@@ -598,7 +598,7 @@
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
         <command name="load">acme-binutils</command>
-        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
@@ -671,7 +671,7 @@
         <command name="load">sems-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
@@ -909,7 +909,7 @@
         <command name="load">sems-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake/3.12.2</command>
         <command name="load">gnu/4.9.2</command>
         <command name="load">sems-intel/17.0.0</command>
@@ -984,7 +984,7 @@
         <command name="purge"/>
         <command name="load">sems-env</command>
         <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake</command>
         <command name="load">gnu/4.9.2</command>
         <command name="load">sems-intel/16.0.2</command>
