@@ -303,6 +303,7 @@ contains
           if (history_gaschmbudget) then
              call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before gas chem solver')
              call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after Linoz')
+             call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after surface emission')
              call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after dry deposition')
              call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
              call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
@@ -310,6 +311,7 @@ contains
              call addfld( trim(spc_name)//'_TDN', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to reset negative values to zero')
              call addfld( trim(spc_name)//'_TDU', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting upper boundary values')
              call addfld( trim(spc_name)//'_TDB', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_TDS', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to surface emission')
              call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
           endif
        endif
@@ -327,6 +329,7 @@ contains
              if (history_gaschmbudget) then
                 call add_default( trim(spc_name)//'_MSB', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSL', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSS', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSD', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
@@ -334,6 +337,7 @@ contains
                 call add_default( trim(spc_name)//'_TDN', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDU', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDB', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDS', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDD', 1, ' ' )
              endif
           endif
@@ -895,7 +899,7 @@ contains
     do m = 1,gas_pcnst
        
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
-          if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSD') then
+          if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
              do k = 1,pver
                 ! kg/m2
                 wrk(:ncol,k,m) = adv_mass(m)*vmr(:ncol,k,m)/mbar(:ncol,k) &

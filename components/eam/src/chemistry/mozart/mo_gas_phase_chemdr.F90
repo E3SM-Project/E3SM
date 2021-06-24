@@ -36,8 +36,8 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
 
-  ! low limit factor for dry deposition
-  real(r8) :: low_limit
+  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
+  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
 
 contains
 
@@ -67,7 +67,6 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
    
-    low_limit = 0.1_r8
     ndx_h2so4 = get_spc_ndx('H2SO4')
 
     uci1_ndx= get_rxt_ndx('uci1')
@@ -951,6 +950,54 @@ contains
     endif
 
     !-----------------------------------------------------------------------      
+    !         ... Surface emissions
+    !----------------------------------------------------------------------- 
+    ! if chemUCI is used, apply surface emissions here
+    if (uci1_ndx > 0) then 
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
+              if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
+                do k = pver, 1, -1 ! loop from bottom to top
+                  ! kg/m2, tracer mass
+                  wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
+                                    *drymass(:ncol,k)/area(:ncol)
+                  j = 0 ! number of columns will double concentration after adding surf. emission
+                  do i = 1,ncol
+                    if ( cflx(i,m) /= 0._r8 ) then
+                      if ( wrk(i,k)*(up_limit-1._r8) >= cflx(i,m)*delt ) then
+                        tmp = wrk(i,k) + cflx(i,m)*delt
+                        cflx(i,m) = 0._r8
+                      else
+                        tmp = wrk(i,k)*up_limit
+                        cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
+                        j = j + 1
+                      endif
+                      vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
+                    endif
+                  end do
+
+                  if ( j == 0 ) then
+                    exit
+                  endif
+
+                end do
+              endif
+            endif
+          endif
+       end do
+    endif
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDS' )
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'MSS' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
+    !-----------------------------------------------------------------------      
     !         ... Xform from vmr to mmr (for dry deposition)
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
@@ -1014,15 +1061,17 @@ contains
                                     *drymass(:ncol,k)/area(:ncol)
                   j = 0 ! number of columns w/o enough mass to remove at the current layer
                   do i = 1,ncol
-                    if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
-                      tmp = wrk(i,k) - sflx2(i,n)*delt
-                      sflx2(i,n) = 0._r8
-                    else
-                      tmp = wrk(i,k)*low_limit
-                      sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
-                      j = j + 1
+                    if ( sflx2(i,n) /= 0._r8 ) then
+                      if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
+                        tmp = wrk(i,k) - sflx2(i,n)*delt
+                        sflx2(i,n) = 0._r8
+                      else
+                        tmp = wrk(i,k)*low_limit
+                        sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
+                        j = j + 1
+                      endif
+                      vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
                     endif
-                    vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
                   end do
 
                   if ( j == 0 ) then
