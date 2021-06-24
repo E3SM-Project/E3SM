@@ -590,7 +590,8 @@ contains
           else
              mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
           end if
-          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
+          ! KVC: Temp fix to make progress
+          ! call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -613,7 +614,8 @@ contains
           else
               mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
           end if
-          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
+          ! KVC: Temp fix to make progress
+          ! call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
 
        endif
     enddo
@@ -878,14 +880,16 @@ contains
              else
                 mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
              end if
-             call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
+          ! KVC: Temp fix to make progress
+             !call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
              if ( size(comp) > 1) then
                 mpi_tag = comp(eci)%cplcompid*100+eci*10+4
              else
                 mpi_tag = comp(eci)%cplcompid*10000+eci*10+4
              end if
-             call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
+             ! KVC: Temp fix to make progress
+             ! call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
           end if
 
           if (present(timer_map_exch)) then
