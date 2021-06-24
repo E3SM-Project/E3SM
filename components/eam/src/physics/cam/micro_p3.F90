@@ -2185,7 +2185,7 @@ contains
          Eii_fact = 1._rtype
       endif
 
-      ni_selfcollect_tend = table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld
+      ni_selfcollect_tend = table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld*ni_incld
    endif
 
    return
@@ -3504,11 +3504,11 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
    ! very simple temperature dependent aggregation efficiency
    if (t_atm.lt.253.15_rtype) then
-      eii=0.1_rtype
-   else if (t_atm.ge.253.15_rtype.and.t_atm.lt.268.15_rtype) then
-      eii=0.1_rtype+(t_atm-253.15_rtype)/15._rtype*0.9_rtype  ! linear ramp from 0.1 to 1 between 253.15 and 268.15 K
+      eii = 0.001_rtype
+   else if (t_atm.ge.253.15_rtype.and.t_atm.lt.273.15_rtype) then
+      eii = 0.001_rtype + (t_atm-253.15_rtype)*(0.3_rtype - 0.001_rtype)/20._rtype  ! linear ramp from 0.001 to 0.3 between 253.15 and 273.15 K
    else
-      eii=1._rtype
+      eii = 0.3_rtype
    end if
 
    return
