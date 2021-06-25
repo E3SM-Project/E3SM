@@ -808,8 +808,10 @@ add_default($nl,'use_hetfrz_classnuc');
 add_default($nl,'hist_hetfrz_classnuc');
 add_default($nl,'gw_convect_hcf');
 add_default($nl,'linoz_psc_t');
-add_default($nl,'micro_mg_dcs_tdep');
-add_default($nl,'micro_mincdnc');
+if ($cfg->get('microphys') =~ /^mg/) {
+   add_default($nl,'micro_mg_dcs_tdep');
+   add_default($nl,'micro_mincdnc');
+}
 add_default($nl,'microp_aero_wsub_scheme');
 add_default($nl,'microp_aero_wsubmin');
 add_default($nl,'use_preexisting_ice');
@@ -3559,9 +3561,6 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_version');
     add_default($nl, 'micro_mg_sub_version');
     add_default($nl, 'micro_mg_num_steps');
-    add_default($nl, 'nucleate_ice_subgrid');
-    add_default($nl, 'so4_sz_thresh_icenuc');
-    add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
     add_default($nl, 'micro_mg_dcs');
@@ -3569,6 +3568,10 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_accre_enhan_fac');
     add_default($nl, 'rrtmg_temp_fix');
 }
+
+add_default($nl, 'nucleate_ice_subgrid');
+add_default($nl, 'so4_sz_thresh_icenuc');
+add_default($nl, 'cld_macmic_num_steps');
 
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl, 'prc_coef1');
@@ -4656,7 +4659,7 @@ sub add_default {
                     print "key=$key  val=$opts{$key}\n";
                 }
             }
-            die;
+            die $var;
         } else {
             return;
         }

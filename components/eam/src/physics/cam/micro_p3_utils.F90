@@ -170,7 +170,7 @@ module micro_p3_utils
     ! mean size for soft lambda_r limiter [microns]
     dbrk   = 600.e-6_rtype
     ! ratio of rain number produced to ice number loss from melting
-    nmltratio = 0.2_rtype
+    nmltratio = 1.0_rtype
 
     cons1 = piov6*rho_h2o
     cons2 = 4._rtype*piov3*rho_h2o
