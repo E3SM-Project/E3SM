@@ -1522,7 +1522,16 @@ is the value of that variable from the *previous* time level!
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
-               />
+	       />
+       <var name="seedMask" type="integer" dimensions="nCells" units="none"
+	       description="seed mask for flood fill"
+	       persistence="scratch"
+	       />
+       <var name="growMask" type="integer" dimensions="nCells" units="none"
+	       description="grow mask for flood fill"
+	       persistence="scratch"
+	       />
+
 	</var_struct>
 
 <!-- ================ -->
