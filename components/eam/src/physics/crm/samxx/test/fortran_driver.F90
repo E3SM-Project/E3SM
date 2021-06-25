@@ -54,7 +54,7 @@ program driver
   integer       , allocatable :: gcolp(:)
   character(len=64) :: fprefix = 'fortran_output'
   integer(8) :: t1, t2, tr
-  integer :: ierr
+  integer :: ierr, iter
 
   logical :: use_MMF_VT                    ! flag for MMF variance transport
   integer :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
@@ -208,27 +208,29 @@ program driver
     write(*,*) 'Running the CRM'
   endif
 
-  if (masterTask) then
-    call system_clock(t1)
-  endif
+  do iter = 1 , 3
+    if (masterTask) then
+      call system_clock(t1)
+    endif
 
-  use_MMF_VT = .false.
-  MMF_VT_wn_max = 0
+    use_MMF_VT = .false.
+    MMF_VT_wn_max = 0
 
-  ! Run the code
-  call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
-           lat0, long0, gcolp, 2, &
-           use_MMF_VT, MMF_VT_wn_max, &
-           .true., 2.D0, .true.)
+    ! Run the code
+    call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
+             lat0, long0, gcolp, 2, &
+             use_MMF_VT, MMF_VT_wn_max, &
+             .true., 2.D0, .true.)
 
 
-#if HAVE_MPI
-  call mpi_barrier(mpi_comm_world,ierr)
-#endif
-  if (masterTask) then
-    call system_clock(t2,tr)
-    write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
-  endif
+  #if HAVE_MPI
+    call mpi_barrier(mpi_comm_world,ierr)
+  #endif
+    if (masterTask) then
+      call system_clock(t2,tr)
+      write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
+    endif
+  enddo
 
   if (masterTask) then
     write(*,*) 'Writing output data'

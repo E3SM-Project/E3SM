@@ -12,7 +12,7 @@ module variance_transport_mod
 !-------------------------------------------------------------------------------
    use params_kind,  only: crm_rknd
    use grid,         only: nx,ny,nzm,dtn
-   use params,       only: pi
+   use params,       only: pi, asyncid
    use openacc_utils
 
    implicit none
@@ -106,7 +106,7 @@ subroutine VT_filter(ncrms,filter_wn_max,f_in,f_out)
    call rfft1i(nx,wsave,lensav,ier)
    if(ier /= 0) write(0,*) 'ERROR: rfftmi(): VT_filter - FFT initialization error ',ier
    
-   !$acc parallel loop collapse(3) async(asyncid)
+   !!$acc parallel loop collapse(3) async(asyncid)
    do k = 1,nzm
       do j = 1,ny
          do icrm = 1,ncrms
