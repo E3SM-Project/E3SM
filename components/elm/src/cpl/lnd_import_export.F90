@@ -40,6 +40,7 @@ contains
     use elm_nlUtilsMod   , only : find_nlgroup_name
     use FrictionVelocityMod, only: implicit_stress, atm_gustiness
     use lnd_disagg_forc
+    use lnd_downscale_atm_forcing
     use netcdf
     !
     ! !ARGUMENTS:
@@ -1112,7 +1113,7 @@ contains
        
        !set the topounit-level atmospheric state and flux forcings
        if (use_atm_downscaling_to_topunit) then
-         call downscale_grd_to_topounit(g, i, x2l, lnd2atm_vars)
+         call downscale_atm_forcing_to_topounit(g, i, x2l, lnd2atm_vars)
        else
          do topo = grc_pp%topi(g), grc_pp%topf(g)
            ! first, all the state forcings

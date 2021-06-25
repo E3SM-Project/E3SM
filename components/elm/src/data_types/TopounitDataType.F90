@@ -386,8 +386,8 @@ module TopounitDataType
     call hist_addfld1d (fname='FLDS', units='W/m^2',  &
          avgflag='A', long_name='atmospheric longwave radiation', &
          ptr_topo=this%lwrad,t2g_scale_type='unity')
-    
-    end subroutine init_top_af
+  
+  end subroutine init_top_af
 
   !-----------------------------------------------------------------------
   subroutine clean_top_af(this, begt, endt)
