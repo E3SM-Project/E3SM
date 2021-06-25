@@ -156,6 +156,10 @@ module li_subglacial_hydro
          ! TODO: Set time step appropriately on first subcycle of init
          deltatSGH = 1.0e-4_RKIND ! in seconds
 
+         ! Mask needs to be initialized for pressure calcs to be correct
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
          ! remove invalid values - not necessary on restart, but shouldn't hurt
          call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
          waterThickness = max(0.0_RKIND, waterThickness)
@@ -176,9 +180,6 @@ module li_subglacial_hydro
             waterPressure = rhoo * gravity * (config_sea_level - bedTopography)
          end where
 
-         ! Mask needs to be initialized for pressure calcs to be correct
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
          ! Initialize diagnostic pressure variables
          call calc_pressure_diag_vars(block, err_tmp)
          err = ior(err, err_tmp)
