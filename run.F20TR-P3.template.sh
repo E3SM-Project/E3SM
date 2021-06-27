@@ -317,12 +317,12 @@ case_setup() {
 
     if [[ $RESOLUTION =~ "ne120" ]]; then
      # lfs setstripe -S 1m -c 64 `./xmlquery --value RUNDIR`
-       ./xmlchange MAX_MPITASKS_PER_NODE="32"
+       ./xmlchange MAX_MPITASKS_PER_NODE="64"
        ./xmlchange NTASKS_WAV="32"
        ./xmlchange NTASKS_GLC="32"
        for comp in ATM LND ROF ICE OCN CPL; do
-           ./xmlchange NTASKS_$comp="10800"
-           ./xmlchange NTHRDS_$comp="4"
+           ./xmlchange NTASKS_$comp="21600"
+           ./xmlchange NTHRDS_$comp="2"
        done
     fi
 
