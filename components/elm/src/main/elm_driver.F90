@@ -573,7 +573,7 @@ contains
 
 
        if (do_budgets) then
-          call WaterBudget_SetBeginningMonthlyStates(bounds_clump, waterstate_vars)
+          call WaterBudget_SetBeginningMonthlyStates(bounds_clump )
           if (use_cn) then
              call CNPBudget_SetBeginningMonthlyStates(bounds_clump, col_cs, grc_cs)
           endif
@@ -1276,7 +1276,7 @@ contains
        call t_stopf('gridbalchk')
 
        if (do_budgets) then
-          call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
+          call WaterBudget_SetEndingMonthlyStates(bounds_clump)
           if (use_cn) then
              call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs)
           endif
