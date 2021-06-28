@@ -862,7 +862,7 @@ module li_subglacial_hydro
                   hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
                   hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
                endif
-            else ! phi<=0
+            elseif (hydropotentialBaseSlopeNormal(iEdge) < 0.0_RKIND) then
                ! flow is from cell1 to cell2
                if (.not. li_mask_is_grounded_ice(cellMask(cell1))) then
                   hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
