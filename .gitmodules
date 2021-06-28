@@ -31,7 +31,7 @@
 [submodule "cime"]
         path = cime
         url = git@github.com:ESMCI/cime.git
-        branch = master
+        branch = jonbob/e3sm/support-add-ww3
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
