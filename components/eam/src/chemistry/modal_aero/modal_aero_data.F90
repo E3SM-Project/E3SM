@@ -161,12 +161,6 @@
 #else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
 #endif
-#elif ( defined MODAL_AERO_4MODE_SOA_MOM )
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 2 /)
-#else
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3, 2 /)
-#endif
 #elif ( defined MODAL_AERO_3MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6 /)
