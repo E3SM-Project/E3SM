@@ -17,7 +17,7 @@ void Functions<S,D>::ni_conservation(const Spack& ni, const Spack& ni_nucleat_te
 {
   const auto sink_ni = (ni2nr_melt_tend + ni_sublim_tend + ni_selfcollect_tend)*dt;
   const auto source_ni = ni + (ni_nucleat_tend+nr2ni_immers_freeze_tend+nc2ni_immers_freeze_tend)*dt;
-  const auto mask = sink_ni > source_ni && context && sink_ni > 0;
+  const auto mask = sink_ni > source_ni && context;
   if (mask.any()) {
     const auto ratio = source_ni/sink_ni;
     ni2nr_melt_tend.set(mask, ni2nr_melt_tend*ratio);

@@ -2936,7 +2936,7 @@ subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_auto
   !recall that melting number is scaled by nmltratio to account for ice crystals melting then
   !rapidly evaporating. Thus ni removal from melting is *not* scaled by nmltratio...
   source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
-  if(sink_nr > source_nr .and. sink_nr.gt.0._rtype) then
+  if(sink_nr > source_nr) then
      ratio = source_nr/sink_nr
      nr_collect_tend  = nr_collect_tend*ratio
      nr2ni_immers_freeze_tend = nr2ni_immers_freeze_tend*ratio
@@ -2959,7 +2959,7 @@ subroutine ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_
 
   sink_ni = (ni2nr_melt_tend + ni_sublim_tend + ni_selfcollect_tend)*dt
   source_ni = ni + (ni_nucleat_tend+nr2ni_immers_freeze_tend+nc2ni_immers_freeze_tend)*dt
-  if(sink_ni > source_ni .and. sink_ni.gt.0._rtype) then
+  if(sink_ni > source_ni) then
      ratio = source_ni/sink_ni
      ni2nr_melt_tend  = ni2nr_melt_tend*ratio
      ni_sublim_tend = ni_sublim_tend*ratio
