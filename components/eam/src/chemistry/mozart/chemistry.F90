@@ -1440,7 +1440,7 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! call Neu wet dep scheme
 !-----------------------------------------------------------------------
-    call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdel,state%zi,state%t,dt, &
+    call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdeldry,state%zi,state%t,dt, &
          prain, nevapr, cldfr, cmfdqr, ptend%q)
 
 !-----------------------------------------------------------------------
