@@ -7,11 +7,11 @@ set (ARRAY_SCORPIO_SRCS
 )
 
 ## Test atmosphere processes
-CreateUnitTest(io_test "io.cpp" scream_io
+CreateUnitTest(io_test "io.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
-CreateUnitTest(restart_test "restart.cpp" scream_io
+CreateUnitTest(restart_test "restart.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
