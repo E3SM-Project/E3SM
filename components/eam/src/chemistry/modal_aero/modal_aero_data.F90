@@ -23,7 +23,7 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_SOA_MOM) && ( defined RAIN_EVAP_TO_COARSE_AERO )
+#if ( ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_SOA_MOM ) ) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
@@ -69,7 +69,8 @@
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
-       'seasalt   ', 'dust      ', 'm-organic ' /)
+       'seasalt   ', 'dust      ', &
+       'm-organic ' /)
 #else
   integer, parameter ::  ntot_aspectype = 8
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
@@ -93,9 +94,10 @@
        250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
 #elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
-       12.0_r8,   250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
+       12.0_r8,  250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
-#elif ( defined MODAL_AERO_4MODE )
+
+#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_SOA_MOM )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,  250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8 /)
 
@@ -145,7 +147,7 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
 #elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/12,10,12, 3 /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
@@ -184,7 +186,7 @@
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 1, 1, 1, 1, 1, 1, 1, 1, 1/)
-#elif ( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#elif ( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_4MODE_SOA_MOM) )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1/)
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0/)
@@ -260,8 +262,13 @@
           lptr_soa_a_amode(ntot_amode),  lptr_soa_cw_amode(ntot_amode), &   !
           lptr_bc_a_amode(ntot_amode),   lptr_bc_cw_amode(ntot_amode),  &   !
           lptr_nacl_a_amode(ntot_amode), lptr_nacl_cw_amode(ntot_amode),&   !
-          lptr_mom_a_amode(ntot_amode),  lptr_mom_cw_amode(ntot_amode),&   !
+          lptr_mom_a_amode(ntot_amode),  lptr_mom_cw_amode(ntot_amode), &   !
           lptr_dust_a_amode(ntot_amode), lptr_dust_cw_amode(ntot_amode),&   !
+! ++MW
+          lptr_ca_a_amode(ntot_amode),   lptr_ca_cw_amode(ntot_amode),  &   !
+          lptr_co3_a_amode(ntot_amode),  lptr_co3_cw_amode(ntot_amode), &   !
+          lptr_cl_a_amode(ntot_amode),   lptr_cl_cw_amode(ntot_amode),  &   !
+! --MW
           lptr_mpoly_a_amode(ntot_amode),  lptr_mpoly_cw_amode(ntot_amode), &
           lptr_mprot_a_amode(ntot_amode),  lptr_mprot_cw_amode(ntot_amode), &
           lptr_mlip_a_amode(ntot_amode),   lptr_mlip_cw_amode(ntot_amode),  &
@@ -276,6 +283,12 @@
           lptr2_soa_a_amode(ntot_amode,nsoa), &
           lptr2_soa_g_amode(nsoag)
 
+! ++MW
+      integer &
+          lptr_h2so4_g_amode,   lptr_hno3_g_amode, &
+          lptr_hcl_g_amode,     lptr_nh3_g_amode
+! --MW
+
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &
           specmw_nh4_amode,     specdens_nh4_amode,       &
@@ -285,6 +298,11 @@
           specmw_mpoly_amode,   specdens_mpoly_amode,     &
           specmw_mprot_amode,   specdens_mprot_amode,     &
           specmw_mlip_amode,    specdens_mlip_amode,      &
+! ++MW
+          specmw_ca_amode,      specdens_ca_amode,        &
+          specmw_co3_amode,     specdens_co3_amode,       &
+          specmw_cl_amode,      specdens_cl_amode,        &
+! --MW
           specmw_bc_amode,      specdens_bc_amode,        &
           specmw_dust_amode,    specdens_dust_amode,      &
           specmw_seasalt_amode, specdens_seasalt_amode,   &
