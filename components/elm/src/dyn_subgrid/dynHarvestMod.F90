@@ -19,14 +19,8 @@ module dynHarvestMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use CNStateType           , only : cnstate_type
-  use CNCarbonStateType     , only : carbonstate_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
-  use CNCarbonFluxType      , only : carbonflux_type
-  use CNNitrogenFluxType    , only : nitrogenflux_type
    use VegetationPropertiesType        , only : veg_vp
   use elm_varcon            , only : grlnd
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use PhosphorusFluxType    , only : phosphorusflux_type
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_cf, col_nf, col_pf  
   use VegetationType        , only : veg_pp                
@@ -175,9 +169,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine CNHarvest (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+  subroutine CNHarvest (num_soilc, filter_soilc, num_soilp, filter_soilp, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! Harvest mortality routine for coupled carbon-nitrogen code (CN)
@@ -193,13 +185,6 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-
-    type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p                         ! patch index
@@ -470,16 +455,14 @@ contains
    ! and litter P inputs
 
    call CNHarvestPftToColumn(num_soilc, filter_soilc, &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-      phosphorusstate_vars,phosphorusflux_vars)
+      cnstate_vars)
 
     end associate 
  end subroutine CNHarvest
 
  !-----------------------------------------------------------------------
  subroutine CNHarvestPftToColumn (num_soilc, filter_soilc, &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-      phosphorusstate_vars,phosphorusflux_vars)
+      cnstate_vars)
    !
    ! !DESCRIPTION:
    ! called at the end of CNHarvest to gather all pft-level harvest litterfall fluxes
@@ -492,12 +475,6 @@ contains
    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
    integer                   , intent(in)    :: filter_soilc(:) ! soil column filter
    type(cnstate_type)        , intent(in)    :: cnstate_vars
-   type(carbonstate_type)    , intent(in)    :: carbonstate_vars
-   type(nitrogenstate_type)  , intent(in)    :: nitrogenstate_vars
-   type(carbonflux_type)     , intent(inout) :: carbonflux_vars
-   type(nitrogenflux_type)   , intent(inout) :: nitrogenflux_vars
-   type(phosphorusstate_type), intent(in)    :: phosphorusstate_vars
-   type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
    !
    ! !LOCAL VARIABLES:
    integer :: fc,c,pi,p,j               ! indices
