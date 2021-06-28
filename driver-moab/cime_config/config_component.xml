@@ -173,8 +173,8 @@
     <type>char</type>
     <group>case_desc</group>
     <file>env_case.xml</file>
-    <desc>                                                                                     
-      Optional string denoting that this case is part of a case group                          
+    <desc>
+      Optional string denoting that this case is part of a case group
     </desc>
   </entry>
 
@@ -753,6 +753,15 @@
     machines.</desc>
   </entry>
 
+  <entry id="USE_MOAB">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the MOAB library</desc>
+  </entry>
+
   <entry id="USE_TRILINOS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -906,9 +915,9 @@
     <file>env_run.xml</file>
     <desc>
       Determines what ESMF log files (if any) are generated when
-          USE_ESMF_LIB is TRUE.
+	  USE_ESMF_LIB is TRUE.
       ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
-          all of the PETs. Not supported on some platforms.
+	  all of the PETs. Not supported on some platforms.
       ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
       ESMF_LOGKIND_NONE: Do not issue messages to a log file.
       By default, no ESMF log files are generated.
@@ -1069,7 +1078,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -1147,6 +1156,31 @@
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>grid mask - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="PTS_MULTCOLS_MODE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Use a single point of the global grid but propogate that point to multiple columns  - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="PTS_NX">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>number of cells for single point mode when operating on multiple columns in i direction</desc>
+  </entry>
+
+  <entry id="PTS_NY">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>number of cells for single point mode when operating on multiple columns in j directions</desc>
   </entry>
 
   <entry id="PTS_MODE">
@@ -2362,7 +2396,7 @@
 
   <entry id="PIO_VERSION">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>2</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
     <file>env_build.xml</file>

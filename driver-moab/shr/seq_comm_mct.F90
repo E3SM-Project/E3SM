@@ -275,7 +275,8 @@ contains
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
+         info_taskmap_model
 
     namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
