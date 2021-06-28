@@ -23,7 +23,7 @@ module model_init_mod
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode, hv_ref_profiles, &
-       hv_theta_correction
+       hv_theta_correction, hcoord
   use time_mod,           only: timelevel_qdp, timelevel_t
   use physical_constants, only: g, TREF, Rgas, kappa
   use imex_mod,           only: test_imex_jacobian
@@ -71,16 +71,22 @@ contains
          elem(ie)%state%phinh_i(:,:,nlevp,t) = elem(ie)%state%phis(:,:)
       enddo
 
-      ! initialize reference states used by hyberviscosity
+      ! initialize reference states used by hyperviscosity
       ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
       do k=1,nlev
          elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
               (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
       enddo
-      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
-      temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
-      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
-           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+      if (hcoord==1) then
+         phi_ref(:,:,:,ie)=0    ! should use reference coordinates
+         dp_ref(:,:,:,ie)=0  ! for now. what to do here?
+      else
+         call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
+         temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
+         call phi_from_eos(hvcoord,elem(ie)%state%phis,&
+              temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+      end if
+      
       if (hv_ref_profiles==0) then
          ! keep PHI profile, but dont use theta and dp:
          elem(ie)%derived%theta_ref=0
@@ -110,7 +116,7 @@ contains
 
     ! unit test for analytic jacobian used by IMEX methods
 #if 0
-    if (.not. theta_hydrostatic_mode) &
+    if (.not. theta_hydrostatic_mode .and. hcoord==0) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 #endif
 

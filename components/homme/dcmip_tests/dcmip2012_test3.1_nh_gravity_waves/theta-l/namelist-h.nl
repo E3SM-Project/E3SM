@@ -39,7 +39,7 @@
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
   output_frequency  = 120,                      ! steps
-  output_varnames1  ='T','ps','u','v','omega'   ! variables to write to file
+  output_varnames1  ='T','omega','pnh'          ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   num_io_procs      = 16         

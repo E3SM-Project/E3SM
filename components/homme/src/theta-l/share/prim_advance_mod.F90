@@ -18,7 +18,7 @@ module prim_advance_mod
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
     theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction,&
-    vtheta_thresh
+    vtheta_thresh, hcoord
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -1209,23 +1209,29 @@ contains
      enddo
 
      ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
-     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-     omega_i(:,:,1)=0
-     do k=1,nlev
-        pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
-        omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
-     enddo
-     do k=1,nlev
+     if (hcoord == 1) then
+        ! approximation -g w rho  = g w dphi/dpi
+        omega(:,:,k)=g*( phi_i(:,:,k+1)-phi_i(:,:,k))/dp3d(:,:,k) *&
+             ( elem(ie)%state%w_i(:,:,k+1,n0)+elem(ie)%state%w_i(:,:,k,n0))/2
+     else
+        pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+        omega_i(:,:,1)=0
+        do k=1,nlev
+           pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+           omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
+        enddo
+        do k=1,nlev
 #ifdef HOMMEXX_BFB_TESTING
-        pi(:,:,k)=(pi_i(:,:,k) + pi_i(:,:,k+1))/2
+           pi(:,:,k)=(pi_i(:,:,k) + pi_i(:,:,k+1))/2
 #else
-        pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+           pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
 #endif
-        vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
-        vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
-             elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
-        omega(:,:,k) = (vgrad_p(:,:,k) - ( omega_i(:,:,k)+omega_i(:,:,k+1))/2) 
-     enddo        
+           vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
+           vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
+                elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
+           omega(:,:,k) = (vgrad_p(:,:,k) - ( omega_i(:,:,k)+omega_i(:,:,k+1))/2) 
+        enddo
+     end if
 
      ! ==================================================
      ! Compute eta_dot_dpdn
@@ -1260,6 +1266,26 @@ contains
            eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
         end do
 
+        if (hcoord==1) then
+           ! z coordinate version:
+           ! eta_dot_dpdn  dp3d_i * sdot
+           ! u_i*grad(phi_i) + sdot dphi/ds - w_i = 0
+           ! sdot = (w_i - u_i*grad(phi_i) ) / dphi/ds
+           ! eta_dot_dpdn = dp3d_i*(w_i - u_i*grad(phi_i) ) / 
+           ! code copies from below (ineffiiciet)
+           do k=2,nlev
+              gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
+              v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
+                   +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
+              
+              eta_dot_dpdn(:,:,k) = &
+                   (g*elem(ie)%state%w_i(:,:,k,n0)-v_gradphinh_i(:,:,k))*dp3d_i(:,:,k) / &
+                   (phi(:,:,k)-phi(:,:,k-1))
+              
+           enddo
+           
+        endif
+        
         eta_dot_dpdn(:,:,1     ) = 0
         eta_dot_dpdn(:,:,nlevp)  = 0
         vtheta_i(:,:,1) =       0
@@ -1317,6 +1343,12 @@ contains
         phi_vadv_i=phi_vadv_i/dp3d_i
      endif
 
+     if (hcoord==1) then
+        ! height coordinate we require phi_i(1)=constant, which implies w=0
+        ! and thus w equation determines dpnh_dp_i(1):
+        dpnh_dp_i(:,:,1)=1 + w_vadv_i(:,:,1)/g
+        ! boundary condition at surface is same in height and z coordinates, treated below
+     endif
 
      ! ================================
      ! accumulate mean vertical flux:
@@ -1375,8 +1407,22 @@ contains
     phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
     + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
     
-
-
+#if 1    
+    if (rsplit==0 .and. hcoord==1 ) then
+       ! debug eta_dot_dpdn code 
+       do k=1,nlevp
+          if  ( maxval(abs(phi_tens(:,:,k))) > 1e-10) then
+             print *,ie,k,'max abs phi_tens=',maxval(abs(phi_tens(:,:,k))),&
+                  maxval(abs(elem(ie)%state%w_i(:,:,k,n0))),&
+                  maxval(abs(gradphinh_i(:,:,:,k))),&
+                  maxval(abs(phi_vadv_i(:,:,k)))
+          endif
+          if  ( maxval(abs(gradphinh_i(:,:,:,k))) > 1e-10) then
+             print *,ie,k,'max abs gradphi=',maxval(abs(gradphinh_i(:,:,:,k)))
+          endif
+       enddo
+    endif
+#endif
 
 
      ! ================================================                                                                 
@@ -1771,6 +1817,17 @@ contains
            endif
         enddo
         enddo
+
+     if (hcoord==1) then
+        do j=1,np
+           do i=1,np
+              if ( abs(elem(ie)%state%w_i(i,j,1,np1)) >1e-10) then
+                 write(iulog,*) 'WARNING: w(1) does not satisfy b.c.',ie,i,j,k
+                 write(iulog,*) 'val2 = ',elem(ie)%state%w_i(i,j,nlevp,np1)
+              endif
+           enddo
+        enddo
+     endif
 
         ! check for layer spacing <= 1m
         do k=1,nlev

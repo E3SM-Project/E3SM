@@ -15,7 +15,7 @@ module prim_state_mod
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case,  use_moisture, &
                               qsplit, ftype, rsplit,&
-                              theta_hydrostatic_mode
+                              theta_hydrostatic_mode, hcoord
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -932,8 +932,11 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                 Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k) 
           suml2(:,:) = suml2(:,:)+(phi_i(:,:,k+1)-phi_i(:,:,k))*pnh(:,:,k)
        enddo
-       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            pnh_i(:,:,1)* phi_i(:,:,1)
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:)
+       if (hcoord==0) then
+          elem(ie)%accum%IEner(:,:,n)=elem(ie)%accum%IEner(:,:,n)+&
+               pnh_i(:,:,1)* phi_i(:,:,1)
+       endif
 
        enddo
     

@@ -15,6 +15,8 @@ private
 ! hvcoord_t: Hybrid level definitions: p = a*p0 + b*ps
 !            interfaces   p(k) = hyai(k)*ps0 + hybi(k)*ps
 !            midpoints    p(k) = hyam(k)*ps0 + hybm(k)*ps
+! hcoord=1 (height coordinate)
+!            z_i(k) = hyai(k)*zbot0 + hybi(k)*zbot
 !-----------------------------------------------------------------------
 type, public :: hvcoord_t
   real(r8) ps0          ! base state surface-pressure for level definitions

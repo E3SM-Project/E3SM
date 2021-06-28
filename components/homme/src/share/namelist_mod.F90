@@ -101,7 +101,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     hv_theta_thresh, &
     vert_remap_q_alg, &
     se_fv_phys_remap_alg, &
-    timestep_make_subcycle_parameters_consistent
+    timestep_make_subcycle_parameters_consistent, &
+    hcoord
+  
 
 #ifndef CAM
   use control_mod, only:              &
@@ -1017,6 +1019,13 @@ end if
       call abortmp("Error: planar grids require the use of tensor HV")
     end if
 
+
+    if (theta_hydrostatic_mode .and. hcoord==1) then
+       call abortmp('height coordinate only runs in theta-l NH model')
+    endif
+    if (rsplit/=0 .and. hcoord==1) then
+       call abortmp('height coordinate requires rsplit=0')
+    endif
     ftype = se_ftype
 
 #ifdef _PRIM

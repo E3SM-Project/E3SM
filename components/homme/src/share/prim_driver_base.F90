@@ -1553,7 +1553,7 @@ contains
   use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use control_mod,        only : theta_hydrostatic_mode
+  use control_mod,        only : theta_hydrostatic_mode, hcoord
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
@@ -1586,11 +1586,13 @@ contains
 #endif
 
 #ifdef MODEL_THETA_L
+
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
      adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
   endif
+
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
@@ -1718,22 +1720,36 @@ contains
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
    
+   if (hcoord==0) then
+      ! now we have tn1,dp,pnh - compute corresponding theta and phi:
+      vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
+
+      phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+      do k=nlev,1,-1
+         phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+      enddo
+      elem%derived%FPHI(:,:,:) = &
+           (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+
+      !finally, compute difference for FVTheta
+      ! this method is using new dp, new exner, new-new r*, new t
+      elem%derived%FVTheta(:,:,:) = &
+           (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
+
+   else
+      ! height coordinate. assume phi is fixed.  dp3d and T changed above.
+      ! p = rho R* T
+      do k=1,nlev
+         pnh(:,:,k) =  -elem%state%dp3d(:,:,k,np1) * rstarn1(:,:,k)*tn1(:,:,k) / &
+              ( elem%state%phinh_i(:,:,k+1,np1) -  elem%state%phinh_i(:,:,k,np1))
+      enddo
+      exner(:,:,:)=(pnh(:,:,:)/p0)**(Rgas/Cp)
+      vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)      
+
+      elem%derived%FPHI(:,:,:) = 0
+      elem%derived%FVTheta(:,:,:) = (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
+   endif
    
-   ! now we have tn1,dp,pnh - compute corresponding theta and phi:
-   vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
-     
-   phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
-   do k=nlev,1,-1
-      phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
-   enddo
-   
-   !finally, compute difference for FVTheta
-   ! this method is using new dp, new exner, new-new r*, new t
-   elem%derived%FVTheta(:,:,:) = &
-        (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-   
-   elem%derived%FPHI(:,:,:) = &
-        (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
 

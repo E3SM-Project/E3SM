@@ -1181,14 +1181,14 @@ IMPLICIT NONE
 
 	if (zcoords .eq. 1) then
 
-		height = z
-		p = ps*( (bigG/TS)*exp(-N2*height/g)+1.d0 - (bigG/TS)  )**(cp/Rd)
+          height = z
+	  p = ps*( (bigG/TS)*exp(-N2*height/g)+1.d0 - (bigG/TS)  )**(cp/Rd)
 
 	else
 
-    if (hybrid_eta) p = hyam*p0 + hybm*ps
-		height = (-g/N2)*log( (TS/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
-    z      = height
+         if (hybrid_eta) p = hyam*p0 + hybm*ps
+	   height = (-g/N2)*log( (TS/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
+           z  = height
 
 	endif
 
@@ -1227,7 +1227,7 @@ IMPLICIT NONE
 
 	t = t_mean + t_pert
 
-  rho = p/(Rd*t)
+        rho = p/(Rd*t)
 
 !-----------------------------------------------------------------------
 !     initialize Q, set to zero 

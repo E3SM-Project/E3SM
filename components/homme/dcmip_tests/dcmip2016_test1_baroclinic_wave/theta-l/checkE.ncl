@@ -13,7 +13,9 @@ end setvalues
 ;  output_format = "X11"
 
   f = addfile("movies/dcmip2016_test11.nc","r")
-
+;  f = addfile("movies/r400_dcmip2016_test11-ptop.nc","r")
+;  f = addfile("movies-pcoord/dcmip2016_test11.nc","r")
+;  f = addfile("movies/r400_dcmip2016_test11-bak1.nc","r")
 
   
   wks = gsn_open_wks(output_format,"prec-vor.pdf")
@@ -21,10 +23,11 @@ end setvalues
   nlon = dimsizes(f->lon)
   nlev = dimsizes(f->lev)
   ntimes = dimsizes(f->time)
-  
+
   print ("ntimes="+ntimes+" nlev="+nlev+" nlat x nlon "+nlat+"x"+nlon)
-  
-  
+
+  day15  = closest_val( 15, f->time)  
+  print ("plotting time="+day15)
   
   res=True
   res@cnLevelSelectionMode = "ManualLevels"
@@ -61,7 +64,9 @@ res@gsnMinorLonSpacing = 30
     k=21
     eta = (f->hyam(k)+f->hybm(k))
     eta_mb = 1000*eta
-    print("model level:  k="+k+" eta_mb="+eta_mb)
+    minz = min(f->geo(day15,k,:,:))/9.8061
+    maxz = max(f->geo(day15,k,:,:))/9.8061
+    print("model level:  k="+k+" eta_mb="+eta_mb+" min/max dz="+minz+","+maxz)
 
 ;  snapshots
     ; precip: 4e-7 meters/s
@@ -70,11 +75,11 @@ res@gsnMinorLonSpacing = 30
 
     gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
     res@lbLabelStride = 2
-    res@cnMinLevelValF = 1d0
-    res@cnMaxLevelValF = 37d0
+    res@cnMinLevelValF = 1d0 
+    res@cnMaxLevelValF = 37d0 
     res@cnLevelSpacingF = 2d0
 
-    field = f->precl(ntimes-1,:,:)
+    field = f->precl(day15,:,:)
     field = field*xfac
     field@units = "mm/day"
     print("precl snapshot min/max ="+min(field)+" "+max(field))
@@ -88,7 +93,7 @@ res@gsnMinorLonSpacing = 30
     res@cnMinLevelValF =  -8d-5
     res@cnMaxLevelValF =  8d-5
     res@cnLevelSpacingF = 2*res@cnMaxLevelValF/24
-    field = f->zeta(ntimes-1,k,:,:)
+    field = f->zeta(day15,k,:,:)
 ;    field = field*1e5
 ;    field@units = "1e-5 1/s"
     print("zeta snapshot min/max ="+min(field)+" "+max(field))

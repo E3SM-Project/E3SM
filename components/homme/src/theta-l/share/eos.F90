@@ -23,7 +23,7 @@ module eos
   use kinds,          only: real_kind
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, kappa, g, Rgas
-  use control_mod,    only: theta_hydrostatic_mode
+  use control_mod,    only: theta_hydrostatic_mode, hcoord
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,        only: bfb_pow
 #endif
@@ -183,14 +183,22 @@ implicit none
   enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
-   ! surface boundary condition pnh_i determined by w equation to enforce
-   ! w b.c.  This is computed in the RHS calculation.  Here, we use
-   ! an approximation (hydrostatic) so that dpnh/dpi = 1
-   pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
-   ! extrapolote NH perturbation:
-   !pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if (hcoord==1) then
+     ! use hydrostatic approximation so that dpnh/dpi=1
+     ! this is correct at TOM.  AT surface, correct values must be computed in 
+     ! RHS calculation
+     pnh_i(:,:,1) = pnh(:,:,1) - dp3d(:,:,1)/2    
+     pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2  
+  else
+     pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
+     ! surface boundary condition pnh_i determined by w equation to enforce
+     ! w b.c.  This is computed in the RHS calculation.  Here, we use
+     ! an approximation (hydrostatic) so that dpnh/dpi = 1
+     pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
+     ! extrapolote NH perturbation:
+     !pnh_i(:,:,nlevp) = pi_i(:,:,nlevp) + (3*(pnh(:,:,nlev)-pi(:,:,nlev)) - (pnh(:,:,nlev-1)-pi(:,:,nlev-1)) )/2
+  end if
 
 
    ! compute d(pnh)/d(pi) at interfaces

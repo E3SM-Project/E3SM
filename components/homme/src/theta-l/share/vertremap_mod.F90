@@ -11,7 +11,7 @@ module vertremap_mod
   use element_mod, only            : element_t
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
-  use control_mod, only : vert_remap_q_alg
+  use control_mod, only            : vert_remap_q_alg
   use eos, only : phi_from_eos
   implicit none
   private
@@ -36,7 +36,7 @@ contains
   !
   use kinds,          only: real_kind
   use hybvcoord_mod,  only: hvcoord_t
-  use control_mod,    only: rsplit
+  use control_mod,    only: rsplit, hcoord
   use hybrid_mod,     only: hybrid_t
   use physical_constants, only : Cp,g
 
@@ -78,8 +78,17 @@ contains
      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
           sum(elem(ie)%state%dp3d(:,:,:,np1),3)
      do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        if (hcoord==1) then
+           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)  ! rsplit=0 case
+           ! rsplit=1  we will remap dp3d based on PHI*
+           ! dz       = dz of reference levels
+           ! dz_star  = d(phinh_i) = current level dz
+           ! call remap1(dp3d,np,5,dz_star,dz)   
+           ! then use remap(dp3d) and dp_start to remap everything else
+        else
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        endif
         if (rsplit==0) then
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k))
@@ -87,6 +96,7 @@ contains
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         endif
      enddo
+     
      if (minval(dp_star)<0) then
         do k=1,nlev
         do i=1,np
@@ -164,8 +174,11 @@ contains
      endif
 
      ! reinitialize dp3d after remap
-     elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
-
+     ! in eulerian rsplit=0 case, also do this just to keep dp3d /ps consistent
+     if (hcoord == 0) then
+        elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
+     end if
+     
   enddo
   call t_stopf('vertical_remap')
   end subroutine vertical_remap
