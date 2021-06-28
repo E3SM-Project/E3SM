@@ -934,13 +934,11 @@ module li_subglacial_hydro
          waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
 
          ! diffusive flux
-         numGroundedCells = li_mask_is_grounded_ice_int(cellMask(cell1)) + li_mask_is_grounded_ice_int(cellMask(cell2))
-         if (numGroundedCells < 2) then
-            waterFluxDiffu(iEdge) = 0.0_RKIND
-         else
-            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
+         ! Note: At the GL, the water thickness for one cell will be 0, meaning a large gradient.  However, the
+         ! diffusivity uses a one sided water thickness.  It's unclear what really happens to lakes at the GL/margin.
+         waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
                / dcEdge(iEdge)
-         endif
+         !endif
       end do
       where (waterFluxMask == 2)
          waterFluxAdvec = 0.0_RKIND
