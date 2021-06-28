@@ -185,7 +185,7 @@ subroutine neu_wetdep_init
 !
 end subroutine neu_wetdep_init
 !
-subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
+subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
      prain, nevapr, cld, cmfdqr, wd_tend)
 !
   use ppgrid,           only : pcols, pver
@@ -199,7 +199,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
   integer,        intent(in)    :: lchnk,ncol
   real(r8),       intent(in)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
   real(r8),       intent(in)    :: pmid(pcols,pver)         ! midpoint pressures (Pa)
-  real(r8),       intent(in)    :: pdel(pcols,pver)         ! pressure delta about midpoints (Pa)
+  real(r8),       intent(in)    :: pdeldry(pcols,pver)      ! dry air pressure delta about midpoints (Pa)
   real(r8),       intent(in)    :: zint(pcols,pver+1)       ! interface geopotential height above the surface (m)
   real(r8),       intent(in)    :: tfld(pcols,pver)         ! midpoint temperature (K)
   real(r8),       intent(in)    :: delt                     ! timestep (s)
@@ -260,7 +260,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
     kk = pver - k + 1
     do i=1,ncol
 !
-      mass_in_layer(i,k) = area(i) * pdel(i,kk)/gravit          ! kg
+      mass_in_layer(i,k) = area(i) * pdeldry(i,kk)/gravit       ! kg
 !
       cldice (i,k) = mmr(i,kk,index_cldice)                     ! kg/kg
       cldliq (i,k) = mmr(i,kk,index_cldliq)                     ! kg/kg
