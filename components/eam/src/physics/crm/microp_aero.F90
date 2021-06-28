@@ -116,7 +116,6 @@ integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 integer :: mode_fine_dst_idx = -1   ! index of dust in fine dust mode
 integer :: mode_pcarbon_idx  = -1  ! index of dust in accum mode
 integer :: accum_dust_idx    = -1  ! index of dust in accum mode
-logical :: dem_in            = .false.           ! use DeMott IN
 
 integer :: npccn_idx, rndst_idx, nacon_idx
 
@@ -177,10 +176,7 @@ subroutine microp_aero_init
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
         history_amwg_out = history_amwg, &
         micro_do_icesupersat_out = micro_do_icesupersat, &
-        liqcf_fix_out    = liqcf_fix,    & 
-        demott_ice_nuc_out = dem_in      ) 
-   
-   if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
+        liqcf_fix_out    = liqcf_fix ) 
 
    ! Access the physical properties of the aerosols that are affecting the climate
    ! by using routines from the rad_constituents module.
@@ -274,17 +270,6 @@ subroutine microp_aero_init
             coarse_nacl_idx = n
          end select
       end do
-      
-      if(dem_in) then
-         call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
-         do n = 1, nspec
-            call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
-            select case (trim(str32))
-            case ('dust')
-               accum_dust_idx = n
-            end select
-         end do
-      endif
 
       ! Check that required mode specie types were found
       if ( coarse_dust_idx == -1 .or. coarse_nacl_idx == -1) then
@@ -410,7 +395,6 @@ subroutine microp_aero_run ( &
    integer :: i, k, m
    integer :: itim_old
    integer :: nmodes
-   real(r8):: dst1_num_to_mass 
 
    real(r8), pointer :: ast(:,:)        
    real(r8), pointer :: alst(:,:)        
@@ -424,10 +408,6 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: num_coarse(:,:) ! number m.r. of coarse mode
    real(r8), pointer :: coarse_dust(:,:) ! mass m.r. of coarse dust
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
-
-   real(r8), pointer :: accum_dust(:,:) ! mass m.r. of accum dust
-   real(r8), pointer :: num_fine(:,:)   ! number m.r. of fine dust
-   real(r8), pointer :: num_pcarbon(:,:)! number m.r. of primary carbon
 
    real(r8), pointer :: kvh(:,:)        ! vertical eddy diff coef (m2 s-1)
    real(r8), pointer :: tke(:,:)        ! TKE from the UW PBL scheme (m2 s-2)
@@ -453,12 +433,6 @@ subroutine microp_aero_run ( &
    real(r8) :: nctend_mixnuc(pcols,pver)
    real(r8) :: dum, dum2           ! temporary dummy variable
    real(r8) :: dmc, ssmc           ! variables for modal scheme.
-
-   real(r8) :: so4_num                               ! so4 aerosol number (#/cm^3)
-   real(r8) :: soot_num                              ! soot (hydrophilic) aerosol number (#/cm^3)
-   real(r8) :: dst1_num,dst2_num,dst3_num,dst4_num   ! dust aerosol number (#/cm^3)
-   real(r8) :: organic_num                           
-   real(r8) :: dst_num                               ! total dust aerosol number (#/cm^3)
 
    real(r8) :: qs(pcols)            ! liquid-ice weighted sat mixing rat (kg/kg)
    real(r8) :: es(pcols)            ! liquid-ice weighted sat vapor press (pa)
@@ -561,14 +535,10 @@ subroutine microp_aero_run ( &
    if (clim_modal_aero) then
       ! mode number mixing ratios
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
-      if(dem_in)then
-         if(mode_fine_dst_idx > 0)call rad_cnst_get_mode_num(0, mode_fine_dst_idx, 'a', state, pbuf, num_fine)
-         if(mode_pcarbon_idx  > 0)call rad_cnst_get_mode_num(0, mode_pcarbon_idx, 'a', state, pbuf, num_pcarbon)      
-      endif
+     
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
-      call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
-      if(dem_in)call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_dust_idx, 'a', state, pbuf, accum_dust) 
+      call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl) 
 
    else
       ! init number/mass arrays for bulk aerosols

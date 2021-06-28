@@ -1102,6 +1102,7 @@ if ($aer_model eq 'mam' ) {
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam4_resus_mom/) {$aero_modes = '4mode_mom';}
+  if ($chem =~ /_mam4_resus_soa_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
   if ($chem =~ /_mam9/) {$aero_modes = '9mode';}
 
@@ -2582,28 +2583,28 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
     # Surface emission datasets:
     %species = ();
     if ($chem eq 'trop_mam4_resus_soag') {
-	%species = ('DMS       -> ' => 'dms_emis_file',
-		    'SO2       -> ' => 'so2_emis_file',
-		    'bc_a4     -> ' => 'bc_a4_emis_file',
-		    'pom_a4    -> ' => 'pom_a4_emis_file',
-		    'so4_a1    -> ' => 'so4_a1_emis_file',
-		    'so4_a2    -> ' => 'so4_a2_emis_file',
-		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
-		    'num_a2    -> ' => 'num_a2_emis_file',
-		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-	    );
+        %species = ('DMS       -> ' => 'dms_emis_file',
+                    'SO2       -> ' => 'so2_emis_file',
+                    'bc_a4     -> ' => 'bc_a4_emis_file',
+                    'pom_a4    -> ' => 'pom_a4_emis_file',
+                    'so4_a1    -> ' => 'so4_a1_emis_file',
+                    'so4_a2    -> ' => 'so4_a2_emis_file',
+                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                    'num_a2    -> ' => 'num_a2_emis_file',
+                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+            );
     } else {
-	%species = ('DMS       -> ' => 'dms_emis_file',
-		    'SO2       -> ' => 'so2_emis_file',
-		    'SOAG      -> ' => 'soag_emis_file',
-		    'bc_a4     -> ' => 'bc_a4_emis_file',
-		    'pom_a4    -> ' => 'pom_a4_emis_file',
-		    'so4_a1    -> ' => 'so4_a1_emis_file',
-		    'so4_a2    -> ' => 'so4_a2_emis_file',
-		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
-		    'num_a2    -> ' => 'num_a2_emis_file',
-		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-	    );
+        %species = ('DMS       -> ' => 'dms_emis_file',
+                    'SO2       -> ' => 'so2_emis_file',
+                    'SOAG      -> ' => 'soag_emis_file',
+                    'bc_a4     -> ' => 'bc_a4_emis_file',
+                    'pom_a4    -> ' => 'pom_a4_emis_file',
+                    'so4_a1    -> ' => 'so4_a1_emis_file',
+                    'so4_a2    -> ' => 'so4_a2_emis_file',
+                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                    'num_a2    -> ' => 'num_a2_emis_file',
+                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+            );
     }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
@@ -2627,24 +2628,24 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
     # Vertical emission datasets:
     %species = ();
     if ($chem eq 'trop_mam4_resus_soag') {
-	%species = ('SO2         -> ' => 'so2_ext_file',
-		    'SOAG        -> ' => 'soag_ext_file',
-		    'so4_a1      -> ' => 'so4_a1_ext_file',
-		    'so4_a2      -> ' => 'so4_a2_ext_file',
-		    'pom_a4      -> ' => 'pom_a4_ext_file',
-		    'bc_a4       -> ' => 'bc_a4_ext_file',
-		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
-		    'num_a2      -> ' => 'num_a2_ext_file',
-		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+        %species = ('SO2         -> ' => 'so2_ext_file',
+                    'SOAG        -> ' => 'soag_ext_file',
+                    'so4_a1      -> ' => 'so4_a1_ext_file',
+                    'so4_a2      -> ' => 'so4_a2_ext_file',
+                    'pom_a4      -> ' => 'pom_a4_ext_file',
+                    'bc_a4       -> ' => 'bc_a4_ext_file',
+                    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                    'num_a2      -> ' => 'num_a2_ext_file',
+                    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
     } else {
-	%species = ('SO2         -> ' => 'so2_ext_file',
-		    'so4_a1      -> ' => 'so4_a1_ext_file',
-		    'so4_a2      -> ' => 'so4_a2_ext_file',
-		    'pom_a4      -> ' => 'pom_a4_ext_file',
-		    'bc_a4       -> ' => 'bc_a4_ext_file',
-		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
-		    'num_a2      -> ' => 'num_a2_ext_file',
-		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+        %species = ('SO2         -> ' => 'so2_ext_file',
+                    'so4_a1      -> ' => 'so4_a1_ext_file',
+                    'so4_a2      -> ' => 'so4_a2_ext_file',
+                    'pom_a4      -> ' => 'pom_a4_ext_file',
+                    'bc_a4       -> ' => 'bc_a4_ext_file',
+                    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                    'num_a2      -> ' => 'num_a2_ext_file',
+                    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
     }
     $first = 1;
     $pre = "";
@@ -2695,28 +2696,28 @@ if ($chem eq 'linoz_mam4_resus' || $chem eq 'linoz_mam4_resus_soag') {
     # Surface emission datasets:
     %species = ();
     if ($chem eq 'linoz_mam4_resus_soag') {
-	%species = ('DMS       -> ' => 'dms_emis_file',
-		    'SO2       -> ' => 'so2_emis_file',
-		    'bc_a4     -> ' => 'bc_a4_emis_file',
-		    'pom_a4    -> ' => 'pom_a4_emis_file',
-		    'so4_a1    -> ' => 'so4_a1_emis_file',
-		    'so4_a2    -> ' => 'so4_a2_emis_file',
-		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
-		    'num_a2    -> ' => 'num_a2_emis_file',
-		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-	    );
+        %species = ('DMS       -> ' => 'dms_emis_file',
+                    'SO2       -> ' => 'so2_emis_file',
+                    'bc_a4     -> ' => 'bc_a4_emis_file',
+                    'pom_a4    -> ' => 'pom_a4_emis_file',
+                    'so4_a1    -> ' => 'so4_a1_emis_file',
+                    'so4_a2    -> ' => 'so4_a2_emis_file',
+                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                    'num_a2    -> ' => 'num_a2_emis_file',
+                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+            );
     } else {
-	%species = ('DMS       -> ' => 'dms_emis_file',
-		    'SO2       -> ' => 'so2_emis_file',
-		    'SOAG      -> ' => 'soag_emis_file',
-		    'bc_a4     -> ' => 'bc_a4_emis_file',
-		    'pom_a4    -> ' => 'pom_a4_emis_file',
-		    'so4_a1    -> ' => 'so4_a1_emis_file',
-		    'so4_a2    -> ' => 'so4_a2_emis_file',
-		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
-		    'num_a2    -> ' => 'num_a2_emis_file',
-		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-	    );
+        %species = ('DMS       -> ' => 'dms_emis_file',
+                    'SO2       -> ' => 'so2_emis_file',
+                    'SOAG      -> ' => 'soag_emis_file',
+                    'bc_a4     -> ' => 'bc_a4_emis_file',
+                    'pom_a4    -> ' => 'pom_a4_emis_file',
+                    'so4_a1    -> ' => 'so4_a1_emis_file',
+                    'so4_a2    -> ' => 'so4_a2_emis_file',
+                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                    'num_a2    -> ' => 'num_a2_emis_file',
+                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+            );
     }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
@@ -2740,24 +2741,24 @@ if ($chem eq 'linoz_mam4_resus' || $chem eq 'linoz_mam4_resus_soag') {
     # Vertical emission datasets:
     %species = ();
     if ($chem eq 'linoz_mam4_resus_soag') {
-	%species = ('SO2         -> ' => 'so2_ext_file',
-		    'SOAG        -> ' => 'soag_ext_file',
-		    'so4_a1      -> ' => 'so4_a1_ext_file',
-		    'so4_a2      -> ' => 'so4_a2_ext_file',
-		    'pom_a4      -> ' => 'pom_a4_ext_file',
-		    'bc_a4       -> ' => 'bc_a4_ext_file',
-		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
-		    'num_a2      -> ' => 'num_a2_ext_file',
-		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+        %species = ('SO2         -> ' => 'so2_ext_file',
+                    'SOAG        -> ' => 'soag_ext_file',
+                    'so4_a1      -> ' => 'so4_a1_ext_file',
+                    'so4_a2      -> ' => 'so4_a2_ext_file',
+                    'pom_a4      -> ' => 'pom_a4_ext_file',
+                    'bc_a4       -> ' => 'bc_a4_ext_file',
+                    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                    'num_a2      -> ' => 'num_a2_ext_file',
+                    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
     } else {
-	%species = ('SO2         -> ' => 'so2_ext_file',
-		    'so4_a1      -> ' => 'so4_a1_ext_file',
-		    'so4_a2      -> ' => 'so4_a2_ext_file',
-		    'pom_a4      -> ' => 'pom_a4_ext_file',
-		    'bc_a4       -> ' => 'bc_a4_ext_file',
-		    'num_a1      -> ' => 'mam7_num_a1_ext_file',
-		    'num_a2      -> ' => 'num_a2_ext_file',
-		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+        %species = ('SO2         -> ' => 'so2_ext_file',
+                    'so4_a1      -> ' => 'so4_a1_ext_file',
+                    'so4_a2      -> ' => 'so4_a2_ext_file',
+                    'pom_a4      -> ' => 'pom_a4_ext_file',
+                    'bc_a4       -> ' => 'bc_a4_ext_file',
+                    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                    'num_a2      -> ' => 'num_a2_ext_file',
+                    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
     }
     $first = 1;
     $pre = "";
@@ -2908,13 +2909,28 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
     }
 }
 
-if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
+if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ||
+    $chem eq 'linoz_mam4_resus_soa_mom_soag_vbs' ) {
 
     my %species;
 
     # Surface emission datasets:
     %species = ();
-    if ($chem eq 'linoz_mam4_resus_mom_soag') {
+    if ($chem eq 'linoz_mam4_resus_soa_mom_soag_vbs') {
+        %species = ('DMS       -> ' => 'dms_emis_file',
+                    'SO2       -> ' => 'so2_emis_file',
+                    'SOAG0     -> ' => 'soag0_emis_file',
+                    'ISOP     -> '  => 'isop_emis_file',
+                    'C10H16   -> '  => 'c10h16_emis_file',
+                    'bc_a4     -> ' => 'bc_a4_emis_file',
+                    'pom_a4    -> ' => 'pom_a4_emis_file',
+                    'so4_a1    -> ' => 'so4_a1_emis_file',
+                    'so4_a2    -> ' => 'so4_a2_emis_file',
+                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                    'num_a2    -> ' => 'num_a2_emis_file',
+                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
+            );
+    } elsif ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('DMS       -> ' => 'dms_emis_file',
 		    'SO2       -> ' => 'so2_emis_file',
 		    'bc_a4     -> ' => 'bc_a4_emis_file',
@@ -2959,7 +2975,17 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
 
     # Vertical emission datasets:
     %species = ();
-    if ($chem eq 'linoz_mam4_resus_mom_soag') {
+    if ($chem eq 'linoz_mam4_resus_soa_mom_soag_vbs') {
+        %species = ('SO2         -> ' => 'so2_ext_file',
+                    'so4_a1      -> ' => 'so4_a1_ext_file',
+                    'so4_a2      -> ' => 'so4_a2_ext_file',
+                    'SOAG0       -> ' => 'soag0_ext_file',
+                    'pom_a4      -> ' => 'pom_a4_ext_file',
+                    'bc_a4       -> ' => 'bc_a4_ext_file',
+                    'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                    'num_a2      -> ' => 'num_a2_ext_file',
+                    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    } elsif ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('SO2         -> ' => 'so2_ext_file',
 		    'SOAG        -> ' => 'soag_ext_file',
 		    'so4_a1      -> ' => 'so4_a1_ext_file',

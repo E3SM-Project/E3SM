@@ -17,7 +17,7 @@
   use chem_mods,       only:  gas_pcnst
   use physconst,       only:  pi
   use ppgrid,          only:  pcols, pver
-  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc
+  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
@@ -88,6 +88,14 @@
   integer, public :: rename_method_optaa = 40
 ! controls renaming parameterization
 
+  integer, parameter :: soa_mech_type_default = 1
+  integer, parameter :: soa_mech_type_vbs     = 100
+  !integer, parameter :: soa_mech_type = soa_mech_type_default
+  !integer, parameter :: soa_mech_optaa = 1
+  integer, public :: soa_mech_type = soa_mech_type_default
+  integer, public :: soa_mech_optaa = 1 ! parameter to public QZR
+! controls soa treatment
+
   integer, public :: update_qaerwat = 0
   integer, public :: update_dgncur_a = 0
   integer, public :: update_dgncur_awet = 0
@@ -100,40 +108,36 @@
 
 
 #if ( defined MODAL_AERO_3MODE )
-  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_gas = nsoag + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
 #elif ( defined MODAL_AERO_4MODE )
-  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_gas = nsoag + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
 #elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 9  
-#elif ( defined MODAL_AERO_4MODE_MOM )
-  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 9
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
+  integer, parameter :: max_gas = nsoag + 1  
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
-  integer, parameter :: max_gas = nsoa + 4
-  ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
+  integer, parameter :: max_gas = nsoag + 4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 8
 #elif ( defined MODAL_AERO_7MODE )
-  integer, parameter :: max_gas = nsoa + 2
-  ! the +4 in max_aer are dst, ncl, so4, nh4
+  integer, parameter :: max_gas = nsoag + 2
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( defined MODAL_AERO_8MODE )
-  integer, parameter :: max_gas = nsoa + 2
-  ! the +4 in max_aer are dst, ncl, so4, mom ???
+  integer, parameter :: max_gas = nsoag + 2
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( defined MODAL_AERO_9MODE )
-  integer, parameter :: max_gas = nsoa + 2
-  ! the +4+5 in max_aer are dst, ncl, so4, nh4 and 5 marine organics
+  integer, parameter :: max_gas = nsoag + 2
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )|| (defined MODAL_AERO_4MODE_SOA_MOM))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -170,14 +174,18 @@
                       ! early versions of mam neglected the seasalt contribution
 
   ! species indices for various qgas_--- arrays
-  integer :: igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+  integer :: igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+  integer :: igas_soagzz
   ! species indices for various qaer_--- arrays
-  !    when nsoa > 1, igas_soa and iaer_soa are indices of the first soa species
-  !    when nbc  > 1, iaer_bc  is index of the first bc  species
-  !    when npom > 1, iaer_pom is index of the first pom species
+  !    when nsoag > 1, igas_soag is index of the first soag species in qgas arrays
+  !    when nsoa  > 1, iaer_soa  is index of the first soa  species in qaer arrays
+  !    when nbc   > 1, iaer_bc   is index of the first bc   species in qaer arrays
+  !    when npoa  > 1, iaer_pom  is index of the first pom  species in qaer arrays
+  ! and igas_soagzz, iaer_soazz, iaer_bczz, iaer_pomzz are indicies of the last ... species
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
+  integer :: iaer_bczz, iaer_pomzz, iaer_soazz
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &
@@ -185,7 +193,10 @@
   integer :: lmap_num(max_mode), lmap_numcw(max_mode)
   integer :: lmapcc_all(gas_pcnst)
   integer, parameter :: lmapcc_val_gas = 1, lmapcc_val_aer = 2, lmapcc_val_num = 3
-  integer :: ngas, naer
+  integer :: naer        ! number of aerosol species in qaer arrays
+  integer :: naer_cond   ! number of aerosol species directly involved in gas/aerosol exchange (condensation)
+  integer :: ngas        ! number of gas     species in qgas arrays
+  integer :: ngas_cond   ! number of gas     species directly involved in gas/aerosol exchange (condensation)
   integer :: nacc, nait, npca, nufi, nmacc, nmait
 
   integer :: n_agepair, n_coagpair
@@ -214,7 +225,7 @@
   real(r8) :: mw_gas(max_gas), mw_aer(max_aer)
   real(r8) :: mwhost_gas(max_gas), mwhost_aer(max_aer), mwhost_num
   real(r8) :: mw_nh4a_host, mw_so4a_host
-  real(r8) :: mwuse_soa(nsoa), mwuse_poa(npoa)
+  real(r8) :: mwuse_soag(nsoag), mwuse_soa(nsoa), mwuse_poa(npoa)
   real(r8) :: sigmag_aer(max_mode)
   real(r8) :: vol_molar_gas(max_gas)
 
@@ -830,7 +841,7 @@ main_i_loop: &
          else if (l2 == 4) then
             igas = -3
          else
-            igas = 1
+            igas = igas_soag
          end if
          if (igas > 0) then
             l = lmap_gas(igas)
@@ -1021,7 +1032,7 @@ main_i_loop: &
          else if (l2 == 4) then
             igas = -3
          else
-            igas = 1
+            igas = igas_soag
          end if
          if (igas > 0) then
             l = lmap_gas(igas)
@@ -2786,7 +2797,7 @@ do_newnuc_if_block50: &
         gas_avg(:) = 0.0_r8
         
         !Units conversion:qgas_cur[mol/mol] * cair_mol_m3[mol/m3] * 10.0e9[nmol/mol] 
-        gas(ilim2_g)  = qgas_cur(igas_soa)   * nano_mult_cair
+        gas(ilim2_g)  = qgas_cur(igas_soag)  * nano_mult_cair
         gas(ih2so4_g) = qgas_cur(igas_h2so4) * nano_mult_cair 
         gas(inh3_g)   = qgas_cur(igas_nh3)   * nano_mult_cair 
         if (igas_hno3 > 0) &
@@ -3128,11 +3139,11 @@ do_newnuc_if_block50: &
         !BSINGH - only 3 gases are avialble in CAM (SOAG, H2SO4, NH3). 
         !SOAG is stored in LIM2 gas species as of now
 
-        qgas_cur(igas_soa)   = gas(ilim2_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag)  = gas(ilim2_g)  * nano_mult_cair_inv
         qgas_cur(igas_h2so4) = gas(ih2so4_g) * nano_mult_cair_inv 
         qgas_cur(igas_nh3)   = gas(inh3_g)   * nano_mult_cair_inv 
 
-        qgas_avg(igas_soa)   = gas_avg(ilim2_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag)  = gas_avg(ilim2_g)  * nano_mult_cair_inv
         qgas_avg(igas_h2so4) = gas_avg(ih2so4_g) * nano_mult_cair_inv
         qgas_avg(igas_nh3)   = gas_avg(inh3_g)   * nano_mult_cair_inv
 
@@ -3259,6 +3270,8 @@ do_newnuc_if_block50: &
       if (jtsubstep == 1) then
 
       tmpa = pmid/1.013e5_r8
+      uptkaer(:,:) = 0.0_r8
+
       do igas = 1, ngas
          gas_diffus(igas) = gas_diffusivity( &
                                temp, tmpa, mw_gas(igas), vol_molar_gas(igas) )
@@ -3288,10 +3301,35 @@ do_newnuc_if_block50: &
       end do ! igas
 
       do igas = 1, ngas
-         ! use cam5.1.00 uptake rates
-         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
-         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
+         ! use cam5.1.00 uptake rates for soag and nh3
+         if ((igas_soag <= igas) .and. (igas <= igas_soagzz)) then
+            uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
+         else if (igas == igas_nh3) then
+            uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
+         end if
       end do ! igas
+
+      do igas = 1, ngas
+         if (igas <= igas_soagzz) then
+            iaer = igas
+            if (soa_mech_type == soa_mech_type_vbs) iaer = min( iaer, iaer_soazz )
+         else
+            iaer = iaer_soazz + (igas - igas_soagzz)
+            iaer = min( iaer, naer )
+         end if
+         ! set uptkaer(igas,n) to zero if mode does not contain this species and does not undergo aging
+         do n = 1, ntot_amode
+            if ( mode_aging_optaa(n) > 0 ) cycle
+            if ( lmap_aer(iaer,n)    > 0 ) cycle
+            uptkaer(igas,n) = 0.0_r8
+         end do
+#if ( defined( CAMBOX_ACTIVATE_THIS ) )
+         if (i==1 .and. k==1) write(183,'(a,6i5,1p,20e9.1)')  &
+            'igas, nsoag, ngas, iaer, nsoa, naer, uptkaer', &
+             igas, nsoag, ngas, iaer, nsoa, naer, uptkaer(igas,1:ntot_amode)
+#endif
+      end do ! igas
+
       uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
@@ -3312,31 +3350,57 @@ do_newnuc_if_block50: &
 
 
 ! do soa
-      call mam_soaexch_1subarea(                                    &
-         nstep,             lchnk,                                  &
-         i,                 k,                jsub,                 &
-         latndx,            lonndx,           lund,                 &
-         dtsubstep,                                                 &
-         temp,              pmid,             aircon,               &
-         n_mode,                                                    &
-         qgas_cur,          qgas_avg,                               &
-         qaer_cur,                                                  &
-         qnum_cur,                                                  &
-         qwtr_cur,                                                  &
-         uptkaer                                                    )
+      if (soa_mech_type == soa_mech_type_vbs) then
+         call mam_soaexch_vbs_1subarea(                                &
+            nstep,             lchnk,                                  &
+            i,                 k,                jsub,                 &
+            latndx,            lonndx,           lund,                 &
+            dtsubstep,                                                 &
+            temp,              pmid,             aircon,               &
+            n_mode,                                                    &
+            qgas_cur,          qgas_avg,                               &
+            qaer_cur,                                                  &
+            qnum_cur,                                                  &
+            qwtr_cur,                                                  &
+            uptkaer                                                    )
+      else
+         call mam_soaexch_default_1subarea(                            &
+            nstep,             lchnk,                                  &
+            i,                 k,                jsub,                 &
+            latndx,            lonndx,           lund,                 &
+            dtsubstep,                                                 &
+            temp,              pmid,             aircon,               &
+            n_mode,                                                    &
+            qgas_cur,          qgas_avg,                               &
+            qaer_cur,                                                  &
+            qnum_cur,                                                  &
+            qwtr_cur,                                                  &
+            uptkaer                                                    )
+      end if
 
 
 ! do other gases (that are assumed non-volatile) with no time sub-stepping
-      do igas = nsoa+1, ngas
-         iaer = igas
+      do igas = igas_soagzz+1, ngas
+         if (igas == igas_h2so4) then
+            iaer = iaer_so4
+         else if (igas == igas_nh3) then
+            iaer = iaer_nh4
+         else
+            cycle
+         end if
+
          qgas_prv(igas)          = qgas_cur(igas)
          qaer_prv(iaer,1:n_mode) = qaer_cur(iaer,1:n_mode)
       end do
 
-      do igas = nsoa+1, ngas
-         iaer = igas
-         if ( (igas == igas_hno3) .or. &
-              (igas == igas_hcl ) ) cycle
+      do igas = igas_soagzz+1, ngas
+         if (igas == igas_h2so4) then
+            iaer = iaer_so4
+         else if (igas == igas_nh3) then
+            iaer = iaer_nh4
+         else
+            cycle
+         end if
 
          tmpa = sum( uptkaer(igas,1:n_mode) )
          tmp_kxt = tmpa*dtsubstep
@@ -3413,7 +3477,7 @@ do_newnuc_if_block50: &
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-      subroutine mam_soaexch_1subarea(                              &
+      subroutine mam_soaexch_default_1subarea(                      &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
          latndx,            lonndx,           lund,                 &
@@ -3427,6 +3491,7 @@ do_newnuc_if_block50: &
          uptkaer                                                    )
 !
 ! calculate soa condensation/evaporation for i,k,jsub over time dtsubstep
+! for the mam default soa mechanism
 !
 
 ! uses
@@ -3461,25 +3526,20 @@ do_newnuc_if_block50: &
          uptkaer
 
 ! local
-      integer, parameter :: ntot_poaspec = npoa
-      integer, parameter :: ntot_soaspec = nsoa
+      integer, parameter :: maxd_poaspec = npoa
+      integer, parameter :: maxd_soaspec = nsoa
 
       integer :: iaer, igas, ip
+      integer :: isoa_bgn, isoa_end
       integer :: ll
       integer :: n, niter, niter_max
+      integer :: ntot_poaspec, ntot_soaspec
       integer :: ntot_soamode
 
       logical, parameter :: flag_pcarbon_opoa_frac_zero   = .true.
 
       logical :: skip_soamode(max_mode)   ! true if this mode does not have soa
 
-      real(r8), dimension( 1:max_gas ) :: &
-         qgas_prv
-
-      real(r8), dimension( 1:max_aer, 1:max_mode ) :: &
-         qaer_prv
-
-      real(r8) :: uptkaer_soag_tmp(nsoa,max_mode)
 
       real(r8), parameter :: a_min1 = 1.0e-20
       real(r8), parameter :: g_min1 = 1.0e-20
@@ -3490,33 +3550,51 @@ do_newnuc_if_block50: &
 
       real(r8) :: a_ooa_sum_tmp(max_mode)          ! total ooa (=soa+opoa) in a mode
       real(r8) :: a_opoa(max_mode)                 ! oxidized-poa aerosol mixrat (mol/mol at actual mw)
-      real(r8) :: a_soa(ntot_soaspec,max_mode)     ! soa aerosol mixrat (mol/mol at actual mw)
-      real(r8) :: a_soa_tmp(ntot_soaspec,max_mode) ! temporary soa aerosol mixrat (mol/mol)
-      real(r8) :: beta(ntot_soaspec,max_mode)      ! dtcur*xferrate
-      real(r8) :: delh_vap_soa(ntot_soaspec)       ! delh_vap_soa = heat of vaporization for gas soa (J/mol)
-      real(r8) :: del_g_soa_tmp(ntot_soaspec)
+      real(r8) :: a_soa(maxd_soaspec,max_mode)     ! soa aerosol mixrat (mol/mol at actual mw)
+      real(r8) :: a_soa_prv(maxd_soaspec,max_mode) ! soa aerosol mixrat at beginning of current time sub-step
+      real(r8) :: a_soa_tmp(maxd_soaspec,max_mode) ! temporary soa aerosol mixrat (mol/mol)
+      real(r8) :: beta(maxd_soaspec,max_mode)      ! dtcur*xferrate
+      real(r8) :: delh_vap_soa(maxd_soaspec)       ! delh_vap_soa = heat of vaporization for gas soa (J/mol)
+      real(r8) :: del_g_soa_tmp(maxd_soaspec)
       real(r8) :: dtcur                            ! current time step (s)
       real(r8) :: dtfull                           ! full time step (s)
       real(r8) :: dtmax                            ! = (dtfull-tcur)
-      real(r8) :: dtsum_qgas_avg
-      real(r8) :: g0_soa(ntot_soaspec)             ! ambient soa gas equilib mixrat (mol/mol at actual mw)
-      real(r8) :: g_soa(ntot_soaspec)              ! soa gas mixrat (mol/mol at actual mw)
-      real(r8) :: g_star(ntot_soaspec,max_mode)    ! soa gas mixrat that is in equilib
+      real(r8) :: dtsum_g_soa_avg
+      real(r8) :: g0_soa(maxd_soaspec)             ! ambient soa gas equilib mixrat (mol/mol at actual mw)
+      real(r8) :: g_soa(maxd_soaspec)              ! soa gas mixrat (mol/mol at actual mw)
+      real(r8) :: g_soa_prv(maxd_soaspec)          ! soa gas mixrat at beginning of current time sub-step
+      real(r8) :: g_soa_avg(maxd_soaspec)          ! time-averaged soa gas mixrat
+      real(r8) :: g_star(maxd_soaspec,max_mode)    ! soa gas mixrat that is in equilib
                                                    ! with each aerosol mode (mol/mol)
-      real(r8) :: mw_poa(ntot_poaspec)             ! actual molec wght of poa
-      real(r8) :: mw_soa(ntot_soaspec)             ! actual molec wght of soa
-      real(r8) :: opoa_frac(ntot_poaspec,max_mode) ! fraction of poa that is opoa
-      real(r8) :: phi(ntot_soaspec,max_mode)       ! "relative driving force"
-      real(r8) :: p0_soa(ntot_soaspec)             ! soa gas equilib vapor presssure (atm)
-      real(r8) :: p0_soa_298(ntot_soaspec)         ! p0_soa_298 = soa gas equilib vapor presssure (atm) at 298 k
-      real(r8) :: sat(ntot_soaspec,max_mode)       ! sat(m,ll) = g0_soa(ll)/a_ooa_sum_tmp(m) = g_star(m,ll)/a_soa(m,ll)
+      real(r8) :: mw_poa(maxd_poaspec)             ! actual molec wght of poa
+      real(r8) :: mw_soa(maxd_soaspec)             ! actual molec wght of soa
+      real(r8) :: opoa_frac(maxd_poaspec,max_mode) ! fraction of poa that is opoa
+      real(r8) :: phi(maxd_soaspec,max_mode)       ! "relative driving force"
+      real(r8) :: p0_soa(maxd_soaspec)             ! soa gas equilib vapor presssure (atm)
+      real(r8) :: p0_soa_298(maxd_soaspec)         ! p0_soa_298 = soa gas equilib vapor presssure (atm) at 298 k
+      real(r8) :: sat(maxd_soaspec,max_mode)       ! sat(m,ll) = g0_soa(ll)/a_ooa_sum_tmp(m) = g_star(m,ll)/a_soa(m,ll)
                                                    !    used by the numerical integration scheme -- it is not a saturation rato!
       real(r8) :: tcur                             ! current integration time (from 0 s)
 
       real(r8) :: tmpa, tmpb, tmpc
 
-      real(r8) :: tot_soa(ntot_soaspec)            ! g_soa + sum( a_soa(:) )
+      real(r8) :: tot_soa(maxd_soaspec)            ! g_soa + sum( a_soa(:) )
+      real(r8) :: uptkaer_soag(maxd_soaspec,max_mode)
+      real(r8) :: uptkaer_soag_tmp(maxd_soaspec,max_mode)
 
+      character(len=128) :: msg
+
+
+      if (nsoag /= nsoa) then
+         write(msg,'(a,2(1x,i5))') 'mam_soaexch_default_1subarea - bad nsoag, nsoa =', nsoag, nsoa
+         call endrun( msg )
+      end if
+
+      ntot_poaspec = maxd_poaspec
+      ntot_soaspec = maxd_soaspec
+
+      isoa_bgn = igas_soag
+      isoa_end = igas_soagzz
 
 ! calc ntot_soamode = "last" mode on which soa is allowed to condense
       ntot_soamode = 0
@@ -3552,19 +3630,45 @@ do_newnuc_if_block50: &
       niter_max = 1000
       niter = 0
       dtfull = dtsubstep
-      tcur = 0.0
-      dtcur = 0.0
-      phi(:,:) = 0.0
-      g_star(:,:) = 0.0
-      g_soa(:) = 0.0
-      a_opoa(:) = 0.0
-      a_soa(:,:) = 0.0
+      tcur = 0.0_r8
+      dtcur = 0.0_r8
+      phi(:,:) = 0.0_r8
+      g_star(:,:) = 0.0_r8
+      g_soa(:) = 0.0_r8
+      g_soa_prv(:) = 0.0_r8
+      a_opoa(:) = 0.0_r8
+      a_soa(:,:) = 0.0_r8
+      a_soa_prv(:,:) = 0.0_r8
+      g_soa_avg(:) = 0.0_r8
+      dtsum_g_soa_avg = 0.0_r8
+      uptkaer_soag(:,:) = 0.0_r8
+
+! initialize g_soa_prv, a_soa_prv, uptkaer_soag
+      do ll = 1, ntot_soaspec
+         igas = igas_soag + ll - 1
+         g_soa_prv(ll) = qgas_cur(igas)
+         do n = 1, ntot_soamode
+            uptkaer_soag(ll,n) = uptkaer(igas,n)
+         end do
+
+         iaer = iaer_soa + ll - 1
+         do n = 1, ntot_soamode
+            a_soa_prv(ll,n) = qaer_cur(iaer,n)
+         end do
+      end do
+
+! calc oxygenated poa (which does not change during the soa uptake integration)
+      do n = 1, ntot_soamode
+         a_opoa(n) = 0.0_r8
+         do ll = 1, ntot_poaspec
+            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_cur(iaer_pom+ll-1,n), 0.0_r8 )
+         end do
+      end do
+
 
 !
 ! main integration loop -- does multiple substeps to reach dtfull
 !
-      qgas_avg(1:nsoa) = 0.0_r8
-      dtsum_qgas_avg = 0.0_r8
 
 time_loop: &
       do while (tcur < dtfull-1.0e-3_r8 )
@@ -3574,9 +3678,10 @@ time_loop: &
 
 
 ! set qxxx_prv to be current value
-      qgas_prv(1:nsoa) = qgas_cur(1:nsoa)
-      qaer_prv = qaer_cur
-!     qaer_num = qnum_cur
+      if (niter > 1) then
+         g_soa_prv = g_soa
+         a_soa_prv = a_soa
+      end if
 
 
 ! determine which modes have non-zero transfer rates
@@ -3585,8 +3690,8 @@ time_loop: &
       do n = 1, ntot_soamode
          skip_soamode(n) = .true.
          do ll = 1, ntot_soaspec
-            if (uptkaer(ll,n) > 1.0e-15_r8) then
-               uptkaer_soag_tmp(ll,n) = uptkaer(ll,n)
+            if (uptkaer_soag(ll,n) > 1.0e-15_r8) then
+               uptkaer_soag_tmp(ll,n) = uptkaer_soag(ll,n)
                skip_soamode(n) = .false.
             else
                uptkaer_soag_tmp(ll,n) = 0.0_r8
@@ -3608,32 +3713,24 @@ time_loop: &
 ! > create qxxx_bgn = qxxx_cur at the very beginning (is it needed)
 !
       do ll = 1, ntot_soaspec
-         g_soa(ll) = max( qgas_prv(ll), 0.0_r8 )
+         g_soa(ll) = max( g_soa_prv(ll), 0.0_r8 )
          tot_soa(ll) = g_soa(ll)
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
-            a_soa(ll,n) = max( qaer_prv(ll,n), 0.0_r8 )
+            a_soa(ll,n) = max( a_soa_prv(ll,n), 0.0_r8 )
             tot_soa(ll) = tot_soa(ll) + a_soa(ll,n)
-         end do
-      end do
-
-      do n = 1, ntot_soamode
-         if ( skip_soamode(n) ) cycle
-         a_opoa(n) = 0.0_r8
-         do ll = 1, ntot_poaspec
-            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_prv(iaer_pom+ll-1,n), 0.0_r8 )
          end do
       end do
 
 
 ! determine time step
-      tmpa = 0.0  ! time integration parameter for all soa species
+      tmpa = 0.0_r8  ! time integration parameter for all soa species
       do n = 1, ntot_soamode
          if ( skip_soamode(n) ) cycle
          a_ooa_sum_tmp(n) = a_opoa(n) + sum( a_soa(1:ntot_soaspec,n) )
       end do
       do ll = 1, ntot_soaspec
-         tmpb = 0.0  ! time integration parameter for a single soa species
+         tmpb = 0.0_r8  ! time integration parameter for a single soa species
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             sat(ll,n) = g0_soa(ll)/max( a_ooa_sum_tmp(n), a_min1 )
@@ -3689,8 +3786,8 @@ time_loop: &
 ! step 2 - implicit in g_soa and semi-implicit in a_soa,
 !    with g_star(ll,n) calculated semi-implicitly
       do ll = 1, ntot_soaspec
-         tmpa = 0.0
-         tmpb = 0.0
+         tmpa = 0.0_r8
+         tmpb = 0.0_r8
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             tmpa = tmpa + a_soa(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
@@ -3707,31 +3804,440 @@ time_loop: &
       end do
 
 
-! update mix ratios for soa species
-      do igas = 1, nsoa
-         iaer = igas
-         qgas_cur(igas) = g_soa(igas)
-         tmpc = qgas_cur(igas) - qgas_prv(igas)
-         qgas_avg(igas) = qgas_avg(igas) + dtcur*(qgas_prv(igas) + 0.5_r8*tmpc)
+! increment g_soa_avg
+      do ll = 1, ntot_soaspec
+         tmpc = g_soa(ll) - g_soa_prv(ll)
+         g_soa_avg(ll) = g_soa_avg(ll) + dtcur*(g_soa_prv(ll) + 0.5_r8*tmpc)
+      end do
+
+
+      dtsum_g_soa_avg = dtsum_g_soa_avg + dtcur
+
+      end do time_loop
+
+
+! update mix ratios for soa gas and aerosol species
+! convert g_soa_avg from sum_over[ qgas*dt_cut ] to an average
+      do ll = 1, ntot_soaspec
+         igas = igas_soag + ll - 1
+         qgas_cur(igas) = g_soa(ll)
+         qgas_avg(igas) = max( 0.0_r8, g_soa_avg(ll)/dtsum_g_soa_avg )
+
+         iaer = iaer_soa + ll - 1
          do n = 1, ntot_soamode
-            qaer_cur(iaer,n) = a_soa(iaer,n)
-            tmpc = qaer_cur(iaer,n) - qaer_prv(iaer,n)
+            qaer_cur(iaer,n) = a_soa(ll,n)
          end do
       end do
 
 
-      dtsum_qgas_avg = dtsum_qgas_avg + dtcur
+      return
+      end subroutine mam_soaexch_default_1subarea
+
+
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+      subroutine mam_soaexch_vbs_1subarea(                          &
+         nstep,             lchnk,                                  &
+         i,                 k,                jsub,                 &
+         latndx,            lonndx,           lund,                 &
+         dtsubstep,                                                 &
+         temp,              pmid,             aircon,               &
+         n_mode,                                                    &
+         qgas_cur,          qgas_avg,                               &
+         qaer_cur,                                                  &
+         qnum_cur,                                                  &
+         qwtr_cur,                                                  &
+         uptkaer                                                    )
+!
+! calculate soa condensation/evaporation for i,k,jsub over time dtsubstep
+! for the mam vbs soa mechanism
+!
+! currently this does a modified version of the nvsoa mechanism 
+!    of shrivastava et al. (2015) (doi 10.1002/2014jd022563)
+! the main difference is that soa and condensible organic vapors from
+!    biomass-burning (and biofuel), biogenic, and fossil-fuel sources
+!    are all lumped together rather than treated separately
+!
+
+! uses
+      use modal_aero_data, only: lptr2_soa_a_amode
+
+
+      implicit none
+
+! arguments
+      integer,  intent(in) :: nstep                 ! model time-step number
+      integer,  intent(in) :: lchnk                 ! chunk identifier
+      integer,  intent(in) :: i, k                  ! column and level indices
+      integer,  intent(in) :: jsub                  ! sub-area index
+      integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+      integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+      integer,  intent(in) :: n_mode                ! current number of modes (including temporary)
+
+      real(r8), intent(in) :: dtsubstep        ! current integration timestep (s)
+      real(r8), intent(in) :: temp             ! temperature (K)
+      real(r8), intent(in) :: pmid             ! pressure at model levels (Pa)
+      real(r8), intent(in) :: aircon           ! air molar concentration (kmol/m3)
+
+      real(r8), intent(inout), dimension( 1:max_gas ) :: &
+         qgas_cur, qgas_avg
+      real(r8), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_cur
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qnum_cur
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qwtr_cur
+      real(r8), intent(in   ), dimension( 1:max_gas, 1:max_mode ) :: &
+         uptkaer
+
+! local
+      integer, parameter :: maxd_poaspec = npoa
+      integer, parameter :: maxd_soaspec = 7
+
+      integer :: iaer, igas, ip
+      integer :: isoa_bgn, isoa_end
+      integer :: ll
+      integer :: n, niter, niter_max
+      integer :: ntot_poaspec, ntot_soaspec
+      integer :: ntot_soamode
+
+      logical, parameter :: flag_pcarbon_opoa_frac_zero   = .true.
+
+      logical :: skip_soamode(max_mode)   ! true if this mode does not have soa
+
+
+      real(r8), parameter :: a_min1 = 1.0e-20
+      real(r8), parameter :: g_min1 = 1.0e-20
+      real(r8), parameter :: alpha_astem = 0.05_r8 ! parameter used in calc of time step
+      real(r8), parameter :: dtsub_fixed = -1.0    ! fixed sub-step for time integration (s)
+!     real(r8), parameter :: dtsub_fixed = 10.0    ! fixed sub-step for time integration (s)
+      real(r8), parameter :: rgas = 8.3144_r8      ! gas constant in J/K/mol
+
+      real(r8) :: a_ooa_sum_tmp(max_mode)          ! total ooa (=soa+opoa) in a mode
+      real(r8) :: a_opoa(max_mode)                 ! oxidized-poa aerosol mixrat (mol/mol at actual mw)
+      real(r8) :: a_soa(maxd_soaspec,max_mode)     ! soa aerosol mixrat (mol/mol at actual mw)
+      real(r8) :: a_soa_prv(maxd_soaspec,max_mode) ! soa aerosol mixrat at beginning of current time sub-step
+      real(r8) :: a_soa_tmp(maxd_soaspec,max_mode) ! temporary soa aerosol mixrat (mol/mol)
+      real(r8) :: beta(maxd_soaspec,max_mode)      ! dtcur*xferrate
+      real(r8) :: c0_soa_298(maxd_soaspec)         ! c0_soa_298 = soa gas equilib vapor conc (ug/m3) at 298 k
+      real(r8) :: delh_vap_soa(maxd_soaspec)       ! delh_vap_soa = heat of vaporization for gas soa (J/mol)
+      real(r8) :: del_g_soa_tmp(maxd_soaspec)
+      real(r8) :: dtcur                            ! current time step (s)
+      real(r8) :: dtfull                           ! full time step (s)
+      real(r8) :: dtmax                            ! = (dtfull-tcur)
+      real(r8) :: dtsum_g_soa_avg
+      real(r8) :: g0_soa(maxd_soaspec)             ! ambient soa gas equilib mixrat (mol/mol at actual mw)
+      real(r8) :: g_soa(maxd_soaspec)              ! soa gas mixrat (mol/mol at actual mw)
+      real(r8) :: g_soa_prv(maxd_soaspec)          ! soa gas mixrat at beginning of current time sub-step
+      real(r8) :: g_soa_avg(maxd_soaspec)          ! time-averaged soa gas mixrat
+      real(r8) :: g_star(maxd_soaspec,max_mode)    ! soa gas mixrat that is in equilib
+                                                   ! with each aerosol mode (mol/mol)
+      real(r8) :: mw_poa(maxd_poaspec)             ! actual molec wght of poa
+      real(r8) :: mw_soa(maxd_soaspec)             ! actual molec wght of soa
+      real(r8) :: opoa_frac(maxd_poaspec,max_mode) ! fraction of poa that is opoa
+      real(r8) :: phi(maxd_soaspec,max_mode)       ! "relative driving force"
+      real(r8) :: p0_soa(maxd_soaspec)             ! soa gas equilib vapor presssure (atm)
+      real(r8) :: p0_soa_298(maxd_soaspec)         ! p0_soa_298 = soa gas equilib vapor presssure (atm) at 298 k
+      real(r8) :: sat(maxd_soaspec,max_mode)       ! sat(m,ll) = g0_soa(ll)/a_ooa_sum_tmp(m) = g_star(m,ll)/a_soa(m,ll)
+                                                   !    used by the numerical integration scheme -- it is not a saturation rato!
+      real(r8) :: tcur                             ! current integration time (from 0 s)
+
+      real(r8) :: tmpa, tmpb, tmpc
+
+      real(r8) :: tot_soa(maxd_soaspec)            ! g_soa + sum( a_soa(:) )
+      real(r8) :: uptkaer_soag(maxd_soaspec,max_mode)
+      real(r8) :: uptkaer_soag_tmp(maxd_soaspec,max_mode)
+
+      character(len=128) :: msg
+
+!check if it enters this subroutine
+!        write(msg,'(a)') 'Within subroutine mam_soaexch_vbs_1subarea'
+!        call endrun( msg )
+
+
+      if (nsoag /= 7 .or. nsoa /= 1) then
+         write(msg,'(a,2(1x,i5))') 'mam_soaexch_vbs_1subarea - bad nsoag, nsoa =', nsoag, nsoa
+         call endrun( msg )
+      end if
+
+      ntot_poaspec = npoa
+!
+! in the nvsoa treatment, the condensible organic vapors partition to the particle phase,
+!    and the resulting aerosol species are initially semi-volatile (svsoa)
+! once in the particle phase, they quickly age (oligomerize) to non-volatile soa (nvsoa)
+!
+! ntot_soaspec here is the number of condensible organic vapors and corresponding svsoa species
+!
+! most of the calculations in this routine involve the dynamic partitioning (i.e., mass transfer),
+!    and the nvsoa soa does not participate (or affect) the partitioning
+! after partitioning has been calculated for the time step (dtsubstep),
+!    all of the svsoa is immediately converted to nvsoa
+! as a result, the final (i.e., end of time step) svsoa mixing ratios are always zero, 
+!    so the svsoa species do not need to be transported in the model,
+!    and are just "temporary variables" within this routine
+!
+      ntot_soaspec = nsoag
+
+      isoa_bgn = igas_soag
+      isoa_end = igas_soagzz
+
+! calc ntot_soamode = "last" mode on which soa is allowed to condense
+      ntot_soamode = 0
+      do n = 1, ntot_amode
+         if (n == nufi) cycle
+         if (mode_aging_optaa(n) > 0) ntot_soamode = n
+         if (lptr2_soa_a_amode(n,1) > 0) ntot_soamode = n
+      end do
+#if ( defined( CAMBOX_ACTIVATE_THIS ) )
+      if ( i*k == top_lev .and. ldiagd1 ) write(lund,'(/a,5i5)') &
+         'ntot_amode, ntot_amode_extd, n_mode, ntot_soamode', &
+          ntot_amode, ntot_amode_extd, n_mode, ntot_soamode
+#endif
+
+! in the shrivastava et al. (2015) nvsoa treatment, poa is assumed to not contribute
+!    to the raoults law calculation of effective saturation vapor pressures, so opoa_frac = 0.0
+      opoa_frac = 0.0_r8
+! for primary carbon mode, set opoa_frac=0 for consistency with older code
+! (this could be changed)
+      if ( flag_pcarbon_opoa_frac_zero ) then
+         if (npca > 0) opoa_frac(:,npca) = 0.0_r8
+      end if
+
+      c0_soa_298 = 0.1_r8
+      delh_vap_soa = 100.0e3
+      ! c0 an delh values from shrivastava et al. (2015)
+      !                      SOAG15     SOAG24    SOAG35     SOAG34     SOAG33   SOAG32    SOAG31
+      delh_vap_soa(1:7) = (/   82.0_r8,  88.0_r8,   82.0_r8,  88.0_r8,  94.0_r8, 100.0_r8, 106.0_r8 /) * 1.0e3_r8
+      c0_soa_298(  1:7) = (/ 1000.0_r8, 100.0_r8, 1000.0_r8, 100.0_r8,  10.0_r8,   1.0_r8,   0.1_r8 /)
+
+      do ll = 1, ntot_soaspec
+         igas = igas_soag + ll - 1
+         ! convert sat vapor conc from ug/m^3 to mol/m^3 then to mol/liter
+         tmpa = (c0_soa_298(ll)*1.0e-6_r8/mw_gas(igas)) * 1.0e-3_r8  
+         ! calc sat vapor pressure (atm) from molar-conc and temp [ 0.082056 = gas constant in (atm/deg-K/(mol/liter)) ]
+         p0_soa_298(ll) = 0.082056_r8*tmpa*temp  
+      end do
+
+! calc soa gas saturation molar-mixing-ratio at local temp and air-pressure
+      do ll = 1, ntot_soaspec
+         p0_soa(ll) = p0_soa_298(ll) * &
+                  exp( -(delh_vap_soa(ll)/rgas)*((1.0/temp)-(1.0/298.0)) )
+         g0_soa(ll) = 1.01325e5*p0_soa(ll)/pmid
+      end do
+
+      niter_max = 1000
+      niter = 0
+      dtfull = dtsubstep
+      tcur = 0.0_r8
+      dtcur = 0.0_r8
+      phi(:,:) = 0.0_r8
+      g_star(:,:) = 0.0_r8
+      g_soa(:) = 0.0_r8
+      g_soa_prv(:) = 0.0_r8
+      a_opoa(:) = 0.0_r8
+      a_soa(:,:) = 0.0_r8
+      a_soa_prv(:,:) = 0.0_r8
+      g_soa_avg(:) = 0.0_r8
+      dtsum_g_soa_avg = 0.0_r8
+      uptkaer_soag(:,:) = 0.0_r8
+
+! initialize g_soa_prv, a_soa_prv, uptkaer_soag
+! the a_soa, which involves only the svsoa species, and is initially zero
+      do ll = 1, ntot_soaspec
+         igas = igas_soag + ll - 1
+         g_soa_prv(ll) = qgas_cur(igas)
+         do n = 1, ntot_soamode
+            uptkaer_soag(ll,n) = uptkaer(igas,n)
+         end do
+
+         iaer = iaer_soa + ll - 1
+         do n = 1, ntot_soamode
+            a_soa_prv(ll,n) = 0.0_r8
+         end do
+      end do
+
+! calc oxygenated poa (which does not change during the soa uptake integration)
+      do n = 1, ntot_soamode
+         a_opoa(n) = 0.0_r8
+         do ll = 1, ntot_poaspec
+            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_cur(iaer_pom+ll-1,n), 0.0_r8 )
+         end do
+      end do
+
+
+!
+! main integration loop -- does multiple substeps to reach dtfull
+!
+
+time_loop: &
+      do while (tcur < dtfull-1.0e-3_r8 )
+
+      niter = niter + 1
+      if (niter > niter_max) exit
+
+
+! set qxxx_prv to be current value
+      if (niter > 1) then
+         g_soa_prv = g_soa
+         a_soa_prv = a_soa
+      end if
+
+
+! determine which modes have non-zero transfer rates
+!    and are involved in the soa gas-aerosol transfer
+! for diameter = 1 nm and number = 1 #/cm3, xferrate ~= 1e-9 s-1
+      do n = 1, ntot_soamode
+         skip_soamode(n) = .true.
+         do ll = 1, ntot_soaspec
+            if (uptkaer_soag(ll,n) > 1.0e-15_r8) then
+               uptkaer_soag_tmp(ll,n) = uptkaer_soag(ll,n)
+               skip_soamode(n) = .false.
+            else
+               uptkaer_soag_tmp(ll,n) = 0.0_r8
+            end if
+         end do
+      end do
+
+! load incoming soag and soaa into temporary arrays
+! force things to be non-negative
+! calc tot_soa(ll)
+! calc a_opoa (always slightly >0)
+!
+! *** questions ***
+! > why not use qgas and qaer instead of g_soa and a_soa
+! > why not calc the following on every substep because 
+!      nuc and coag may change things:
+!      skip)soamode, uptkaer_soag_tmp, tot_soa, a_opoa
+! > include gasprod for soa ??
+! > create qxxx_bgn = qxxx_cur at the very beginning (is it needed)
+!
+      do ll = 1, ntot_soaspec
+         g_soa(ll) = max( g_soa_prv(ll), 0.0_r8 )
+         tot_soa(ll) = g_soa(ll)
+         do n = 1, ntot_soamode
+            if ( skip_soamode(n) ) cycle
+            a_soa(ll,n) = max( a_soa_prv(ll,n), 0.0_r8 )
+            tot_soa(ll) = tot_soa(ll) + a_soa(ll,n)
+         end do
+      end do
+
+
+! determine time step
+      tmpa = 0.0_r8  ! time integration parameter for all soa species
+      do n = 1, ntot_soamode
+         if ( skip_soamode(n) ) cycle
+         a_ooa_sum_tmp(n) = a_opoa(n) + sum( a_soa(1:ntot_soaspec,n) )
+      end do
+      do ll = 1, ntot_soaspec
+         tmpb = 0.0_r8  ! time integration parameter for a single soa species
+         do n = 1, ntot_soamode
+            if ( skip_soamode(n) ) cycle
+            sat(ll,n) = g0_soa(ll)/max( a_ooa_sum_tmp(n), a_min1 )
+            g_star(ll,n) = sat(ll,n)*a_soa(ll,n)
+            phi(ll,n) = (g_soa(ll) - g_star(ll,n))/max( g_soa(ll), g_star(ll,n), g_min1 )
+            tmpb = tmpb + uptkaer_soag_tmp(ll,n)*abs(phi(ll,n))
+         end do
+         tmpa = max( tmpa, tmpb )
+      end do
+
+      if (dtsub_fixed > 0.0_r8) then
+         dtcur = dtsub_fixed
+         tcur = tcur + dtcur
+      else
+         dtmax = dtfull-tcur
+         if (dtmax*tmpa <= alpha_astem) then
+! here alpha_astem/tmpa >= dtmax, so this is final substep
+            dtcur = dtmax
+            tcur = dtfull
+         else
+            dtcur = alpha_astem/tmpa
+            tcur = tcur + dtcur
+         end if
+      end if
+
+
+! step 1 - for modes where soa is condensing, estimate "new" a_soa(ll,n)
+!    using an explicit calculation with "old" g_soa
+!    and g_star(ll,n) calculated using "old" a_soa(ll,n)
+! do this to get better estimate of "new" a_soa(ll,n) and sat(ll,n)
+      do n = 1, ntot_soamode
+         if ( skip_soamode(n) ) cycle
+         do ll = 1, ntot_soaspec
+            ! first ll loop calcs a_soa_tmp(ll,n) & a_ooa_sum_tmp
+            a_soa_tmp(ll,n) = a_soa(ll,n)
+            beta(ll,n) = dtcur*uptkaer_soag_tmp(ll,n)
+            del_g_soa_tmp(ll) = g_soa(ll) - g_star(ll,n)
+            if (del_g_soa_tmp(ll) > 0.0_r8) then
+               a_soa_tmp(ll,n) = a_soa(ll,n) + beta(ll,n)*del_g_soa_tmp(ll)
+            end if
+         end do
+         a_ooa_sum_tmp(n) = a_opoa(n) + sum( a_soa_tmp(1:ntot_soaspec,n) )
+         do ll = 1, ntot_soaspec
+            ! second ll loop calcs sat & g_star
+            if (del_g_soa_tmp(ll) > 0.0_r8) then
+               sat(ll,n) = g0_soa(ll)/max( a_ooa_sum_tmp(n), a_min1 )
+               g_star(ll,n) = sat(ll,n)*a_soa_tmp(ll,n)   ! this just needed for diagnostics
+            end if
+         end do
+      end do
+
+
+! step 2 - implicit in g_soa and semi-implicit in a_soa,
+!    with g_star(ll,n) calculated semi-implicitly
+      do ll = 1, ntot_soaspec
+         tmpa = 0.0_r8
+         tmpb = 0.0_r8
+         do n = 1, ntot_soamode
+            if ( skip_soamode(n) ) cycle
+            tmpa = tmpa + a_soa(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
+            tmpb = tmpb + beta(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
+         end do
+
+         g_soa(ll) = (tot_soa(ll) - tmpa)/(1.0_r8 + tmpb)
+         g_soa(ll) = max( 0.0_r8, g_soa(ll) )
+         do n = 1, ntot_soamode
+            if ( skip_soamode(n) ) cycle
+            a_soa(ll,n) = (a_soa(ll,n) + beta(ll,n)*g_soa(ll))/   &
+                       (1.0_r8 + beta(ll,n)*sat(ll,n))
+         end do
+      end do
+
+
+! increment g_soa_avg
+      do ll = 1, ntot_soaspec
+         tmpc = g_soa(ll) - g_soa_prv(ll)
+         g_soa_avg(ll) = g_soa_avg(ll) + dtcur*(g_soa_prv(ll) + 0.5_r8*tmpc)
+      end do
+
+
+      dtsum_g_soa_avg = dtsum_g_soa_avg + dtcur
 
       end do time_loop
 
-! convert qgas_avg from sum_over[ qgas*dt_cut ] to an average
-      do igas = 1, nsoa
-         qgas_avg(igas) = max( 0.0_r8, qgas_avg(igas)/dtsum_qgas_avg )
+
+! update mix ratios for soa gas species,
+! and convert g_soa_avg from sum_over[ qgas*dt_cut ] to an time averaged value
+      do ll = 1, ntot_soaspec
+         igas = igas_soag + ll - 1
+         qgas_cur(igas) = g_soa(ll)
+         qgas_avg(igas) = max( 0.0_r8, g_soa_avg(ll)/dtsum_g_soa_avg )
+      end do
+
+! for each mode, sum up all of the newly condensed svsoa
+! and "oligomerize" it to the single nvsoa species
+      do n = 1, ntot_soamode
+         if ( skip_soamode(n) ) cycle
+         tmpa = 0.0_r8
+         do ll = 1, ntot_soaspec
+            tmpa = tmpa + a_soa(ll,n)
+         end do
+         iaer = iaer_soa
+         qaer_cur(iaer,n) = qaer_cur(iaer,n) + tmpa
       end do
 
 
       return
-      end subroutine mam_soaexch_1subarea
+      end subroutine mam_soaexch_vbs_1subarea
 
 
 !--------------------------------------------------------------------------------
@@ -4985,7 +5491,7 @@ agepair_loop1: &
 !        so4 (but it is already done)
 !        soa, nh4 and no3
 !        ncl and cl (when aging_include_seasalt == .true.)
-         if ( (iaer <= nsoa    ) .or. &
+         if ( (iaer_soa <= iaer .and. iaer <= iaer_soazz) .or. &
               (iaer == iaer_nh4) .or. &
               (iaer == iaer_no3) .or. &
               (iaer == iaer_cl ) ) then
@@ -5020,7 +5526,7 @@ agepair_loop1: &
       end if
       tmp4 = 1.0_r8 - tmp3
 
-      vol_core = 0.0
+      vol_core = 0.0_r8
       do iaer = 1, naer
          ! for core volume, only include the mapped species 
          !    which are primary and low hygroscopicity
@@ -5213,7 +5719,7 @@ agepair_loop1: &
          const  = tworootpi * exp( beta*lndpgn + 0.5_r8*(beta*lnsg(n))**2 )
          
 !   sum over gauss-hermite quadrature points
-         sumghq = 0.0
+         sumghq = 0.0_r8
          do iq = 1, nghq
             lndp = lndpgn + beta*lnsg(n)**2 + root2*lnsg(n)*xghq(iq)
             dp = exp(lndp)
@@ -5267,6 +5773,7 @@ use modal_aero_data, only : &
     cnst_name_cw, &
     dgnum_amode, dgnumlo_amode, dgnumhi_amode, &
     lmassptr_amode, lmassptrcw_amode, &
+    lptr2_soa_a_amode, lptr2_soa_g_amode, &
     modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
@@ -5322,11 +5829,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 #endif
 
 
-      call mam_set_lptr2_and_specxxx2
+      call mam_set_specxxx2
 
-
-      mwuse_soa(:) = 150.0_r8
-      mwuse_poa(:) = 150.0_r8
 
 ! set ngas, name_gas, and igas_xxx
 ! set naer, name_aerpfx, and iaer_xxx
@@ -5338,37 +5842,90 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_numcw  = "???"
 
       igas_h2so4 = 0 ; igas_nh3 = 0
-      iaer_bc  = 0 ; iaer_dst = 0 
-      iaer_ncl = 0 ; iaer_nh4 = 0 
-      iaer_pom = 0 ; iaer_soa = 0 
-      iaer_so4 = 0
+      igas_hno3  = 0 ; igas_hcl = 0
+      igas_soag  = 0 ; igas_soagzz = -1
+
+      iaer_bc  = 0 ; iaer_bczz  = -1
+      iaer_pom = 0 ; iaer_pomzz = -1
+      iaer_soa = 0 ; iaer_soazz = -1
+      iaer_dst = 0 ; iaer_ncl = 0 
+      iaer_so4 = 0 ; iaer_nh4 = 0 
       iaer_no3 = 0 ; iaer_cl  = 0 
       iaer_ca  = 0 ; iaer_co3 = 0 
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
       iaer_mproc = 0 ; iaer_mom = 0
 
-      if (nsoa == 1) then
-         name_gas(1) = 'SOAG'
-         name_aerpfx(1) = 'soa'
-      else if (nsoa == 2) then
-         jsoa =      1 ; name_gas(jsoa) = 'SOAGa'  ; name_aerpfx(jsoa) = 'soaa'  ! jsoa=1
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb'  ; name_aerpfx(jsoa) = 'soab'  ! jsoa=2
-      else if (nsoa == 6) then
-         jsoa =      1 ; name_gas(jsoa) = 'SOAGa1' ; name_aerpfx(jsoa) = 'soaa1' ! jsoa=1
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa2' ; name_aerpfx(jsoa) = 'soaa2' ! jsoa=2
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa3' ; name_aerpfx(jsoa) = 'soaa3' ! jsoa=3
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb1' ; name_aerpfx(jsoa) = 'soab1' ! jsoa=4
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb2' ; name_aerpfx(jsoa) = 'soab2' ! jsoa=5
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb3' ; name_aerpfx(jsoa) = 'soab3' ! jsoa=6
+      ngas = 0
+      naer = 0
+
+! soa aerosol and condensing gas species
+#if ( defined MODAL_AERO_4MODE_SOA_MOM )
+      soa_mech_type = soa_mech_type_vbs
+      soa_mech_optaa = 1
+      if      (nsoa == 1 .and. nsoag == 7) then
+! The gas-phase organic species are named as SOAG + two digits. The first digit is the generation of SOAG products, 
+! i.e., 1 is first generation, 2 is second generation, and 3 is third generation. The second digit is volatility 
+! bin, with 1 being the least volatile bin and 5 being the most volatile bin.
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG15' ; naer = naer+1 ; name_aerpfx(naer) = 'soa'  
+         igas_soag   = ngas ; iaer_soa   = naer
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG24'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG35'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG34'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG33'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG32'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG31'
+         igas_soagzz = ngas ; iaer_soazz = naer
+#else
+      soa_mech_type = soa_mech_type_default
+      soa_mech_optaa = 1
+      if      (nsoa == 1 .and. nsoag == 1) then
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAG'   ; naer = naer+1 ; name_aerpfx(naer) = 'soa'  
+         igas_soag   = ngas ; iaer_soa   = naer
+         igas_soagzz = ngas ; iaer_soazz = naer
+      else if (nsoa == 2 .and. nsoag == 2) then
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGa'  ; naer = naer+1 ; name_aerpfx(naer) = 'soaa'
+         igas_soag   = ngas ; iaer_soa   = naer
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGb'  ; naer = naer+1 ; name_aerpfx(naer) = 'soab' 
+         igas_soagzz = ngas ; iaer_soazz = naer
+      else if (nsoa == 6 .and. nsoag == 6) then
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGa1' ; naer = naer+1 ; name_aerpfx(naer) = 'soaa1'
+         igas_soag   = ngas ; iaer_soa   = naer
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGa2' ; naer = naer+1 ; name_aerpfx(naer) = 'soaa2'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGa3' ; naer = naer+1 ; name_aerpfx(naer) = 'soaa3'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGb1' ; naer = naer+1 ; name_aerpfx(naer) = 'soab1'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGb2' ; naer = naer+1 ; name_aerpfx(naer) = 'soab2'
+         ngas = ngas+1 ; name_gas(ngas) = 'SOAGb3' ; naer = naer+1 ; name_aerpfx(naer) = 'soab3'
+         igas_soagzz = ngas ; iaer_soazz = naer
+#endif
       else
-         call endrun( 'modal_aero_amicphys_init ERROR - bad nsoa' )
+         write( msg, '(a,3(1x,i10))') &
+            'modal_aero_amicphys_init ERROR - bad soa_mech_type, nsoa, nsoag =', soa_mech_type, nsoa, nsoag
+         call endrun( msg )
       end if
       ngas = nsoa
       naer = nsoa
       igas_soa = 1
       iaer_soa = 1
 
+      if (igas_soag < 1 .or. iaer_soa < 1) then
+         ! code currently requires that igas_soag = iaer_soa = 1
+         write( msg, '(a,3(1x,i10))') &
+            'modal_aero_amicphys_init ERROR - bad igas_soag, iaer_soa =', igas_soag, iaer_soa
+         call endrun( msg )
+      end if
+
+      if (soa_mech_type == soa_mech_type_vbs) then
+         mwuse_soag(:) = 250.0_r8
+         mwuse_soa(:)  = 250.0_r8
+         mwuse_poa(:)  = 250.0_r8
+      else
+         mwuse_soag(:) = 150.0_r8
+         mwuse_soa(:)  = 150.0_r8
+         mwuse_poa(:)  = 150.0_r8
+      endif
+
+! non-soa aerosol species with condensing gas counterparts
       ngas = ngas + 1
       name_gas(ngas) = 'H2SO4'
       naer = naer + 1
@@ -5387,16 +5944,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          iaer_nh4 = naer
       end if
 
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
-      ngas = ngas + 1
-      name_gas(ngas) = 'NH3'
-      naer = naer + 1
-      name_aerpfx(naer) = 'nh4'
-      igas_nh3 = ngas
-      iaer_nh4 = naer
-#endif
-
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
       ngas = ngas + 1
       name_gas(ngas) = 'HNO3'
       naer = naer + 1
@@ -5412,69 +5960,65 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_cl = naer
 #endif
 
-      iaer_pom = naer + 1
+      ngas_cond = ngas
+      naer_cond = naer
+
+! other aerosol species
       if (npoa == 1) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'pom'
+         naer = naer + 1 ; name_aerpfx(naer) = 'pom'
+         iaer_pom   = naer
+         iaer_pomzz = naer
       else if (npoa == 2) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'poma'
-         naer = naer + 1
-         name_aerpfx(naer) = 'pomb'
+         naer = naer + 1 ; name_aerpfx(naer) = 'poma'
+         iaer_pom   = naer
+         naer = naer + 1 ; name_aerpfx(naer) = 'pomb'
+         iaer_pomzz = naer
       else
          call endrun( 'modal_aero_amicphys_init ERROR - bad npoa' )
       end if
 
-      iaer_bc = naer + 1
       if (nbc == 1) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'bc'
+         naer = naer + 1 ; name_aerpfx(naer) = 'bc'
+         iaer_bc   = naer
+         iaer_bczz = naer
       else if (nbc == 2) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'bca'
-         naer = naer + 1
-         name_aerpfx(naer) = 'bcb'
+         naer = naer + 1 ; name_aerpfx(naer) = 'bca'
+         iaer_bc   = naer
+         naer = naer + 1 ; name_aerpfx(naer) = 'bcb'
+         iaer_bczz = naer
       else
          call endrun( 'modal_aero_amicphys_init ERROR - bad nbc' )
       end if
 
-      naer = naer + 1
-      name_aerpfx(naer) = 'ncl'
-      iaer_ncl = naer
-      naer = naer + 1
-      name_aerpfx(naer) = 'dst'
+      naer = naer + 1 ; name_aerpfx(naer) = 'ncl'
+      iaer_ncl = naer 
+      naer = naer + 1 ; name_aerpfx(naer) = 'dst'
       iaer_dst = naer
 
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
-      naer = naer + 1
-      name_aerpfx(naer) = 'ca'
+#if ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
+      naer = naer + 1 ; name_aerpfx(naer) = 'ca'
       iaer_ca = naer
-      naer = naer + 1
-      name_aerpfx(naer) = 'co3'
+      naer = naer + 1 ; name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+
+#if ( defined MODAL_AERO_4MODE_MOM || MODAL_AERO_4MODE_SOA_MOM )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
 #endif
 
       if (ntot_amode==9) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'mpoly'
+         naer = naer + 1 ; name_aerpfx(naer) = 'mpoly'
          iaer_mpoly = naer
-         naer = naer + 1
-         name_aerpfx(naer) = 'mprot'
+         naer = naer + 1 ; name_aerpfx(naer) = 'mprot'
          iaer_mprot = naer
-         naer = naer + 1
-         name_aerpfx(naer) = 'mlip'
+         naer = naer + 1 ; name_aerpfx(naer) = 'mlip'
          iaer_mlip = naer
-         naer = naer + 1
-         name_aerpfx(naer) = 'mhum'
+         naer = naer + 1 ; name_aerpfx(naer) = 'mhum'
          iaer_mhum = naer
-         naer = naer + 1
-         name_aerpfx(naer) = 'mproc'
+         naer = naer + 1 ; name_aerpfx(naer) = 'mproc'
          iaer_mproc = naer
       end if
 
@@ -5489,6 +6033,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 ! set gas mapping
       loffset = imozart - 1
       lmap_gas(:) = 0
+      lptr2_soa_g_amode(:) = big_neg_int
       mwhost_gas(:) = 1.0_r8
       mw_gas(:) = 1.0_r8
       fcvt_gas(:) = 1.0_r8
@@ -5513,10 +6058,14 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
          mwhost_gas(igas) = adv_mass(lmz)
          mw_gas(igas) = mwhost_gas(igas)
-         if (igas <= nsoa) mw_gas(igas) = mwuse_soa(igas)
+         if ((igas_soag <= igas) .and. (igas <= igas_soagzz)) then
+            mw_gas(igas) = mwuse_soag(igas-igas_soag+1)
+            jsoa = igas - igas_soag + 1
+            lptr2_soa_g_amode(jsoa) = l
+         end if
          fcvt_gas(igas) = mwhost_gas(igas)/mw_gas(igas)
 
-         if (igas <= nsoa) then
+         if ((igas_soag <= igas) .and. (igas <= igas_soagzz)) then
             vol_molar_gas(igas) = vol_molar_gas(igas_h2so4) * (mw_gas(igas)/98.0_r8)
          else if (igas == igas_nh3) then
             vol_molar_gas(igas) = 14.90_r8
@@ -5538,6 +6087,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       lmap_aer(:,:) = 0
       lmap_aercw(:,:) = 0
       lmapbb_aer(:,:) = 0
+      lptr2_soa_a_amode(:,:) = big_neg_int
       dens_aer(:) = 1.0_r8
       hygro_aer(:) = 1.0_r8
       mw_aer(:) = 1.0_r8
@@ -5595,11 +6145,12 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
                mwhost_aer(iaer) = specmw2_amode(l1,n)
                mw_aer(iaer) = mwhost_aer(iaer)
 
-               itmpa = iaer - iaer_pom + 1
-               if (iaer <= nsoa) then
-                  mw_aer(iaer) = mwuse_soa(iaer)
-               else if ((1 <= itmpa) .and. (itmpa <= npoa)) then
-                  mw_aer(iaer) = mwuse_poa(itmpa)
+               if      ((iaer_soa <= iaer) .and. (iaer <= iaer_soazz)) then
+                  mw_aer(iaer) = mwuse_soa(iaer-iaer_soa+1)
+                  jsoa = iaer - iaer_soa + 1
+                  lptr2_soa_a_amode(n,jsoa) = l
+               else if ((iaer_pom <= iaer) .and. (iaer <= iaer_pomzz)) then
+                  mw_aer(iaer) = mwuse_poa(iaer-iaer_pom+1)
                end if
                fcvt_aer(iaer) = mwhost_aer(iaer)/mw_aer(iaer)
                fac_m2v_aer(iaer) = mw_aer(iaer)/dens_aer(iaer)
@@ -5784,16 +6335,20 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             'rename_method_optaa        ', rename_method_optaa
          write(iulog,'( a,1p,e12.4)') &
             'newnuc_adjust_factor_pbl   ', newnuc_adjust_factor_pbl
+         write(iulog,'( a,i12)') &
+            'soa_mech_type              ', soa_mech_type
+         write(iulog,'( a,i12)') &
+            'soa_mech_optaa             ', soa_mech_optaa
 
          write(iulog,'(/a56,10i5)') &
            'ngas, max_gas, naer, max_aer', &
             ngas, max_gas, naer, max_aer
          write(iulog,'(/a56,10i5)') &
-           'nsoa, npoa, nbc', &
-            nsoa, npoa, nbc
+           'nsoag, nsoa, npoa, nbc', &
+            nsoag, nsoa, npoa, nbc
          write(iulog,'(/a56,10i5)') &
-           'igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
-            igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+           'igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
+            igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
          write(iulog,'(/a56,10i5)') &
            'iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl', &
             iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl
@@ -5801,8 +6356,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
            'iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3', &
             iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3
          write(iulog,'(/a56,10i5)') &
-           'iaer_mom, ...mpoly, ...mprot, ...mlip, ...mhum, ...mproc', &
-            iaer_mom, iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
+           'iaer_[ mpoly, mprot, mlip, mhum, mproc, mom ]', &
+            iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom
          write(iulog,'(/a)') &
            'fac_eqvso4hyg_aer(1:naer)'
          write(iulog,'(4(a,1pe10.3,3x))') &
@@ -5865,8 +6420,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       return
       end subroutine modal_aero_amicphys_init
 
-
-#if ( defined MOSAIC_SPECIES )
+ 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
       subroutine mam_amicphys_set_mosaic_hygro
@@ -6013,7 +6567,9 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine mam_set_lptr2_and_specxxx2
+ 
+
+           subroutine mam_set_specxxx2
 !
 ! initializes the following
 !    lptr2_soa_a_amode, lptr2_soa_g_amode, &
@@ -6061,7 +6617,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
 
       return
-      end subroutine mam_set_lptr2_and_specxxx2
+      end subroutine mam_set_specxxx2
 
 
 !--------------------------------------------------------------------------------
@@ -6087,9 +6643,7 @@ use phys_control,only  :  phys_getopts
 
 use modal_aero_data, only : &
     cnst_name_cw, &
-! ++MW
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, ntot_amode !dsj+zlu
-! --MW
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine
 !use modal_aero_rename
 
 implicit none
@@ -6191,7 +6745,7 @@ implicit none
       end do ! lmz
 
 !  define history fields for 3d soa production for aerocom
-      do igas = 1, nsoa
+      do igas = igas_soag, igas_soagzz
          lmz = lmap_gas(igas)
          if (lmz <= 0) cycle
          if ( .not. do_q_coltendaa(lmz,iqtend_cond)) cycle
@@ -6310,13 +6864,16 @@ implicit none
       n = modeptr_aitken
       do igas = 1, ngas
          iok = 0
-         if (igas == igas_h2so4) iok = 1
-         if (igas == igas_nh3  ) iok = 1
-         if (iok <= 0) cycle
+         if (igas == igas_h2so4) then
+            iaer = iaer_so4
+         else if (igas == igas_nh3) then
+            iaer = iaer_nh4
+         else
+            cycle
+         end if
          lmz = lmap_gas(igas)
          if (lmz > 0) then
             do_q_coltendaa(lmz,iqtend_nnuc) = .true.
-            iaer = igas
             lmz = lmap_aer(iaer,n)
             if (lmz > 0) do_q_coltendaa(lmz,iqtend_nnuc) = .true.
           end if

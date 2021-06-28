@@ -69,7 +69,7 @@ module seasalt_model
           'mom_a1', 'mom_a2', 'mom_a4', &
           'num_a1', 'num_a2', 'num_a3', 'num_a4'/)
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM  ||  defined MODAL_AERO_4MODE_SOA_MOM )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
@@ -204,7 +204,7 @@ module seasalt_model
             1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &
             1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &
             1.0e-6_r8,   0.08e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, POM accu
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_SOA_MOM)
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
             0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
@@ -651,7 +651,7 @@ end subroutine ocean_data_readnl
 
 enddo tracer_loop
 
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_SOA_MOM)
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
@@ -683,7 +683,7 @@ add_om_species: if ( has_mam_mom ) then
     else
        call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
     end if
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_SOA_MOM)
     if ((mixing_state == 1) .or. (mixing_state == 0)) then
        emit_this_mode = (/ .false., .true., .true. /)
     else if ((mixing_state == 2) .or. (mixing_state == 3)) then
@@ -736,7 +736,7 @@ add_om_species: if ( has_mam_mom ) then
     om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
        mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_SOA_MOM)
        mm = seasalt_indices(nslt+m_om)
 #endif
 
@@ -1270,7 +1270,7 @@ subroutine init_ocean_data()
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_4MODE_SOA_MOM)
           m = nslt+m_om
 #endif
           call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 

@@ -229,7 +229,7 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-organic', 'calcium  ', 'carbonate', 'chloride '/)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ))
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 9
 character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
