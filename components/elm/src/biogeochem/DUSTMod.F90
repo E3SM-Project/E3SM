@@ -60,14 +60,14 @@ module DUSTMod
   !
   type, public :: dust_type
 
-     real(r8), pointer  :: flx_mss_vrt_dst_patch     (:,:) => null() ! surface dust emission (kg/m**2/s) [ + = to atm] (ndst)
-     real(r8), pointer  :: flx_mss_vrt_dst_tot_patch (:)   => null() ! total dust flux into atmosphere
-     real(r8), pointer  :: vlc_trb_patch             (:,:) => null() ! turbulent deposition velocity  (m/s) (ndst)
-     real(r8), pointer  :: vlc_trb_1_patch           (:)   => null() ! turbulent deposition velocity 1(m/s)
-     real(r8), pointer  :: vlc_trb_2_patch           (:)   => null() ! turbulent deposition velocity 2(m/s)
-     real(r8), pointer  :: vlc_trb_3_patch           (:)   => null() ! turbulent deposition velocity 3(m/s)
-     real(r8), pointer  :: vlc_trb_4_patch           (:)   => null() ! turbulent deposition velocity 4(m/s)
-     real(r8), pointer  :: mbl_bsn_fct_col           (:)   => null() ! basin factor
+     real(r8), pointer, PUBLIC  :: flx_mss_vrt_dst_patch     (:,:)  ! surface dust emission (kg/m**2/s) [ + = to atm] (ndst)
+     real(r8), pointer, private :: flx_mss_vrt_dst_tot_patch (:)    ! total dust flux into atmosphere
+     real(r8), pointer, private :: vlc_trb_patch             (:,:)  ! turbulent deposition velocity  (m/s) (ndst)
+     real(r8), pointer, private :: vlc_trb_1_patch           (:)    ! turbulent deposition velocity 1(m/s)
+     real(r8), pointer, private :: vlc_trb_2_patch           (:)    ! turbulent deposition velocity 2(m/s)
+     real(r8), pointer, private :: vlc_trb_3_patch           (:)    ! turbulent deposition velocity 3(m/s)
+     real(r8), pointer, private :: vlc_trb_4_patch           (:)    ! turbulent deposition velocity 4(m/s)
+     real(r8), pointer, private :: mbl_bsn_fct_col           (:)    ! basin factor
 
    contains
 
@@ -110,60 +110,60 @@ contains
     begp = bounds%begp ; endp = bounds%endp
     begc = bounds%begc ; endc = bounds%endc
 
-    allocate(this%flx_mss_vrt_dst_patch     (begp:endp,1:ndst)) ; this%flx_mss_vrt_dst_patch     (:,:) = spval
-    allocate(this%flx_mss_vrt_dst_tot_patch (begp:endp))        ; this%flx_mss_vrt_dst_tot_patch (:)   = spval
-    allocate(this%vlc_trb_patch             (begp:endp,1:ndst)) ; this%vlc_trb_patch             (:,:) = spval
-    allocate(this%vlc_trb_1_patch           (begp:endp))        ; this%vlc_trb_1_patch           (:)   = spval
-    allocate(this%vlc_trb_2_patch           (begp:endp))        ; this%vlc_trb_2_patch           (:)   = spval
-    allocate(this%vlc_trb_3_patch           (begp:endp))        ; this%vlc_trb_3_patch           (:)   = spval
-    allocate(this%vlc_trb_4_patch           (begp:endp))        ; this%vlc_trb_4_patch           (:)   = spval
-    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col     (:)   = spval
+    allocate(this%flx_mss_vrt_dst_patch     (begp:endp,1:ndst)) ; this%flx_mss_vrt_dst_patch     (:,:) = nan 
+    allocate(this%flx_mss_vrt_dst_tot_patch (begp:endp))        ; this%flx_mss_vrt_dst_tot_patch (:)   = nan 
+    allocate(this%vlc_trb_patch             (begp:endp,1:ndst)) ; this%vlc_trb_patch             (:,:) = nan 
+    allocate(this%vlc_trb_1_patch           (begp:endp))        ; this%vlc_trb_1_patch           (:)   = nan 
+    allocate(this%vlc_trb_2_patch           (begp:endp))        ; this%vlc_trb_2_patch           (:)   = nan 
+    allocate(this%vlc_trb_3_patch           (begp:endp))        ; this%vlc_trb_3_patch           (:)   = nan 
+    allocate(this%vlc_trb_4_patch           (begp:endp))        ; this%vlc_trb_4_patch           (:)   = nan 
+    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col     (:)   = nan
 
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
-   subroutine InitHistory(this, bounds)
-     !
-     ! !USES:
-     use histFileMod, only : hist_addfld1d
-     !
-     !
-     ! !ARGUMENTS:
-     class (dust_type) :: this
-     type(bounds_type), intent(in) :: bounds
-     !
-     ! !LOCAL VARIABLES:
-     integer :: begp,endp
-     !------------------------------------------------------------------------
+  subroutine InitHistory(this, bounds)
+    !
+    ! !USES:
+    use histFileMod, only : hist_addfld1d
+    !
+    !
+    ! !ARGUMENTS:
+    class (dust_type) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: begp,endp
+    !------------------------------------------------------------------------
 
-     begp = bounds%begp; endp = bounds%endp
+    begp = bounds%begp; endp = bounds%endp
 
-     this%flx_mss_vrt_dst_tot_patch(begp:endp) = spval
-     call hist_addfld1d (fname='DSTFLXT', units='kg/m2/s',  &
-          avgflag='A', long_name='total surface dust emission', &
-          ptr_patch=this%flx_mss_vrt_dst_tot_patch, set_lake=0._r8, set_urb=0._r8)
+    this%flx_mss_vrt_dst_tot_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DSTFLXT', units='kg/m2/s',  &
+         avgflag='A', long_name='total surface dust emission', &
+         ptr_patch=this%flx_mss_vrt_dst_tot_patch, set_lake=0._r8, set_urb=0._r8)
 
-     this%vlc_trb_1_patch(begp:endp) = spval
-     call hist_addfld1d (fname='DPVLTRB1', units='m/s',  &
-          avgflag='A', long_name='turbulent deposition velocity 1', &
-          ptr_patch=this%vlc_trb_1_patch, default='inactive')
+    this%vlc_trb_1_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DPVLTRB1', units='m/s',  &
+         avgflag='A', long_name='turbulent deposition velocity 1', &
+         ptr_patch=this%vlc_trb_1_patch, default='inactive')
 
-     this%vlc_trb_2_patch(begp:endp) = spval
-     call hist_addfld1d (fname='DPVLTRB2', units='m/s',  &
-          avgflag='A', long_name='turbulent deposition velocity 2', &
-          ptr_patch=this%vlc_trb_2_patch, default='inactive')
+    this%vlc_trb_2_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DPVLTRB2', units='m/s',  &
+         avgflag='A', long_name='turbulent deposition velocity 2', &
+         ptr_patch=this%vlc_trb_2_patch, default='inactive')
 
-     this%vlc_trb_3_patch(begp:endp) = spval
-     call hist_addfld1d (fname='DPVLTRB3', units='m/s',  &
-          avgflag='A', long_name='turbulent deposition velocity 3', &
-          ptr_patch=this%vlc_trb_3_patch, default='inactive')
+    this%vlc_trb_3_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DPVLTRB3', units='m/s',  &
+         avgflag='A', long_name='turbulent deposition velocity 3', &
+         ptr_patch=this%vlc_trb_3_patch, default='inactive')
 
-     this%vlc_trb_4_patch(begp:endp) = spval
-     call hist_addfld1d (fname='DPVLTRB4', units='m/s',  &
-          avgflag='A', long_name='turbulent deposition velocity 4', &
-          ptr_patch=this%vlc_trb_4_patch, default='inactive')
+    this%vlc_trb_4_patch(begp:endp) = spval
+    call hist_addfld1d (fname='DPVLTRB4', units='m/s',  &
+         avgflag='A', long_name='turbulent deposition velocity 4', &
+         ptr_patch=this%vlc_trb_4_patch, default='inactive')
 
-   end subroutine InitHistory
+  end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds)
@@ -632,6 +632,7 @@ contains
      !
      ! !USES
      use shr_const_mod , only: SHR_CONST_PI, SHR_CONST_RDAIR
+     use shr_spfn_mod  , only: erf => shr_spfn_erf
      use decompMod     , only : get_proc_bounds
      !
      ! !ARGUMENTS:
@@ -732,8 +733,8 @@ contains
       ryn_nbr_frc_thr_prx_opt = 0.38_r8 + 1331.0_r8 * (100.0_r8*dmt_slt_opt)**1.56_r8
 
       if (ryn_nbr_frc_thr_prx_opt < 0.03_r8) then
-          write(iulog,*) 'dstmbl: ryn_nbr_frc_thr_prx_opt < 0.03'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
+         write(iulog,*) 'dstmbl: ryn_nbr_frc_thr_prx_opt < 0.03'
+         call endrun(msg=errMsg(__FILE__, __LINE__))
       else if (ryn_nbr_frc_thr_prx_opt < 10.0_r8) then
          ryn_nbr_frc_thr_opt_fnc = -1.0_r8 + 1.928_r8 * (ryn_nbr_frc_thr_prx_opt**0.0922_r8)
          ryn_nbr_frc_thr_opt_fnc = 0.1291_r8 * 0.1291_r8 / ryn_nbr_frc_thr_opt_fnc
