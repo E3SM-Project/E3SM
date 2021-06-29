@@ -179,7 +179,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.14.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -2772,7 +2772,7 @@
         <command name="load">python/3.5.2</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.13.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
@@ -2922,7 +2922,7 @@
         <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.13.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
