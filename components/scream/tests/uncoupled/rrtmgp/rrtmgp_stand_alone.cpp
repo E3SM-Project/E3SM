@@ -20,7 +20,6 @@
 // Other helper headers needed for the specifics of this test
 #include "physics/share/physics_constants.hpp"
 #include "physics/share/physics_only_grids_manager.hpp"
-#include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
