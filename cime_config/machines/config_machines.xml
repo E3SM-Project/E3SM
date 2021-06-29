@@ -332,7 +332,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.14.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">perl5-extras</command>
       </modules>
 
@@ -672,7 +672,7 @@
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
         <command name="load">sems-python/3.5.2</command>
-        <command name="load">sems-cmake/3.12.2</command>
+        <command name="load">sems-cmake/3.19.1</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">acme-gcc/8.1.0</command>
@@ -1164,6 +1164,7 @@
         <command name="purge"/>
         <command name="load">subversion/1.14.0-e4smcy3</command>
         <command name="load">perl/5.32.0-bsnc6lt</command>
+        <command name="load">cmake/3.19.1-yisciec</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/20.0.4-kodw73g</command>
@@ -1560,7 +1561,7 @@
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="load">craype/2.6.5</command>
-        <command name="load">cmake/3.14.5</command>
+        <command name="load">cmake/3.18.0</command>
       </modules>
       <modules compiler="intel">
         <command name="rm">PrgEnv-gnu</command>
@@ -2042,7 +2043,7 @@
         <command name="purge"/>
       </modules>
       <modules>
-        <command name="load">cmake/3.11.4</command>
+        <command name="load">cmake/3.19.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/19.0.5</command>
