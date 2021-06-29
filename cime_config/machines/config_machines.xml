@@ -828,6 +828,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables mpilib="mpi-serial">
+      <env name="PATH">/soft/apps/packages/climate/cmake/3.18.4/bin:/soft/apps/packages/climate/gmake/bin:$ENV{PATH}</env>
       <!-- We currently don't have a soft env for serial hdf5 and szip built with gcc 8.2.0 -->
       <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <!-- We currently don't have a soft env for netcdf serial built with gcc 8.2.0 -->
