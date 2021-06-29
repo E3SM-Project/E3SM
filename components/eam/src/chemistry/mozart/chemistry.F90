@@ -1366,7 +1366,7 @@ end function chem_is_active
 ! Dummy arguments
 !-----------------------------------------------------------------------
     real(r8),            intent(in)    :: dt              ! time step
-    type(physics_state), intent(in)    :: state           ! Physics state variables
+    type(physics_state), intent(inout) :: state           ! Physics state variables
     type(physics_ptend), intent(out)   :: ptend           ! indivdual parameterization tendencies
     type(cam_in_t),      intent(inout) :: cam_in
     type(cam_out_t),     intent(inout) :: cam_out
