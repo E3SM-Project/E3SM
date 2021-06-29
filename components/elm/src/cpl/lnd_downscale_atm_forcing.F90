@@ -37,7 +37,7 @@ module lnd_downscale_atm_forcing
   public :: downscale_atm_forcing_to_topounit    ! Calls downscaling subroutines of forcing fields from gridcell to topounit
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: downscale_atmo_state_to_topounit    ! Downscale atmosperic state fields from gridcell to topounit
+  private :: downscale_atm_state_to_topounit    ! Downscale atmosperic state fields from gridcell to topounit
   private :: downscale_longwave_to_topounit      ! Downscale longwave radiation field from gridcell to topounit
   private :: downscale_precip_to_topounit_FNM    ! Downscale precipitation field from gridcell to topounit using Froude number method (FNM)
   private :: downscale_precip_to_topounit_ERMM   ! Downscale precipitation field from gridcell to topounit using elevation ration with maximum elevation method (ERMM)
@@ -252,7 +252,7 @@ contains
              top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
        		       top_af%solai(t,2) + top_af%solai(t,1)
           else
-             call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
+             call downscale_atm_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
              call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
              top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
              top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
