@@ -51,7 +51,7 @@ module control_mod
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
 
-  integer, public :: hcoord = 1           ! 0=pressure, 1=height coordinate.
+  integer, public :: hcoord = 0           ! 0=pressure, 1=height coordinate.
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps

@@ -291,7 +291,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_correction,   &
       hv_theta_thresh,   &
       vert_remap_q_alg, &
-      se_fv_phys_remap_alg
+      se_fv_phys_remap_alg, &
+      hcoord
 
 
 #ifdef CAM
@@ -733,6 +734,7 @@ end if
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_thresh,1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(hcoord             , 1, MPIinteger_t, par%root, par%comm, ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
@@ -1169,7 +1171,8 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
-
+       
+       write(iulog,*)"readnl: hcoord            = ", hcoord
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT

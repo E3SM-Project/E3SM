@@ -113,8 +113,8 @@ theta_mean = T_mean*(p_ref/p0)^kappa
 ts = 0.50                                                             ; timestep in seconds
 interval = 100                                                        ; steps per write
 
-;t_sec =ts*interval*t_index                                            ; get time from time-index
-t_sec = f->time(t_index)
+t_sec = ts*interval*t_index                                            ; get time from time-index
+;t_sec = f->time(t_index)
 
 theta = f->T(t_index,:,:,:)*(p_ref/p0)^kappa
 theta_diff = theta - theta_mean
