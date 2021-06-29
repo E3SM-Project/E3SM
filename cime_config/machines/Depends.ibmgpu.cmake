@@ -53,7 +53,7 @@ set(FILES_NEED_OPENMP_FLAGS
   eam/src/physics/crm/samomp/params.F90
   eam/src/physics/crm/samomp/dmdf.F90
   eam/src/physics/crm/samomp/domain.F90
-  eam/src/physics/crm/samomp/ecppvars.F90
+  eam/src/physics/crm/ecppvars.F90
   eam/src/physics/crm/samomp/fft.F90
   eam/src/physics/crm/samomp/fftpack5.F90
   eam/src/physics/crm/samomp/fftpack5_1d.F90

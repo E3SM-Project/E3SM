@@ -52,7 +52,7 @@ set(FILES_NEED_OPENACC_FLAGS
   eam/src/physics/crm/sam/params.F90
   eam/src/physics/crm/sam/dmdf.F90
   eam/src/physics/crm/sam/domain.F90
-  eam/src/physics/crm/sam/ecppvars.F90
+  eam/src/physics/crm/ecppvars.F90
   eam/src/physics/crm/sam/fft.F90
   eam/src/physics/crm/sam/fftpack5.F90
   eam/src/physics/crm/sam/fftpack5_1d.F90
