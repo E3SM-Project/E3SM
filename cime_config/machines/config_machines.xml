@@ -179,7 +179,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.14.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -821,9 +821,6 @@
       <init_path lang="sh">/software/common/adm/packages/softenv-1.6.2/etc/softenv-load.sh</init_path>
       <cmd_path lang="csh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.csh ; soft</cmd_path>
       <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.6.2/etc/softenv-aliases.sh ; soft</cmd_path>
-      <modules>
-        <command name="add">+cmake-3.12.4</command>
-      </modules>
       <modules compiler="gnu">
         <command name="add">+gcc-8.2.0</command>
       </modules>
@@ -840,7 +837,7 @@
       <!-- We currently don't have a soft env for parallel hdf5 and szip built with gcc 8.2.0 -->
       <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0/lib:/soft/apps/packages/climate/szip/2.1/gcc-8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <!-- We currently don't have a soft env for mpich 3.3.2 built with gcc 8.2.0 -->
-      <env name="PATH">/soft/apps/packages/climate/mpich/3.3.2/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <env name="PATH">/soft/apps/packages/climate/mpich/3.3.2/gcc-8.2.0/bin:/soft/apps/packages/climate/cmake/3.18.4/bin:/soft/apps/packages/climate/gmake/bin:$ENV{PATH}</env>
       <!-- We currently don't have a soft env for parallel hdf5 built with mpich 3.3.2 and gcc 8.2.0 -->
       <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.16-parallel/mpich-3.3.2/gcc-8.2.0</env>
       <!-- We currently don't have a soft env for netcdf parallel built with mpich 3.3.2 and gcc 8.2.0 -->
@@ -850,7 +847,7 @@
     </environment_variables>
     <environment_variables mpilib="openmpi">
       <!-- We currently don't have a soft env for openmpi 2.1.5, zlib, szip, hdf5, NetCDF and PnetCDF libraries -->
-      <env name="PATH">/soft/apps/packages/climate/openmpi/2.1.5/gcc-8.2.0/bin:$ENV{PATH}</env>
+      <env name="PATH">/soft/apps/packages/climate/openmpi/2.1.5/gcc-8.2.0/bin:/soft/apps/packages/climate/cmake/3.18.4/bin:/soft/apps/packages/climate/gmake/bin:$ENV{PATH}</env>
       <env name="ZLIB_PATH">/soft/apps/packages/climate/zlib/1.2.11/gcc-8.2.0-static</env>
       <env name="SZIP_PATH">/soft/apps/packages/climate/szip/2.1/gcc-8.2.0-static</env>
       <env name="HDF5_PATH">/soft/apps/packages/climate/hdf5/1.8.12-parallel/openmpi-2.1.5/gcc-8.2.0-static</env>
@@ -1053,7 +1050,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.14.2-gvwazz3</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/17.0.0-pwabdn2</command>
@@ -1271,7 +1268,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.14.2-gvwazz3</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">nvhpc/20.9-5brtudu</command>
@@ -1355,7 +1352,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.13.4-354d6wl</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.4-443hhug</command>
@@ -2772,7 +2769,7 @@
         <command name="load">python/3.5.2</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.13.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
@@ -2922,7 +2919,7 @@
         <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
-        <command name="load">cmake/3.13.4</command>
+        <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
