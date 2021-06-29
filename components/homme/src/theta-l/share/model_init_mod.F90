@@ -15,7 +15,7 @@ module model_init_mod
 
   use element_mod,        only: element_t
   use derivative_mod,     only: derivative_t,gradient_sphere, laplace_sphere_wk
-  use hybvcoord_mod, 	  only: hvcoord_t
+  use hybvcoord_mod,      only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
   use element_ops,        only: set_theta_ref
@@ -78,8 +78,8 @@ contains
               (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
       enddo
       if (hcoord==1) then
-         phi_ref(:,:,:,ie)=0    ! should use reference coordinates
-         dp_ref(:,:,:,ie)=0  ! for now. what to do here?
+         elem(ie)%derived%phi_ref=0    ! should use reference coordinates
+         elem(ie)%derived%dp_ref=0  ! for now. what to do here?
       else
          call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
          temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
