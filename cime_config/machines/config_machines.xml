@@ -1050,7 +1050,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.14.2-gvwazz3</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/17.0.0-pwabdn2</command>
@@ -1268,7 +1268,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.14.2-gvwazz3</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">nvhpc/20.9-5brtudu</command>
@@ -1352,7 +1352,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.13.4-354d6wl</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.4-443hhug</command>
