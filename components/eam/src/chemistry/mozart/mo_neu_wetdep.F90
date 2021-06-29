@@ -28,6 +28,7 @@ module mo_neu_wetdep
   integer                     :: index_cldice,index_cldliq,nh3_ndx,co2_ndx
   logical                     :: debug   = .false.
   integer                     :: hno3_ndx = 0
+  integer                     :: uci1_ndx
 !
 ! diagnostics
 !
@@ -51,6 +52,7 @@ subroutine neu_wetdep_init
   use constituents, only : cnst_get_ind,cnst_mw
   use cam_history,  only : addfld, add_default, horiz_only
   use ppgrid,       only : pver
+  use mo_chem_utls, only : get_rxt_ndx
 !
   integer :: m,l
   character*20 :: test_name
@@ -58,6 +60,8 @@ subroutine neu_wetdep_init
   do_neu_wetdep = gas_wetdep_method == 'NEU' .and. gas_wetdep_cnt>0
 
   if (.not.do_neu_wetdep) return
+
+  uci1_ndx = get_rxt_ndx('uci1')
 
   allocate( mapping_to_heff(gas_wetdep_cnt) )
   allocate( mapping_to_mmr(gas_wetdep_cnt) )
@@ -197,7 +201,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
   implicit none
 !
   integer,        intent(in)    :: lchnk,ncol
-  real(r8),       intent(in)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
+  real(r8),       intent(inout) :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
   real(r8),       intent(in)    :: pmid(pcols,pver)         ! midpoint pressures (Pa)
   real(r8),       intent(in)    :: pdeldry(pcols,pver)      ! dry air pressure delta about midpoints (Pa)
   real(r8),       intent(in)    :: zint(pcols,pver+1)       ! interface geopotential height above the surface (m)
@@ -396,7 +400,6 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
 ! output tendencies
 !
   do m=1,gas_wetdep_cnt
-    wd_tend(1:ncol,:,mapping_to_mmr(m)) = wd_tend(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)
     call outfld( 'DTWR_'//trim(gas_wetdep_list(m)),dtwr(:,:,m),ncol,lchnk )
     call outfld( 'HEFF_'//trim(gas_wetdep_list(m)),heff(:,pver:1:-1,m),ncol,lchnk )
 !
@@ -408,6 +411,13 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
       wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
     end do
     call outfld( 'WD_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+    
+    ! if chemUCI is used, apply wet deposition flux here
+    if (uci1_ndx <= 0) then
+      wd_tend(1:ncol,:,mapping_to_mmr(m)) = wd_tend(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)
+    else
+      mmr(1:ncol,:,mapping_to_mmr(m)) = mmr(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)*delt
+    end if
   end do
 !
   if ( do_diag ) then
