@@ -113,11 +113,11 @@ int main(int argc, char** argv) {
         lw_flux_up_ref, lw_flux_dn_ref
     );
     int nerr = 0;
-    // if (!rrtmgpTest::all_equals(sw_flux_up_ref , sw_flux_up )) nerr++;
-    // if (!rrtmgpTest::all_equals(sw_flux_dn_ref , sw_flux_dn )) nerr++;
-    // if (!rrtmgpTest::all_equals(sw_flux_dir_ref, sw_flux_dir)) nerr++;
-    // if (!rrtmgpTest::all_equals(lw_flux_up_ref , lw_flux_up )) nerr++;
-    // if (!rrtmgpTest::all_equals(lw_flux_dn_ref , lw_flux_dn )) nerr++;
+    if (!rrtmgpTest::all_equals(sw_flux_up_ref , sw_flux_up )) nerr++;
+    if (!rrtmgpTest::all_equals(sw_flux_dn_ref , sw_flux_dn )) nerr++;
+    if (!rrtmgpTest::all_equals(sw_flux_dir_ref, sw_flux_dir)) nerr++;
+    if (!rrtmgpTest::all_equals(lw_flux_up_ref , lw_flux_up )) nerr++;
+    if (!rrtmgpTest::all_equals(lw_flux_dn_ref , lw_flux_dn )) nerr++;
 
     // Clean up or else YAKL will throw errors
     scream::rrtmgp::rrtmgp_finalize();
