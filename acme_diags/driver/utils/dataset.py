@@ -313,10 +313,11 @@ class Dataset:
         for filename in dir_files:
             if filename.startswith(data_name + "_" + season):
                 return os.path.join(path_name, filename)
-        # The below is only ran on model data, because a shorter name is passed into this software.
+        # The below is only ran on model data, because a shorter name is passed into this software. Won't work when use month name such as '01' as season.
         for filename in dir_files:
-            if filename.startswith(data_name) and season in filename:
-                return os.path.join(path_name, filename)
+            if season in ["ANN", "DJF", "MAM", "JJA", "SON"]:
+                if filename.startswith(data_name) and season in filename:
+                    return os.path.join(path_name, filename)
         # No file found.
         return ""
 

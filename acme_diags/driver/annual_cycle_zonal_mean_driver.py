@@ -11,6 +11,7 @@ from acme_diags.driver.utils.general import (
     get_name_and_yrs,
     regrid_to_lower_res,
     save_ncfiles,
+    select_region_lat_lon,
 )
 from acme_diags.plot import plot
 
@@ -50,15 +51,51 @@ def run_diag(parameter: "CoreParameter"):
         )
 
         test_ac_zonal_mean = cdutil.averager(test_ac, axis="x", weights="generate")
-        ref_ac_zonal_mean = cdutil.averager(ref_ac, axis="x", weights="generate")
         test_ac_reg_zonal_mean = cdutil.averager(
             test_ac_reg, axis="x", weights="generate"
         )
-        ref_ac_reg_zonal_mean = cdutil.averager(
-            ref_ac_reg, axis="x", weights="generate"
-        )
+
+        if (
+            parameter.ref_name == "OMI-MLS"
+        ):  # SCO from OMI-MLS only available as (time, lat)
+            test_ac_reg_zonal_mean = select_region_lat_lon(
+                "60S60N", test_ac_reg_zonal_mean, parameter
+            )
+            test_ac_zonal_mean = select_region_lat_lon(
+                "60S60N", test_ac_zonal_mean, parameter
+            )
+            if var == "SCO":
+                ref_ac_zonal_mean = ref_ac
+                ref_ac_reg_zonal_mean = ref_ac_reg
+            else:
+                ref_ac_zonal_mean = cdutil.averager(
+                    ref_ac, axis="x", weights="generate"
+                )
+                ref_ac_reg_zonal_mean = cdutil.averager(
+                    ref_ac_reg, axis="x", weights="generate"
+                )
+
+        else:
+            ref_ac_zonal_mean = cdutil.averager(ref_ac, axis="x", weights="generate")
+            ref_ac_reg_zonal_mean = cdutil.averager(
+                ref_ac_reg, axis="x", weights="generate"
+            )
+
+        # if var == 'SCO' and parameter.ref_name=='OMI-MLS':  # SCO from OMI-MLS only available as (time, lat)
+        #    ref_ac_zonal_mean = ref_ac
+        #    ref_ac_reg_zonal_mean = ref_ac_reg
+
+        #    test_ac_reg_zonal_mean = select_region_lat_lon("60S60N", test_ac_reg_zonal_mean, parameter)
+        #    test_ac_zonal_mean = select_region_lat_lon("60S60N", test_ac_zonal_mean, parameter)
+        # else:
+        #    ref_ac_zonal_mean = cdutil.averager(ref_ac, axis="x", weights="generate")
+        #    ref_ac_reg_zonal_mean = cdutil.averager(
+        #        ref_ac_reg, axis="x", weights="generate"
+        #    )
 
         diff_ac = test_ac_reg_zonal_mean - ref_ac_reg_zonal_mean
+        diff_ac.setAxis(1, test_ac_reg_zonal_mean.getAxis(1))
+        diff_ac.setAxis(0, test_ac_reg_zonal_mean.getAxis(0))
 
         parameter.var_id = var
         parameter.output_file = "-".join([ref_name, var, "Annual-Cycle"])
@@ -117,8 +154,10 @@ def _create_annual_cycle(dataset: Dataset, variable: str) -> "TransientVariable"
 
             var_ann_cycle.setAxis(0, time)
             time.designateTime()
-            var_ann_cycle.setAxis(1, var.getAxis(0))
-            var_ann_cycle.setAxis(2, var.getAxis(1))
+
+            for iax in list(range(len(var.shape))):
+                var_ann_cycle.setAxis(1 + iax, var.getAxis(iax))
+            # var_ann_cycle.setAxis(2, var.getAxis(1))
 
             var_ann_cycle[0] = var
         else:

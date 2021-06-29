@@ -84,14 +84,15 @@ class TestRun(unittest.TestCase):
                 msg = "Count for {} is invalid: {}"
                 self.fail(msg.format(set_name, count))
 
-        all_season_counts = list(season_counter.values())
         # enso_diags and streamflow only run ANN, no seasons
         # So, reduce the ANN count by the number of times these appear
-        all_season_counts[0] -= set_counter["enso_diags"]
-        all_season_counts[0] -= set_counter["streamflow"]
-        if not all(all_season_counts[0] == count for count in all_season_counts):
+        season_counter["ANN"] -= set_counter["enso_diags"]
+        season_counter["ANN"] -= set_counter["streamflow"]
+        if not all(season_counter["ANN"] == count for count in season_counter.values()):
             self.fail(
-                "Counts for the seasons don't match: {}".format(all_season_counts)
+                "In .cfg files, at least one season does not match the count for ANN: {}".format(
+                    season_counter
+                )
             )
 
     def test_zonal_mean_2d(self):

@@ -53,14 +53,15 @@ def plot_panel(n, fig, var, clevels, cmap, title, parameters, stats=None):
     # Contour plot
     ax = fig.add_axes(panel[n])
     cmap = get_colormap(cmap, parameters)
-    p1 = ax.contourf(
+    # p1 = ax.contourf(
+    p1 = ax.pcolor(
         mon,
         lat,
         var,
         norm=norm,
-        levels=levels,
         cmap=cmap,
-        extend="both",
+        edgecolors="face",
+        shading="auto",
     )
 
     if title[0] is not None:
@@ -80,7 +81,7 @@ def plot_panel(n, fig, var, clevels, cmap, title, parameters, stats=None):
 
     # Color bar
     cbax = fig.add_axes((panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792))
-    cbar = fig.colorbar(p1, cax=cbax)
+    cbar = fig.colorbar(p1, cax=cbax, extend="both")
     w, h = get_ax_size(fig, cbax)
 
     if levels is None:
@@ -99,6 +100,9 @@ def plot_panel(n, fig, var, clevels, cmap, title, parameters, stats=None):
             pad = 30
         cbar.set_ticks(levels[1:-1])
         labels = [fmt % level for level in levels[1:-1]]
+        if all(x[-2:] == ".0" for x in labels):
+            labels = [x[:-2] for x in labels]
+            pad = pad - 5
         cbar.ax.set_yticklabels(labels, ha="right")
         cbar.ax.tick_params(labelsize=9.0, pad=pad, length=0)
 

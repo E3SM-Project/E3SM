@@ -1351,6 +1351,8 @@ derived_variables = {
             (("tasmax",), lambda t: convert_units(t, target_units="DegC")),
         ]
     ),
+    "TCO": OrderedDict([(("TCO",), rename)]),
+    "SCO": OrderedDict([(("SCO",), rename)]),
     # Land variables
     "SOILWATER_10CM": OrderedDict([(("mrsos",), rename)]),
     "SOILWATER_SUM": OrderedDict([(("mrso",), rename)]),

@@ -170,6 +170,22 @@ def pressure_to_plevs(var, plev):
     return var_p
 
 
+def select_region_lat_lon(region, var, parameter):
+    """Select desired regions from transient variables (no mask)."""
+    try:
+        # if region.find('global') == -1:
+        domain = regions_specs[region]["domain"]  # type: ignore
+        # print('Domain: ', domain)
+    except Exception:
+        pass
+        # print("No domain selector.")
+
+    var_selected = var(domain)
+    var_selected.units = var.units
+
+    return var_selected
+
+
 def select_region(region, var, land_frac, ocean_frac, parameter):
     """Select desired regions from transient variables."""
     domain = None
