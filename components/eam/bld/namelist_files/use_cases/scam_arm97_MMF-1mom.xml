@@ -12,7 +12,7 @@
 
 <!-- namelist for single column model -->
 <single_column                                    scam="1"  >  .true.    </single_column>
-<single_column                                    scam="1"  >  .true.    </single_column>
+<scm_iop_srf_prop                                 scam="1"  >  .true.    </scm_iop_srf_prop>
 <swrad_off                                        scam="1"  >  .false.   </swrad_off>
 <lwrad_off                                        scam="1"  >  .false.   </lwrad_off>
 <precip_off                                       scam="1"  >  .false.   </precip_off>
