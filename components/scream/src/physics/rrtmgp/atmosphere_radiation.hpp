@@ -5,6 +5,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include <string>
 
 namespace scream {
@@ -18,6 +19,7 @@ public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
+  using ci_string        = ekat::CaseInsensitiveString;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -86,7 +88,7 @@ public:
 
   // These are the gases that we keep track of
   int m_ngas;
-  std::vector<std::string> m_gas_names;
+  std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
   GasConcs gas_concs;
 
