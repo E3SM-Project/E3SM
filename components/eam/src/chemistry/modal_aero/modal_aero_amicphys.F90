@@ -3925,9 +3925,9 @@ mainloop1_ipair:  do n = 1, ntot_amode
         !local variables
         integer :: to_mode, from_mode, imode
 
-        real(r8), parameter :: sqrt_half = sqrt(0.5_r8)
-        real(r8), parameter :: freelax = 27.0_r8
-        real(r8), parameter :: smallest_dryvol_value = 1.0e-25_r8
+        real(r8), parameter :: sqrt_half = sqrt(0.5)
+        real(r8), parameter :: frelax = 27.0_r8 !(3^3)
+        real(r8), parameter :: smallest_dryvol_value = 1.0e-25
 
       !number of pairs allowed to do inter-mode particle transfer
       ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
@@ -3965,8 +3965,8 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
          dryvol_smallest(from_mode) = smallest_dryvol_value
          !compute volume to number high and low limits with relaxation coefficients (BALLI see if we can use comon factor above)
-         v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * freelax
-         v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / freelax
+         v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * frelax
+         v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / frelax
 
          !A factor for computing diameter at the tails of the distribution
          ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
@@ -3977,7 +3977,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
             dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
 
          ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
-         diameter_belowcutoff(from_mode) = 0.99_r8*diameter_cutoff(from_mode) !99% of the cutoff
+         diameter_belowcutoff(from_mode) = 0.99*diameter_cutoff(from_mode) !99% of the cutoff
 
       enddo
 
