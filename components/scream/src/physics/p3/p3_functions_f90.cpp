@@ -1,4 +1,5 @@
 #include "p3_functions_f90.hpp"
+#include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "p3_f90.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -2676,24 +2677,27 @@ template <typename ScalarT, typename DeviceT>
 struct CudaWrap
 {
   using Scalar = ScalarT;
+  using RangePolicy = typename ekat::KokkosTypes<DeviceT>::RangePolicy;
 
   static Scalar cxx_pow(Scalar base, Scalar exp)
   {
     Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) {
+    RangePolicy policy(0,1);
+    Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const Int&, Scalar& value) {
         value = std::pow(base, exp);
     }, result);
 
     return result;
   }
 
-#define cuda_wrap_single_arg(wrap_name, func_call)      \
-static Scalar wrap_name(Scalar input) {                 \
-  Scalar result;                                        \
-  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) { \
-    value = func_call(input);                                         \
-  }, result);                                                         \
-  return result;                                                      \
+#define cuda_wrap_single_arg(wrap_name, func_call)                            \
+static Scalar wrap_name(Scalar input) {                                       \
+  Scalar result;                                                              \
+  RangePolicy policy(0,1);                                                    \
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const Int&, Scalar& value) {  \
+    value = func_call(input);                                                 \
+  }, result);                                                                 \
+  return result;                                                              \
 }
 
   cuda_wrap_single_arg(cxx_gamma, std::tgamma)
