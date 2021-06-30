@@ -33,13 +33,13 @@ void Functions<S,D>
     ekat::index_and_shift<-1>(sinvar1, range_pack2, invar1_s, invar1_sm1);
     ekat::index_and_shift<-1>(sinvar2, range_pack2, invar2_s, invar2_sm1);
 
-    const auto dz_zi_ne_zero = dz_zi(k) != 0;
-    if (dz_zi_ne_zero.any()) {
+    const auto active_range = range_pack1 > 0 && range_pack1 < nlev;
+    if (active_range.any()) {
       const Spack grid_dz = 1 / dz_zi(k);
       const Spack grid_dz2 = ekat::square(grid_dz); // vertical grid diff squared
 
       // Compute the variance or covariance
-      varorcovar(k).set(range_pack1 > 0 && range_pack1 < nlev && dz_zi_ne_zero, tunefac*(isotropy_zi(k)*tkh_zi(k))*grid_dz2*(invar1_sm1 - invar1_s)*(invar2_sm1 - invar2_s));
+      varorcovar(k).set(active_range, tunefac*(isotropy_zi(k)*tkh_zi(k))*grid_dz2*(invar1_sm1 - invar1_s)*(invar2_sm1 - invar2_s));
     }
   });
 }

@@ -72,8 +72,8 @@ void Functions<S,D>
     ekat::index_and_shift<-1>(s_tke, range_pack_m1, tke_k, tke_km1);
 
     // Compute inputs for computing f0 to f5 terms
-    const auto dz_zi_ne_zero = dz_zi(k) != 0 && thetal_zi(k) != 0;
-    if (dz_zi_ne_zero.any()) {
+    const auto active_range = range_pack > 0 && range_pack < nlev;
+    if (active_range.any()) {
       const auto thedz  = 1/dz_zi(k);
       const auto thedz2 = 1/(dz_zt_k+dz_zt_km1);
 
@@ -111,7 +111,7 @@ void Functions<S,D>
       const auto aa1 = omega0*x1+omega1*y1+omega2;
 
       // Finally, compute the third moment of w
-      w3(k).set(range_pack > 0 && range_pack < nlev && dz_zi_ne_zero,
+      w3(k).set(active_range,
                 (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
     }
   });

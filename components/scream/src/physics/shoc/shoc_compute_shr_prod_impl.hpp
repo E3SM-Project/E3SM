@@ -35,22 +35,22 @@ void Functions<S,D>
   //compute shear production term
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
 
-    const auto dz_zi_ne_zero = dz_zi(k) != 0;
-    if (dz_zi_ne_zero.any()) {
+    auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
+    const auto active_range = range_pack1 > 0 && range_pack1 < nlev;
+    if (active_range.any()) {
       const Spack grid_dz = 1/dz_zi(k);
 
       // calculate vertical gradient of u&v wind
-      auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
       auto range_pack2 = range_pack1;
       range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
       Spack u_up_grid, u_grid, v_up_grid, v_grid;
       ekat::index_and_shift<-1>(sclr_uwind, range_pack2, u_grid, u_up_grid); //for u_wind
       ekat::index_and_shift<-1>(sclr_vwind, range_pack2, v_grid, v_up_grid); //for v_wind
-      const Spack u_grad(range_pack1 > 0 && range_pack1 < nlev, grid_dz*(u_up_grid - u_grid));
-      const Spack v_grad(range_pack1 > 0 && range_pack1 < nlev, grid_dz*(v_up_grid - v_grid));
+      const Spack u_grad(active_range, grid_dz*(u_up_grid - u_grid));
+      const Spack v_grad(active_range, grid_dz*(v_up_grid - v_grid));
 
       //compute shear production
-      sterm(k)           = Ck_sh*(u_grad*u_grad+v_grad*v_grad);
+      sterm(k).set(active_range, Ck_sh*(u_grad*u_grad+v_grad*v_grad));
     }
   });
   /*
