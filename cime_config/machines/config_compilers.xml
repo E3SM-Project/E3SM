@@ -1020,8 +1020,10 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <LAPACK_LIBDIR>$ENV{BLASLAPACK_LIBDIR}</LAPACK_LIBDIR>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
-    <append>$SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+    <!-- it's weired that AMANZI-TPLS installed libnetcdff.* (fortran) in different directory-->
+    <append MPILIB="openmpi3"> -L$NETCDF_FORTRAN_PATH/lib64 -Wl,-rpath=$NETCDF_FORTRAN_PATH/lib64 -lnetcdff </append>
+    <append MPILIB="openmpi"> -L$NETCDF_FORTRAN_PATH/lib -Wl,-rpath=$NETCDF_FORTRAN_PATH/lib -lnetcdff </append>
+    <append> -L$NETCDF_C_PATH/lib -Wl,-rpath=$NETCDF_C_PATH/lib -lnetcdf </append>
   </SLIBS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
