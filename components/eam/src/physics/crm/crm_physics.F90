@@ -40,6 +40,7 @@ module crm_physics
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
    integer :: mmf_clear_rh_idx = -1
+   integer :: crm_angle_idx    = -1
 
    integer :: crm_t_rad_idx    = -1
    integer :: crm_qv_rad_idx   = -1
@@ -243,7 +244,7 @@ subroutine crm_physics_register()
    call pbuf_add_field('ACLDY_CEN',    'global', dtype_r8,dims_gcm_2D,idx) 
    
    ! CRM orientation angle needs to persist across time steps
-   call pbuf_add_field('CRM_ANGLE',    'global', dtype_r8,dims_gcm_1D,idx)
+   call pbuf_add_field('CRM_ANGLE',    'global', dtype_r8,dims_gcm_1D,crm_angle_idx)
 
    ! top and bottom levels of convective activity for chemistry
    call pbuf_add_field('CLDTOP',       'physpkg',dtype_r8,(/pcols,1/),idx)
@@ -559,7 +560,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: norm_rand                     ! normally distributed random number - Box-Muller (1958)
    real(crm_rknd) :: crm_rotation_std              ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset           ! offset to specify preferred rotation direction 
-   real(crm_rknd), dimension(pcols) :: crm_angle
+   real(crm_rknd), dimension(pcols) :: crm_angle   ! local copy of CRM orientation angle
+   real(crm_rknd), pointer :: crm_angle_ptr(:)     ! CRM orientation angle in pbuf
 
    ! surface flux variables for using adjusted fluxes from flux_avg_run
    real(crm_rknd), pointer, dimension(:) :: shf_ptr
@@ -668,7 +670,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
          if (.not. is_first_step()) then
             ! get current crm angle from pbuf, except on first step
-            call pbuf_get_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+            call pbuf_get_field(pbuf, crm_angle_idx, crm_angle_ptr)
+            crm_angle(:pcols) = crm_angle_ptr(:pcols)
          end if
          do i = 1,ncol
             ! set the seed based on the chunk and column index (duplicate seeds are ok)
@@ -684,7 +687,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             if ( crm_angle(i).gt.(pi*2)) crm_angle(i) = crm_angle(i) - pi*2
          end do ! i
          ! write current crm_angle to pbuf
-         call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+         call pbuf_set_field(pbuf, crm_angle_idx, crm_angle)
       end if
 
    else
@@ -844,7 +847,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #endif
 
       ! only need to do this once when crm_angle is static
-      call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+      call pbuf_set_field(pbuf, crm_angle_idx, crm_angle)
 
       ! Set clear air RH to zero on first step
       call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
