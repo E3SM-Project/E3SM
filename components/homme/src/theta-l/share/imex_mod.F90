@@ -13,7 +13,7 @@ module imex_mod
   use physical_constants, only: g, kappa
   use eos,                only: pnh_and_exner_from_eos, pnh_and_exner_from_eos2, phi_from_eos
   use element_state,      only: max_itercnt, max_deltaerr, max_reserr
-  use control_mod,        only: theta_hydrostatic_mode, qsplit
+  use control_mod,        only: theta_hydrostatic_mode, qsplit, hcoord
   use perf_mod,           only: t_startf, t_stopf
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,            only: tridiag_diagdom_bfb_a1x1
@@ -462,9 +462,14 @@ contains
        k  = 1 ! Jacobian row 1
        b  = a/dp3d(:,:,k)
        ck = pnh(:,:,k)/dphi(:,:,k)
-       JacU(:,:,k) = 2*b*ck
-       JacD(:,:,k) = 1 - JacU(:,:,k)
        ckm1 = ck
+       if (hcoord == 2) then ! Geometric height coordinate boundary condition
+          JacU(:,:,k) = 0
+          JacD(:,:,k) = 1
+       else ! Pressure coordinate boundary condition
+          JacU(:,:,k) = 2*b*ck
+          JacD(:,:,k) = 1 - JacU(:,:,k)
+       end if
        do k = 2,nlev-1 ! Jacobian row k
           b  = 2*a/(dp3d(:,:,k-1) + dp3d(:,:,k))
           ck = pnh(:,:,k)/dphi(:,:,k)
