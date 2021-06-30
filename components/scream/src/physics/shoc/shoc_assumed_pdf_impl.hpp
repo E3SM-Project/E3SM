@@ -158,13 +158,14 @@ void Functions<S,D>::shoc_assumed_pdf(
                                          - (1 - a)*ekat::square(tmp_val_1))
                                          + (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
                                          /(3*(1 - a)*(tmp_val_1 - tmp_val_2))))*thlsec);
+
+        thl1_1.set(condition, tmp_val_2*sqrtthl+thl_first);
+        thl1_2.set(condition, tmp_val_1*sqrtthl+thl_first);
+
+        sqrtthl2_1.set(condition, ekat::sqrt(thl2_1));
+        sqrtthl2_2.set(condition, ekat::sqrt(thl2_2));
       }
 
-      thl1_1.set(condition, tmp_val_2*sqrtthl+thl_first);
-      thl1_2.set(condition, tmp_val_1*sqrtthl+thl_first);
-
-      sqrtthl2_1.set(condition, ekat::sqrt(thl2_1));
-      sqrtthl2_2.set(condition, ekat::sqrt(thl2_2));
     }
 
     // Find parameters for total water mixing ratio

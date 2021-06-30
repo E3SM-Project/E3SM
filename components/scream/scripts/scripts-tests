@@ -353,8 +353,6 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
-
-
     def test_baseline_handling(self):
         if self._full:
             baseline_dir = TEST_DIR.parent/"ctest-build"/"baselines"
