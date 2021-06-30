@@ -459,7 +459,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
-                        use_MMF_VT_out, MMF_VT_wn_max_out, &
+                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         linearize_pbl_winds_out, export_gustiness_out, &
@@ -491,6 +491,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: radiation_scheme_out
    character(len=16), intent(out), optional :: macrop_scheme_out
    character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
+   real(r8),          intent(out), optional :: MMF_orientation_angle_out
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MMF_VT_out
@@ -565,6 +566,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(radiation_scheme_out    ) ) radiation_scheme_out     = radiation_scheme
 
    if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
+   if ( present(MMF_orientation_angle_out   ) ) MMF_orientation_angle_out    = MMF_orientation_angle
    if ( present(use_MMF_out             ) ) use_MMF_out              = use_MMF
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
