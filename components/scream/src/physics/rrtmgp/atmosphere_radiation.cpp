@@ -66,10 +66,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
+  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
-      add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+      // do nothing, qv has already been added.
     } else {
       add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
     }
@@ -267,7 +268,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
     Kokkos::fence();
 
-    gas_concs.set_vmr(m_gas_names[igas], tmp2d);
+    gas_concs.set_vmr(name, tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)

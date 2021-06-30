@@ -2,21 +2,26 @@
 #include <cmath>
 #include <catch2/catch.hpp>
 
+// Boiler plate, needed for all runs
 #include "control/atmosphere_driver.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat.hpp"
+// Boiler plate, needed for when physics is part of the run
+#include "physics/register_physics.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
+// EKAT headers
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+// Other rrtmgp specific code needed specifically for this test
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "Intrinsics.h"
 #include "rrtmgp_test_utils.hpp"
+// Other helper headers needed for the specifics of this test
+#include "physics/share/physics_constants.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 /*
@@ -64,7 +69,7 @@ namespace scream {
         // Create a MPI communicator
         ekat::Comm atm_comm (MPI_COMM_WORLD);
 
-        // Need to register products in the factory *before* we create any atm process or grids manager.,
+        // Need to register products in the factory *before* we create any atm process or grids manager.
         auto& proc_factory = AtmosphereProcessFactory::instance();
         auto& gm_factory = GridsManagerFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);

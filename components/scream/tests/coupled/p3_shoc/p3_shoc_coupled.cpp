@@ -29,7 +29,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
-  // Need to register products in the factory *before* we create any atm process or grids manager.,
+  // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
@@ -44,7 +44,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init and run (do not finalize, or you'll clear the field repo!)
+  // Init and run 
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
