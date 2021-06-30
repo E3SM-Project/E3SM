@@ -3648,7 +3648,6 @@ time_loop: &
 
       integer, parameter :: ldiag1 = 0
 
-      real(r8), parameter :: frelax = 27.0_r8
       real(r8), parameter :: onethird = 1.0_r8/3.0_r8
 
       real(r8) :: deldryvol_a(ntot_amode)
@@ -3677,40 +3676,35 @@ time_loop: &
       real(r8) :: xferfrac_vol, xferfrac_num, xferfrac_max
       real(r8) :: yn_tail, yv_tail
 
+      xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps !FIXME: This can be a parameter???
 
-      xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
+      !------------------------------------------------------------------------
+      !Find mapping between different modes, so that we can move aerosol
+      !particles from one mode to another
+      !------------------------------------------------------------------------
 
+      !FIXME: All the arrays in find_renaming_pairs subroutine call should be
+      !initialized to HUGE numbers as only part of them are populated
+
+      ! Find pairs of modes which can participate in inter-mode particle transfer
+      call find_renaming_pairs (ntot_amode, mtoo_renamexf, & !input
+           npair, factoraa, factoryy, v2nlorlx, &            !output
+           v2nhirlx, tmp_alnsg2, dp_cut, &                   !output
+           lndp_cut, dp_belowcut, dryvol_smallest)           !output
+
+      if (npair <= 0) return ! if no transfer required, return
+
+      !^^^^^^^^^^^^^^^^^^ BSINGH - ENDS REFACTOR ^^^^^^^^^^^^^^^^^^^^^^^
+
+      !BSINGH- original comments to be adjusted
 ! calculate variable used in the renamingm mode" of each renaming pair
 ! also compute dry-volume change during the continuous growth process
-      npair = 0
-      do n = 1, ntot_amode
-         mtoo = mtoo_renamexf(n)
-         if (mtoo <= 0) cycle
 
-         npair = npair + 1
-         mfrm = n
-         factoraa(mfrm) = (pi/6.)*exp(4.5*(alnsg_aer(mfrm)**2))
-         factoraa(mtoo) = (pi/6.)*exp(4.5*(alnsg_aer(mtoo)**2))
-         factoryy(mfrm) = sqrt( 0.5 )/alnsg_aer(mfrm)
 ! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
 ! used for avoiding overflow.  it corresponds to dp = 1 nm
 ! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
-         dryvol_smallest(mfrm) = 1.0e-25
-!        v2nlorlx(mfrm) = voltonumblo_amode(mfrm)*frelax
-!        v2nhirlx(mfrm) = voltonumbhi_amode(mfrm)/frelax
-         v2nlorlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
-            (dgnumlo_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) * frelax
-         v2nhirlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
-            (dgnumhi_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) / frelax
 
-         tmp_alnsg2(mfrm) = 3.0 * (alnsg_aer(mfrm)**2)
-         dp_cut(mfrm) = sqrt(   &
-            dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
-            dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
-         lndp_cut(mfrm) = log( dp_cut(mfrm) )
-         dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
-      end do
-      if (npair <= 0) return
+      !Original Comments ENDS
 
 ! compute aerosol dry-volume for the "from mode" of each renaming pair
 ! also compute dry-volume change during the continuous growth process
@@ -3908,6 +3902,113 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       return
       end subroutine mam_rename_1subarea
+
+      !--------------------------------------------------------------------------------
+      !--------------------------------------------------------------------------------
+
+      subroutine find_renaming_pairs (nmodes, to_mode_of_mode, &    !input
+           num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & !output
+           v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     !output
+           ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    !output
+
+        !arguments (intent-ins)
+        integer, intent(in) :: nmodes, to_mode_of_mode(:)
+
+        !intent-outs
+        integer,  intent(out) :: num_pairs
+        real(r8), intent(out) :: sz_factor(:), fmode_dist_tail_fac(:)
+        real(r8), intent(out) :: v2n_lo_rlx(:), v2n_hi_rlx(:)
+        real(r8), intent(out) :: ln_diameter_tail_fac(:)
+        real(r8), intent(out) :: diameter_cutoff(:), ln_dia_cutoff(:)
+        real(r8), intent(out) :: diameter_belowcutoff(:), dryvol_smallest(:)
+
+        !local variables
+        integer :: to_mode, from_mode, imode
+
+        real(r8), parameter :: sqrt_half = sqrt(0.5_r8)
+        real(r8), parameter :: freelax = 27.0_r8
+        real(r8), parameter :: smallest_dryvol_value = 1.0e-25_r8
+
+      !number of pairs allowed to do inter-mode particle transfer
+      ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
+      ! inter-mode aerosol particle transfer where particles in mode_1 can be
+      ! transferred to mode_2 and vice-versa)
+      num_pairs = 0 ! Let us assume there are none to start with
+
+      !if there can be no possible pairs, just return
+      if (all(to_mode_of_mode(:)<=0)) return
+
+      !Go through all the modes to find if we have atleast one or more than one pairs
+      do imode = 1, nmodes
+         to_mode   = to_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
+
+         !if to_mode is <=0, transfer is not possible for this mode, cycle the loop for the next mode
+         if(to_mode <= 0)cycle
+
+         from_mode = imode                  ! transfer "from" mode is the current mode (i.e. imode)
+
+         !^^At this point, we know that particles can be tranfered from the
+         ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
+
+         !update number of pairs found so far
+         num_pairs = num_pairs + 1    !increment npair
+
+         !-------------------------------------------------------
+         !now precompute some common factors to be used later
+         !-------------------------------------------------------
+
+         call compute_size_factor (from_mode, sz_factor) !size factor for "from mode"
+         call compute_size_factor (to_mode,   sz_factor) !size factor for "to mode"
+
+         ! We compute few factors below for the "from_mode", which will be used for inter-mode particle transfer
+         fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_aer(from_mode) !factor for computing distribution tails of the  "from mode"
+
+         dryvol_smallest(from_mode) = smallest_dryvol_value
+         !compute volume to number high and low limits with relaxation coefficients (BALLI see if we can use comon factor above)
+         v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * freelax
+         v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / freelax
+
+         !A factor for computing diameter at the tails of the distribution
+         ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
+
+         !Cut-off (based on geometric mean) for making decision to do inter-mode transfers
+         diameter_cutoff(from_mode) = sqrt(   &
+            dgnum_aer(from_mode)*exp(1.5*(alnsg_aer(from_mode)**2)) *   &
+            dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
+
+         ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
+         diameter_belowcutoff(from_mode) = 0.99_r8*diameter_cutoff(from_mode) !99% of the cutoff
+
+      enddo
+
+    end subroutine find_renaming_pairs
+    !----------------------------------------------------------------------
+    !----------------------------------------------------------------------
+
+      subroutine compute_size_factor(imode, size_factor)
+        ! Compute size factor for a mode
+        implicit none
+
+        integer,  intent(in) :: imode     !mode number
+        real(r8), intent(inout) :: size_factor(:) !size factor
+
+        size_factor(imode) = (pi/6.)*exp(4.5*(alnsg_aer(imode)**2))
+
+      end subroutine compute_size_factor
+
+
+      pure function compute_vol_to_num_ratio(imode, diameter) result(v2n)
+        !compute volume to number ratio for a mode
+        implicit none
+        integer,  intent(in) :: imode
+        real(r8), intent(in) :: diameter(:) ![m]
+
+        real(r8) :: v2n !return value
+
+        v2n = ( 1._r8 / ( (pi/6._r8)* &
+             (diameter(imode)**3._r8)*exp(4.5_r8*alnsg_aer(imode)**2._r8) ) )
+
+      end function compute_vol_to_num_ratio
 
 
 !----------------------------------------------------------------------
