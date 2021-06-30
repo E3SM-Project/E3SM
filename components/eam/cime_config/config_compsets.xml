@@ -259,6 +259,12 @@
     <alias>F-MMF2-ECPP</alias>
     <lname>2000_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <!-- MMF compsets for stand-alone single column mode of EAM -->
+  <compset>
+    <alias>F-MMF1-SCAM-ARM97</alias>
+    <lname>AR97_EAM%MMF1-SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <!-- ******************************* -->
   <!-- ******************************* -->
@@ -292,6 +298,7 @@
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
+   <value compset="EAM%*SCAM_">TRUE</value>
       </values>
     </entry>
 
@@ -328,6 +335,12 @@
       </values>
     </entry>
 
+    <entry id="PTS_MODE">
+      <values>
+        <value compset="_EAM%MMF[12XO]-SCAM_">TRUE</value>
+      </values>
+    </entry>
+    
     <entry id="PTS_LAT">
       <values>
         <value compset="AR9[57]_EAM">36.6</value>
