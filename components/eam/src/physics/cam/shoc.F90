@@ -113,8 +113,8 @@ real(rtype), parameter :: mintke = 0.0004_rtype
 
 !===================
 ! const parameter for Diagnosis of PBL depth
-real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
-real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
+real(rtype), parameter :: tinyw = 1.e-36_rtype    ! lower bound for wind magnitude
+real(rtype), parameter :: fac   = 100._rtype      ! ustar parameter in height diagnosis
 real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
 
 ! Maximum number of levels in pbl from surface
@@ -2855,7 +2855,7 @@ subroutine shoc_assumed_pdf_compute_s(&
   qn=0._rtype
   C=0._rtype
 
-  if (std_s .gt. 2.0E-155_rtype) then
+  if (std_s .gt. bfb_sqrt(tiny(1._rtype)) * 100) then
     C=0.5_rtype*(1._rtype+bfb_erf(s/(sqrt2*std_s)))
     if (C .ne. 0._rtype) qn=s*C+(std_s/sqrt2pi)*bfb_exp(-0.5_rtype*bfb_square(s/std_s))
   else
@@ -4414,7 +4414,7 @@ subroutine pblintd_height(&
        do i=1,shcol
           if (check(i)) then
              vvk = bfb_square((u(i,k) - u(i,nlev))) + bfb_square((v(i,k) - v(i,nlev))) + fac*bfb_square(ustar(i))
-             vvk = max(vvk,tiny)
+             vvk = max(vvk,tinyw)
              rino(i,k) = ggr*(thv(i,k) -thv_ref(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then
                 pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) -rino(i,k+1)) * &
