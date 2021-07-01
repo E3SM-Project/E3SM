@@ -3220,11 +3220,10 @@ module li_calving
       type (mpas_pool_type), pointer :: velocityPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      type (field1dInteger), pointer :: contiguousDynamicIceField
-      type (field1dInteger), pointer :: contiguousDynamicIceOldField
       type (field1dInteger), pointer :: seedMaskField
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
+      !integer, dimension(:), allocatable :: seedMaskOld !mask of where icebergs are removed, for debugging
 
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -3232,9 +3231,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
 
-      integer, dimension(:), pointer :: contiguousDynamicIce, contiguousDynamicIceOld
       integer, pointer :: nCells, nCellsSolve
-      integer, dimension(:), pointer :: nCellsArray
       integer :: iCell, jCell, n
       integer :: newMaskCountLocal, newMaskCountLocalAccum, newMaskCountGlobal
       integer :: err_tmp, err
@@ -3278,7 +3275,6 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -3290,11 +3286,10 @@ module li_calving
          err = ior(err, err_tmp)
 
          call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
-         contiguousDynamicIce(:) = 0  ! initialize
          newMaskCountLocal = 0
          do iCell = 1, nCellsSolve
             if (li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
-               contiguousDynamicIce(iCell) = 1
+               seedMask(iCell) = 1
                newMaskCountLocal = newMaskCountLocal + 1
             endif
          enddo
@@ -3305,13 +3300,11 @@ module li_calving
 
       call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
       
-      seedMask(:) = contiguousDynamicIce(:)
       where ( seedMask == 0 .and. li_mask_is_floating_ice(cellMask(:)) )
              growMask = 1
       endwhere
       call flood_fill(seedMask, growMask, domain)
       
-      contiguousDynamicIce(:) = seedMask(:)
       ! Now remove any ice that was not flood-filled - these are icebergs
       block => domain % blocklist
       do while (associated(block))
@@ -3319,20 +3312,20 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
          call mpas_pool_get_dimension(geometryPool, 'nCells', nCells)
          call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
+         !allocate(seedMaskOld(nCells+1)) ! debug: make this a mask of where icebergs were removed
+         !seedMaskOld(:) = 0
 
-         contiguousDynamicIceOld(:) = 0
+         localIcebergCellCount = 0
          do iCell = 1, nCellsSolve
-            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_floating_ice(cellMask(iCell))) then
+            if (seedMask(iCell) == 0 .and. li_mask_is_floating_ice(cellMask(iCell))) then
                calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)  ! remove any remaining ice here
                thickness(iCell) = 0.0_RKIND
-               !contiguousDynamicIceOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
+               localIcebergCellCount = localIcebergCellCount + 1
+               !seedMaskOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
             endif
          enddo
-         localIcebergCellCount = sum(contiguousDynamicIceOld)
 
          block => block % next
       end do
@@ -3346,6 +3339,7 @@ module li_calving
       call mpas_timer_stop("halo updates")
 
       ! clean up
+      !deallocate(seedMaskOld) !un-comment for debugging
       call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.false.)
       call mpas_deallocate_scratch_field(growMaskField, single_block_in=.false.)
       call mpas_log_write("Iceberg-detection flood-fill complete. Removed $i iceberg cells.", intArgs=(/globalIcebergCellCount/))
@@ -3359,8 +3353,9 @@ module li_calving
 !> \brief  Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc. 
 !> The calling routine defines the seedMask to specify the initial masked region, and the growMask 
 !> to specify the potential region to be filled by the flood-fill routine. The flood-fill routine
-!> then adds the contiguous areas of the growMask to the seedMask to produce the final mask, which
-!> is passed back to the calling routine for application.
+!> then adds the contiguous areas of the growMask to the seedMask, which is passed back to the 
+!> calling routine for application. Any integer fields in Registry can be used for seedMask and
+!> growMask, but there are existing variables with those names that can be used.
 !> \author Trevor Hillebrand and Matthew Hoffman
 !> \date   March 2021
 !> \details 
@@ -3382,9 +3377,7 @@ module li_calving
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:), allocatable :: seedMaskOld
 
-      integer, dimension(:), pointer :: contiguousDynamicIce, contiguousDynamicIceOld
       integer, pointer :: nCells, nCellsSolve
-      integer, dimension(:), pointer :: nCellsArray
       integer :: iCell, jCell, n
       integer :: newMaskCountLocal, newMaskCountLocalAccum, newMaskCountGlobal
       integer :: err_tmp, err
@@ -3408,7 +3401,6 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -3420,14 +3412,7 @@ module li_calving
          err = ior(err, err_tmp)
 
          call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
-         contiguousDynamicIce(:) = 0  ! initialize
-         newMaskCountLocal = 0
-         do iCell = 1, nCellsSolve
-            if ( seedMask(iCell) > 0 ) then
-               contiguousDynamicIce(iCell) = 1
-               newMaskCountLocal = newMaskCountLocal + 1
-            endif
-         enddo
+         newMaskCountLocal = sum(seedMask)
          call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
 
          block => block % next
@@ -3449,7 +3434,6 @@ module li_calving
          call mpas_log_write("  Starting global processor loop $i", intArgs=(/globalLoopCount/))
          ! First Update halos
          call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'contiguousDynamicIce')
          call mpas_dmpar_field_halo_exch(domain, 'growMask')
          call mpas_dmpar_field_halo_exch(domain, 'seedMask')
          call mpas_timer_stop("halo updates")
@@ -3464,10 +3448,7 @@ module li_calving
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-            call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
-            call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-            call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
             ! initialize local loop
             localLoopCount = 0
@@ -3480,7 +3461,7 @@ module li_calving
                newMaskCountLocal = 0
                seedMaskOld(:) = seedMask(:)
 
-               do iCell = 1, nCellsArray(1) ! this gives owned cells only
+               do iCell = 1, nCellsSolve ! this gives owned cells only
                   if ( growMask(iCell)>0 ) then  
                      ! If it has a marked neighbor, then add it to the mask
                      do n = 1, nEdgesOnCell(iCell)
