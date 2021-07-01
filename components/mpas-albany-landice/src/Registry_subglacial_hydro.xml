@@ -45,6 +45,10 @@
 		            description="conductivity coefficient for subglacial water flux"
 		            possible_values="positive real number"
 		/>
+		<nml_option name="config_SGH_conduc_coeff_drowned" type="real" default_value="0.0" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
+		            description="conductivity coefficient for subglacial water flux for fraction of water thickness that exceeds bump height.  Use 0.0 or negative value to disable."
+		            possible_values="positive real number or 0.0"
+		/>
 		<nml_option name="config_SGH_till_drainage" type="real" default_value="0.0" units="m s^{-1}"
 		            description="background subglacial till drainage rate"
                             possible_values="positive real number.  Disabled by default.  Bueler and van Pelt use 3.1709792e-11 m/s (0.001 m/yr)."

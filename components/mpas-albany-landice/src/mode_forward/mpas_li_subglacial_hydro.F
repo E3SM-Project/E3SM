@@ -737,6 +737,9 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
+      real (kind=RKIND), pointer :: conduc_coeff_drowned
+      real (kind=RKIND), pointer :: bedRoughMax
+      real (kind=RKIND) :: conduc_coeff_wtd
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), pointer :: rhoo
@@ -764,6 +767,8 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_alpha', alpha)
       call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
       call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff', conduc_coeff)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff_drowned', conduc_coeff_drowned)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
@@ -916,8 +921,20 @@ module li_subglacial_hydro
       gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
-      effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-         (gradMagPhiEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+      if (conduc_coeff_drowned > 0.0_RKIND) then
+         ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
+         do iEdge = 1, nEdges
+            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+                             conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
+                             (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
+            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+               (gradMagPhiEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+         end do
+      else
+         ! Just use a single conductivity coeff.
+         effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
+            (gradMagPhiEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+      endif
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
