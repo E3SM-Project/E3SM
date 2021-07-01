@@ -232,7 +232,7 @@ contains
          long_name='gridcell index of corresponding landunit',                            &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
     
-    ilarr = GetGlobalIndexArray(lun_pp%topounit(bounds%begl:bounds%endl), bounds%begl, bounds%endl, elmlevel=nameg)
+    ilarr = GetGlobalIndexArray(lun_pp%topounit(bounds%begl:bounds%endl), bounds%begl, bounds%endl, elmlevel=namet)
     call restartvar(ncid=ncid, flag=flag, varname='land1d_topounit_index', xtype=ncd_int, &
          dim1name='landunit',                                                             &
          long_name='topounit index of corresponding landunit',                            &
@@ -301,7 +301,7 @@ contains
          long_name='gridcell index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
     
-    icarr = GetGlobalIndexArray(col_pp%topounit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namel)
+    icarr = GetGlobalIndexArray(col_pp%topounit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namet)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_topounit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='topounit index of corresponding column',                              &
@@ -384,7 +384,7 @@ contains
          long_name='gridcell index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
     
-    iparr = GetGlobalIndexArray(veg_pp%topounit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namel)
+    iparr = GetGlobalIndexArray(veg_pp%topounit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namet)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_topounit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='topounit index of corresponding pft',                                 &

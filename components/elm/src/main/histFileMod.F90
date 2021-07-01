@@ -3001,6 +3001,12 @@ contains
 
           call ncd_defvar(varname='land1d_wtgcell', xtype=ncd_double, dim1name=namel, &
                long_name='landunit weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='land1d_wttopounit', xtype=ncd_double, dim1name=namel, &
+               long_name='landunit weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='land1d_topounit', xtype=ncd_int, dim1name=namel, &
+               long_name='topounit index of landunit', ncid=ncid)
 
           call ncd_defvar(varname='land1d_ityplunit', xtype=ncd_int, dim1name=namel, &
                long_name='landunit type (vegetated,urban,lake,wetland,glacier or glacier_mec)', &
@@ -3033,6 +3039,12 @@ contains
 
           call ncd_defvar(varname='cols1d_wtgcell', xtype=ncd_double, dim1name=namec, &
                long_name='column weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='cols1d_wttopounit', xtype=ncd_double, dim1name=namec, &
+               long_name='colum weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='cols1d_topounit', xtype=ncd_int, dim1name=namec, &
+               long_name='topounit index of colum', ncid=ncid)
 
           call ncd_defvar(varname='cols1d_wtlunit', xtype=ncd_double, dim1name=namec, &
                long_name='column weight relative to corresponding landunit', ncid=ncid)
@@ -3071,6 +3083,12 @@ contains
 
           call ncd_defvar(varname='pfts1d_wtgcell', xtype=ncd_double, dim1name=namep, &
                long_name='pft weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='pfts1d_wttopounit', xtype=ncd_double, dim1name=namep, &
+               long_name='pft weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='pfts1d_topounit', xtype=ncd_int, dim1name=namep, &
+               long_name='topounit index of pft', ncid=ncid)
 
           call ncd_defvar(varname='pfts1d_wtlunit', xtype=ncd_double, dim1name=namep, &
                long_name='pft weight relative to corresponding landunit', ncid=ncid)
@@ -3168,6 +3186,8 @@ contains
        !call ncd_io(varname='land1d_gi'       , data=lun_pp%gridcell, dim1name=namel, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='land1d_wtgcell'  , data=lun_pp%wtgcell , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_wttopounit'  , data=lun_pp%wttopounit , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_topounit'  , data=lun_pp%topounit , dim1name=namel, ncid=ncid, flag='write')
        call ncd_io(varname='land1d_ityplunit', data=lun_pp%itype   , dim1name=namel, ncid=ncid, flag='write')
        call ncd_io(varname='land1d_active'   , data=lun_pp%active  , dim1name=namel, ncid=ncid, flag='write')
 
@@ -3194,6 +3214,8 @@ contains
        !call ncd_io(varname='cols1d_li'     , data=col_pp%landunit, dim1name=namec, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='cols1d_wtgcell', data=col_pp%wtgcell , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wttopounit', data=col_pp%wttopounit , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_topounit', data=col_pp%topounit , dim1name=namec, ncid=ncid, flag='write')
        call ncd_io(varname='cols1d_wtlunit', data=col_pp%wtlunit , dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
          icarr(c) = lun_pp%itype(col_pp%landunit(c))
@@ -3225,6 +3247,8 @@ contains
        !call ncd_io(varname='pfts1d_ci'       , data=veg_pp%column  , dim1name=namep, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='pfts1d_wtgcell'  , data=veg_pp%wtgcell , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wttopounit'  , data=veg_pp%wttopounit , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_topounit'  , data=veg_pp%topounit , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_wtlunit'  , data=veg_pp%wtlunit , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_wtcol'    , data=veg_pp%wtcol   , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_itype_veg', data=veg_pp%itype   , dim1name=namep, ncid=ncid, flag='write')

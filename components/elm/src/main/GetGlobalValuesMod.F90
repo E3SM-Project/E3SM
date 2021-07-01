@@ -76,7 +76,7 @@ contains
     use shr_log_mod, only: errMsg => shr_log_errMsg
     use decompMod  , only: bounds_type, get_elmlevel_gsmap, get_proc_bounds
     use spmdMod    , only: iam
-    use elm_varcon , only: nameg, namel, namec, namep
+    use elm_varcon , only: nameg,namet, namel, namec, namep
     use elm_varctl , only: iulog
     use mct_mod
     !
@@ -99,6 +99,8 @@ contains
 
     if (trim(elmlevel) == nameg) then
        beg_index = bounds_proc%begg
+    else if (trim(elmlevel) == namet) then
+       beg_index = bounds_proc%begt
     else if (trim(elmlevel) == namel) then
        beg_index = bounds_proc%begl
     else if (trim(elmlevel) == namec) then
