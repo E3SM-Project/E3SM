@@ -241,6 +241,12 @@ void run(std::mt19937_64& engine)
   // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
   //            equal to wetmmr0
 
+  // mmr_test4: [to test mathematical properties of the function] Compute drymmr from wetmmr0 and then use the result to
+  //            compute wetmmr. "qv" should be in the form of 2^k+1 (1 is added as we have [1-qv] in the numerator or
+  //            denominator of this function), so that the results of wet->dry->wet are exactly
+  //            the same as the initial input mmr(wetmmr0). This is a mathematical property test, so physically invalid qv
+  //            values are also acceptable
+
   REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
   REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
 
@@ -248,6 +254,12 @@ void run(std::mt19937_64& engine)
   tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
   tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0);//convert it back to wetmmr0
   REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
+
+  //mmr_test4
+  ScalarT qv0_2k_m1 = pow(2,qv0)+1; // 2^qv0+1 (qv0 is just used as a random number here)
+  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0_2k_m1);//get drymmr from wetmmr0
+  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0_2k_m1);//convert it back to wetmmr0
+  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be exactly equal to tmp
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
