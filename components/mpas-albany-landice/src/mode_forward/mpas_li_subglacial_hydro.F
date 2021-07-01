@@ -1449,11 +1449,18 @@ module li_subglacial_hydro
 
       waterPressure = max(0.0_RKIND, waterPressure)
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
-      ! set pressure correctly under floating ice and open ocean
+
       do iCell = 1, nCells
         if ( li_mask_is_floating_ice(cellMask(iCell)) .or. &
              ((.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) ) then
+           ! set pressure correctly under floating ice and open ocean
            waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
+        elseif (li_mask_is_grounding_line(cellMask(iCell))) then
+           ! At GL, don't let water pressure fall below ocean pressure
+           ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
+           if (waterPressure(iCell) < rhoo * gravity * (config_sea_level - bedTopography(iCell))) then
+               waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
+           endif
         endif
       enddo
 
