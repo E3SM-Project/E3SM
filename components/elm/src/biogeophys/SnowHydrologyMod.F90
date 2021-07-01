@@ -3,7 +3,7 @@ module SnowHydrologyMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Calculate snow hydrology.
-  ! - Using as input aerosol deposition from atmosphere model calculate 
+  ! - Using as input aerosol deposition from atmosphere model calculate
   !   aerosol fluxes and masses in each layer - need for surface albedo calculation
   ! - Change of snow mass and the snow water onto soil
   ! - Change in snow layer thickness due to compaction
@@ -22,13 +22,12 @@ module SnowHydrologyMod
   use elm_varcon      , only : namec, h2osno_max
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
-  use TemperatureType , only : temperature_type
-  use WaterfluxType   , only : waterflux_type
-  use WaterstateType  , only : waterstate_type
-  use LandunitType    , only : lun_pp                
-  use ColumnType      , only : col_pp 
-  use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf  
   use TopounitDataType, only : topounit_atmospheric_state
+  use LandunitType    , only : lun_pp
+  use ColumnType      , only : col_pp
+  use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
+
+  use timeinfoMod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -51,9 +50,9 @@ module SnowHydrologyMod
   !
   ! !PUBLIC DATA MEMBERS:
   !  Aerosol species indices:
-  !  1= hydrophillic (bulk model) or within-ice (modal model) black carbon 
+  !  1= hydrophillic (bulk model) or within-ice (modal model) black carbon
   !  2= hydrophobic (bulk model) or external (modal model) black carbon
-!  !  1= hydrophillic black carbon 
+!  !  1= hydrophillic black carbon
 !  !  2= hydrophobic black carbon
   !  3= hydrophilic organic carbon
   !  4= hydrophobic organic carbon
@@ -70,6 +69,16 @@ module SnowHydrologyMod
   real(r8), public, parameter :: scvng_fct_mlt_dst2  = 0.02_r8 ! scavenging factor for dust species 2 inclusion in meltwater  [frc]
   real(r8), public, parameter :: scvng_fct_mlt_dst3  = 0.01_r8 ! scavenging factor for dust species 3 inclusion in meltwater  [frc]
   real(r8), public, parameter :: scvng_fct_mlt_dst4  = 0.01_r8 ! scavenging factor for dust species 4 inclusion in meltwater  [frc]
+
+  !$acc declare copyin(scvng_fct_mlt_bcphi)
+  !$acc declare copyin(scvng_fct_mlt_bcpho)
+  !$acc declare copyin(scvng_fct_mlt_ocphi)
+  !$acc declare copyin(scvng_fct_mlt_ocpho)
+  !$acc declare copyin(scvng_fct_mlt_dst1 )
+  !$acc declare copyin(scvng_fct_mlt_dst2 )
+  !$acc declare copyin(scvng_fct_mlt_dst3 )
+  !$acc declare copyin(scvng_fct_mlt_dst4 )
+
   !-----------------------------------------------------------------------
   !H. Wang ++
   !  "Rfast" parameters used by Flanner et al (2012, ACP)
@@ -106,7 +115,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine SnowWater(bounds, &
        num_snowc, filter_snowc, num_nosnowc, filter_nosnowc, &
-       atm2lnd_vars, waterflux_vars, waterstate_vars, aerosol_vars)
+       atm2lnd_vars, aerosol_vars)
     !
     ! !DESCRIPTION:
     ! Evaluate the change of snow mass and the snow water onto soil.
@@ -121,28 +130,26 @@ contains
     ! to being called.
     !
     ! !USES:
+      !$acc routine seq
     use elm_varcon        , only : denh2o, denice, wimp, ssi
     use landunit_varcon   , only : istsoil
-    use clm_time_manager  , only : get_step_size
     use AerosolMod        , only : AerosolFluxes
     use elm_varctl        , only : use_vsfm
     !
     ! !ARGUMENTS:
-    type(bounds_type)     , intent(in)    :: bounds            
+    type(bounds_type)     , intent(in)    :: bounds
     integer               , intent(in)    :: num_snowc         ! number of snow points in column filter
     integer               , intent(in)    :: filter_snowc(:)   ! column filter for snow points
     integer               , intent(in)    :: num_nosnowc       ! number of non-snow points in column filter
     integer               , intent(in)    :: filter_nosnowc(:) ! column filter for non-snow points
     type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
-    type(waterflux_type)  , intent(inout) :: waterflux_vars
-    type(waterstate_type) , intent(inout) :: waterstate_vars
     type(aerosol_type)    , intent(inout) :: aerosol_vars
+    real(r8)   :: dtime
     !
     ! !LOCAL VARIABLES:
     integer  :: g                                                  ! gridcell loop index
     integer  :: c, j, fc, l                                        ! do loop/array indices
-    real(r8) :: dtime                                              ! land model time step (sec)
-    real(r8) :: qin(bounds%begc:bounds%endc)                       ! water flow into the elmement (mm/s) 
+    real(r8) :: qin(bounds%begc:bounds%endc)                       ! water flow into the elmement (mm/s)
     real(r8) :: qout(bounds%begc:bounds%endc)                      ! water flow out of the elmement (mm/s)
     real(r8) :: qin_bc_phi  (bounds%begc:bounds%endc)              ! flux of hydrophilic BC into   layer [kg]
     real(r8) :: qout_bc_phi (bounds%begc:bounds%endc)              ! flux of hydrophilic BC out of layer [kg]
@@ -176,25 +183,25 @@ contains
     !mgf--
 
 
-    associate(                                                 & 
-         dz             => col_pp%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
-         snl            => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers                     
+    associate(                                                 &
+         dz             => col_pp%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)
+         snl            => col_pp%snl                           , & ! Input:  [integer  (:)   ] number of snow layers
 
-         do_capsnow     => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ] true => do snow capping                   
+         do_capsnow     => col_ws%do_capsnow    , & ! Input:  [logical  (:)   ] true => do snow capping
          frac_sno_eff   => col_ws%frac_sno_eff  , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
          frac_sno       => col_ws%frac_sno      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         h2osno         => col_ws%h2osno        , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                     
-         int_snow       => col_ws%int_snow      , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]                
-         h2osoi_ice     => col_ws%h2osoi_ice    , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
-         h2osoi_liq     => col_ws%h2osoi_liq    , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
+         h2osno         => col_ws%h2osno        , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
+         int_snow       => col_ws%int_snow      , & ! Output: [real(r8) (:)   ] integrated snowfall [mm]
+         h2osoi_ice     => col_ws%h2osoi_ice    , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
+         h2osoi_liq     => col_ws%h2osoi_liq    , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
 
-         qflx_snomelt   => col_wf%qflx_snomelt   , & ! Input:  [real(r8) (:)   ] snow melt (mm H2O /s)                    
+         qflx_snomelt   => col_wf%qflx_snomelt   , & ! Input:  [real(r8) (:)   ] snow melt (mm H2O /s)
          qflx_rain_grnd => col_wf%qflx_rain_grnd , & ! Input:  [real(r8) (:)   ] rain on ground after interception (mm H2O/s) [+]
          qflx_sub_snow  => col_wf%qflx_sub_snow  , & ! Input:  [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]
          qflx_dew_snow  => col_wf%qflx_dew_snow  , & ! Input:  [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]
          qflx_evap_grnd => col_wf%qflx_evap_grnd , & ! Input:  [real(r8) (:)   ] ground surface evaporation rate (mm H2O/s) [+]
          qflx_dew_grnd  => col_wf%qflx_dew_grnd  , & ! Input:  [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
-         qflx_snow_melt => col_wf%qflx_snow_melt , & ! Output: [real(r8) (:)   ] net snow melt                           
+         qflx_snow_melt => col_wf%qflx_snow_melt , & ! Output: [real(r8) (:)   ] net snow melt
          qflx_top_soil  => col_wf%qflx_top_soil  , & ! Output: [real(r8) (:)   ] net water input into soil from top (mm/s)
 !         qflx_snofrz_lyr => cwf%qflx_snofrz_lyr     , & ! HW+++ snow freezing rate (col,lyr) [kg m-2 s-1]
 
@@ -215,7 +222,7 @@ contains
 
       ! Determine model time step
 
-      dtime = get_step_size()
+      dtime = dtime_mod
 
       ! Renew the mass of ice lens (h2osoi_ice) and liquid (h2osoi_liq) in the
       ! surface snow layer resulting from sublimation (frost) / evaporation (condense)
@@ -292,9 +299,9 @@ contains
       !    of aerosol in layer multiplied by a scavenging ratio.
       ! 4) update mass of aerosol in top layer, accordingly
       ! 5) update mass concentration of aerosol accordingly
-      
+
       do c = bounds%begc,bounds%endc
-         qin(c)         = 0._r8         
+         qin(c)         = 0._r8
          qin_bc_phi (c) = 0._r8
          qin_bc_pho (c) = 0._r8
          qin_oc_phi (c) = 0._r8
@@ -432,7 +439,7 @@ contains
       call AerosolFluxes(bounds, num_snowc, filter_snowc, &
            atm2lnd_vars, aerosol_vars)
 
-      ! Adjust layer thickness for any water+ice content changes in excess of previous 
+      ! Adjust layer thickness for any water+ice content changes in excess of previous
       ! layer thickness. Strictly speaking, only necessary for top snow layer, but doing
       ! it for all snow layers will catch problems with older initial files.
       ! Layer interfaces (zi) and node depths (z) do not need adjustment here because they
@@ -469,8 +476,8 @@ contains
       end do
 
 #ifdef MODAL_AER
-    !mgf++ 
-    ! 
+    !mgf++
+    !
     ! Transfer BC and OC from the within-ice state to the external
     ! state based on snow sublimation and re-freezing of liquid water.
     ! Re-freezing effect is inactived by default because of
@@ -529,13 +536,13 @@ contains
     !mgf--
 #endif
 
-    end associate 
+    end associate
 
    end subroutine SnowWater
 
    !-----------------------------------------------------------------------
    subroutine SnowCompaction(bounds, num_snowc, filter_snowc, &
-        temperature_vars, waterstate_vars, top_as_inst)
+         top_as_inst, dtime)
      !
      ! !DESCRIPTION:
      ! Determine the change in snow layer thickness due to compaction and
@@ -547,22 +554,20 @@ contains
      ! fraction after the melting versus before the melting.
      !
      ! !USES:
-     use clm_time_manager, only : get_step_size
+      !$acc routine seq
      use elm_varcon      , only : denice, denh2o, tfrz, rpi, grav, rgas
      use landunit_varcon , only : istice_mec, istdlak, istsoil, istcrop
      use elm_varctl      , only : subgridflag
      !
      ! !ARGUMENTS:
-     type(bounds_type)      , intent(in) :: bounds          
+     type(bounds_type)      , intent(in) :: bounds
      integer                , intent(in) :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in) :: filter_snowc(:) ! column filter for snow points
-     type(temperature_type) , intent(in) :: temperature_vars
-     type(waterstate_type)  , intent(in) :: waterstate_vars
      type(topounit_atmospheric_state), intent(in) :: top_as_inst
+     real(r8), intent(in)  :: dtime
      !
      ! !LOCAL VARIABLES:
      integer :: j, l, c, fc, t                   ! indices
-     real(r8):: dtime                            ! land model time step (sec)
      ! parameters
      real(r8), parameter :: c2 = 23.e-3_r8       ! [m3/kg]
      real(r8), parameter :: c3 = 2.777e-6_r8     ! [1/s]
@@ -595,31 +600,26 @@ contains
      real(r8) :: wsum                            ! snowpack total water mass (ice+liquid) [kg/m2]
      real(r8) :: fsno_melt
      !-----------------------------------------------------------------------
-     
-     associate(                                              & 
-          snl          => col_pp%snl                          , & ! Input:  [integer (:)    ] number of snow layers                     
-          n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter                      
-          ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type                             
+
+     associate(                                              &
+          snl          => col_pp%snl                          , & ! Input:  [integer (:)    ] number of snow layers
+          n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter
+          ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type
 
           forc_wind    => top_as_inst%windbot                 , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
-
-          t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
+          t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)
           imelt        => col_ef%imelt       , & ! Input:  [integer (:,:)  ] flag for melting (=1), freezing (=2), Not=0
 
-          snow_depth   => col_ws%snow_depth   , & ! Input:  [real(r8) (:)   ] snow height (m)                         
-          frac_sno     => col_ws%frac_sno_eff , & ! Input:  [real(r8) (:)   ] snow covered fraction                    
-          swe_old      => col_ws%swe_old      , & ! Input:  [real(r8) (:,:) ] initial swe values                     
-          int_snow     => col_ws%int_snow     , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
+          snow_depth   => col_ws%snow_depth   , & ! Input:  [real(r8) (:)   ] snow height (m)
+          frac_sno     => col_ws%frac_sno_eff , & ! Input:  [real(r8) (:)   ] snow covered fraction
+          swe_old      => col_ws%swe_old      , & ! Input:  [real(r8) (:,:) ] initial swe values
+          int_snow     => col_ws%int_snow     , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]
           frac_iceold  => col_ws%frac_iceold  , & ! Input:  [real(r8) (:,:) ] fraction of ice relative to the tot water
           h2osoi_ice   => col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq   => col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
           snw_rds      => col_ws%snw_rds      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
           dz           => col_pp%dz                             & ! Output: [real(r8) (: ,:) ] layer depth (m)                        
           )
-
-       ! Get time step
-
-       dtime = get_step_size()
 
        ! Begin calculation - note that the following column loops are only invoked if snl(c) < 0
 
@@ -768,7 +768,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine CombineSnowLayers(bounds, num_snowc, filter_snowc, &
-        aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
+        aerosol_vars, dtime)
      !
      ! !DESCRIPTION:
      ! Combine snow layers that are less than a minimum thickness or mass
@@ -777,19 +777,17 @@ contains
      ! clm\_combo.f90 then executes the combination of mass and energy.
      !
      ! !USES:
+      !$acc routine seq
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
-     use clm_time_manager , only : get_step_size
-     use elm_varcon       , only : denh2o     
+     use elm_varcon       , only : denh2o
      !
      ! !ARGUMENTS:
-     type(bounds_type)      , intent(in)    :: bounds          
+     type(bounds_type)      , intent(in)    :: bounds
      integer                , intent(inout) :: num_snowc       ! number of column snow points in column filter
      integer                , intent(inout) :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(temperature_type) , intent(inout) :: temperature_vars
-     type(waterflux_type)   , intent(inout) :: waterflux_vars
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
+     real(r8), intent(in)  :: dtime
      !
      ! !LOCAL VARIABLES:
      integer :: c, fc                            ! column indices
@@ -804,17 +802,16 @@ contains
      real(r8):: dzmin(5)                         ! minimum of top snow layer
      real(r8):: dzminloc(5)                ! minimum of top snow layer (local)
      real(r8):: dzminloc16(16)             ! minimum of top snow layer (local)
-     real(r8):: dtime                            !land model time step (sec)
 
      data dzmin /0.010_r8, 0.015_r8, 0.025_r8, 0.055_r8, 0.115_r8/
 
      !-----------------------------------------------------------------------
 
-     associate(                                                     & 
-          ltype            => lun_pp%itype                           , & ! Input:  [integer  (:)   ] landunit type                             
-          urbpoi           => lun_pp%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
+     associate(                                                     &
+          ltype            => lun_pp%itype                           , & ! Input:  [integer  (:)   ] landunit type
+          urbpoi           => lun_pp%urbpoi                          , & ! Input:  [logical  (:)   ] true => landunit is an urban point
 
-          t_soisno         => col_es%t_soisno       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
+          t_soisno         => col_es%t_soisno       , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)
 
           mss_bcphi        => aerosol_vars%mss_bcphi_col          , & ! Output: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
           mss_bcpho        => aerosol_vars%mss_bcpho_col          , & ! Output: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]
@@ -827,26 +824,23 @@ contains
 
           frac_sno         => col_ws%frac_sno        , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
           frac_sno_eff     => col_ws%frac_sno_eff    , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-          snow_depth       => col_ws%snow_depth      , & ! Input:  [real(r8) (:)   ] snow height (m)                          
-          int_snow         => col_ws%int_snow        , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]                 
-          h2osno           => col_ws%h2osno          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)                      
-          h2osoi_ice       => col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
-          h2osoi_liq       => col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
+          snow_depth       => col_ws%snow_depth      , & ! Input:  [real(r8) (:)   ] snow height (m)
+          int_snow         => col_ws%int_snow        , & ! Input:  [real(r8) (:)   ] integrated snowfall [mm]
+          h2osno           => col_ws%h2osno          , & ! Output: [real(r8) (:)   ] snow water (mm H2O)
+          h2osoi_ice       => col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
+          h2osoi_liq       => col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           snw_rds          => col_ws%snw_rds         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
           mflx_snowlyr_col => col_wf%mflx_snowlyr     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
           qflx_sl_top_soil => col_wf%qflx_sl_top_soil , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_snow2topsoi => col_wf%qflx_snow2topsoi , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
 
-          snl              => col_pp%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
-          dz               => col_pp%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
-          zi               => col_pp%zi                              , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
-          z                => col_pp%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
+          snl              => col_pp%snl                             , & ! Output: [integer  (:)   ] number of snow layers
+          dz               => col_pp%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)
+          zi               => col_pp%zi                              , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)
+          z                => col_pp%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)
           )
 
-       ! Determine model time step
-
-       dtime = get_step_size()
 
        ! Check the mass of ice lens of snow, when the total is less than a small value,
        ! combine it with the underlying neighbor.
@@ -878,7 +872,7 @@ contains
 
           msn_old(c) = snl(c)
           qflx_sl_top_soil(c) = 0._r8
-          qflx_snow2topsoi(c) = 0._r8          
+          qflx_snow2topsoi(c) = 0._r8
           mflx_snowlyr_col(c) = 0._r8
        end do
 
@@ -902,9 +896,9 @@ contains
                    if (j /= 0) dz(c,j+1) = dz(c,j+1) + dz(c,j)
 
                    ! NOTE: Temperature, and similarly snw_rds, of the
-                   ! underlying snow layer are NOT adjusted in this case. 
-                   ! Because the layer being eliminated has a small mass, 
-                   ! this should not make a large difference, but it 
+                   ! underlying snow layer are NOT adjusted in this case.
+                   ! Because the layer being eliminated has a small mass,
+                   ! this should not make a large difference, but it
                    ! would be more thorough to do so.
                    if (j /= 0) then
                       mss_bcphi(c,j+1) = mss_bcphi(c,j+1)  + mss_bcphi(c,j)
@@ -938,7 +932,7 @@ contains
                 if (j > snl(c)+1 .and. snl(c) < -1) then
                    do i = j, snl(c)+2, -1
                       ! If the layer closest to the surface is less than 0.1 mm and the ltype is not
-                      ! urban, soil or crop, the h2osoi_liq and h2osoi_ice associated with this layer is sent 
+                      ! urban, soil or crop, the h2osoi_liq and h2osoi_ice associated with this layer is sent
                       ! to qflx_qrgwl later on in the code.  To keep track of this for the snow balance
                       ! error check, we add this to qflx_sl_top_soil here
                       if (ltype(l) /= istsoil .and. ltype(l) /= istcrop .and. .not. urbpoi(l) .and. i == 0) then
@@ -958,7 +952,6 @@ contains
                       mss_dst3(c,i)    = mss_dst3(c,i-1)
                       mss_dst4(c,i)    = mss_dst4(c,i-1)
                       snw_rds(c,i)     = snw_rds(c,i-1)
-
                       dz(c,i)         = dz(c,i-1)
                    end do
                 end if
@@ -1015,13 +1008,13 @@ contains
                 if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                    h2osoi_liq(c,0) = 0.0_r8
                    h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
-                   qflx_snow2topsoi(c) = zwliq(c)/dtime                   
+                   qflx_snow2topsoi(c) = zwliq(c)/dtime
                    mflx_snowlyr_col(c) = mflx_snowlyr_col(c) + zwliq(c)/dtime
                 end if
-                if (ltype(l) == istwet) then             
+                if (ltype(l) == istwet) then
                    h2osoi_liq(c,0) = 0.0_r8
                 endif
-                if (ltype(l) == istice .or. ltype(l)==istice_mec) then             
+                if (ltype(l) == istice .or. ltype(l)==istice_mec) then
                    h2osoi_liq(c,0) = 0.0_r8
                 endif
              endif
@@ -1088,6 +1081,7 @@ contains
                    mss_dst4(c,j)=mss_dst4(c,j)+mss_dst4(c,l)
 
                    ! mass-weighted combination of effective grain size:
+
                    snw_rds(c,j) = (snw_rds(c,j)*(h2osoi_liq(c,j)+h2osoi_ice(c,j)) + &
                         snw_rds(c,l)*(h2osoi_liq(c,l)+h2osoi_ice(c,l))) / &
                         (h2osoi_liq(c,j)+h2osoi_ice(c,j)+h2osoi_liq(c,l)+h2osoi_ice(c,l))
@@ -1145,27 +1139,26 @@ contains
           end do
        end do
 
-    end associate 
+    end associate
    end subroutine CombineSnowLayers
 
    !-----------------------------------------------------------------------
    subroutine DivideSnowLayers(bounds, num_snowc, filter_snowc, &
-        aerosol_vars, temperature_vars, waterstate_vars, is_lake)
+        aerosol_vars, is_lake)
      !
      ! !DESCRIPTION:
      ! Subdivides snow layers if they exceed their prescribed maximum thickness.
      !
      ! !USES:
-     use elm_varcon,  only : tfrz 
+      !$acc routine seq
+     use elm_varcon,  only : tfrz
      use LakeCon   ,  only : lsadz
      !
      ! !ARGUMENTS:
-     type(bounds_type)      , intent(in)    :: bounds          
+     type(bounds_type)      , intent(in)    :: bounds
      integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(temperature_type) , intent(inout) :: temperature_vars
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
      logical                , intent(in)    :: is_lake  !TODO - this should be examined and removed in the future
      !
      ! !LOCAL VARIABLES:
@@ -1204,12 +1197,12 @@ contains
      real(r8) :: snwliqtot(bounds%begc:bounds%endc)
      real(r8) :: offset ! temporary
      !-----------------------------------------------------------------------
-     
-     associate(                                            & 
-          t_soisno   => col_es%t_soisno    , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)              
 
-          h2osoi_ice => col_ws%h2osoi_ice   , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
-          h2osoi_liq => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
+     associate(                                            &
+          t_soisno   => col_es%t_soisno    , & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)
+
+          h2osoi_ice => col_ws%h2osoi_ice   , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
+          h2osoi_liq => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           frac_sno   => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
           snw_rds    => col_ws%snw_rds      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
@@ -1222,10 +1215,10 @@ contains
           mss_dst3   => aerosol_vars%mss_dst3_col        , & ! Output: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
           mss_dst4   => aerosol_vars%mss_dst4_col        , & ! Output: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
 
-          snl        => col_pp%snl                          , & ! Output: [integer  (:)   ] number of snow layers                     
-          dz         => col_pp%dz                           , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
-          zi         => col_pp%zi                           , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)  
-          z          => col_pp%z                              & ! Output: [real(r8) (:,:) ] layer thickness (m)                   
+          snl        => col_pp%snl                          , & ! Output: [integer  (:)   ] number of snow layers
+          dz         => col_pp%dz                           , & ! Output: [real(r8) (:,:) ] layer depth (m)
+          zi         => col_pp%zi                           , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)
+          z          => col_pp%z                              & ! Output: [real(r8) (:,:) ] layer thickness (m)
           )
 
        if ( is_lake ) then
@@ -1233,13 +1226,13 @@ contains
           do j = -nlevsno+1,0
              do fc = 1, num_snowc
                 c = filter_snowc(fc)
-                
+
                 if (j == -nlevsno+1) then
                    dztot(c) = 0._r8
                    snwicetot(c) = 0._r8
                    snwliqtot(c) = 0._r8
                 end if
-                
+
                 if (j >= snl(c)+1) then
                    dztot(c) = dztot(c) + dz(c,j)
                    snwicetot(c) = snwicetot(c) + h2osoi_ice(c,j)
@@ -1498,9 +1491,11 @@ contains
               !mgf++ bugfix
               rds(c,3) = (rds(c,3)*(swliq(c,3)+swice(c,3)) + rds(c,2)*(zwliq+zwice))/(swliq(c,3)+swice(c,3)+zwliq+zwice)
                 if ((rds(c,3) < 30.) .or. (rds(c,3) > 1500.)) then
+#ifndef _OPENACC
                    write (iulog,*) "3. SNICAR ERROR: snow grain radius of",rds(c,3),rds(c,2)
                    write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,3), swice(c,3),zwliq, zwice
                    write (iulog,*) "layers ", msno
+#endif
                 endif
               !mgf--
 #else
@@ -1814,7 +1809,7 @@ contains
    
    !-----------------------------------------------------------------------
    subroutine DivideExtraSnowLayers(bounds, num_snowc, filter_snowc, &
-        aerosol_vars, temperature_vars, waterstate_vars, is_lake)
+        aerosol_vars,  is_lake)
      !
      ! !DESCRIPTION:
      ! Subdivides up to 16 snow layers if they exceed their prescribed maximum thickness.
@@ -1829,8 +1824,6 @@ contains
      integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(temperature_type) , intent(inout) :: temperature_vars
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
      logical                , intent(in)    :: is_lake  !TODO - this should be examined and removed in the future
      !
      ! !LOCAL VARIABLES:
@@ -2097,7 +2090,6 @@ contains
                 mss_dst3(c,j)    = mdst3(c,j-snl(c))
                 mss_dst4(c,j)    = mdst4(c,j-snl(c))
                 snw_rds(c,j)     = rds(c,j-snl(c))
-
              end if
           end do
        end do
@@ -2117,9 +2109,11 @@ contains
                 if (j == 0) then
                    if ( abs(dztot(c)) > 1.e-10_r8 .or. abs(snwicetot(c)) > 1.e-7_r8 .or. &
                         abs(snwliqtot(c)) > 1.e-7_r8 ) then
+#ifndef _OPENACC
                       write(iulog,*)'Inconsistency in SnowDivision_Lake! c, remainders', &
                            'dztot, snwicetot, snwliqtot = ',c,dztot(c),snwicetot(c),snwliqtot(c)
                       call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+#endif
                    end if
                 end if
              end do
@@ -2244,7 +2238,7 @@ contains
    
    !-----------------------------------------------------------------------
    subroutine SnowCapping(bounds, num_nolakec, filter_initc, num_snowc, filter_snowc, &
-        aerosol_vars, waterflux_vars, waterstate_vars )
+        aerosol_vars  )
      ! from CLM (clm4_5_12_r190)
      ! !DESCRIPTION:
      ! Removes mass from bottom snow layer for columns that exceed the maximum snow depth.
@@ -2254,8 +2248,6 @@ contains
      ! Density and temperature of the layer are conserved (density needs some work, temperature is a state
      ! variable)
      !
-     ! !USES:
-     use clm_time_manager   , only : get_step_size
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
@@ -2264,8 +2256,6 @@ contains
      integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(waterflux_type)   , intent(inout) :: waterflux_vars 
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
      !
      ! !LOCAL VARIABLES:
      real(r8)   :: dtime                            ! land model time step (sec)
@@ -2298,8 +2288,7 @@ contains
      )
 
      ! Determine model time step
-     dtime = get_step_size()
-
+     dtime = dtime_mod 
      ! Initialize capping fluxes for all columns in domain (lake or non-lake)
      do fc = 1, num_nolakec
         c = filter_initc(fc)
@@ -2507,6 +2496,7 @@ contains
      ! that of the combined element.
      !
      ! !USES:
+      !$acc routine seq
      use elm_varcon,  only : cpice, cpliq, tfrz, hfus
      !
      ! !ARGUMENTS:
@@ -2582,7 +2572,8 @@ contains
      ! !USES:
      !
      ! !ARGUMENTS:
-     type(bounds_type) , intent(in)  :: bounds            
+      !$acc routine seq
+     type(bounds_type) , intent(in)  :: bounds
      integer           , intent(in)  :: num_nolakec       ! number of column non-lake points in column filter
      integer           , intent(in)  :: filter_nolakec(:) ! column filter for non-lake points
      integer           , intent(out) :: num_snowc         ! number of column snow points in column filter

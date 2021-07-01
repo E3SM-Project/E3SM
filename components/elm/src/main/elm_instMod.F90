@@ -1,6 +1,6 @@
 module elm_instMod
   !-----------------------------------------------------------------------
-  ! initialize clm data types
+  ! initialize elm data types
   !
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
@@ -34,11 +34,11 @@ module elm_instMod
   use SoilStateType              , only : soilstate_type
   use SolarAbsorbedType          , only : solarabs_type
   use SurfaceRadiationMod        , only : surfrad_type
-  use SurfaceAlbedoMod           , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
+  use SurfaceAlbedoType          , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
   use SurfaceAlbedoType          , only : surfalb_type
-  use TemperatureType            , only : temperature_type
-  use WaterfluxType              , only : waterflux_type
-  use WaterstateType             , only : waterstate_type
+  use TemperatureType            , only : temperature_type, temperature_vars
+  use WaterfluxType              , only : waterflux_type,   waterflux_vars
+  use WaterstateType             , only : waterstate_type, waterstate_vars
   use VOCEmissionMod             , only : vocemis_type
   use atm2lndType                , only : atm2lnd_type
   use lnd2atmType                , only : lnd2atm_type
@@ -78,6 +78,7 @@ module elm_instMod
 
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars
+  use controlMod                 , only : nlfilename
 
 
   !
@@ -116,9 +117,6 @@ module elm_instMod
   type(solarabs_type)                                 :: solarabs_vars
   type(surfalb_type)                                  :: surfalb_vars
   type(surfrad_type)                                  :: surfrad_vars
-  type(temperature_type)                              :: temperature_vars
-  type(waterflux_type)                                :: waterflux_vars
-  type(waterstate_type)                               :: waterstate_vars
   type(atm2lnd_type)                                  :: atm2lnd_vars
   type(glc2lnd_type)                                  :: glc2lnd_vars
   type(lnd2atm_type)                                  :: lnd2atm_vars
@@ -173,7 +171,7 @@ contains
 
        call grc_cs%Init(begg, endg, carbon_type='c12')
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
-       
+
        if (use_c13) then
           call c13_grc_cs%Init(begg, endg,carbon_type='c13')
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
@@ -191,7 +189,7 @@ contains
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
-       
+
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
@@ -206,7 +204,7 @@ contains
 
        call grc_nf%Init(begg, endg)
        call col_nf%Init(begc, endc)
-       
+
        call grc_ps%Init(begg, endg)
        call col_ps%Init(begc, endc, col_cs)
 
@@ -223,7 +221,7 @@ contains
 
        call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
        call veg_cf%Init(begp, endp, carbon_type='c12')
-       
+
 
        if (use_c13) then
           call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
@@ -237,19 +235,19 @@ contains
 
        call veg_ns%Init(begp, endp, veg_cs)
        call veg_nf%Init(begp, endp)
-       
+
        call veg_ps%Init(begp, endp, veg_cs)
        call veg_pf%Init(begp, endp)
 
        call crop_vars%Init(bounds_proc)
-      
+
     end if
-    
+
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
        call alm_fates%Init(bounds_proc)
     end if
-       
+
     call hist_printflds()
 
   end subroutine elm_inst_biogeochem
@@ -331,7 +329,7 @@ contains
            ! a small amount of snow in places that are likely to be snow-covered for much or
            ! all of the year.
            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
-              ! land ice (including multiple elevation classes, i.e. glacier_mec) 
+              ! land ice (including multiple elevation classes, i.e. glacier_mec)
               h2osno_col(c) = 50._r8
            else if (lun_pp%itype(l)==istsoil .and. grc_pp%latdeg(g) >= 44._r8) then
               ! Northern hemisphere seasonal snow
@@ -395,7 +393,7 @@ contains
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
-    
+
     call canopystate_vars%init(bounds_proc)
 
     call soilstate_vars%init(bounds_proc)
@@ -477,4 +475,3 @@ contains
 
 
 end module elm_instMod
-
