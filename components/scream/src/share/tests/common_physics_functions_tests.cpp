@@ -98,7 +98,6 @@ void run(std::mt19937_64& engine)
   view_1d temperature("temperature",num_mid_packs),
           height("height",num_mid_packs),
           qv("qv",num_mid_packs),
-          rand_int("rand_int",num_mid_packs),
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
           dz_for_testing("dz_for_testing",num_mid_packs),
@@ -144,7 +143,6 @@ void run(std::mt19937_64& engine)
   ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
   ekat::genRandArray(dview_as_real(height),          engine,pdf_height);
   ekat::genRandArray(dview_as_real(qv),              engine,pdf_qv);
-  ekat::genRandArray(dview_as_real(rand_int),        engine,pdf_rand_int);
   ekat::genRandArray(dview_as_real(pressure),        engine,pdf_pres);
   ekat::genRandArray(dview_as_real(pseudo_density),  engine,pdf_dp);
   ekat::genRandArray(dview_as_real(mmr_for_testing), engine,pdf_mmr);
