@@ -997,6 +997,47 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="wsl" COMPILER="gnu">
+  <CFLAGS>
+  </CFLAGS>
+  <CMAKE_OPTS>
+  </CMAKE_OPTS>
+  <CPPDEFS>
+  </CPPDEFS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <FC_AUTO_R8>
+     <base> -fdefault-real-8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
+           so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
+     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
+  </FFLAGS>
+  <FIXEDFLAGS>
+    <base>  -ffixed-form </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -ffree-form </base>
+  </FREEFLAGS>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH></PNETCDF_PATH>
+  <LAPACK_LIBDIR>$ENV{BLASLAPACK_LIBDIR}</LAPACK_LIBDIR>
+  <LDFLAGS>
+  </LDFLAGS>
+  <SLIBS>
+    <append> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
+    <append> -L$LAPACK_LIBDIR -lblas -llapack </append>	
+  </SLIBS>
+  <MPICC>mpicc</MPICC>
+  <MPICXX>mpic++</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <SCC>gcc</SCC>
+  <SCXX>g++</SCXX>
+  <SFC>gfortran</SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler MACH="cades" COMPILER="gnu">
   <CXX_LINKER>CXX</CXX_LINKER> <!-- for PIO2, it must be CXX; for PIO1, it shall be FORTRAN -->
   <FC_AUTO_R8>
