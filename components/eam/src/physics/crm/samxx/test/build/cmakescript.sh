@@ -64,7 +64,7 @@ else
   NCRMS2D=$NCRMS_FILE
 fi
 
-DEFS2D=" -DNCRMS=$NCRMS2D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE -DHAVE_MPI"
+DEFS2D=" -DNCRMS=$NCRMS2D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE"
 printf "2D Defs: $DEFS2D\n\n"
 
 
@@ -96,7 +96,7 @@ else
   NCRMS3D=$NCRMS_FILE
 fi
 
-DEFS3D=" -DNCRMS=$NCRMS3D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE -DHAVE_MPI"
+DEFS3D=" -DNCRMS=$NCRMS3D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE"
 printf "3D Defs: $DEFS3D\n\n"
 
 
@@ -135,36 +135,20 @@ printf "NetCDF Flags: $NCFLAGS\n\n"
 ############################################################################
 ## RUN THE CONFIGURE
 ############################################################################
-FFLAGS="$FFLAGS -I$NCHOME/include -I$NFHOME/include"
-CXXFLAGS="$CXXFLAGS -I$NCHOME/include -I$NFHOME/include"
-CUDAFLAGS="$CUDAFLAGS ${CUDA_ARCH}"
+unset CXXFLAGS
+unset CUDAFLAGS
 
 printf "FFLAGS: $FFLAGS\n\n"
-printf "CXXFLAGS: $CXXFLAGS\n\n"
-printf "CUDAFLAGS: $CUDAFLAGS\n\n"
 
-echo cmake                          \
-  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
-  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
-  -DNCFLAGS="$NCFLAGS"              \
-  -DDEFS2D="$DEFS2D"                \
-  -DDEFS3D="$DEFS3D"                \
-  -DCUDA_FLAGS="$CUDAFLAGS"         \
-  -DYAKL_HOME=${YAKL_HOME}          \
-  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
-  -DARCH="${ARCH}"                  \
-  ..
-
-cmake                               \
-  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
-  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
-  -DNCFLAGS="$NCFLAGS"              \
-  -DDEFS2D="$DEFS2D"                \
-  -DDEFS3D="$DEFS3D"                \
-  -DCUDA_FLAGS="$CUDAFLAGS"         \
-  -DYAKL_HOME=${YAKL_HOME}          \
-  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
-  -DARCH="${ARCH}"                  \
+cmake                                    \
+  -DCMAKE_Fortran_FLAGS="${FFLAGS} -I$NCHOME/include -I$NFHOME/include"    \
+  -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS} -I$NCHOME/include -I$NFHOME/include" \
+  -DNCFLAGS="$NCFLAGS"                   \
+  -DDEFS2D="$DEFS2D"                     \
+  -DDEFS3D="$DEFS3D"                     \
+  -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}" \
+  -DYAKL_HOME=${YAKL_HOME}               \
+  -DYAKL_ARCH="${YAKL_ARCH}"             \
   ..
 
 
