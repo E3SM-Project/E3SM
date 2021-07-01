@@ -9,7 +9,7 @@ file(GLOB SAMXX_SRC ${CXX_SRC} ${F90_SRC})
 
 # samxx will be a static library
 add_library(samxx STATIC ${SAMXX_SRC})
-if ("${YAKL_ARCH}" STREQUAL "CUDA")
+if (${USE_CUDA})
   # samxx will be CUDA-linked with device symbols resolved at library creation
   set_target_properties(samxx PROPERTIES LINKER_LANGUAGE CUDA CUDA_SEPARABLE_COMPILATION OFF CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
