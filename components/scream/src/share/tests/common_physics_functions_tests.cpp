@@ -136,6 +136,10 @@ void run(std::mt19937_64& engine)
        pdf_surface(100.0,400.0),
        pdf_mmr(0,0.99);
 
+  //contruct random integers
+  using IPDF = std::uniform_int_distribution<int>;
+  IPDF pdf_rand_int(1,100);
+
   ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
   ekat::genRandArray(dview_as_real(height),          engine,pdf_height);
   ekat::genRandArray(dview_as_real(qv),              engine,pdf_qv);
@@ -158,20 +162,21 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0;
   RealType surf_height;
 
   // calculate density property tests:
   //  - calculate_density(pseudo_density=zero) should return 0.0
   //  - density using ideal gas law should match the calculated density.
-  dz0 = pdf_dz(engine);
-  p   = pdf_pres(engine);
-  dp0 = pdf_dp(engine);
-  T0  = pdf_temp(engine);
-  qv0 = pdf_qv(engine);
-  Tv0 = PF::calculate_virtual_temperature(T0,qv0);
-  dz0 = PF::calculate_dz(dp0,p,T0,qv0);
+  dz0  = pdf_dz(engine);
+  p    = pdf_pres(engine);
+  dp0  = pdf_dp(engine);
+  T0   = pdf_temp(engine);
+  qv0  = pdf_qv(engine);
+  Tv0  = PF::calculate_virtual_temperature(T0,qv0);
+  dz0  = PF::calculate_dz(dp0,p,T0,qv0);
   rho0 = p / Tv0 / Rd;  // Ideal gas law
+  rand_int0 = pdf_rand_int(engine);//random integers
 
   REQUIRE( Check::equal(PF::calculate_density(zero,dz0),zero) );
   REQUIRE( Check::approx_equal(PF::calculate_density(dp0,dz0),rho0,test_tol) );
@@ -238,7 +243,17 @@ void run(std::mt19937_64& engine)
   qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
-  // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be equal to wetmmr0
+  // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
+  //            equal to wetmmr0
+
+  // mmr_test4: [to test mathematical properties of the function]
+  //            Compute drymmr from wetmmr0 and then use the result to
+  //            compute wetmmr. "qv" should be in the form of 2^k+1 (1 is added as we have [1-qv] in the numerator or
+  //            denominator of this function), so that the results of wet->dry->wet are exactly
+  //            the same as the initial input mmr(wetmmr0). This is a mathematical property test, so unphysical invalid qv
+  //            values are also acceptable
+  //
+  //            *WARNING* This test might fail if a check is added to this function to accept only valid values for qv0
 
   REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
   REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
@@ -246,7 +261,13 @@ void run(std::mt19937_64& engine)
   //mmr_test3
   tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
   tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0);//convert it back to wetmmr0
-  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be equal to tmp
+  REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
+
+  //mmr_test4
+  ScalarT qv0_2k_m1 = pow(2,rand_int0)+1; // 2^rand_int+1
+  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0_2k_m1);//get drymmr from wetmmr0
+  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0_2k_m1);//convert it back to wetmmr0
+  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be exactly equal to tmp
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
