@@ -560,8 +560,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: norm_rand                     ! normally distributed random number - Box-Muller (1958)
    real(crm_rknd) :: crm_rotation_std              ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset           ! offset to specify preferred rotation direction 
-   real(crm_rknd), dimension(pcols) :: crm_angle   ! local copy of CRM orientation angle
-   real(crm_rknd), pointer :: crm_angle_ptr(:)     ! CRM orientation angle in pbuf
+   real(crm_rknd), pointer :: crm_angle(:)         ! CRM orientation angle (pbuf)
 
    ! surface flux variables for using adjusted fluxes from flux_avg_run
    real(crm_rknd), pointer, dimension(:) :: shf_ptr
@@ -661,18 +660,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
+
+   call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
+
    if (MMF_orientation_angle==-1) then
 
       crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
       crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
 
+      if (is_first_step()) crm_angle(1:ncol) = 0
+
       ! Rotate the CRM using a random walk
       if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
-         if (.not. is_first_step()) then
-            ! get current crm angle from pbuf, except on first step
-            call pbuf_get_field(pbuf, crm_angle_idx, crm_angle_ptr)
-            crm_angle(:pcols) = crm_angle_ptr(:pcols)
-         end if
          do i = 1,ncol
             ! set the seed based on the chunk and column index (duplicate seeds are ok)
             call RNG_MT_set_seed( lchnk + i + nstep )
@@ -686,14 +685,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             if ( crm_angle(i).lt. 0.   ) crm_angle(i) = crm_angle(i) + pi*2
             if ( crm_angle(i).gt.(pi*2)) crm_angle(i) = crm_angle(i) - pi*2
          end do ! i
-         ! write current crm_angle to pbuf
-         call pbuf_set_field(pbuf, crm_angle_idx, crm_angle)
       end if
 
    else
 
-      ! use static CRM orientation (no rotation)
-      crm_angle(:ncol) = MMF_orientation_angle
+      ! use static CRM orientation (no rotation) - only set pbuf values once
+      if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle
 
    end if
 
@@ -845,9 +842,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          call pbuf_set_field(pbuf, pbuf_get_index('TK_CRM'), 0.0_r8 )
       end if 
 #endif
-
-      ! only need to do this once when crm_angle is static
-      call pbuf_set_field(pbuf, crm_angle_idx, crm_angle)
 
       ! Set clear air RH to zero on first step
       call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
