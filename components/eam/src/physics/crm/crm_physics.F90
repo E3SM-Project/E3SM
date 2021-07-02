@@ -555,7 +555,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8) :: tmp_rh_cnt                          ! temporary relative humidity count
 
    ! variables for changing CRM orientation
-   real(crm_rknd) :: MMF_orientation_angle
+   real(crm_rknd) :: MMF_orientation_angle         ! CRM orientation [deg] (convert to radians)
    real(crm_rknd) :: unif_rand1, unif_rand2        ! uniform random numbers 
    real(crm_rknd) :: norm_rand                     ! normally distributed random number - Box-Muller (1958)
    real(crm_rknd) :: crm_rotation_std              ! scaling factor for rotation (std dev of rotation angle)
@@ -690,7 +690,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    else
 
       ! use static CRM orientation (no rotation) - only set pbuf values once
-      if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle
+      if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle * pi/180.
 
    end if
 

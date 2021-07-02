@@ -61,7 +61,7 @@ integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arith
                                                        ! 2==> Yes-Average in emissivity.
 
 character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
-real(r8)          :: MMF_orientation_angle= 0.D0       ! CRM acceleration factor
+real(r8)          :: MMF_orientation_angle= 0.D0       ! CRM orientation angle [deg]
 logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
@@ -385,7 +385,7 @@ subroutine phys_ctl_readnl(nlfile)
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
       end if
       ! check value of MMF_orientation_angle
-      if ( MMF_orientation_angle<0 .or. MMF_orientation_angle>(pi*2) ) then
+      if ( MMF_orientation_angle<0 .or. MMF_orientation_angle>(360) ) then
          if ( MMF_orientation_angle/=-1) then
             write(iulog,*)'phys_setopts: illegal value of MMF_orientation_angle:', MMF_orientation_angle
             call endrun('phys_setopts: illegal value of MMF_orientation_angle')
