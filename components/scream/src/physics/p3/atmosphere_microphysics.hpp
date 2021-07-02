@@ -215,11 +215,10 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 2;
+    static constexpr int num_1d_scalar = 1;
     // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 10;
 
-    uview_1d precip_liq_surf;
     uview_1d precip_ice_surf;
     uview_2d inv_exner;
     uview_2d th_atm;
