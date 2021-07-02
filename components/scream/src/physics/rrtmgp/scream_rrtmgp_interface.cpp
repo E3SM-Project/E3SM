@@ -192,33 +192,113 @@ namespace scream {
             // Get problem sizes
             int nbnd = k_dist.get_nband();
             int ngpt = k_dist.get_ngpt();
+            int ngas = gas_concs.get_num_gases();
+
+            // Get daytime indices
+            // TODO: this won't be GPU friendly; need to copy back and forth to host
+            auto dayIndices = int1d("dayIndices", ncol);
+            memset(dayIndices, -1);
+            int nday = 0;
+            for (int icol = 1; icol <= ncol; icol++) {
+                if (mu0(icol) > 0) {
+                    nday++;
+                    dayIndices(nday) = icol;
+                }
+            }
+            if (nday == 0) { 
+                std::cout << "WARNING: no daytime columns found for this chunk!\n";
+                return;
+            }
+
+            // Subset mu0
+            auto mu0_day = real1d("mu0_day", nday);
+            parallel_for(Bounds<1>(nday), YAKL_LAMBDA(int iday) {
+                mu0_day(iday) = mu0(dayIndices(iday));
+            });
+
+            // subset state variables
+            auto p_lay_day = real2d("p_lay_day", nday, nlay);
+            auto t_lay_day = real2d("t_lay_day", nday, nlay);
+            parallel_for(Bounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+                p_lay_day(iday,ilay) = p_lay(dayIndices(iday),ilay);
+                t_lay_day(iday,ilay) = t_lay(dayIndices(iday),ilay);
+            });
+            auto p_lev_day = real2d("p_lev_day", nday, nlay+1);
+            auto t_lev_day = real2d("t_lev_day", nday, nlay+1);
+            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+                p_lev_day(iday,ilev) = p_lev(dayIndices(iday),ilev);
+                t_lev_day(iday,ilev) = t_lev(dayIndices(iday),ilev);
+            });
+
+            // Subset gases
+            auto gas_names = gas_concs.get_gas_names();
+            GasConcs gas_concs_day;
+            gas_concs_day.init(gas_names, nday, nlay);
+            for (int igas = 1; igas <= ngas; igas++) {
+                auto vmr_day = real2d("vmr_day", nday, nlay);
+                auto vmr     = real2d("vmr"    , ncol, nlay);
+                gas_concs.get_vmr(gas_names(igas), vmr);
+                parallel_for(Bounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+                    vmr_day(iday,ilay) = vmr(dayIndices(iday),ilay);
+                });
+                gas_concs_day.set_vmr(gas_names(igas), vmr_day);
+            }
+
+            // Subset cloud optics
+            OpticalProps2str clouds_day;
+            clouds_day.init(k_dist.get_band_lims_wavenumber());
+            clouds_day.alloc_2str(nday, nlay);
+            parallel_for(Bounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
+                clouds_day.tau(iday,ilay,ibnd) = clouds.tau(dayIndices(iday),ilay,ibnd);
+                clouds_day.ssa(iday,ilay,ibnd) = clouds.ssa(dayIndices(iday),ilay,ibnd);
+                clouds_day.g  (iday,ilay,ibnd) = clouds.g  (dayIndices(iday),ilay,ibnd);
+            });
+
+            // RRTMGP assumes surface albedos have a screwy dimension ordering
+            // for some strange reason, so we need to transpose these; also do
+            // daytime subsetting in the same kernel
+            real2d sfc_alb_dir_T("sfc_alb_dir", nbnd, nday);
+            real2d sfc_alb_dif_T("sfc_alb_dif", nbnd, nday);
+            parallel_for(Bounds<2>(nbnd,nday), YAKL_LAMBDA(int ibnd, int icol) {
+                sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(dayIndices(icol),ibnd);
+                sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
+            });
 
             // Allocate space for optical properties
             OpticalProps2str optics;
-            optics.alloc_2str(ncol, nlay, k_dist);
+            optics.alloc_2str(nday, nlay, k_dist);
 
             // Do gas optics
-            real2d toa_flux("toa_flux", ncol, ngpt);
+            real2d toa_flux("toa_flux", nday, ngpt);
             auto p_lay_host = p_lay.createHostCopy();
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
 
-            k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, gas_concs, optics, toa_flux);
+            k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
 
             // Combine gas and cloud optics
-            clouds.delta_scale();
-            clouds.increment(optics);
+            clouds_day.delta_scale();
+            clouds_day.increment(optics);
 
-            // RRTMGP assumes surface albedos have a screwy dimension ordering
-            // for some strange reason, so we need to transpose these
-            real2d sfc_alb_dir_T("sfc_alb_dir", nbnd, ncol);
-            real2d sfc_alb_dif_T("sfc_alb_dif", nbnd, ncol);
-            parallel_for(Bounds<2>(nbnd,ncol), YAKL_LAMBDA(int ibnd, int icol) {
-                sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(icol,ibnd);
-                sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(icol,ibnd);
+            // Compute fluxes on daytime columns
+            auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
+            auto flux_dn_day = real2d("flux_dn_day", nday, nlay+1);
+            auto flux_dn_dir_day = real2d("flux_dn_dir_day", nday, nlay+1);
+            FluxesBroadband fluxes_day;
+            fluxes_day.flux_up     = flux_up_day; //real2d("flux_up"    , nday,nlay+1);
+            fluxes_day.flux_dn     = flux_dn_day; //real2d("flux_dn"    , nday,nlay+1);
+            fluxes_day.flux_dn_dir = flux_dn_dir_day; //real2d("flux_dn_dir", nday,nlay+1);
+            rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
+            
+            // Expand fluxes to all columns
+            auto &flux_up = fluxes.flux_up;
+            auto &flux_dn = fluxes.flux_dn;
+            auto &flux_dn_dir = fluxes.flux_dn_dir;
+            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+                int icol = dayIndices(iday);
+                flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
+                flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
+                flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
             });
-
-            // Compute fluxes
-            rte_sw(optics, top_at_1, mu0, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes);
         }
 
         void rrtmgp_lw(
