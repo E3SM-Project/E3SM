@@ -2442,14 +2442,14 @@ contains
         !
     ! !LOCAL VARIABLES:
     integer  :: nc
-    integer  :: p,c,g,j,s              ! indices
-    integer  :: fc,fp                  ! soil filter column index
-    integer  :: pf                     ! fates patch index
-    integer  :: nlevsoil_f             ! number of root layers tracked by fates
-    real(r8), allocatable :: tranloss(:)     ! loss due to transpiration (mol / m3 /s)
-    real(r8), allocatable :: aere(:) 
-    real(r8), allocatable :: oxaere(:)     ! (mol / m3 /s)
-    real(r8), allocatable :: rootfr_vr(:) ! Root fraction over depth
+    integer  :: p,c,g,j,s            ! indices
+    integer  :: fc,fp                ! soil filter column index
+    integer  :: pf                   ! fates patch index
+    integer  :: nlevsoil_f           ! number of root layers tracked by fates
+    real(r8) :: tranloss(1:nlevsoi)  ! loss due to transpiration (mol / m3 /s)
+    real(r8) :: aere(1:nlevsoi) 
+    real(r8) :: oxaere(1:nlevsoi)    ! (mol / m3 /s)
+    real(r8) :: rootfr_vr(1:nlevsoi) ! Root fraction over depth
     real(r8) :: aeretran
 
     logical :: is_vegetated ! is this a vegetated patch?
@@ -2540,11 +2540,6 @@ contains
          end do
       end do
 
-      allocate(rootfr_vr(nlevsoi))
-      allocate(tranloss(nlevsoi))
-      allocate(aere(nlevsoi))
-      allocate(oxaere(nlevsoi))
-      
       nc = bounds%clump_index
 
       ! point loop to partition aerenchyma flux into each soil layer
@@ -2616,11 +2611,6 @@ contains
          end do ! p filter
 
       end if ! not lake
-
-      deallocate(tranloss)
-      deallocate(aere)
-      deallocate(oxaere)
-      deallocate(rootfr_vr)
 
     end associate
 

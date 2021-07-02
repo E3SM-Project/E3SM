@@ -110,25 +110,11 @@ module AllocationMod
   integer,  allocatable        :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ELM-BL w/ ECA
 
   real(r8), allocatable,target :: veg_rootc_bigleaf(:,:)        ! column-level fine-root biomas kgc/m3
-  integer,  pointer :: ft_index_bigleaf(:)           ! array holding the pft index of each competitor
+  integer,  pointer :: ft_index_bigleaf(:)                      ! array holding the pft index of each competitor
   real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nh4 demand per competitor per soil layer
   real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
   real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
 
-
-  
-  real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-  real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-  !$acc declare copyin(E_plant_scalar, E_decomp_scalar)
-  real(r8)              :: e_km_nh4 ! temp variable of sum(E/KM) for NH4 competition BGC mode
-  real(r8)              :: e_km_no3 ! temp variable of sum(E/KM) for NO3 competition BGC mode
-  real(r8)              :: e_km_p   ! temp variable of sum(E/KM) for P competition
-  real(r8)              :: e_km_n   ! temp variable of sum(E/KM) for N competition CN mode
-  !$acc declare create(decompmicc)
-  !$acc declare create(e_km_nh4  )
-  !$acc declare create(e_km_no3  )
-  !$acc declare create(e_km_p    )
-  !$acc declare create(e_km_n    )
   !$acc declare copyin(crop_supln)
   !-----------------------------------------------------------------------
 
@@ -1504,13 +1490,16 @@ contains
 
         if(carbonnitrogen_only)then
            do j = 1, nlevdecomp
-              do fc=1,num_soilc
-                 c = filter_soilc(fc)
-                     actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
-              end do
+              actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
            end do
         end if
 
+        if(carbonphosphorus_only)then
+           do j = 1, nlevdecomp
+              actual_immob_vr(c,j) = potential_immob_vr(c,j) * fpi_p_vr(c,j)
+           end do
+        end if
+        
         ! sum up plant N/P uptake at column level and patch level
         ! sum up N fluxes to plant after initial competition
         sminn_to_plant(c) = 0._r8
@@ -1519,16 +1508,15 @@ contains
            sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
            sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
         end do
-
+        
         ! update column plant N/P demand, pft level plant NP uptake for ECA and MIC mode
         eca_filter: if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
 
-         if(carbonphosphorus_only)then
+           plant_ndemand_col(c) = 0._r8
+           plant_pdemand_col(c) = 0._r8
            do j = 1, nlevdecomp
-              do fc=1,num_soilc
-                 c = filter_soilc(fc)
-                     actual_immob_vr(c,j) = potential_immob_vr(c,j) * fpi_p_vr(c,j)
-              end do
+              plant_ndemand_col(c) = plant_ndemand_col(c) + col_plant_ndemand_vr(c,j) * dzsoi_decomp(j)
+              plant_pdemand_col(c) = plant_pdemand_col(c) + col_plant_pdemand_vr(c,j) * dzsoi_decomp(j)
            end do
 
            do j = 1, nlevdecomp
@@ -1573,7 +1561,7 @@ contains
 
      end do col_loop
 
-     ! MOVE THIS TO WITHIN THE PREVIOUS BLOCK AFTER TESTING
+ 
      if ((nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') .and. .not.use_fates) then
         do fp=1,num_soilp
            p = filter_soilp(fp)
@@ -1671,30 +1659,28 @@ contains
            c = filter_soilc(fc)
            s = elm_fates%f2hmap(ci)%hsites(c)
            n_pcomp = elm_fates%fates(ci)%bc_out(s)%num_plant_comps
-         
-         if (nu_com .eq. 'RD') then
 
-            if( plant_ndemand_col(c)>tiny(plant_ndemand_col(c)) ) then
-               
-               do f = 1,n_pcomp
-                  do j = 1,nlevdecomp
+           if (nu_com .eq. 'RD') then
 
-                     
-                     j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                     
-                     elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) = & 
-                          elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) + &
-                          smin_nh4_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
-                          (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
-                     
-                     elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) = & 
-                          elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) + &
-                          smin_no3_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
-                          (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
+              if( plant_ndemand_col(c)>tiny(plant_ndemand_col(c)) ) then
+                 do f = 1,n_pcomp
+                    do j = 1,nlevdecomp
 
-                  end do
-               end do
-            end if
+                       j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
+
+                       elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) = & 
+                            elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) + &
+                            smin_nh4_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
+                            (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
+
+                       elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) = & 
+                            elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) + &
+                            smin_no3_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
+                            (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
+
+                    end do
+                 end do
+              end if
             
             if( plant_pdemand_col(c)>tiny(plant_pdemand_col(c)) ) then
                do f = 1,n_pcomp
@@ -1714,7 +1700,6 @@ contains
             do f = 1,n_pcomp
                do j = 1,nlevdecomp
                   j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
-
                   
                   elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) = & 
                        elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) + & 
