@@ -1167,14 +1167,6 @@ is the value of that variable from the *previous* time level!
                 <var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="thickness of ice added when the config_restore_calving_front option is set to .true. (in order to maintain the calving front at its initial position)"
                 />
-                <var name="contiguousDynamicIce" type="integer" dimensions="nCells Time" units="none" time_levs="1"
-                        description="mask of contiguous dynamic ice determined from flood fill.  Used for finding icebergs."
-                        persistence="persistent"
-                />
-                <var name="contiguousDynamicIceOld" type="integer" dimensions="nCells Time" units="none" time_levs="1"
-                        description="mask from the previous iteration of contiguous dynamic ice as the algorithm advances"
-                        persistence="persistent"
-                />
                 <!-- Variables only needed for calculating diffusivity at cell centers - this is always done now so no package is attached here -->
                 <var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
                      units="m m^{-1}"  description="normal surface slope on edges"
@@ -1522,7 +1514,16 @@ is the value of that variable from the *previous* time level!
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
-               />
+	       />
+       <var name="seedMask" type="integer" dimensions="nCells" units="none"
+	       description="seed mask for flood fill"
+	       persistence="scratch"
+	       />
+       <var name="growMask" type="integer" dimensions="nCells" units="none"
+	       description="grow mask for flood fill"
+	       persistence="scratch"
+	       />
+
 	</var_struct>
 
 <!-- ================ -->
