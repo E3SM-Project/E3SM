@@ -3392,7 +3392,7 @@ module li_calving
       allocate(seedMaskOld(nCells+1))
       seedMaskOld(:) = 0
 
-      call mpas_log_write("Flood-fill: allocated.")
+      !call mpas_log_write("Flood-fill: allocated.")
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! First mark grounded ice to initialize flood fill mask
@@ -3411,14 +3411,14 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-         call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
+         !call mpas_log_write("Flood-fill: updated masks.")
          newMaskCountLocal = sum(seedMask)
-         call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
+         !call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
 
          block => block % next
       end do
 
-      call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
+      !call mpas_log_write("Flood-fill initialization complete.")
 
       ! Outer loop over processors (should also have a loop over blocks)
       ! Inner loop over cells on that processor
@@ -3427,11 +3427,11 @@ module li_calving
       call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocal, newMaskCountGlobal)
       globalLoopCount = 0
 
-      call mpas_log_write("Initialized $i cells to global mask", intArgs=(/newMaskCountGlobal/))
+      call mpas_log_write("Flood fill initialized $i cells to global seedMask", intArgs=(/newMaskCountGlobal/))
 
       do while (newMaskCountGlobal > 0)
          globalLoopCount = globalLoopCount + 1
-         call mpas_log_write("  Starting global processor loop $i", intArgs=(/globalLoopCount/))
+         !call mpas_log_write("  Starting global processor loop $i", intArgs=(/globalLoopCount/))
          ! First Update halos
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'growMask')
@@ -3455,14 +3455,14 @@ module li_calving
             newMaskCountLocal = 1  ! need to make sure we enter the loop
             do while (newMaskCountLocal > 0)
                localLoopCount = localLoopCount + 1
-               call mpas_log_write("    Starting local cell loop $i", intArgs=(/localLoopCount/))
+               !call mpas_log_write("    Starting local cell loop $i", intArgs=(/localLoopCount/))
 
                ! initialize
                newMaskCountLocal = 0
                seedMaskOld(:) = seedMask(:)
 
                do iCell = 1, nCellsSolve ! this gives owned cells only
-                  if ( growMask(iCell)>0 ) then  
+                  if ( growMask(iCell)>0 ) then
                      ! If it has a marked neighbor, then add it to the mask
                      do n = 1, nEdgesOnCell(iCell)
                         jCell = cellsOnCell(n, iCell)
@@ -3478,7 +3478,7 @@ module li_calving
                ! Accumulate cells added locally until we do the next global
                ! reduce
                newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
-               call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
+               !call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
             enddo ! local mask loop
 
             block => block % next
@@ -3493,6 +3493,8 @@ module li_calving
          endif
       end do ! global loop
       deallocate(seedMaskOld)
+
+      call mpas_log_write("Flood fill complete.")
 
    end subroutine flood_fill
 
