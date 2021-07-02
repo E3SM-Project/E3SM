@@ -847,7 +847,7 @@ flags should be captured within MPAS CMake files.
   </CXXFLAGS>
   <FFLAGS>
     <append>-static-intel</append>
-    <append> -march=core-avx2 </append>
+    <append> -axCORE-AVX2 </append>
     <append DEBUG="FALSE">-O3 -qno-opt-dynamic-align</append>
   </FFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
