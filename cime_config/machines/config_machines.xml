@@ -1014,8 +1014,8 @@
     <DESC>ANL/LCRC Linux Cluster</DESC>
     <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,intel18,gnu</COMPILERS>
-    <MPILIBS>mvapich</MPILIBS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>mvapich,impi</MPILIBS>
     <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -1038,11 +1038,14 @@
         <arg name="num_tasks"> -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
         <arg name="binding">--cpu_bind=cores</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="mpi-serial">
-      <executable/>
+    <mpirun mpilib="impi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
+      </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=$MODULEPATH:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
@@ -1053,29 +1056,25 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.14.2-gvwazz3</command>
+        <command name="load">cmake/3.20.3-vedypwm</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/17.0.0-pwabdn2</command>
-        <command name="load">intel-mkl/2017.1.132-6qy7y5f</command>
-        <command name="load">netcdf/4.4.1-tckdgwl</command>
-        <command name="load">netcdf-cxx/4.2-3qkutvv</command>
-        <command name="load">netcdf-fortran/4.4.4-urmb6ss</command>
+        <command name="load">intel/20.0.4-lednsve</command>
+        <command name="load">intel-mkl/2020.4.304-voqlapk</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-verbs-qwuab3b</command>
-        <command name="load">parallel-netcdf/1.11.0-6qz7skn</command>
+        <command name="load">mvapich2/2.3.6-verbs-x4iz7lq</command>
+        <command name="load">netcdf-c/4.4.1-gei7x7w</command>
+        <command name="load">netcdf-cxx/4.2-db2f5or</command>
+        <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
+        <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
       </modules>
-      <modules compiler="intel18">
-        <command name="load">intel/18.0.4-62uvgmb</command>
-        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-        <command name="load">netcdf/4.4.1-fijcsqi</command>
-        <command name="load">netcdf-cxx/4.2-cixenix</command>
-        <command name="load">netcdf-fortran/4.4.4-mmtrep3</command>
-      </modules>
-      <modules compiler="intel18" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-verbs-m57bia7</command>
-        <command name="load">parallel-netcdf/1.11.0-ny4vo3o</command>
+      <modules compiler="intel" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-i42whlw</command>
+        <command name="load">netcdf-c/4.4.1-blyisdg</command>
+        <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
+        <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
+        <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-xhxgy33</command>
@@ -1096,23 +1095,28 @@
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="mvapich">
       <env name="MV2_ENABLE_AFFINITY">0</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
+      <env name="MV2_HOMOGENEOUS_CLUSTER">1</env>
     </environment_variables>
     <environment_variables mpilib="mvapich" DEBUG="TRUE">
       <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
       <env name="MV2_SHOW_ENV_INFO">2</env>
     </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_DEBUG">10</env>
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">unit</env>
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel|intel18">
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=core,scatter</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
