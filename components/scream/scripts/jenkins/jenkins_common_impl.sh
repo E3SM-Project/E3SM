@@ -34,15 +34,17 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   SUBMIT="--submit"
+  AUTOTESTER_CMAKE=""
   if [ -n "$PULLREQUESTNUM" ]; then
       SUBMIT="" # We don't submit AT runs
+      AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
   fi
 
   # The special string "AUTO" makes test-all-scream look for a baseline dir in the machine_specs.py file.
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 
   # Add a valgrind test for mappy for nightlies
   if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
