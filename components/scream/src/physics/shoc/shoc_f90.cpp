@@ -140,6 +140,8 @@ void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
 }
 
 Int shoc_main(FortranData& d, bool use_fortran) {
+  EKAT_REQUIRE_MSG(d.dtime > 0, "Invalid dtime");
+  EKAT_REQUIRE_MSG(d.nadv > 0,  "Invalid nadv");
   if (use_fortran) {
     Real elapsed_s;
     shoc_main_c((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,

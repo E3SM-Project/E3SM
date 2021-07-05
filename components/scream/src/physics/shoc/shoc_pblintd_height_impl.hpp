@@ -61,8 +61,10 @@ void Functions<S,D>::pblintd_height(
                       ekat::square(u(k) - s_u(nlev-1)) +
                       ekat::square(v(k) - s_v(nlev-1)) +
                       fac*(ustar*ustar)));
-    rino(k).set(in_range,
-                ggr*(thv(k) - thv_ref)*(z(k) - s_z(nlev-1))/(s_thv(nlev-1)*vvk));
+    if (in_range.any()) {
+      rino(k).set(in_range,
+                  ggr*(thv(k) - thv_ref)*(z(k) - s_z(nlev-1))/(s_thv(nlev-1)*vvk));
+    }
 
     // Set indices_pack entry to -1 if rino(k)<ricr or
     // if global index is not in [nlev-npbl, nlev-1)

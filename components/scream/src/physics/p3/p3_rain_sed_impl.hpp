@@ -112,7 +112,7 @@ void Functions<S,D>
                                      qr_incld(pk), rhofacr(pk),
                                      nr_incld(pk), mu_r(pk), lamr(pk),
 				     V_qr(pk), V_nr(pk), qr_gt_small);
-	  
+
 	  //in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
 	  //distribution within reasonable bounds by modifying nr_incld.
 	  //The next line maintains consistency between nr_incld and nr
@@ -134,7 +134,7 @@ void Functions<S,D>
 	  qr_incld(pk)=qr(pk)/cld_frac_r(pk);
 	  nr_incld(pk)=nr(pk)/cld_frac_r(pk);
 	});
-      
+
       // AaronDonahue, precip_liq_flux output
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);

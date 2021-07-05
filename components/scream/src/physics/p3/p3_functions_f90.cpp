@@ -533,7 +533,7 @@ CheckValuesData::CheckValuesData(
                    { {&qv, &temp, &col_loc} }),
   kts(kts_), kte(kte_), timestepcount(timestepcount_), source_ind(source_ind_), force_abort(force_abort_)
 {
-  EKAT_REQUIRE_MSG(nk() >= 3 || (kte == 0 && kts == 0), "nk too small to use for col_loc");
+  EKAT_REQUIRE_MSG(nk() >= 3 || (kte == 1 && kts == 1), "nk too small to use for col_loc");
 }
 
 void check_values(CheckValuesData& d)
