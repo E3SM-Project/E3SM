@@ -11,7 +11,6 @@ module mo_gas_phase_chemdr
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
-  use mo_constants,     only : rgrav, rearth
 
   implicit none
   save
@@ -217,7 +216,7 @@ contains
     use seq_drydep_mod,    only : DD_XLND, DD_XATM, DD_TABL, drydep_method
     use mo_fstrat,         only : set_fstrat_vals, set_fstrat_h2o
     use mo_flbc,           only : flbc_set
-    use phys_grid,         only : get_rlat_all_p, get_rlon_all_p, get_lat_all_p, get_lon_all_p, get_area_all_p
+    use phys_grid,         only : get_rlat_all_p, get_rlon_all_p, get_lat_all_p, get_lon_all_p
     use mo_mean_mass,      only : set_mean_mass
     use cam_history,       only : outfld
     use wv_saturation,     only : qsat
@@ -400,8 +399,6 @@ contains
 
     ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget
-    real(r8) :: area(ncol)                     ! grid box area, m2
-    real(r8) :: drymass(ncol,pver)             ! dry air mass of each box, kg
 
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
@@ -774,14 +771,6 @@ contains
 
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
-    ! calculate dry air mass for diagnostics
-    call get_area_all_p(lchnk, ncol, area)
-    area = area * rearth**2
-
-    do k = 1,pver
-       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
-    enddo
-
     call t_stopf('chemdr_init')
 
     if ( history_gaschmbudget ) then
@@ -962,7 +951,7 @@ contains
                 do k = pver, 1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
-                                    *drymass(:ncol,k)/area(:ncol)
+                                    *pdeldry(:ncol,k)*rga
                   j = 0 ! number of columns will double concentration after adding surf. emission
                   do i = 1,ncol
                     if ( cflx(i,m) /= 0._r8 ) then
@@ -974,7 +963,7 @@ contains
                         cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 
@@ -1058,7 +1047,7 @@ contains
                 do k = pver, 1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
-                                    *drymass(:ncol,k)/area(:ncol)
+                                    *pdeldry(:ncol,k)*rga
                   j = 0 ! number of columns w/o enough mass to remove at the current layer
                   do i = 1,ncol
                     if ( sflx2(i,n) /= 0._r8 ) then
@@ -1070,7 +1059,7 @@ contains
                         sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 

@@ -16,7 +16,7 @@ module mo_chm_diags
   implicit none
   private
 
-  public :: chm_diags_inti
+  public :: chm_diags_inti,chm_diags_inti_ac
   public :: chm_diags
   public :: het_diags
   public :: gaschmmass_diags
@@ -305,6 +305,8 @@ contains
              call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after Linoz')
              call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after surface emission')
              call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after dry deposition')
+             call addfld( trim(spc_name)//'_MSBac', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before chem_timestep_tend')
+             call addfld( trim(spc_name)//'_MSac', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after chem_timestep_tend in tphysac')
              call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
              call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
              call addfld( trim(spc_name)//'_TDL', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to Linoz')
@@ -313,6 +315,7 @@ contains
              call addfld( trim(spc_name)//'_TDB', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting lower boundary values')
              call addfld( trim(spc_name)//'_TDS', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to surface emission')
              call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
+             call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
           endif
        endif
 
@@ -331,6 +334,8 @@ contains
                 call add_default( trim(spc_name)//'_MSL', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSS', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSBac', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSac', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDL', 1, ' ' )
@@ -339,6 +344,7 @@ contains
                 call add_default( trim(spc_name)//'_TDB', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDS', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDD', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDO', 1, ' ' )
              endif
           endif
        endif
@@ -394,6 +400,68 @@ contains
     call add_default( 'SCO', 1, ' ' )
 
   end subroutine chm_diags_inti
+
+  subroutine chm_diags_inti_ac
+    !--------------------------------------------------------------------
+    !	... initialize for tphysac
+    !--------------------------------------------------------------------
+
+    implicit none
+
+    integer :: k, m, n
+
+    integer :: id_so4, id_nh4no3
+    integer :: id_dst01, id_dst02, id_dst03, id_dst04, id_sslt01, id_sslt02, id_sslt03, id_sslt04
+    integer :: id_soa,  id_oc1, id_oc2, id_cb1, id_cb2
+    integer :: id_soam,id_soai,id_soat,id_soab,id_soax
+
+    integer :: bulkaero_species(20)
+
+    !-----------------------------------------------------------------------
+
+    id_nh4no3  = get_spc_ndx( 'NH4NO3' )
+
+    id_dst01   = get_spc_ndx( 'DST01' )
+    id_dst02   = get_spc_ndx( 'DST02' )
+    id_dst03   = get_spc_ndx( 'DST03' )
+    id_dst04   = get_spc_ndx( 'DST04' )
+    id_sslt01  = get_spc_ndx( 'SSLT01' )
+    id_sslt02  = get_spc_ndx( 'SSLT02' )
+    id_sslt03  = get_spc_ndx( 'SSLT03' )
+    id_sslt04  = get_spc_ndx( 'SSLT04' )
+    id_soa     = get_spc_ndx( 'SOA' )
+    id_so4     = get_spc_ndx( 'SO4' )
+    id_oc1     = get_spc_ndx( 'OC1' )
+    id_oc2     = get_spc_ndx( 'OC2' )
+    id_cb1     = get_spc_ndx( 'CB1' )
+    id_cb2     = get_spc_ndx( 'CB2' )
+
+    id_soam = get_spc_ndx( 'SOAM' )
+    id_soai = get_spc_ndx( 'SOAI' )
+    id_soat = get_spc_ndx( 'SOAT' )
+    id_soab = get_spc_ndx( 'SOAB' )
+    id_soax = get_spc_ndx( 'SOAX' )
+
+    bulkaero_species(:) = -1
+    bulkaero_species(1:20) = (/ id_dst01, id_dst02, id_dst03, id_dst04, &
+                                id_sslt01, id_sslt02, id_sslt03, id_sslt04, &
+                                id_soa, id_so4, id_oc1, id_oc2, id_cb1, id_cb2, id_nh4no3, &
+                                id_soam,id_soai,id_soat,id_soab,id_soax /)
+
+    aer_species(:) = -1
+    n = 1
+    do m = 1,gas_pcnst
+       k=0
+       if ( any(bulkaero_species(:)==m) ) k=1
+       if ( k==0 ) k = index(trim(solsym(m)), '_a')
+       if ( k==0 ) k = index(trim(solsym(m)), '_c')
+       if ( k>0 ) then ! must be aerosol species
+          aer_species(n) = m
+          n = n+1
+       endif
+    enddo
+
+  end subroutine chm_diags_inti_ac
 
   subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop )
     !--------------------------------------------------------------------
@@ -858,7 +926,6 @@ contains
     !--------------------------------------------------------------------
     
     use cam_history,  only : outfld
-    use phys_grid,    only : get_area_all_p
     use phys_control, only : phys_getopts
     
     implicit none
@@ -880,7 +947,6 @@ contains
     !--------------------------------------------------------------------
     integer  :: i,j,k, m, n
     real(r8) :: wrk(ncol,pver,gas_pcnst)
-    real(r8) :: area(ncol), drymass(ncol,pver)
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
@@ -889,39 +955,21 @@ contains
 
     if ( .not. history_gaschmbudget ) return
 
-    call get_area_all_p(lchnk, ncol, area)
-    area = area * rearth**2
-
-    do k = 1,pver
-       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
-    enddo
-
     do m = 1,gas_pcnst
        
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
           if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
-             do k = 1,pver
-                ! kg/m2
-                wrk(:ncol,k,m) = adv_mass(m)*vmr(:ncol,k,m)/mbar(:ncol,k) &
-                                  *drymass(:ncol,k)/area(:ncol)
-             enddo
+             ! kg/m2
+             wrk(:ncol,:,m) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+                              *pdeldry(:ncol,:)*rgrav
              call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
           else
-             do k = 1,pver
-                ! kg/m2/s
-                wrk(:ncol,k,m) = adv_mass(m)*(vmr(:ncol,k,m)-vmr_old(:ncol,k,m))&
-                  /mbar(:ncol,k)*drymass(:ncol,k)/area(:ncol)*rdelt
-             enddo
+             ! kg/m2/s
+             wrk(:ncol,:,m) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m))&
+               /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
              call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
           endif
        endif
-
-       !do k=1,pver
-       !   do i=1,ncol
-       !      net_chem(i,k) = mmr_tend(i,k,m) * mass(i,k) 
-       !   end do
-       !end do
-       !call outfld( dtchem_name(m), net_chem(:ncol,:), ncol, lchnk )
 
     enddo
 
