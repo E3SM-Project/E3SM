@@ -1,0 +1,209 @@
+	<nml_record name="AM_conservationCheck">
+		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member conservationCheck is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput" units="unitless"
+			description="Name of the stream that the conservationCheck analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value=".false." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value=".false." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if the conservation check is written to the log file."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
+	</packages>
+	<var_struct name="conservationCheckAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="performConservationPrecompute" type="integer" dimensions="" units=""
+			description="" default_value="1"
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckEnergyAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialEnergy" type="real" dimensions="Time" units="J"
+			description="Total initial energy of ice and snow"
+		/>
+		<var name="finalEnergy" type="real" dimensions="Time" units="J"
+			description="Total final energy of ice and snow"
+		/>
+		<var name="energyChange" type="real" dimensions="Time" units="J"
+			description="Total energy change of ice and snow during time step"
+		/>
+		<var name="netEnergyFlux" type="real" dimensions="Time" units="W"
+			description="Net energy flux to ice"
+		/>
+		<var name="absoluteEnergyError" type="real" dimensions="Time" units="J"
+			description="Absolute energy conservation error"
+		/>
+		<var name="relativeEnergyError" type="real" dimensions="Time" units="None"
+			description="Relative energy conservation error"
+		/>
+		<var name="accumulatedLatentHeatFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedSensibleHeatFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedLongWaveHeatFluxUp" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedLongWaveHeatFluxDown" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedShortWaveHeatFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedSeaIceHeatFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedMeltingHeatFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckMassAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialMass" type="real" dimensions="Time" units="kg"
+			description="Total initial mass of ice and snow"
+		/>
+		<var name="finalMass" type="real" dimensions="Time" units="kg"
+			description="Total final mass of ice and snow"
+		/>
+		<var name="massChange" type="real" dimensions="Time" units="kg"
+			description="Total mass change of ice and snow during time step"
+		/>
+		<var name="netMassFlux" type="real" dimensions="Time" units="kg/s"
+			description="Net mass flux to ice"
+		/>
+		<var name="absoluteMassError" type="real" dimensions="Time" units="kg"
+			description="Absolute mass conservation error"
+		/>
+		<var name="relativeMassError" type="real" dimensions="Time" units="None"
+			description="Relative mass conservation error"
+		/>
+		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedSeaIceFreshWaterFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckSaltAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialSalt" type="real" dimensions="Time" units="kg"
+			description="Total initial salt of ice and snow"
+		/>
+		<var name="finalSalt" type="real" dimensions="Time" units="kg"
+			description="Total final salt of ice and snow"
+		/>
+		<var name="saltChange" type="real" dimensions="Time" units="kg"
+			description="Total salt change of ice and snow during time step"
+		/>
+		<var name="netSaltFlux" type="real" dimensions="Time" units="kg/s"
+			description="Net salt flux to ice"
+		/>
+		<var name="absoluteSaltError" type="real" dimensions="Time" units="kg"
+			description="Absolute salt conservation error"
+		/>
+		<var name="relativeSaltError" type="real" dimensions="Time" units="None"
+			description="Relative salt conservation error"
+		/>
+		<var name="accumulatedSeaIceSalinityFlux" type="real" dimensions="Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<streams>
+		<stream name="conservationCheckOutput" type="output"
+				filename_template="analysis_members/conservationCheck.nc"
+				filename_interval="none"
+				output_interval="00-00-00_01:00:00"
+				packages="conservationCheckAMPKG"
+				clobber_mode="replace_files"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="initialEnergy"/>
+			<var name="finalEnergy"/>
+			<var name="energyChange"/>
+			<var name="accumulatedLatentHeatFlux"/>
+			<var name="accumulatedSensibleHeatFlux"/>
+			<var name="accumulatedLongWaveHeatFluxUp"/>
+			<var name="accumulatedLongWaveHeatFluxDown"/>
+			<var name="accumulatedSeaIceHeatFlux"/>
+			<var name="accumulatedShortWaveHeatFlux"/>
+			<var name="accumulatedMeltingHeatFlux"/>
+			<var name="netEnergyFlux"/>
+			<var name="absoluteEnergyError"/>
+			<var name="relativeEnergyError"/>
+			<var name="initialMass"/>
+			<var name="finalMass"/>
+			<var name="massChange"/>
+			<var name="accumulatedEvaporationFlux"/>
+			<var name="accumulatedSnowFlux"/>
+			<var name="accumulatedSeaIceFreshWaterFlux"/>
+			<var name="accumulatedRiverRunoffFlux"/>
+			<var name="accumulatedIceRunoffFlux"/>
+			<var name="accumulatedRainFlux"/>
+			<var name="netMassFlux"/>
+			<var name="absoluteMassError"/>
+			<var name="relativeMassError"/>
+			<var name="initialSalt"/>
+			<var name="finalSalt"/>
+			<var name="saltChange"/>
+			<var name="accumulatedSeaIceSalinityFlux"/>
+			<var name="netSaltFlux"/>
+			<var name="absoluteSaltError"/>
+			<var name="relativeSaltError"/>
+		</stream>
+
+		<stream name="conservationCheckRestart"
+				type="input;output"
+				filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				clobber_mode="replace_files"
+				packages="conservationCheckAMPKG"
+				input_interval="initial_only"
+				output_interval="stream:restart:output_interval"
+				runtime_format="single_file"
+				immutable="true">
+			<var name="performConservationPrecompute"/>
+			<var name="initialEnergy"/>
+			<var name="accumulatedLatentHeatFlux"/>
+			<var name="accumulatedSensibleHeatFlux"/>
+			<var name="accumulatedLongWaveHeatFluxUp"/>
+			<var name="accumulatedLongWaveHeatFluxDown"/>
+			<var name="accumulatedSeaIceHeatFlux"/>
+			<var name="accumulatedShortWaveHeatFlux"/>
+			<var name="accumulatedMeltingHeatFlux"/>
+			<var name="initialMass"/>
+			<var name="accumulatedEvaporationFlux"/>
+			<var name="accumulatedSnowFlux"/>
+			<var name="accumulatedSeaIceFreshWaterFlux"/>
+			<var name="accumulatedRiverRunoffFlux"/>
+			<var name="accumulatedIceRunoffFlux"/>
+			<var name="accumulatedRainFlux"/>
+			<var name="initialSalt"/>
+			<var name="accumulatedSeaIceSalinityFlux"/>
+		</stream>
+	</streams>
