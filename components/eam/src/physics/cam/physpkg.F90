@@ -44,6 +44,10 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use chem_mods,    only : gas_pcnst
+  use mo_tracname,  only : solsym
+  use cam_history,  only : fieldname_len
+  use mo_chm_diags, only : aer_species
 
   implicit none
   private
@@ -68,7 +72,10 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+  integer ::  rice2_idx          = 0
+  integer ::  gas_ac_idx(gas_pcnst)
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
+  character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
 
   save
 
@@ -95,6 +102,7 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
   !======================================================================= 
 contains
@@ -153,6 +161,7 @@ subroutine phys_register
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
+    use mo_chm_diags,       only: chm_diags_inti_ac
 
     !---------------------------Local variables-----------------------------
     !
@@ -161,6 +170,7 @@ subroutine phys_register
     !-----------------------------------------------------------------------
 
     integer :: nmodes
+    character(len=16) :: spc_name
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -172,7 +182,9 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      history_gaschmbudget_out = history_gaschmbudget)
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -197,7 +209,6 @@ subroutine phys_register
     call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
-
 
     ! check energy package
     call check_energy_register
@@ -257,6 +268,23 @@ subroutine phys_register
 
        ! register chemical constituents including aerosols ...
        call chem_register(species_class)
+
+       ! NB: has to be after chem_register to use tracer names
+       ! Fields for gas chemistry tracers
+       if (history_gaschmbudget) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              gas_ac_name(m) = 'ac_'//spc_name
+              call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx(m))
+
+              if (masterproc) then
+                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
+              end if
+            end if
+         enddo
+       end if
 
        ! co2 constituents
        call co2_register()
@@ -1414,6 +1442,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend
+    use cam_history,        only: outfld
 
     implicit none
 
@@ -1442,7 +1471,7 @@ subroutine tphysac (ztodt,   cam_in,  &
 
     integer :: lchnk                                ! chunk identifier
     integer :: ncol                                 ! number of atmospheric columns
-    integer i,k,m                 ! Longitude, level indices
+    integer i,k,m,n                  ! Longitude, level indices
     integer :: yr, mon, day, tod       ! components of a date
     integer :: ixcldice, ixcldliq      ! constituent indices for cloud liquid and ice water.
 
@@ -1458,8 +1487,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
     real(r8) :: tmp_t     (pcols,pver) ! tmp space
     real(r8) :: ftem      (pcols,pver) ! tmp space
+    real(r8) :: Diff      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:,:) :: gas_ac
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1473,6 +1504,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction 
 
     logical :: do_clubb_sgs 
+
+    real(r8) rtdt                              ! 1./ztodt
 
     !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
@@ -1495,6 +1528,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     lchnk = state%lchnk
     ncol  = state%ncol
 
+    rtdt = 1._r8/ztodt
+
     nstep = get_nstep()
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
@@ -1505,6 +1540,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_rayleigh_out         = l_rayleigh         &
                       ,l_gw_drag_out          = l_gw_drag          &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
+                      ,history_gaschmbudget_out = history_gaschmbudget &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
@@ -1601,8 +1637,48 @@ if (l_tracer_aero) then
 
     ! Chemistry calculation
     if (chem_is_active()) then
+       if (history_gaschmbudget) then
+         do m = 1,pcnst
+           n = map2chm(m)
+           if (n > 0 .and. (.not. any( aer_species == n ))) then
+             gas_ac_idx(n) = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx(n), gas_ac )
+             if( nstep == 0 ) then
+                Diff(:ncol,:) = 0.0_r8
+             if (masterproc) then
+               write(iulog,*) 'tphysac1: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+             end if
+
+             else
+                ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+                Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))*rtdt
+             end if
+             call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
+           end if
+         enddo
+       end if
+
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
+       
+       if (history_gaschmbudget) then
+         do m = 1,pcnst
+            n = map2chm(m)
+            if (n > 0 .and. (.not. any( aer_species == n ))) then
+              gas_ac_idx(n) = pbuf_get_index(gas_ac_name(n))
+              call pbuf_get_field(pbuf, gas_ac_idx(n), gas_ac )
+              ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+              call outfld(trim(solsym(n))//'_MSac', ftem, pcols, lchnk )
+              gas_ac(:ncol,:) = ftem(:ncol,:)
+
+             if( nstep == 0 ) then
+             if (masterproc) then
+               write(iulog,*) 'tphysac2: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+             end if
+             end if
+            end if
+         enddo
+       end if
 
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
@@ -1862,7 +1938,7 @@ subroutine tphysbc (ztodt,               &
     use physics_types,   only: physics_state, physics_tend, physics_ptend, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
-    use cam_history,     only: outfld, fieldname_len
+    use cam_history,     only: outfld
     use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans

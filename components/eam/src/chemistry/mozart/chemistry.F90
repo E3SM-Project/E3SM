@@ -1359,6 +1359,10 @@ end function chem_is_active
     use mo_drydep,           only : drydep_update
     use mo_neu_wetdep,       only : neu_wetdep_tend, do_neu_wetdep
     use aerodep_flx,         only : aerodep_flx_prescribed
+    use mo_chm_diags,        only : aer_species
+    use mo_tracname,         only : solsym
+    use physconst,           only : rga
+    use phys_control,        only : phys_getopts
     
     implicit none
 
@@ -1394,12 +1398,16 @@ end function chem_is_active
     real(r8), pointer :: cmfdqr(:,:)
     real(r8), pointer :: nevapr(:,:)
     real(r8), pointer :: cldtop(:)
+    real(r8) :: ftem(pcols,pver) ! tmp space
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     integer :: tim_ndx
 
     logical :: lq(pcnst)
 
     if ( .not. chem_step ) return
+
+    call phys_getopts(history_gaschmbudget_out = history_gaschmbudget)
 
     chem_dt = chem_freq*dt
 
@@ -1414,6 +1422,16 @@ end function chem_is_active
        end if
     end do
     if ( ghg_chem ) lq(1) = .true.
+
+    if (history_gaschmbudget) then
+      do m = 1,pcnst
+         n = map2chm(m)
+         if (n > 0 .and. (.not. any( aer_species == n ))) then
+           ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+           call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
+         end if
+      end do
+    end if
 
     call physics_ptend_init(ptend, state%psetcols, 'chemistry', lq=lq)
     
