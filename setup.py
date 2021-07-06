@@ -115,7 +115,7 @@ setup(
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",
     scripts=["acme_diags/acme_diags_driver.py"],
-    packages=find_packages(exclude=["*.test", "*.test.*", "test.*", "test"]),
+    packages=find_packages(include=["acme_diags", "acme_diags.*"]),
     data_files=data_files,
     entry_points={
         "console_scripts": [
