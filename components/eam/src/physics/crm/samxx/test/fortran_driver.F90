@@ -223,9 +223,9 @@ program driver
              .true., 2.D0, .true.)
 
 
-  #if HAVE_MPI
+#if HAVE_MPI
     call mpi_barrier(mpi_comm_world,ierr)
-  #endif
+#endif
     if (masterTask) then
       call system_clock(t2,tr)
       write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
