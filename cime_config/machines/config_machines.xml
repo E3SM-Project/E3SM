@@ -2044,6 +2044,7 @@
         <command name="load">cmake/3.19.6</command>
       </modules>
       <modules compiler="intel">
+        <command name="load">gcc/8.1.0</command>
         <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
