@@ -2188,7 +2188,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer*8 :: gsmap_gsize                   ! global size of gsmap
     integer*8 :: fullsize                      ! size of entire array on cdf
     integer*8 :: gsize                         ! global size of elmlevel
-    integer   :: vsize                         ! other dimensions
+    integer*8 :: vsize                         ! other dimensions
     integer   :: vsize1, vsize2                ! other dimensions
     integer   :: status                        ! error status
     logical   :: found                         ! true => found created iodescriptor
