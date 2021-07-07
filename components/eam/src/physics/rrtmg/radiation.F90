@@ -813,7 +813,7 @@ end function radiation_nextsw_cday
   
   subroutine radiation_tend(state,ptend, pbuf, &
        cam_out, cam_in, &
-       landfrac,landm,icefrac,snowh, &
+       landfrac,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
        fsds, net_flx, is_cmip6_volc, dt)
 
@@ -874,7 +874,6 @@ end function radiation_nextsw_cday
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: dt               ! time step(s)
-    real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
@@ -1116,7 +1115,7 @@ end function radiation_nextsw_cday
        coszrs(:)=0._r8 ! coszrs is only output for zenith
     endif    
 
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+    call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
