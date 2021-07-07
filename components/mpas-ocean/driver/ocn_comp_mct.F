@@ -1014,6 +1014,11 @@ contains
          write (WCstring,'(F18.3)') current_wallclock_time
          call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
+        ! pre-timestep analysis computation
+        if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
+        call ocn_analysis_precompute(domain, ierr)
+        if (debugOn) call mpas_log_write('   Finished analysis precompute', masterOnly=.true.)
+
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
          call ocn_timestep(domain, dt, timeStamp)

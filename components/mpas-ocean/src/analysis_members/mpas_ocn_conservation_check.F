@@ -10,8 +10,8 @@
 !  ocn_conservation_check
 !
 !> \brief MPAS sea ice analysis mode member: conservation_check
-!> \author Adrian K. Turner
-!> \date   9th September 2015
+!> \author Mark Petersen, Adrian K. Turner
+!> \date   August 2021
 !> \details
 !>  MPAS sea ice analysis mode member: conservation_check
 !>
@@ -27,6 +27,7 @@ module ocn_conservation_check
    use mpas_log, only: mpas_log_write
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -57,6 +58,8 @@ module ocn_conservation_check
    !
    !--------------------------------------------------------------------
 
+   logical :: landIceFluxesOn
+
 !***********************************************************************
 
 contains
@@ -66,8 +69,8 @@ contains
 !  routine ocn_bootstrap_conservation_check
 !
 !> \brief   Bootstrap MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    10th November 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all boostraps required for the
 !>  MPAS-OCN analysis member.
@@ -113,8 +116,8 @@ contains
 !  routine ocn_init_conservation_check
 !
 !> \brief   Initialize MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-OCN analysis member.
@@ -160,8 +163,8 @@ contains
 !  routine ocn_precompute_conservation_check
 !
 !> \brief   Precompute MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all pre-computation required for this
 !>  MPAS-OCN analysis member.
@@ -253,8 +256,8 @@ contains
 !  routine ocn_compute_conservation_check
 !
 !> \brief   Compute MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-OCN analysis member.
@@ -293,9 +296,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: &
-           config_AM_conservationCheck_write_to_logfile
-
       integer :: &
            ierr
 
@@ -312,9 +312,6 @@ contains
            timeStr
 
       err = 0
-
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
           MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
@@ -351,8 +348,8 @@ contains
 !  routine energy_conservation
 !
 !> \brief   Compute MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-OCN analysis member.
@@ -391,7 +388,16 @@ contains
            accumulatedLongWaveHeatFluxDown, &
            accumulatedShortWaveHeatFlux, &
            accumulatedSeaIceHeatFlux, &
-           accumulatedMeltingHeatFlux
+           accumulatedMeltingSnowHeatFlux, &
+           accumulatedMeltingIceRunoffHeatFlux, &
+           accumulatedIcebergHeatFlux, &
+           accumulatedLandIceHeatFlux, &
+           accumulatedRainTemperatureFlux, &
+           accumulatedEvapTemperatureFlux, &
+           accumulatedSeaIceTemperatureFlux, &
+           accumulatedRiverRunoffTemperatureFlux, &
+           accumulatedIcebergTemperatureFlux, &
+           accumulatedTotalFreshWaterTemperatureFlux
 
       real(kind=RKIND), dimension(:), allocatable :: &
            sumArray, &
@@ -399,7 +405,8 @@ contains
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
-           forcingPool
+           forcingPool, &
+           tracersSurfaceFluxPool
 
       real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
@@ -410,23 +417,27 @@ contains
            seaIceHeatFlux, &
            shortWaveHeatFlux, &
            snowFlux, &
-           iceRunoffFlux
+           iceRunoffFlux, &
+           icebergHeatFlux, &
+           landIceHeatFlux, &
+           rainTemperatureFlux, &
+           evapTemperatureFlux, &
+           seaIceTemperatureFlux, &
+           icebergTemperatureFlux, &
+           totalFreshWaterTemperatureFlux
+
+      real(kind=RKIND), dimension(:,:), pointer :: &
+           activeTracersSurfaceFluxRunoff
 
       type (MPAS_timeInterval_type) :: &
            timeStepESMF
 
-      character(len=StrKIND), pointer :: &
-           config_dt
-
       real(kind=RKIND) :: &
            dt
 
-      logical, pointer :: &
-           config_calc_surface_temperature, &
-           config_AM_conservationCheck_write_to_logfile
-
       integer, pointer :: &
-           nCellsSolve
+           nCellsSolve, &
+           index_temperature_flux
 
       integer :: &
            iCell, &
@@ -443,22 +454,27 @@ contains
 
       call mpas_pool_get_package(ocnPackages, 'activeTracersBulkRestoringPKGActive', activeTracersBulkRestoringPKG)
 
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=dt)
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
-
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckEnergyAM", conservationCheckEnergyAMPool)
 
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLatentHeatFlux",       accumulatedLatentHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSensibleHeatFlux",     accumulatedSensibleHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLongWaveHeatFluxUp",   accumulatedLongWaveHeatFluxUp)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLongWaveHeatFluxDown", accumulatedLongWaveHeatFluxDown)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceHeatFlux",       accumulatedSeaIceHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedShortWaveHeatFlux",    accumulatedShortWaveHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingHeatFlux",      accumulatedMeltingHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLatentHeatFlux",                 accumulatedLatentHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSensibleHeatFlux",               accumulatedSensibleHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLongWaveHeatFluxUp",             accumulatedLongWaveHeatFluxUp)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLongWaveHeatFluxDown",           accumulatedLongWaveHeatFluxDown)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceHeatFlux",                 accumulatedSeaIceHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedShortWaveHeatFlux",              accumulatedShortWaveHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingSnowHeatFlux",            accumulatedMeltingSnowHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingIceRunoffHeatFlux",       accumulatedMeltingIceRunoffHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedIcebergHeatFlux",                accumulatedIcebergHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceHeatFlux",                accumulatedLandIceHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRainTemperatureFlux",            accumulatedRainTemperatureFlux)           
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedEvapTemperatureFlux",            accumulatedEvapTemperatureFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceTemperatureFlux",          accumulatedSeaIceTemperatureFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRiverRunoffTemperatureFlux",     accumulatedRiverRunoffTemperatureFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedIcebergTemperatureFlux",         accumulatedIcebergTemperatureFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedTotalFreshWaterTemperatureFlux", accumulatedTotalFreshWaterTemperatureFlux)
 
       !-------------------------------------------------------------
       ! Net heat flux to ice
@@ -489,31 +505,45 @@ contains
             call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
             call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
             call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+            call mpas_pool_get_array(forcingPool, 'icebergHeatFlux', icebergHeatFlux)
+            call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
+
+            call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux',            rainTemperatureFlux)
+            call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux',            evapTemperatureFlux)
+            call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux',          seaIceTemperatureFlux)
+            call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux',         icebergTemperatureFlux)
+            call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
+            call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+            call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
+            call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
 
             do iCell = 1, nCellsSolve
 
-               ! latent heat flux
                sumArray(1) = sumArray(1) + areaCell(iCell) * latentHeatFlux(iCell)
-
-               ! sensible heat flux
                sumArray(2) = sumArray(2) + areaCell(iCell) * sensibleHeatFlux(iCell)
-
-               ! longwave heat flux up
                sumArray(3) = sumArray(3) + areaCell(iCell) * longWaveHeatFluxUp(iCell)
-
-               ! longwave heat flux down
                sumArray(4) = sumArray(4) + areaCell(iCell) * longWaveHeatFluxDown(iCell)
-
-               ! sea ice heat flux
                sumArray(5) = sumArray(5) + areaCell(iCell) * seaIceHeatFlux(iCell)
-
-               ! shortwave heat flux
                sumArray(6) = sumArray(6) + areaCell(iCell) * shortWaveHeatFlux(iCell)
+               sumArray(7) = sumArray(7) + areaCell(iCell) * snowFlux(iCell) * latent_heat_fusion_mks
+               sumArray(8) = sumArray(8) + areaCell(iCell) * iceRunoffFlux(iCell) * latent_heat_fusion_mks
+               sumArray(9) = sumArray(9) + areaCell(iCell) * icebergHeatFlux(iCell)
 
-               ! melting heat flux
-               sumArray(7) = sumArray(7) + areaCell(iCell) * (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks
+               sumArray(11) = sumArray(11) + areaCell(iCell) * rainTemperatureFlux(iCell)
+               sumArray(12) = sumArray(12) + areaCell(iCell) * evapTemperatureFlux(iCell)
+               sumArray(13) = sumArray(13) + areaCell(iCell) * seaIceTemperatureFlux(iCell)
+               ! river runoff temperature flux
+               sumArray(14) = sumArray(14) + areaCell(iCell) * activeTracersSurfaceFluxRunoff(index_temperature_flux,iCell)
+               sumArray(15) = sumArray(15) + areaCell(iCell) * icebergTemperatureFlux(iCell)
+               sumArray(16) = sumArray(16) + areaCell(iCell) * totalFreshWaterTemperatureFlux(iCell)
 
             enddo ! iCell
+
+            if (landIceFluxesOn) then
+               do iCell = 1, nCellsSolve
+                  sumArray(10) = sumArray(10) + areaCell(iCell) * landIceHeatFlux(iCell)
+               enddo ! iCell
+            end if
 
             block => block % next
          enddo
@@ -522,13 +552,22 @@ contains
          call MPAS_dmpar_sum_real_array(domain % dminfo, nSums, sumArray, sumArrayOut)
 
          ! accumulate fluxes
-         accumulatedLatentHeatFlux       = accumulatedLatentHeatFlux       + sumArrayOut(1)
-         accumulatedSensibleHeatFlux     = accumulatedSensibleHeatFlux     + sumArrayOut(2)
-         accumulatedLongWaveHeatFluxUp   = accumulatedLongWaveHeatFluxUp   + sumArrayOut(3)
-         accumulatedLongWaveHeatFluxDown = accumulatedLongWaveHeatFluxDown + sumArrayOut(4)
-         accumulatedSeaIceHeatFlux       = accumulatedSeaIceHeatFlux       + sumArrayOut(5)
-         accumulatedShortWaveHeatFlux    = accumulatedShortWaveHeatFlux    + sumArrayOut(6)
-         accumulatedMeltingHeatFlux      = accumulatedMeltingHeatFlux      + sumArrayOut(7)
+         accumulatedLatentHeatFlux                 = accumulatedLatentHeatFlux                 + sumArrayOut( 1)
+         accumulatedSensibleHeatFlux               = accumulatedSensibleHeatFlux               + sumArrayOut( 2)
+         accumulatedLongWaveHeatFluxUp             = accumulatedLongWaveHeatFluxUp             + sumArrayOut( 3)
+         accumulatedLongWaveHeatFluxDown           = accumulatedLongWaveHeatFluxDown           + sumArrayOut( 4)
+         accumulatedSeaIceHeatFlux                 = accumulatedSeaIceHeatFlux                 + sumArrayOut( 5)
+         accumulatedShortWaveHeatFlux              = accumulatedShortWaveHeatFlux              + sumArrayOut( 6)
+         accumulatedMeltingSnowHeatFlux            = accumulatedMeltingSnowHeatFlux            + sumArrayOut( 7)
+         accumulatedMeltingIceRunoffHeatFlux       = accumulatedMeltingIceRunoffHeatFlux       + sumArrayOut( 8)
+         accumulatedIcebergHeatFlux                = accumulatedIcebergHeatFlux                + sumArrayOut( 9)
+         accumulatedLandIceHeatFlux                = accumulatedLandIceHeatFlux                + sumArrayOut(10)
+         accumulatedRainTemperatureFlux            = accumulatedRainTemperatureFlux            + sumArrayOut(11)
+         accumulatedEvapTemperatureFlux            = accumulatedEvapTemperatureFlux            + sumArrayOut(12)
+         accumulatedSeaIceTemperatureFlux          = accumulatedSeaIceTemperatureFlux          + sumArrayOut(13)
+         accumulatedRiverRunoffTemperatureFlux     = accumulatedRiverRunoffTemperatureFlux     + sumArrayOut(14)
+         accumulatedIcebergTemperatureFlux         = accumulatedIcebergTemperatureFlux         + sumArrayOut(15)
+         accumulatedTotalFreshWaterTemperatureFlux = accumulatedTotalFreshWaterTemperatureFlux + sumArrayOut(16)
 
          ! cleanup
          deallocate(sumArray)
@@ -563,7 +602,11 @@ contains
               + accumulatedLongWaveHeatFluxDown &
               + accumulatedSeaIceHeatFlux &
               + accumulatedShortWaveHeatFlux &
-              + accumulatedMeltingHeatFlux
+              + accumulatedMeltingSnowHeatFlux &
+              + accumulatedMeltingIceRunoffHeatFlux &
+              + accumulatedIcebergHeatFlux &
+              + accumulatedLandIceHeatFlux &
+              + accumulatedTotalFreshWaterTemperatureFlux * latent_heat_fusion_mks
 
          ! compute the final energy error
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "absoluteEnergyError", absoluteEnergyError)
@@ -578,22 +621,31 @@ contains
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
-            formatString = "(a32,2x,1pe24.17)"
+            formatString = "(a32,2x,1pes24.17)"
 
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write(' Energy conservation check')
             call mpas_log_write(' ')
-            call mpas_log_write(' Initial energy           (J) = $r', realArgs=(/initialEnergy/))
-            call mpas_log_write(' Final energy             (J) = $r', realArgs=(/finalEnergy/))
-            call mpas_log_write(' Energy change            (J) = $r', realArgs=(/energyChange/))
+            call mpas_log_write(' Initial energy             (J) = $r', realArgs=(/initialEnergy/))
+            call mpas_log_write(' Final energy               (J) = $r', realArgs=(/finalEnergy/))
+            call mpas_log_write(' Energy change              (J) = $r', realArgs=(/energyChange/))
             call mpas_log_write(' ')
-            call mpas_log_write(' Latent heat flux         (W) = $r', realArgs=(/accumulatedLatentHeatFlux/))
-            call mpas_log_write(' Sensible heat flux       (W) = $r', realArgs=(/accumulatedSensibleHeatFlux/))
-            call mpas_log_write(' Longwave heat flux up    (W) = $r', realArgs=(/accumulatedLongWaveHeatFluxUp/))
-            call mpas_log_write(' Longwave heat flux down  (W) = $r', realArgs=(/accumulatedLongWaveHeatFluxDown/))
-            call mpas_log_write(' Sea ice heat flux        (W) = $r', realArgs=(/accumulatedSeaIceHeatFlux/))
-            call mpas_log_write(' Shortwave heat flux      (W) = $r', realArgs=(/accumulatedShortWaveHeatFlux/))
-            call mpas_log_write(' Melting heat flux        (W) = $r', realArgs=(/accumulatedMeltingHeatFlux/))
+            call mpas_log_write(' Latent heat flux           (W) = $r', realArgs=(/accumulatedLatentHeatFlux/))
+            call mpas_log_write(' Sensible heat flux         (W) = $r', realArgs=(/accumulatedSensibleHeatFlux/))
+            call mpas_log_write(' Longwave heat flux up      (W) = $r', realArgs=(/accumulatedLongWaveHeatFluxUp/))
+            call mpas_log_write(' Longwave heat flux down    (W) = $r', realArgs=(/accumulatedLongWaveHeatFluxDown/))
+            call mpas_log_write(' Sea ice heat flux          (W) = $r', realArgs=(/accumulatedSeaIceHeatFlux/))
+            call mpas_log_write(' Shortwave heat flux        (W) = $r', realArgs=(/accumulatedShortWaveHeatFlux/))
+            call mpas_log_write(' MeltingSnowHeatFlux        (W) = $r', realArgs=(/accumulatedMeltingSnowHeatFlux/))
+            call mpas_log_write(' MeltingIceRunoffHeatFlux   (W) = $r', realArgs=(/accumulatedMeltingIceRunoffHeatFlux/))
+            call mpas_log_write(' IcebergHeatFlux            (W) = $r', realArgs=(/accumulatedIcebergHeatFlux/))
+            call mpas_log_write(' LandIceHeatFlux            (W) = $r', realArgs=(/accumulatedLandIceHeatFlux/))
+            call mpas_log_write(' RainTemperatureFlux     (Cm/s) = $r', realArgs=(/accumulatedRainTemperatureFlux/))
+            call mpas_log_write(' EvapTemperatureFlux     (Cm/s) = $r', realArgs=(/accumulatedEvapTemperatureFlux/))
+            call mpas_log_write(' SeaIceTemperatureFlux   (Cm/s) = $r', realArgs=(/accumulatedSeaIceTemperatureFlux/))
+            call mpas_log_write(' RiverRunoffTemperatureFlux(Cm/s)=$r', realArgs=(/accumulatedRiverRunoffTemperatureFlux/))
+            call mpas_log_write(' IcebergTemperatureFlux  (Cm/s) = $r', realArgs=(/accumulatedIcebergTemperatureFlux/))
+            call mpas_log_write(' TotalFreshWaterTemperatureFlux = $r', realArgs=(/accumulatedTotalFreshWaterTemperatureFlux/))
             call mpas_log_write(' Net energy flux          (W) = $r', realArgs=(/netEnergyFlux/))
             call mpas_log_write(' Net energy flux          (J) = $r', realArgs=(/netEnergyFlux * dt/))
             call mpas_log_write(' ')
@@ -612,8 +664,8 @@ contains
 !  routine mass_conservation
 !
 !> \brief   Compute MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    11th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-OCN analysis member.
@@ -643,12 +695,16 @@ contains
            relativeMassError
 
       real(kind=RKIND), pointer :: &
-           accumulatedEvaporationFlux, &
+           accumulatedRainFlux, &
            accumulatedSnowFlux, &
-           accumulatedSeaIceFreshWaterFlux, &
+           accumulatedEvaporationFlux, &
+           accumulatedSeaIceFlux, &
            accumulatedRiverRunoffFlux, &
            accumulatedIceRunoffFlux, &
-           accumulatedRainFlux
+           accumulatedRemovedRiverRunoffFlux, &
+           accumulatedRemovedIceRunoffFlux, &
+           accumulatedIcebergFlux, &
+           accumulatedLandIceFlux
 
       real(kind=RKIND), dimension(:), allocatable :: &
            sumArray, &
@@ -660,24 +716,22 @@ contains
 
       real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
-           evaporationFlux, &
+           rainFlux, &
            snowFlux, &
+           evaporationFlux, &
            seaIceFreshWaterFlux, &
            riverRunoffFlux, &
            iceRunoffFlux, &
-           rainFlux
+           removedRiverRunoffFlux, &
+           removedIceRunoffFlux, &
+           icebergFreshWaterFlux, &
+           landIceFreshwaterFlux
 
       type (MPAS_timeInterval_type) :: &
            timeStepESMF
 
-      character(len=StrKIND), pointer :: &
-           config_dt
-
       real(kind=RKIND) :: &
            dt
-
-      logical, pointer :: &
-           config_AM_conservationCheck_write_to_logfile
 
       integer, pointer :: &
            nCellsSolve
@@ -687,7 +741,7 @@ contains
            ierr
 
       integer, parameter :: &
-           nSums = 6
+           nSums = 10
 
       character(len=17) :: &
            formatString
@@ -697,21 +751,21 @@ contains
 
       call mpas_pool_get_package(ocnPackages, 'thicknessBulkPKGActive', thicknessBulkPKGActive)
 
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=dt)
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
-
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckMassAM", conservationCheckMassAMPool)
 
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedEvaporationFlux",      accumulatedEvaporationFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSnowFlux",             accumulatedSnowFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSeaIceFreshWaterFlux", accumulatedSeaIceFreshWaterFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRiverRunoffFlux",      accumulatedRiverRunoffFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedIceRunoffFlux",        accumulatedIceRunoffFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRainFlux",             accumulatedRainFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRainFlux",              accumulatedRainFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSnowFlux",              accumulatedSnowFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedEvaporationFlux",       accumulatedEvaporationFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSeaIceFlux",            accumulatedSeaIceFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRiverRunoffFlux",       accumulatedRiverRunoffFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedIceRunoffFlux",         accumulatedIceRunoffFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRemovedRiverRunoffFlux",accumulatedRemovedRiverRunoffFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRemovedIceRunoffFlux",  accumulatedRemovedIceRunoffFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedIcebergFlux",           accumulatedIcebergFlux)
+       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedLandIceFlux",           accumulatedLandIceFlux)
 
       !-------------------------------------------------------------
       ! Net mass flux to ocean
@@ -734,34 +788,36 @@ contains
 
             call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
 
-            call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-            call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
-            call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
-            call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-            call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
-            call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+            call mpas_pool_get_array(forcingPool, 'rainFlux',               rainFlux)
+            call mpas_pool_get_array(forcingPool, 'snowFlux',               snowFlux)
+            call mpas_pool_get_array(forcingPool, 'evaporationFlux',        evaporationFlux)
+            call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux',   seaIceFreshWaterFlux)
+            call mpas_pool_get_array(forcingPool, 'riverRunoffFlux',        riverRunoffFlux)
+            call mpas_pool_get_array(forcingPool, 'iceRunoffFlux',          iceRunoffFlux)
+            call mpas_pool_get_array(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFlux)
+            call mpas_pool_get_array(forcingPool, 'removedIceRunoffFlux',   removedIceRunoffFlux)
+            call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux',  icebergFreshWaterFlux)
+            call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux',  landIceFreshwaterFlux)
 
             do iCell = 1, nCellsSolve
 
-               ! snowfall
-               sumArray(1) = sumArray(1) + areaCell(iCell) * snowFlux(iCell)
-
-               ! rainfall
-               sumArray(2) = sumArray(2) + areaCell(iCell) * rainFlux(iCell)
-
-               ! evaporation
-               sumArray(3) = sumArray(3) + areaCell(iCell) * evaporationFlux(iCell)
-
-               ! sea ice fresh water flux
-               sumArray(4) = sumArray(4) + areaCell(iCell) * seaIceFreshWaterFlux(iCell)
-
-               ! ice runoff flux
-               sumArray(5) = sumArray(5) + areaCell(iCell) * iceRunoffFlux(iCell)
-
-               ! river runoff flux
-               sumArray(6) = sumArray(6) + areaCell(iCell) * riverRunoffFlux(iCell)
+                sumArray( 1) = sumArray( 1) + areaCell(iCell) * rainFlux(iCell)
+                sumArray( 2) = sumArray( 2) + areaCell(iCell) * snowFlux(iCell)
+                sumArray( 3) = sumArray( 3) + areaCell(iCell) * evaporationFlux(iCell)
+                sumArray( 4) = sumArray( 4) + areaCell(iCell) * seaIceFreshWaterFlux(iCell)
+                sumArray( 5) = sumArray( 5) + areaCell(iCell) * riverRunoffFlux(iCell)
+                sumArray( 6) = sumArray( 6) + areaCell(iCell) * iceRunoffFlux(iCell)
+                sumArray( 7) = sumArray( 7) + areaCell(iCell) * removedRiverRunoffFlux(iCell)
+                sumArray( 8) = sumArray( 8) + areaCell(iCell) * removedIceRunoffFlux(iCell)
+                sumArray( 9) = sumArray( 9) + areaCell(iCell) * icebergFreshWaterFlux(iCell)
 
             enddo ! iCell
+
+            if (landIceFluxesOn) then
+               do iCell = 1, nCellsSolve
+                  sumArray(10) = sumArray(10) + areaCell(iCell) * landIceFreshwaterFlux(iCell)
+               enddo ! iCell
+            end if
 
             block => block % next
          enddo
@@ -770,12 +826,16 @@ contains
          call MPAS_dmpar_sum_real_array(domain % dminfo, nSums, sumArray, sumArrayOut)
 
          ! accumulate fluxes
-         accumulatedEvaporationFlux      = accumulatedEvaporationFlux      + sumArrayOut(1)
-         accumulatedSnowFlux             = accumulatedSnowFlux             + sumArrayOut(2)
-         accumulatedSeaIceFreshWaterFlux = accumulatedSeaIceFreshWaterFlux + sumArrayOut(3)
-         accumulatedRiverRunoffFlux      = accumulatedRiverRunoffFlux      + sumArrayOut(4)
-         accumulatedIceRunoffFlux        = accumulatedIceRunoffFlux        + sumArrayOut(5)
-         accumulatedRainFlux             = accumulatedRainFlux             + sumArrayOut(6)
+         accumulatedRainFlux               = accumulatedRainFlux               + sumArrayOut( 1)
+         accumulatedSnowFlux               = accumulatedSnowFlux               + sumArrayOut( 2)
+         accumulatedEvaporationFlux        = accumulatedEvaporationFlux        + sumArrayOut( 3)
+         accumulatedSeaIceFlux             = accumulatedSeaIceFlux             + sumArrayOut( 4)
+         accumulatedRiverRunoffFlux        = accumulatedRiverRunoffFlux        + sumArrayOut( 5)
+         accumulatedIceRunoffFlux          = accumulatedIceRunoffFlux          + sumArrayOut( 6)
+         accumulatedRemovedRiverRunoffFlux = accumulatedRemovedRiverRunoffFlux + sumArrayOut( 7)
+         accumulatedRemovedIceRunoffFlux   = accumulatedRemovedIceRunoffFlux   + sumArrayOut( 8) 
+         accumulatedIcebergFlux            = accumulatedIcebergFlux            + sumArrayOut( 9)
+         accumulatedLandIceFlux            = accumulatedLandIceFlux            + sumArrayOut(10)
 
          ! cleanup
          deallocate(sumArray)
@@ -804,12 +864,16 @@ contains
          call MPAS_pool_get_array(conservationCheckMassAMPool, "netMassFlux", netMassFlux)
 
          netMassFlux = &
-                accumulatedEvaporationFlux &
+              + accumulatedRainFlux &
               + accumulatedSnowFlux &
-              + accumulatedSeaIceFreshWaterFlux &
+              + accumulatedEvaporationFlux &
+              + accumulatedSeaIceFlux &
               + accumulatedRiverRunoffFlux &
               + accumulatedIceRunoffFlux &
-              + accumulatedRainFlux
+              + accumulatedRemovedRiverRunoffFlux &
+              + accumulatedRemovedIceRunoffFlux &
+              + accumulatedIcebergFlux &
+              + accumulatedLandIceFlux
 
          ! compute the final energy error
          call MPAS_pool_get_array(conservationCheckMassAMPool, "absoluteMassError", absoluteMassError)
@@ -833,12 +897,16 @@ contains
             call mpas_log_write(' Final mass              (kg) = $r', realArgs=(/finalMass/))
             call mpas_log_write(' Mass change             (kg) = $r', realArgs=(/massChange/))
             call mpas_log_write(' ')
-            call mpas_log_write(' Evaporative flux      (kg/s) = $r', realArgs=(/accumulatedEvaporationFlux/))
+            call mpas_log_write(' Rain flux             (kg/s) = $r', realArgs=(/accumulatedRainFlux/))
             call mpas_log_write(' Snow flux             (kg/s) = $r', realArgs=(/accumulatedSnowFlux/))
-            call mpas_log_write(' Sea ice FW flux       (kg/s) = $r', realArgs=(/accumulatedSeaIceFreshWaterFlux/))
+            call mpas_log_write(' Evaporative flux      (kg/s) = $r', realArgs=(/accumulatedEvaporationFlux/))
+            call mpas_log_write(' Sea ice FW flux       (kg/s) = $r', realArgs=(/accumulatedSeaIceFlux/))
             call mpas_log_write(' River runoff flux     (kg/s) = $r', realArgs=(/accumulatedRiverRunoffFlux/))
             call mpas_log_write(' Ice runoff flux       (kg/s) = $r', realArgs=(/accumulatedIceRunoffFlux/))
-            call mpas_log_write(' Rain flux             (kg/s) = $r', realArgs=(/accumulatedRainFlux/))
+            call mpas_log_write(' RemovedRiverRunoffFlux(kg/s) = $r', realArgs=(/accumulatedRemovedRiverRunoffFlux/))
+            call mpas_log_write(' RemovedIceRunoffFlux  (kg/s) = $r', realArgs=(/accumulatedRemovedIceRunoffFlux/))
+            call mpas_log_write(' IcebergFlux           (kg/s) = $r', realArgs=(/accumulatedIcebergFlux/))
+            call mpas_log_write(' LandIceFlux           (kg/s) = $r', realArgs=(/accumulatedLandIceFlux/))
             call mpas_log_write(' Net mass flux         (kg/s) = $r', realArgs=(/netMassFlux/))
             call mpas_log_write(' Net mass flux           (kg) = $r', realArgs=(/netMassFlux * dt/))
             call mpas_log_write(' ')
@@ -857,8 +925,8 @@ contains
 !  routine salt_conservation
 !
 !> \brief   Compute MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    11th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-OCN analysis member.
@@ -903,14 +971,8 @@ contains
       type (MPAS_timeInterval_type) :: &
            timeStepESMF
 
-      character(len=StrKIND), pointer :: &
-           config_dt
-
       real(kind=RKIND) :: &
            dt
-
-      logical, pointer :: &
-           config_AM_conservationCheck_write_to_logfile
 
       integer, pointer :: &
            nCellsSolve
@@ -930,12 +992,8 @@ contains
 
       call mpas_pool_get_package(ocnPackages, 'activeTracersBulkRestoringPKGActive', activeTracersBulkRestoringPKG)
 
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=dt)
-
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckSaltAM", conservationCheckSaltAMPool)
 
@@ -1049,8 +1107,8 @@ contains
 !  routine compute_total_energy
 !
 !> \brief   Compute total energy of sea-ice system
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  Calculate the total energy of the sea-ice system
 !
@@ -1142,8 +1200,8 @@ contains
 !  routine compute_total_mass
 !
 !> \brief   Compute total mass of sea-ice system
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  Calculate the total mass of the sea-ice system
 !
@@ -1223,8 +1281,8 @@ contains
 !  routine compute_total_salt
 !
 !> \brief   Compute total salt of sea-ice system
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  Calculate the total salt of the sea-ice system
 !
@@ -1312,8 +1370,8 @@ contains
 !  routine reset_accumulated_variables
 !
 !> \brief   Reset the accumulated fluxes
-!> \author  Adrian K. Turner
-!> \date    7th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details This routine resets accumulated fluxes after the
 !> conservation calculation has been performed
 !
@@ -1336,10 +1394,12 @@ contains
            accumulatedLongWaveHeatFluxDown, &
            accumulatedSeaIceHeatFlux, &
            accumulatedShortWaveHeatFlux, &
-           accumulatedMeltingHeatFlux, &
+           accumulatedMeltingSnowHeatFlux, &
+           accumulatedMeltingIceRunoffHeatFlux, &
+           accumulatedLandIceHeatFlux, &
            accumulatedEvaporationFlux, &
            accumulatedSnowFlux, &
-           accumulatedSeaIceFreshWaterFlux, &
+           accumulatedSeaIceFlux, &
            accumulatedRiverRunoffFlux, &
            accumulatedIceRunoffFlux, &
            accumulatedRainFlux, &
@@ -1353,7 +1413,9 @@ contains
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLongWaveHeatFluxDown", accumulatedLongWaveHeatFluxDown)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceHeatFlux",       accumulatedSeaIceHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedShortWaveHeatFlux",    accumulatedShortWaveHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingHeatFlux",      accumulatedMeltingHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingSnowHeatFlux",      accumulatedMeltingSnowHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedMeltingIceRunoffHeatFlux",      accumulatedMeltingIceRunoffHeatFlux)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceHeatFlux",      accumulatedLandIceHeatFlux)
 
       accumulatedLatentHeatFlux       = 0.0_RKIND
       accumulatedSensibleHeatFlux     = 0.0_RKIND
@@ -1361,21 +1423,23 @@ contains
       accumulatedLongWaveHeatFluxDown = 0.0_RKIND
       accumulatedSeaIceHeatFlux       = 0.0_RKIND
       accumulatedShortWaveHeatFlux    = 0.0_RKIND
-      accumulatedMeltingHeatFlux      = 0.0_RKIND
+      accumulatedMeltingSnowHeatFlux      = 0.0_RKIND
+      accumulatedMeltingIceRunoffHeatFlux      = 0.0_RKIND
+      accumulatedLandIceHeatFlux      = 0.0_RKIND
 
       ! mass
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckMassAM", conservationCheckMassAMPool)
 
       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedEvaporationFlux",      accumulatedEvaporationFlux)
       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSnowFlux",             accumulatedSnowFlux)
-      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSeaIceFreshWaterFlux", accumulatedSeaIceFreshWaterFlux)
+      call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedSeaIceFlux", accumulatedSeaIceFlux)
       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRiverRunoffFlux",      accumulatedRiverRunoffFlux)
       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedIceRunoffFlux",        accumulatedIceRunoffFlux)
       call MPAS_pool_get_array(conservationCheckMassAMPool, "accumulatedRainFlux",             accumulatedRainFlux)
 
       accumulatedEvaporationFlux      = 0.0_RKIND
       accumulatedSnowFlux             = 0.0_RKIND
-      accumulatedSeaIceFreshWaterFlux = 0.0_RKIND
+      accumulatedSeaIceFlux = 0.0_RKIND
       accumulatedRiverRunoffFlux      = 0.0_RKIND
       accumulatedIceRunoffFlux        = 0.0_RKIND
       accumulatedRainFlux             = 0.0_RKIND
@@ -1394,8 +1458,8 @@ contains
 !  routine ocn_restart_conservation_check
 !
 !> \brief   Save restart for MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-OCN analysis member.
@@ -1434,6 +1498,11 @@ contains
 
       err = 0
 
+      if ( trim(config_land_ice_flux_mode) == 'standalone' .or. &
+           trim(config_land_ice_flux_mode) == 'coupled' ) then
+         landIceFluxesOn = .true.
+      end if
+
    end subroutine ocn_restart_conservation_check!}}}
 
 !***********************************************************************
@@ -1441,8 +1510,8 @@ contains
 !  routine ocn_finalize_conservation_check
 !
 !> \brief   Finalize MPAS-OCN analysis member
-!> \author  Adrian K. Turner
-!> \date    9th September 2015
+!> \author  Mark Petersen, Adrian K. Turner
+!> \date    August 2021
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-OCN analysis member.

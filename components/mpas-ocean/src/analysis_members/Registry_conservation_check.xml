@@ -67,29 +67,38 @@
 		<var name="accumulatedLongWaveHeatFluxDown" type="real" dimensions="Time" units="W m^{-2}"
 			description="Downward long wave heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
-			description="Sea ice heat flux from coupler, integrated in space and time. Positive into the ocean."
-		/>
-		<var name="accumulatedIcebergHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
-			description="Sea ice heat flux from coupler, integrated in space and time. Positive into the ocean."
-		/>
 		<var name="accumulatedShortWaveHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
 			description="shortwave heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedMeltingHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
-			description="This is (snowFlux + iceRunoffFlux) * latent_heat_fusion_mks. Positive into the ocean."
+		<var name="accumulatedSeaIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="Sea ice heat flux from coupler, integrated in space and time. Positive into the ocean."
+		/>
+		<var name="accumulatedMeltingSnowHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="This is snowFlux * latent_heat_fusion_mks. Positive into the ocean."
+		/>
+		<var name="accumulatedMeltingIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="This is iceRunoffFlux * latent_heat_fusion_mks. Positive into the ocean."
+		/>
+		<var name="accumulatedIcebergHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="Iceberg heat flux from coupler, integrated in space and time. Positive into the ocean."
+		/>
+		<var name="accumulatedLandIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="Land ice heat flux, integrated in space and time. Positive into the ocean."
 		/>
 		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
-			 description="Heat flux associated with rain sent to coupler. Positive into the ocean."
+			 description="Heat flux associated with rain. Positive into the ocean."
 		/>
 		<var name="accumulatedEvapTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
-			 description="Heat flux associated with Evaporation sent to coupler. Positive into the ocean."
+			 description="Heat flux associated with Evaporation. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceFreshWaterTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
-			 description="Heat flux associated with sea ice melt water sent to coupler. Positive into the ocean."
+		<var name="accumulatedSeaIceTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+			 description="Heat flux associated with sea ice melt water. Positive into the ocean."
 		/>
-		<var name="accumulatedIcebergFreshWaterTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
-			 description="Heat flux associated with iceberg melt sent to coupler. Positive into the ocean."
+		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+			 description="Heat flux associated with river runoff. Positive into the ocean."
+		/>
+		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+			 description="Heat flux associated with iceberg melt. Positive into the ocean."
 		/>
 		<var name="accumulatedTotalFreshWaterTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
@@ -114,43 +123,38 @@
 		<var name="relativeMassError" type="real" dimensions="Time" units="None"
 			description="Relative mass conservation error"
 		/>
-		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Evaporation flux from coupler. Positive into the ocean."
-		/>
-		<var name="accumulatedSeaIceFreshWaterFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from sea ice from coupler. Positive into the ocean."
-		/>
-		<var name="accumulatedIcebergFreshWaterFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from iceberg melt from coupler. Positive into the ocean."
-		/>
-		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from river runoff from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
-		/>
-		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG"
-		/>
-		<var name="accumulatedTotalRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
-			 description="Global sum of fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG"
-		/>
-		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
-		/>
-		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
-			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
-		/>
-		<var name="accumulatedTotalRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
-			 description="Global sum of fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
-			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
-		/>
 		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain from coupler. Positive into the ocean."
 		/>
 		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from snow from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Evaporation flux from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedSeaIceFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from sea ice from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from river runoff from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
+		/>
+		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from iceberg melt from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from land ice melt from coupler. Positive into the ocean."
 		/>
 	</var_struct>
 	<var_struct name="conservationCheckSaltAM" time_levs="1" packages="conservationCheckAMPKG">
@@ -194,7 +198,8 @@
 			<var name="accumulatedLongWaveHeatFluxDown"/>
 			<var name="accumulatedSeaIceHeatFlux"/>
 			<var name="accumulatedShortWaveHeatFlux"/>
-			<var name="accumulatedMeltingHeatFlux"/>
+			<var name="accumulatedMeltingSnowHeatFlux"/>
+			<var name="accumulatedMeltingIceRunoffHeatFlux"/>
 			<var name="netEnergyFlux"/>
 			<var name="absoluteEnergyError"/>
 			<var name="relativeEnergyError"/>
@@ -203,7 +208,7 @@
 			<var name="massChange"/>
 			<var name="accumulatedEvaporationFlux"/>
 			<var name="accumulatedSnowFlux"/>
-			<var name="accumulatedSeaIceFreshWaterFlux"/>
+			<var name="accumulatedSeaIceFlux"/>
 			<var name="accumulatedRiverRunoffFlux"/>
 			<var name="accumulatedIceRunoffFlux"/>
 			<var name="accumulatedRainFlux"/>
@@ -231,20 +236,32 @@
 				immutable="true">
 			<var name="performConservationPrecompute"/>
 			<var name="initialEnergy"/>
-			<var name="accumulatedLatentHeatFlux"/>
-			<var name="accumulatedSensibleHeatFlux"/>
-			<var name="accumulatedLongWaveHeatFluxUp"/>
-			<var name="accumulatedLongWaveHeatFluxDown"/>
-			<var name="accumulatedSeaIceHeatFlux"/>
-			<var name="accumulatedShortWaveHeatFlux"/>
-			<var name="accumulatedMeltingHeatFlux"/>
+            <var name="accumulatedLatentHeatFlux"/>
+            <var name="accumulatedSensibleHeatFlux"/>
+            <var name="accumulatedLongWaveHeatFluxUp"/>
+            <var name="accumulatedLongWaveHeatFluxDown"/>
+            <var name="accumulatedShortWaveHeatFlux"/>
+            <var name="accumulatedSeaIceHeatFlux"/>
+            <var name="accumulatedMeltingSnowHeatFlux"/>
+            <var name="accumulatedMeltingIceRunoffHeatFlux"/>
+            <var name="accumulatedIcebergHeatFlux"/>
+            <var name="accumulatedLandIceHeatFlux"/>
+            <var name="accumulatedRainTemperatureFlux"/>
+            <var name="accumulatedEvapTemperatureFlux"/>
+            <var name="accumulatedSeaIceTemperatureFlux"/>
+            <var name="accumulatedRiverRunoffTemperatureFlux"/>
+            <var name="accumulatedIcebergTemperatureFlux"/>
 			<var name="initialMass"/>
-			<var name="accumulatedEvaporationFlux"/>
-			<var name="accumulatedSnowFlux"/>
-			<var name="accumulatedSeaIceFreshWaterFlux"/>
-			<var name="accumulatedRiverRunoffFlux"/>
-			<var name="accumulatedIceRunoffFlux"/>
-			<var name="accumulatedRainFlux"/>
+            <var name="accumulatedRainFlux"/>
+            <var name="accumulatedSnowFlux"/>
+            <var name="accumulatedEvaporationFlux"/>
+            <var name="accumulatedSeaIceFlux"/>
+            <var name="accumulatedRiverRunoffFlux"/>
+            <var name="accumulatedIceRunoffFlux"/>
+            <var name="accumulatedRemovedRiverRunoffFlux"/>
+            <var name="accumulatedRemovedIceRunoffFlux"/>
+            <var name="accumulatedIcebergFlux"/>
+            <var name="accumulatedLandIceFlux"/>
 			<var name="initialSalt"/>
 			<var name="accumulatedSeaIceSalinityFlux"/>
 		</stream>
