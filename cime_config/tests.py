@@ -161,8 +161,8 @@ _TESTS = {
             "PEM_Ln9.ne30_oECv3.A_WCYCL1850S",
             "ERP_Ld3.ne30_oECv3.A_WCYCL1850S.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.elm-bgcexp",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
+            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
+            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
@@ -228,9 +228,9 @@ _TESTS = {
     #e3sm tests to mimic BGC production runs
     "e3sm_bgcprod" : {
         "tests"   :  (
-               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.allactive-v1bgc_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.allactive-v1bgc_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
-               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
         },
