@@ -90,17 +90,12 @@ def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, parameters, stats=
     ax.coastlines(lw=0.3)
 
     # Plot titles
-    for i in range(3):
-        if title[i] is None:
-            title[i] = ""
-
-    t = ax.set_title(
-        "%s\n%s" % (title[0], title[2]), loc="left", fontdict=plotSideTitle
-    )
-
-    t = ax.set_title(title[1], fontdict=plotTitle)
-    if title[0] != "" or title[2] != "":
-        t.set_position([0.5, 1.06])
+    if title[0] is not None:
+        ax.set_title(title[0], loc="left", fontdict=plotSideTitle)
+    if title[1] is not None:
+        ax.set_title(title[1], fontdict=plotTitle)
+    if title[2] is not None:
+        ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
 
     # Color bar
     cbax = fig.add_axes((panel[n][0] + 0.35, panel[n][1] + 0.0354, 0.0326, 0.1792))
@@ -229,7 +224,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             diff,
             parameter.diff_levels,
             parameter.diff_colormap,
-            [None, parameter.diff_title, None],
+            [None, parameter.diff_title, test.units],
             parameter,
             stats=(max3, mean3, min3, r, c),
         )

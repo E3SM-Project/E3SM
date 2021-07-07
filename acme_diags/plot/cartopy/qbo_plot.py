@@ -101,7 +101,7 @@ def plot(period_new, parameter, test, ref):
     x = dict(axis_range=[0, months], axis_scale="linear", data=x_test, label=" ")
     y = dict(axis_range=[100, 1], axis_scale="log", data=y_test, label="hPa")
     z = dict(data=test["qbo"].T[:, :months])
-    title = "{} U 5S-5N ({})".format(test["name"], parameter.test_yrs)
+    title = "{} U [{}] 5S-5N ({})".format(test["name"], "m/s", parameter.test_yrs)
     ax0 = plot_panel(  # noqa
         0,
         fig,
@@ -120,7 +120,7 @@ def plot(period_new, parameter, test, ref):
     x = dict(axis_range=[0, months], axis_scale="linear", data=x_ref, label="month")
     y = dict(axis_range=[100, 1], axis_scale="log", data=y_ref, label="hPa")
     z = dict(data=ref["qbo"].T[:, :months])
-    title = "{} U 5S-5N ({})".format(ref["name"], parameter.ref_yrs)
+    title = "{} U [{}] 5S-5N ({})".format(ref["name"], "m/s", parameter.ref_yrs)
     plot_panel(
         1,
         fig,

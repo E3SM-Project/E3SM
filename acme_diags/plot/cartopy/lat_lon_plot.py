@@ -279,7 +279,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         diff,
         parameter.diff_levels,
         parameter.diff_colormap,
-        (None, parameter.diff_title, None),
+        (None, parameter.diff_title, test.units),
         parameter,
         stats=(max3, mean3, min3, r, c),
     )

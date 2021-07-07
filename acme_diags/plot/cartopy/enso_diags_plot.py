@@ -284,7 +284,7 @@ def plot_map(
         diff,
         parameter.diff_levels,
         parameter.diff_colormap,
-        (None, parameter.diff_title, None),
+        (None, parameter.diff_title, test.units),
         parameter,
         stats=metrics_dict["diff"],
     )

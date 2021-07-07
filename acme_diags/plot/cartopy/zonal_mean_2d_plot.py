@@ -81,7 +81,9 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
     if title[1] is not None:
         ax.set_title(title[1], fontdict=plotTitle)
     if title[2] is not None:
-        ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
+        ax.set_title(
+            title[2], loc="right", fontdict=plotSideTitle
+        )  # loc="right"  doesn't work for polar projection
     # ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
     # ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
     ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # , crs=ccrs.PlateCarree())
@@ -217,7 +219,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         diff,
         parameter.diff_levels,
         parameter.diff_colormap,
-        (None, parameter.diff_title, None),
+        (None, parameter.diff_title, test.units),
         parameter,
         stats=(max3, mean3, min3, r, c),
     )
