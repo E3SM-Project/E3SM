@@ -29,7 +29,6 @@ module radiation_data
        lndfrc_fldn    = 'rad_lndfrc      ' , &
        icefrc_fldn    = 'rad_icefrc      ' , &
        snowh_fldn     = 'rad_snowh       ' , &
-       landm_fldn     = 'rad_landm       ' , &
        asdir_fldn     = 'rad_asdir       ' , &
        asdif_fldn     = 'rad_asdif       ' , &
        aldir_fldn     = 'rad_aldir       ' , &
@@ -160,8 +159,6 @@ contains
          'radiation input: ice fraction')
     call addfld (snowh_fldn,        horiz_only,    rad_data_avgflag,  'm',&
          'radiation input: water equivalent snow depth')
-    call addfld (landm_fldn,     horiz_only,    rad_data_avgflag,  'none',&
-         'radiation input: land mask: ocean(0), continent(1), transition(0-1)')
 
     call addfld (asdir_fldn,        horiz_only,    rad_data_avgflag,  '1',&
          'radiation input: short wave direct albedo', flag_xyfill=.true.)
@@ -239,7 +236,6 @@ contains
     call add_default (lndfrc_fldn,    rad_data_histfile_num, ' ')
     call add_default (icefrc_fldn,    rad_data_histfile_num, ' ')
     call add_default (snowh_fldn,     rad_data_histfile_num, ' ')
-    call add_default (landm_fldn,     rad_data_histfile_num, ' ')
     call add_default (asdir_fldn,     rad_data_histfile_num, ' ')
     call add_default (asdif_fldn,     rad_data_histfile_num, ' ')
     call add_default (aldir_fldn,     rad_data_histfile_num, ' ')
@@ -318,7 +314,7 @@ contains
 
   !================================================================================================
   !================================================================================================
-  subroutine output_rad_data(  pbuf, state, cam_in, landm, coszen )
+  subroutine output_rad_data(  pbuf, state, cam_in, coszen )
 
     use physics_types,    only: physics_state
     use camsrfexch,       only: cam_in_t     
@@ -330,7 +326,6 @@ contains
     
     type(physics_state), intent(in), target :: state
     type(cam_in_t),      intent(in) :: cam_in
-    real(r8),            intent(in) :: landm(pcols)
     real(r8),            intent(in) :: coszen(pcols)
 
     ! Local variables
@@ -373,7 +368,6 @@ contains
     call outfld(lndfrc_fldn, cam_in%landfrac,  pcols, lchnk)
     call outfld(icefrc_fldn, cam_in%icefrac,   pcols, lchnk)
     call outfld(snowh_fldn,  cam_in%snowhland, pcols, lchnk)
-    call outfld(landm_fldn,  landm,            pcols, lchnk)
     call outfld(temp_fldn,   state%t,               pcols, lchnk   )
     call outfld(pdel_fldn,   state%pdel,            pcols, lchnk   )
     call outfld(pdeldry_fldn,state%pdeldry,         pcols, lchnk   )
