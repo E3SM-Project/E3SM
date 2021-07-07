@@ -40,6 +40,7 @@ module ocn_time_integration_split
 
    use ocn_equation_of_state
    use ocn_vmix
+   use ocn_vertical_remap
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
@@ -83,10 +84,11 @@ module ocn_time_integration_split
                            ! outer timestep iteration
 
    integer :: &
-      neededHalos,     &! number of halo levels needed
-      haloDecrement,   &! number of halos to invalidate each cycle
-      numTSIterations, &! number of outer timestep iterations
-      nBtrSubcycles     ! number of barotropic subcycles
+      configVertAdvMethod, &! type of vertical advection method
+      neededHalos,         &! number of halo levels needed
+      haloDecrement,       &! number of halos to invalidate each cycle
+      numTSIterations,     &! number of outer timestep iterations
+      nBtrSubcycles         ! number of barotropic subcycles
 
    integer :: ssh_sal_on
 
@@ -262,6 +264,11 @@ module ocn_time_integration_split
         frazilSurfacePressure, landIcePressure, landIceDraft
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
+
+      ! Remap variables
+      real (kind=RKIND) :: totalThickness
+      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessRemap
+      real (kind=RKIND), dimension(:,:), pointer :: restingThickness
 
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
@@ -2431,6 +2438,35 @@ module ocn_time_integration_split
 
       call mpas_timer_stop("se implicit vert mix")
 
+      if ( configVertAdvMethod == 2 ) then
+            
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+         allocate(layerThicknessRemap(nVertLevels, nCellsAll))
+         layerThicknessRemap = layerThicknessNew
+
+         ! calc. z*-style expansions
+         !$omp parallel
+         !$omp do schedule(runtime) private(k,totalThickness)
+         do iCell = 1, nCellsAll
+            totalThickness = 0.0_RKIND
+            do k = maxLevelCell(iCell), 1, -1
+               totalThickness = totalThickness + layerThicknessNew(k,iCell)
+            end do
+            do k = maxLevelCell(iCell), 1, -1
+               layerThicknessRemap(k, iCell) = restingThickness(k, iCell) * &
+                                               totalThickness / bottomDepth(iCell)
+            end do
+
+         end do
+         !$omp end do
+         !$omp end parallel
+         call ocn_remap_vert_state(block, layerThicknessRemap, err)
+
+         deallocate(layerThicknessRemap)
+      
+      end if
+
       call mpas_timer_start('se fini')
 
 #ifdef MPAS_OPENACC
@@ -2719,6 +2755,12 @@ module ocn_time_integration_split
          useVelocityCorrection = 1.0_RKIND
       else
          useVelocityCorrection = 0.0_RKIND
+      endif
+
+      if ( config_vert_advection_method == 'flux-form' ) then
+         configVertAdvMethod = 1
+      elseif ( config_vert_advection_method == 'remap' ) then
+         configVertAdvMethod = 2
       endif
 
       !*** Compute some halo needs to reduce the number

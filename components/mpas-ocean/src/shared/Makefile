@@ -23,6 +23,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_forcing_surface_stress.o \
 	   mpas_ocn_vel_forcing_explicit_bottom_drag.o \
 	   mpas_ocn_vel_pressure_grad.o \
+	   mpas_ocn_vertical_remap.o \
 	   mpas_ocn_vmix.o \
 	   mpas_ocn_vmix_coefs_redi.o \
 	   mpas_ocn_vmix_cvmix.o \
