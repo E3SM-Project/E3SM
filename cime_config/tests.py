@@ -151,20 +151,20 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.A_WCYCL1850",
-            "SMS_D_Ld1.ne30_oECv3.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+            "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "ERS_Ln9.ne4_ne4.FC5AV1C-L",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
             "NCK.ne11_oQU240.A_WCYCL1850",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
-            "PET_Ln9_PS.ne30_oECv3.A_WCYCL1850S.allactive-mach-pet",
-            "PEM_Ln9.ne30_oECv3.A_WCYCL1850S",
-            "ERP_Ld3.ne30_oECv3.A_WCYCL1850S.allactive-pioroot1",
+            "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",
+            "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
+            "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
-            "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
+            "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
@@ -221,6 +221,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
             "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.A_WCYCL1850S_CMIP6.allactive-wcprodrrm",
             )
         },
