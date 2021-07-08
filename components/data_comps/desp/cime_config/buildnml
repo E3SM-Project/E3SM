@@ -97,7 +97,6 @@ def buildnml(case, caseroot, compname):
     expect (os.path.isdir(user_xml_dir),
             "user_xml_dir %s does not exist " %user_xml_dir)
 
-    breakpoint()
     # NOTE: User definition *replaces* existing definition.
     files = Files()
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE",
