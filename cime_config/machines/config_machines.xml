@@ -1012,10 +1012,10 @@
 
   <machine MACH="anvil">
     <DESC>ANL/LCRC Linux Cluster</DESC>
-    <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mvapich,impi</MPILIBS>
+    <MPILIBS>impi,mvapich</MPILIBS>
     <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -1039,12 +1039,6 @@
         <arg name="binding">--cpu_bind=cores</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="placement">-m plane={{ tasks_per_node }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="impi">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -1108,17 +1102,14 @@
       <env name="MV2_DEBUG_SHOW_BACKTRACE">1</env>
       <env name="MV2_SHOW_ENV_INFO">2</env>
     </environment_variables>
-    <environment_variables mpilib="impi">
+    <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">unit</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
-      <env name="KMP_AFFINITY">granularity=core,scatter</env>
+      <env name="KMP_AFFINITY">granularity=core,balanced</env>
       <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
