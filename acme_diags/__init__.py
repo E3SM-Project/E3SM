@@ -1,7 +1,7 @@
 import os
 import sys
 
-__version__ = "v2.5.0rc3"
+__version__ = "v2.5.0rc4"
 INSTALL_PATH = os.path.join(sys.prefix, "share/e3sm_diags/")
 
 # Disable MPI in cdms2, which is not currently supported by E3SM-unified

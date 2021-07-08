@@ -1,5 +1,5 @@
 {% set name = "e3sm_diags" %}
-{% set version = "2.5.0rc3" %}
+{% set version = "2.5.0rc4" %}
 
 package:
     name: {{ name|lower }}
