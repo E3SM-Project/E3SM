@@ -769,8 +769,20 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append COMP_NAME="gptl">-DHAVE_SLASHPROC</append>
   </CPPDEFS>
+  <CFLAGS>
+    <append>-static-intel</append>
+    <append> -march=core-avx2 </append>
+    <append DEBUG="FALSE"> -O3 </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <append>-static-intel</append>
+    <append> -axCORE-AVX2 </append>
+    <append DEBUG="FALSE"> -O3 </append>
+  </CXXFLAGS>
   <FFLAGS>
-    <append DEBUG="FALSE">-O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append>-static-intel</append>
+    <append> -axCORE-AVX2 </append>
+    <append DEBUG="FALSE">-O3 -qno-opt-dynamic-align</append>
   </FFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SLIBS>
@@ -779,12 +791,6 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <CFLAGS>
-    <append>-static-intel</append>
-  </CFLAGS>
-  <FFLAGS>
-    <append>-static-intel</append>
-  </FFLAGS>
   <LDFLAGS>
     <append>-static-intel </append>
   </LDFLAGS>
