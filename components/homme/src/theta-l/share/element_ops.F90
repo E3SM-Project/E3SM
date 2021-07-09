@@ -67,7 +67,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_field_i, get_state
+  public get_field, get_field_i, get_state, get_pottemp
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref

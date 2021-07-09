@@ -62,6 +62,11 @@ CONTAINS
       if (scm_multcols) then
         call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname='GLL')
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='GLL')
+        call addfld ('WTHL_RES',(/ 'ilev' /), 'A', 'W/m2', 'resolved liquid water potential temperature flux',gridname='GLL')
+        call addfld ('WQW_RES',(/ 'ilev' /), 'A', 'W/m2', 'resolved total water flux',gridname='GLL')
+        call addfld ('Max_w', (/ 'ilev' /), 'X', 'm/s', 'maximum vertical velocity',gridname='GLL')
+        call addfld ('Min_w', (/ 'ilev' /), 'M', 'm/s', 'minimum vertical velocity',gridname='GLL')
+        call addfld ('Dyn_w', (/ 'ilev' /), 'A', 'm/s', 'vertical velocity',gridname='GLL')
       else 
         call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname=trim(dyngrid))
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname=trim(dyngrid))
@@ -86,6 +91,13 @@ CONTAINS
       call addfld ('TAURELAX',(/ 'lev' /),    'A','seconds','relaxation time constant',gridname=trim(dyngrid))
       call add_default ('TDIFF     ', 1, ' ')
       call add_default ('QDIFF     ', 1, ' ')
+      if (scm_multcols) then
+        call add_default ('WTHL_RES', 1, ' ')
+        call add_default ('WQW_RES', 1, ' ')
+        call add_default ('Max_w', 1, ' ')
+        call add_default ('Min_w', 1, ' ')
+        call add_default ('Dyn_w', 1, ' ')
+      endif
    end subroutine scm_intht   
 
 !#######################################################################
