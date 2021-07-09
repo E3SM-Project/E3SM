@@ -928,7 +928,7 @@ if ($co2_cycle) {
             # This should be the same file as the one in the aircraft_specifier file.
             # This is a workaround to get this filepath into the cam.input_data_list file
             # to allow the CESM scripts to obtain all required data for a run.
-            add_default($nl, 'aircraft_co2_file');
+	    # add_default($nl, 'aircraft_co2_file');
        }
     }
 }
