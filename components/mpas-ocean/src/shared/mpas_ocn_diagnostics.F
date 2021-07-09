@@ -118,7 +118,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, normalVelocity
+        layerThickness, layerThicknessLag, normalVelocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -237,6 +237,14 @@ contains
              normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
+
+      if ( config_vert_advection_method == 'remap' ) then
+         ! Overwrite vertVelocityTop with exact Eulerian solution from remapping
+         call mpas_pool_get_array(statePool, 'layerThicknessLag', &
+             layerThicknessLag, timeLevel)
+         call ocn_diagnostic_solve_vertVel_remap(layerThickness, &
+             layerThicknessLag, dt, vertVelocityTop)
+      endif
 
       !
       ! Compute kinetic energy
@@ -1676,6 +1684,87 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_diagnostic_solve_vertVel_remap
+!
+!> \brief   Computes diagnostic variables for velocity
+!> \author  Carolyn Begeman
+!> \date    October 2021
+!> \details
+!>  This routine computes the Eulerian vertical velocity valid for
+!>    Vertical Lagrangian Remapping
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_vertVel_remap(layerThickness, &
+             layerThicknessLag, dt, vertVelocityTop)!{{{
+
+      use ocn_mesh
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickness    ! layerThickness after remapping at timeLevelIn
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessLag ! layerThickness before remapping at timeLevelIn
+      real (kind=RKIND), intent(in) :: dt
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         vertVelocityTop
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, k
+      real (kind=RKIND), dimension(:), allocatable :: &
+         heightCell, heightCellLag
+
+      allocate(heightCell(nVertLevels+1))
+      allocate(heightCellLag(nVertLevels+1))
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(k, heightCell, heightCellLag)
+      do iCell = 1, nCellsAll
+
+         heightCell(:) = -1.0_RKIND * bottomDepth(iCell)
+         heightCellLag(:) = -1.0_RKIND * bottomDepth(iCell)
+
+         do k = maxLevelCell(iCell), minLevelCell(iCell), -1
+            ! reconstruct heights
+            heightCellLag(k) = heightCellLag(k + 1) + layerThicknessLag(k, iCell)
+            heightCell(k) = heightCell(k + 1) + layerThickness(k, iCell)
+         end do
+
+         vertVelocityTop(:, iCell) = 0.0_RKIND
+
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
+            ! compute vertical velocity at the top of each Cell
+            vertVelocityTop(k,iCell) = (heightCellLag(k) - heightCell(k))/dt
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      deallocate(heightCell)
+      deallocate(heightCellLag)
+
+   end subroutine ocn_diagnostic_solve_vertVel_remap!}}}
+
+!***********************************************************************
+!
 !  routine ocn_diagnostic_solve_surface_pressure
 !
 !> \brief   Computes diagnostic variables for surface pressure
@@ -2209,7 +2298,8 @@ contains
 
       err = 0
 
-      if (config_vert_coord_movement.eq.'impermeable_interfaces') then
+      if (config_vert_coord_movement.eq.'impermeable_interfaces' .or. &
+          config_vert_advection_method.eq.'remap') then
         vertAleTransportTop=0.0_RKIND
         !$acc update device(vertAleTransportTop)
         return

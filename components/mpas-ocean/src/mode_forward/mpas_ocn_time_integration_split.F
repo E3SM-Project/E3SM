@@ -268,7 +268,9 @@ module ocn_time_integration_split
       ! Remap variables
       real (kind=RKIND) :: totalThickness
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessRemap
-      real (kind=RKIND), dimension(:,:), pointer :: restingThickness
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         restingThickness,      &
+         layerThicknessLagNew
 
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
@@ -289,6 +291,7 @@ module ocn_time_integration_split
       ! activeTracerNonLocalTendency
       ! activeTracerHorMixTendency
       ! activeTracerHorizontalAdvectionEdgeFlux
+      ! vertVelocityTop
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -2441,9 +2444,15 @@ module ocn_time_integration_split
       if ( configVertAdvMethod == 2 ) then
             
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+         call mpas_pool_get_array(statePool, 'layerThicknessLag', layerThicknessLagNew, 2)
 
          allocate(layerThicknessRemap(nVertLevels, nCellsAll))
+         ! Initialize target layerThickness for remapping to
+         ! its current, Lagrangian location
          layerThicknessRemap = layerThicknessNew
+         ! Store the current, Lagrangian location for computation of the
+         ! Eulerian vertical velocity induced by remapping
+         layerThicknessLagNew = layerThicknessNew
 
          ! calc. z*-style expansions
          !$omp parallel
@@ -2457,7 +2466,6 @@ module ocn_time_integration_split
                layerThicknessRemap(k, iCell) = restingThickness(k, iCell) * &
                                                totalThickness / bottomDepth(iCell)
             end do
-
          end do
          !$omp end do
          !$omp end parallel
