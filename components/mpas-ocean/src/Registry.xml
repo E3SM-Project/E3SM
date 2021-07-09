@@ -1692,6 +1692,25 @@
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 		</stream>
+		<stream name="remap_testing"
+				type="output"
+				filename_template="output/remap_test.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="00-01-00_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				clobber_mode="truncate"
+				output_interval="0000_01:00:00"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="layerThicknessLag"/>
+			<var name="ssh"/>
+			<var name="vertVelocityTop"/>
+		</stream>
 		<stream name="KPP_testing"
 				type="output"
 				filename_template="output/KPP_test.$Y-$M-$D_$h.$m.$s.nc"
