@@ -156,6 +156,7 @@
       <value compset="_EAM%MMF*-RCE"    >RCEMIP_EAMv1</value>
       <value compset="_EAM%MMF*-AQUA"   >aquaplanet_MMF-1mom</value>
       <value compset="AR97_EAM%MMF[1XO]*-SCM"   >scam_arm97_MMF-1mom</value>
+      <value compset="RICO_EAM%MMF[1XO]*-SCM"   >scam_rico_MMF-1mom</value>
     </values>
 
     <group>run_component_cam</group>
@@ -219,6 +220,7 @@
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
     <desc compset="AR95_EAM%*SCAM">stand-alone single column EAM ARM95 IOP test case:</desc>
     <desc compset="AR97_EAM%*SCAM">stand-alone single column EAM ARM97 IOP test case:</desc>
+    <desc compset="RICO_EAM%">stand-alone single column RICO IOP test case:</desc>
     <desc compset="GEOS_EAM%([^W]|W[^C])" >EAM winds and temperature driven by GEOS5 meteorology:</desc>
     <desc compset="GEOS_EAM%WC" >EAM WACCM winds and temperature nudged toward GEOS5 meteorology each time step:</desc>
     <desc compset="_EAM.%L60"    >EAM 60 layers and full gravity wave spectrum:</desc>

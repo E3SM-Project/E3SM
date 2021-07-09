@@ -269,6 +269,15 @@
     <alias>F-MMFXX-SCM-ARM97</alias>
     <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <compset>
+    <alias>F-MMF1-SCM-RICO</alias>
+    <lname>RICO_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-SCM-RICO</alias>
+    <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <!-- ******************************* -->
   <!-- ******************************* -->
@@ -296,13 +305,14 @@
 	<value  compset="C2R4_EAM">2004-01-01</value>
 	<value  compset="AR95_EAM">1995-07-18</value>
 	<value  compset="AR97_EAM">1997-06-19</value>
+	<value  compset="RICO_EAM">2004-12-16</value>
       </values>
     </entry>
 
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
-   <value  compset="EAM%MMF[12OX]*-SCM_">GREGORIAN</value>
+   <value  compset="RICO_EAM">GREGORIAN</value>
       </values>
     </entry>
 
@@ -310,6 +320,7 @@
       <values>
 	<value  compset="AR95_EAM">19800</value>
 	<value  compset="AR97_EAM">84585</value>
+	<value  compset="RICO_EAM">0</value>
       </values>
     </entry>
 
@@ -317,6 +328,7 @@
       <values>
 	<value compset="AR95_EAM">ndays</value>
 	<value compset="AR97_EAM">ndays</value>
+	<value compset="RICO_EAM">ndays</value>
       </values>
     </entry>
 
@@ -324,12 +336,14 @@
       <values>
 	<value compset="AR95_EAM">2</value>
 	<value compset="AR97_EAM">29</value>
+	<value compset="RICO_EAM">1</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
 	<value compset="AR97_EAM">USGS</value>
+	<value compset="RICO_EAM">USGS</value>
       </values>
     </entry>
 
@@ -348,12 +362,14 @@
     <entry id="PTS_LAT">
       <values>
         <value compset="AR9[57]_EAM">36.6</value>
+        <value compset="RICO_EAM">17.97</value>
       </values>
     </entry>
 
     <entry id="PTS_LON">
       <values>
         <value compset="AR9[57]_EAM">262.5</value>
+        <value compset="RICO_EAM">298.54</value>
       </values>
     </entry>
 
