@@ -115,6 +115,16 @@ module AllocationMod
   real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
   real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
 
+  ! ECA parameters
+  ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance                                         
+  real(r8), parameter :: e_plant_scalar  = 0.0000125_r8 
+  
+  ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance                                         
+  real(r8), parameter :: e_decomp_scalar = 0.05_r8      
+
+  !$acc declare create(e_decomp_scalar)
+  !$acc declare create(e_plant_scalar)
+  
   !$acc declare copyin(crop_supln)
   !-----------------------------------------------------------------------
 
@@ -1044,7 +1054,7 @@ contains
         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, puptake_prof)
 
-     elseif (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
+     elseif ((nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') .and. .not. use_fates) then
 
         do fp=1,num_soilp
            p = filter_soilp(fp)
@@ -2954,12 +2964,6 @@ contains
     real(r8), parameter :: adsorp_nh4_eff = 2.76_r8
 
     real(r8), parameter :: m3_per_liter = 1.e-3_r8   ! m3 per liter
-
-    ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-    real(r8), parameter :: e_plant_scalar  = 0.0000125_r8 
-
-    ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-    real(r8), parameter :: e_decomp_scalar = 0.05_r8      
 
     do j = 1, nlevdecomp
 
