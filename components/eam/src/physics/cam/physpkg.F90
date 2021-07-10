@@ -76,6 +76,7 @@ module physpkg
   integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
   character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
+  character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   save
 
@@ -86,6 +87,7 @@ module physpkg
   public phys_run2   ! Second phase of the public run method
   public phys_final  ! Public finalization method
   public gas_ac_name
+  public gas_ac_name_2D
   !
   ! Private module data
   !
@@ -104,6 +106,7 @@ module physpkg
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
   logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
 
   !======================================================================= 
 contains
@@ -184,7 +187,8 @@ subroutine phys_register
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods, &
-                      history_gaschmbudget_out = history_gaschmbudget)
+                      history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -282,6 +286,21 @@ subroutine phys_register
 
               if (masterproc) then
                 write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
+              end if
+            end if
+         enddo
+       end if
+
+       if (history_gaschmbudget_2D) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+              call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
+
+              if (masterproc) then
+                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name_2D=',gas_ac_name_2D(m)
               end if
             end if
          enddo
@@ -1495,6 +1514,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: Diff      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:) :: gas_ac_2D
     real(r8), pointer, dimension(:,:) :: gas_ac
 
     ! physics buffer fields for total energy and mass adjustment
@@ -1542,7 +1562,8 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_rayleigh_out         = l_rayleigh         &
                       ,l_gw_drag_out          = l_gw_drag          &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
-                      ,history_gaschmbudget_out = history_gaschmbudget &
+                    ,history_gaschmbudget_out = history_gaschmbudget &
+                 ,history_gaschmbudget_2D_out = history_gaschmbudget_2D &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
@@ -1652,6 +1673,30 @@ if (l_tracer_aero) then
                 Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))*rtdt
              end if
              call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
+           end if
+         enddo
+       end if
+       !
+       if (history_gaschmbudget_2D) then
+         do m = 1,pcnst
+           n = map2chm(m)
+           if (n > 0 .and. (.not. any( aer_species == n ))) then
+             gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
+             if( nstep == 0 ) then
+                Diff(:ncol,1) = 0.0_r8
+                if (masterproc) then
+                  write(iulog,*) 'tphysac: m = ',m,' n = ',n,' gas_ac_name_2D=',gas_ac_name_2D(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                end if
+
+             else
+                ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+                do k=2,pver
+                  ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+                end do
+                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))*rtdt
+             end if
+             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
            end if
          enddo
        end if
