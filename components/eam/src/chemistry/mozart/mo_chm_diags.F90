@@ -88,6 +88,7 @@ contains
     logical :: history_amwg         ! output the variables used by the AMWG diag package
     logical :: history_verbose      ! produce verbose history output
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
@@ -96,11 +97,15 @@ contains
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
                        cam_chempkg_out     = chempkg, &
-                       history_gaschmbudget_out = history_gaschmbudget)
+                       history_gaschmbudget_out = history_gaschmbudget, &
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)
 
     if (masterproc) then
        if (history_gaschmbudget) then
           write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
+       endif
+       if (history_gaschmbudget_2D) then
+          write(iulog,*) 'chm_diags_inti: history_gaschmbudget_2D = ', history_gaschmbudget_2D
        endif
     endif
 
@@ -316,6 +321,22 @@ contains
              call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
              call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
           endif
+          if (history_gaschmbudget_2D) then
+             call addfld( trim(spc_name)//'_2DMSB', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration before gas chem solver')
+             call addfld( trim(spc_name)//'_2DMSL', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after Linoz')
+             call addfld( trim(spc_name)//'_2DMSS', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after surface emission')
+             call addfld( trim(spc_name)//'_2DMSD', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after dry deposition')
+             call addfld( trim(spc_name)//'_2DMSBac', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration before chem_timestep_tend')
+             call addfld( trim(spc_name)//'_2DTDE', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to explicit solver')
+             call addfld( trim(spc_name)//'_2DTDI', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to implicit solver')
+             call addfld( trim(spc_name)//'_2DTDL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to Linoz')
+             call addfld( trim(spc_name)//'_2DTDN', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_2DTDU', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_2DTDB', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_2DTDS', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to surface emission')
+             call addfld( trim(spc_name)//'_2DTDD', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to dry deposition')
+             call addfld( trim(spc_name)//'_2DTDO', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to processes outside of chemistry')
+          endif
        endif
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
@@ -343,6 +364,22 @@ contains
                 call add_default( trim(spc_name)//'_TDS', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDD', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDO', 1, ' ' )
+             endif
+             if (history_gaschmbudget_2D) then
+                call add_default( trim(spc_name)//'_2DMSB', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSL', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSS', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSBac', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDL', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDN', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDU', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDB', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDS', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDD', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDO', 1, ' ' )
              endif
           endif
        endif
@@ -378,7 +415,7 @@ contains
     call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
 
-    if (history_gaschmbudget) then
+    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
        call add_default( 'AREA', 1, ' ' )
     endif
 
@@ -943,29 +980,46 @@ contains
     !--------------------------------------------------------------------
     !	... local variables
     !--------------------------------------------------------------------
-    integer  :: i,j,k, m, n
+    integer  :: k, m
     real(r8) :: wrk(ncol,pver)
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical  :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
 
-    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget )
+    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)
 
-    if ( .not. history_gaschmbudget ) return
+    if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D ) return
 
     do m = 1,gas_pcnst
        
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
-          if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
-             ! kg/m2
-             wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
-                              *pdeldry(:ncol,:)*rgrav
-             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
+          if (flag(1:2) .ne. '2D') then
+            if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
+               ! kg/m2
+               wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+                                *pdeldry(:ncol,:)*rgrav
+            else
+               ! kg/m2/s
+               wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
+                                /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
+            endif
+            call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
-             ! kg/m2/s
-             wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
-                              /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
-             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
+            if (flag == '2DMSB' .or. flag=='2DMSL' .or. flag=='2DMSS' .or. flag=='2DMSD') then
+               ! kg/m2
+               wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+                                *pdeldry(:ncol,:)*rgrav
+            else
+               ! kg/m2/s
+               wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
+                                /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
+            endif
+            do k=2,pver
+               wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+            enddo
+            call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,1), ncol ,lchnk )
           endif
        endif
 

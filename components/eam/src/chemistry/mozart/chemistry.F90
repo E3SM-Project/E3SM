@@ -1400,6 +1400,7 @@ end function chem_is_active
     real(r8), pointer :: cldtop(:)
     real(r8) :: ftem(pcols,pver) ! tmp space
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget_2D
 
     integer :: tim_ndx
 
@@ -1407,7 +1408,8 @@ end function chem_is_active
 
     if ( .not. chem_step ) return
 
-    call phys_getopts(history_gaschmbudget_out = history_gaschmbudget)
+    call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
 
     chem_dt = chem_freq*dt
 
@@ -1423,12 +1425,22 @@ end function chem_is_active
     end do
     if ( ghg_chem ) lq(1) = .true.
 
-    if (history_gaschmbudget) then
+    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
       do m = 1,pcnst
          n = map2chm(m)
          if (n > 0 .and. (.not. any( aer_species == n ))) then
            ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-           call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
+
+           if (history_gaschmbudget) then
+             call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
+           end if
+
+           if (history_gaschmbudget_2D) then
+             do k=2,pver
+               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+             end do
+             call outfld(trim(solsym(n))//'_2DMSBac', ftem(:ncol,1), pcols, lchnk )
+           end if
          end if
       end do
     end if
