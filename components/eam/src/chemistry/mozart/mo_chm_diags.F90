@@ -316,6 +316,7 @@ contains
              call addfld( trim(spc_name)//'_TDS', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to surface emission')
              call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
              call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
+             call addfld( trim(spc_name)//'_TDac', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes after dry dep till the end of chem_timestep_tend')
           endif
        endif
 
@@ -345,6 +346,7 @@ contains
                 call add_default( trim(spc_name)//'_TDS', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDD', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDO', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDac', 1, ' ' )
              endif
           endif
        endif

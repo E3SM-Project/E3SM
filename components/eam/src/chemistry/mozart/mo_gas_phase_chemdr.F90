@@ -8,9 +8,10 @@ module mo_gas_phase_chemdr
   use chem_mods,        only : rxt_tag_cnt, rxt_tag_lst, rxt_tag_map, extcnt
   use dust_model,       only : dust_names, ndust => dust_nbin
   use ppgrid,           only : pcols, pver
-  use spmd_utils,       only : iam
+  use spmd_utils,       only : iam, masterproc
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
+  use physics_buffer,   only : pbuf_get_index
 
   implicit none
   save
@@ -49,7 +50,6 @@ contains
     use mo_chm_diags,      only : chm_diags_inti
     use mo_tracname,       only : solsym
     use constituents,      only : cnst_get_ind
-    use physics_buffer,    only : pbuf_get_index
     use rate_diags,        only : rate_diags_init
     use rad_constituents,  only : rad_cnst_get_info
 
@@ -244,6 +244,7 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
+    use physpkg,           only : gas_ac_name
 
 !
 ! LINOZ
@@ -399,6 +400,10 @@ contains
 
     ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget
+
+    integer ::  gas_ac_idx
+    real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: ftem(pcols,pver) ! tmp space
 
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
@@ -1080,6 +1085,19 @@ contains
                               pdeldry(:ncol,:), mbar, delt_inverse, 'TDD' )
        call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                               pdeldry(:ncol,:), mbar, delt_inverse, 'MSD' )
+       do m = 1,pcnst
+          n = map2chm(m)
+          if (n > 0 .and. (.not. any( aer_species == n ))) then
+            ! store gas chemistry tracer concentration in pbuf for tendency
+            ! calculation
+            gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+            call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+            ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
+                            *pdeldry(:ncol,:)*rga
+            gas_ac(:ncol,:) = ftem(:ncol,:)
+          endif
+       end do
+
     endif
 
     !-----------------------------------------------------------------------      
