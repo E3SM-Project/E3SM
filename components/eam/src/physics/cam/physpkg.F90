@@ -85,6 +85,7 @@ module physpkg
   public phys_run1   ! First phase of the public run method
   public phys_run2   ! Second phase of the public run method
   public phys_final  ! Public finalization method
+  public gas_ac_name
   !
   ! Private module data
   !
@@ -279,9 +280,9 @@ subroutine phys_register
               gas_ac_name(m) = 'ac_'//spc_name
               call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx(m))
 
-              if (masterproc) then
-                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
-              end if
+              !if (masterproc) then
+              !  write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
+              !end if
             end if
          enddo
        end if
@@ -1642,9 +1643,9 @@ if (l_tracer_aero) then
              call pbuf_get_field(pbuf, gas_ac_idx(n), gas_ac )
              if( nstep == 0 ) then
                 Diff(:ncol,:) = 0.0_r8
-             if (masterproc) then
-               write(iulog,*) 'tphysac1: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-             end if
+                !if (masterproc) then
+                !  write(iulog,*) 'tphysac1: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                !end if
 
              else
                 ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
@@ -1658,25 +1659,6 @@ if (l_tracer_aero) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
        
-       if (history_gaschmbudget) then
-         do m = 1,pcnst
-            n = map2chm(m)
-            if (n > 0 .and. (.not. any( aer_species == n ))) then
-              gas_ac_idx(n) = pbuf_get_index(gas_ac_name(n))
-              call pbuf_get_field(pbuf, gas_ac_idx(n), gas_ac )
-              ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-              call outfld(trim(solsym(n))//'_MSac', ftem, pcols, lchnk )
-              gas_ac(:ncol,:) = ftem(:ncol,:)
-
-             if( nstep == 0 ) then
-             if (masterproc) then
-               write(iulog,*) 'tphysac2: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-             end if
-             end if
-            end if
-         enddo
-       end if
-
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
