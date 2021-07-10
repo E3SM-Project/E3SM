@@ -306,7 +306,6 @@ contains
              call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after surface emission')
              call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after dry deposition')
              call addfld( trim(spc_name)//'_MSBac', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before chem_timestep_tend')
-             call addfld( trim(spc_name)//'_MSac', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after chem_timestep_tend in tphysac')
              call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
              call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
              call addfld( trim(spc_name)//'_TDL', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to Linoz')
@@ -316,7 +315,6 @@ contains
              call addfld( trim(spc_name)//'_TDS', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to surface emission')
              call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
              call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
-             call addfld( trim(spc_name)//'_TDac', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes after dry dep till the end of chem_timestep_tend')
           endif
        endif
 
@@ -336,7 +334,6 @@ contains
                 call add_default( trim(spc_name)//'_MSS', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSD', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSBac', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSac', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDL', 1, ' ' )
@@ -346,7 +343,6 @@ contains
                 call add_default( trim(spc_name)//'_TDS', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDD', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDO', 1, ' ' )
-                call add_default( trim(spc_name)//'_TDac', 1, ' ' )
              endif
           endif
        endif
@@ -948,7 +944,7 @@ contains
     !	... local variables
     !--------------------------------------------------------------------
     integer  :: i,j,k, m, n
-    real(r8) :: wrk(ncol,pver,gas_pcnst)
+    real(r8) :: wrk(ncol,pver)
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
@@ -962,14 +958,14 @@ contains
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
           if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
              ! kg/m2
-             wrk(:ncol,:,m) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+             wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
                               *pdeldry(:ncol,:)*rgrav
-             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
+             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
              ! kg/m2/s
-             wrk(:ncol,:,m) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m))&
-               /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
-             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
+             wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
+                              /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
+             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           endif
        endif
 
