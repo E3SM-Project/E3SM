@@ -73,7 +73,7 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
-  integer ::  gas_ac_idx(gas_pcnst)
+  integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
   character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
 
@@ -278,11 +278,11 @@ subroutine phys_register
             if (.not. any( aer_species == m )) then
               spc_name = trim(solsym(m))
               gas_ac_name(m) = 'ac_'//spc_name
-              call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx(m))
+              call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
 
-              !if (masterproc) then
-              !  write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
-              !end if
+              if (masterproc) then
+                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
+              end if
             end if
          enddo
        end if
@@ -1639,13 +1639,13 @@ if (l_tracer_aero) then
          do m = 1,pcnst
            n = map2chm(m)
            if (n > 0 .and. (.not. any( aer_species == n ))) then
-             gas_ac_idx(n) = pbuf_get_index(gas_ac_name(n))
-             call pbuf_get_field(pbuf, gas_ac_idx(n), gas_ac )
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
              if( nstep == 0 ) then
                 Diff(:ncol,:) = 0.0_r8
-                !if (masterproc) then
-                !  write(iulog,*) 'tphysac1: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-                !end if
+                if (masterproc) then
+                  write(iulog,*) 'tphysac: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                end if
 
              else
                 ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
