@@ -87,8 +87,8 @@ else
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
   readonly PELAYOUT="M"
   readonly WALLTIME="24:00:00"
-  readonly STOP_OPTION="nyears"
-  readonly STOP_N="2"
+  readonly STOP_OPTION="nmonths"
+  readonly STOP_N="25"
   readonly REST_OPTION="nmonths"
   readonly REST_N="3"
   readonly RESUBMIT="0"
