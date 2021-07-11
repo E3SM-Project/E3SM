@@ -273,31 +273,19 @@ subroutine phys_register
 
        ! NB: has to be after chem_register to use tracer names
        ! Fields for gas chemistry tracers
-       if (history_gaschmbudget) then
+       if (history_gaschmbudget .or. history_gaschmbudget_2D) then
          call chm_diags_inti_ac() ! to get aer_species
          do m = 1,gas_pcnst
             if (.not. any( aer_species == m )) then
               spc_name = trim(solsym(m))
-              gas_ac_name(m) = 'ac_'//spc_name
-              call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
-
-              if (masterproc) then
-                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name=',gas_ac_name(m)
+              if (history_gaschmbudget) then
+                gas_ac_name(m) = 'ac_'//spc_name
+                call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
               end if
-            end if
-         enddo
-       end if
 
-       if (history_gaschmbudget_2D) then
-         call chm_diags_inti_ac() ! to get aer_species
-         do m = 1,gas_pcnst
-            if (.not. any( aer_species == m )) then
-              spc_name = trim(solsym(m))
-              gas_ac_name_2D(m) = 'ac_2D_'//spc_name
-              call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
-
-              if (masterproc) then
-                write(iulog,*) 'phys_register: m = ',m,' gas_ac_name_2D=',gas_ac_name_2D(m)
+              if (history_gaschmbudget_2D) then
+                gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+                call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
               end if
             end if
          enddo
