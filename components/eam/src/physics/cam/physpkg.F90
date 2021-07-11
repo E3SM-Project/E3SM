@@ -48,6 +48,7 @@ module physpkg
   use mo_tracname,  only : solsym
   use cam_history,  only : fieldname_len
   use mo_chm_diags, only : aer_species
+  use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
   implicit none
   private
@@ -75,8 +76,6 @@ module physpkg
   integer ::  rice2_idx          = 0
   integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
-  character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
-  character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   save
 
@@ -86,8 +85,6 @@ module physpkg
   public phys_run1   ! First phase of the public run method
   public phys_run2   ! Second phase of the public run method
   public phys_final  ! Public finalization method
-  public gas_ac_name
-  public gas_ac_name_2D
   !
   ! Private module data
   !
