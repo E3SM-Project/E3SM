@@ -784,31 +784,32 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          crm_qt(1:ncol,:,:,:) = 0.0_r8
 
          do i = 1,ncol
+            icrm = ncol_sum + i
             do k = 1,crm_nz
                m = pver-k+1
 
-               crm_u(i,:,:,k) = state%u(i,m) * cos( crm_angle(i) ) + state%v(i,m) * sin( crm_angle(i) )
-               crm_v(i,:,:,k) = state%v(i,m) * cos( crm_angle(i) ) - state%u(i,m) * sin( crm_angle(i) )
-               crm_w(i,:,:,k) = 0.
-               crm_t(i,:,:,k) = state%t(i,m)
+               crm_u(icrm,:,:,k) = state(c)%u(i,m) * cos( crm_angle(i) ) + state(c)%v(i,m) * sin( crm_angle(i) )
+               crm_v(icrm,:,:,k) = state(c)%v(i,m) * cos( crm_angle(i) ) - state(c)%u(i,m) * sin( crm_angle(i) )
+               crm_w(icrm,:,:,k) = 0.
+               crm_t(icrm,:,:,k) = state(c)%t(i,m)
 
                ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
-                  crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-                  crm_qp(i,:,:,k) = 0.0_r8
-                  crm_qn(i,:,:,k) = state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
+                  crm_qt(icrm,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
+                  crm_qp(icrm,:,:,k) = 0.0_r8
+                  crm_qn(icrm,:,:,k) = state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                else if (MMF_microphysics_scheme .eq. 'm2005') then
-                  crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
-                  crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
-                  crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
-                  crm_nc(i,:,:,k) = 0.0_r8
-                  crm_qr(i,:,:,k) = 0.0_r8
-                  crm_nr(i,:,:,k) = 0.0_r8
-                  crm_ni(i,:,:,k) = 0.0_r8
-                  crm_qs(i,:,:,k) = 0.0_r8
-                  crm_ns(i,:,:,k) = 0.0_r8
-                  crm_qg(i,:,:,k) = 0.0_r8
-                  crm_ng(i,:,:,k) = 0.0_r8
+                  crm_qt(icrm,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)
+                  crm_qc(icrm,:,:,k) = state(c)%q(i,m,ixcldliq)
+                  crm_qi(icrm,:,:,k) = state(c)%q(i,m,ixcldice)
+                  crm_nc(icrm,:,:,k) = 0.0_r8
+                  crm_qr(icrm,:,:,k) = 0.0_r8
+                  crm_nr(icrm,:,:,k) = 0.0_r8
+                  crm_ni(icrm,:,:,k) = 0.0_r8
+                  crm_qs(icrm,:,:,k) = 0.0_r8
+                  crm_ns(icrm,:,:,k) = 0.0_r8
+                  crm_qg(icrm,:,:,k) = 0.0_r8
+                  crm_ng(icrm,:,:,k) = 0.0_r8
                end if
 
             end do
@@ -833,8 +834,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             m = pver-k+1
             do i = 1,ncol
                crm_qrad   (i,:,:,k) = 0.
-               crm_t_rad  (i,:,:,k) = state%t(i,m)
-               crm_qv_rad (i,:,:,k) = state%q(i,m,1)
+               crm_t_rad  (i,:,:,k) = state(c)%t(i,m)
+               crm_qv_rad (i,:,:,k) = state(c)%q(i,m,1)
                crm_qc_rad (i,:,:,k) = 0.
                crm_qi_rad (i,:,:,k) = 0.
                crm_cld_rad(i,:,:,k) = 0.
@@ -1047,7 +1048,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          phase = 1  ! interstital aerosols only
          do i = 1,ncol
             icrm = ncol_sum + i
-            air_density(i,1:pver) = state%pmid(i,1:pver) / (287.15*state%t(i,1:pver))
+            air_density(i,1:pver) = state(c)%pmid(i,1:pver) / (287.15*state(c)%t(i,1:pver))
             do k = 1, pver
                do m = 1, ntot_amode
                   call loadaer( state(c), pbuf_chunk, i, i, k, m, air_density, phase, &
@@ -1300,7 +1301,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
             do i = 1,ncol
                icrm = ncol_sum + i
-               air_density(i,1:pver) = state%pmid(i,1:pver) / (287.15*state%t(i,1:pver))
+               air_density(i,1:pver) = state(c)%pmid(i,1:pver) / (287.15*state(c)%t(i,1:pver))
                TKE_tmp(i,1:pver) = crm_output%tkez(i,1:pver) / air_density(i,1:pver)
                ideep_crm(i) = i*1.0  ! For convective transport
             end do
