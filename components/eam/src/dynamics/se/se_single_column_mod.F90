@@ -42,6 +42,7 @@ subroutine scm_setinitial(elem)
   integer inumliq, inumice, icldliq, icldice
 
   if (.not. use_replay .and. get_nstep() .eq. 0 .and. par%dynproc) then
+
     call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
     call cnst_get_ind('NUMICE', inumice, abrtf=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
@@ -141,6 +142,7 @@ subroutine scm_broadcast()
   call mpibcast(have_u,1,mpilog,0,mpicom)
   call mpibcast(have_v,1,mpilog,0,mpicom)
   call mpibcast(have_omega,1,mpilog,0,mpicom)
+  call mpibcast(have_cldliq,1,mpilog,0,mpicom)
   call mpibcast(have_divt,1,mpilog,0,mpicom)
   call mpibcast(have_divq,1,mpilog,0,mpicom)
   call mpibcast(have_divt3d,1,mpilog,0,mpicom)
@@ -156,6 +158,7 @@ subroutine scm_broadcast()
   call mpibcast(qobs,plev,mpir8,0,mpicom)
   call mpibcast(uobs,plev,mpir8,0,mpicom)
   call mpibcast(vobs,plev,mpir8,0,mpicom)
+  call mpibcast(cldliqobs,plev,mpir8,0,mpicom)
   call mpibcast(wfld,plev,mpir8,0,mpicom) 
   
   call mpibcast(divt,plev,mpir8,0,mpicom)
