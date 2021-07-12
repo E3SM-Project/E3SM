@@ -99,6 +99,8 @@ VECTOR_SIMD_LOOP
     return *this;
   }
 
+  type& operator= (const type& src) = default;
+
   KOKKOS_FORCEINLINE_FUNCTION
   type &loadUnaligned(value_type const *p) {
 VECTOR_SIMD_LOOP

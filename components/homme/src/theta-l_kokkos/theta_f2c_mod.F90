@@ -127,12 +127,21 @@ interface
   end subroutine init_reference_element_c
 
   ! Create C++ functors
-  subroutine init_functors_c () bind(c)
+  subroutine init_functors_c (allocate_buffer) bind(c)
+  use iso_c_binding, only: c_bool
+  !
+  ! Inputs
+  !
+  logical(kind=c_bool), intent(in) :: allocate_buffer
   end subroutine init_functors_c
 
   ! Initialize C++ boundary exchange structures
   subroutine init_boundary_exchanges_c () bind(c)
   end subroutine init_boundary_exchanges_c
+
+  ! Initialize dp3d from ps_v and hybrid v coord
+  subroutine initialize_dp3d_from_ps_c () bind(c)
+  end subroutine initialize_dp3d_from_ps_c
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !               Run-time routines               !

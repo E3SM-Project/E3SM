@@ -15,8 +15,7 @@ namespace Homme
 {
 
 void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geometry,
-                        const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
-                        F90Ptr& elem_state_q_ptr,
+                        const HybridVCoord& hvcoord, F90Ptr& elem_state_q_ptr,
                         F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
                         F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
                         F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
@@ -32,7 +31,6 @@ void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geom
   m_state    = state;
   m_geometry = geometry;
   m_hvcoord  = hvcoord;
-  m_theta_hydrostatic_mode = theta_hydrostatic_mode;
 
   m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
   m_elem_ops.init(m_hvcoord);
@@ -58,8 +56,10 @@ int Diagnostics::requested_buffer_size () const {
 
   constexpr int size_mid_scalar = NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar = NP*NP*NUM_LEV_P*VECTOR_SIZE;
+  const int num_3d_int = m_theta_hydrostatic_mode ? Buffers::num_3d_scalar_int_buf_hy
+                                                  : Buffers::num_3d_scalar_int_buf_nh;
   return nslots * (Buffers::num_3d_scalar_mid_buf*size_mid_scalar +
-                   Buffers::num_3d_scalar_mid_buf*size_int_scalar);
+                   num_3d_int*size_int_scalar);
 }
 
 void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
@@ -83,6 +83,11 @@ void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
   mem += nslots*NP*NP*NUM_LEV;
 
   m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nslots);
+  mem += nslots*NP*NP*NUM_LEV_P;
+
+  if (m_theta_hydrostatic_mode) {
+    m_buffers.phi_i = decltype(m_buffers.phi_i)(mem,nslots);
+  }
 }
 
 void Diagnostics::sync_diags_to_host () {

@@ -16,14 +16,23 @@ class FunctorsBuffersManager;
 struct VerticalRemapManager {
   VerticalRemapManager();
 
+  VerticalRemapManager(const int num_elems);
+
   void run_remap(int np1, int np1_qdp, double dt) const;
 
   int requested_buffer_size () const;
   void init_buffers(const FunctorsBuffersManager& fbm);
 
+  bool setup_needed () { return !is_setup; }
+
+  void setup ();
+
 private:
   struct Impl;
   std::shared_ptr<Impl> p_;
+
+  int m_num_elems;
+  bool is_setup;
 };
 
 }

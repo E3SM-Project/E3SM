@@ -22,28 +22,30 @@ class Diagnostics
 {
 private:
   struct Buffers {
-    static constexpr int num_3d_scalar_mid_buf = 4;
-    static constexpr int num_3d_scalar_int_buf = 1;
+    static constexpr int num_3d_scalar_mid_buf    = 4;
+    static constexpr int num_3d_scalar_int_buf_hy = 2;
+    static constexpr int num_3d_scalar_int_buf_nh = 1;
 
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    pnh;
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    exner;
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    phi;
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV]>    dp_ref;
 
+    ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV_P]>  phi_i;
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV_P]>  dpnh_dp_i;
   };
 
 public:
 
-  Diagnostics (const int num_elems) :
+  Diagnostics (const int num_elems, const bool theta_hydrostatic_mode) :
     m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
     m_tu(m_policy),
-    m_num_elems(num_elems)
+    m_num_elems(num_elems),
+    m_theta_hydrostatic_mode(theta_hydrostatic_mode)
   {}
 
   void init (const ElementsState& state, const ElementsGeometry& geometry,
-             const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
-             F90Ptr& elem_state_q_ptr,
+             const HybridVCoord& hvcoord,  F90Ptr& elem_state_q_ptr,
              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
              F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
              F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr);
@@ -75,7 +77,9 @@ public:
     // Subview inputs/outputs
     auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp, kv.ie,t1);
     auto dpt1      = Homme::subview(m_state.m_dp3d,      kv.ie,t1);
-    auto phi_i     = Homme::subview(m_state.m_phinh_i,   kv.ie,t1);
+    auto phi_i     = m_theta_hydrostatic_mode
+                   ? Homme::subview(m_buffers.phi_i,   kv.team_idx)
+                   : Homme::subview(m_state.m_phinh_i, kv.ie,t1);
 
     auto phi       = Homme::subview(m_buffers.phi,       kv.team_idx);
     auto exner     = Homme::subview(m_buffers.exner,     kv.team_idx);
@@ -121,7 +125,7 @@ public:
 
       // Compute phi at midpoints
       ColumnOps::compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
-                                           Homme::subview(phi,  igp,jgp));
+                                            Homme::subview(phi,  igp,jgp));
 
       auto& KEner = m_KEner(kv.ie,m_ivar,igp,jgp);
       auto& PEner = m_PEner(kv.ie,m_ivar,igp,jgp);

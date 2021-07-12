@@ -18,38 +18,53 @@ namespace Homme {
 
 struct VerticalRemapManager::Impl {
   Impl(const SimulationParams &params, const Elements &e, const Tracers &t,
-       const HybridVCoord &h) {
+       const HybridVCoord &h)
+    : m_hvcoord(h)
+    , m_params(params)
+    , m_elements(e)
+    , m_tracers(t)
+  {
+    setup_remmapper();
+  }
+
+  Impl(const SimulationParams &params, const HybridVCoord &h)
+    : m_hvcoord(h)
+    , m_params(params)
+  {}
+
+  void setup_remmapper ()
+  {
     using namespace Remap;
     using namespace Remap::Ppm;
-    if (params.remap_alg == RemapAlg::PPM_FIXED_PARABOLA) {
-      if (params.rsplit != 0) {
+    if (m_params.remap_alg == RemapAlg::PPM_FIXED_PARABOLA) {
+      if (m_params.rsplit != 0) {
         remapper = std::make_shared<RemapFunctor<
             true, PpmVertRemap<PpmFixedParabola>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       } else {
         remapper = std::make_shared<RemapFunctor<
             false, PpmVertRemap<PpmFixedParabola>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       }
-    } else if (params.remap_alg == RemapAlg::PPM_FIXED_MEANS) {
-      if (params.rsplit != 0) {
+    } else if (m_params.remap_alg == RemapAlg::PPM_FIXED_MEANS) {
+      if (m_params.rsplit != 0) {
         remapper = std::make_shared<RemapFunctor<
             true, PpmVertRemap<PpmFixedMeans>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       } else {
         remapper = std::make_shared<RemapFunctor<
             false, PpmVertRemap<PpmFixedMeans>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       }
-    } else if (params.remap_alg == RemapAlg::PPM_MIRRORED) {
-      if (params.rsplit != 0) {
+    } else if (m_params.remap_alg == RemapAlg::PPM_MIRRORED) {
+      if (m_params.rsplit != 0) {
         remapper = std::make_shared<RemapFunctor<
             true, PpmVertRemap<PpmMirrored>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       } else {
         remapper = std::make_shared<RemapFunctor<
             false, PpmVertRemap<PpmMirrored>> >(
-            params.qsize, e, t, h);
+            m_params.qsize, m_elements, m_tracers, m_hvcoord);
       }
     } else {
       Errors::runtime_abort(
@@ -58,29 +73,98 @@ struct VerticalRemapManager::Impl {
     }
   }
 
+  void setup (const Elements &e, const Tracers &t)
+  {
+    m_elements = e;
+    m_tracers  = t;
+
+    setup_remmapper();
+  }
+
   std::shared_ptr<Remap::Remapper> remapper;
+
+  HybridVCoord     m_hvcoord;
+  SimulationParams m_params;
+  Elements         m_elements;
+  Tracers          m_tracers;
+
 };
 
-VerticalRemapManager::VerticalRemapManager() {
+VerticalRemapManager::VerticalRemapManager()
+  : is_setup(true)
+{
   const auto &h = Context::singleton().get<HybridVCoord>();
   const auto &p = Context::singleton().get<SimulationParams>();
   const auto &e = Context::singleton().get<Elements>();
+  m_num_elems = e.num_elems();
   const auto &t = Context::singleton().get<Tracers>();
   assert(p.params_set);
   p_.reset(new Impl(p, e, t, h));
 }
 
+VerticalRemapManager::VerticalRemapManager(const int num_elems)
+  : m_num_elems(num_elems)
+  , is_setup(false)
+{
+  const auto &h = Context::singleton().get<HybridVCoord>();
+  const auto &p = Context::singleton().get<SimulationParams>();
+  assert(p.params_set);
+  p_.reset(new Impl(p, h));
+}
+
+void VerticalRemapManager::setup ()
+{
+  assert(!is_setup);
+
+  const auto &e = Context::singleton().get<Elements>();
+  assert(m_num_elems == e.num_elems()); // Sanity check
+
+  const auto &t = Context::singleton().get<Tracers>();
+  p_->setup(e,t);
+
+  is_setup = true;
+}
+
 void VerticalRemapManager::run_remap(int np1, int np1_qdp, double dt) const {
+  assert(is_setup);
+
   assert(p_);
   assert(p_->remapper);
   p_->remapper->run_remap(np1, np1_qdp, dt);
 }
 
+struct TempTagStruct  {};
+
 int VerticalRemapManager::requested_buffer_size () const {
   assert (p_);
   assert (p_->remapper);
 
-  return p_->remapper->requested_buffer_size();
+  if (is_setup) {
+    return p_->remapper->requested_buffer_size();
+  }
+  // If the struct is not fully setup, we must manually compute
+  // buffer request, since internally the Element functor is required.
+  else {
+#ifdef HOMMEXX_BFB_TESTING
+    const bool process_nh_vars = true;
+#else
+    const bool process_nh_vars = !(p_->m_params.theta_hydrostatic_mode);
+#endif
+    if (p_->m_params.rsplit == 0 || !process_nh_vars) {
+      return 0;
+    } else {
+      const int iters = 2;
+      const int team_size = (iters*m_num_elems > 0 ? iters*m_num_elems : 1);
+      TeamUtils<ExecSpace> dummy_tu(Homme::get_default_team_policy<ExecSpace,TempTagStruct>(team_size));
+
+      using temp_type = ExecViewUnmanaged<Scalar*  [NP][NP][NUM_LEV  ]>;
+      using phi_type  = ExecViewUnmanaged<Scalar*  [NP][NP][NUM_LEV_P]>;
+
+      const int temp_size = temp_type::shmem_size(dummy_tu.get_num_ws_slots())/sizeof(Real);
+      const int phi_size  = phi_type::shmem_size(dummy_tu.get_num_ws_slots())/sizeof(Real);
+      return temp_size + phi_size;
+    }
+  }
 }
 
 void VerticalRemapManager::init_buffers(const FunctorsBuffersManager& fbm) {
