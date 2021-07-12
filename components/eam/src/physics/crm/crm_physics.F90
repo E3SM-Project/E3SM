@@ -503,20 +503,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    !------------------------------------------------------------------------------------------------
    ! Local variables 
    !------------------------------------------------------------------------------------------------
-
-   ! convective precipitation variables
-   real(r8), pointer :: prec_dp(:)          ! total precip from deep convection (ZM)    [m/s]
-   real(r8), pointer :: snow_dp(:)          ! snow from deep convection (ZM)            [m/s]
-
-   real(r8), pointer :: ttend_dp(:,:)       ! Convective heating for gravity wave drag
-   real(r8), pointer :: mmf_clear_rh(:,:)   ! clear air RH for aerosol water uptake
-
    integer lchnk                                   ! chunk identifier
    integer ncol                                    ! number of atmospheric columns
    integer nstep                                   ! time steps
 
-   ! physics buffer fields to compute tendencies for stratiform package
-   real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
+   type(physics_buffer_desc), pointer :: pbuf_chunk(:) ! temporary pbuf pointer for single chunk
+
+   ! convective precipitation variables on pbuf
+   real(r8), pointer :: prec_dp(:)                 ! total precip from deep convection (ZM)    [m/s]
+   real(r8), pointer :: snow_dp(:)                 ! snow from deep convection (ZM)            [m/s]
+   real(r8), pointer :: ttend_dp(:,:)              ! Convective heating for gravity wave drag
+   real(r8), pointer :: mmf_clear_rh(:,:)          ! clear air RH for aerosol water uptake
+   real(r8), pointer :: cld(:,:)                   ! cloud fraction
 
 #if (defined m2005 && defined MODAL_AERO)
    real(r8), dimension(pcols) :: aerosol_num       ! aerosol number concentration      [/m3]
@@ -533,18 +531,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(r8), pointer, dimension(:,:) :: qrs        ! shortwave radiative heating rate
    real(r8), pointer, dimension(:,:) :: qrl        ! shortwave radiative heating rate
 
-   real(r8), dimension(pcols) :: qli_hydro_before  ! column-integraetd rain + snow + graupel 
-   real(r8), dimension(pcols) ::  qi_hydro_before  ! column-integrated snow water + graupel water
-   real(r8), dimension(pcols) :: qli_hydro_after   ! column-integraetd rain + snow + graupel 
-   real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
+   real(r8), dimension(begchunk:endchunk,pcols) :: qli_hydro_before ! column-integraetd rain + snow + graupel 
+   real(r8), dimension(begchunk:endchunk,pcols) ::  qi_hydro_before ! column-integrated snow water + graupel water
+   real(r8), dimension(begchunk:endchunk,pcols) :: qli_hydro_after  ! column-integraetd rain + snow + graupel 
+   real(r8), dimension(begchunk:endchunk,pcols) ::  qi_hydro_after  ! column-integrated snow water + graupel water
+
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
-   integer  :: i, icrm, icol, k, m, ii, jj         ! loop iterators
-   integer  :: ixcldliq, ixcldice                  ! constituent indices
-   integer  :: ixnumliq, ixnumice                  ! constituent indices
-   integer  :: ixrain, ixsnow                      ! constituent indices
-   integer  :: ixnumrain, ixnumsnow                ! constituent indices
-   integer  :: ifld, itim                          ! pbuf field and "old time" indices
+   integer  :: i, icrm, icol, k, m, ii, jj, c      ! loop iterators
+   integer  :: ncol_sum                            ! ncol sum for chunk loops
+   integer  :: itim                                ! pbuf field and "old time" indices
    real(r8) :: ideep_crm(pcols)                    ! gathering array for convective columns
    logical  :: lq(pcnst)                           ! flags for initializing ptend
    logical  :: use_ECPP                            ! flag for ECPP mode
@@ -597,16 +593,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    integer                     :: igstep
 
    ! pointers for crm_rad data on pbuf
-   real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
-   real(crm_rknd), pointer :: crm_t_rad  (:,:,:,:) ! rad temperature
-   real(crm_rknd), pointer :: crm_qv_rad (:,:,:,:) ! rad vapor
-   real(crm_rknd), pointer :: crm_qc_rad (:,:,:,:) ! rad cloud water
-   real(crm_rknd), pointer :: crm_qi_rad (:,:,:,:) ! rad cloud ice
-   real(crm_rknd), pointer :: crm_cld_rad(:,:,:,:) ! rad cloud fraction
-   real(crm_rknd), pointer :: crm_nc_rad (:,:,:,:) ! rad cloud droplet number (#/kg)
-   real(crm_rknd), pointer :: crm_ni_rad (:,:,:,:) ! rad cloud ice crystal number (#/kg)
-   real(crm_rknd), pointer :: crm_qs_rad (:,:,:,:) ! rad cloud snow (kg/kg)
-   real(crm_rknd), pointer :: crm_ns_rad (:,:,:,:) ! rad cloud snow crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qrad_tmp   (:,:,:,:) ! rad heating
+   real(crm_rknd), pointer :: crm_t_rad_tmp  (:,:,:,:) ! rad temperature
+   real(crm_rknd), pointer :: crm_qv_rad_tmp (:,:,:,:) ! rad vapor
+   real(crm_rknd), pointer :: crm_qc_rad_tmp (:,:,:,:) ! rad cloud water
+   real(crm_rknd), pointer :: crm_qi_rad_tmp (:,:,:,:) ! rad cloud ice
+   real(crm_rknd), pointer :: crm_cld_rad_tmp(:,:,:,:) ! rad cloud fraction
+   real(crm_rknd), pointer :: crm_nc_rad_tmp (:,:,:,:) ! rad cloud droplet number (#/kg)
+   real(crm_rknd), pointer :: crm_ni_rad_tmp (:,:,:,:) ! rad cloud ice crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qs_rad_tmp (:,:,:,:) ! rad cloud snow (kg/kg)
+   real(crm_rknd), pointer :: crm_ns_rad_tmp (:,:,:,:) ! rad cloud snow crystal number (#/kg)
 
    ! pointers for crm state data on pbuf
    real(crm_rknd), pointer :: crm_u (:,:,:,:) ! CRM u-wind component
