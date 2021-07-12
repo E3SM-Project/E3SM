@@ -44,6 +44,10 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use chem_mods,    only : gas_pcnst
+  use mo_tracname,  only : solsym
+  use mo_chm_diags, only : aer_species
+  use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
   implicit none
   private
@@ -69,6 +73,7 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
+  integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -96,6 +101,8 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
 
   !======================================================================= 
 contains
@@ -154,6 +161,7 @@ subroutine phys_register
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
+    use mo_chm_diags,       only: chm_diags_inti_ac
 
     !---------------------------Local variables-----------------------------
     !
@@ -162,6 +170,7 @@ subroutine phys_register
     !-----------------------------------------------------------------------
 
     integer :: nmodes
+    character(len=16) :: spc_name
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -173,7 +182,10 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -258,6 +270,26 @@ subroutine phys_register
 
        ! register chemical constituents including aerosols ...
        call chem_register(species_class)
+
+       ! NB: has to be after chem_register to use tracer names
+       ! Fields for gas chemistry tracers
+       if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              if (history_gaschmbudget) then
+                gas_ac_name(m) = 'ac_'//spc_name
+                call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
+              end if
+
+              if (history_gaschmbudget_2D) then
+                gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+                call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
+              end if
+            end if
+         enddo
+       end if
 
        ! co2 constituents
        call co2_register()

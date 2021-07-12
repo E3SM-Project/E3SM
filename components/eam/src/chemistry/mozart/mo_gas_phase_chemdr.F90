@@ -8,9 +8,10 @@ module mo_gas_phase_chemdr
   use chem_mods,        only : rxt_tag_cnt, rxt_tag_lst, rxt_tag_map, extcnt
   use dust_model,       only : dust_names, ndust => dust_nbin
   use ppgrid,           only : pcols, pver
-  use spmd_utils,       only : iam
+  use spmd_utils,       only : iam, masterproc
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
+  use physics_buffer,   only : pbuf_get_index
 
   implicit none
   save
@@ -18,11 +19,15 @@ module mo_gas_phase_chemdr
   private
   public :: gas_phase_chemdr, gas_phase_chemdr_inti 
   public :: map2chm
+  public :: gas_ac_name, gas_ac_name_2D
 
   integer :: map2chm(pcnst) = 0           ! index map to/from chemistry/constituents list
+  character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
+  character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
 !  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
+  integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
@@ -33,6 +38,9 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
+
+  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
+  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
 
 contains
 
@@ -45,7 +53,6 @@ contains
     use mo_chm_diags,      only : chm_diags_inti
     use mo_tracname,       only : solsym
     use constituents,      only : cnst_get_ind
-    use physics_buffer,    only : pbuf_get_index
     use rate_diags,        only : rate_diags_init
     use rad_constituents,  only : rad_cnst_get_info
 
@@ -64,6 +71,7 @@ contains
    
     ndx_h2so4 = get_spc_ndx('H2SO4')
 
+    uci1_ndx= get_rxt_ndx('uci1')
     het1_ndx= get_rxt_ndx('het1')
     o3_ndx  = get_spc_ndx('O3')
     o_ndx   = get_spc_ndx('O')
@@ -177,7 +185,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
                               phis, zm, zi, calday, &
-                              tfld, pmid, pdel, pint,  &
+                              tfld, pmid, pdel, pdeldry, pint,  &
                               cldw, troplev, &
                               ncldwtr, ufld, vfld,  &
                               delt, ps, xactive_prates, &
@@ -228,7 +236,7 @@ contains
     use cam_control_mod,   only : lambm0, eccen, mvelpp, obliqr
     use mo_strato_rates,   only : has_strato_chem
     use short_lived_species,only: set_short_lived_species,get_short_lived_species
-    use mo_chm_diags,      only : chm_diags, het_diags
+    use mo_chm_diags,      only : chm_diags, het_diags, gaschmmass_diags, aer_species
     use perf_mod,          only : t_startf, t_stopf
     use mo_tracname,       only : solsym
     use physconst,         only : gravit
@@ -239,6 +247,7 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
+
 !
 ! LINOZ
 !
@@ -264,6 +273,7 @@ contains
     real(r8),       intent(in)    :: tfld(pcols,pver)               ! midpoint temperature (K)
     real(r8),       intent(in)    :: pmid(pcols,pver)               ! midpoint pressures (Pa)
     real(r8),       intent(in)    :: pdel(pcols,pver)               ! pressure delta about midpoints (Pa)
+    real(r8),       intent(in)    :: pdeldry(pcols,pver)            ! dry pressure delta about midpoints (Pa)
     real(r8),       intent(in)    :: ufld(pcols,pver)               ! zonal velocity (m/s)
     real(r8),       intent(in)    :: vfld(pcols,pver)               ! meridional velocity (m/s)
     real(r8),       intent(in)    :: cldw(pcols,pver)               ! cloud water (kg/kg)
@@ -357,6 +367,7 @@ contains
     real(r8) :: soilw(pcols)
     real(r8) :: prect(pcols)
     real(r8) :: sflx(pcols,gas_pcnst)
+    real(r8) :: sflx2(pcols,gas_pcnst)
     real(r8) :: dust_vmr(ncol,pver,ndust)
     real(r8) :: noy(ncol,pver)
     real(r8) :: sox(ncol,pver)
@@ -383,11 +394,25 @@ contains
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
-
+    real(r8) :: vmr_old(ncol,pver,gas_pcnst)
+    real(r8) :: tmp
+ 
     ! flags for MMF configuration
     logical :: use_MMF, use_ECPP
+
+    ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget
+    logical :: history_gaschmbudget_2D
+
+    integer ::  gas_ac_idx
+    real(r8), pointer, dimension(:) :: gas_ac_2D
+    real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: ftem(pcols,pver) ! tmp space
+
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
+    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
+                    history_gaschmbudget_2D_out = history_gaschmbudget_2D)
 
     call t_startf('chemdr_init')
 
@@ -758,6 +783,10 @@ contains
 
     call t_stopf('chemdr_init')
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     !=======================================================================
     !        ... Call the class solution algorithms
     !=======================================================================
@@ -768,6 +797,18 @@ contains
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
     call t_stopf('exp_sol')
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
@@ -777,6 +818,18 @@ contains
     call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) )
     call t_stopf('imp_sol')
+
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
 
     if( h2o_ndx>0) call outfld( 'H2O_GAS',  vmr(1,1,h2o_ndx),  ncol ,lchnk )
     if(convproc_do_aer) then 
@@ -860,16 +913,55 @@ contains
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDL' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'MSL' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
 
     !-----------------------------------------------------------------------      
     !         ... Check for negative values and reset to zero
     !-----------------------------------------------------------------------      
     call negtrc( 'After chemistry ', vmr, ncol )
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDN' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
     !-----------------------------------------------------------------------      
     if(.not. linoz_v3) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
+
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDU' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
 
     !-----------------------------------------------------------------------      
     !         ... Set fixed lower boundary mmr values
@@ -880,28 +972,84 @@ contains
        call ghg_chem_set_flbc( vmr, ncol )
     endif
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDB' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     !-----------------------------------------------------------------------      
-    !         ... Xform from vmr to mmr
+    !         ... Surface emissions
+    !----------------------------------------------------------------------- 
+    ! if chemUCI is used, apply surface emissions here
+    if (uci1_ndx > 0) then 
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
+              if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
+                do k = pver, 1, -1 ! loop from bottom to top
+                  ! kg/m2, tracer mass
+                  wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
+                                    *pdeldry(:ncol,k)*rga
+                  j = 0 ! number of columns will double concentration after adding surf. emission
+                  do i = 1,ncol
+                    if ( cflx(i,m) /= 0._r8 ) then
+                      if ( wrk(i,k)*(up_limit-1._r8) >= cflx(i,m)*delt ) then
+                        tmp = wrk(i,k) + cflx(i,m)*delt
+                        cflx(i,m) = 0._r8
+                      else
+                        tmp = wrk(i,k)*up_limit
+                        cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
+                        j = j + 1
+                      endif
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                    endif
+                  end do
+
+                  if ( j == 0 ) then
+                    exit
+                  endif
+
+                end do
+              endif
+            endif
+          endif
+       end do
+    endif
+
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDS' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'MSS' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
+    !-----------------------------------------------------------------------      
+    !         ... Xform from vmr to mmr (for dry deposition)
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
 
     call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
 
     !-----------------------------------------------------------------------      
-    !         ... Form the tendencies
+    !         ... Dry deposition
     !----------------------------------------------------------------------- 
-    do m = 1,gas_pcnst 
-       mmr_new(:ncol,:,m) = mmr_tend(:ncol,:,m)
-       mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
-    enddo
-
-    do m = 1,pcnst
-       n = map2chm(m)
-       if( n > 0 ) then
-          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
-       end if
-    end do
-
     tvs(:ncol) = tfld(:ncol,pver) * (1._r8 + qh2o(:ncol,pver))
 
     sflx(:,:) = 0._r8
@@ -931,21 +1079,122 @@ contains
             depvel, sflx, mmr, pmid(:,pver), &
             tvs, ncol, icefrac, ocnfrac, lchnk )
     endif
-    call t_stopf('drydep')
 
     drydepflx(:,:) = 0._r8
-    do m = 1,pcnst
-       n = map2chm( m )
-       if ( n > 0 ) then
-         cflx(:ncol,m)      = cflx(:ncol,m) - sflx(:ncol,n)
-         drydepflx(:ncol,m) = sflx(:ncol,n)
+    ! if chemUCI is used, apply dry dep flux here
+    if (uci1_ndx <= 0) then 
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            cflx(:ncol,m)      = cflx(:ncol,m) - sflx(:ncol,n)
+            drydepflx(:ncol,m) = sflx(:ncol,n)
+          endif
+       end do
+    else
+       sflx2 = sflx
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            drydepflx(:ncol,m) = sflx(:ncol,n)
+            if ( any( sflx2(:ncol,n) /= 0._r8 ) ) then
+              if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
+                do k = pver, 1, -1 ! loop from bottom to top
+                  ! kg/m2, tracer mass
+                  wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
+                                    *pdeldry(:ncol,k)*rga
+                  j = 0 ! number of columns w/o enough mass to remove at the current layer
+                  do i = 1,ncol
+                    if ( sflx2(i,n) /= 0._r8 ) then
+                      if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
+                        tmp = wrk(i,k) - sflx2(i,n)*delt
+                        sflx2(i,n) = 0._r8
+                      else
+                        tmp = wrk(i,k)*low_limit
+                        sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
+                        j = j + 1
+                      endif
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                    endif
+                  end do
+
+                  if ( j == 0 ) then
+                    exit
+                  endif
+
+                end do
+              endif
+            endif
+          endif
+       end do
+    endif
+    call t_stopf('drydep')
+
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDD' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'MSD' )
        endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD' )
+       endif
+       do m = 1,pcnst
+          n = map2chm(m)
+          if (n > 0 .and. (.not. any( aer_species == n ))) then
+            ! store gas chemistry tracer concentration in pbuf for tendency
+            ! calculation
+            if (history_gaschmbudget) then
+               gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+               call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+               ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
+                               *pdeldry(:ncol,:)*rga
+               gas_ac(:ncol,:) = ftem(:ncol,:)
+            endif
+            if (history_gaschmbudget_2D) then
+               gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
+               call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
+               ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
+                               *pdeldry(:ncol,:)*rga
+               do k=2,pver
+                 ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+               end do
+               gas_ac_2D(:ncol) = ftem(:ncol,1)
+            endif
+          endif
+       end do
+
+    endif
+
+    !-----------------------------------------------------------------------      
+    !         ... Xform from vmr to mmr
+    !-----------------------------------------------------------------------      
+    call vmr2mmr( vmr, mmr_tend, mbar, ncol )
+
+    call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
+
+    !-----------------------------------------------------------------------      
+    !         ... Form the tendencies
+    !----------------------------------------------------------------------- 
+    do m = 1,gas_pcnst 
+       mmr_new(:ncol,:,m) = mmr_tend(:ncol,:,m)
+       mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
+    enddo
+
+    do m = 1,pcnst
+       n = map2chm(m)
+       if( n > 0 ) then
+          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
+       end if
     end do
 
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
-                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pbuf  )
+                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol)  )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk )
     call t_stopf('chemdr_diags')

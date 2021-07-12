@@ -4,19 +4,23 @@ module mo_chm_diags
   use chem_mods,    only : gas_pcnst
   use mo_tracname,  only : solsym
   use chem_mods,    only : rxntot, nfs, gas_pcnst, indexm, adv_mass
-  use ppgrid,       only : pver
+  use ppgrid,       only : pcols, pver
   use mo_constants, only : pi, rgrav, rearth, avogadro
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
   use gas_wetdep_opts,only : gas_wetdep_method
+  use cam_logfile,   only : iulog
+  use spmd_utils,    only : masterproc
 
   implicit none
   private
 
-  public :: chm_diags_inti
+  public :: chm_diags_inti,chm_diags_inti_ac
   public :: chm_diags
   public :: het_diags
+  public :: gaschmmass_diags
+  public :: aer_species
 
   integer :: id_n,id_no,id_no2,id_no3,id_n2o5,id_hno3,id_ho2no2,id_clono2,id_brono2
   integer :: id_cl,id_clo,id_hocl,id_cl2,id_cl2o2,id_oclo,id_hcl,id_brcl
@@ -48,7 +52,6 @@ module mo_chm_diags
   real(r8), parameter :: S_molwgt = 32.066_r8
 
   ! constants for converting O3 mixing ratio to DU
-  real(r8), parameter :: air_molwgt = 28.97_r8 ! molar mass of dry air, g/mol
   real(r8), parameter :: DUfac = 2.687e20_r8   ! 1 DU in molecules per m^2
 
   character(len=32) :: chempkg
@@ -84,6 +87,8 @@ contains
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_amwg         ! output the variables used by the AMWG diag package
     logical :: history_verbose      ! produce verbose history output
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
@@ -91,7 +96,18 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
-                       cam_chempkg_out     = chempkg   )
+                       cam_chempkg_out     = chempkg, &
+                       history_gaschmbudget_out = history_gaschmbudget, &
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+
+    if (masterproc) then
+       if (history_gaschmbudget) then
+          write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
+       endif
+       if (history_gaschmbudget_2D) then
+          write(iulog,*) 'chm_diags_inti: history_gaschmbudget_2D = ', history_gaschmbudget_2D
+       endif
+    endif
 
     id_bry     = get_spc_ndx( 'BRY' )
     id_cly     = get_spc_ndx( 'CLY' )
@@ -289,6 +305,36 @@ contains
        else
           call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
+          if (history_gaschmbudget) then
+             call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration before wet deposition and gas chem solver')
+             call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after Linoz')
+             call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after surface emission')
+             call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after dry deposition')
+             call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
+             call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
+             call addfld( trim(spc_name)//'_TDL', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to Linoz')
+             call addfld( trim(spc_name)//'_TDN', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_TDU', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_TDB', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_TDS', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to surface emission')
+             call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
+             call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
+          endif
+          if (history_gaschmbudget_2D) then
+             call addfld( trim(spc_name)//'_2DMSB', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration before wet deposition and gas chem solver')
+             call addfld( trim(spc_name)//'_2DMSL', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after Linoz')
+             call addfld( trim(spc_name)//'_2DMSS', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after surface emission')
+             call addfld( trim(spc_name)//'_2DMSD', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after dry deposition')
+             call addfld( trim(spc_name)//'_2DTDE', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to explicit solver')
+             call addfld( trim(spc_name)//'_2DTDI', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to implicit solver')
+             call addfld( trim(spc_name)//'_2DTDL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to Linoz')
+             call addfld( trim(spc_name)//'_2DTDN', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_2DTDU', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_2DTDB', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_2DTDS', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to surface emission')
+             call addfld( trim(spc_name)//'_2DTDD', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to dry deposition')
+             call addfld( trim(spc_name)//'_2DTDO', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to processes outside of chemistry')
+          endif
        endif
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
@@ -299,6 +345,38 @@ contains
           endif 
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
+          endif
+          if ( .not. any( aer_species == m ) ) then
+             if (history_gaschmbudget) then
+                call add_default( trim(spc_name)//'_MSB', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSL', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSS', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDE', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDI', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDL', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDN', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDU', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDB', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDS', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDD', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDO', 1, ' ' )
+             endif
+             if (history_gaschmbudget_2D) then
+                call add_default( trim(spc_name)//'_2DMSB', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSL', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSS', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDL', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDN', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDU', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDB', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDS', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDD', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDO', 1, ' ' )
+             endif
           endif
        endif
 
@@ -330,7 +408,12 @@ contains
     endif
 
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
+    call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
+
+    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+       call add_default( 'AREA', 1, ' ' )
+    endif
 
     call addfld( 'WD_NOY', horiz_only, 'A', 'kg/s', 'NOy wet deposition' )
     call addfld( 'DF_NOY', horiz_only, 'I', 'kg/m2/s', 'NOy dry deposition flux ' )
@@ -342,10 +425,76 @@ contains
     call addfld( 'DF_NHX', horiz_only, 'I', 'kg/m2/s', 'NHx dry deposition flux ' )
 
     call addfld( 'TOZ', horiz_only,    'A', 'DU', 'Total column ozone' )
+    call addfld( 'TCO', horiz_only,    'A', 'DU', 'Tropospheric column ozone based on chemistry tropopause' )
+    call add_default( 'TCO', 1, ' ' )
+    call addfld( 'SCO', horiz_only,    'A', 'DU', 'Stratospheric column ozone based on chemistry tropopause' )
+    call add_default( 'SCO', 1, ' ' )
 
   end subroutine chm_diags_inti
 
-  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pbuf )
+  subroutine chm_diags_inti_ac
+    !--------------------------------------------------------------------
+    !	... initialize for tphysac
+    !--------------------------------------------------------------------
+
+    implicit none
+
+    integer :: k, m, n
+
+    integer :: id_so4, id_nh4no3
+    integer :: id_dst01, id_dst02, id_dst03, id_dst04, id_sslt01, id_sslt02, id_sslt03, id_sslt04
+    integer :: id_soa,  id_oc1, id_oc2, id_cb1, id_cb2
+    integer :: id_soam,id_soai,id_soat,id_soab,id_soax
+
+    integer :: bulkaero_species(20)
+
+    !-----------------------------------------------------------------------
+
+    id_nh4no3  = get_spc_ndx( 'NH4NO3' )
+
+    id_dst01   = get_spc_ndx( 'DST01' )
+    id_dst02   = get_spc_ndx( 'DST02' )
+    id_dst03   = get_spc_ndx( 'DST03' )
+    id_dst04   = get_spc_ndx( 'DST04' )
+    id_sslt01  = get_spc_ndx( 'SSLT01' )
+    id_sslt02  = get_spc_ndx( 'SSLT02' )
+    id_sslt03  = get_spc_ndx( 'SSLT03' )
+    id_sslt04  = get_spc_ndx( 'SSLT04' )
+    id_soa     = get_spc_ndx( 'SOA' )
+    id_so4     = get_spc_ndx( 'SO4' )
+    id_oc1     = get_spc_ndx( 'OC1' )
+    id_oc2     = get_spc_ndx( 'OC2' )
+    id_cb1     = get_spc_ndx( 'CB1' )
+    id_cb2     = get_spc_ndx( 'CB2' )
+
+    id_soam = get_spc_ndx( 'SOAM' )
+    id_soai = get_spc_ndx( 'SOAI' )
+    id_soat = get_spc_ndx( 'SOAT' )
+    id_soab = get_spc_ndx( 'SOAB' )
+    id_soax = get_spc_ndx( 'SOAX' )
+
+    bulkaero_species(:) = -1
+    bulkaero_species(1:20) = (/ id_dst01, id_dst02, id_dst03, id_dst04, &
+                                id_sslt01, id_sslt02, id_sslt03, id_sslt04, &
+                                id_soa, id_so4, id_oc1, id_oc2, id_cb1, id_cb2, id_nh4no3, &
+                                id_soam,id_soai,id_soat,id_soab,id_soax /)
+
+    aer_species(:) = -1
+    n = 1
+    do m = 1,gas_pcnst
+       k=0
+       if ( any(bulkaero_species(:)==m) ) k=1
+       if ( k==0 ) k = index(trim(solsym(m)), '_a')
+       if ( k==0 ) k = index(trim(solsym(m)), '_c')
+       if ( k>0 ) then ! must be aerosol species
+          aer_species(n) = m
+          n = n+1
+       endif
+    enddo
+
+  end subroutine chm_diags_inti_ac
+
+  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop )
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -354,6 +503,7 @@ contains
     use constituents, only : pcnst
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
+    use physconst,    only : mwdry                   ! molecular weight of dry air
     use physics_buffer, only : physics_buffer_desc
 
 ! here and below for the calculations of total aerosol mass mixing ratios for each aerosol class
@@ -380,6 +530,8 @@ contains
     real(r8), intent(in)  :: depflx(ncol, gas_pcnst)
     real(r8), intent(in)  :: mmr_tend(ncol,pver,gas_pcnst)
     real(r8), intent(in)  :: pdel(ncol,pver)
+    real(r8), intent(in)  :: pdeldry(ncol,pver)
+    integer,  intent(in)  :: ltrop(pcols)  ! index of the lowest stratospheric level
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     !--------------------------------------------------------------------
@@ -394,7 +546,8 @@ contains
     real(r8), dimension(ncol,pver) :: mmr_noy, mmr_sox, mmr_nhx, net_chem
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
-    real(r8) :: area(ncol), mass(ncol,pver)
+    real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver)
+    real(r8) :: wrk1d(ncol)
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
@@ -452,18 +605,45 @@ contains
 
     do k = 1,pver
        mass(:ncol,k) = pdel(:ncol,k) * area(:ncol) * rgrav
+       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
     enddo
 
     call outfld( 'AREA', area(:ncol),   ncol, lchnk )
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
+    call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
-    ! convert ozone from mol/mol to DU
-    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/air_molwgt/DUfac*1.e3_r8
-    ! total column ozone, vertical integration
-    do k = 2,pver
-       wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+    ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
+    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+    ! total column ozone
+    wrk1d(:) = 0._r8
+    do k = 1,pver ! loop from top of atmosphere to surface
+       wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
     end do
-    call outfld( 'TOZ', wrk,   ncol, lchnk )
+    call outfld( 'TOZ', wrk1d,   ncol, lchnk )
+
+    ! stratospheric column ozone
+    wrk1d(:) = 0._r8
+    do i = 1,ncol
+       do k = 1,pver
+          if (k > ltrop(i)) then
+            exit
+          end if
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
+       end do
+    end do
+    call outfld( 'SCO', wrk1d,   ncol, lchnk )
+
+    ! tropospheric column ozone
+    wrk1d(:) = 0._r8
+    do i = 1,ncol
+       do k = 1,pver
+          if (k <= ltrop(i)) then
+            cycle
+          end if
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
+       end do
+    end do
+    call outfld( 'TCO', wrk1d,   ncol, lchnk )
 
     do m = 1,gas_pcnst
 
@@ -770,5 +950,77 @@ contains
     endif
 
   end subroutine het_diags
+
+  subroutine gaschmmass_diags( lchnk, ncol, vmr, vmr_old, pdeldry, mbar, rdelt, flag )
+    !--------------------------------------------------------------------
+    !	... utility routine to output gas chemistry tracer concentrations
+    !--------------------------------------------------------------------
+    
+    use cam_history,  only : outfld
+    use phys_control, only : phys_getopts
+    
+    implicit none
+
+    !--------------------------------------------------------------------
+    !	... dummy arguments
+    !--------------------------------------------------------------------
+    integer,  intent(in)  :: lchnk
+    integer,  intent(in)  :: ncol
+    real(r8), intent(in)  :: vmr(ncol,pver,gas_pcnst)
+    real(r8), intent(in)  :: vmr_old(ncol,pver,gas_pcnst)
+    real(r8), intent(in)  :: pdeldry(ncol,pver)
+    real(r8), intent(in)  :: mbar(ncol,pver)
+    real(r8), intent(in)  :: rdelt        ! inverse of timestep (1/s)
+    character(len=*), intent(in)  :: flag ! flag for diagnostic output locations
+
+    !--------------------------------------------------------------------
+    !	... local variables
+    !--------------------------------------------------------------------
+    integer  :: k, m
+    real(r8) :: wrk(ncol,pver)
+    logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical  :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
+
+    !-----------------------------------------------------------------------
+
+    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+
+    if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D ) return
+
+    do m = 1,gas_pcnst
+       
+       if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
+          if (flag(1:2) .ne. '2D') then
+            if (flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
+               ! kg/m2
+               wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+                                *pdeldry(:ncol,:)*rgrav
+            else
+               ! kg/m2/s
+               wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
+                                /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
+            endif
+            call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
+          else
+            if (flag=='2DMSL' .or. flag=='2DMSS' .or. flag=='2DMSD') then
+               ! kg/m2
+               wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
+                                *pdeldry(:ncol,:)*rgrav
+            else
+               ! kg/m2/s
+               wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
+                                /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
+            endif
+            do k=2,pver
+               wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+            enddo
+            call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,1), ncol ,lchnk )
+          endif
+       endif
+
+    enddo
+
+  end subroutine gaschmmass_diags
 
 end module mo_chm_diags

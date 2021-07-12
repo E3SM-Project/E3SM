@@ -3594,6 +3594,18 @@ History tape number T/Q budget output is written to.
 Default: 1
 </entry>
 
+<entry id="history_gaschmbudget" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers budget diagnostic output
+Default: .false.
+</entry>
+
+<entry id="history_gaschmbudget_2D" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output
+Default: .false.
+</entry>
+
 <entry id="history_waccm" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output used primarily for WACCM runs.
