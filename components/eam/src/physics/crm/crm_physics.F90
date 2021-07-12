@@ -48,6 +48,9 @@ module crm_physics
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
    integer :: mmf_clear_rh_idx = -1
+   integer :: cld_idx          = -1
+   integer :: prec_dp_idx      = -1
+   integer :: snow_dp_idx      = -1
 
    integer :: crm_t_rad_idx    = -1
    integer :: crm_qv_rad_idx   = -1
@@ -92,7 +95,7 @@ subroutine crm_physics_register()
 #endif
    !----------------------------------------------------------------------------
    ! local variables
-   integer idx
+   integer :: idx, c
    logical           :: use_ECPP
    logical           :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
@@ -100,26 +103,25 @@ subroutine crm_physics_register()
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
    integer, dimension(3) :: dims_gcm_3D
-   integer, dimension(3) :: dims_crm_2D
    integer, dimension(4) :: dims_crm_3D
    integer, dimension(4) :: dims_crm_rad
-#ifdef MODAL_AERO
-   integer, dimension(5) :: dims_crm_aer
-#endif
    integer :: cnst_ind ! dummy for adding new constituents for variance transport
    !----------------------------------------------------------------------------
 #ifdef MMF_SAMXX
    call gator_init()
 #endif
+
+   ! Determine total number of CRMs per task
+   ncrms = 0
+   do c=begchunk, endchunk
+      ncrms = ncrms + get_ncols_p(c)
+   end do
+
    dims_gcm_1D  = (/pcols/)
    dims_gcm_2D  = (/pcols, pver/)
    dims_gcm_3D  = (/pcols,pver,dyn_time_lvls/)
-   dims_crm_2D  = (/pcols, crm_nx, crm_ny/)
-   dims_crm_3D  = (/pcols, crm_nx, crm_ny, crm_nz/)
+   dims_crm_3D  = (/ncrms, crm_nx, crm_ny, crm_nz/)
    dims_crm_rad = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/)
-#ifdef MODAL_AERO
-   dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
-#endif
 
    call phys_getopts( use_ECPP_out = use_ECPP )
    call phys_getopts( use_MMF_VT_out = use_MMF_VT )
@@ -141,14 +143,6 @@ subroutine crm_physics_register()
       print*,'CRM Microphysics = ',MMF_microphysics_scheme
       print*,'_____________________________________________________________'
    end if
-
-   !----------------------------------------------------------------------------
-   ! Determine total number of CRMs per task
-   !----------------------------------------------------------------------------
-   ncrms = 0
-   do c=begchunk, endchunk
-      ncrms = ncrms + get_ncols_p(c)
-   end do
 
    !----------------------------------------------------------------------------
    ! Setup CRM internal parameters
@@ -438,6 +432,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
    ! set pbuf indices
    mmf_clear_rh_idx = pbuf_get_index('MMF_CLEAR_RH')
+   cld_idx          = pbuf_get_index('CLD')
+   prec_dp_idx      = pbuf_get_index('PREC_DP')
+   snow_dp_idx      = pbuf_get_index('SNOW_DP')
 
 end subroutine crm_physics_init
 
