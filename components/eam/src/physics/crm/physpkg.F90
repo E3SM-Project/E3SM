@@ -692,7 +692,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
   use flux_avg,               only: flux_avg_init
   use check_energy,           only: check_energy_chng
-  use crm_physics,            only: crm_physics_tend
+  use crm_physics,            only: ncrms, crm_physics_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize
   !-----------------------------------------------------------------------------
   ! Interface arguments
@@ -800,24 +800,23 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   ! CRM physics
   !-----------------------------------------------------------------------------  
+  if (use_ECPP) then
+    do c=begchunk, endchunk
+      call crm_ecpp_output_initialize(crm_ecpp_output(c),phys_state(c)%ncol,pver)
+    end do
+  end if
+
+  call t_startf('crm_physics_tend')
+  call crm_physics_tend(ztodt, phys_state, phys_tend, ptend,  &
+                        pbuf2d, cam_in, cam_out,              &
+                        species_class, crm_ecpp_output,       &
+                        mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux )
+  call t_stopf('crm_physics_tend')
+
   do c=begchunk, endchunk
-
-    phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
-
-    ! Initialize variable for ECPP data
-    if (use_ECPP) call crm_ecpp_output_initialize(crm_ecpp_output(c),phys_state(c)%ncol,pver)
-
-    call t_startf('crm_physics_tend')
-    call crm_physics_tend(ztodt, phys_state(c), phys_tend(c), ptend(c), &
-                          phys_buffer_chunk, cam_in(c), cam_out(c),    &
-                          species_class, crm_ecpp_output(c),       &
-                          mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux )
     call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
-    call t_stopf('crm_physics_tend')
-
     call check_energy_chng(phys_state(c), phys_tend(c), "crm_tend", nstep, ztodt, zero, &
-                           mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
-
+                           mmf_qchk_prec_dp(c,:), mmf_qchk_snow_dp(c,:), mmf_rad_flux(c,:))
   end do
 
   !-----------------------------------------------------------------------------
