@@ -60,7 +60,6 @@
       <!-- they will be removed in a future PR -->
       <value compset="_EAM%SP[12]V1"        >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm_dx 1000 -crm_dt 5 </value>
       <value compset="_EAM%SP[12]V1"        >-microphys mg2  </value>
-      <value compset="_EAM%SP[12]V1"        >-cppdefs ' -DMMF_DIR_NS ' </value>
       <value compset="_EAM%SP[12]V1"        >-rad rrtmg </value>
       <value compset="_EAM%SP1V1"           >-MMF_microphysics_scheme sam1mom -chem none </value>
       <value compset="_EAM%SP2V1"           >-MMF_microphysics_scheme m2005 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
@@ -72,7 +71,6 @@
       <value compset="_EAM%MMF[12]"           >-crm sam</value>
       <value compset="_EAM%MMFXX"             >-crm samxx</value>
       <value compset="_EAM%MMFOMP"            >-crm samomp</value>
-      <value compset="_EAM%MMF"               >-cppdefs ' -DMMF_DIR_NS ' </value>
       <value compset="_EAM%MMF"               >-rad rrtmgp </value>
       <value compset="_EAM%MMF[1XO]"          >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%MMF2"              >-MMF_microphysics_scheme m2005 </value>
