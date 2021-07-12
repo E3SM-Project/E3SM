@@ -24,7 +24,7 @@ module crm_physics
    public :: crm_surface_flux_bypass_tend
    public :: m2005_effradius
 
-   integer :: ncrms = -1 ! total number of CRMs summed over all chunks in task
+   integer, public :: ncrms = -1 ! total number of CRMs summed over all chunks in task
 
    ! Constituent names
    character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
@@ -1306,16 +1306,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                ideep_crm(i) = i*1.0  ! For convective transport
             end do
 
-            call pbuf_set_field(pbuf, pbuf_get_index('TKE_CRM'), TKE_tmp )
-            call pbuf_set_field(pbuf, pbuf_get_index('TK_CRM'), crm_output%tkz   (ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('MU_CRM'), crm_output%mu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('MD_CRM'), crm_output%md_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('EU_CRM'), crm_output%eu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('DU_CRM'), crm_output%du_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('ED_CRM'), crm_output%eu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('JT_CRM'), crm_output%jt_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('MX_CRM'), crm_output%mx_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
-            call pbuf_set_field(pbuf, pbuf_get_index('IDEEP_CRM'), ideep_crm )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('TKE_CRM'), TKE_tmp )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('TK_CRM'), crm_output%tkz   (ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('MU_CRM'), crm_output%mu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('MD_CRM'), crm_output%md_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('EU_CRM'), crm_output%eu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('DU_CRM'), crm_output%du_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('ED_CRM'), crm_output%eu_crm(ncol_sum+1:ncol_sum+ncol,1:pver) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('JT_CRM'), crm_output%jt_crm(ncol_sum+1:ncol_sum+ncol) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('MX_CRM'), crm_output%mx_crm(ncol_sum+1:ncol_sum+ncol) )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('IDEEP_CRM'), ideep_crm )
 
             crm_ecpp_output%qlsinkcen = crm_ecpp_output%qlsink_avgcen
          

@@ -9,6 +9,7 @@ module crm_ecpp_output_module
    public crm_ecpp_output_type
    public crm_ecpp_output_initialize
    public crm_ecpp_output_finalize
+   public crm_ecpp_output_copy
 
    !------------------------------------------------------------------------------------------------
    type crm_ecpp_output_type
@@ -91,6 +92,36 @@ contains
       if (allocated(output%wwqui_bnd       )) deallocate(output%wwqui_bnd       )
       if (allocated(output%wwqui_cloudy_bnd)) deallocate(output%wwqui_cloudy_bnd)
    end subroutine crm_ecpp_output_finalize
+   !------------------------------------------------------------------------------------------------
+   subroutine crm_ecpp_output_copy(output, output_copy, col_beg, col_end)
+      type(crm_ecpp_output_type), intent(in   ) :: output
+      type(crm_ecpp_output_type), intent(inout) :: output_copy
+      integer,                    intent(in   ) :: col_beg
+      integer,                    intent(in   ) :: col_end
+      integer :: ncol_copy
+      ncol_copy = col_end - col_beg + 1
+      output_copy%abnd            (1:ncol_copy,:,:,:,:) = output%abnd            (col_beg:col_end,:,:,:,:)
+      output_copy%abnd_tf         (1:ncol_copy,:,:,:,:) = output%abnd_tf         (col_beg:col_end,:,:,:,:)
+      output_copy%massflxbnd      (1:ncol_copy,:,:,:,:) = output%massflxbnd      (col_beg:col_end,:,:,:,:)
+      output_copy%acen            (1:ncol_copy,:,:,:,:) = output%acen            (col_beg:col_end,:,:,:,:)
+      output_copy%acen_tf         (1:ncol_copy,:,:,:,:) = output%acen_tf         (col_beg:col_end,:,:,:,:)
+      output_copy%rhcen           (1:ncol_copy,:,:,:,:) = output%rhcen           (col_beg:col_end,:,:,:,:)
+      output_copy%qcloudcen       (1:ncol_copy,:,:,:,:) = output%qcloudcen       (col_beg:col_end,:,:,:,:)
+      output_copy%qicecen         (1:ncol_copy,:,:,:,:) = output%qicecen         (col_beg:col_end,:,:,:,:)
+      output_copy%qlsinkcen       (1:ncol_copy,:,:,:,:) = output%qlsinkcen       (col_beg:col_end,:,:,:,:)
+      output_copy%precrcen        (1:ncol_copy,:,:,:,:) = output%precrcen        (col_beg:col_end,:,:,:,:)
+      output_copy%precsolidcen    (1:ncol_copy,:,:,:,:) = output%precsolidcen    (col_beg:col_end,:,:,:,:)
+      output_copy%qlsink_afcen    (1:ncol_copy,:,:,:,:) = output%qlsink_afcen    (col_beg:col_end,:,:,:,:)
+      output_copy%qlsink_bfcen    (1:ncol_copy,:,:,:,:) = output%qlsink_bfcen    (col_beg:col_end,:,:,:,:)
+      output_copy%qlsink_avgcen   (1:ncol_copy,:,:,:,:) = output%qlsink_avgcen   (col_beg:col_end,:,:,:,:)
+      output_copy%praincen        (1:ncol_copy,:,:,:,:) = output%praincen        (col_beg:col_end,:,:,:,:)
+      output_copy%wupthresh_bnd   (1:ncol_copy,:)       = output%wupthresh_bnd   (col_beg:col_end,:)
+      output_copy%wdownthresh_bnd (1:ncol_copy,:)       = output%wdownthresh_bnd (col_beg:col_end,:)
+      output_copy%wwqui_cen       (1:ncol_copy,:)       = output%wwqui_cen       (col_beg:col_end,:)
+      output_copy%wwqui_bnd       (1:ncol_copy,:)       = output%wwqui_bnd       (col_beg:col_end,:)
+      output_copy%wwqui_cloudy_cen(1:ncol_copy,:)       = output%wwqui_cloudy_cen(col_beg:col_end,:)
+      output_copy%wwqui_cloudy_bnd(1:ncol_copy,:)       = output%wwqui_cloudy_bnd(col_beg:col_end,:)
+   end subroutine crm_ecpp_output_copy
    !------------------------------------------------------------------------------------------------
 
 end module crm_ecpp_output_module
