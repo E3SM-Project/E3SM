@@ -607,7 +607,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_u (:,:,:,:) ! CRM u-wind component
    real(crm_rknd), pointer :: crm_v (:,:,:,:) ! CRM v-wind component
    real(crm_rknd), pointer :: crm_w (:,:,:,:) ! CRM w-wind component
-   real(crm_rknd), pointer :: crm_t (:,:,:,:) ! CRM temperuture
+   real(crm_rknd), pointer :: crm_t (:,:,:,:) ! CRM temperature
    real(crm_rknd), pointer :: crm_qt(:,:,:,:) ! CRM total water
 
    real(crm_rknd), pointer :: crm_qp(:,:,:,:) ! 1-mom mass mixing ratio of precipitating condensate
@@ -1091,8 +1091,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call t_startf ('crm_call')
 
-      call crm(1, ncrms, ztodt, pver, &
-               crm_input, crm_state, crm_rad, &
+      call crm(ncrms, ztodt, pver, &
+               crm_input, crm_state, &
+               crm_rad%qrad, crm_rad%temperature, &
+               crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, &
+               crm_rad%nc, crm_rad%ni, crm_rad%qs, crm_rad%ns, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
@@ -1106,7 +1109,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
-      call crm(ncol, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
+      call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
 #ifdef MMF_ESMT
