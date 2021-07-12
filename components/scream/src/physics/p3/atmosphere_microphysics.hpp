@@ -215,11 +215,10 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 2;
+    static constexpr int num_1d_scalar = 1;
     // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 10;
 
-    uview_1d precip_liq_surf;
     uview_1d precip_ice_surf;
     uview_2d inv_exner;
     uview_2d th_atm;
@@ -248,7 +247,7 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by

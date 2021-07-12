@@ -68,7 +68,6 @@ TEST_CASE("column_ops_ps_1") {
   using exec_space = typename device_type::execution_space;
 
   using view_2d_type  = KT::view_2d<pack_type>;
-  using uview_1d_type = KT::view_1d<pack_type>;
   using policy_type   = KT::TeamPolicy;
   using member_type   = KT::MemberType;
   using column_ops    = ColumnOps<device_type,Real>;
@@ -97,8 +96,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
     });
@@ -119,7 +118,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_i = [&](const int k)->pack_type {
         return v_int(icol,k);
       };
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
     });
@@ -144,8 +143,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
     });
@@ -166,7 +165,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_m = [&](const int k)->pack_type {
         return v_mid(icol,k);
       };
-      uview_1d_type v_i = ekat::subview(v_int,icol);
+      auto v_i = ekat::subview(v_int,icol);
 
       column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
     });
@@ -191,8 +190,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
     });
@@ -213,7 +212,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_m = [&](const int k)->pack_type {
         return v_mid(icol,k);
       };
-      uview_1d_type v_i = ekat::subview(v_int,icol);
+      auto v_i = ekat::subview(v_int,icol);
 
       column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
     });
@@ -238,8 +237,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
       column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
@@ -265,8 +264,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type v_m = ekat::subview(v_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
       column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
@@ -292,8 +291,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto dv_m = ekat::subview(dv_mid,icol);
 
       column_ops::compute_midpoint_delta(team,num_levs,v_i,dv_m);
     });
@@ -314,7 +313,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_i = [&](const int k)->pack_type {
         return v_int(icol,k);
       };
-      uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+      auto dv_m = ekat::subview(dv_mid,icol);
 
       column_ops::compute_midpoint_delta(team,num_levs,v_i,dv_m);
     });
@@ -341,8 +340,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto dv_m = ekat::subview(dv_mid,icol);
 
       column_ops::column_scan<true>(team,num_levs,dv_m,v_i,s0);
     });
@@ -363,7 +362,7 @@ TEST_CASE("column_ops_ps_1") {
       auto dv_m = [&](const int k)->pack_type {
         return dv_mid(icol,k);
       };
-      uview_1d_type v_i = ekat::subview(v_int,icol);
+      auto v_i = ekat::subview(v_int,icol);
 
       column_ops::column_scan<true>(team,num_levs,dv_m,v_i,s0);
     });
@@ -391,8 +390,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::parallel_for(policy,
                          KOKKOS_LAMBDA(const member_type& team){
       const int icol = team.league_rank();
-      uview_1d_type v_i = ekat::subview(v_int,icol);
-      uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+      auto v_i = ekat::subview(v_int,icol);
+      auto dv_m = ekat::subview(dv_mid,icol);
 
       column_ops::column_scan<false>(team,num_levs,dv_m,v_i,s0);
     });
@@ -414,7 +413,7 @@ TEST_CASE("column_ops_ps_1") {
       auto dv_m = [&](const int k)->pack_type {
         return dv_mid(icol,k);
       };
-      uview_1d_type v_i = ekat::subview(v_int,icol);
+      auto v_i = ekat::subview(v_int,icol);
 
       column_ops::column_scan<false>(team,num_levs,dv_m,v_i,s0);
     });
@@ -440,7 +439,6 @@ TEST_CASE("column_ops_ps_N") {
     using exec_space = typename device_type::execution_space;
 
     using view_2d_type  = KT::view_2d<pack_type>;
-    using uview_1d_type = KT::view_1d<pack_type>;
     using policy_type   = KT::TeamPolicy;
     using member_type   = KT::MemberType;
     using column_ops    = ColumnOps<device_type,Real>;
@@ -476,8 +474,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
         });
@@ -500,7 +498,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_i = [&](const int k)->pack_type {
             return v_int(icol,k);
           };
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
         });
@@ -529,8 +527,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
         });
@@ -553,7 +551,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_m = [&](const int k)->pack_type {
             return v_mid(icol,k);
           };
-          uview_1d_type v_i = ekat::subview(v_int,icol);
+          auto v_i = ekat::subview(v_int,icol);
 
           column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
         });
@@ -582,8 +580,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
         });
@@ -606,7 +604,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_m = [&](const int k)->pack_type {
             return v_mid(icol,k);
           };
-          uview_1d_type v_i = ekat::subview(v_int,icol);
+          auto v_i = ekat::subview(v_int,icol);
 
           column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
         });
@@ -635,8 +633,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
           column_ops::compute_interface_values<true>(team,num_levs,v_m,1,v_i);
@@ -666,8 +664,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type v_m = ekat::subview(v_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
           column_ops::compute_interface_values<false>(team,num_levs,v_m,2*num_levs+1,v_i);
@@ -697,8 +695,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto dv_m = ekat::subview(dv_mid,icol);
 
           column_ops::compute_midpoint_delta(team,num_levs,v_i,dv_m);
         });
@@ -721,7 +719,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_i = [&](const int k)->pack_type {
             return v_int(icol,k);
           };
-          uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+          auto dv_m = ekat::subview(dv_mid,icol);
 
           column_ops::compute_midpoint_delta(team,num_levs,v_i,dv_m);
         });
@@ -752,8 +750,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto dv_m = ekat::subview(dv_mid,icol);
 
           column_ops::column_scan<true>(team,num_levs,dv_m,v_i,s0);
         });
@@ -776,7 +774,7 @@ TEST_CASE("column_ops_ps_N") {
           auto dv_m = [&](const int k)->pack_type {
             return dv_mid(icol,k);
           };
-          uview_1d_type v_i = ekat::subview(v_int,icol);
+          auto v_i = ekat::subview(v_int,icol);
 
           column_ops::column_scan<true>(team,num_levs,dv_m,v_i,s0);
         });
@@ -808,8 +806,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const member_type& team){
           const int icol = team.league_rank();
-          uview_1d_type v_i = ekat::subview(v_int,icol);
-          uview_1d_type dv_m = ekat::subview(dv_mid,icol);
+          auto v_i = ekat::subview(v_int,icol);
+          auto dv_m = ekat::subview(dv_mid,icol);
 
           column_ops::column_scan<false>(team,num_levs,dv_m,v_i,s0);
         });
@@ -833,7 +831,7 @@ TEST_CASE("column_ops_ps_N") {
           auto dv_m = [&](const int k)->pack_type {
             return dv_mid(icol,k);
           };
-          uview_1d_type v_i = ekat::subview(v_int,icol);
+          auto v_i = ekat::subview(v_int,icol);
 
           column_ops::column_scan<false>(team,num_levs,dv_m,v_i,s0);
         });

@@ -13,6 +13,8 @@ contains
     use control_mod,       only: topology, cubed_sphere_map, partmethod
     use params_mod,        only: SFCURVE
     use homme_context_mod, only: is_params_inited
+    use physical_constants, only : domain_size, DD_PI
+
     !
     ! Inputs
     !
@@ -22,6 +24,7 @@ contains
     topology = 'cube'
     cubed_sphere_map = 0
     partmethod = SFCURVE
+    domain_size = 4.0D0*DD_PI
 
     ! Set desired resolution
     ne = ne_in

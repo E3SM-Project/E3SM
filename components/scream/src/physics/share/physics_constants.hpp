@@ -3,6 +3,8 @@
 
 #include "share/scream_types.hpp"
 
+#include "ekat/util/ekat_string_utils.hpp"
+
 #include <vector>
 
 namespace scream {
@@ -18,6 +20,8 @@ namespace physics {
 template <typename Scalar>
 struct Constants
 {
+  using ci_string      = ekat::CaseInsensitiveString;
+
   static constexpr Scalar Cpair         = 1004.64;
   static constexpr Scalar Rair          = 287.042;
   static constexpr Scalar RH2O          = 461.505;
@@ -109,30 +113,32 @@ struct Constants
   static constexpr int IPARAM         = 3;
 
   // Gases
-  static const std::map<std::string,Scalar> gas_mol_weights;
-  static Scalar get_gas_mol_weight(std::string gas_name);
+  static Scalar get_gas_mol_weight(ci_string gas_name);
 };
 
 // Gases
 // Define the molecular weight for each gas, which can then be
 // used to determine the volume mixing ratio for each gas.
 template <typename Scalar>
-const std::map<std::string,Scalar> Constants<Scalar>::gas_mol_weights = {
-  {"h2o", Scalar(Constants<Scalar>::MWH2O)},
-  {"co2", 44.0095},
-  {"o3" , 47.9982},
-  {"n2o", 44.0128},
-  {"co" , 28.0101},
-  {"ch4", 16.04246},
-  {"o2" , 31.998},
-  {"n2" , 28.0134}
-};
-
-template <typename Scalar>
-Scalar Constants<Scalar>::get_gas_mol_weight(std::string gas_name) {
+Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   //TODO: Possible improvement would be to design a device friendly function
-  //      here instead of just a std::map lookup, which only works on host.
-  return Constants<Scalar>::gas_mol_weights.at(gas_name);
+  if        (gas_name == "h2o") {
+    return Scalar(Constants<Scalar>::MWH2O);
+  } else if (gas_name == "co2") {
+    return 44.0095;
+  } else if (gas_name == "o3" ) {
+    return 47.9982;
+  } else if (gas_name == "n2o") {
+    return 44.0128;
+  } else if (gas_name == "co" ) {
+    return 28.0101;
+  } else if (gas_name == "ch4") {
+    return 16.04246;
+  } else if (gas_name == "o2" ) {
+    return 31.998;
+  } else if (gas_name == "n2" ) {
+    return 28.0134;
+  }
 }
 
 template <typename Scalar>

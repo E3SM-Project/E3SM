@@ -47,7 +47,10 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
+  // Layout for 2D (1d horiz X 1d vertical) variable
+  FieldLayout scalar2d_layout { {COL}, {m_num_cols} };
+
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
 
@@ -84,6 +87,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
+  add_field<Computed>("precip_liq_surf",    scalar2d_layout,     m/s,    grid_name);
   add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, micron, grid_name, ps);
 
@@ -123,8 +127,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  m_buffer.precip_liq_surf = decltype(m_buffer.precip_liq_surf)(mem, m_num_cols);
-  mem += m_buffer.precip_liq_surf.size();
   m_buffer.precip_ice_surf = decltype(m_buffer.precip_ice_surf)(mem, m_num_cols);
   mem += m_buffer.precip_ice_surf.size();
 
@@ -232,7 +234,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
 
-  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf;
+  diag_outputs.precip_liq_surf  = m_p3_fields_out["precip_liq_surf"].get_reshaped_view<Real*>();
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf;
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;

@@ -16,8 +16,6 @@
 #include "CamForcing.hpp"
 #include "profiling.hpp"
 
-#include <iostream>
-
 namespace Homme
 {
 

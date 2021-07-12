@@ -52,6 +52,7 @@ sp (const T val) {
 // Micro-utility, that given an enum returns the underlying int.
 // The only use of this is if you need to sort scoped enums.
 template<typename EnumT>
+KOKKOS_FUNCTION
 constexpr typename
 std::enable_if<std::is_enum<EnumT>::value,
                typename std::underlying_type<EnumT>::type
