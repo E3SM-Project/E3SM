@@ -1,4 +1,6 @@
-
+!---------------------------------------------------------------------------------------------------
+! MMF main driver (original version by Marat Khairoutdinov)
+!---------------------------------------------------------------------------------------------------
 module crm_module
   use openacc_utils, only: prefetch
   use perf_mod
@@ -25,7 +27,7 @@ module crm_module
   use damping_mod
   use ice_fall_mod
   use coriolis_mod
-
+  use setparm_mod,            only: setparm
   use crm_state_module,       only: crm_state_type
   use crm_rad_module,         only: crm_rad_type
   use crm_input_module,       only: crm_input_type
@@ -34,16 +36,14 @@ module crm_module
 #ifdef ECPP  
   use module_ecpp_crm_driver, only: ecpp_crm_stat, ecpp_crm_init, ecpp_crm_cleanup
 #endif
-!---------------------------------------------------------------
-!  Super-parameterization's main driver
-!  Marat Khairoutdinov, 2001-2009
-!---------------------------------------------------------------
-use setparm_mod, only : setparm
 
 contains
 
-subroutine crm(lchnk, ncrms, dt_gl, plev,       &
-                crm_input, crm_state, crm_rad,  &
+subroutine crm( ncrms, dt_gl, plev,       &
+                crm_input, crm_state, &
+                crm_rad_qrad, crm_rad_temperature, &
+                crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, &
+                crm_rad_nc, crm_rad_ni, crm_rad_qs, crm_rad_ns, &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
                 use_VT, VT_wn_max, &
@@ -81,14 +81,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !-----------------------------------------------------------------------------------------------
     ! Interface variable declarations
     !-----------------------------------------------------------------------------------------------
-
-    integer , intent(in   ) :: lchnk                            ! chunk identifier (only for lat/lon and random seed)
     integer , intent(in   ) :: ncrms                            ! Number of "vector" GCM columns to push down into CRM for SIMD vectorization / more threading
     integer , intent(in   ) :: plev                             ! number of levels in parent model
     real(r8), intent(in   ) :: dt_gl                            ! global model's time step
     type(crm_input_type), target,intent(in   ) :: crm_input
     type(crm_state_type), target,intent(inout) :: crm_state
-    type(crm_rad_type),   target,intent(inout) :: crm_rad
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qrad
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_temperature
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qv
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qc
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qi
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_cld
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_nc
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_ni
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qs
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_ns
     type(crm_ecpp_output_type)  ,intent(inout) :: crm_ecpp_output
     type(crm_output_type),target,intent(inout) :: crm_output
     real(r8), dimension(ncrms,nzm), intent(  out) :: crm_clear_rh
@@ -159,12 +166,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
     real(r8), allocatable :: crm_clear_rh_cnt(:,:) ! counter for clear air relative humidity
 
-    real(crm_rknd), pointer :: crm_rad_temperature  (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qv           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qc           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qi           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_cld          (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qrad         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_u_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_v_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_w_wind     (:,:,:,:)
@@ -252,13 +253,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
   if (use_VT) call allocate_VT(ncrms)
 
-  crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
-  crm_rad_qv          => crm_rad%qv         (1:ncrms,:,:,:)
-  crm_rad_qc          => crm_rad%qc         (1:ncrms,:,:,:)
-  crm_rad_qi          => crm_rad%qi         (1:ncrms,:,:,:)
-  crm_rad_cld         => crm_rad%cld        (1:ncrms,:,:,:)
-  crm_rad_qrad        => crm_rad%qrad       (1:ncrms,:,:,:)
-
   crm_state_u_wind      => crm_state%u_wind     (1:ncrms,:,:,:)
   crm_state_v_wind      => crm_state%v_wind     (1:ncrms,:,:,:)
   crm_state_w_wind      => crm_state%w_wind     (1:ncrms,:,:,:)
@@ -283,10 +277,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_rad_qi  = 0.
   crm_rad_cld = 0.
 #ifdef m2005
-  crm_rad%nc = 0.0
-  crm_rad%ni = 0.0
-  crm_rad%qs = 0.0
-  crm_rad%ns = 0.0
+  crm_rad_nc = 0.0
+  crm_rad_ni = 0.0
+  crm_rad_qs = 0.0
+  crm_rad_ns = 0.0
 #endif /* m2005 */
   do icrm = 1 , ncrms
     bflx(icrm) = crm_input%bflxls(icrm)
@@ -981,13 +975,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             endif
 #ifdef m2005
             !$acc atomic update
-            crm_rad%nc         (icrm,i_rad,j_rad,k) = crm_rad%nc         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,incl)
+            crm_rad_nc         (icrm,i_rad,j_rad,k) = crm_rad_nc         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,incl)
             !$acc atomic update
-            crm_rad%ni         (icrm,i_rad,j_rad,k) = crm_rad%ni         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,inci)
+            crm_rad_ni         (icrm,i_rad,j_rad,k) = crm_rad_ni         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,inci)
             !$acc atomic update
-            crm_rad%qs         (icrm,i_rad,j_rad,k) = crm_rad%qs         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,iqs )
+            crm_rad_qs         (icrm,i_rad,j_rad,k) = crm_rad_qs         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,iqs )
             !$acc atomic update
-            crm_rad%ns         (icrm,i_rad,j_rad,k) = crm_rad%ns         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,ins )
+            crm_rad_ns         (icrm,i_rad,j_rad,k) = crm_rad_ns         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,ins )
 #endif
           enddo
         enddo
@@ -1076,10 +1070,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
           crm_rad_qi         (icrm,i,j,k) = crm_rad_qi         (icrm,i,j,k) * tmp1
           crm_rad_cld        (icrm,i,j,k) = crm_rad_cld        (icrm,i,j,k) * tmp1
 #ifdef m2005
-          crm_rad%nc         (icrm,i,j,k) = crm_rad%nc         (icrm,i,j,k) * tmp1
-          crm_rad%ni         (icrm,i,j,k) = crm_rad%ni         (icrm,i,j,k) * tmp1
-          crm_rad%qs         (icrm,i,j,k) = crm_rad%qs         (icrm,i,j,k) * tmp1
-          crm_rad%ns         (icrm,i,j,k) = crm_rad%ns         (icrm,i,j,k) * tmp1
+          crm_rad_nc         (icrm,i,j,k) = crm_rad_nc         (icrm,i,j,k) * tmp1
+          crm_rad_ni         (icrm,i,j,k) = crm_rad_ni         (icrm,i,j,k) * tmp1
+          crm_rad_qs         (icrm,i,j,k) = crm_rad_qs         (icrm,i,j,k) * tmp1
+          crm_rad_ns         (icrm,i,j,k) = crm_rad_ns         (icrm,i,j,k) * tmp1
 #endif /* m2005 */
         enddo
       enddo
