@@ -455,6 +455,10 @@ contains
             inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
             qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
 
+       if (do_prescribed_CCN) then !revert nc_incld to nc
+          nc_incld(k) = nc(k)
+       end if
+
     enddo k_loop_1
 
   END SUBROUTINE p3_main_part1
@@ -944,6 +948,10 @@ contains
       call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
            inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
            qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
+
+       if (do_prescribed_CCN) then !revert nc_incld to nc
+          nc_incld(k) = nc(k)
+       end if
 
 555   continue
 
