@@ -410,7 +410,7 @@
       <!-- (i.e. super-parameterization, MMF, CRM) -->
       <value compset="_EAM%SP"       grid="a%ne4np4">96</value>
       <value compset="_EAM%SP.*ECPP" grid="a%ne4np4">72</value>
-      <value compset="_EAM%MMF"      grid="a%ne4np4">96</value>
+      <value compset="_EAM%MMF"      grid="a%ne4np4">72</value>
       <value compset="_EAM%MMF"      grid="a%ne4np4.pg2">72</value>
     </values>
     <group>run_coupling</group>

@@ -62,6 +62,10 @@ module kurant_mod
       !$omp taskwait
       ncycle = max(ncycle,max(1,ceiling(cfl/0.7D0)))
 
+#ifdef MMF_FIXED_SUBCYCLE
+      ncycle = max_ncycle
+#endif
+
       if(ncycle.gt.max_ncycle) then
         !$omp target update from(wm)
         !$omp target update from(uhm)
