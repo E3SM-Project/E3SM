@@ -67,17 +67,16 @@ function(build_model COMP_CLASS COMP_NAME)
 
     # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
-      # ARCH can be CUDA, HIP, or unset
+      # YAKL_ARCH can be CUDA, HIP, SYCL, OPENMP45, or empty
+      # USE_CUDA is set through Macros.cmake / config_compilers.xml
       if (USE_CUDA)
-        set(ARCH "CUDA")
+        set(YAKL_ARCH "CUDA")
         # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
-        # We can't have duplicate flags with nvcc, so we only specify CPPDEFS,
-        # and the rest is up to CUDAFLAGS
-        set(YAKL_CXX_FLAGS "${CPPDEFS}")
+        set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
       else()
-        # For normal C++ compilers duplicate flags are fine, the last ones win typically
+        # For CPU C++ compilers duplicate flags are fine, the last ones win typically
         set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
-        set(ARCH "")
+        set(YAKL_ARCH "")
       endif()
       message(STATUS "Building YAKL")
       # Build YAKL as a static library
@@ -85,14 +84,10 @@ function(build_model COMP_CLASS COMP_NAME)
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
       # YAKL_BIN is where we're placing the YAKL library
       set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
-      # YAKL_CUB_HOME is where Nvidia's cub repo lives (submodule)
-      if (USE_CUDA)
-        set(YAKL_CUB_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub)
-      endif()
       # Build the YAKL static library
       add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
-      # Add both YAKL source and YAKL binary directories to the include paths
-      include_directories(${YAKL_HOME} ${YAKL_BIN})
+      # Add the YAKL bin directory, mainly due to a Fortran module if it's needed
+      include_directories(${YAKL_BIN})
     endif()
 
     # if samxx is needed, build samxx as a static library
