@@ -110,10 +110,6 @@ std::string TimeStamp::to_string () const {
 
 }
 
-int TimeStamp::get_days_this_month () const {
-  return dpm(m_yy,m_mm);
-}
-
 double TimeStamp::get_julian_day () const {
   return get_julian_day(m_yy,m_mm,m_dd,m_ss);
 }

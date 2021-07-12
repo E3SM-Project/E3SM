@@ -25,7 +25,6 @@ public:
   double  test_double () const; // Dummy double precision representation of the timestamp used for operator definitions.
 
   std::string to_string () const;
-  int    get_days_this_month () const; 
   double get_julian_day () const;
   double get_julian_day (const int yy, const int mm, const int dd, const double ss) const;
 
