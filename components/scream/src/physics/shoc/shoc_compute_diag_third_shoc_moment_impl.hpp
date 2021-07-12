@@ -37,6 +37,8 @@ void Functions<S,D>
   const auto s_tke = scalarize(tke);
   const auto s_w3 = scalarize(w3);
 
+  const Int max_safe_shift1_idx = s_wthl_sec.extent(0) - 2;
+
   // Set lower condition: w3(i,nlevi) = 0
   s_w3(nlevi-1) = 0;
 
@@ -60,14 +62,17 @@ void Functions<S,D>
 
     auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     auto range_pack_m1 = range_pack;
+    auto range_pack_m2 = range_pack;
     // index for _km1 should never go below 0
     range_pack_m1.set(range_pack < 1, 1);
+    // index for _km1 should never go above scalar view bounds
+    range_pack_m2.set(range_pack > max_safe_shift1_idx, max_safe_shift1_idx);
 
     ekat::index_and_shift<-1>(s_dz_zt, range_pack_m1, dz_zt_k, dz_zt_km1);
     ekat::index_and_shift<-1>(s_wthl_sec, range_pack_m1, wthl_sec_k, wthl_sec_km1);
-    ekat::index_and_shift<1> (s_wthl_sec, range_pack, wthl_sec_k, wthl_sec_kp1);
+    ekat::index_and_shift<1> (s_wthl_sec, range_pack_m2, wthl_sec_k, wthl_sec_kp1);
     ekat::index_and_shift<-1>(s_thl_sec, range_pack_m1, thl_sec_k, thl_sec_km1);
-    ekat::index_and_shift<1> (s_thl_sec, range_pack, thl_sec_k, thl_sec_kp1);
+    ekat::index_and_shift<1> (s_thl_sec, range_pack_m2, thl_sec_k, thl_sec_kp1);
     ekat::index_and_shift<-1>(s_w_sec, range_pack_m1, w_sec_k, w_sec_km1);
     ekat::index_and_shift<-1>(s_tke, range_pack_m1, tke_k, tke_km1);
 

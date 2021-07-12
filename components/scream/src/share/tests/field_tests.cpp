@@ -38,16 +38,6 @@ TEST_CASE("field_identifier", "") {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-#ifdef SCREAM_FORCE_RUN_FAIL
-  REQUIRE(false); // force this test to fail
-#endif
-
-#ifdef SCREAM_FORCE_RUN_FPE_FAIL
-  float foo = 42.0;
-  float bar = foo / 0.0;
-  std::cout << bar << std::endl;
-#endif
-
   std::vector<FieldTag> tags1 = {EL, LEV, CMP};
   std::vector<FieldTag> tags2 = {EL, CMP, LEV};
 
