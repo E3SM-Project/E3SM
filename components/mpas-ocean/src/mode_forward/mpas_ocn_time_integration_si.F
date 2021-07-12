@@ -286,16 +286,8 @@ module ocn_time_integration_si
 
       ! Semi-implicit variables
       real (kind=RKIND), dimension(2) :: &
-         SIcst_allreduce2,       &! array for local  summations
+         SIcst_allreduce_local2, &! array for local  summations
          SIcst_allreduce_global2  ! array for global summations
-      real (kind=RKIND), dimension(2) :: &
-         SIcst_allreduce_local2   ! array for local  summations
-      real (kind=RKIND), dimension(3) :: &
-         SIcst_allreduce3,       &! array for local  summations
-         SIcst_allreduce_global3  ! array for global summations
-      real (kind=RKIND), dimension(5) :: &
-         SIcst_allreduce5,       &! array for local  summations
-         SIcst_allreduce_global5  ! array for global summations
       real (kind=RKIND), dimension(9) :: &
          SIcst_allreduce_local9, &! array for local  summations
          SIcst_allreduce_global9,&! array for global summations
@@ -612,17 +604,31 @@ module ocn_time_integration_si
          ! normalTransportVelocity) for momentum advection.
          ! Use the most recent time level available.
 
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
+         !$acc update device(layerThickEdge)
+#endif
          if (associated(highFreqThicknessNew)) then
+#ifdef MPAS_OPENACC
+            !$acc enter data copyin(highFreqThicknessNew)
+#endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
+#ifdef MPAS_OPENACC
+            !$acc exit data delete(highFreqThicknessNew)
+#endif
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
+#ifdef MPAS_OPENACC
+         !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
+         !$acc update host(vertAleTransportTop)
+#endif
 
          call ocn_tend_vel(tendPool, statePool, forcingPool, &
                            stage1_tend_time, dt)
@@ -902,6 +908,11 @@ module ocn_time_integration_si
    
             call mpas_timer_start("si btr residual")
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendb1,sshTendb2,sshTendAx,iEdge, &
+            !$omp         cell1,cell2,sshEdgeCur,thicknessSumCur, &
+            !$omp         sshDiffCur,fluxb1,fluxb2,fluxAx,sshCurArea)
             do iCell = 1, nPrecVec
                sshTendb1 = 0.0_RKIND
                sshTendb2 = 0.0_RKIND
@@ -954,6 +965,8 @@ module ocn_time_integration_si
                SIvec_r00(iCell) = SIvec_r0(iCell)
    
             end do ! iCell
+            !$omp end do
+            !$omp end parallel
    
             ! Preconditioning --------------------------------------------!
    
@@ -994,6 +1007,10 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeCur, &
+            !$omp         thicknessSumCur,sshDiffCur,fluxAx,sshCurArea )
             do iCell = 1, nPrecVec
    
                sshTendAx = 0.0_RKIND
@@ -1028,7 +1045,8 @@ module ocn_time_integration_si
                SIvec_w0(iCell) = -sshCurArea - sshTendAx
    
             end do ! iCell
-   
+            !$omp end do
+            !$omp end parallel
    
             ! Preconditioning --------------------------------------------!
    
@@ -1067,9 +1085,12 @@ module ocn_time_integration_si
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
             call mpas_timer_stop("si halo r0")
    
-   
             ! SpMV -------------------------------------------------------!
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeCur, &
+            !$omp         thicknessSumCur,sshDiffCur,fluxAx,sshCurArea )
             do iCell = 1, nPrecVec
    
                sshTendAx = 0.0_RKIND
@@ -1114,7 +1135,8 @@ module ocn_time_integration_si
                SIvec_s0(iCell)  = 0.0_RKIND
    
             end do ! iCell
-   
+            !$omp end do
+            !$omp end parallel
    
             ! Reduction --------------------------------------------------!
             SIcst_r00r0 = 0.0_RKIND
@@ -1182,6 +1204,8 @@ module ocn_time_integration_si
    
                iter = iter + 1
    
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1, nPrecVec
                   SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
                                    * (SIvec_ph0(iCell) - SIcst_omega0     &
@@ -1208,7 +1232,8 @@ module ocn_time_integration_si
                   SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
                                                        * SIvec_z1(iCell)
                end do ! iCell
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Preconditioning -----------------------------------------!
    
@@ -1250,6 +1275,10 @@ module ocn_time_integration_si
    
                ! SpMV ----------------------------------------------------!
    
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+               !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
                do iCell = 1, nPrecVec
                   sshTendAx = 0.0_RKIND
    
@@ -1285,7 +1314,8 @@ module ocn_time_integration_si
                   SIvec_v0(iCell) = -sshLagArea - sshTendAx
    
                end do ! iCell
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Reduction -----------------------------------------------!
                SIcst_r00s0 = 0.0_RKIND
@@ -1321,12 +1351,12 @@ module ocn_time_integration_si
                                             * SIvec_t0(iCell)
    
                   SIcst_r00v0 = SIcst_r00v0 + SIvec_r00(iCell) &
-                                            * SIvec_v0(iCell) ! v1
+                                            * SIvec_v0(iCell)
    
                   SIcst_q0q0 = SIcst_q0q0   + SIvec_q0(iCell) &
                                             * SIvec_q0(iCell)
                end do
-   
+
                SIcst_allreduce_local9(1) = SIcst_r00s0
                SIcst_allreduce_local9(2) = SIcst_r00z0
                SIcst_allreduce_local9(3) = SIcst_q0y0 
@@ -1381,6 +1411,8 @@ module ocn_time_integration_si
                      - 2.0_RKIND * SIcst_omega0 * SIcst_q0y0_global  &
                      + SIcst_omega0**2.0_RKIND  * SIcst_y0y0_global
    
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1,nPrecVec
                   sshSubcycleNew(iCell) = sshSubcycleNew(iCell)           &
                                         + SIcst_alpha0 * SIvec_ph1(iCell) &
@@ -1397,7 +1429,8 @@ module ocn_time_integration_si
                                    * ( SIvec_t0(iCell) - SIcst_alpha0     &
                                                        * SIvec_v0(iCell))
                end do
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Preconditioning -----------------------------------------!
    
@@ -1439,6 +1472,10 @@ module ocn_time_integration_si
    
                ! SpMV ----------------------------------------------------!
    
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+               !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
                do iCell = 1, nPrecVec
                   sshTendAx = 0.0_RKIND
    
@@ -1473,9 +1510,9 @@ module ocn_time_integration_si
    
                   SIvec_t1(iCell) = -sshLagArea - sshTendAx
                end do ! iCell
-   
-               ! End reduction -------------------------------------------!
-   
+               !$omp end do
+               !$omp end parallel
+
                SIcst_rho1 = SIcst_r00q0_global - SIcst_omega0 * SIcst_r00y0_global 
    
                SIcst_gamma1 = SIcst_r00y0_global - SIcst_omega0 * SIcst_r00t0_global  &
@@ -1489,7 +1526,10 @@ module ocn_time_integration_si
                             / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
-   
+               SIcst_rho0         = SIcst_rho1
+
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1,nPrecVec
                   SIvec_r0(iCell) = SIvec_r1(iCell)
                   SIvec_s0(iCell) = SIvec_s1(iCell)
@@ -1503,13 +1543,12 @@ module ocn_time_integration_si
                   SIvec_wh0(iCell) = SIvec_wh1(iCell)
                   SIvec_zh0(iCell) = SIvec_zh1(iCell)
                end do ! iCell
-   
-               SIcst_rho0         = SIcst_rho1
+               !$omp end do
+               !$omp end parallel
    
             !-------------------------------------------------------------!
             end do ! do iter
             !-------------------------------------------------------------!
-    
    
             !   boundary update on sshNew
             call mpas_timer_start("si halo iter")
@@ -1519,18 +1558,25 @@ module ocn_time_integration_si
    
             call mpas_timer_stop("si btr iteration")
    
-   
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! Stage 2.4 : The barotropic velocity update
             !             using the lagged SSH
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
             call mpas_timer_start("si btr vel update")
+
+            !$omp parallel
+            !$omp do schedule(runtime)
             do iCell = 1,nCellsAll
                ! Use of sshNew to save the lagged SSH
                sshNew(iCell) = sshSubcycleNew(iCell)
             end do
+            !$omp end do
+            !$omp end parallel
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(temp_mask,cell1,cell2)
             do iEdge = 1,nEdgesHalo( edgeHaloComputeCounter-1 )
                temp_mask = edgeMask(1, iEdge)
    
@@ -1551,6 +1597,8 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
    
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
@@ -1569,7 +1617,10 @@ module ocn_time_integration_si
             end do
             !$omp end do
             !$omp end parallel
-   
+
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(temp_mask,cell1,cell2)
             do iEdge = 1,nEdgesHalo(2)
                temp_mask = edgeMask(1, iEdge)
    
@@ -1582,6 +1633,8 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)        &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
    
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
@@ -1617,6 +1670,13 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendb1,sshTendb2,sshTendAx,iEdge, &
+            !$omp         cell1,cell2,sshEdgeCur,sshEdgeLag,sshEdgeMid, &
+            !$omp         thicknessSumCur,thicknessSumMid, &
+            !$omp         thicknessSumLag,sshDiffCur,sshDiffLag, &
+            !$omp         fluxb1,fluxb2,fluxAx,sshCurArea,sshLagArea)
             do iCell = 1, nPrecVec
                sshTendb1 = 0.0_RKIND
                sshTendb2 = 0.0_RKIND
@@ -1680,7 +1740,8 @@ module ocn_time_integration_si
                                 -(-sshLagArea - sshTendAx)
                SIvec_r00(iCell) = SIvec_r0(iCell)
             end do ! iCell
-   
+            !$omp end do
+            !$omp end parallel
    
             ! Preconditioning --------------------------------------------!
    
@@ -1722,6 +1783,10 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+            !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
             do iCell = 1, nPrecVec
    
                sshTendAx = 0.0_RKIND
@@ -1751,13 +1816,14 @@ module ocn_time_integration_si
                             * fluxAx * dvEdge(iEdge)
                end do ! i
    
-               sshCurArea = R1_alpha1s_g_dts * SIvec_rh0(iCell) &
+               sshLagArea = R1_alpha1s_g_dts * SIvec_rh0(iCell) &
                                              * areaCell(iCell)
    
-               SIvec_w0(iCell) = -sshCurArea - sshTendAx
+               SIvec_w0(iCell) = -sshLagArea - sshTendAx
    
             end do ! iCell
-   
+            !$omp end do
+            !$omp end parallel
    
             ! Preconditioning --------------------------------------------!
    
@@ -1798,6 +1864,10 @@ module ocn_time_integration_si
    
    
             ! SpMV -------------------------------------------------------!
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+            !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
             do iCell = 1, nPrecVec
    
                sshTendAx = 0.0_RKIND
@@ -1819,19 +1889,19 @@ module ocn_time_integration_si
                                         bottomDepth(cell2))
    
                   ! nabla (ssh^0)
-                  sshDiffCur = (SIvec_wh0(cell2) - SIvec_wh0(cell1)) &
+                  sshDiffLag = (SIvec_wh0(cell2) - SIvec_wh0(cell1)) &
                              / dcEdge(iEdge)
    
-                  fluxAx = thicknessSumLag * sshDiffCur
+                  fluxAx = thicknessSumLag * sshDiffLag
    
                   sshTendAx = sshTendAx + edgeSignOnCell(i, iCell) &
                             * fluxAx * dvEdge(iEdge)
                end do ! i
    
-               sshCurArea = R1_alpha1s_g_dts * SIvec_wh0(iCell) &
+               sshLagArea = R1_alpha1s_g_dts * SIvec_wh0(iCell) &
                           * areaCell(iCell)
    
-               SIvec_t0(iCell) = -sshCurArea - sshTendAx
+               SIvec_t0(iCell) = -sshLagArea - sshTendAx
    
                SIvec_ph0(iCell) = 0.0_RKIND
                SIvec_sh0(iCell) = 0.0_RKIND
@@ -1841,6 +1911,8 @@ module ocn_time_integration_si
                SIvec_s0(iCell)  = 0.0_RKIND
    
             end do ! iCell
+            !$omp end do
+            !$omp end parallel
    
    
             ! Reduction -----------------------------------------------!
@@ -1856,7 +1928,6 @@ module ocn_time_integration_si
    
             SIcst_allreduce_local2(1) = SIcst_r00r0
             SIcst_allreduce_local2(2) = SIcst_r00w0
-   
    
             ! Global sum across CPUs
             call mpas_timer_start("si reduction r0")
@@ -1911,6 +1982,8 @@ module ocn_time_integration_si
    
                iter = iter + 1
    
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1, nPrecVec
                   SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
                                    * (SIvec_ph0(iCell) - SIcst_omega0     &
@@ -1937,7 +2010,8 @@ module ocn_time_integration_si
                   SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
                                                        * SIvec_z1(iCell)
                end do ! iCell
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Preconditioning -----------------------------------------!
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
@@ -1978,6 +2052,10 @@ module ocn_time_integration_si
    
                ! SpMV ----------------------------------------------------!
    
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+               !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
                do iCell = 1, nPrecVec
                   sshTendAx = 0.0_RKIND
    
@@ -2007,12 +2085,14 @@ module ocn_time_integration_si
                                * fluxAx * dvEdge(iEdge)
                   end do ! i
    
-                  sshLagArea = R1_alpha1s_g_dts * SIvec_zh1(iCell) * areaCell(iCell)
+                  sshLagArea = R1_alpha1s_g_dts * SIvec_zh1(iCell) &
+                             * areaCell(iCell)
    
                   SIvec_v0(iCell) = -sshLagArea - sshTendAx
    
                end do ! iCell
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Reduction -----------------------------------------------!
                SIcst_r00s0 = 0.0_RKIND
@@ -2048,7 +2128,7 @@ module ocn_time_integration_si
                                             * SIvec_t0(iCell)
    
                   SIcst_r00v0 = SIcst_r00v0 + SIvec_r00(iCell) &
-                                            * SIvec_v0(iCell) ! v1
+                                            * SIvec_v0(iCell)
    
                   SIcst_q0q0 = SIcst_q0q0   + SIvec_q0(iCell) &
                                             * SIvec_q0(iCell)
@@ -2107,6 +2187,8 @@ module ocn_time_integration_si
                      - 2.0_RKIND * SIcst_omega0 * SIcst_q0y0_global  &
                      + SIcst_omega0**2.0_RKIND  * SIcst_y0y0_global
    
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1,nPrecVec
                   sshSubcycleNew(iCell) = sshSubcycleNew(iCell)           &
                                         + SIcst_alpha0 * SIvec_ph1(iCell) &
@@ -2123,7 +2205,8 @@ module ocn_time_integration_si
                                    * ( SIvec_t0(iCell) - SIcst_alpha0     &
                                                        * SIvec_v0(iCell))
                end do
-   
+               !$omp end do
+               !$omp end parallel
    
                ! Preconditioning -----------------------------------------!
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
@@ -2161,9 +2244,12 @@ module ocn_time_integration_si
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh1')
                call mpas_timer_stop("si halo iter")
    
-   
                ! SpMV ----------------------------------------------------!
    
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdgeLag, &
+               !$omp         thicknessSumLag,sshDiffLag,fluxAx,sshLagArea )
                do iCell = 1, nPrecVec
                   sshTendAx = 0.0_RKIND
    
@@ -2198,6 +2284,8 @@ module ocn_time_integration_si
    
                   SIvec_t1(iCell) = -sshLagArea - sshTendAx
                end do ! iCell
+               !$omp end do
+               !$omp end parallel
    
                SIcst_rho1 = SIcst_r00q0_global - SIcst_omega0 * SIcst_r00y0_global 
    
@@ -2212,6 +2300,10 @@ module ocn_time_integration_si
                             / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
+               SIcst_rho0 = SIcst_rho1
+
+               !$omp parallel
+               !$omp do schedule(runtime)
                do iCell = 1,nPrecVec
                   SIvec_r0(iCell) = SIvec_r1(iCell)
                   SIvec_s0(iCell) = SIvec_s1(iCell)
@@ -2225,8 +2317,8 @@ module ocn_time_integration_si
                   SIvec_wh0(iCell) = SIvec_wh1(iCell)
                   SIvec_zh0(iCell) = SIvec_zh1(iCell)
                end do ! iCell
-   
-               SIcst_rho0         = SIcst_rho1
+               !$omp end do
+               !$omp end parallel
    
                if ( iter > int(mean_num_cells*5) ) then
                   call mpas_log_write(&
@@ -2260,6 +2352,9 @@ module ocn_time_integration_si
    
             call mpas_timer_start("si btr vel update")
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(temp_mask,cell1,cell2)
             do iEdge = 1, nEdgesHalo(2)
                temp_mask = edgeMask(1, iEdge)
    
@@ -2280,6 +2375,8 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
    
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
@@ -2299,6 +2396,9 @@ module ocn_time_integration_si
             !$omp end do
             !$omp end parallel
    
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(temp_mask,cell1,cell2)
             do iEdge = 1, nEdgesOwned
                temp_mask = edgeMask(1, iEdge)
    
@@ -2312,8 +2412,12 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
    
-   
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(cell1,cell2,sshEdge,thicknessSum)
             do iEdge = 1, nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -2323,9 +2427,6 @@ module ocn_time_integration_si
                normalBarotropicVelocitySubcycleCur(iEdge)                &
                   = 0.5_RKIND*normalBarotropicVelocitySubcycleNew(iEdge) &
                   + 0.5_RKIND*normalBarotropicVelocityCur(iEdge)
-   
-               normalBarotropicVelocityNew(iEdge) &
-                  = normalBarotropicVelocitySubcycleCur(iEdge)
    
                          ! 0.25 = 0.5 * 0.5
                sshEdge = 0.25_RKIND * (  sshSubcycleCur(cell1)   &
@@ -2341,6 +2442,8 @@ module ocn_time_integration_si
                          + normalBarotropicVelocityCur(iEdge) )       &
                          * thicknessSum
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
    
    
             ! boundary update on F
@@ -2348,9 +2451,6 @@ module ocn_time_integration_si
             call mpas_dmpar_exch_group_create(domain, finalBtrGroupName)
             call mpas_dmpar_exch_group_add_field(domain, &
                       finalBtrGroupName, 'barotropicThicknessFlux')
-            call mpas_dmpar_exch_group_add_field(domain,             &
-                      finalBtrGroupName, 'normalBarotropicVelocity', &
-                                                       timeLevel=2)
             call mpas_dmpar_exch_group_add_field(domain,             &
                       finalBtrGroupName,                             &
                                  'normalBarotropicVelocitySubcycle', &
@@ -2360,6 +2460,15 @@ module ocn_time_integration_si
             call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
             call mpas_timer_stop("si halo btr vel")
    
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdgesAll
+               normalBarotropicVelocityNew(iEdge)              &
+                  = normalBarotropicVelocitySubcycleCur(iEdge) 
+            end do ! iEdge
+            !$omp end do
+            !$omp end parallel
+
             call mpas_timer_stop("si btr vel update")
 
          !-------------------------------------------------------------!
@@ -2473,17 +2582,31 @@ module ocn_time_integration_si
          ! layerThickEdge because layerThickness has not yet
          ! been computed for time level 2.
          call mpas_timer_start('thick vert trans vel top')
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessCur, sshCur)
+         !$acc update device(layerThickEdge, normalTransportVelocity)
+#endif
          if (associated(highFreqThicknessNew)) then
+#ifdef MPAS_OPENACC
+            !$acc enter data copyin(highFreqThicknessNew)
+#endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
+#ifdef MPAS_OPENACC
+            !$acc exit data delete(highFreqThicknessNew)
+#endif
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
          endif
+#ifdef MPAS_OPENACC
+         !$acc exit data delete(layerThicknessCur, sshCur)
+         !$acc update host(vertAleTransportTop, normalTransportVelocity)
+#endif
          call mpas_timer_stop('thick vert trans vel top')
 
          call ocn_tend_thick(tendPool, forcingPool, meshPool)
@@ -3069,7 +3192,7 @@ module ocn_time_integration_si
          normalBaroclinicVelocity, &! normal baroclinic velocity
          normalVelocity             ! normal velocity (total)
 
-      real (kind=RKIND), dimension(:), pointer :: sshCur
+      real (kind=RKIND), dimension(:), pointer :: ssh
 
 #ifndef USE_LAPACK
       call mpas_log_write( &
@@ -3150,7 +3273,7 @@ module ocn_time_integration_si
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-      call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
 
       nCells = nCellsArray(config_num_halos)
       nEdges = nEdgesArray(config_num_halos+1)
@@ -3276,21 +3399,16 @@ module ocn_time_integration_si
          end do
 
          ! copy zTop(1,iCell) into sea-surface height array
-         sshCur(iCell) = zTop(minLevelCell(iCell),iCell)
+         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
       end do
 
-      tmp1 = minval(sshCur)
+      tmp1 = minval(ssh)
       call mpas_dmpar_min_real(domain % dminfo, tmp1,tmp2 )
 
       si_ismf = 1
       if ( tmp2 < -10.d0 ) then
          si_ismf = 0
       endif
-
-      ! Reinitialize ssh and zTop
-      sshCur(:) = 0.0
-      zTop(:,:) = 0.0
-
 
       ! Impliciness parameters
       alpha1= 0.5_RKIND
@@ -3313,10 +3431,7 @@ module ocn_time_integration_si
       !      version.
       nSiLargeIter = config_n_btr_si_large_iter
 
-      if ( tmp2 < -10.d0 .and. nSiLargeIter == 1 ) then ! For ISMF case
-         nSiLargeIter = 2
-         dt_si = dt_si / real(nSiLargeIter)
-      elseif ( numTSIterations == 1 ) then
+      if ( numTSIterations == 1 ) then
          nSiLargeIter = 2
       else
          nSiLargeIter = config_n_btr_si_large_iter
