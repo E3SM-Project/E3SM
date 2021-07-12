@@ -730,8 +730,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field(pbuf, crm_qrad_idx,    crm_qrad)
    crm_rad%qrad(1:ncol,:,:,:) = crm_qrad(1:ncol,:,:,:)
 
-   call pbuf_get_field(pbuf, pbuf_get_index('PREC_DP'),  prec_dp  )
-   call pbuf_get_field(pbuf, pbuf_get_index('SNOW_DP'),  snow_dp  )
+   call pbuf_get_field(pbuf, prec_dp_idx,  prec_dp  )
+   call pbuf_get_field(pbuf, snow_dp_idx,  snow_dp  )
 
    prec_dp  = 0.
    snow_dp  = 0.
