@@ -838,32 +838,38 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end do
 
          ! use radiation from grid-cell mean radctl on first time step
-         cld(:,:) = 0.
-         ptend%s(:,:) = 0.
-         ptend%q(:,:,1) = 0.
-         ptend%q(:,:,ixcldliq) = 0.
-         ptend%q(:,:,ixcldice) = 0.
+         call pbuf_get_field(pbuf_chunk, cld_idx, cld, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+         cld(1:ncol,:) = 0.
+         ptend(c)%s(1:ncol,:) = 0.
+         ptend(c)%q(1:ncol,:,1) = 0.
+         ptend(c)%q(1:ncol,:,ixcldliq) = 0.
+         ptend(c)%q(1:ncol,:,ixcldice) = 0.
+
+         ! Set clear air RH to zero on first step
+         call pbuf_get_field(pbuf_chunk, mmf_clear_rh_idx, mmf_clear_rh )
+         mmf_clear_rh(1:ncol,1:pver) = 0
 
          !------------------------------------------------------------------------------------------
          ! initialize ECPP variables
          !------------------------------------------------------------------------------------------
-
 #ifdef ECPP
-      if (use_ECPP) then
-         do i = 1,ncol
-            icrm = ncol_sum + i
-            air_density(icrm,1:pver) = state%pmid(i,1:pver) / (287.15*state%t(i,1:pver))
-         end do
+         if (use_ECPP) then
+            do i = 1,ncol
+               icrm = ncol_sum + i
+               air_density(icrm,1:pver) = state%pmid(i,1:pver) / (287.15*state%t(i,1:pver))
+            end do
 
-         ! initialize turbulence for ECPP calculations
-         call pbuf_set_field(pbuf_chunk, pbuf_get_index('TKE_CRM'), 0.0_r8 )
-         call pbuf_set_field(pbuf_chunk, pbuf_get_index('TK_CRM'), 0.0_r8 )
-      end if 
+            ! initialize turbulence for ECPP calculations
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('TKE_CRM'), 0.0_r8 )
+            call pbuf_set_field(pbuf_chunk, pbuf_get_index('TK_CRM'), 0.0_r8 )
+         end if 
 #endif
+         !------------------------------------------------------------------------------------------
+         !------------------------------------------------------------------------------------------
 
-      ! Set clear air RH to zero on first step
-      call pbuf_get_field(pbuf_chunk, mmf_clear_rh_idx, mmf_clear_rh )
-      mmf_clear_rh(1:ncol,1:pver) = 0
+         ncol_sum = ncol_sum + ncol
+
+      end do ! c=begchunk, endchunk
 
    else  ! not is_first_step
 
