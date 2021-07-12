@@ -446,7 +446,7 @@ end subroutine crm_physics_final
 !===================================================================================================
 !===================================================================================================
 
-subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
+subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, &
                             species_class, crm_ecpp_output, &
                             mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
    !------------------------------------------------------------------------------------------------
@@ -454,55 +454,56 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! Original Author: Marat Khairoutdinov
    !------------------------------------------------------------------------------------------------
    use perf_mod
-   use physics_buffer,  only: physics_buffer_desc, pbuf_old_tim_idx, pbuf_get_index, &
-                              dyn_time_lvls, pbuf_get_field, pbuf_set_field
-   use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_ptend_init
-   use camsrfexch,      only: cam_in_t, cam_out_t
-   use time_manager,    only: is_first_step, get_nstep
-   use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
-   use physconst,       only: cpair, latvap, latice, gravit, cappa
-   use constituents,    only: pcnst, cnst_get_ind
+   use physics_buffer,        only: physics_buffer_desc, pbuf_old_tim_idx, pbuf_get_index, &
+                                    dyn_time_lvls, pbuf_get_field, pbuf_set_field, pbuf_get_chunk
+   use physics_types,         only: physics_state, physics_tend, physics_ptend, physics_ptend_init
+   use camsrfexch,            only: cam_in_t, cam_out_t
+   use time_manager,          only: is_first_step, get_nstep
+   use crmdims,               only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
+   use physconst,             only: cpair, latvap, latice, gravit, cappa
+   use constituents,          only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
-   use cpp_interface_mod, only: crm
+   use cpp_interface_mod,     only: crm
 #elif defined(MMF_SAM) || defined(MMF_SAMOMP)
-   use crm_module       , only: crm
+   use crm_module,            only: crm
 #endif
-   use params_kind,          only: crm_rknd
-   use phys_control,    only: phys_getopts, phys_do_flux_avg
-   use crm_history,     only: crm_history_out
-   use wv_saturation,   only: qsat_water
+   use params_kind,           only: crm_rknd
+   use phys_control,          only: phys_getopts, phys_do_flux_avg
+   use crm_history,           only: crm_history_out
+   use wv_saturation,         only: qsat_water
 #if (defined  m2005 && defined MODAL_AERO)  
    ! modal_aero_data only exists if MODAL_AERO
-   use modal_aero_data, only: ntot_amode, ntot_amode
-   use ndrop,           only: loadaer
+   use modal_aero_data,       only: ntot_amode, ntot_amode
+   use ndrop,                 only: loadaer
 #endif
 
 #if defined( MMF_ORIENT_RAND )
    use RNG_MT ! random number generator for randomly rotating CRM orientation (MMF_ORIENT_RAND)
 #endif
 
-   use crm_state_module,       only: crm_state_type, crm_state_initialize, crm_state_finalize
-   use crm_rad_module,         only: crm_rad_type, crm_rad_initialize, crm_rad_finalize
-   use crm_input_module,       only: crm_input_type, crm_input_initialize, crm_input_finalize
-   use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
-   use crm_ecpp_output_module, only: crm_ecpp_output_type
+   use crm_state_module,      only: crm_state_type, crm_state_initialize, crm_state_finalize
+   use crm_rad_module,        only: crm_rad_type, crm_rad_initialize, crm_rad_finalize
+   use crm_input_module,      only: crm_input_type, crm_input_initialize, crm_input_finalize
+   use crm_output_module,     only: crm_output_type, crm_output_initialize, crm_output_finalize
+   use crm_ecpp_output_module,only: crm_ecpp_output_type
 
-   use iso_c_binding, only: c_bool
-   use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
-   use spmd_utils,          only: masterproc
+   use iso_c_binding,         only: c_bool
+   use phys_grid,             only: get_rlon_p, get_rlat_p, get_gcol_p  
+   use spmd_utils,            only: masterproc
+   use openacc_utils
 
-   real(r8),                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
-   type(physics_state),             intent(in   ) :: state            ! Global model state 
-   type(physics_tend),              intent(in   ) :: tend             ! 
-   type(physics_ptend),             intent(  out) :: ptend            ! output tendencies
-   type(physics_buffer_desc),       pointer       :: pbuf(:)          ! physics buffer
-   type(cam_in_t),                  intent(in   ) :: cam_in           ! atm input from coupler
-   type(cam_out_t),                 intent(inout) :: cam_out          ! atm output to coupler
-   integer,                         intent(in   ) :: species_class(:) ! aerosol species type
-   type(crm_ecpp_output_type),      intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
-   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
-   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
-   real(r8), dimension(pcols),      intent(  out) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
+   real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
+   type(physics_state),dimension(begchunk:endchunk),intent(in   ) :: state            ! Global model state 
+   type(physics_tend), dimension(begchunk:endchunk),intent(in   ) :: tend             ! 
+   type(physics_ptend),dimension(begchunk:endchunk),intent(  out) :: ptend            ! output tendencies
+   type(physics_buffer_desc), pointer                             :: pbuf2d(:,:)      ! physics buffer
+   type(cam_in_t),     dimension(begchunk:endchunk),intent(in   ) :: cam_in           ! atm input from coupler
+   type(cam_out_t),    dimension(begchunk:endchunk),intent(inout) :: cam_out          ! atm output to coupler
+   integer,                                         intent(in   ) :: species_class(:) ! aerosol species type
+   type(crm_ecpp_output_type),                      intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
+   real(r8), dimension(begchunk:endchunk,pcols),    intent(  out) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
+   real(r8), dimension(begchunk:endchunk,pcols),    intent(  out) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
+   real(r8), dimension(begchunk:endchunk,pcols),    intent(  out) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
 
    !------------------------------------------------------------------------------------------------
    ! Local variables 
