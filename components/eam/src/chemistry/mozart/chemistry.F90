@@ -1346,11 +1346,11 @@ end function chem_is_active
 ! 
 !-----------------------------------------------------------------------
 
-    use physics_buffer,      only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer,      only : physics_buffer_desc, pbuf_get_field, pbuf_get_index, pbuf_old_tim_idx
     use cam_history,         only : outfld
-    use time_manager,        only : get_curr_calday
+    use time_manager,        only : get_curr_calday, get_nstep
     use chem_mods,           only : gas_pcnst
-    use mo_gas_phase_chemdr, only : gas_phase_chemdr
+    use mo_gas_phase_chemdr, only : gas_phase_chemdr, gas_ac_name, gas_ac_name_2D
     
     use spmd_utils,          only : iam
     use camsrfexch,          only : cam_in_t, cam_out_t     
@@ -1398,15 +1398,22 @@ end function chem_is_active
     real(r8), pointer :: cmfdqr(:,:)
     real(r8), pointer :: nevapr(:,:)
     real(r8), pointer :: cldtop(:)
+    real(r8), pointer, dimension(:) :: gas_ac_2D
+    real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: Diff(pcols,pver) ! tmp space
     real(r8) :: ftem(pcols,pver) ! tmp space
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D
+    integer ::  gas_ac_idx
+    integer :: nstep
 
     integer :: tim_ndx
 
     logical :: lq(pcnst)
 
     if ( .not. chem_step ) return
+
+    nstep = get_nstep()
 
     call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D)
@@ -1424,26 +1431,6 @@ end function chem_is_active
        end if
     end do
     if ( ghg_chem ) lq(1) = .true.
-
-    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
-      do m = 1,pcnst
-         n = map2chm(m)
-         if (n > 0 .and. (.not. any( aer_species == n ))) then
-           ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-
-           if (history_gaschmbudget) then
-             call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
-           end if
-
-           if (history_gaschmbudget_2D) then
-             do k=2,pver
-               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-             end do
-             call outfld(trim(solsym(n))//'_2DMSBac', ftem(:ncol,1), pcols, lchnk )
-           end if
-         end if
-      end do
-    end if
 
     call physics_ptend_init(ptend, state%psetcols, 'chemistry', lq=lq)
     
@@ -1466,6 +1453,55 @@ end function chem_is_active
     call pbuf_get_field(pbuf, ndx_cmfdqr,     cmfdqr, start=(/1,1/),         kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_nevapr,     nevapr, start=(/1,1/),         kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_cldtop,     cldtop )
+
+!-----------------------------------------------------------------------
+! output gas concentration and tendency
+!-----------------------------------------------------------------------
+    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+      do m = 1,pcnst
+         n = map2chm(m)
+         if (n > 0 .and. (.not. any( aer_species == n ))) then
+           ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+
+           if (history_gaschmbudget) then
+             call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+             if (nstep == 0) then
+                Diff(:ncol,:) = 0.0_r8
+                !if (masterproc) then
+                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                !end if
+
+             else
+                Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))/dt
+             end if
+             call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
+           end if
+           !
+           if (history_gaschmbudget_2D) then
+             do k=2,pver
+               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+             end do
+             call outfld(trim(solsym(n))//'_2DMSBac', ftem(:ncol,1), pcols, lchnk )
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
+             if( nstep == 0 ) then
+                Diff(:ncol,1) = 0.0_r8
+                !if (masterproc) then
+                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name_2D=',gas_ac_name_2D(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                !end if
+
+             else
+                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))/dt
+             end if
+             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
+           end if
+         end if
+      end do
+    end if
 
 !-----------------------------------------------------------------------
 ! call Neu wet dep scheme
