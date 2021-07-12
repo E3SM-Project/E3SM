@@ -399,6 +399,8 @@ ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
+  include_directories(${KOKKOS_INCLUDE_DIR})
+  link_directories(${KOKKOS_LIBRARY_DIR})
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

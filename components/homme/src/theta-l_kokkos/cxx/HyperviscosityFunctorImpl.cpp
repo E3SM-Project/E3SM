@@ -224,6 +224,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   // Finally, convert theta back to vtheta, and adjust w at surface
   auto geo = m_geometry;
+  const auto process_nh_vars = m_process_nh_vars;
   Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
                        KOKKOS_LAMBDA(const TeamMember& team) {
     const int ie = team.league_rank();
@@ -242,7 +243,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
       // Fix w at surface:
       // Adjust w_i at the surface, since velocity has changed
-      if (m_process_nh_vars) {
+      if (process_nh_vars) {
         Kokkos::single(Kokkos::PerThread(team),[&](){
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
