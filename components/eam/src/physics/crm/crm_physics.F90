@@ -28,6 +28,8 @@ module crm_physics
    public :: crm_surface_flux_bypass_tend
    public :: m2005_effradius
 
+   integer :: ncrms = -1 ! total number of CRMs summed over all chunks in task
+
    ! Constituent names
    character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
                                                     'RAINQM', 'SNOWQM','NUMRAI','NUMSNO'/)
@@ -68,6 +70,7 @@ subroutine crm_physics_register()
    use spmd_utils,          only: masterproc
    use physconst,           only: cpair, mwh2o, mwdry
    use ppgrid,              only: pcols, pver, pverp
+   use phys_grid,           only: get_ncols_p
    use physics_buffer,      only: dyn_time_lvls, pbuf_add_field, dtype_r8, pbuf_get_index
    use phys_control,        only: phys_getopts, use_gw_convect
    use constituents,        only: cnst_add
@@ -136,6 +139,14 @@ subroutine crm_physics_register()
       print*,'CRM Microphysics = ',MMF_microphysics_scheme
       print*,'_____________________________________________________________'
    end if
+
+   !----------------------------------------------------------------------------
+   ! Determine total number of CRMs per task
+   !----------------------------------------------------------------------------
+   ncrms = 0
+   do c=begchunk, endchunk
+      ncrms = ncrms + get_ncols_p(c)
+   end do
 
    !----------------------------------------------------------------------------
    ! Setup CRM internal parameters
