@@ -24,6 +24,13 @@
 # define ConstExceptGnu const
 #endif
 
+// Copy by ref if not Cuda build.
+#if defined COMPOSE_PORT && defined KOKKOS_ENABLE_CUDA
+# define COMPOSE_LAMBDA KOKKOS_LAMBDA
+#else
+# define COMPOSE_LAMBDA [&]
+#endif
+
 namespace cedr {
 namespace impl {
 
@@ -3899,13 +3906,13 @@ void CAAS<ES>::reduce_locally () {
   const bool user_reduces = user_reducer_ != nullptr;
   ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
 
-  const auto probs = probs_;
-  const auto send = send_;
-  const auto d = d_;
+  const auto& probs = probs_;
+  const auto& send = send_;
+  const auto& d = d_;
   if (user_reduces) {
     const Int n_accum_in_place = user_reducer_->n_accum_in_place();
     const Int nlclaccum = nlclcells / n_accum_in_place;
-    const auto calc_Qm_clip = KOKKOS_LAMBDA (const Int& j) {
+    const auto calc_Qm_clip = COMPOSE_LAMBDA (const Int& j) {
       const auto k = j / nlclaccum;
       const auto bi = j % nlclaccum;
       const auto os = (k+1)*nlclcells;
@@ -3922,7 +3929,7 @@ void CAAS<ES>::reduce_locally () {
       send(nlclaccum*(nt + k) + bi) = accum_term;
     };
     homme_parallel_for(0, nt*nlclaccum, calc_Qm_clip);
-    const auto set_Qm_minmax = KOKKOS_LAMBDA (const Int& j) {
+    const auto set_Qm_minmax = COMPOSE_LAMBDA (const Int& j) {
       const auto k = 2*nt + j / nlclaccum;
       const auto bi = j % nlclaccum;
       const auto os = (k-nt+1)*nlclcells;
