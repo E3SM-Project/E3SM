@@ -3693,6 +3693,9 @@ add_default($nl, 'use_crm_accel');
 add_default($nl, 'crm_accel_uv');
 add_default($nl, 'crm_accel_factor');
 
+# MMF CRM domain orientation
+add_default($nl, 'MMF_orientation_angle');
+
 add_default($nl, 'do_aerocom_ind3');
 my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
 

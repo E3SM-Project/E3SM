@@ -1,7 +1,3 @@
-#if defined( MMF_ORIENT_RAND ) && defined( MMF_DIR_NS )
-#undef MMF_DIR_NS
-#endif
-
 module crm_physics
 !---------------------------------------------------------------------------------------------------
 ! Purpose: Provides the interface to the crm code for the MMF configuration
@@ -51,6 +47,7 @@ module crm_physics
    integer :: cld_idx          = -1
    integer :: prec_dp_idx      = -1
    integer :: snow_dp_idx      = -1
+   integer :: crm_angle_idx    = -1
 
    integer :: crm_t_rad_idx    = -1
    integer :: crm_qv_rad_idx   = -1
@@ -253,7 +250,7 @@ subroutine crm_physics_register()
    call pbuf_add_field('ACLDY_CEN',    'global', dtype_r8,dims_gcm_2D,idx) 
    
    ! CRM orientation angle needs to persist across time steps
-   call pbuf_add_field('CRM_ANGLE',    'global', dtype_r8,dims_gcm_1D,idx)
+   call pbuf_add_field('CRM_ANGLE',    'global', dtype_r8,dims_gcm_1D,crm_angle_idx)
 
    ! top and bottom levels of convective activity for chemistry
    call pbuf_add_field('CLDTOP',       'physpkg',dtype_r8,(/pcols,1/),idx)
@@ -460,7 +457,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use camsrfexch,            only: cam_in_t, cam_out_t
    use time_manager,          only: is_first_step, get_nstep
    use crmdims,               only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
-   use physconst,             only: cpair, latvap, latice, gravit, cappa
+   use physconst,             only: cpair, latvap, latice, gravit, cappa, pi
    use constituents,          only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,     only: crm
@@ -477,9 +474,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use ndrop,                 only: loadaer
 #endif
 
-#if defined( MMF_ORIENT_RAND )
-   use RNG_MT ! random number generator for randomly rotating CRM orientation (MMF_ORIENT_RAND)
-#endif
+   use RNG_MT ! random number generator for randomly rotating CRM orientation
 
    use crm_state_module,      only: crm_state_type, crm_state_initialize, crm_state_finalize
    use crm_rad_module,        only: crm_rad_type, crm_rad_initialize, crm_rad_finalize
@@ -565,9 +560,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(r8) :: tmp_rh_cnt                          ! temporary relative humidity count
 
    ! variables for changing CRM orientation
-   real(crm_rknd), parameter        :: pi   = 3.14159265359
-   real(crm_rknd), parameter        :: pix2 = 6.28318530718
-   real(crm_rknd), dimension(pcols) :: crm_angle
+   real(crm_rknd) :: MMF_orientation_angle         ! CRM orientation [deg] (convert to radians)
+   real(crm_rknd) :: unif_rand1, unif_rand2        ! uniform random numbers 
+   real(crm_rknd) :: norm_rand                     ! normally distributed random number - Box-Muller (1958)
+   real(crm_rknd) :: crm_rotation_std              ! scaling factor for rotation (std dev of rotation angle)
+   real(crm_rknd) :: crm_rotation_offset           ! offset to specify preferred rotation direction 
+   real(crm_rknd), pointer :: crm_angle(:)         ! CRM orientation angle (pbuf)
 
    ! surface flux variables for using adjusted fluxes from flux_avg_run
    real(crm_rknd), pointer, dimension(:) :: shf_ptr
@@ -585,14 +583,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    type(crm_rad_type)    :: crm_rad
    type(crm_input_type)  :: crm_input
    type(crm_output_type) :: crm_output
-
-#if defined( MMF_ORIENT_RAND )
-   real(crm_rknd) :: unif_rand1           ! uniform random number 
-   real(crm_rknd) :: unif_rand2           ! uniform random number 
-   real(crm_rknd) :: norm_rand            ! normally distributed random number - Box-Muller (1958)
-   real(crm_rknd) :: crm_rotation_std     ! scaling factor for rotation (std dev of rotation angle)
-   real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
-#endif
 
    real(crm_rknd), allocatable :: crm_clear_rh(:,:) ! clear air relative humidity for aerosol wateruptake
 
@@ -641,13 +631,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
-#if defined( MMF_ORIENT_RAND )
-   crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
-   crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
-#endif
 
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+   call phys_getopts(MMF_orientation_angle_out = MMF_orientation_angle)
 
    use_MMF_VT = .false.
    call phys_getopts(use_MMF_VT_out = use_MMF_VT_tmp)
@@ -677,50 +664,39 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
-   crm_angle(:) = 0
 
-#if defined( MMF_ORIENT_RAND )
-   !------------------------------------------------------------------------------------------------
-   ! Rotate the CRM using a random walk
-   !------------------------------------------------------------------------------------------------
-   if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
+   call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
 
-      if (.not. is_first_step()) then
-         ! get current crm angle from pbuf, except on first step
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+   if (MMF_orientation_angle==-1) then
+
+      crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
+      crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
+
+      if (is_first_step()) crm_angle(1:ncol) = 0
+
+      ! Rotate the CRM using a random walk
+      if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
+         do i = 1,ncol
+            ! set the seed based on the chunk and column index (duplicate seeds are ok)
+            call RNG_MT_set_seed( lchnk + i + nstep )
+            ! Generate a pair of uniform random numbers
+            call RNG_MT_gen_rand(unif_rand1)
+            call RNG_MT_gen_rand(unif_rand2)
+            ! Box-Muller (1958) method of obtaining a Gaussian distributed random number
+            norm_rand = sqrt(-2.*log(unif_rand1))*cos(pi*2*unif_rand2)
+            crm_angle(i) = crm_angle(i) + norm_rand * crm_rotation_std + crm_rotation_offset
+            ! Adjust CRM orientation angle to be between 0 and 2*pi
+            if ( crm_angle(i).lt. 0.   ) crm_angle(i) = crm_angle(i) + pi*2
+            if ( crm_angle(i).gt.(pi*2)) crm_angle(i) = crm_angle(i) - pi*2
+         end do ! i
       end if
 
-      do i = 1,ncol
+   else
 
-         ! set the seed based on the chunk and column index (duplicate seeds are ok)
-         call RNG_MT_set_seed( lchnk + i + nstep )
+      ! use static CRM orientation (no rotation) - only set pbuf values once
+      if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle * pi/180.
 
-         ! Generate a pair of uniform random numbers
-         call RNG_MT_gen_rand(unif_rand1)
-         call RNG_MT_gen_rand(unif_rand2)
-
-         ! Box-Muller (1958) method of obtaining a Gaussian distributed random number
-         norm_rand = sqrt(-2.*log(unif_rand1))*cos(pix2*unif_rand2)
-         crm_angle(i) = crm_angle(i) + norm_rand * crm_rotation_std + crm_rotation_offset
-
-         ! Adjust CRM orientation angle to be between 0 and 2*pi
-         if ( crm_angle(i) .lt. 0. )   crm_angle(i) = crm_angle(i) + pix2
-         if ( crm_angle(i) .gt. pix2 ) crm_angle(i) = crm_angle(i) - pix2
-
-      end do ! i
-
-      ! write current crm_angle to pbuf
-      call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
    end if
-#else /* MMF_ORIENT_RAND */
-   !------------------------------------------------------------------------------------------------
-   ! use static CRM orientation (no rotation)
-   !------------------------------------------------------------------------------------------------
-#if defined( MMF_DIR_NS )
-    if (crm_ny.eq.1) crm_angle(:ncol) = pi/2.
-#endif /* MMF_DIR_NS */
-
-#endif /* MMF_ORIENT_RAND */
 
    !------------------------------------------------------------------------------------------------
    ! Retrieve pbuf fields and constituent indices
@@ -870,9 +846,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          call pbuf_set_field(pbuf, pbuf_get_index('TK_CRM'), 0.0_r8 )
       end if 
 #endif
-
-      ! only need to do this once when crm_angle is static
-      call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
 
       ! Set clear air RH to zero on first step
       call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
