@@ -363,7 +363,7 @@ add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
 ####################################
-# Namelist group: semi_implicit_ts #
+# Namelist group: split_implicit_ts #
 ####################################
 
 add_default($nl, 'config_btr_si_preconditioner');

@@ -430,7 +430,7 @@
 <config_btr_gam3_velWt2>1.0</config_btr_gam3_velWt2>
 <config_btr_solve_SSH2>.false.</config_btr_solve_SSH2>
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 <config_btr_si_preconditioner>'ras'</config_btr_si_preconditioner>
 <config_btr_si_tolerance>1.0e-9</config_btr_si_tolerance>
 <config_n_btr_si_large_iter>1</config_n_btr_si_large_iter>

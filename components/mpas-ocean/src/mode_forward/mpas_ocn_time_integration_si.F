@@ -9,17 +9,17 @@
 !
 !  ocn_time_integration_si
 !
-!> \brief MPAS ocean semi-implicit time integration scheme
+!> \brief MPAS ocean split-implicit time integration scheme
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011 (split explicit base code)
 !
 !> \author Hyun-Gyu Kang (Oak Ridge National Laboratory)
-!> \date   September 2019 (semi-implicit code)
+!> \date   September 2019 (split-implicit code)
 !> \details
-!>  This module contains the routines for the semi-implicit
+!>  This module contains the routines for the split-implicit
 !>  time integration scheme based on the split-explicit code.
 !>  Only stage 2 (barotropic mode) is changed from the explicit
-!>  subcycling scheme to the semi-implicit scheme.
+!>  subcycling scheme to the split-implicit scheme.
 !
 !-----------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ module ocn_time_integration_si
    real (kind=RKIND) :: &
       useVelocityCorrection ! mask for velocity correction
 
-   ! Global variables for the semi-implicit time stepper ---------------
+   ! Global variables for the split-implicit time stepper ---------------
    real (kind=RKIND), allocatable,dimension(:)   :: &
       prec_ivmat    ! an inversed preconditioning matrix
    real (kind=RKIND) :: &
@@ -119,14 +119,14 @@ module ocn_time_integration_si
 !
 !  ocn_time_integration_si
 !
-!> \brief MPAS ocean semi-implicit time integration scheme
+!> \brief MPAS ocean split-implicit time integration scheme
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011 (split explicit base code)
 !> \author Hyun-Gyu Kang (Oak Ridge National Laboratory)
-!> \date   JAN 2019 (semi-implicit code)
+!> \date   JAN 2019 (split-implicit code)
 !> \details
 !>  This routine integrates a master time step (dt) using a
-!>  semi-implicit time integrator.
+!>  split-implicit time integrator.
 !
 !-----------------------------------------------------------------------
 
@@ -736,10 +736,10 @@ module ocn_time_integration_si
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         ! Stage 2: Barotropic velocity (2D) prediction, semi-implicit
+         ! Stage 2: Barotropic velocity (2D) prediction, split-implicit
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
-         ! The semi-implicit barotropic mode solver
+         ! The split-implicit barotropic mode solver
          !    - uses the preconditioned communication-avoiding
          !      (single-reduction) BiCGStab method 
          !      (Cool and Vanroose, 2017) as a linear iterative solver
@@ -785,7 +785,7 @@ module ocn_time_integration_si
          !                SSH and BtrVel at time (n+1)
          !
          !
-         ! Reference: Kang et al. (2021): A scalable semi-implicit
+         ! Reference: Kang et al. (2021): A scalable split-implicit
          !            barotropic mode solver for the MPAS-Ocean, JAMES
          !
          !
@@ -3123,11 +3123,11 @@ module ocn_time_integration_si
 !
 !  routine ocn_time_integration_si_init
 !
-!> \brief   Initialize semi-implicit time stepping within MPAS-Ocean
+!> \brief   Initialize split-implicit time stepping within MPAS-Ocean
 !> \author  Mark Petersen
 !> \date    September 2011
 !
-!> \author  Hyun-Gyu Kang (ORNL, for the semi-implicit code)
+!> \author  Hyun-Gyu Kang (ORNL, for the split-implicit code)
 !> \date    September 2019
 !> \details
 !>  This routine initializes variables required for the split-implicit
@@ -3211,12 +3211,12 @@ module ocn_time_integration_si
 
       select case (trim(config_time_integrator))
 
-      case ('semi_implicit')
+      case ('split_implicit')
 
          call mpas_log_write( &
          '***********************************************************')
          call mpas_log_write( &
-         'The semi-implicit time integration is configured')
+         'The split-implicit time integration is configured')
          call mpas_log_write( &
          '***********************************************************')
 
@@ -3386,7 +3386,7 @@ module ocn_time_integration_si
 
       ! Detection of ISMF (Temporariliy implemented. 
       !                    This will be revised in next SI version)
-      ! If ISMF is detected, the semi-implicit barotropic mode solver
+      ! If ISMF is detected, the split-implicit barotropic mode solver
       ! will solve a 'quasi-linear' barotropic system for the more 
       ! stable solver convergence.
       do iCell = 1, nCells
@@ -3446,7 +3446,7 @@ module ocn_time_integration_si
                            * gravity * dt_si)
       R1_alpha1_g      = 1.0_RKIND/(gravity*alpha1)
 
-      ! Compute preconditioner for the semi-implicit barotropic
+      ! Compute preconditioner for the split-implicit barotropic
       !  mode solver
       call mpas_log_write(' Building a preconditioning matrix: ')
       call mpas_timer_start("preconditioning matrix build")
@@ -3466,7 +3466,7 @@ module ocn_time_integration_si
 !> \date    September 2019
 !> \details
 !>  This routine constructs preconditioners for the
-!>  semi-implicit time stepper.
+!>  split-implicit time stepper.
 !
 !-----------------------------------------------------------------------
    subroutine ocn_time_integrator_si_preconditioner(domain, dt)!{{{

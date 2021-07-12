@@ -586,7 +586,7 @@ contains
                 surfacePressure)
 
       ! Semi-implicit Array Pointer retrievals
-      if (trim(config_time_integrator) == 'semi_implicit') then
+      if (trim(config_time_integrator) == 'split_implicit') then
          call mpas_pool_get_array(diagnosticsPool, 'SIvec_r0', SIvec_r0)
          call mpas_pool_get_array(diagnosticsPool, 'SIvec_r1', SIvec_r1)
          call mpas_pool_get_array(diagnosticsPool, 'SIvec_v0', SIvec_v0)
@@ -763,7 +763,7 @@ contains
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          !$acc enter data copyin(                       &
          !$acc                   SIvec_r0,              &
          !$acc                   SIvec_r00,             &
@@ -1000,7 +1000,7 @@ contains
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          !$acc exit data delete(                        &
          !$acc                   SIvec_r0,              &
          !$acc                   SIvec_r00,             &
@@ -1189,7 +1189,7 @@ contains
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &
                  SIvec_r00,             &
                  SIvec_r1,              &
