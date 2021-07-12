@@ -116,7 +116,7 @@ subroutine crm_physics_register()
    dims_gcm_1D  = (/pcols/)
    dims_gcm_2D  = (/pcols, pver/)
    dims_gcm_3D  = (/pcols,pver,dyn_time_lvls/)
-   dims_crm_3D  = (/ncrms, crm_nx, crm_ny, crm_nz/)
+   dims_crm_3D  = (/pcols, crm_nx, crm_ny, crm_nz/)
    dims_crm_rad = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/)
 
    call phys_getopts( use_ECPP_out = use_ECPP )
@@ -485,7 +485,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use iso_c_binding,         only: c_bool
    use phys_grid,             only: get_rlon_p, get_rlat_p, get_gcol_p  
    use spmd_utils,            only: masterproc
-   use openacc_utils
+   use openacc_utils,         only: prefetch
 
    real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
    type(physics_state),dimension(begchunk:endchunk),intent(in   ) :: state            ! Global model state 
@@ -524,7 +524,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 #endif
 
    real(r8) :: dp_g                                ! = state%pdel / gravit
-   real(r8), dimension(pcols,pver) :: air_density  ! air density                       [kg/m3]
+   real(r8), dimension(ncrms,pver) :: air_density  ! air density                       [kg/m3]
    real(r8), dimension(pcols,pver) :: TKE_tmp      ! temporary TKE value used for ECPP
 
    ! CRM column radiation stuff:
@@ -593,16 +593,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    integer                     :: igstep
 
    ! pointers for crm_rad data on pbuf
-   real(crm_rknd), pointer :: crm_qrad_tmp   (:,:,:,:) ! rad heating
-   real(crm_rknd), pointer :: crm_t_rad_tmp  (:,:,:,:) ! rad temperature
-   real(crm_rknd), pointer :: crm_qv_rad_tmp (:,:,:,:) ! rad vapor
-   real(crm_rknd), pointer :: crm_qc_rad_tmp (:,:,:,:) ! rad cloud water
-   real(crm_rknd), pointer :: crm_qi_rad_tmp (:,:,:,:) ! rad cloud ice
-   real(crm_rknd), pointer :: crm_cld_rad_tmp(:,:,:,:) ! rad cloud fraction
-   real(crm_rknd), pointer :: crm_nc_rad_tmp (:,:,:,:) ! rad cloud droplet number (#/kg)
-   real(crm_rknd), pointer :: crm_ni_rad_tmp (:,:,:,:) ! rad cloud ice crystal number (#/kg)
-   real(crm_rknd), pointer :: crm_qs_rad_tmp (:,:,:,:) ! rad cloud snow (kg/kg)
-   real(crm_rknd), pointer :: crm_ns_rad_tmp (:,:,:,:) ! rad cloud snow crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
+   real(crm_rknd), pointer :: crm_t_rad  (:,:,:,:) ! rad temperature
+   real(crm_rknd), pointer :: crm_qv_rad (:,:,:,:) ! rad vapor
+   real(crm_rknd), pointer :: crm_qc_rad (:,:,:,:) ! rad cloud water
+   real(crm_rknd), pointer :: crm_qi_rad (:,:,:,:) ! rad cloud ice
+   real(crm_rknd), pointer :: crm_cld_rad(:,:,:,:) ! rad cloud fraction
+   real(crm_rknd), pointer :: crm_nc_rad (:,:,:,:) ! rad cloud droplet number (#/kg)
+   real(crm_rknd), pointer :: crm_ni_rad (:,:,:,:) ! rad cloud ice crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qs_rad (:,:,:,:) ! rad cloud snow (kg/kg)
+   real(crm_rknd), pointer :: crm_ns_rad (:,:,:,:) ! rad cloud snow crystal number (#/kg)
 
    ! pointers for crm state data on pbuf
    real(crm_rknd), pointer :: crm_u (:,:,:,:) ! CRM u-wind component
@@ -638,8 +638,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use_MMF_VT = use_MMF_VT_tmp
 
    nstep = get_nstep()
-   lchnk = state%lchnk
-   ncol  = state%ncol
+   itim = pbuf_old_tim_idx() ! "Old" pbuf time index (what does all this mean?)
 
    call t_startf ('crm')
 
@@ -647,204 +646,223 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    ! Initialize ptend
    !------------------------------------------------------------------------------------------------
    lq(:) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'crm', lu=.true. , lv=.true. , ls=.true. , lq=lq)
+   do c=begchunk, endchunk
+      call physics_ptend_init(ptend(c), state(c)%psetcols, 'crm', lu=.true., lv=.true., ls=.true., lq=lq)
+   end do
    
    !------------------------------------------------------------------------------------------------
    ! Initialize CRM state (nullify pointers, allocate memory, etc)
    !------------------------------------------------------------------------------------------------
-   call crm_state_initialize(crm_state, pcols, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
-   call crm_rad_initialize(crm_rad, pcols, crm_nx_rad, crm_ny_rad, crm_nz, MMF_microphysics_scheme)
-   call crm_input_initialize(crm_input, pcols, pver, MMF_microphysics_scheme)
-   call crm_output_initialize(crm_output, pcols, pver, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
+   call crm_state_initialize(crm_state, ncrms, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
+   call crm_rad_initialize(crm_rad, ncrms, crm_nx_rad, crm_ny_rad, crm_nz, MMF_microphysics_scheme)
+   call crm_input_initialize(crm_input, ncrms, pver, MMF_microphysics_scheme)
+   call crm_output_initialize(crm_output, ncrms, pver, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
 
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
+   do c=begchunk, endchunk
+      lchnk = state(c)%lchnk
+      ncol = state(c)%ncol
+      pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
 
-   call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
+      call pbuf_get_field(pbuf_chunk, crm_angle_idx, crm_angle)
 
-   if (MMF_orientation_angle==-1) then
+      if (MMF_orientation_angle==-1) then
 
-      crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
-      crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
+         crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
+         crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
 
-      if (is_first_step()) crm_angle(1:ncol) = 0
+         if (is_first_step()) crm_angle(1:ncol) = 0
 
-      ! Rotate the CRM using a random walk
-      if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
-         do i = 1,ncol
-            ! set the seed based on the chunk and column index (duplicate seeds are ok)
-            call RNG_MT_set_seed( lchnk + i + nstep )
-            ! Generate a pair of uniform random numbers
-            call RNG_MT_gen_rand(unif_rand1)
-            call RNG_MT_gen_rand(unif_rand2)
-            ! Box-Muller (1958) method of obtaining a Gaussian distributed random number
-            norm_rand = sqrt(-2.*log(unif_rand1))*cos(pi*2*unif_rand2)
-            crm_angle(i) = crm_angle(i) + norm_rand * crm_rotation_std + crm_rotation_offset
-            ! Adjust CRM orientation angle to be between 0 and 2*pi
-            if ( crm_angle(i).lt. 0.   ) crm_angle(i) = crm_angle(i) + pi*2
-            if ( crm_angle(i).gt.(pi*2)) crm_angle(i) = crm_angle(i) - pi*2
-         end do ! i
+         ! Rotate the CRM using a random walk
+         if ( (crm_ny.eq.1) .or. (crm_nx.eq.1) ) then
+            do i = 1,ncol
+               ! set the seed based on the chunk and column index (duplicate seeds are ok)
+               call RNG_MT_set_seed( lchnk + i + nstep )
+               ! Generate a pair of uniform random numbers
+               call RNG_MT_gen_rand(unif_rand1)
+               call RNG_MT_gen_rand(unif_rand2)
+               ! Box-Muller (1958) method of obtaining a Gaussian distributed random number
+               norm_rand = sqrt(-2.*log(unif_rand1))*cos(pi*2*unif_rand2)
+               crm_angle(i) = crm_angle(i) + norm_rand * crm_rotation_std + crm_rotation_offset
+               ! Adjust CRM orientation angle to be between 0 and 2*pi
+               if ( crm_angle(i).lt. 0.   ) crm_angle(i) = crm_angle(i) + pi*2
+               if ( crm_angle(i).gt.(pi*2)) crm_angle(i) = crm_angle(i) - pi*2
+            end do ! i
+         end if
+
+      else
+
+         ! use static CRM orientation (no rotation) - only set pbuf values once
+         if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle * pi/180.
+
       end if
 
-   else
+   end do ! c=begchunk, endchunk
 
-      ! use static CRM orientation (no rotation) - only set pbuf values once
-      if (is_first_step()) crm_angle(1:ncol) = MMF_orientation_angle * pi/180.
+   !---------------------------------------------------------------------------------------------
+   ! pbuf initialization
+   !---------------------------------------------------------------------------------------------
+   ncol_sum = 0
+   do c=begchunk, endchunk
+      ncol = state(c)%ncol
+      pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
+      
+      ! Retrieve radiative heating tendency
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QRAD'),    crm_qrad_tmp)
+      do i = 1,ncol
+         icrm = ncol_sum + i
+         crm_rad%qrad(icrm,:,:,:) = crm_qrad_tmp(i,:,:,:)
+      end do
+      
+      ! Zero these fields to ensure balanced water in land input
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('PREC_SED'), 0._r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('SNOW_SED'), 0._r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('PREC_PCW'), 0._r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('SNOW_PCW'), 0._r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('PREC_SH'),  0._r8)
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('SNOW_SH'),  0._r8)
 
-   end if
+      ! set convective rain to be zero for PRAIN already includes precipitation production from convection. 
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('RPRDTOT'), 0.0_r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('RPRDDP' ), 0.0_r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('RPRDSH' ), 0.0_r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('ICWMRDP'), 0.0_r8 )
+      call pbuf_set_field(pbuf_chunk, pbuf_get_index('ICWMRSH'), 0.0_r8 )
 
-   !------------------------------------------------------------------------------------------------
-   ! Retrieve pbuf fields and constituent indices
-   !------------------------------------------------------------------------------------------------
-   call pbuf_get_field(pbuf, crm_qrad_idx,    crm_qrad)
-   crm_rad%qrad(1:ncol,:,:,:) = crm_qrad(1:ncol,:,:,:)
+      ncol_sum = ncol_sum + ncol
 
-   call pbuf_get_field(pbuf, prec_dp_idx,  prec_dp  )
-   call pbuf_get_field(pbuf, snow_dp_idx,  snow_dp  )
-
-   prec_dp  = 0.
-   snow_dp  = 0.
-   
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
-
-   ! Zero these fields to ensure balanced water in land input
-   call pbuf_set_field(pbuf, pbuf_get_index('PREC_SED'), 0._r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_SED'), 0._r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('PREC_PCW'), 0._r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_PCW'), 0._r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('PREC_SH'),  0._r8)
-   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_SH'),  0._r8)
-
-   ! set convective rain to be zero for PRAIN already includes precipitation production from convection. 
-   call pbuf_set_field(pbuf, pbuf_get_index('RPRDTOT'), 0.0_r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('RPRDDP' ), 0.0_r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('RPRDSH' ), 0.0_r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('ICWMRDP'), 0.0_r8 )
-   call pbuf_set_field(pbuf, pbuf_get_index('ICWMRSH'), 0.0_r8 )
-
-   ! "Old" cloud fraction (what does all this mean?)
-   itim = pbuf_old_tim_idx()
-   ifld = pbuf_get_index('CLD')
-   call pbuf_get_field(pbuf, ifld, cld, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-
+   end do ! c=begchunk, endchunk
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
 
    if (is_first_step()) then
 
-      !---------------------------------------------------------------------------------------------
-      ! initialize CRM state stored in pbuf
-      !---------------------------------------------------------------------------------------------
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_U'),  crm_u)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_V'),  crm_v)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_W'),  crm_w)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_T'),  crm_t)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_qt)
-      if (MMF_microphysics_scheme .eq. 'sam1mom') then
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_qp)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_qn)
-      else
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC'), crm_nc)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QR'), crm_qr)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NR'), crm_nr)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI'), crm_qi)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NI'), crm_ni)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QS'), crm_qs)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NS'), crm_ns)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QG'), crm_qg)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NG'), crm_ng)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC'), crm_qc)
-      end if
+      ncol_sum = 0
+      do c=begchunk, endchunk
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
+         ncol = state(c)%ncol
 
-      ! initialize all of crm_state%qt to zero (needed for ncol < i <= pcols)
-      crm_qt(:,:,:,:) = 0.0_r8
+         !------------------------------------------------------------------------------------------
+         ! initialize CRM state stored in pbuf
+         !------------------------------------------------------------------------------------------
+         
+         ! Set pointers to crm_state fields that persist on physics buffer
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_U'),  crm_u)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_V'),  crm_v)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_W'),  crm_w)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_T'),  crm_t)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QT'), crm_qt)
+         if (MMF_microphysics_scheme .eq. 'sam1mom') then
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QP'), crm_qp)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QN'), crm_qn)
+         else
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NC'), crm_nc)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QR'), crm_qr)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NR'), crm_nr)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QI'), crm_qi)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NI'), crm_ni)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QS'), crm_qs)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NS'), crm_ns)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QG'), crm_qg)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NG'), crm_ng)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
+         end if
 
-      do i = 1,ncol
+         ! initialize all of total water to zero (needed for ncol < i <= pcols)
+         crm_qt(1:ncol,:,:,:) = 0.0_r8
+
+         do i = 1,ncol
+            do k = 1,crm_nz
+               m = pver-k+1
+
+               crm_u(i,:,:,k) = state%u(i,m) * cos( crm_angle(i) ) + state%v(i,m) * sin( crm_angle(i) )
+               crm_v(i,:,:,k) = state%v(i,m) * cos( crm_angle(i) ) - state%u(i,m) * sin( crm_angle(i) )
+               crm_w(i,:,:,k) = 0.
+               crm_t(i,:,:,k) = state%t(i,m)
+
+               ! Initialize microphysics arrays
+               if (MMF_microphysics_scheme .eq. 'sam1mom') then
+                  crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
+                  crm_qp(i,:,:,k) = 0.0_r8
+                  crm_qn(i,:,:,k) = state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
+               else if (MMF_microphysics_scheme .eq. 'm2005') then
+                  crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
+                  crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
+                  crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
+                  crm_nc(i,:,:,k) = 0.0_r8
+                  crm_qr(i,:,:,k) = 0.0_r8
+                  crm_nr(i,:,:,k) = 0.0_r8
+                  crm_ni(i,:,:,k) = 0.0_r8
+                  crm_qs(i,:,:,k) = 0.0_r8
+                  crm_ns(i,:,:,k) = 0.0_r8
+                  crm_qg(i,:,:,k) = 0.0_r8
+                  crm_ng(i,:,:,k) = 0.0_r8
+               end if
+
+            end do
+         end do
+
+         !------------------------------------------------------------------------------------------
+         ! Initialize radiation variables
+         !------------------------------------------------------------------------------------------
+         call pbuf_get_field(pbuf_chunk, crm_t_rad_idx,  crm_t_rad)
+         call pbuf_get_field(pbuf_chunk, crm_qv_rad_idx, crm_qv_rad)
+         call pbuf_get_field(pbuf_chunk, crm_qc_rad_idx, crm_qc_rad)
+         call pbuf_get_field(pbuf_chunk, crm_qi_rad_idx, crm_qi_rad)
+         call pbuf_get_field(pbuf_chunk, crm_cld_rad_idx,crm_cld_rad)
+         call pbuf_get_field(pbuf_chunk, crm_qrad_idx,   crm_qrad)
+         if (MMF_microphysics_scheme .eq. 'm2005') then
+            call pbuf_get_field(pbuf_chunk, crm_nc_rad_idx,crm_nc_rad)
+            call pbuf_get_field(pbuf_chunk, crm_ni_rad_idx,crm_ni_rad)
+            call pbuf_get_field(pbuf_chunk, crm_qs_rad_idx,crm_qs_rad)
+            call pbuf_get_field(pbuf_chunk, crm_ns_rad_idx,crm_ns_rad)
+         end if
          do k = 1,crm_nz
             m = pver-k+1
-
-            crm_u(i,:,:,k) = state%u(i,m) * cos( crm_angle(i) ) + state%v(i,m) * sin( crm_angle(i) )
-            crm_v(i,:,:,k) = state%v(i,m) * cos( crm_angle(i) ) - state%u(i,m) * sin( crm_angle(i) )
-            crm_w(i,:,:,k) = 0.
-            crm_t(i,:,:,k) = state%t(i,m)
-
-            ! Initialize microphysics arrays
-            if (MMF_microphysics_scheme .eq. 'sam1mom') then
-               crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-               crm_qp(i,:,:,k) = 0.0_r8
-               crm_qn(i,:,:,k) = state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-            else if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
-               crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
-               crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
-               crm_nc(i,:,:,k) = 0.0_r8
-               crm_qr(i,:,:,k) = 0.0_r8
-               crm_nr(i,:,:,k) = 0.0_r8
-               crm_ni(i,:,:,k) = 0.0_r8
-               crm_qs(i,:,:,k) = 0.0_r8
-               crm_ns(i,:,:,k) = 0.0_r8
-               crm_qg(i,:,:,k) = 0.0_r8
-               crm_ng(i,:,:,k) = 0.0_r8
-            end if
-
+            do i = 1,ncol
+               crm_qrad   (i,:,:,k) = 0.
+               crm_t_rad  (i,:,:,k) = state%t(i,m)
+               crm_qv_rad (i,:,:,k) = state%q(i,m,1)
+               crm_qc_rad (i,:,:,k) = 0.
+               crm_qi_rad (i,:,:,k) = 0.
+               crm_cld_rad(i,:,:,k) = 0.
+               if (MMF_microphysics_scheme .eq. 'm2005') then
+                  crm_nc_rad(i,:,:,k) = 0.0
+                  crm_ni_rad(i,:,:,k) = 0.0
+                  crm_qs_rad(i,:,:,k) = 0.0
+                  crm_ns_rad(i,:,:,k) = 0.0
+               end if
+            end do
          end do
-      end do
 
-      !---------------------------------------------------------------------------------------------
-      ! Initialize radiation variables
-      !---------------------------------------------------------------------------------------------
-      call pbuf_get_field(pbuf, crm_t_rad_idx,  crm_t_rad)
-      call pbuf_get_field(pbuf, crm_qv_rad_idx, crm_qv_rad)
-      call pbuf_get_field(pbuf, crm_qc_rad_idx, crm_qc_rad)
-      call pbuf_get_field(pbuf, crm_qi_rad_idx, crm_qi_rad)
-      call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
-      call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
-      if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_get_field(pbuf, crm_nc_rad_idx,crm_nc_rad)
-         call pbuf_get_field(pbuf, crm_ni_rad_idx,crm_ni_rad)
-         call pbuf_get_field(pbuf, crm_qs_rad_idx,crm_qs_rad)
-         call pbuf_get_field(pbuf, crm_ns_rad_idx,crm_ns_rad)
-      end if
-      do k = 1,crm_nz
-         m = pver-k+1
-         do i = 1,ncol
-            crm_qrad   (i,:,:,k) = 0.
-            crm_t_rad  (i,:,:,k) = state%t(i,m)
-            crm_qv_rad (i,:,:,k) = state%q(i,m,1)
-            crm_qc_rad (i,:,:,k) = 0.
-            crm_qi_rad (i,:,:,k) = 0.
-            crm_cld_rad(i,:,:,k) = 0.
-            if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_nc_rad(i,:,:,k) = 0.0
-               crm_ni_rad(i,:,:,k) = 0.0
-               crm_qs_rad(i,:,:,k) = 0.0
-               crm_ns_rad(i,:,:,k) = 0.0
-            end if
-         end do
-      end do
+         ! use radiation from grid-cell mean radctl on first time step
+         cld(:,:) = 0.
+         ptend%s(:,:) = 0.
+         ptend%q(:,:,1) = 0.
+         ptend%q(:,:,ixcldliq) = 0.
+         ptend%q(:,:,ixcldice) = 0.
 
-      ! use radiation from grid-cell mean radctl on first time step
-      cld(:,:) = 0.
-      ptend%s(:,:) = 0.
-      ptend%q(:,:,1) = 0.
-      ptend%q(:,:,ixcldliq) = 0.
-      ptend%q(:,:,ixcldice) = 0.
+         !------------------------------------------------------------------------------------------
+         ! initialize ECPP variables
+         !------------------------------------------------------------------------------------------
 
 #ifdef ECPP
       if (use_ECPP) then
-         
-         air_density(1:ncol,1:pver) = state%pmid(1:ncol,1:pver) / (287.15*state%t(1:ncol,1:pver))
+         do i = 1,ncol
+            icrm = ncol_sum + i
+            air_density(icrm,1:pver) = state%pmid(i,1:pver) / (287.15*state%t(i,1:pver))
+         end do
 
          ! initialize turbulence for ECPP calculations
-         call pbuf_set_field(pbuf, pbuf_get_index('TKE_CRM'), 0.0_r8 )
-         call pbuf_set_field(pbuf, pbuf_get_index('TK_CRM'), 0.0_r8 )
+         call pbuf_set_field(pbuf_chunk, pbuf_get_index('TKE_CRM'), 0.0_r8 )
+         call pbuf_set_field(pbuf_chunk, pbuf_get_index('TK_CRM'), 0.0_r8 )
       end if 
 #endif
 
       ! Set clear air RH to zero on first step
-      call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
+      call pbuf_get_field(pbuf_chunk, mmf_clear_rh_idx, mmf_clear_rh )
       mmf_clear_rh(1:ncol,1:pver) = 0
 
    else  ! not is_first_step
@@ -853,46 +871,52 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! Retreive CRM state data from pbuf
       !---------------------------------------------------------------------------------------------
 
-      ! Set pointers from crm_state to fields that persist on physics buffer
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_U'),  crm_u)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_V'),  crm_v)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_W'),  crm_w)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_T'),  crm_t)
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_qt)
-
-      crm_state%u_wind      = crm_u
-      crm_state%v_wind      = crm_v
-      crm_state%w_wind      = crm_w
-      crm_state%temperature = crm_t
-      crm_state%qt          = crm_qt
-      
+      ! Set pointers to crm_state fields that persist on physics buffer
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_U'),  crm_u)
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_V'),  crm_v)
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_W'),  crm_w)
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_T'),  crm_t)
+      call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QT'), crm_qt)
       if (MMF_microphysics_scheme .eq. 'sam1mom') then
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_qp)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_qn)
-         crm_state%qp = crm_qp
-         crm_state%qn = crm_qn
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QP'), crm_qp)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QN'), crm_qn)
       else
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC'), crm_nc)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QR'), crm_qr)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NR'), crm_nr)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI'), crm_qi)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NI'), crm_ni)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QS'), crm_qs)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NS'), crm_ns)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QG'), crm_qg)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NG'), crm_ng)
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC'), crm_qc)
-         crm_state%nc = crm_nc
-         crm_state%qr = crm_qr
-         crm_state%nr = crm_nr
-         crm_state%qi = crm_qi
-         crm_state%ni = crm_ni
-         crm_state%qs = crm_qs
-         crm_state%ns = crm_ns
-         crm_state%qg = crm_qg
-         crm_state%ng = crm_ng
-         crm_state%qc = crm_qc
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NC'), crm_nc)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QR'), crm_qr)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NR'), crm_nr)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QI'), crm_qi)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NI'), crm_ni)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QS'), crm_qs)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NS'), crm_ns)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QG'), crm_qg)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NG'), crm_ng)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
       end if
+
+      ! copy CRM state data from pbuf data into crm_state
+      do i = 1,ncol
+         icrm = ncol_sum + i
+         crm_state%u_wind     (icrm,:,:,:) = crm_u (i,:,:,:)
+         crm_state%v_wind     (icrm,:,:,:) = crm_v (i,:,:,:)
+         crm_state%w_wind     (icrm,:,:,:) = crm_w (i,:,:,:)
+         crm_state%temperature(icrm,:,:,:) = crm_t (i,:,:,:)
+         crm_state%qt         (icrm,:,:,:) = crm_qt(i,:,:,:)
+         if (MMF_microphysics_scheme .eq. 'sam1mom') then
+            crm_state%qp      (icrm,:,:,:) = crm_qp(i,:,:,:)
+            crm_state%qn      (icrm,:,:,:) = crm_qn(i,:,:,:)
+         else
+            crm_state%nc      (icrm,:,:,:) = crm_nc(i,:,:,:)
+            crm_state%qr      (icrm,:,:,:) = crm_qr(i,:,:,:)
+            crm_state%nr      (icrm,:,:,:) = crm_nr(i,:,:,:)
+            crm_state%qi      (icrm,:,:,:) = crm_qi(i,:,:,:)
+            crm_state%ni      (icrm,:,:,:) = crm_ni(i,:,:,:)
+            crm_state%qs      (icrm,:,:,:) = crm_qs(i,:,:,:)
+            crm_state%ns      (icrm,:,:,:) = crm_ns(i,:,:,:)
+            crm_state%qg      (icrm,:,:,:) = crm_qg(i,:,:,:)
+            crm_state%ng      (icrm,:,:,:) = crm_ng(i,:,:,:)
+            crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
+         end if
+      end do ! i=1,ncol
 
       !---------------------------------------------------------------------------------------------
       !---------------------------------------------------------------------------------------------
