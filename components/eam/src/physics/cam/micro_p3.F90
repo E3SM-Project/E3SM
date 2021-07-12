@@ -343,7 +343,7 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
-       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, &
+       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, cld_frac_l,inv_cld_frac_l, inv_cld_frac_i, &
        inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion,  &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, &
        qc, nc, qr, nr, &
@@ -359,7 +359,7 @@ contains
     real(rtype), intent(in) :: dt
 
     real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, &
-         inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, nccn_prescribed
+         cld_frac_l,inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, nccn_prescribed
 
     real(rtype), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
          acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, &
@@ -410,7 +410,8 @@ contains
       !    prescribe that value
 
           if (do_prescribed_CCN) then
-             nc(k) = max(nc(k),nccn_prescribed(k)*1.0e6*inv_rho(k))
+             !nccn_prescribed is an in-cloud value so make it cloud average in this assignment
+             nc(k) = max(nc(k),nccn_prescribed(k)*1.0e6*inv_rho(k)*cld_frac_l(k))
           else if (do_predict_nc) then
              nc(k) = max(nc(k) + nc_nuceat_tend(k) * dt,0.0_rtype)
           else
@@ -455,9 +456,6 @@ contains
             inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
             qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
 
-       if (do_prescribed_CCN) then !revert nc_incld to nc
-          nc_incld(k) = nc(k)
-       end if
 
     enddo k_loop_1
 
@@ -949,9 +947,6 @@ contains
            inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
            qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
 
-       if (do_prescribed_CCN) then !revert nc_incld to nc
-          nc_incld(k) = nc(k)
-       end if
 
 555   continue
 
@@ -1355,7 +1350,7 @@ contains
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), nccn_prescribed(i,:), inv_exner(i,:), exner(i,:), &
-            inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), latent_heat_fusion(i,:), &
+            cld_frac_l(:,k),inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), latent_heat_fusion(i,:), &
             t_atm(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), &
             rhofaci(i,:), acn(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
             qi(i,:), ni(i,:), qm(i,:), bm(i,:), qc_incld(i,:), qr_incld(i,:), &
