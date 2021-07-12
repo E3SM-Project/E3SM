@@ -7,11 +7,11 @@ module crm_physics
 ! Purpose: Provides the interface to the crm code for the MMF configuration
 !---------------------------------------------------------------------------------------------------
    use shr_kind_mod,    only: r8 => shr_kind_r8
-   use shr_sys_mod,     only: shr_sys_flush
+   use shr_sys_mod,     only: shr_sys_flush   
    use cam_abortutils,  only: endrun
    use cam_logfile,     only: iulog
    use physics_types,   only: physics_state, physics_tend
-   use ppgrid,          only: pcols, pver, pverp
+   use ppgrid,          only: begchunk, endchunk, pcols, pver, pverp
    use constituents,    only: pcnst
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
@@ -74,7 +74,6 @@ subroutine crm_physics_register()
 !---------------------------------------------------------------------------------------------------
    use spmd_utils,          only: masterproc
    use physconst,           only: cpair, mwh2o, mwdry
-   use ppgrid,              only: pcols, pver, pverp
    use phys_grid,           only: get_ncols_p
    use physics_buffer,      only: dyn_time_lvls, pbuf_add_field, dtype_r8, pbuf_get_index
    use phys_control,        only: phys_getopts, use_gw_convect
@@ -313,7 +312,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
 #endif
-   use ppgrid,                only: begchunk, endchunk
    use constituents,          only: pcnst, cnst_get_ind
    !----------------------------------------------------------------------------
    ! interface variables
@@ -455,7 +453,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! Purpose: CRM interface for the MMF configuration to update GCM state
    ! Original Author: Marat Khairoutdinov
    !------------------------------------------------------------------------------------------------
-   use ppgrid
    use perf_mod
    use physics_buffer,  only: physics_buffer_desc, pbuf_old_tim_idx, pbuf_get_index, &
                               dyn_time_lvls, pbuf_get_field, pbuf_set_field
@@ -1531,7 +1528,6 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    use physics_types,   only: physics_state, physics_ptend, physics_ptend_init
    use physics_buffer,  only: physics_buffer_desc
    use camsrfexch,      only: cam_in_t
-   use ppgrid,          only: begchunk, endchunk, pcols, pver
    use constituents,    only: pcnst
    use physconst,       only: gravit
 
