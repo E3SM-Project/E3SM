@@ -19,8 +19,11 @@ module mo_gas_phase_chemdr
   private
   public :: gas_phase_chemdr, gas_phase_chemdr_inti 
   public :: map2chm
+  public :: gas_ac_name, gas_ac_name_2D
 
   integer :: map2chm(pcnst) = 0           ! index map to/from chemistry/constituents list
+  character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
+  character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
 !  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
@@ -244,7 +247,6 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
-    use physpkg,           only : gas_ac_name, gas_ac_name_2D
 
 !
 ! LINOZ

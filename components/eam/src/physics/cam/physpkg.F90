@@ -46,7 +46,6 @@ module physpkg
                                     modal_aero_wateruptake_reg
   use chem_mods,    only : gas_pcnst
   use mo_tracname,  only : solsym
-  use cam_history,  only : fieldname_len
   use mo_chm_diags, only : aer_species
   use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
@@ -211,6 +210,7 @@ subroutine phys_register
     call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
+
 
     ! check energy package
     call check_energy_register
@@ -1451,7 +1451,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use cam_history,        only: outfld
 
     implicit none
 
@@ -1480,7 +1479,7 @@ subroutine tphysac (ztodt,   cam_in,  &
 
     integer :: lchnk                                ! chunk identifier
     integer :: ncol                                 ! number of atmospheric columns
-    integer i,k,m,n                  ! Longitude, level indices
+    integer i,k,m                 ! Longitude, level indices
     integer :: yr, mon, day, tod       ! components of a date
     integer :: ixcldice, ixcldliq      ! constituent indices for cloud liquid and ice water.
 
@@ -1496,11 +1495,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
     real(r8) :: tmp_t     (pcols,pver) ! tmp space
     real(r8) :: ftem      (pcols,pver) ! tmp space
-    real(r8) :: Diff      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
-    real(r8), pointer, dimension(:) :: gas_ac_2D
-    real(r8), pointer, dimension(:,:) :: gas_ac
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1514,8 +1510,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction 
 
     logical :: do_clubb_sgs 
-
-    real(r8) rtdt                              ! 1./ztodt
 
     !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
@@ -1536,8 +1530,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     lchnk = state%lchnk
     ncol  = state%ncol
 
-    rtdt = 1._r8/ztodt
-
     nstep = get_nstep()
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
@@ -1547,8 +1539,6 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_rayleigh_out         = l_rayleigh         &
                       ,l_gw_drag_out          = l_gw_drag          &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
-                    ,history_gaschmbudget_out = history_gaschmbudget &
-                 ,history_gaschmbudget_2D_out = history_gaschmbudget_2D &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
@@ -1641,54 +1631,9 @@ if (l_tracer_aero) then
 
     ! Chemistry calculation
     if (chem_is_active()) then
-       if (history_gaschmbudget) then
-         do m = 1,pcnst
-           n = map2chm(m)
-           if (n > 0 .and. (.not. any( aer_species == n ))) then
-             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
-             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
-             if( nstep == 0 ) then
-                Diff(:ncol,:) = 0.0_r8
-                if (masterproc) then
-                  write(iulog,*) 'tphysac: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-                end if
-
-             else
-                ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-                Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))*rtdt
-             end if
-             call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
-           end if
-         enddo
-       end if
-       !
-       if (history_gaschmbudget_2D) then
-         do m = 1,pcnst
-           n = map2chm(m)
-           if (n > 0 .and. (.not. any( aer_species == n ))) then
-             gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
-             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
-             if( nstep == 0 ) then
-                Diff(:ncol,1) = 0.0_r8
-                if (masterproc) then
-                  write(iulog,*) 'tphysac: m = ',m,' n = ',n,' gas_ac_name_2D=',gas_ac_name_2D(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-                end if
-
-             else
-                ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-                do k=2,pver
-                  ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-                end do
-                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))*rtdt
-             end if
-             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
-           end if
-         enddo
-       end if
-
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, &
             pbuf,  fh2o, fsds)
-       
+
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chem", nstep, ztodt, fh2o, zero, zero, zero)
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, &
@@ -1964,7 +1909,7 @@ subroutine tphysbc (ztodt,               &
     use physics_types,   only: physics_state, physics_tend, physics_ptend, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
-    use cam_history,     only: outfld
+    use cam_history,     only: outfld, fieldname_len
     use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
