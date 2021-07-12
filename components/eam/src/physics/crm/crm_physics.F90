@@ -590,7 +590,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    logical                     :: crm_accel_uv_tmp
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
-   integer                     :: igstep
 
    ! pointers for crm_rad data on pbuf
    real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
@@ -632,10 +631,28 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
    call phys_getopts(MMF_orientation_angle_out = MMF_orientation_angle)
 
+   ! CRM variance transport
    use_MMF_VT = .false.
    call phys_getopts(use_MMF_VT_out = use_MMF_VT_tmp)
    call phys_getopts(MMF_VT_wn_max_out = MMF_VT_wn_max)
    use_MMF_VT = use_MMF_VT_tmp
+
+   ! CRM mean state acceleration (MSA) parameters
+   use_crm_accel = .false.
+   crm_accel_factor = 0.
+   crm_accel_uv = .false.
+   call phys_getopts(use_crm_accel_out    = use_crm_accel_tmp)
+   call phys_getopts(crm_accel_factor_out = crm_accel_factor)
+   call phys_getopts(crm_accel_uv_out     = crm_accel_uv_tmp)
+   use_crm_accel = use_crm_accel_tmp
+   crm_accel_uv = crm_accel_uv_tmp
+
+   if (masterproc) then
+     if (use_crm_accel .and. MMF_microphysics_scheme/='sam1mom') then
+       write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
+       call endrun('crm main')
+     endif
+   endif
 
    nstep = get_nstep()
    itim = pbuf_old_tim_idx() ! "Old" pbuf time index (what does all this mean?)
@@ -1055,44 +1072,29 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       if (.not.allocated(crm_clear_rh)) allocate(crm_clear_rh(ncrms,crm_nz))
 
       ! Load latitude, longitude, and unique column ID for all CRMs
-      allocate(longitude0(ncol))
-      allocate(latitude0 (ncol))
-      allocate(gcolp     (ncol))
-      do icrm = 1 , ncol
-        latitude0 (icrm) = get_rlat_p(lchnk,icrm) * 57.296_r8
-        longitude0(icrm) = get_rlon_p(lchnk,icrm) * 57.296_r8
-        gcolp     (icrm) = get_gcol_p(lchnk,icrm)
-      enddo
-      ! set CRM mean state acceleration (MSA) parameters from namelist
-      use_crm_accel = .false.
-      crm_accel_factor = 0.
-      crm_accel_uv = .false.
-      call phys_getopts(use_crm_accel_out    = use_crm_accel_tmp, &
-                        crm_accel_factor_out = crm_accel_factor, &
-                        crm_accel_uv_out     = crm_accel_uv_tmp)
-      use_crm_accel = use_crm_accel_tmp
-      crm_accel_uv = crm_accel_uv_tmp
-
-      if (masterproc) then
-        if (use_crm_accel) then
-#if !defined(sam1mom)
-          write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
-          call endrun('crm main')
-#endif
-        endif
-      endif
-
-      ! Load the nstep
-      igstep = get_nstep()
+      allocate(longitude0(ncrms))
+      allocate(latitude0 (ncrms))
+      allocate(gcolp     (ncrms))
+      ncol_sum = 0
+      do c=begchunk, endchunk
+         ncol = state(c)%ncol
+         do i = 1 , ncol
+           icrm = ncol_sum + i
+           latitude0 (icrm) = get_rlat_p(c,i) * 57.296_r8
+           longitude0(icrm) = get_rlon_p(c,i) * 57.296_r8
+           gcolp     (icrm) = get_gcol_p(c,i)
+         enddo
+         ncol_sum = ncol_sum + ncol
+      end do ! c=begchunk, endchunk
 
 #if defined(MMF_SAM) || defined(MMF_SAMOMP)
 
       call t_startf ('crm_call')
 
-      call crm(lchnk, ncol, ztodt, pver, &
+      call crm(1, ncrms, ztodt, pver, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
-               latitude0, longitude0, gcolp, igstep, &
+               latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
@@ -1104,7 +1106,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
-      call crm(ncol, pcols, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
+      call crm(ncol, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
 #ifdef MMF_ESMT
@@ -1135,7 +1137,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%u_tend_esmt, crm_output%v_tend_esmt,                 &
 #endif
                crm_clear_rh, &
-               latitude0, longitude0, gcolp, igstep, &
+               latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT, MMF_VT_wn_max, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
