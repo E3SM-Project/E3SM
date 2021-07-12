@@ -42,6 +42,8 @@ module crm_physics
    integer :: ixsnow    = -1   ! snow index
    integer :: ixnumrain = -1   ! rain number index
    integer :: ixnumsnow = -1   ! snow number index
+   integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
+   integer :: idx_vt_q  = -1   ! CRM variance transport - total water
 
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
@@ -155,9 +157,9 @@ subroutine crm_physics_register()
 
    if (use_MMF_VT) then
       ! add variance tracers
-      call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+      call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), idx_vt_t, &
                     longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
-      call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+      call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), idx_vt_q, &
                     longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
 
@@ -333,7 +335,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    logical :: use_ECPP
    logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
-   integer :: idx_vt_t, idx_vt_q
    integer :: lchnk, ncol
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
@@ -375,8 +376,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
    if (use_MMF_VT) then
       ! initialize variance transport tracers
-      call cnst_get_ind( 'VT_T', idx_vt_t )
-      call cnst_get_ind( 'VT_Q', idx_vt_q )
       do lchnk = begchunk, endchunk
          ncol  = state(lchnk)%ncol
          state(lchnk)%q(:ncol,:pver,idx_vt_t) = 0
@@ -611,7 +610,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
-   integer                     :: idx_vt_t, idx_vt_q  ! variance transport constituent indices
 
    ! pointers for crm_rad data on pbuf
    real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
@@ -1175,8 +1173,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:ncol,:pver,ixcldice) = crm_output%qiltend(1:ncol,1:pver)
 
       if (use_MMF_VT) then
-         call cnst_get_ind( 'VT_T', idx_vt_t )
-         call cnst_get_ind( 'VT_Q', idx_vt_q )
          ptend%q(1:ncol,1:pver,idx_vt_t) = crm_output%t_vt_tend(1:ncol,1:pver)
          ptend%q(1:ncol,1:pver,idx_vt_q) = crm_output%q_vt_tend(1:ncol,1:pver)
       end if
@@ -1280,8 +1276,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%lv           = .FALSE.
 
       if (use_MMF_VT) then
-         call cnst_get_ind( 'VT_T', idx_vt_t )
-         call cnst_get_ind( 'VT_Q', idx_vt_q )
          ptend%lq(idx_vt_t) = .TRUE.
          ptend%lq(idx_vt_q) = .TRUE.
       end if
