@@ -356,8 +356,8 @@ gfortran:
 gfortran-clang:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
-	"CC_PARALLEL = mpicc -cc=clang" \
-	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
