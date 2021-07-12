@@ -807,9 +807,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   end if
 
   call t_startf('crm_physics_tend')
-  call crm_physics_tend(ztodt, phys_state, phys_tend, ptend,  &
-                        pbuf2d, cam_in, cam_out,              &
-                        species_class, crm_ecpp_output,       &
+  call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out, &
+                        species_class, crm_ecpp_output, &
                         mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux )
   call t_stopf('crm_physics_tend')
 
