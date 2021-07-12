@@ -785,14 +785,6 @@ contains
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
-       if ( history_gaschmbudget ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, 'MSB' )
-       endif
-       if ( history_gaschmbudget_2D ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSB' )
-       endif
     endif
 
     !=======================================================================

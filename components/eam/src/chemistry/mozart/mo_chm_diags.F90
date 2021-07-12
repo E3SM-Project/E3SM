@@ -306,11 +306,10 @@ contains
           call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
           if (history_gaschmbudget) then
-             call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before gas chem solver')
+             call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before wet deposition and gas chem solver')
              call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after Linoz')
              call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after surface emission')
              call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after dry deposition')
-             call addfld( trim(spc_name)//'_MSBac', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before chem_timestep_tend')
              call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
              call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
              call addfld( trim(spc_name)//'_TDL', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to Linoz')
@@ -322,11 +321,10 @@ contains
              call addfld( trim(spc_name)//'_TDO', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to processes outside of chemistry')
           endif
           if (history_gaschmbudget_2D) then
-             call addfld( trim(spc_name)//'_2DMSB', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration before gas chem solver')
+             call addfld( trim(spc_name)//'_2DMSB', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration before wet deposition and gas chem solver')
              call addfld( trim(spc_name)//'_2DMSL', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after Linoz')
              call addfld( trim(spc_name)//'_2DMSS', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after surface emission')
              call addfld( trim(spc_name)//'_2DMSD', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration after dry deposition')
-             call addfld( trim(spc_name)//'_2DMSBac', horiz_only, 'A', 'kg/m2', trim(attr)//' vertically integrated concentration before chem_timestep_tend')
              call addfld( trim(spc_name)//'_2DTDE', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to Linoz')
@@ -354,7 +352,6 @@ contains
                 call add_default( trim(spc_name)//'_MSL', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSS', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSD', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSBac', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDL', 1, ' ' )
@@ -370,7 +367,6 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DMSBac', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDL', 1, ' ' )
@@ -996,7 +992,7 @@ contains
        
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
           if (flag(1:2) .ne. '2D') then
-            if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
+            if (flag=='MSL' .or. flag=='MSS' .or. flag=='MSD') then
                ! kg/m2
                wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
                                 *pdeldry(:ncol,:)*rgrav
@@ -1007,7 +1003,7 @@ contains
             endif
             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
-            if (flag == '2DMSB' .or. flag=='2DMSL' .or. flag=='2DMSS' .or. flag=='2DMSD') then
+            if (flag=='2DMSL' .or. flag=='2DMSS' .or. flag=='2DMSD') then
                ! kg/m2
                wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
                                 *pdeldry(:ncol,:)*rgrav

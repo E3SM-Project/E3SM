@@ -1464,7 +1464,7 @@ end function chem_is_active
            ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
 
            if (history_gaschmbudget) then
-             call outfld(trim(solsym(n))//'_MSBac', ftem, pcols, lchnk )
+             call outfld(trim(solsym(n))//'_MSB', ftem, pcols, lchnk )
 
              gas_ac_idx = pbuf_get_index(gas_ac_name(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
@@ -1484,7 +1484,7 @@ end function chem_is_active
              do k=2,pver
                ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
              end do
-             call outfld(trim(solsym(n))//'_2DMSBac', ftem(:ncol,1), pcols, lchnk )
+             call outfld(trim(solsym(n))//'_2DMSB', ftem(:ncol,1), pcols, lchnk )
 
              gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
