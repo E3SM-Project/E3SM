@@ -2,6 +2,11 @@ include (ScreamUtils)
 
 # Needed for RRTMGP
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+## Add CUDA flags for YAKL
+if (CUDA_BUILD)
+    set(ARCH "CUDA")
+    set(YAKL_CXX_FLAGS "-D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr ${CUDA_FLAGS} ${YAKL_CXX_FLAGS}")
+endif()
 
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
@@ -9,9 +14,12 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
 set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
 
+# Add source files
+set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
+
 # Test Homme standalone
 if (NOT SCREAM_AUTOTESTER)
-  CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+  CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
   set_target_properties(homme_physics_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
   target_include_directories(homme_physics_stand_alone PUBLIC
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp

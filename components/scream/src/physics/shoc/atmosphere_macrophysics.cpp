@@ -92,7 +92,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
 
   // Tracer group
-  add_group<Updated>("tracers",grid->name(),Bundling::Required);
+  add_group<Updated>("tracers",grid->name(),ps,Bundling::Required);
 }
 
 // =========================================================================================
