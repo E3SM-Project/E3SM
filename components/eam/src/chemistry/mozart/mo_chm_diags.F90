@@ -348,10 +348,10 @@ contains
           endif
           if ( .not. any( aer_species == m ) ) then
              if (history_gaschmbudget) then
-                call add_default( trim(spc_name)//'_MSB', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSL', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSS', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSB', 2, ' ' )
+                call add_default( trim(spc_name)//'_MSL', 2, ' ' )
+                call add_default( trim(spc_name)//'_MSS', 2, ' ' )
+                call add_default( trim(spc_name)//'_MSD', 2, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDL', 1, ' ' )
@@ -363,10 +363,10 @@ contains
                 call add_default( trim(spc_name)//'_TDO', 1, ' ' )
              endif
              if (history_gaschmbudget_2D) then
-                call add_default( trim(spc_name)//'_2DMSB', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DMSL', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DMSS', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DMSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DMSB', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSL', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSS', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSD', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDL', 1, ' ' )
