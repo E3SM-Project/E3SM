@@ -677,9 +677,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -855,9 +852,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="blues" COMPILER="pgigpu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
@@ -941,7 +935,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cascade" COMPILER="intel">
   <CONFIG_ARGS>
-    <base> --host=Linux --enable-filesystem-hints=lustre</base>
+    <base> --enable-filesystem-hints=lustre</base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
@@ -980,9 +974,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1002,9 +993,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1024,9 +1012,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -kind=byte </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1046,9 +1031,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1070,9 +1052,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1100,9 +1079,6 @@ flags should be captured within MPAS CMake files.
     <base>-lstdc++</base>
   </CXX_LIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1126,9 +1102,6 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cori-haswell" COMPILER="intel">
   <ALBANY_PATH>/global/cfs/cdirs/e3sm/software/albany-trilinos/albany-install-2020-08-07</ALBANY_PATH>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
@@ -1166,9 +1139,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
@@ -1216,9 +1186,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1305,9 +1272,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1358,9 +1322,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1383,9 +1344,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1407,9 +1365,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1432,9 +1387,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1515,9 +1467,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1538,9 +1487,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append> -xCORE-AVX2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
@@ -1574,9 +1520,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1606,9 +1549,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1641,9 +1581,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="summit" COMPILER="ibm">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1711,9 +1648,6 @@ flags should be captured within MPAS CMake files.
     <base> -qsuffix=f=f90:cpp=F90  </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <LDFLAGS>
     <append> -Wl,--relax -Wl,--allow-multiple-definition </append>
     <append>-qsmp -qoffload -lcudart -L$ENV{CUDA_DIR}/lib64</append>
@@ -1741,9 +1675,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
@@ -1773,10 +1704,7 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-    <CPPDEFS>
+  <CPPDEFS>
     <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -1812,9 +1740,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1844,9 +1769,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1872,9 +1794,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="ascent" COMPILER="ibm">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1943,9 +1862,6 @@ flags should be captured within MPAS CMake files.
     <base> -qsuffix=f=f90:cpp=F90  </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <LDFLAGS>
     <append> -Wl,--relax -Wl,--allow-multiple-definition </append>
     <append>-qsmp -qoffload -lcudart -L$ENV{CUDA_DIR}/lib64</append>
@@ -1973,9 +1889,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
@@ -2005,10 +1918,7 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-    <CPPDEFS>
+  <CPPDEFS>
     <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -2044,9 +1954,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DNO_SHR_VMATH -DCNL </append>
   </CPPDEFS>
@@ -2069,9 +1976,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DNO_SHR_VMATH -DCNL </append>
   </CPPDEFS>
@@ -2091,9 +1995,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="theta" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
     <append DEBUG="TRUE"> -O0 </append>
@@ -2111,9 +2012,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="theta" COMPILER="intel">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
@@ -2132,9 +2030,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="tulip" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -2149,9 +2044,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="theta" COMPILER="cray">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O1 </append>
   </CFLAGS>
@@ -2197,9 +2089,6 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
@@ -2259,9 +2148,6 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
@@ -2297,9 +2183,6 @@ flags should be captured within MPAS CMake files.
 <!-- CRL  End of "oneapi-ifx" compiler -->
 
 <compiler MACH="jlse" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
