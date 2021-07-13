@@ -1039,7 +1039,9 @@ end subroutine micro_p3_readnl
 
     if (do_prescribed_CCN) then
        call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
-       nccn_prescribed = ccn_trcdat*cld_frac_l ! since nc is assigned nccn_prescribed and nc is a grid average propery, nccn_prescribed is multiplied by cld_frac_l
+       ! ccn is uniformly distributed throughout the cell, but P3 computes in-cloud values assuming cell-averages are comprised 
+       ! of zero values outside cloud. Preemptively multiplying by cldfrac here is needed to get the correct in-cloud ccn value in P3
+       nccn_prescribed = ccn_trcdat*cld_frac_l
     end if
 
     ! CALL P3
