@@ -12,13 +12,23 @@ Initial Conditions:
   w_int_prev: 0.0
 
 Atmosphere Processes:
-  Number of Entries: 2
+  Number of Entries: 3
   Schedule Type: Sequential
   Process 0:
     Process Name: Dynamics
+  Process 4:
+    Process Name: SHOC
+    Grid: Physics GLL
   Process 1:
+    Process Name: CldFraction 
+    Grid: Physics GLL
+  Process 2:
     Process Name: P3
     Grid: Physics GLL
+  Process 3:
+    Process Name: RRTMGP
+    Grid: Physics GLL
+    active_gases: ["H2O", "CO2", "O3", "N2O", "CO" , "CH4", "O2", "N2"]
 
 Grids Manager:
   Type: Dynamics Driven

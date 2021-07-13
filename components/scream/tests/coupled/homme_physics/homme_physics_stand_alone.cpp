@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 
+// DYNAMICS includes
 #include "control/atmosphere_driver.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
@@ -11,17 +12,23 @@
 // SHOC includes
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
+// CLD FRAC includes
+#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
+
+// RRTMGP includes
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
+
+// EKAT headers
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_feutils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 // Hommexx includes
 #include "Context.hpp"
 #include "SimulationParams.hpp"
 #include "Types.hpp"
 #include "FunctorsBuffersManager.hpp"
-
-#include "ekat/util/ekat_feutils.hpp"
-#include "ekat/ekat_assert.hpp"
 
 static int get_default_fpes () {
 #ifdef SCREAM_FPE
@@ -39,6 +46,9 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
 
   ekat::enable_fpes(get_default_fpes());
 
+  // Initialize yakl
+  if(!yakl::isInitialized()) { yakl::init(); }
+
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
@@ -48,9 +58,11 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
-//  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
   proc_factory.register_product("dynamics",&create_atmosphere_process<HommeDynamics>);
+  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
+  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
@@ -87,6 +99,9 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
     ad.run(dt);
   }
   ad.finalize();
+  // Finalize YAKL
+  yakl::finalize();
+
 
   // If we got here, we were able to run homme
   REQUIRE(true);

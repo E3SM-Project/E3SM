@@ -1,13 +1,29 @@
 include (ScreamUtils)
 
+# Needed for RRTMGP
+find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   72   34)
+CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
-set (NEED_LIBS shoc p3 ${dynLibName} scream_control scream_share)
+set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
 
 # Test Homme standalone
-CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+if (NOT SCREAM_AUTOTESTER)
+  CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+  set_target_properties(homme_physics_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+  target_include_directories(homme_physics_stand_alone PUBLIC
+    ${SCREAM_BASE_DIR}/src/physics/rrtmgp
+    ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
+    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
+  )
+endif()
 
 # Copy yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
@@ -58,3 +74,9 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
+
+# P3 data files
+CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4
+               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4 COPYONLY)
+CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
+               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4 COPYONLY)

@@ -41,7 +41,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   using namespace ShortFieldTagsNames;
 
-  auto grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_rrtmgp_params.get<std::string>("Grid");
+  auto grid = grids_manager->get_grid(grid_name);
   m_ncol = grid->get_num_local_dofs();
   m_nlay = grid->get_num_vertical_levels();
   m_lat  = grid->get_geometry_data("lat");
