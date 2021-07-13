@@ -23,10 +23,10 @@ readonly MACHINE=cori-knl
 readonly PROJECT="e3sm"
 
 # Simulation
-readonly COMPSET="F20TR-P3"                  # or F20TR-P3-piAEROSOL 
+readonly COMPSET="F2010SC5-P3"               # 
 readonly sstplus4K=false                     # true if to run plus4k experiment, otherwise false
 readonly RESOLUTION="ne30pg2_r05_oECv3"      # or ne120pg2_r0125_oRRS18to6v3
-readonly DESCRIPTOR="F20TR-P3.NGD.ne30pg2"   # This will be the main part of the casename
+readonly DESCRIPTOR="F2010-P3.NGD.ne30pg2"   # This will be the main part of the casename
 
 readonly CASE_GROUP="NGD.Convection"
 
@@ -37,7 +37,7 @@ readonly DEBUG_COMPILE=false
 
 # Run options
 readonly MODEL_START_TYPE="initial"  # initial, continue
-readonly START_DATE="1991-01-01"
+readonly START_DATE="0001-01-01"
 
 # Case name
 #readonly CASE_NAME=${CHECKOUT}.${DESCRIPTOR}.${RESOLUTION}
@@ -87,7 +87,7 @@ else
   readonly PELAYOUT="M"
   readonly WALLTIME="24:00:00"
   readonly STOP_OPTION="nyears"
-  readonly STOP_N="20"
+  readonly STOP_N="11"
   readonly REST_OPTION="nyears"
   readonly REST_N="1"
   readonly RESUBMIT="0"
@@ -166,6 +166,11 @@ cat << EOF >> user_nl_eam
  mfilt = 1,30,120,240,240
  history_budget = .true.
  
+
+EOF
+cat >> user_nl_elm <<EOF
+
+finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
 
 EOF
 
