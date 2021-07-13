@@ -339,7 +339,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use elm_varpar       , only : nlevsoi
+    use elm_varpar       , only : nlevsoi, nlevgrnd
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -350,6 +350,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
+    integer  :: nlevbed				       ! number of layers to bedrock
     real(r8) :: disp_conc                              ! dissolved mineral N concentration (gP/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
     real(r8) :: surface_water(bounds%begc:bounds%endc) ! liquid water to shallow surface depth (kg water/m2)
@@ -358,6 +359,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
+    	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
          h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
          qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
@@ -370,27 +372,26 @@ contains
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
 
       ! for runoff calculation; calculate total water to a given depth
       surface_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         if ( zisoi(j) <= depth_runoff_Ploss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
+            if ( zisoi(j) <= depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-            end do
-         elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+            elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col_pp%dz(c,j))
-            end do
-         endif
+            end if
+         end do
       end do
 
       ! Loop through columns
@@ -567,7 +568,6 @@ contains
     use pftvarcon              , only : noveg
     use elm_varpar             , only : ndecomp_pools
     use CNDecompCascadeConType , only : decomp_cascade_con
-
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
@@ -608,8 +608,7 @@ contains
          lamda_ptase          => veg_vp%lamda_ptase                   ,  &
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
-         is_soil               => decomp_cascade_con%is_soil             &
-         )
+         is_soil               => decomp_cascade_con%is_soil)
 
 
     ! set initial values for potential C and N fluxes
