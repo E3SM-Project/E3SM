@@ -25,7 +25,7 @@ TEST_CASE("force_fpe", "[fake_infra_test]")
 }
 #endif
 
-//#ifdef SCREAM_FORCE_RUN_KOKKOS_OOB
+#ifdef SCREAM_FORCE_RUN_KOKKOS_OOB
 TEST_CASE("force_kokkos_oob", "[fake_infra_test]")
 {
   using namespace ekat;
@@ -41,7 +41,7 @@ TEST_CASE("force_kokkos_oob", "[fake_infra_test]")
 
   REQUIRE(true);
 }
-//#endif
+#endif
 
 TEST_CASE("pass", "[fake_infra_test]")
 {
