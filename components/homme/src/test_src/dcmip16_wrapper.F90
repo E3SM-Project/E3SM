@@ -449,6 +449,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   if (case_planar_bubble) then
     prec_type = bubble_prec_type
+    if (qsize<3) call abortmp('ERROR: moist bubble test requires qsize=3')
   else
     prec_type = dcmip16_prec_type
   endif
@@ -475,8 +476,10 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qi=1;  qv  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=2;  qc  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=3;  qr  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    if (.not. case_planar_bubble) then
+      qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+      qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    endif
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
@@ -510,6 +513,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
+      lat=0.0
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
                              precl(i,j,ie), pbl_type, prec_type)
 
