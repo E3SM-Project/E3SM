@@ -449,7 +449,11 @@
 <config_AM_temperatures_write_on_startup>true</config_AM_temperatures_write_on_startup>
 
 <!-- AM_regionalStatistics -->
-<config_AM_regionalStatistics_enable>false</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable ice_grid="oQU480">false</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable ice_grid="oQU240">false</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable ice_grid="oQU240wLI">false</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable ice_grid="oQU120">false</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_enable prognostic_mode="prescribed">false</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_compute_interval>'0000-00-01_00:00:00'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
@@ -548,7 +552,11 @@
 <config_AM_icePresent_write_on_startup>false</config_AM_icePresent_write_on_startup>
 
 <!-- AM_timeSeriesStatsDaily -->
-<config_AM_timeSeriesStatsDaily_enable>false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable ice_grid="oQU480">false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable ice_grid="oQU240">false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable ice_grid="oQU240wLI">false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable ice_grid="oQU120">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
