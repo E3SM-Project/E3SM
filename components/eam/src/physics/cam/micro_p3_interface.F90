@@ -1039,7 +1039,7 @@ end subroutine micro_p3_readnl
 
     if (do_prescribed_CCN) then
        call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
-       nccn_prescribed = ccn_trcdat
+       nccn_prescribed = ccn_trcdat*cld_frac_l ! since nc is assigned nccn_prescribed and nc is a grid average propery, nccn_prescribed is multiplied by cld_frac_l
     end if
 
     ! CALL P3
