@@ -2459,10 +2459,10 @@ module ocn_time_integration_split
          !$omp do schedule(runtime) private(k,totalThickness)
          do iCell = 1, nCellsAll
             totalThickness = 0.0_RKIND
-            do k = maxLevelCell(iCell), 1, -1
+            do k = maxLevelCell(iCell), minLevelCell(iCell), -1
                totalThickness = totalThickness + layerThicknessNew(k,iCell)
             end do
-            do k = maxLevelCell(iCell), 1, -1
+            do k = maxLevelCell(iCell), minLevelCell(iCell), -1
                layerThicknessRemap(k, iCell) = restingThickness(k, iCell) * &
                                                totalThickness / bottomDepth(iCell)
             end do

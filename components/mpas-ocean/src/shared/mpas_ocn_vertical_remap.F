@@ -30,10 +30,9 @@ module ocn_vertical_remap
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    use ppr_1d
-
-   ! TODO add use ocn_mesh
 
    implicit none
    private
@@ -45,6 +44,7 @@ module ocn_vertical_remap
    !
    
    type(rmap_opts) :: opts
+   integer :: bc_upper, bc_lower
    
    !--------------------------------------------------------------------
 
@@ -78,11 +78,11 @@ module ocn_vertical_remap
       real (kind=RKIND), dimension(:, :), intent(in) :: layerThicknessNew
       integer, intent(out) :: err
 
-      integer, pointer :: nCells, nEdges, nVertLevels
-      integer :: nLevels, nVars, nDoFs, nTracers
-      integer :: iCell, jCell, iEdge, iTrac, k
+      integer :: nCells, nEdges
+      integer :: nLayers, nLevels, nVars, nDoFs, nTracers
+      integer :: iCell, jCell, iEdge, iTrac, k, kTop, kBot
 
-      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
+      type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_iterator_type) :: groupItr
@@ -94,9 +94,6 @@ module ocn_vertical_remap
       real (kind=RKIND), dimension(:, :), allocatable :: heightCellNow, heightEdgeNow
       real (kind=RKIND), dimension(:, :), allocatable :: heightCellNew, heightEdgeNew
       
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot
-      integer, dimension(:, :), pointer :: cellsOnEdge
-      real (kind=RKIND), dimension(:), pointer :: bottomDepth
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :), pointer :: highFreqThickness,lowFreqDivergence
@@ -104,21 +101,14 @@ module ocn_vertical_remap
 
       err = 0
 
-      call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
-      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
-
-      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      ! Remapping currently only supports one block for the whole domain rather
+      ! than sub-blocks
+      call mpas_log_write('Entering vertical remapping')
+      
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
       
@@ -129,6 +119,9 @@ module ocn_vertical_remap
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 2)
       end if
       
+      nCells = nCellsAll
+      nEdges = nEdgesAll
+
    !----------------------------------------------------------------------------
    !- SETUP VERTICAL GRIDS:
    !- heightCellNow, heightEdgeNow: depth at layer interfaces (lagrangian grid)
@@ -143,51 +136,48 @@ module ocn_vertical_remap
       allocate(heightEdgeNow(nVertLevels + 1, nEdges))
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
       
-      do iCell = 1, nCells
-         heightCellNow(:, iCell) = -bottomDepth(iCell)
-         heightCellNew(:, iCell) = -bottomDepth(iCell)
-
-      !- reconstruct "now" heights
-
-         do k = maxLevelCell(iCell), 1, -1
-            heightCellNow(k, iCell) = &
-               heightCellNow(k + 1, iCell) + layerThickness(k, iCell)
-         end do
-
-      !- reconstruct "new" heights
-      !- Assign new layerThicknesses
-
-         heightCellNew(1, iCell) = heightCellNow(1, iCell)
-         do k = maxLevelCell(iCell), 2, -1
-            heightCellNew(k, iCell) = &
-               heightCellNew(k + 1, iCell) + layerThicknessNew(k, iCell)
-         end do
-      end do
-      layerThickness = layerThicknessNew
-
+      call mpas_log_write('  -- cells')
    !- There's currently a silly issue in PPR: it assumes the "coordinates" for
    !- the data being remapped increases with index. Here, we have the opposite 
    !- (z becomes more -ve with k)... 
    !- I'll make some updates to PPR to handle this, but for now, just flip the
    !- signs to make PPR happy. This shouldn't have any actual impact.
- 
-      heightCellNow = -1.0_RKIND * heightCellNow
-      heightCellNew = -1.0_RKIND * heightCellNew
+      do iCell = 1, nCells
+         heightCellNow(nVertLevels+1:maxLevelCell(iCell)+1, iCell) = bottomDepth(iCell)
+         heightCellNew(nVertLevels+1:maxLevelCell(iCell)+1, iCell) = bottomDepth(iCell)
 
+      !- reconstruct "now" heights
 
+         do k = maxLevelCell(iCell), minLevelCell(iCell), -1
+            heightCellNow(k, iCell) = &
+               heightCellNow(k + 1, iCell) - layerThickness(k, iCell)
+         end do
+
+      !- reconstruct "new" heights
+      !- Assign new layerThicknesses
+
+         heightCellNew(minLevelCell(iCell), iCell) = heightCellNow(minLevelCell(iCell), iCell)
+         do k = maxLevelCell(iCell), minLevelCell(iCell)+1, -1
+            heightCellNew(k, iCell) = &
+               heightCellNew(k + 1, iCell) - layerThicknessNew(k, iCell)
+         end do
+      end do
+      layerThickness = layerThicknessNew
+
+      call mpas_log_write('  -- edges')
       do iEdge = 1, nEdges
          iCell = cellsOnEdge(1, iEdge)
          jCell = cellsOnEdge(2, iEdge)
 
-         heightEdgeNow(:, iEdge) = -bottomDepth(iCell)
-         heightEdgeNew(:, iEdge) = -bottomDepth(iCell)
+         heightEdgeNow(:, iEdge) = bottomDepth(iCell)
+         heightEdgeNew(:, iEdge) = bottomDepth(iCell)
 
       !- this is just a quick hack for the edge heights
       !- really should use layerThicknessEdge here, but it's unclear if this has
       !- been properly initiallised at this point...
       !- layerThicknessEdge could involve upwinding, so need to be careful!
 
-         do k = maxLevelEdgeTop(iEdge), 1, -1
+         do k = maxLevelEdgeTop(iEdge), minLevelEdgeBot(iEdge), -1
             heightEdgeNow(k, iEdge) = &
                            0.5_RKIND * (heightCellNow(k, iCell) + heightCellNow(k, jCell))
             heightEdgeNew(k, iEdge) = &
@@ -207,54 +197,65 @@ module ocn_vertical_remap
       endif
       nDoFs = 1 ! always 1 for MPAS, it'd be >1 for DG methods (with more DoF per layer)
 
-      allocate(dataNow(nDoFs, nVars, nVertLevels))
-      allocate(dataNew(nDoFs, nVars, nVertLevels))
+      allocate(dataNow(nDoFs, nVars, nVertLevels+1))
+      allocate(dataNew(nDoFs, nVars, nVertLevels+1))
       allocate(bcUpper(nVars))
       allocate(bcLower(nVars))
       
       dataNow = 0.0_RKIND
       dataNew = 0.0_RKIND
 
-      bcUpper%bcopt = bcon_loose ! "loose" => extrapolate
-      bcLower%bcopt = bcon_loose
+      bcUpper%bcopt = bc_upper ! "loose" => extrapolate
+      bcLower%bcopt = bc_lower
 
       call work%init(nVertLevels + 1, nVars, opts) ! this is internal workspace for PPR
 
    !- Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
       if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
          do iEdge = 1, nEdges
-            nLevels = maxLevelEdgeTop(iEdge) + 1
+
+            kTop = minLevelEdgeBot(iEdge)
+            kBot = maxLevelEdgeTop(iEdge)
+
+            nLayers = kBot - kTop + 1
+            nLevels = nLayers + 1
 
             if (nLevels .lt. 2) cycle
 
-            dataNow(1, 1, :) = normalVelocity(:, iEdge)
-            dataNow(1, 2, :) = highFreqThickness(:, iEdge)
-            dataNow(1, 3, :) = lowFreqDivergence(:, iEdge)
+            dataNow(1, 1, 1:nLayers) = normalVelocity   (kTop:kBot, iEdge)
+            dataNow(1, 2, 1:nLayers) = highFreqThickness(kTop:kBot, iEdge)
+            dataNow(1, 3, 1:nLayers) = lowFreqDivergence(kTop:kBot, iEdge)
 
             call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
-               heightEdgeNow(:, iEdge), &
-               heightEdgeNew(:, iEdge), &
-               dataNow, dataNew, bcUpper, bcLower, work, opts)
+               heightEdgeNow(kTop:kBot+1, iEdge), &
+               heightEdgeNew(kTop:kBot+1, iEdge), &
+               dataNow, dataNew, &
+               bcUpper, bcLower, work, opts)
 
-            normalVelocity   (1:maxLevelEdgeTop(iEdge), iEdge) = dataNew(1, 1, 1:maxLevelEdgeTop(iEdge))
-            highFreqThickness(1:maxLevelEdgeTop(iEdge), iEdge) = dataNew(1, 2, 1:maxLevelEdgeTop(iEdge))
-            lowFreqDivergence(1:maxLevelEdgeTop(iEdge), iEdge) = dataNew(1, 3, 1:maxLevelEdgeTop(iEdge))
-         
+            normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
+            highFreqThickness(kTop:kBot, iEdge) = dataNew(1, 2, 1:nLayers)
+            lowFreqDivergence(kTop:kBot, iEdge) = dataNew(1, 3, 1:nLayers)
          end do
       else
          do iEdge = 1, nEdges
-            nLevels = maxLevelEdgeTop(iEdge) + 1
+
+            kTop = minLevelEdgeBot(iEdge)
+            kBot = maxLevelEdgeTop(iEdge)
+
+            nLayers = kBot - kTop + 1
+            nLevels = nLayers + 1
 
             if (nLevels .lt. 2) cycle
 
-            dataNow(1, 1, :) = normalVelocity(:, iEdge)
+            dataNow(1, 1, 1:nLayers) = normalVelocity(kTop:kBot, iEdge)
 
             call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
-               heightEdgeNow(:, iEdge), &
-               heightEdgeNew(:, iEdge), &
-               dataNow, dataNew, bcUpper, bcLower, work, opts)
+               heightEdgeNow(kTop:kBot+1, iEdge), &
+               heightEdgeNew(kTop:kBot+1, iEdge), &
+               dataNow, dataNew, &
+               bcUpper, bcLower, work, opts)
 
-            normalVelocity(1:maxLevelEdgeTop(iEdge), iEdge) = dataNew(1, 1, 1:maxLevelEdgeTop(iEdge))
+            normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
          
          end do
       end if
@@ -282,27 +283,34 @@ module ocn_vertical_remap
 
                allocate(bcUpper(nTracers))
                allocate(bcLower(nTracers))
-               ! TODO replace hardcoded bcon_loose with config option 
-               bcUpper%bcopt = bcon_loose ! "loose" => extrapolate
-               bcLower%bcopt = bcon_loose
+               bcUpper%bcopt = bc_upper ! "loose" => extrapolate
+               bcLower%bcopt = bc_lower
                
                do iCell = 1, nCells
+
+                  kTop = minLevelCell(iCell)
+                  kBot = maxLevelCell(iCell)
+
+                  nLayers = kBot - kTop + 1
+                  nLevels = nLayers + 1
+
+                  if (nLevels .lt. 2) cycle
+
                   do iTrac = 1, nTracers
-                     nLevels = maxLevelCell(iCell) + 1
 
-                     if (nLevels .lt. 2) cycle
+                     dataNow(1, iTrac, 1:nLayers) = tracersGroup(iTrac, kTop:kBot, iCell)
 
-                     dataNow(1, iTrac, :) = tracersGroup(iTrac, :, iCell)
                   end do
                   call rmap1d(nLevels, nLevels, nTracers,nDoFs, &
-                     heightCellNow(:, iCell), &
-                     heightCellNew(:, iCell), &
-                     dataNow, dataNew, bcUpper, bcLower, work, opts)
+                     heightCellNow(kTop:kBot+1, iCell), &
+                     heightCellNew(kTop:kBot+1, iCell), &
+                     dataNow, dataNew, &
+                     bcUpper, bcLower, work, opts)
 
                   do iTrac = 1, nTracers
-                     tracersGroup(iTrac, 1:maxLevelCell(iCell), iCell) = dataNew(1, iTrac, 1:maxLevelCell(iCell))
+                     tracersGroup(iTrac, kTop:kBot, iCell) = dataNew(1, iTrac, 1:nLayers)
                   end do
-               
+                     
                end do
 
                deallocate(dataNow,dataNew)
@@ -346,6 +354,14 @@ module ocn_vertical_remap
          opts%edge_meth = p5e_method ! 3rd-order edge interp.
       endif
       opts%cell_lims = mono_limit ! monotone slope limits TODO: consider config_monotonic
+      ! TODO replace hardcoded bcon_loose with config option 
+      !select case (config_vert_remap_bc_upper)
+      !case ('extrapolate')
+      bc_upper = bcon_loose
+      !case ('dirichlet')
+      !bc_upper = bcon_value
+      bc_lower = bcon_loose
+      !bc_lower = bcon_value
 
    end subroutine ocn_vertical_remap_init
 
