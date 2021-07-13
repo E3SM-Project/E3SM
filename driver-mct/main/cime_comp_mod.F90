@@ -2464,7 +2464,6 @@ contains
 
     ! --- Write out performance data for initialization
     call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
-#ifndef CPL_BYPASS
     ! Report on memory usage
     call shr_mem_getusage(msize,mrss)
 
@@ -2606,7 +2605,6 @@ contains
           endif
        endif ! iamroot_CPLID
     endif ! info_mprof > 0
-#endif
     ! Write out a timing file checkpoint
     write(timing_file,'(a,i8.8,a1,i5.5)') &
           trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
