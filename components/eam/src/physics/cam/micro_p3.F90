@@ -635,7 +635,7 @@ end function bfb_expm1
     real(rtype)    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi,epsi_tot, &
          dum1,dum3,dum4,dum5,dum6,dqsidt,abi,rhop,vtrmi1,eii
       
-    real(rtype) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt     
+    real(rtype) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt,qi_wetDepos     
 
     integer :: dumi,k,dumj,dumii,dumjj,dumzz
 
@@ -677,6 +677,7 @@ end function bfb_expm1
 
       ncheti_cnt = 0.0_rtype; qcheti_cnt = 0.0_rtype; nicnt = 0.0_rtype 
       qicnt = 0.0_rtype;      ninuc_cnt = 0.0_rtype;  qinuc_cnt = 0.0_rtype
+      qi_wetDepos = 0.0_rtype
 
 
       log_wetgrowth = .false.
@@ -716,9 +717,9 @@ end function bfb_expm1
          bm(k)=bm_incld(k)*cld_frac_i(k)
 
          ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi_incld(k),ni_incld(k),rho(k))
-         call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
-              dum5,dum6,isize,rimsize,densize,                &
-              qi_incld(k),ni_incld(k),qm_incld(k),      &
+         call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,   &
+              dum5,dum6,isize,rimsize,densize,                                &
+              qi_incld(k),ni_incld(k),qm_incld(k),                            &
               rhop)
          !qm_incld(k),zitot(k),rhop)
          call find_lookupTable_indices_1b(dumj,dum3,rcollsize,qr_incld(k),nr_incld(k))
@@ -911,32 +912,38 @@ end function bfb_expm1
       !   1) Should we be taking qinuc into consideration too?
       !   2) Is MG correct in NOT limiting qi2qv_sublim_tend?
 
-      call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
 
-      call water_vapor_conservation(qv(k), qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, qinuc_cnt, dt)
+
       
-      call ice_supersat_conservation(qidep, qinuc, qinuc_cnt, cld_frac_i(k), qv(k), qv_sat_i(k), latent_heat_sublim(k), th_atm(k)/exner(k), dt)
-      
-      ! cloud
+      ! cloud mass
       call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
            qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt)
 
-      ! rain
+      ! rain mass
       call rain_water_conservation(qr(k), qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt, &
            qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend)
 
-      ! ice
+      ! ice mass
       call ice_water_conservation(qi(k), qidep, qinuc, qiberg, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, &
            dt, qinuc_cnt, qcheti_cnt, qicnt, qi2qv_sublim_tend, qi2qr_melt_tend)
 
+      ! cloud number     
       call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
            nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt)
 
+      ! rain number     
       call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio, &
            nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
       
+      ! ice number     
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,ncheti_cnt,nicnt,ninuc_cnt,dt,ni2nr_melt_tend,&
            ni_sublim_tend,ni_selfcollect_tend)
+
+      call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_vapor(k), latent_heat_sublim(k), inv_dt, dt, qidep, qinuc, qinuc_cnt, qi2qv_sublim_tend, qr2qv_evap_tend)
+
+      !call water_vapor_conservation(qv(k), qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, qinuc_cnt, dt)
+           
+      call ice_supersat_conservation(qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, qinuc_cnt, cld_frac_i(k), qv(k), qv_sat_i(k), latent_heat_sublim(k), th_atm(k)/exner(k), dt)
 
       !---------------------------------------------------------------------------------
       ! update prognostic microphysics and thermodynamics variables
@@ -950,7 +957,7 @@ end function bfb_expm1
            ni_sublim_tend, qiberg, exner(k), latent_heat_sublim(k), latent_heat_fusion(k),   &
            do_predict_nc, log_wetgrowth, dt, nmltratio, rho_qm_cloud,                        &
            ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,                       &
-           th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k), nc(k), qr(k), nr(k) )
+           th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k), nc(k), qr(k), nr(k), qi_wetDepos)
 
       !-- warm-phase only processes:
       call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
@@ -965,7 +972,7 @@ end function bfb_expm1
       else
          qv2qi_depos_tend(k) = qidep - qi2qv_sublim_tend + qinuc + qinuc_cnt
       endif
-      precip_total_tend(k)   = ( qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qccol )
+      precip_total_tend(k)   = ( qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qi_wetDepos )
       nevapr(k)  = qi2qv_sublim_tend + qr2qv_evap_tend
       qr_evap_tend(k) = qr2qv_evap_tend
       vap_ice_exchange(k) = qidep - qi2qv_sublim_tend + qinuc
@@ -1062,7 +1069,8 @@ end function bfb_expm1
       exner, cld_frac_l, cld_frac_r, cld_frac_i,                                                                           &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim,            &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,                                                                        &
-      ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc)
+      ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc,  & 
+      diag_ze_rain,diag_ze_ice)
 
    implicit none
 
@@ -1076,7 +1084,8 @@ end function bfb_expm1
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, &
         lamr, vap_liq_exchange, &
-        ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc
+        ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, &
+        diag_ze_rain, diag_ze_ice
 
    ! locals
    integer :: k, dumi, dumii, dumjj, dumzz
@@ -1110,6 +1119,7 @@ end function bfb_expm1
          diag_eff_radius_qc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
          nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
+         diag_eff_radius_qc(k) = 0.0_rtype
          qv(k) = qv(k)+qc(k)
          th_atm(k) = th_atm(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
          vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)
@@ -1130,6 +1140,7 @@ end function bfb_expm1
          ze_rain(k) = nr(k)*(mu_r(k)+6._rtype)*(mu_r(k)+5._rtype)*(mu_r(k)+4._rtype)*           &
               (mu_r(k)+3._rtype)*(mu_r(k)+2._rtype)*(mu_r(k)+1._rtype)/bfb_pow(lamr(k), 6._rtype)
          ze_rain(k) = max(ze_rain(k),1.e-22_rtype)
+         diag_ze_rain(k) = 10._rtype*bfb_log10(ze_rain(k)*1.e18_rtype)
       else
          qv(k) = qv(k)+qr(k)
          th_atm(k) = th_atm(k)-exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
@@ -1194,7 +1205,7 @@ end function bfb_expm1
 
          !above formula for ze only makes sense for in-cloud vals, but users expect cell-ave output.
          ze_ice(k) = ze_ice(k)*cld_frac_i(k)
-
+         diag_ze_ice(k) = 10._rtype*bfb_log10(ze_ice(k)*1.e18_rtype)
       else
 
          qv(k) = qv(k) + qi(k)
@@ -1224,12 +1235,12 @@ end function bfb_expm1
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
+  SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,                                                                                                               &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,frzimm,frzcnt,frzdep,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
-       diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN, &
-       dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,  &
-       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,qv_prev,t_prev,col_location &
+       diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,                                                                                                       &
+       dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
+       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
+       vap_ice_exchange,qv_prev,t_prev,col_location,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
 #ifdef SCREAM_CONFIG_IS_CMAKE
        ,elapsed_s &
 #endif
@@ -1318,6 +1329,7 @@ end function bfb_expm1
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: inv_qc_relvar
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     real(rtype), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
@@ -1328,7 +1340,6 @@ end function bfb_expm1
     !
 
     ! These outputs are no longer provided by p3_main.
-    real(rtype), dimension(its:ite,kts:kte) :: diag_equiv_reflectivity  ! equivalent reflectivity          dBZ
     real(rtype), dimension(its:ite,kts:kte) :: diag_vm_qi ! mass-weighted fall speed of ice  m s-1
     real(rtype), dimension(its:ite,kts:kte) :: diag_diam_qi  ! mean diameter of ice             m
     real(rtype), dimension(its:ite,kts:kte) :: pratot   ! accretion of cloud by rain
@@ -1400,6 +1411,8 @@ end function bfb_expm1
     prec      = 0._rtype
     mu_r      = 0._rtype
     diag_equiv_reflectivity   = -99._rtype
+    diag_ze_rain = -99.0_rtype 
+    diag_ze_ice  = -99.0_rtype
 
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
@@ -1583,12 +1596,14 @@ end function bfb_expm1
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_part3(kts, kte, kbot, ktop, kdir, &
-            exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:), &
+       call p3_main_part3(kts, kte, kbot, ktop, kdir,                                                                         &
+            exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:),                                                    &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
-            qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), &
-            mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
-            ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_radius_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_radius_qc(i,:))
+            qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:),                                                &
+            mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:),                                       &
+            ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_radius_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_radius_qc(i,:), &
+            diag_ze_rain(i,:),diag_ze_ice(i,:))
+
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
        !..............................................
@@ -2326,7 +2341,7 @@ end function bfb_expm1
          Eii_fact = 1._rtype
       endif
 
-      ni_selfcollect_tend = table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld
+      ni_selfcollect_tend = table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld*ni_incld
 
    endif
 
@@ -3007,8 +3022,8 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
 
 end subroutine back_to_cell_average
 
-subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,    &
-   qidep,qi2qv_sublim_tend)
+subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_vapor,latent_heat_sublim,inv_dt,dt,qidep,qinuc,qinuc_cnt,    &
+   qi2qv_sublim_tend,qr2qv_evap_tend)
 
    !-- Limit ice process rates to prevent overdepletion of sources such that
    !   the subsequent adjustments are done with maximum possible rates for the
@@ -3022,18 +3037,39 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,   
    real(rtype), intent(in) :: pres
    real(rtype), intent(in) :: t_atm
    real(rtype), intent(in) :: qv
-   real(rtype), intent(in) :: latent_heat_sublim
-   real(rtype), intent(in) :: inv_dt
+   real(rtype), intent(in) :: latent_heat_sublim,latent_heat_vapor
+   real(rtype), intent(in) :: inv_dt,dt
+   real(rtype), intent(in) :: qidep,qinuc,qinuc_cnt
 
-   real(rtype), intent(inout) :: qidep
-   real(rtype), intent(inout) :: qi2qv_sublim_tend
+   real(rtype), intent(inout) :: qi2qv_sublim_tend,qr2qv_evap_tend
 
-   real(rtype) :: dumqv_sat_i, qdep_satadj
+   real(rtype) :: dumqv_sat_i, qdep_satadj, qrevp_satadj
+   real(rtype) :: qtmp_all,ttmp_all,qv_sat_l,q_sink,t_sink,dumqv_sat_l,qv_source_evp,qi2qv_sublim_satadj
 
-   dumqv_sat_i = qv_sat(t_atm,pres,1)
-   qdep_satadj = (qv-dumqv_sat_i)/(1._rtype + bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv* bfb_square(t_atm) ))*inv_dt
-   qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
-   qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qi2qv_sublim_tend, 1.e-20_rtype))
+
+   qtmp_all = qv - (qidep + qinuc + qinuc_cnt)*dt + (qi2qv_sublim_tend + qr2qv_evap_tend)*dt 
+   ttmp_all = t_atm + ((qidep-qi2qv_sublim_tend+qinuc+qinuc_cnt)*latent_heat_sublim*inv_cp + (-qr2qv_evap_tend*latent_heat_vapor*inv_cp))*dt
+
+   qv_sat_l = qv_sat(ttmp_all,pres,0)
+
+   ! If water vapor mass exceeds ice saturation value, we limit only source terms (e.g., sublimation, rain evp) 
+   if(qtmp_all > qv_sat_l)then
+
+      ! ... First, rain evaporation is limited to the sub-saturation defined by the water vapor sink terms (deposition, ice nucleation)
+      q_sink = qv - (qidep + qinuc + qinuc_cnt)*dt
+      t_sink = t_atm + ((qidep+qinuc+qinuc_cnt)*latent_heat_sublim*inv_cp)*dt
+      dumqv_sat_l = qv_sat(t_sink,pres,0)
+      qv_source_evp = qr2qv_evap_tend + qi2qv_sublim_tend
+      qrevp_satadj = (q_sink-dumqv_sat_l)/(1._rtype + bfb_square(latent_heat_vapor)*dumqv_sat_l/(cp*rv* bfb_square(t_sink) ))*inv_dt
+      qr2qv_evap_tend    = qr2qv_evap_tend*min(1._rtype,max(0._rtype,-qrevp_satadj)/max(qv_source_evp, 1.e-20_rtype))
+
+      ! ... Next, ice-sublimation is limited in the same way but with sublim LH 
+      dumqv_sat_i = qv_sat(t_sink,pres,1)
+      qi2qv_sublim_satadj = (q_sink-dumqv_sat_i)/(1._rtype + bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv* bfb_square(t_sink) ))*inv_dt
+      qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qi2qv_sublim_satadj)/max(qv_source_evp, 1.e-20_rtype))
+   
+   endif
+
 
 end subroutine prevent_ice_overdepletion
 
@@ -3065,12 +3101,12 @@ subroutine water_vapor_conservation(qv,qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_
   return
 end subroutine water_vapor_conservation
 
-subroutine ice_supersat_conservation(qidep,qinuc,qinuc_cnt,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt)
+subroutine ice_supersat_conservation(qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,qinuc_cnt,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt)
   !Make sure ice processes don't drag qv below ice supersaturation
 
   implicit none
 
-  real(rtype), intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt
+  real(rtype), intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend,qr2qv_evap_tend
   real(rtype), intent(inout) :: qidep,qinuc,qinuc_cnt
 
   real(rtype) :: qv_sink, qv_avail, fract
@@ -3083,7 +3119,7 @@ subroutine ice_supersat_conservation(qidep,qinuc,qinuc_cnt,cld_frac_i,qv,qv_sat_
 
   if (qv_sink > qsmall .and. cld_frac_i > 1.0e-20_rtype) then
      ! --- Available water vapor for deposition/nucleation
-     qv_avail = (qv - qv_sat_i) / &
+   qv_avail = (qv + (qi2qv_sublim_tend + qr2qv_evap_tend)*dt - qv_sat_i) / &
           (1.0_rtype + bfb_square(latent_heat_sublim)*qv_sat_i / (cp*rv*bfb_square(T_atm)) ) / dt
 
      ! --- Only excess water vapor can be limited
@@ -3287,7 +3323,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    exner,latent_heat_sublim,latent_heat_fusion,                                        &
    do_predict_nc,log_wetgrowth,dt,nmltratio,rho_qm_cloud,                              &
    ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,                         &
-   th_atm,qv,qi,ni,qm,bm,qc,nc,qr,nr)
+   th_atm,qv,qi,ni,qm,bm,qc,nc,qr,nr,qi_wetDepos)
 
    !-- ice-phase dependent processes:
    implicit none
@@ -3325,7 +3361,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    real(rtype), intent(in) :: rho_qm_cloud
    real(rtype), intent(in) :: ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt
 
-   real(rtype), intent(inout) :: th_atm
+   real(rtype), intent(inout) :: th_atm,qi_wetDepos
    real(rtype), intent(inout) :: qv
    real(rtype), intent(inout) :: qc
    real(rtype), intent(inout) :: nc
@@ -3368,6 +3404,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    if(.not. use_hetfrz_classnuc)then
       dum = (qrcol+qccol+qr2qi_immers_freeze_tend+qc2qi_hetero_freeze_tend)*dt
       qi = qi + (qidep+qinuc+qiberg)*dt + dum
+      qi_wetDepos = (qidep+qinuc+qiberg) + (qrcol+qccol+qr2qi_immers_freeze_tend+qc2qi_hetero_freeze_tend) ! total ice process rate for wet-deopsition
       qm = qm + dum
       bm = bm + (qrcol*inv_rho_rimeMax+qccol/rho_qm_cloud+(qr2qi_immers_freeze_tend+ &
                  qc2qi_hetero_freeze_tend)*inv_rho_rimeMax)*dt
@@ -3376,6 +3413,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    else
       dum = (qrcol+qccol+qr2qi_immers_freeze_tend+qcheti_cnt+qicnt)*dt
       qi = qi + (qidep+qinuc+qiberg+qinuc_cnt)*dt + dum
+      qi_wetDepos = (qidep+qinuc+qiberg+qinuc_cnt) + (qrcol+qccol+qr2qi_immers_freeze_tend+qcheti_cnt+qicnt) ! total ice process rate for wet-deopsition 
       qm = qm + dum
       bm = bm + (qrcol*inv_rho_rimeMax+qccol/rho_qm_cloud+(qr2qi_immers_freeze_tend+ &
                  qcheti_cnt+qicnt)*inv_rho_rimeMax)*dt
@@ -3766,11 +3804,11 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
    ! very simple temperature dependent aggregation efficiency
    if (t_atm.lt.253.15_rtype) then
-      eii = 0.1_rtype
-   else if (t_atm.ge.253.15_rtype.and.t_atm.lt.268.15_rtype) then
-      eii = 0.1_rtype + ((t_atm-253.15_rtype)/15._rtype)*0.9_rtype  ! linear ramp from 0.1 to 1 between 253.15 and 268.15 K
+      eii = 0.001_rtype
+   else if (t_atm.ge.253.15_rtype.and.t_atm.lt.273.15_rtype) then
+      eii = 0.001_rtype + (t_atm-253.15_rtype)*(0.3_rtype - 0.001_rtype)/20._rtype  ! linear ramp from 0.1 to 1 between 253.15 and 268.15 K
    else
-      eii = 1._rtype
+      eii = 0.3_rtype
    end if
 
    return
