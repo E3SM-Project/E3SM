@@ -346,7 +346,7 @@ end subroutine stratiform_init
 
 subroutine stratiform_tend( &
    state, ptend_all, pbuf, dtime, icefrac, &
-   landfrac, ocnfrac, landm, snowh, dlf,   &
+   landfrac, ocnfrac, snowh, dlf,   &
    dlf2, rliq, cmfmc, cmfmc2, ts,          &
    sst, zdu)
 
@@ -379,7 +379,6 @@ subroutine stratiform_tend( &
    real(r8), intent(in)  :: icefrac (pcols)          ! Sea ice fraction (fraction)
    real(r8), intent(in)  :: landfrac(pcols)          ! Land fraction (fraction)
    real(r8), intent(in)  :: ocnfrac (pcols)          ! Ocean fraction (fraction)
-   real(r8), intent(in)  :: landm(pcols)             ! Land fraction ramped over water
    real(r8), intent(in)  :: snowh(pcols)             ! Snow depth over land, water equivalent (m)
 
    real(r8), intent(in)  :: dlf(pcols,pver)          ! Detrained water from convection schemes
@@ -548,7 +547,7 @@ subroutine stratiform_tend( &
    call cld_sediment_vel( ncol,                                                           &
                           icefrac, landfrac, ocnfrac, state1%pmid, state1%pdel, state1%t, &
                           cld, state1%q(:,:,ixcldliq), state1%q(:,:,ixcldice),            & 
-                          pvliq, pvice, landm, snowh )
+                          pvliq, pvice, snowh )
    
    wsedl(:ncol,:pver) = pvliq(:ncol,:pver)/gravit/(state1%pmid(:ncol,:pver)/(287.15_r8*state1%t(:ncol,:pver)))
 
@@ -748,13 +747,13 @@ subroutine stratiform_tend( &
    call pbuf_get_field(pbuf, ls_flxsnw_idx, rkflxsnw)
 
    call t_startf('pcond')
-   call pcond( lchnk, ncol,                                                &
-               state1%t, ttend, state1%q(1,1,1), qtend, state1%omega,      &
-               totcw, state1%pmid , state1%pdel, cld, fice, fsnow,         &
-               qme, prain, prodsnow, nevapr, evapsnow, evapheat, prfzheat, &
-               meltheat, prec_pcw, snow_pcw, dtime, fwaut,                 &
-               fsaut, fracw, fsacw, fsaci, ltend,                          &
-               rhdfda, rhu00, icefrac, state1%zi, ice2pr, liq2pr,          &
+   call pcond( lchnk, ncol,                                                 &
+               state1%t, ttend, state1%q(1,1,1), qtend, state1%omega,       &
+               totcw, state1%pmid , state1%pdel, cld, fice, fsnow,          &
+               qme, prain, prodsnow, nevapr, evapsnow, evapheat, prfzheat,  &
+               meltheat, prec_pcw, snow_pcw, dtime, fwaut,                  &
+               fsaut, fracw, fsacw, fsaci, ltend,                           &
+               rhdfda, rhu00, landfrac, icefrac, state1%zi, ice2pr, liq2pr, &
                liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio )
    call t_stopf('pcond')
 
@@ -907,7 +906,7 @@ subroutine stratiform_tend( &
   
    ! Cloud water and ice particle sizes, saved in physics buffer for radiation
 
-   call cldefr( lchnk, ncol, landfrac, state1%t, rel, rei, state1%ps, state1%pmid, landm, icefrac, snowh )
+   call cldefr( lchnk, ncol, state1%t, rel, rei, state1%ps, state1%pmid, landfrac, icefrac, snowh )
 
    call outfld('REL', rel, pcols, lchnk)
    call outfld('REI', rei, pcols, lchnk)

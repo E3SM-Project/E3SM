@@ -34,13 +34,12 @@ module comsrf
 !
 ! Public data
 !
-  public landm, sgh, sgh30, fv, ram1, soilw, fsns, fsds
+  public sgh, sgh30, fv, ram1, soilw, fsns, fsds
   public fsnt, flns, flnt, srfrpdel, psm1, prcsnw
   public trefmxav, trefmnav
 
-  real(r8), allocatable:: landm(:,:)     ! land/ocean/sea ice flag
-  real(r8), allocatable:: sgh(:,:)       ! land/ocean/sea ice flag
-  real(r8), allocatable:: sgh30(:,:)     ! land/ocean/sea ice flag
+  real(r8), allocatable:: sgh(:,:)       ! Subgrid surface roughness
+  real(r8), allocatable:: sgh30(:,:)     ! Subgrid surface roughness
   real(r8), allocatable:: fv(:,:)        ! needed for dry dep velocities (over land)
   real(r8), allocatable:: ram1(:,:)      ! needed for dry dep velocities (over land)
   real(r8), allocatable:: soilw(:,:)     ! needed for dust emission (over land)
@@ -99,7 +98,6 @@ CONTAINS
     integer k,c      ! level, constituent indices
 
     if(.not. (adiabatic .or. ideal_phys)) then
-       allocate (landm   (pcols,begchunk:endchunk))
        allocate (sgh     (pcols,begchunk:endchunk))
        allocate (sgh30   (pcols,begchunk:endchunk))
 
@@ -121,7 +119,6 @@ CONTAINS
        ! elements of the array outside valid surface points must be set to
        ! zero if these fields are to be written to netcdf history files.
        !
-       landm    (:,:) = nan
        sgh      (:,:) = nan
        sgh30    (:,:) = nan
        fsns     (:,:) = nan

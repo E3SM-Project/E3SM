@@ -96,7 +96,7 @@ end subroutine cld_sediment_readnl
 
   subroutine cld_sediment_vel (ncol,                               &
        icefrac , landfrac, ocnfrac , pmid    , pdel    , t       , &
-       cloud   , cldliq  , cldice  , pvliq   , pvice   , landm, snowh)
+       cloud   , cldliq  , cldice  , pvliq   , pvice   , snowh)
 
 !----------------------------------------------------------------------
 
@@ -147,7 +147,6 @@ end subroutine cld_sediment_readnl
 
     real(r8), intent(out) :: pvliq (pcols,pverp)    ! vertical velocity of cloud liquid drops (Pa/s)
     real(r8), intent(out) :: pvice (pcols,pverp)    ! vertical velocity of cloud ice particles (Pa/s)
-    real(r8), intent(in) :: landm(pcols)            ! land fraction ramped over water
 ! -> note that pvel is at the interfaces (loss from cell is based on pvel(k+1))
 
 ! Local variables
@@ -183,7 +182,7 @@ end subroutine cld_sediment_readnl
     pvliq(:ncol,:) = 0._r8
 
     ! get effective radius of liquid drop
-    call reltab(ncol, t, landfrac, landm, icefrac, rel, snowh)
+    call reltab(ncol, t, landfrac, icefrac, rel, snowh)
 
     do k = 1,pver
        do i = 1,ncol
