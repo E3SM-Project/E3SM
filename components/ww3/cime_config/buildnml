@@ -48,7 +48,7 @@ def buildnml(case, caseroot, compname):
     # Verify wav grid is supported
     #--------------------------------------------------------------------
 
-    wav_grid_supported = ("null", "wQU225EC60to30", "wQU100")
+    wav_grid_supported = ("null", "wQU225EC60to30sp32x36", "wQU225EC60to30", "wQU100")
     expect(wav_grid in wav_grid_supported, "WAV_GRID '{}' is not supported in ww3. Choose from: '{}'".format(wav_grid,' ,'.join(wav_grid_supported)))
 
     #--------------------------------------------------------------------

@@ -154,6 +154,10 @@ contains
             call ocn_stokes_drift_evaluate(zMid(k,iCell), zonalWavenumberCoeff, meridionalWavenumberCoeff, &
                                            stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))
 
+            !! test surface Stokes drift reconstruction
+            !call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+            !                               stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))
+
          end do
 
       end do 
@@ -217,28 +221,32 @@ contains
 
       !-----------------------------------------------------------------
 
-      ! Calculate angle between wind and Langmuir cells
+      ! Compute Stokes drift from wavenumber partitioned surface values
 
       call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
                                      stokesDriftZonalSurface, stokesDriftMeridionalSurface)
 
-      theta_ww = atan2(stokesDriftMeridionalSurface, stokesDriftZonalSurface) - atan2(windStressMeridional, windStressZonal)
+      call ocn_stokes_drift_average(0.2_RKIND*boundaryLayerDepth, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                    stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg)
+
+      ! Calulate Stokes drift mangnitudes
 
       stokesDriftMagnitudeSurface = sqrt(stokesDriftZonalSurface**2 + stokesDriftMeridionalSurface**2)
+
+      stokesDriftMagnitudeMLAvg = sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2)
+
+
+      ! Calculate angle between wind and Langmuir cells
+
+      theta_ww = atan2(stokesDriftMeridionalMLAvg, stokesDriftZonalMLAvg) - atan2(windStressMeridional, windStressZonal)
 
       denominator = surfaceFrictionVelocity/(0.4_RKIND*max(stokesDriftMagnitudeSurface,1e-10_RKIND)) &
                   * log(max(abs(boundaryLayerDepth/(4.0_RKIND*max(significantWaveHeight,1e-10_RKIND))),1.0_RKIND)) &
                   + cos(theta_ww)
       alpha = atan(sin(theta_ww)/denominator)
 
+
       ! Calculate surface layer averaged, projected Langmuir number
-
-      call ocn_stokes_drift_average(0.2_RKIND*boundaryLayerDepth, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
-                                    stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg)
-
-      theta_ww = atan2(stokesDriftMeridionalMLAvg, stokesDriftZonalMLAvg) - atan2(windStressMeridional, windStressZonal)
-
-      stokesDriftMagnitudeMLAvg = sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2)
 
       langmuirNumber = sqrt(surfaceFrictionVelocity*abs(cos(alpha)) &
                             / max(stokesDriftMagnitudeMLAvg*abs(cos(theta_ww-alpha)),1e-10_RKIND))

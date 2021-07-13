@@ -303,10 +303,19 @@ if ($NML_TYPE eq "ww3") {
 }
 if ($NML_TYPE eq "ww3_grid") {
 
-    add_default($nl, 'spectrum%xfr');
-    add_default($nl, 'spectrum%freq1');
-    add_default($nl, 'spectrum%nk');
-    add_default($nl, 'spectrum%nth');
+    if (${WAV_GRID} eq "wQU225EC60to30sp32x36") {
+       add_default($nl, 'spectrum%xfr', 'val'=>1.10);
+       add_default($nl, 'spectrum%freq1', 'val'=>0.05);
+       add_default($nl, 'spectrum%nk', 'val'=>32);
+       add_default($nl, 'spectrum%nth', 'val'=>36);
+    }
+    else {
+       add_default($nl, 'spectrum%xfr');
+       add_default($nl, 'spectrum%freq1');
+       add_default($nl, 'spectrum%nk');
+       add_default($nl, 'spectrum%nth');
+    }
+
     add_default($nl, 'spectrum%thoff');
 
     add_default($nl, 'run%fldry');

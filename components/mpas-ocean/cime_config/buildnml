@@ -791,6 +791,9 @@ def buildnml(case, caseroot, compname):
         if ocn_wave:
             lines.append('    <var name="stokesDriftZonal"/>')
             lines.append('    <var name="stokesDriftMeridional"/>')
+            lines.append('    <var name="significantWaveHeight"/>')
+            lines.append('    <var name="langmuirNumber"/>')
+
 
         lines.append('</stream>')
         lines.append('')
