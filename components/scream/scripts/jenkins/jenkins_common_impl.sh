@@ -35,9 +35,13 @@ if [ $skip_testing -eq 0 ]; then
 
   SUBMIT="--submit"
   AUTOTESTER_CMAKE=""
+  # If this is a nightly run, we do NOT want this script to stop on the first failed command
+  # since that will prevent subsequent dashboard submissions
+  set +e
   if [ -n "$PULLREQUESTNUM" ]; then
       SUBMIT="" # We don't submit AT runs
       AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
+      set -e # This is an AT run, not nightly, so it's OK to stop on first fail
   fi
 
   # The special string "AUTO" makes test-all-scream look for a baseline dir in the machine_specs.py file.
