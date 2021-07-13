@@ -367,7 +367,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine Reset(mode, budg_fluxL, budg_fluxG, budg_fluxN, budg_stateL, budg_stateG)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
     !
     implicit none
     !
@@ -376,7 +376,7 @@ contains
     !
     integer :: year, mon, day, sec
     integer :: ip
-    character(*),parameter :: subName = '(WaterBudget_Reset) '
+    character(*),parameter :: subName = '(CNPBudget_Reset) '
 
     if (.not.present(mode)) then
        call get_curr_date(year, mon, day, sec)
@@ -410,6 +410,11 @@ contains
              budg_fluxN(:,ip)  = 0.0_r8
              budg_stateL(:,ip) = 0.0_r8
              budg_stateG(:,ip) = 0.0_r8
+          endif
+          if (ip==p_inf .and. get_nstep()==1) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
           endif
        enddo
 
