@@ -13,6 +13,7 @@
 ! !USES:
   use shr_kind_mod,    only:  r8 => shr_kind_r8
   use cam_abortutils,  only:  endrun
+  use shr_log_mod ,    only: errMsg => shr_log_errMsg
   use cam_logfile,     only:  iulog
   use chem_mods,       only:  gas_pcnst
   use physconst,       only:  pi
@@ -3697,20 +3698,28 @@ time_loop: &
       !^^^^^^^^^^^^^^^^^^ BSINGH - ENDS REFACTOR ^^^^^^^^^^^^^^^^^^^^^^^
 
 
-
+      !--------------------------------------------------------------------
       !BSINGH- original comments to be adjusted
-! calculate variable used in the renamingm mode" of each renaming pair
-! also compute dry-volume change during the continuous growth process
+      ! calculate variable used in the renamingm mode" of each renaming pair
+      ! also compute dry-volume change during the continuous growth process
 
-! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
-! used for avoiding overflow.  it corresponds to dp = 1 nm
-! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
+      ! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
+      ! used for avoiding overflow.  it corresponds to dp = 1 nm
+      ! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
 
       !Original Comments ENDS
+      !--------------------------------------------------------------------
 
-! compute aerosol dry-volume for the "from mode" of each renaming pair
-! also compute dry-volume change during the continuous growth process
-      do n = 1, ntot_amode
+      ! compute aerosol dry-volume for the "from mode" of each renaming pair
+      ! also compute dry-volume change during the continuous growth process
+
+      !Compute aerosol dry volume
+
+      call compute_dryvol_change_in_src_mode(ntot_amode, naer, mtoo_renamexf, &
+           iscldy_subarea, qaer_cur, qaer_del_grow4rnam, qaercw_cur, qaercw_del_grow4rnam, &
+           dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
+#if 0
+            do n = 1, ntot_amode
          mtoo = mtoo_renamexf(n)
          if (mtoo <= 0) cycle
 
@@ -3735,8 +3744,7 @@ time_loop: &
          end if ! ( iscldy_subarea ) then
 
       end do
-
-
+#endif
 !
 !   loop over renaming pairs
 !
@@ -3992,31 +4000,131 @@ mainloop1_ipair:  do n = 1, ntot_amode
     !----------------------------------------------------------------------
     !----------------------------------------------------------------------
 
-      subroutine compute_size_factor(imode, size_factor)
-        ! Compute size factor for a mode
-        implicit none
+    subroutine compute_size_factor(imode, size_factor)
+      ! Compute size factor for a mode
+      implicit none
 
-        integer,  intent(in) :: imode     !mode number
-        real(r8), intent(inout) :: size_factor(:) !size factor
+      integer,  intent(in) :: imode     !mode number
+      real(r8), intent(inout) :: size_factor(:) !size factor
 
-        size_factor(imode) = (pi/6.)*exp(4.5*(alnsg_aer(imode)**2))
+      size_factor(imode) = (pi/6.)*exp(4.5*(alnsg_aer(imode)**2))
 
-      end subroutine compute_size_factor
+    end subroutine compute_size_factor
+
+    !----------------------------------------------------------------------
+    !----------------------------------------------------------------------
+
+    pure function compute_vol_to_num_ratio(imode, diameter) result(v2n)
+      !compute volume to number ratio for a mode
+      implicit none
+      integer,  intent(in) :: imode
+      real(r8), intent(in) :: diameter(:) ![m]
+
+      real(r8) :: v2n !return value
+
+      v2n = ( 1._r8 / ( (pi/6._r8)* &
+           (diameter(imode)**3._r8)*exp(4.5_r8*alnsg_aer(imode)**2._r8) ) )
+
+    end function compute_vol_to_num_ratio
+
+    !----------------------------------------------------------------------
+    !----------------------------------------------------------------------
+
+    subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
+         iscldy, qaer_cur, qaer_del_grow4rnam, qaercw_cur, qaercw_del_grow4rnam, &
+         dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
+
+      integer,  intent(in):: nmode ! total number of modes
+      integer,  intent(in):: nspec !total number of species in a mode
+      integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
+
+      logical,  intent(in) :: iscldy ! true if it is a cloudy cell
+
+      real(r8), intent(in) :: qaer_cur(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
+      real(r8), intent(in) :: qaer_del_grow4rnam(:,:) !growth in mmr [kmol/kmol]
+
+      real(r8), intent(in), optional :: qaercw_cur(:,:)
+      real(r8), intent(in), optional :: qaercw_del_grow4rnam(:,:)
+
+      !intent-outs
+      real(r8), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
+      real(r8), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
+
+      integer :: imode
+      integer :: dest_mode
+
+      !BALLI- Add comments about overall
 
 
-      pure function compute_vol_to_num_ratio(imode, diameter) result(v2n)
-        !compute volume to number ratio for a mode
-        implicit none
-        integer,  intent(in) :: imode
-        real(r8), intent(in) :: diameter(:) ![m]
+      do imode = 1, nmode
+         !compute dry volume only for modes participating in inter-modal transfer
+         dest_mode = dest_mode_of_mode(imode)
+         if (dest_mode <= 0) cycle
 
-        real(r8) :: v2n !return value
+         !compute dry volumes (before growth) and its change for interstitial aerosols
+         call dryvolume_change(imode, nspec, qaer_cur, qaer_del_grow4rnam, & !input
+              dryvol_a(imode), deldryvol_a(imode)) !output
 
-        v2n = ( 1._r8 / ( (pi/6._r8)* &
-             (diameter(imode)**3._r8)*exp(4.5_r8*alnsg_aer(imode)**2._r8) ) )
+         if ( iscldy ) then ! if this grid cell has cloud
+            !if a grid cell is cloudy, clloud borne quantities has to be present
+            if(.not. present(qaercw_cur) .or. .not. present(qaercw_del_grow4rnam)) then
+               call endrun('If a grid cell is cloudy, dryvol_c and deldryvol_c should be present'//errmsg(__FILE__,__LINE__))
+            endif
+            !compute dry volume (before growth) and its change for cloudborne aerosols
+            call dryvolume_change(imode, nspec, qaercw_cur, qaercw_del_grow4rnam, &!input
+                 dryvol_c(imode), deldryvol_c(imode)) !output
+         end if !iscldy then
+      end do
 
-      end function compute_vol_to_num_ratio
+    end subroutine compute_dryvol_change_in_src_mode
 
+    !----------------------------------------------------------------------
+    !----------------------------------------------------------------------
+
+    subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, &!input
+         dryvol, deldryvol) !output
+
+      !intent-ins
+      integer,  intent(in) :: imode           !current mode number
+      integer,  intent(in) :: nspec           !number of species in the current mode
+      real(r8), intent(in) :: q_vmr(:,:)        !volume mixing ratio [kmol/kmol] FIXME: units needs to be reverified
+      real(r8), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
+
+      !intent-outs
+      real(r8), intent(out) :: dryvol, deldryvol !dry volume (before growth) and its grwoth [m3/kmol]
+
+      !local variables
+      integer  :: ispec, s_spec_ind, e_spec_ind
+      real(r8) :: mass_2_vol(nspec) ! converts specie mass to dry volume !DO NOT PORT, we will construct it during "init"
+      real(r8) :: tmp_dryvol, tmp_del_dryvol
+
+      !Temporary variable name change- do not port
+      mass_2_vol(:) = fac_m2v_aer(:)
+      !
+
+      s_spec_ind = 1     !start specie index for this mode [These will be subroutine args]
+      e_spec_ind = nspec !end specie index for this mode
+
+      !initialize tmp accumulators
+      tmp_dryvol     = 0.0_r8 !dry volume accumulator
+      tmp_del_dryvol = 0.0_r8 !dry volume growth(change) accumulator
+
+      !Notes on mass_2_vol factor:Units:[m3/kmol-s]; where kmol-s is the amount of a specie "s"
+      ! This factor is obtained by  (molecular_weight/density) of a specie. That is,
+      ! [ (kg/kmol-s) / (kg/m3) ]; where molecular_weight has units [kg/kmol-s] and density units are [kg/m3]
+      ! which results in the units of m3/kmol-s
+
+      do ispec = s_spec_ind, e_spec_ind
+         !Multiply by mass_2_vol[m3/kmol-s] to convert q_vmr[kmol-s/kmol-air]) to volume units[m3/kmol-air]
+         tmp_dryvol     = tmp_dryvol     + q_vmr(ispec,imode)*mass_2_vol(ispec)        !compute current dryvolume
+         !accumulate the "grwoth" in volume units as well
+         tmp_del_dryvol = tmp_del_dryvol + q_del_growth(ispec,imode)*mass_2_vol(ispec) !compute dryvolume growth
+      end do
+
+      dryvol    = tmp_dryvol-tmp_del_dryvol ! This is dry volume before the growth
+      deldryvol = tmp_del_dryvol          ! change in dry volume due to growth
+
+    end subroutine dryvolume_change
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
