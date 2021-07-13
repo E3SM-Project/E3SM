@@ -929,6 +929,9 @@ ifdef MPAS_EXTERNAL_CPPFLAGS
 	override CPPFLAGS += $(MPAS_EXTERNAL_CPPFLAGS)
 endif
 ####################################################
+ifeq "$(USE_PIO2)" "true"
+	override LIBS += -lstdc++
+endif
 
 ifeq "$(CONTINUE)" "true"
 all: mpas_main
