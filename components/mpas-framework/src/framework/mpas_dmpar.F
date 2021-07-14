@@ -93,6 +93,7 @@ include 'mpif.h'
    public :: mpas_dmpar_sum_real_array
    public :: mpas_dmpar_min_real_array
    public :: mpas_dmpar_max_real_array
+   public :: mpas_dmpar_sum_complex_array
    public :: mpas_dmpar_scatter_ints
    public :: mpas_dmpar_get_index_range
    public :: mpas_dmpar_compute_index_range
@@ -1358,6 +1359,39 @@ include 'mpif.h'
       end if
 
    end subroutine mpas_dmpar_max_real_array!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_sum_complex_array
+!
+!> \brief MPAS dmpar complex array sum routine.
+!> \author Steven Brus
+!> \date   07/13/21
+!> \details
+!>  This routine computes the sum array of complex values  across all processors in a communicator, from some input arrays.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_sum_complex_array(dminfo, nElements, inArray, outArray)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: nElements !< Input: Length of arrays
+      complex(kind=RKIND), dimension(nElements), intent(in) :: inArray !< Input: Array of reals
+      complex(kind=RKIND), dimension(nElements), intent(out) :: outArray !< Output: Array of real sums
+
+      integer :: mpi_ierr, threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+#ifdef _MPI
+         call MPI_Allreduce(inArray, outArray, nElements, MPI_DOUBLE_COMPLEX, MPI_SUM, dminfo % comm, mpi_ierr)
+#else
+         outArray = inArray
+#endif
+      end if
+
+   end subroutine mpas_dmpar_sum_complex_array!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_scatter_ints
