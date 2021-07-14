@@ -95,6 +95,15 @@ void sgs_scalars() {
       diffuse_scalar(sgs_field_diag,1,micro_field,k,fluxbmk,k,fluxtmk,k,mkdiff,k,mkwsb,k);
     }
   }
+
+#if defined(MMF_ESMT)
+  for (int k=0; k<nmicro_fields; k++) {
+    if (k==index_water_vapor || (docloud && flag_precip(k)!=1) || (doprecip && flag_precip(k)==1)) {
+      diffuse_scalar(sgs_field_diag,1,u_esmt,k,fluxb_u_esmt,k,fluxt_u_esmt,k,u_esmt_diff,k,u_esmt_sgs,k);
+      diffuse_scalar(sgs_field_diag,1,v_esmt,k,fluxb_v_esmt,k,fluxt_v_esmt,k,v_esmt_diff,k,v_esmt_sgs,k);
+    }
+  }
+#endif
 }
 
 
