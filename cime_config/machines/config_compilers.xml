@@ -1136,6 +1136,9 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cori-knl" COMPILER="intel">
   <ALBANY_PATH>/global/homes/m/mperego/e3sm-software/albany-trilinos/albany-install-2021-01-05</ALBANY_PATH>
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
