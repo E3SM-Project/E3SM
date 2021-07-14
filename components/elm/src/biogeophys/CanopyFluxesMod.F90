@@ -46,6 +46,7 @@ module CanopyFluxesMod
   use TemperatureType , only : temperature_vars
   use perfMod_GPU
   use timeinfoMod
+  use spmdmod          , only: masterproc
   !
   ! !PUBLIC TYPES:
   implicit none

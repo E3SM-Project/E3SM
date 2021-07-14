@@ -17,7 +17,7 @@ module ncdio_pio
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc, mpicom, iam, npes
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
-  use elm_varcon     , only : grlnd, nameg, namel, namec, namep
+  use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use elm_varcon     , only : spval,ispval
   use elm_varctl     , only : single_column, iulog
   use shr_sys_mod    , only : shr_sys_flush
@@ -105,8 +105,8 @@ module ncdio_pio
 
      !DIMS 0,1
      module procedure ncd_io_{DIMS}d_log_glob
-
-     !DIMS 0,1,2,3
+     
+     !DIMS 0,1,2,3,4  
      !TYPE int,double
      module procedure ncd_io_{DIMS}d_{TYPE}_glob
 
@@ -115,7 +115,7 @@ module ncdio_pio
      module procedure ncd_io_{DIMS}d_{TYPE}_glob
 
      !TYPE int,double
-     !DIMS 1,2,3
+     !DIMS 1,2,3,4
      module procedure ncd_io_{DIMS}d_{TYPE}
 
      !TYPE logical
@@ -150,8 +150,8 @@ module ncdio_pio
      type(IO_desc_t)   :: iodesc
      integer           :: type
      integer           :: ndims
-     integer           :: dims(4)
-     integer           :: dimids(4) 
+     integer           :: dims(5)
+     integer           :: dimids(5) 
   end type iodesc_plus_type
   integer,parameter      ,private :: max_iodesc = 100
   integer                ,private :: num_iodesc = 0
@@ -500,13 +500,7 @@ contains
        ier = pio_inq_dimlen(ncid, dimid, ni)
        if (ier == PIO_NOERR) nj = 1
     end if
-    
-    ier = pio_inq_dimid (ncid, 'topounit', dimid)
-    if (ier == PIO_NOERR) then
-       ier = pio_inq_dimlen(ncid, dimid, ni)
-       if (ier == PIO_NOERR) nj = 1
-    end if       
-
+   
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
     if (ni == 0 .or. nj == 0) then
@@ -944,7 +938,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: n                   ! indices
-    integer :: ldimid(4)           ! local dimid
+    integer :: ldimid(4)           ! local dimid 
     integer :: dimid0(1)           ! local dimid
     integer :: status              ! error status 
     integer :: lxtype              ! local external type (in case logical variable)
@@ -1263,7 +1257,7 @@ contains
   end subroutine ncd_io_{DIMS}d_log_glob
 
   !------------------------------------------------------------------------
-  !DIMS 0,1,2,3
+  !DIMS 0,1,2,3,4
   !TYPE int,double
   subroutine ncd_io_{DIMS}d_{TYPE}_glob(varname, data, flag, ncid, readvar, nt, posNOTonfile) 
     !
@@ -1282,7 +1276,7 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: m
     integer           :: varid              ! netCDF variable id
-    integer           :: start(4), count(4) ! output bounds
+    integer           :: start(5), count(5) ! output bounds
     integer           :: status             ! error code
     logical           :: varpresent         ! if true, variable is on tape
     logical           :: found              ! if true, found lat/lon dims on file
@@ -1349,6 +1343,13 @@ contains
           start(2) = 1  ; count(2) = size(data,dim=2)
           start(3) = 1  ; count(3) = size(data,dim=3)
           start(4) = nt ; count(4) = 1
+          status = pio_put_var(ncid, varid, start, count, data)
+#elif ({DIMS}==4) 
+          start(1) = 1  ; count(1) = size(data,dim=1)
+          start(2) = 1  ; count(2) = size(data,dim=2)
+          start(3) = 1  ; count(3) = size(data,dim=3)
+          start(4) = 1  ; count(4) = size(data,dim=4)
+          start(5) = nt ; count(5) = 1
           status = pio_put_var(ncid, varid, start, count, data)
 #endif
        else
@@ -1863,8 +1864,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: ndims_iod  ! ndims iodesc for var
     integer                          :: varid      ! varid
     integer                          :: n          ! index      
-    integer                          :: dims(4)    ! dim sizes       
-    integer                          :: dids(4)    ! dim ids
+    integer                          :: dims(5)    ! dim sizes       
+    integer                          :: dids(5)    ! dim ids
     integer                          :: iodnum     ! iodesc num in list
     integer                          :: start(5)   ! netcdf start index
     integer                          :: count(5)   ! netcdf count index
@@ -1959,6 +1960,127 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
   end subroutine ncd_io_3d_{TYPE}
 
+  !-----------------------------------------------------------------------
+
+  !TYPE int,double
+  subroutine ncd_io_4d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar)
+    !
+    ! !DESCRIPTION:
+    ! Netcdf i/o of 4d 
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(inout) :: ncid         ! netcdf file id
+    character(len=*) , intent(in)  :: flag            ! 'read' or 'write'
+    character(len=*) , intent(in)  :: varname         ! variable name
+    {VTYPE}          , pointer     :: data(:,:,:,:)     ! local decomposition input data
+    character(len=*) , intent(in)  :: dim1name        ! dimension 1 name
+    integer, optional, intent(in)  :: nt              ! time sample index
+    logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
+    !
+    ! !LOCAL VARIABLES:
+    integer                          :: ndim1,ndim2       
+    character(len=8)                 :: clmlevel   ! clmlevel
+    character(len=32)                :: dimname    ! temporary      
+    integer                          :: status     ! error status
+    integer                          :: ndims      ! ndims total for var
+    integer                          :: ndims_iod  ! ndims iodesc for var
+    integer                          :: varid      ! varid
+    integer                          :: n          ! index      
+    integer                          :: dims(5)    ! dim sizes       
+    integer                          :: dids(5)    ! dim ids
+    integer                          :: iodnum     ! iodesc num in list
+    integer                          :: start(6)   ! netcdf start index
+    integer                          :: count(6)   ! netcdf count index
+    logical                          :: varpresent ! if true, variable is on tape
+    type(iodesc_plus_type) , pointer :: iodesc_plus
+    type(var_desc_t)                 :: vardesc
+    character(len=*),parameter :: subname='ncd_io_4d_{TYPE}' ! subroutine name
+    !-----------------------------------------------------------------------
+
+    clmlevel = dim1name      
+
+    if (masterproc .and. debug > 1) then
+       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
+    end if
+
+    if (flag == 'read') then
+
+       call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
+       if (varpresent) then
+          if (single_column) then
+             start(:) = 1; count(:) = 1
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
+             if (present(nt)) then
+               n=6
+               if (start(6) .eq. 0) n=5
+               start(n) = nt ; count(n) = 1
+             endif
+             
+             status = pio_get_var(ncid, vardesc, start, count, data)
+          else
+             status = pio_inq_varndims(ncid, vardesc, ndims)
+             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_dimname(ncid, dids(ndims), dimname)
+             if (ndims == 0) then
+                write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
+                call shr_sys_abort(errMsg(__FILE__, __LINE__))
+             end if
+             if ('time' == trim(dimname)) then
+                ndims_iod = ndims - 1
+             else
+                ndims_iod = ndims
+             end if
+             do n = 1,ndims_iod
+                status = pio_inq_dimlen(ncid,dids(n),dims(n))
+             enddo
+             call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+                  PIO_{TYPE}, iodnum)
+             iodesc_plus => iodesc_list(iodnum)
+             if (present(nt)) then
+                call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
+             end if
+             call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
+          end if
+       end if
+       if (present(readvar)) readvar = varpresent
+
+    else if (flag == 'write') then
+
+       call ncd_inqvid(ncid, varname ,varid, vardesc)
+       status = pio_inq_varndims(ncid, vardesc, ndims)
+       status = pio_inq_vardimid(ncid, vardesc , dids)
+       if (ndims == 0) then
+          write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
+          call shr_sys_abort(errMsg(__FILE__, __LINE__))
+       end if
+       status = pio_inq_dimname(ncid,dids(ndims),dimname)
+       if ('time' == trim(dimname)) then
+          ndims_iod = ndims - 1
+       else
+          ndims_iod = ndims
+       end if
+       do n = 1,ndims_iod
+          status = pio_inq_dimlen(ncid,dids(n),dims(n))
+       enddo
+       call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+            PIO_{TYPE}, iodnum)
+       iodesc_plus => iodesc_list(iodnum)
+       if (present(nt)) then
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
+       end if
+       call pio_write_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
+
+    else
+
+       if (masterproc) then
+          write(iulog,*) subname,' error: unsupported flag ',trim(flag)
+          call shr_sys_abort(errMsg(__FILE__, __LINE__))
+       endif
+
+    endif
+
+  end subroutine ncd_io_4d_{TYPE}
+
   !------------------------------------------------------------------------
 
   subroutine scam_field_offsets( ncid, dim1name, vardesc, start, count, &
@@ -1992,9 +2114,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     real(r8) , pointer   :: pfts1dlat(:)      ! holds pfts1d_jxy var
     real(r8) , pointer   :: land1dlon(:)      ! holds land1d_ixy var
     real(r8) , pointer   :: land1dlat(:)      ! holds land1d_jxy var
+    real(r8) , pointer   :: topo1dlon(:)      ! holds topo1d_ixy var
+    real(r8) , pointer   :: topo1dlat(:)      ! holds topo1d_ixy var
     integer, allocatable :: cols(:)           ! grid cell columns for scam
     integer, allocatable :: pfts(:)           ! grid cell pfts for scam
     integer, allocatable :: landunits(:)      ! grid cell landunits for scam
+    integer, allocatable :: topounits(:)      ! grid cell topounits for scam
     integer, allocatable :: dids(:)           ! dim ids
     integer              :: varid             ! netCDF variable id
     integer              :: status            ! return code
@@ -2039,7 +2164,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if ( trim(dimname)=='nj'.or. trim(dimname)=='lat'.or. trim(dimname)=='lsmlat') then
           start(i)=latidx
           count(i)=1
-       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell' .or. trim(dimname)=='topounit') then
+       !else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell' .or. trim(dimname)=='topounit') then
+       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell') then   
           start(i)=lonidx
           count(i)=1
        else if ( trim(dimname)=='column') then
@@ -2146,6 +2272,42 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           deallocate (land1dlon)
           deallocate (land1dlat)
           deallocate (landunits)
+
+          start(i) = data_offset
+          count(i) = ndata
+       else if ( trim(dimname)=='topounit') then
+
+          allocate (topo1dlon(dimlen))
+          allocate (topo1dlat(dimlen))
+          allocate (topounits(dimlen))
+
+          status = pio_inq_varid(ncid, 'topo1d_lon', varid)
+          status = pio_get_var(ncid, varid, topo1dlon)
+
+          status = pio_inq_varid(ncid, 'topo1d_lat', varid)
+          status = pio_get_var(ncid, varid, topo1dlat)
+
+          topounits(:) = huge(1)
+          data_offset  = huge(1)
+          ii     = 1
+          ndata = 0
+          do cc = 1, dimlen
+             if (topo1dlon(cc) == closelon.and.topo1dlat(cc) == closelat) then
+                topounits(ii)=cc
+                ndata  =ii
+                ii=ii+1
+             end if
+          end do
+          if (ndata == 0) then
+             write(iulog,*)'couldnt find any topounits for this latitude',closelat,' and longitude ',closelon
+             call shr_sys_abort('ERROR:: no topounits for this position'//errMsg(__FILE__, __LINE__))
+          else
+             data_offset=topounits(1)
+          end if
+
+          deallocate (topo1dlon)
+          deallocate (topo1dlat)
+          deallocate (topounits)
 
           start(i) = data_offset
           count(i) = ndata
