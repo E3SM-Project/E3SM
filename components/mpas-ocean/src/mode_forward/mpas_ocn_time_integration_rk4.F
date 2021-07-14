@@ -692,12 +692,6 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
 
-         ! Compute normalGMBolusVelocity and the tracer transport velocity
-         if (config_use_GM) then
-             call ocn_gm_compute_Bolus_velocity(statePool, &
-                meshPool, scratchPool, timeLevelIn=2)
-         end if
-
          if (config_use_GM) then
             !$omp parallel
             !$omp do schedule(runtime) 
@@ -836,6 +830,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, normalVelocityCur
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
+      integer :: iEdge
+      integer, pointer :: nEdges
       logical, pointer :: config_filter_btr_mode
 
       err = 0
@@ -852,12 +848,23 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
+      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
       call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
+
+      if (config_use_GM) then
+            !$omp parallel
+            !$omp do schedule(runtime) 
+            do iEdge = 1, nEdges
+               normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
@@ -894,6 +901,8 @@ module ocn_time_integration_rk4
 
       logical, pointer :: config_filter_btr_mode
 
+      integer :: iEdge
+      integer, pointer :: nEdges
       err = 0
 
       call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
@@ -909,12 +918,23 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
+      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
       call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
+
+      if (config_use_GM) then
+         !$omp parallel
+         !$omp do schedule(runtime) 
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + normalGMBolusVelocity(:,iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
@@ -1174,12 +1194,6 @@ module ocn_time_integration_rk4
       end do
       !$omp end do
       !$omp end parallel
-
-      ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
-      if (config_use_GM) then
-         call ocn_gm_compute_Bolus_velocity(provisStatePool, &
-            meshPool, scratchPool, timeLevelIn=1)
-      end if
 
       if (config_use_GM) then
          !$omp parallel
