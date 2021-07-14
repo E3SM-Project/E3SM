@@ -562,7 +562,7 @@ contains
                                          inLandIceCavity=.false.) / rho_sw
 
            totalFreshWaterTemperatureFlux(iCell) = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
-                                                   seaIceFreshWaterTemperatureFlux(iCell) + icebergFreshWaterFlux(iCell)
+                                                   seaIceFreshWaterTemperatureFlux(iCell) + icebergFreshWaterTemperatureFlux(iCell)
 
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
               + totalFreshWaterTemperatureFlux(iCell)
