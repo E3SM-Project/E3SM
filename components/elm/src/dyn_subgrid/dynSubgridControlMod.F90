@@ -37,8 +37,8 @@ module dynSubgridControlMod
   type, public :: dyn_subgrid_control_type
 
      character(len=256)  :: flanduse_timeseries ! transient landuse dataset
-     logical, pointer :: do_transient_pfts   ! whether to apply transient natural PFTs from dataset
-     logical,pointer :: do_transient_crops  ! whether to apply transient crops from dataset
+     logical :: do_transient_pfts   ! whether to apply transient natural PFTs from dataset
+     logical :: do_transient_crops  ! whether to apply transient crops from dataset
      logical :: do_harvest          ! whether to apply harvest from dataset
 
      ! The following is only meant for testing: Whether area changes are allowed at times

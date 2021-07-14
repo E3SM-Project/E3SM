@@ -707,9 +707,9 @@ end subroutine hist_update_hbuf_field_1d_gpu
        end select
     end if
 
-    if (field_allocated) then
-       deallocate(field)
-    end if
+    !if (field_allocated) then
+    !   deallocate(field)
+    !end if
   end associate
   end subroutine hist_update_hbuf_field_2d_gpu
 
