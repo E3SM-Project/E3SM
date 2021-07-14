@@ -152,7 +152,7 @@ cat << EOF >> user_nl_eam
  nhtfrq = 0,-24,-6,-1,-3
 
  fincl1 = 'TVQ','TUQ','U200','U850'
- fincl2 = 'PRECC','PRECT','U200','V200','TMQ','U850','V850' ! h1 daily
+ fincl2 = 'PRECC','PRECT','U200','V200','TMQ','FLUT','U850','V850' ! h1 daily
  fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT'  ! h2 6-hourly
  fincl4 = 'PRECT','TMQ'  ! h3 hourly
 
