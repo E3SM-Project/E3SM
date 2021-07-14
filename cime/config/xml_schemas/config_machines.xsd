@@ -37,6 +37,8 @@
   <xs:element name="SAVE_TIMING_DIR" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR_PROJECTS" type="xs:string"/>
   <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
+  <xs:element name="CIME_HTML_ROOT" type="xs:string"/>
+  <xs:element name="CIME_URL_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
   <xs:element name="DOUT_S_ROOT" type="xs:string"/>
@@ -46,6 +48,7 @@
   <xs:element name="GMAKE" type="xs:string"/>
   <xs:element name="GMAKE_J" type="xs:integer"/>
   <xs:element name="TESTS" type="xs:string"/>
+  <xs:element name="NTEST_PARALLEL_JOBS" type="xs:integer"/>
   <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
   <xs:element name="ALLOCATE_SPARE_NODES" type="upperBoolean"/>
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
@@ -56,6 +59,8 @@
   <xs:element name="executable" type="xs:string"/>
   <xs:element name="default_run_exe" type="xs:string"/>
   <xs:element name="default_run_misc_suffix" type="xs:string"/>
+  <xs:element name="run_exe" type="xs:string"/>
+  <xs:element name="run_misc_suffix" type="xs:string"/>
   <xs:element name="RUNDIR" type="xs:string"/>
   <xs:element name="EXEROOT" type="xs:string"/>
   <xs:element name="TEST_TPUT_TOLERANCE" type="xs:string"/>
@@ -120,6 +125,10 @@
         <!-- CIME_OUTPUT_ROOT: Base directory for case output,
              the bld and run directories are written below here -->
         <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
+        <!-- CIME_HTML_ROOT: Base directory for CIME SystemTest output websites-->
+        <xs:element ref="CIME_HTML_ROOT" minOccurs="0" maxOccurs="1"/>
+        <!-- CIME_URL_ROOT: Base URL for CIME SystemTest output websites-->
+        <xs:element ref="CIME_URL_ROOT" minOccurs="0" maxOccurs="1"/>
         <!-- DIN_LOC_ROOT: location of the inputdata directory -->
         <xs:element ref="DIN_LOC_ROOT" minOccurs="1" maxOccurs="1"/>
         <!-- DIN_LOC_ROOT_CLMFORC: optional input location for clm forcing data  -->
@@ -138,6 +147,8 @@
         <xs:element ref="GMAKE_J" minOccurs="0" maxOccurs="1"/>
         <!-- TESTS: (acme only) list of tests to run on this machine -->
         <xs:element ref="TESTS" minOccurs="0" maxOccurs="1"/>
+        <!-- NTEST_PARALLEL_JOBS: number of parallel jobs create_test will launch -->
+        <xs:element ref="NTEST_PARALLEL_JOBS" minOccurs="0" maxOccurs="1"/>
         <!-- BATCH_SYSTEM: batch system used on this machine (none is okay) -->
         <xs:element ref="BATCH_SYSTEM" minOccurs="1" maxOccurs="1"/>
         <!-- ALLOCATE_SPARE_NODES: allocate spare nodes when job is launched default False-->
@@ -179,6 +190,10 @@
       <xs:sequence>
         <xs:element ref="executable"/>
         <xs:element ref="arguments" minOccurs="0"/>
+        <!-- run_exe: The run executable to use; overrides default_run_exe -->
+        <xs:element ref="run_exe" minOccurs="0"/>
+        <!-- run_misc_suffix: the misc run suffix to use; overrides default_run_misc_suffix -->
+        <xs:element ref="run_misc_suffix" minOccurs="0"/>
       </xs:sequence>
       <xs:attribute ref="compiler"/>
       <xs:attribute ref="queue"/>
