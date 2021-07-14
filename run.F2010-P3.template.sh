@@ -152,9 +152,9 @@ cat << EOF >> user_nl_eam
  nhtfrq = 0,-24,-6,-1,-3
 
  fincl1 = 'TVQ','TUQ','U200','U850'
- fincl2 = 'PRECC','PRECT','U200','V200','TMQ'
- fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT'
- fincl4 = 'PRECT','TMQ'
+ fincl2 = 'PRECC','PRECT','U200','V200','TMQ','FLUT','U850','V850' ! h1 daily
+ fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT' !h2 6-hourly
+ fincl4 = 'PRECT','TMQ' ! h3 hourly
 
 ! Below fto save fields over ARM sites for ARM_diags.
 ! When ZM scheme not in use, remove ZMFLXPRC and ZMFLXSNW
@@ -163,16 +163,36 @@ cat << EOF >> user_nl_eam
 
  fincl5lonlat='262.5e_36.6n','204.6e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
 
- mfilt = 1,30,120,240,240
- history_budget = .true.
+ mfilt = 1,30,120,720,240
  
+ history_budget=.false.
+ history_aerosol=.false.
+ history_aero_optics=.false.
+ fexcl1='P3_mtend_NUMLIQ','P3_mtend_NUMRAIN','P3_mtend_Q','P3_mtend_TH','P3_nc2ni_immers_frz_tend',
+ 'P3_nc2nr_autoconv_tend', 'P3_nc_accret_tend','P3_nc_collect_tend','P3_nc_nuceat_tend','P3_nc_selfcollect_tend',
+ 'P3_ncautr','P3_ncshdc', 'P3_ni2nr_melt_tend','P3_ni_nucleat_tend','P3_ni_selfcollect_tend','P3_ni_sublim_tend',
+ 'P3_nr2ni_immers_frz_tend', 'P3_nr_collect_tend','P3_nr_evap_tend','P3_nr_ice_shed_tend','P3_nr_selfcollect_tend',
+ 'P3_qc2qi_hetero_frz_tend', 'P3_qc2qr_accret_tend','P3_qc2qr_autoconv_tend','P3_qc2qr_ice_shed_tend','P3_qccol','P3_qccon','P3_qcevp',
+ 'P3_qcnuc','P3_qi2qr_melt_tend','P3_qi2qv_sublim_tend','P3_qidep','P3_qinuc','P3_qr2qi_immers_frz_tend',
+ 'P3_qr2qv_evap_tend','P3_qrcol','P3_qwgrth','P3_sed_CLDICE','P3_sed_CLDLIQ','P3_sed_CLDRAIN','P3_sed_NUMICE',
+ 'P3_sed_NUMLIQ','P3_sed_NUMRAIN'
 
 EOF
+
 cat >> user_nl_elm <<EOF
-
-finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
+ finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
 
 EOF
+
+if [[ $RESOLUTION =~ "ne120" ]]; then
+
+cat << EOF >> user_nl_elm
+  hist_empty_htapes=.true.
+
+EOF
+
+
+fi
 
 }
 
