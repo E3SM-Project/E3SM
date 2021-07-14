@@ -30,6 +30,8 @@ module filterMod
 
      integer, pointer :: pcropp(:)       ! prognostic crop filter (pfts)
      integer :: num_pcropp               ! number of pfts in prognostic crop filter
+     integer, pointer :: ppercropp(:)    ! prognostic perennial crop filter (pfts)
+     integer :: num_ppercropp            ! number of pfts in prognostic perennial crop filter
      integer, pointer :: soilnopcropp(:) ! soil w/o prog. crops (pfts)
      integer :: num_soilnopcropp         ! number of pfts in soil w/o prog crops
 
@@ -210,6 +212,7 @@ contains
        allocate(this_filter(nc)%nourbanl(bounds%endl-bounds%begl+1))
 
        allocate(this_filter(nc)%pcropp(bounds%endp-bounds%begp+1))
+       allocate(this_filter(nc)%ppercropp(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%soilnopcropp(bounds%endp-bounds%begp+1))
 
        allocate(this_filter(nc)%icemecc(bounds%endc-bounds%begc+1))      
@@ -268,7 +271,7 @@ contains
     !
     ! !USES:
     use decompMod , only : BOUNDS_LEVEL_CLUMP
-    use pftvarcon , only : npcropmin
+    use pftvarcon , only : npcropmin, nppercropmin
     use landunit_varcon, only : istsoil, istcrop, istice_mec
     use column_varcon, only : icol_road_perv
     !
@@ -284,6 +287,8 @@ contains
     integer :: fl          ! lake filter index
     integer :: fnl,fnlu    ! non-lake filter index
     integer :: fs          ! soil filter index
+    integer :: fc, fpc     ! crop and perennial crop filter index
+    integer :: fnc         ! non-crop filter index
     integer :: f, fn       ! general indices
     integer :: g           !gridcell index
     !------------------------------------------------------------------------
@@ -391,24 +396,31 @@ contains
     ! Create prognostic crop and soil w/o prog. crop filters at pft-level
     ! according to where the crop model should be used
 
-    fl  = 0
-    fnl = 0
+    fc  = 0
+    fpc = 0
+    fnc = 0
     do p = bounds%begp,bounds%endp
        if (veg_pp%active(p) .or. include_inactive) then
-          if (veg_pp%itype(p) >= npcropmin) then !skips 2 generic crop types
-             fl = fl + 1
-             this_filter(nc)%pcropp(fl) = p
-          else
+          if (veg_pp%itype(p) < npcropmin) then
              l =veg_pp%landunit(p)
              if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                fnl = fnl + 1
-                this_filter(nc)%soilnopcropp(fnl) = p
+                fnc = fnc + 1
+                this_filter(nc)%soilnopcropp(fnc) = p
+             end if
+          else
+             if (veg_pp%itype(p) < nppercropmin) then
+                fc = fc + 1
+                this_filter(nc)%pcropp(fc) = p
+             else if (veg_pp%itype(p) >= nppercropmin) then
+                fpc = fpc + 1
+                this_filter(nc)%ppercropp(fpc) = p
              end if
           end if
        end if
     end do
-    this_filter(nc)%num_pcropp   = fl
-    this_filter(nc)%num_soilnopcropp = fnl   ! This wasn't being set before...
+    this_filter(nc)%num_pcropp   = fc
+    this_filter(nc)%num_ppercropp   = fpc
+    this_filter(nc)%num_soilnopcropp = fnc   ! This wasn't being set before...
 
     ! Create landunit-level urban and non-urban filters
 

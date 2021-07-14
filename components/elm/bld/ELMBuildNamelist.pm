@@ -1350,7 +1350,7 @@ sub setup_cmdl_maxpft {
   my $val;
   my $var = "maxpft";
   my %maxpatchpft;
-  $maxpatchpft{'.true.'}   = 25;
+  $maxpatchpft{'.true.'}   = 51;
   $maxpatchpft{'.false.'} = 17;
   if ( $opts->{$var} ne "default") {
     $val = $opts->{$var};

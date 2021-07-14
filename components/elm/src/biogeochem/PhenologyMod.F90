@@ -32,6 +32,12 @@ module PhenologyMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_ef, veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
+  use CNCarbonStateType   , only : carbonstate_type
+  use CNCarbonFluxType    , only : carbonflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use CNNitrogenFluxType  , only : nitrogenflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use PhosphorusFluxType  , only : phosphorusflux_type
   !!!Added for gpu timing info
   use timeinfoMod
 
@@ -252,7 +258,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
+       num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
        crop_vars, canopystate_vars, soilstate_vars, &
        cnstate_vars)
     !
@@ -268,6 +274,8 @@ contains
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     integer                  , intent(in)    :: num_pcropp      ! number of prog. crop patches in filter
     integer                  , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
+    integer                  , intent(in)    :: num_ppercropp   ! number of prog perennial crop patches in filter
+    integer                  , intent(in)    :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
     logical                  , intent(in)    :: doalb           ! true if time for sfc albedo calc
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(crop_type)          , intent(inout) :: crop_vars
@@ -302,6 +310,11 @@ contains
             )
     end if
 
+    if (doalb .and. num_ppercropp > 0 ) then
+       call PerennialCropPhenology(num_ppercropp, filter_ppercropp, &
+            crop_vars, cnstate_vars)
+    end if
+
     ! the same onset and offset routines are called regardless of
     ! phenology type - they depend only on onset_flag, offset_flag, bglfr, and bgtr
 
@@ -312,6 +325,11 @@ contains
       call CNCropHarvest(num_pcropp, filter_pcropp, &
            num_soilc, filter_soilc, crop_vars, &
            cnstate_vars)
+   end if
+
+   if (num_ppercropp > 0 ) then
+      call CNPerennialCropHarvest(num_ppercropp, filter_ppercropp, &
+           num_soilc, filter_soilc, crop_vars, cnstate_vars)
    end if
 
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
@@ -1712,7 +1730,9 @@ contains
                   harvdate(p)  = NOT_Harvested
 
                   if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
-                  if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
+                  if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) then
+                          gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
+                  end if
                   if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
 
                   leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
@@ -1910,6 +1930,215 @@ contains
 
   end subroutine CropPhenology
 
+!-----------------------------------------------------------------------
+  subroutine PerennialCropPhenology(num_ppercropp, filter_ppercropp, &
+       crop_vars, cnstate_vars)
+
+    ! !DESCRIPTION:
+    ! Code based on ORCHIDEE-MICT-BIOENERGY model (Li et al., 2018)
+    ! !USES:
+    use shr_const_mod    , only : SHR_CONST_TKFRZ
+    use clm_time_manager , only : get_curr_calday, get_days_per_year
+    use pftvarcon        , only : gddmin, hybgdd
+    use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
+    use elm_varcon       , only : spval, secspday
+    use elm_varctl       , only : iulog
+    !
+    ! !ARGUMENTS:
+    integer              , intent(in)    :: num_ppercropp       ! number of prog perennial crop patches in filter
+    integer              , intent(in)    :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
+    type(crop_type)      , intent(inout) :: crop_vars
+    type(cnstate_type)   , intent(inout) :: cnstate_vars
+    !
+    ! LOCAL VARAIBLES:
+    integer jday      ! julian day of the year
+    integer fp,p      ! patch indices
+    integer c         ! column indices
+    integer g         ! gridcell indices
+    integer h         ! hemisphere indices
+    integer t         ! topographic indices
+    real(r8) dayspyr  ! days per year
+    real(r8) ndays_on ! number of days to fertilize
+    real(r8):: soilt
+    real(r8):: dt
+    !------------------------------------------------------------------------
+
+    associate(                                                          &
+         ivt                =>    veg_pp%itype                        , & ! Input:  [integer  (:) ]  pft vegetation type
+
+         t_soisno           =>    col_es%t_soisno                     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+
+         leaf_long          =>    veg_vp%leaf_long                    , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)
+         froot_long         =>    veg_vp%froot_long                   , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
+         leafcn             =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
+         leafcp             =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
+         fertnitro          =>    veg_vp%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
+
+         t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
+         a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+
+         harvdate           =>    crop_vars%harvdate_patch            , & ! Output: [integer  (:) ]  harvest date
+         harvday            =>    crop_vars%harvday_patch             , & ! Ouptut: [real(r8) ):) ]  harvest day
+         croplive           =>    crop_vars%croplive_patch            , & ! Output: [logical  (:) ]  Flag, true if planted, not harvested
+         crpyld             =>    crop_vars%crpyld_patch              , & ! Output: [real(r8) ):) ]  harvested crop (bu/acre)
+         dmyield            =>    crop_vars%dmyield_patch             , & ! Output: [real(r8) ):) ]  dry matter harvested crop (t/ha)
+
+         bglfr_leaf         =>    cnstate_vars%bglfr_leaf_patch       , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)
+         bglfr_froot        =>    cnstate_vars%bglfr_froot_patch      , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)
+         bgtr               =>    cnstate_vars%bgtr_patch             , & ! Output: [real(r8) (:) ]  background transfer growth rate (1/s)
+         lgsf               =>    cnstate_vars%lgsf_patch             , & ! Output: [real(r8) (:) ]  long growing season factor [0-1]
+         onset_flag         =>    cnstate_vars%onset_flag_patch       , & ! Output: [real(r8) (:) ]  onset flag
+         onset_counter      =>    cnstate_vars%onset_counter_patch    , & ! Output: [real(r8) (:) ]  onset counter
+         onset_gddflag      =>    cnstate_vars%onset_gddflag_patch    , & ! Output: [real(r8) (:) ]  onset growing degree days flag
+         onset_gdd          =>    cnstate_vars%onset_gdd_patch        , & ! Output: [real(r8) (:) ]  onset growing degree days
+         offset_flag        =>    cnstate_vars%offset_flag_patch      , & ! Output: [real(r8) (:) ]  offset flag
+         offset_counter     =>    cnstate_vars%offset_counter_patch   , & ! Output: [real(r8) (:) ]  offset counter
+         gddmaturity        =>    cnstate_vars%gddmaturity_patch      , & ! Output: [real(r8) (:) ]  gdd needed to harvest
+
+         leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
+
+         crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
+
+         fert               =>    veg_nf%fert                         , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         fert_counter       =>    veg_nf%fert_counter                 , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
+
+         leafn_xfer         =>    veg_ns%leafn_xfer                   , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
+
+         crop_seedn_to_leaf =>    veg_nf%crop_seedn_to_leaf           , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level
+
+         leafp_xfer         =>    veg_ps%leafp_xfer                   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
+
+         crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf             & ! Output [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
+         )
+
+      ! get time info
+      dayspyr = get_days_per_year()
+      jday    = get_curr_calday()
+
+      ndays_on = 20._r8 ! number of days to fertilize
+
+      do fp = 1, num_ppercropp     ! prognostic perennial crops loop
+         p = filter_ppercropp(fp)
+         c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
+         h = inhemi(p)
+
+         ! background litterfall and transfer rates; long growing season factor
+         bglfr_leaf(p)  = 0._r8 ! this value changes later in a crop's life cycle
+         bglfr_froot(p) = 0._r8 ! this value changes later in a crop's life cycle
+         bgtr(p)  = 0._r8
+         lgsf(p)  = 0._r8
+
+         ! B.Drewniak - zero our yield calculator
+         crpyld(p)  = 0._r8
+         dmyield(p) = 0._r8
+
+         if (.not. croplive(p)) then
+
+            ! Perennial crop is planted when temperature conditions are met
+            if ( t10(p) /= spval .and. a10tmin(p) /= spval  .and. &
+                 t10(p)     > planttemp(ivt(p))             .and. &
+                 a10tmin(p) > minplanttemp(ivt(p))          .and. &
+                 jday       >= minplantjday(ivt(p),h)       .and. &
+                 jday       <= maxplantjday(ivt(p),h) ) then
+               croplive(p)  = .true.
+               gddmaturity(p) = hybgdd(ivt(p))
+               offset_flag(p) = 1._r8
+               offset_counter(p) = dt
+               harvdate(p) = NOT_Harvested
+               harvday(p) = NOT_Harvested
+
+               leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
+               leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
+               leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
+
+               crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+               crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
+               crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
+            end if
+         end if     ! crop not live
+
+         if (croplive(p)) then
+
+            ! update onset_counter and test for the end of the onset period
+            if (onset_flag(p) == 1.0_r8) then
+               ! decrement counter for onset period
+               onset_counter(p) = onset_counter(p) - dt
+
+               ! fertilizer counter
+               if (fert_counter(p) <= 0._r8) then
+                  fert(p) = 0._r8
+               else ! continue same fert application every timestep
+                  fert_counter(p) = fert_counter(p) - dt
+               end if
+
+               ! if end of the onset period, reset phenology flags and indices
+               if (onset_counter(p) <= 0.0_r8 .and. &
+                   (t10(p) /= spval  .and. t10(p) < senestemp(ivt(p)))) then
+
+                  onset_flag(p) = 0.0_r8
+                  onset_counter(p) = 0.0_r8
+                  offset_flag(p) = 1._r8
+                  offset_counter(p) = dt
+                  if (harvdate(p) >= NOT_Harvested) harvdate(p) = jday
+                  if (harvday(p) >= NOT_Harvested) harvday(p) = jday
+                  croplive(p) = .false.
+                  bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
+                  bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
+
+               end if
+            end if    ! onset flag
+
+            ! test for switching from senescence period to growth period
+            if (offset_flag(p) == 1.0_r8) then
+               ! Test to turn on growing degree-day sum, if off
+               if (onset_gddflag(p) == 0._r8) then
+                  onset_gddflag(p) = 1._r8
+                  onset_gdd(p) = 0._r8
+               end if
+
+               ! if the gdd flag is set, and if the soil is above freezing
+               ! then accumulate growing degree days for onset trigger
+               soilt = t_soisno(c,3)
+               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
+                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               end if
+
+               ! if accumulated gdd has exceeded gdd required for leaf onset
+               ! then set onset flag
+               ! for perennial crops gddmin tracks gdd required for leaf onset
+               if (onset_gdd(p) > gddmin(ivt(p))) then
+
+                  ! Initialize onset counter
+                  onset_flag(p) = 1.0_r8
+                  offset_flag(p) = 0._r8
+                  harvdate(p) = NOT_Harvested
+                  harvday(p) = NOT_Harvested
+                  onset_gddflag(p) = 0.0_r8
+                  onset_gdd(p) = 0.0_r8
+                  onset_counter(p) = min_days_senes(ivt(p)) * secspday
+                  fert_counter(p)  = ndays_on * secspday
+                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                end if
+            end if    ! offset flag
+         else     ! crop not live
+            ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic
+            crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+            crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
+            crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
+            onset_counter(p) = 0._r8
+            leafc_xfer(p) = 0._r8
+            leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
+            leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
+         end if     ! croplive
+
+      end do     ! prognostic perennial crops loop
+
+    end associate
+
+  end subroutine PerennialCropPhenology
+
   !-----------------------------------------------------------------------
   subroutine CropPhenologyInit(bounds)
     !
@@ -1918,7 +2147,7 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use pftvarcon       , only: npcropmin, npcropmax, mnNHplantdate
+    use pftvarcon       , only: npcropmin, npcropmax, nppercropmin, nppercropmax, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
     use clm_time_manager, only: get_calday
@@ -1951,6 +2180,15 @@ contains
     do n = npcropmin, npcropmax
         minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
         maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+    end do
+
+    do n = nppercropmin, nppercropmax
+       minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
+       maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+    end do
+    do n = nppercropmin, nppercropmax
+       minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
+       maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
     end do
 
     ! Figure out what hemisphere each PFT is in
@@ -2321,6 +2559,8 @@ contains
     ! Determines the flux of stored C and N from transfer pools to display
     ! pools during the phenological onset period.
     ! add flux for phosphorus - X.YANG
+    ! !USES:
+    use pftvarcon            , only : percrop
     !
     ! !ARGUMENTS:
       !$acc routine seq
@@ -2401,7 +2641,7 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt) then
+            if (onset_counter(p) == dt .or. percrop(ivt(p)) == 1.0_r8) then
                t1 = 1.0_r8 / dt
             else
                t1 = 2.0_r8 / (onset_counter(p))
@@ -2574,6 +2814,102 @@ contains
 
     end associate
  end subroutine CNCropHarvest
+
+!----------------------------------------------------------------------
+ subroutine CNPerennialCropHarvest (num_ppercropp, filter_ppercropp, num_soilc, filter_soilc, &
+            crop_vars, cnstate_vars)
+   !
+   ! !DESCRIPTION:
+   ! This routine handles harvest for agriculture vegetation types, such as
+   ! corn, soybean, and wheat. This routine allows harvest to be calculated
+   ! instead of in the OffsetLitterfall subroutine. The harvest index is
+   ! determined based on the LPJ model.
+   !
+   ! !ARGUMENTS:
+   integer, intent(in) :: num_ppercropp       ! number of prog perennial crop patches in filter
+   integer, intent(in) :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
+   integer, intent(in) :: num_soilc           ! number of soil columns in filter
+   integer, intent(in) :: filter_soilc(:)     ! soil column filter
+
+    type(crop_type)         ,  intent(inout) :: crop_vars
+    type(cnstate_type)      ,  intent(inout) :: cnstate_vars
+   !
+   ! !LOCAL VARIABLES:
+   ! local pointers to implicit in scalars
+   integer :: p                             ! indices
+   integer :: fp                            ! lake filter pft index
+   real(r8):: t1                            ! temporary variable
+   real(r8):: cgrain                        ! amount of carbon in the grain
+   real(r8):: dt
+   !-------------------------------------------------------------------------
+   associate(&
+   ivt                      => veg_pp%itype                     , & ! Input: [integer (:)]  pft vegetation type
+   offset_flag              => cnstate_vars%offset_flag_patch   , & ! Input: [real(r8) (:)] offset flag
+   offset_counter           => cnstate_vars%offset_counter_patch, & ! Input: [real(r8) (:)] offset days counter
+
+   presharv                 => veg_vp%presharv                  , & ! Input: [real(r8) (:)] proportion of residue harvested
+   fyield                   => veg_vp%fyield                    , & ! Input: [real(r8) (:)] fraction of grain actually harvested
+   convfact                 => veg_vp%convfact                  , & ! Input: [real(r8) (:)] conversation factor from gC/m2 to bu/acre
+
+   leafc                    => veg_cs%leafc                     , & ! Input: [real(r8) (:)] leaf C (gC/m2)
+   livestemc                => veg_cs%livestemc                 , & ! Input: [real(r8) (:)] livestem C (gC/m2)
+   leafn                    => veg_ns%leafn                     , & ! Input: [real(r8) (:)] leaf N (gN/m2)
+   livestemn                => veg_ns%livestemn                 , & ! Input: [real(r8) (:)] livestem N (gN/m2)
+   leafp                    => veg_ps%leafp                     , & ! Input: [real(r8) (:)] leaf P (gP/m2)
+   livestemp                => veg_ps%livestemp                 , & ! Input: [real(r8) (:)] livestem P (gP/m2)
+   cpool_to_livestemc       => veg_cf%cpool_to_livestemc        , & ! Input: [real(r8) (:)] allocation to live stem C (gC/m2/s)
+   cpool_to_leafc           => veg_cf%cpool_to_leafc            , & ! Input: [real(r8) (:)] allocation to leaf C (gC/m2/s)
+   npool_to_leafn           => veg_nf%npool_to_leafn            , & ! Input: [real(r8) (:)] allocation to leaf N (gN/m2/s)
+   npool_to_livestemn       => veg_nf%npool_to_livestemn        , & ! Input: [real(r8) (:)] allocation to live stem N (gN/m2/s)
+   ppool_to_leafp           => veg_pf%ppool_to_leafp            , & ! Input: [real(r8) (:)] allocation to leaf P (gP/m2/s)
+   ppool_to_livestemp       => veg_pf%ppool_to_livestemp        , & ! Input: [real(r8) (:)] allocation to live stem P (gP/m2/s)
+   hrv_leafc_to_prod1c      => veg_cf%hrv_leafc_to_prod1c       , & ! Input: [real(r8) (:)] crop leaf C harvested
+   hrv_livestemc_to_prod1c  => veg_cf%hrv_livestemc_to_prod1c   , & ! Input: [real(r8) (:)] crop live stem C harvested
+   hrv_leafn_to_prod1n      => veg_nf%hrv_leafn_to_prod1n       , & ! Input: [real(r8) (:)] crop leaf N harvested
+   hrv_livestemn_to_prod1n  => veg_nf%hrv_livestemn_to_prod1n   , & ! Input: [real(r8) (:)] crop live stem N harvested
+   hrv_leafp_to_prod1p      => veg_pf%hrv_leafp_to_prod1p       , & ! Input: [real(r8) (:)] crop leaf P harvested
+   hrv_livestemp_to_prod1p  => veg_pf%hrv_livestemp_to_prod1p   , & ! Input: [real(r8) (:)] crop live stem P harvested
+   crpyld                   => crop_vars%crpyld_patch           , & ! InOut: [real(r8) ):)] harvested crop (bu/acre)
+   dmyield                  => crop_vars%dmyield_patch            & ! InOut: [real(r8) ):)] dry matter harvested crop (t/ha)
+   )
+
+   cgrain = 0.50_r8
+   do fp = 1, num_ppercropp
+      p = filter_ppercropp(fp)
+      ! only calculate during the offset period
+      if (offset_flag(p) == 1._r8) then
+
+         if (offset_counter(p) == dt) then
+         t1 = 1._r8 / dt
+              ! calculate yield (crpyld = bu/acre and dmyield = t/ha)
+              ! for perennial bioenergy grass yield comes from leaf and stem harvest
+              crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * convfact(ivt(p)) / (cgrain * 1000)
+              dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * 0.01 / cgrain
+
+              !calculate harvested carbon and nitrogen; remaining goes into litterpool
+              hrv_leafc_to_prod1c(p)  = presharv(ivt(p)) * ((t1 * leafc(p)) + cpool_to_leafc(p))
+              hrv_livestemc_to_prod1c(p)  =  presharv(ivt(p)) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
+
+              ! Do the same for Nitrogen
+              hrv_leafn_to_prod1n(p) = presharv(ivt(p)) * ((t1 * leafn(p)) + npool_to_leafn(p))
+              hrv_livestemn_to_prod1n(p) = presharv(ivt(p)) * ((t1 * livestemn(p)) + npool_to_livestemn(p))
+
+              ! Do the same for Phosphorus
+              hrv_leafp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * leafp(p)) + ppool_to_leafp(p))
+              hrv_livestemp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
+
+         end if ! offseddt_counter
+
+      end if ! offset_flag
+   end do
+
+   ! gather all pft-level fluxes from harvest to the column
+   ! for C and N inputs
+
+   call CNCropHarvestPftToColumn(num_soilc, filter_soilc, cnstate_vars)
+
+    end associate
+ end subroutine CNPerennialCropHarvest
 
   !-----------------------------------------------------------------------
   subroutine CNOffsetLitterfall (num_soilp, filter_soilp, &
