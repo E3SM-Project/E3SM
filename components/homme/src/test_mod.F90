@@ -4,7 +4,7 @@
 
 module test_mod
 
-use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype
+use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype, bubble_moist
 use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
@@ -88,6 +88,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_nonhydro_mtn_wave');
     case('planar_schar_mtn_wave');
     case('planar_rising_bubble');
+           if (bubble_moist) call dcmip2016_init();
     case('planar_density_current');
     case('planar_baroclinic_instab');
     case('planar_moist_rising_bubble');
@@ -235,6 +236,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('dcmip2016_test2');    call dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl,2)
     case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
+    case('planar_rising_bubble');  
+            if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+
     case('held_suarez0');
        do ie=nets,nete
           call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
@@ -242,21 +246,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   endselect
 
-!for ftype3 we scale tendencies by dp
-  if(ftype == 3) then
-    !initialize dp3d from ps
-    do ie=nets,nete
-      do k=1,nlev
-        dp(:,:)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-        elem(ie)%derived%FT(:,:,k) = elem(ie)%derived%FT(:,:,k) * dp(:,:)
-        elem(ie)%derived%FM(:,:,1,k) = elem(ie)%derived%FM(:,:,1,k) * dp(:,:)
-        elem(ie)%derived%FM(:,:,2,k) = elem(ie)%derived%FM(:,:,2,k) * dp(:,:)
-      enddo
-    enddo
-  endif
-    
-end subroutine
+end subroutine compute_test_forcing
 
 
   !_____________________________________________________________________

@@ -15,6 +15,7 @@ module namelist_mod
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
 #endif
 use physical_constants, only : rearth, rrearth, DD_PI
+
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
 use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
@@ -102,6 +103,26 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     vert_remap_q_alg, &
     se_fv_phys_remap_alg, &
     timestep_make_subcycle_parameters_consistent
+
+
+!PLANAR setup
+#ifndef CAM
+  use control_mod, only:              &
+    set_planar_defaults,&
+    bubble_T0, &
+    bubble_dT, &
+    bubble_xycenter, &
+    bubble_zcenter, &
+    bubble_ztop, &
+    bubble_xyradius, &
+    bubble_zradius, &
+    bubble_cosine, &
+    bubble_moist, &
+    bubble_moist_dq, &
+    bubble_prec_type, &
+    case_planar_bubble
+#endif
+
 
 #ifndef CAM
   use control_mod, only:              &
@@ -318,6 +339,21 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       dcmip2_x_xi,        & !dcmip2-x mountain wavelength       (m)
       dcmip4_moist,       & !dcmip4   moist, 0 or 1
       dcmip4_X              !dcmip4   scaling factor, nondim
+!PLANAR
+    namelist /ctl_nl/ &
+      lx, ly, &
+      sx, sy, &
+      bubble_T0, &
+      bubble_dT, &
+      bubble_xycenter, &
+      bubble_zcenter, &
+      bubble_ztop, &
+      bubble_xyradius, &
+      bubble_zradius, &
+      bubble_cosine, &
+      bubble_moist, &
+      bubble_moist_dq, &
+      bubble_prec_type
     namelist /vert_nl/        &
       vform,              &
       vfile_mid,          &
@@ -422,7 +458,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 !   write(iulog,*) "masterproc=",par%masterproc
 
     if (par%masterproc) then
-
        write(iulog,*)"reading ctl namelist..."
 #if defined(CAM)
        unitn=getunit()
@@ -491,10 +526,25 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #ifndef CAM
 
-
+!checks before the next NL
+!check on ne
 if (topology == "plane" .and. ne /= 0) then
 call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
 end if
+
+!setting default PLANAR values if they are not set in ctl_nl
+call set_planar_defaults()
+
+!checks on planar tests
+if (test_case(1:7)=="planar_") then
+
+!check on Lx, Ly
+if(lx .le. 0.d0 .or. ly .le. 0.d0) then
+call abortmp('for planar tests, planar_lx and planar_ly should be >0')
+endif
+
+endif
+
 
 #ifdef _PRIM
        write(iulog,*) "reading physics namelist..."
@@ -766,8 +816,32 @@ end if
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
 #endif
-    call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
+
+!PLANAR
+    call MPI_bcast(lx     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(ly     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(sx     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(sy     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(planar_slice ,1,MPIlogical_t,par%root,par%comm,ierr)
+
+!PLANAR
+#ifndef CAM
+    call MPI_bcast(bubble_T0 ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_dT ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xycenter,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zcenter ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_ztop ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xyradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist_dq ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
+
+    call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
+#endif
+
+    call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
@@ -834,6 +908,7 @@ end if
     use_moisture = ( moisture /= "dry") 
     if (qsize<1) use_moisture = .false.  
 
+    if(par%masterproc) print *, "use moisture:", use_moisture
 
 
     ! use maximum available:
@@ -923,84 +998,27 @@ end if
       scale_factor = 1.0D0
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
-    if (test_case == "planar_dbl_vrtx") then
-      Lx = 5000.0D0 * 1000.0D0
-      Ly = 5000.0D0 * 1000.0D0
-      Sx = 0.0D0
-      Sy = 0.0D0
-    else if (test_case == "planar_hydro_gravity_wave") then
-       Lx = 6000.0D0 * 1000.0D0
-       Ly = 6000.0D0 * 1000.0D0
-       Sx = -3000.0D0 * 1000.0D0
-       Sy = -3000.0D0 * 1000.0D0
-    else if (test_case == "planar_nonhydro_gravity_wave") then
-       Lx = 300.0D0 * 1000.0D0
-       Ly = 300.0D0 * 1000.0D0
-       Sx = -150.0D0 * 1000.0D0
-       Sy = -150.0D0 * 1000.0D0
-    else if (test_case == "planar_hydro_mtn_wave") then
-       Lx = 240.0D0 * 1000.0D0
-       Ly = 240.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_nonhydro_mtn_wave") then
-       Lx = 144.0D0 * 1000.0D0
-       Ly = 144.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_schar_mtn_wave") then
-       Lx = 100.0D0 * 1000.0D0
-       Ly = 100.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_density_current" .OR. test_case == "planar_moist_density_current") then
-       Lx = 51.2D0 * 1000.0D0
-       Ly = 51.2D0 * 1000.0D0
-       Sx = -25.6D0 * 1000.0D0
-       Sy = -25.6D0 * 1000.0D0
-    else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
-       Lx = 1.0D0 * 1000.0D0
-       Ly = 1.0D0 * 1000.0D0
-       Sx = 0.0D0
-       Sy = 0.0D0
-! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
-!else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-!    else if (test_case == "planar_tropical_cyclone") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-!    else if (test_case == "planar_supercell") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-    end if
 
 ! makes the y-direction cells identical in size to the x-dir cells
 ! this is important for hyperviscosity, etc.
 ! Also adjusts Sy so y-dir domain is centered at 0
-    if (planar_slice .eqv. .true.) then
-    Ly = (Lx / ne_x) * ne_y
-    Sy = -Ly/2.0D0
-    end if
+      if (planar_slice .eqv. .true.) then
+        Ly = (Lx / ne_x) * ne_y
+        Sy = -Ly/2.0D0
+      end if
 
-    domain_size = Lx * Ly
-    dx = Lx/ne_x
-    dy = Ly/ne_y
-    dx_ref = 1.0D0/ne_x
-    dy_ref = 1.0D0/ne_y
+      domain_size = Lx * Ly
+      dx = Lx/ne_x
+      dy = Ly/ne_y
+      dx_ref = 1.0D0/ne_x
+      dy_ref = 1.0D0/ne_y
 
-  else if (geometry == "sphere") then
+    else if (geometry == "sphere") then
       scale_factor = rearth
       scale_factor_inv = rrearth
       domain_size = 4.0D0*DD_PI
       laplacian_rigid_factor = rrearth
-    end if
+    end if ! if plane
 
 !logic around different hyperviscosity options
     if (hypervis_power /= 0) then
