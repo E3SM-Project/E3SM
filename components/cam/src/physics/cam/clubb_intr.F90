@@ -3007,6 +3007,14 @@ end subroutine clubb_init_cnst
    !  for microphysics) etc. can be saved on the high resolution grid and will not have to be
    !  interpolated each CLUBB/microphysics substep
    call t_startf('ice_cloud_frac_diag')
+#ifdef FIVE
+
+   do k=1,pver_clubb
+      call aist_vector(q_five(:,k,ixq),t_five(:,k),pmid_five(:,k),q_five(:,k,ixcldice), &
+           q_five(:,k,ixnumice),cam_in%landfrac(:),cam_in%snowhland(:),aist_five(:,k),ncol)
+   enddo
+# endif
+
    do k=1,pver
       call aist_vector(state1%q(:,k,ixq),state1%t(:,k),state1%pmid(:,k),state1%q(:,k,ixcldice), &
            state1%q(:,k,ixnumice),cam_in%landfrac(:),cam_in%snowhland(:),aist(:,k),ncol)
@@ -3044,10 +3052,10 @@ end subroutine clubb_init_cnst
       enddo
    enddo
 #ifdef FIVE
-   do i = 1, ncol
-      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
-                         aist(i,1:pver),aist_five(i,1:pver_five),pver,pver_five)
-   enddo
+!   do i = 1, ncol
+!      call linear_interp(state1%pmid(i,:),pmid_five(i,:), &
+!                         aist(i,1:pver),aist_five(i,1:pver_five),pver,pver_five)
+!   enddo
 
    do k = 1, pver_clubb
       do i = 1, ncol
