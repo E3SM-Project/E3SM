@@ -1013,7 +1013,7 @@
     <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>impi,mvapich</MPILIBS>
+    <MPILIBS>impi,openmpi,mvapich</MPILIBS>
     <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -1068,6 +1068,13 @@
         <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
         <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
         <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
+      </modules>
+      <modules compiler="intel" mpilib="openmpi">
+        <command name="load">openmpi/4.1.1-v3b3npd</command>
+        <command name="load">netcdf-c/4.4.1-smyuxme</command>
+        <command name="load">netcdf-cxx/4.2-kfb2aag</command>
+        <command name="load">netcdf-fortran/4.4.4-mablvyc</command>
+        <command name="load">parallel-netcdf/1.11.0-x4n5s7k</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-xhxgy33</command>
