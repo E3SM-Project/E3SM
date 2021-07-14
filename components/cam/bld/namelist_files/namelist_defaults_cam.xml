@@ -159,6 +159,8 @@
 <ncdata dyn="se" hgrid="ne120np4" nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="212"            ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="372"            ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
 
 <!-- E3SM Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
@@ -841,11 +843,11 @@
 <chlorine_loading_file>atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
 
 <!-- Fossil fuel carbon aerosol surface emissions-->
-  <!-- standard 4 species carbon --> 
+<!-- standard 4 species carbon --> 
 <caer_emis          hgrid="64x128"  >atm/cam/rad/carbon_penner_cooke_doubled_64x128_c021120.nc</caer_emis>
 <caer_emis          hgrid="32x64"   >atm/cam/rad/carbon_penner_cooke_doubled_32x64_c021120.nc</caer_emis>
 <caer_emis dyn="fv" hgrid="4x5"     >atm/cam/rad/carbon_penner_cooke_doubled_4x5_c021120.nc</caer_emis>
-  <!-- 'alternative' 16 species carbon from Tami Bond. --> 
+<!-- 'alternative' 16 species carbon from Tami Bond. --> 
 <caer_emis          hgrid="64x128" nspecies="16" >atm/cam/rad/ftbc-btbc-oct03-64x128_c050929.nc</caer_emis>
 
 
