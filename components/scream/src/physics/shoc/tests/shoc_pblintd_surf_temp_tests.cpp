@@ -17,7 +17,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
 
   static void run_property()
   {
-    const auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
+    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static constexpr Int shcol = 4;
     static constexpr Int nlev = 4;
     static constexpr Int nlevi = nlev+1;

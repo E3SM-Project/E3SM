@@ -98,6 +98,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     message (FATAL_ERROR "Error! So far, SCREAM only supports 'theta-l_kokkos' as dynamics target.")
   endif()
 
+  add_definitions(-DHAVE_CONFIG_H)
+
   # Create the lib name, and proceed building only if not already built
   set (hommeLibName "${HOMME_TARGET}_${NP}_${PLEV}_${QSIZE}")
   if ("${hommeLibName}" IN_LIST DynamicsLibsCreated)
