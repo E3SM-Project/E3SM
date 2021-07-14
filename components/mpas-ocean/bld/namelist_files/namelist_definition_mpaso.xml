@@ -196,7 +196,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1804,10 +1804,10 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 
 <entry id="config_btr_si_preconditioner" type="char*1024"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Type of preconditioner for the barotropic mode solver
 
 Valid values: ras, block_jacobi, jacobi, none
@@ -1815,24 +1815,24 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_tolerance" type="real"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Tolerance for the barotropic mode solver
 
 Valid values: any positive real, but typically less than 1.0e-9
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_si_outer_iter" type="integer"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-number of outer iterations
+<entry id="config_n_btr_si_large_iter" type="integer"
+	category="split_implicit_ts" group="split_implicit_ts">
+number of large barotropic system iterations
 
-Valid values: any positive integer, but typically 2
+any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_partition_match_mode" type="logical"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
+	category="split_implicit_ts" group="split_implicit_ts">
+If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
