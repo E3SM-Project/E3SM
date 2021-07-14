@@ -47,7 +47,7 @@ module dynPatchStateUpdaterMod
   ! based on pft type.
   public :: update_patch_state_partition_flux_by_type
 
-  type, public :: patch_state_updater_type
+  type :: patch_state_updater_type
 
      real(r8), pointer :: pwtgcell_old(:) => null() ! old patch weights on the gridcell
      real(r8), pointer :: pwtgcell_new(:) => null()! new patch weights on the gridcell

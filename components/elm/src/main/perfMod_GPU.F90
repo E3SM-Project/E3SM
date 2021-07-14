@@ -7,7 +7,6 @@ module perfMod_GPU
 
 contains
 
-<<<<<<< HEAD
   subroutine  t_start_lnd(event)
 
     !$acc routine seq
