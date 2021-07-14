@@ -1078,14 +1078,28 @@
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-xhxgy33</command>
-        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
+        <command name="load">intel-mkl/2020.4.304-d6zw4xa</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mvapich">
         <command name="load">netcdf/4.4.1-ve2zfkw</command>
         <command name="load">netcdf-cxx/4.2-2rkopdl</command>
         <command name="load">netcdf-fortran/4.4.4-thtylny</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mvapich">
         <command name="load">mvapich2/2.2-verbs-ppznoge</command>
         <command name="load">parallel-netcdf/1.11.0-c22b2bn</command>
+      </modules>
+      <modules compiler="gnu" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-rxpzd6p</command>
+        <command name="load">netcdf-c/4.4.1-fysjgfx</command>
+        <command name="load">netcdf-cxx/4.2-oaiw2v6</command>
+        <command name="load">netcdf-fortran/4.4.4-kxgkaop</command>
+        <command name="load">parallel-netcdf/1.11.0-fce7akl</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">openmpi/4.1.1-x5n4m36</command>
+        <command name="load">netcdf-c/4.4.1-mtfptpl</command>
+        <command name="load">netcdf-cxx/4.2-osp27dq</command>
+        <command name="load">netcdf-fortran/4.4.4-5yd6dos</command>
+        <command name="load">parallel-netcdf/1.11.0-a7ohxsg</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
