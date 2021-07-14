@@ -44,6 +44,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto grid = grids_manager->get_grid("Physics");
   m_ncol = grid->get_num_local_dofs();
   m_nlay = grid->get_num_vertical_levels();
+  m_lat  = grid->get_geometry_data("lat");
+  m_lon  = grid->get_geometry_data("lon");
 
   // Set up dimension layouts
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };

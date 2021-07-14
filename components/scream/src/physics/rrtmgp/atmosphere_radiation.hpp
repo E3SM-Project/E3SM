@@ -80,6 +80,8 @@ public:
   // Keep track of number of columns and levels
   int m_ncol;
   int m_nlay;
+  view_1d_real m_lat;
+  view_1d_real m_lon;
 
   // Need to hard-code some dimension sizes for now. 
   // TODO: find a better way of configuring this

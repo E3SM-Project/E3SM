@@ -291,7 +291,19 @@ initialize_fields (const util::TimeStamp& t0)
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 
-  if (ifield>0) {
+  // Check the status of lat and lon values on reference grid:
+  // This option allows the user to set lat or lon in their own
+  // test or run setup code rather than by file.
+  bool skip_init_lat = true;
+  bool skip_init_lon = true;
+  if (ic_pl.isParameter("skip_init_lat")) {
+    bool skip_init_lat     = ic_pl.get<bool>("skip_init_lat");
+  }
+  if (ic_pl.isParameter("skip_init_lon")) {
+    bool skip_init_lon     = ic_pl.get<bool>("skip_init_lon");
+  }
+
+  if (ifield>0 || (!skip_init_lon or !skip_init_lat)) {
     // There are fields to read from the nc file. We must have a valid nc file then.
     ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
     ic_fields.set("Number of Fields",ifield);
@@ -306,7 +318,22 @@ initialize_fields (const util::TimeStamp& t0)
 
     AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,get_ref_grid_field_mgr(),m_grids_manager);
 
-    ic_reader.pull_input();
+    // Case where there are fields to load from initial condition file.
+    if (ifield>0) {
+      ic_reader.pull_input();
+    }
+
+    // Case where lat and/or lon pulled from initial condition file
+    auto ref_grid = m_grids_manager->get_reference_grid();
+    int ncol  = ref_grid->get_num_local_dofs();
+    if (!skip_init_lat) {
+      auto& lat = ref_grid->get_geometry_data("lat");
+      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lat",{"ncol"},true,{ncol},lat.data());
+    }
+    if (!skip_init_lon) {
+      auto& lon = ref_grid->get_geometry_data("lon");
+      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lon",{"ncol"},true,{ncol},lon.data());
+    }
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
