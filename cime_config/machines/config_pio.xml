@@ -5,7 +5,7 @@
   <entry id="PIO_VERSION">
     <values>
       <value>2</value>
-      <value mach="sooty">1</value>
+<!---      <value mach="sooty">1</value> -->
     </values>
   </entry>
 
@@ -55,7 +55,7 @@
       <value mach="eastwind">netcdf</value>
       <value mach="constance">netcdf</value>
       <value mach="cascade">netcdf</value>
-      <value mach="sooty">netcdf</value>
+<!---      <value mach="sooty">netcdf</value> -->
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mach="oic5">netcdf</value>

@@ -1848,7 +1848,7 @@
       </modules>
       <modules>
         <command name="load">netcdf/4.6.3</command>
-        <command name="load">pnetcdf/1.9.0</command>
+      <!--  <command name="load">pnetcdf/1.9.0</command> -->
         <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
@@ -1857,11 +1857,13 @@
     <environment_variables>
       <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
+      <env name="PNETCDFROOT">/home/d3x345/PnetCDF/</env>
+      <env name="PNETCDF_PATH">/home/d3x345/PnetCDF/</env>
       <env name="OMP_STACKSIZE">64M</env>
       <!-- PJR next lines force a modern python from python/3.7.2
       module first and supply some gcc libraries last -->
-      <env name="LD_LIBRARY_PATH">/share/apps/python/3.7.2/lib/:/share/apps/openssl/1.0.2r/lib:$ENV{LD_LIBRARY_PATH}:/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:</env>
-      <env name="PATH">/share/apps/python/3.7.2/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/share/apps/python/3.7.2/lib/:/share/apps/openssl/1.0.2r/lib:/home/d3x345/PnetCDF/lib:$ENV{LD_LIBRARY_PATH}:/home/d3x345/lib:/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:</env>
+      <env name="PATH">/share/apps/python/3.7.2/bin:/home/d3x345/PnetCDF/bin:/share/apps/gcc/8.1.0/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 

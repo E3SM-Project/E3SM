@@ -1054,7 +1054,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
+    <base>  -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
