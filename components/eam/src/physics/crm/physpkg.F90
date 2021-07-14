@@ -833,7 +833,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   ncol_sum = 0
   do c=begchunk, endchunk
     ncol_beg(c) = ncol_sum + 1
-    ncol_end(c) = ncol_sum + phys_state(c)%ncol + 1
+    ncol_end(c) = ncol_sum + phys_state(c)%ncol
     ncol_sum = ncol_sum + phys_state(c)%ncol
   end do
 
