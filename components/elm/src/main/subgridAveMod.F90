@@ -1701,7 +1701,7 @@ contains
          scale_l2t(bounds%begl:bounds%endl))
 
     ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
-    call build_scale_c2l(bounds, c2l_scale_type, &
+    call create_scale_c2l(bounds, c2l_scale_type, &
          scale_c2l(bounds%begc:bounds%endc))
     
     if (p2c_scale_type == 'unity') then
@@ -1778,7 +1778,7 @@ contains
          scale_l2t(bounds%begl:bounds%endl))
 
     ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
-    call build_scale_c2l(bounds, c2l_scale_type, &
+    call create_scale_c2l(bounds, c2l_scale_type, &
          scale_c2l(bounds%begc:bounds%endc))
     
     if (p2c_scale_type == 'unity') then
@@ -1852,7 +1852,7 @@ contains
          scale_l2t(bounds%begl:bounds%endl))
 
     ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
-    call build_scale_c2l(bounds, c2l_scale_type, &
+    call create_scale_c2l(bounds, c2l_scale_type, &
          scale_c2l(bounds%begc:bounds%endc))
     
     tarr(bounds%begt : bounds%endt) = spval
@@ -1915,7 +1915,7 @@ contains
          scale_l2t(bounds%begl:bounds%endl))
 
     ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
-    call build_scale_c2l(bounds, c2l_scale_type, &
+    call create_scale_c2l(bounds, c2l_scale_type, &
          scale_c2l(bounds%begc:bounds%endc))
     
     tarr(bounds%begt : bounds%endt,:) = spval

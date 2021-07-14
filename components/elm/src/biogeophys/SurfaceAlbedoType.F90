@@ -10,7 +10,8 @@ module SurfaceAlbedoType
   use abortutils     , only : endrun
   use elm_varctl     , only : fsurdat, iulog
   use elm_varcon     , only : grlnd
-  use ColumnType        , only : col_pp
+  use ColumnType     , only : col_pp
+   
 
   !
   ! !PUBLIC TYPES:
@@ -129,6 +130,8 @@ contains
     use abortutils , only : endrun
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_pio_openfile, ncd_pio_closefile
     use spmdMod    , only : masterproc
+    use topounit_varcon, only : max_topounits
+    use GridcellType , only : grc_pp
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
