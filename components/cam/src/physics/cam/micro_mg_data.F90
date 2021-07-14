@@ -204,9 +204,8 @@ function pack_2D(self, unpacked) result(packed)
   real(r8) :: packed(self%mgncol,self%nlev)
 
   SHR_ASSERT(size(unpacked, 1) == self%pcols, errMsg(__FILE__, __LINE__))
-
   packed = unpacked(self%mgcols,self%top_lev:)
-
+  
 end function pack_2D
 
 function pack_interface(self, unpacked) result(packed)

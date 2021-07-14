@@ -47,6 +47,8 @@ contains
        call find_group_name(unitn, 'native_mapping', status=ierr)
        if(ierr/=0) then
           write(iulog,*) 'No native_mapping namelist found'
+          close(unitn)
+          call freeunit(unitn)
           exist=.false.
        end if
        if(exist) then

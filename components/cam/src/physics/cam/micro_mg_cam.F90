@@ -2180,7 +2180,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !  This is a crucial component to using FIVE within E3SM
    call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
                              t_five,u_five,v_five,q_five)
-   q_five = max(q_five, 0._r8)
+   !q_five = max(q_five, 0._r8)
    ! Find top level index for FIVE
    do i = 1, ncol
      call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
@@ -2596,7 +2596,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                          frzdep(i,1:pver),frzdep_five(i,1:pver_five),pver,pver_five)
       end if
    end do 
-
+   
    allocate(packed_relvar(mgncol,nlev_micro))  ! These are generated in clubb_intr.F90
    packed_relvar = packer%pack(relvar_five)         !  either we need to interpolate these or 
    allocate(packed_accre_enhan(mgncol,nlev_micro))  ! just keep on same grid 
