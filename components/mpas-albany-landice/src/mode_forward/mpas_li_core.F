@@ -129,9 +129,11 @@ module li_core
       err = ior(err, err_tmp)
 
       if (config_do_restart) then
+         call mpas_log_write("This is a restart: read stream 'restart'.")
          call mpas_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
          err = ior(err, err_tmp)
       else
+         call mpas_log_write("This is not a restart: read stream 'input'.")
          call mpas_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
          err = ior(err, err_tmp)
       end if
@@ -145,6 +147,7 @@ module li_core
       !
       ! Read the remaining input streams
       !
+      call mpas_log_write("Looking for other input streams set for 'initial_only'.")
       call mpas_timer_start('io_read', .false.)
       call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
       err = ior(err, err_tmp)
@@ -153,6 +156,7 @@ module li_core
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
+      call mpas_log_write("Finished reading 'initial_only' input streams.")
 
       !
       ! Read time-varying inputs, if present (i.e., forcing)
@@ -161,6 +165,7 @@ module li_core
       ! But in general, we want that behavior - we do not want to have to wait a whole time step (or input_interval)
       ! before having forcing applied.  Therefore, we must force those streams to be read here.
       call mpas_timer_start('io_read', .false.)
+      call mpas_log_write("Looking for recurring input streams (forcing) that should be forced to be read at the initial time.")
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
          if (stream_cursor % direction == MPAS_STREAM_INPUT) then
@@ -169,6 +174,7 @@ module li_core
                 (trim(stream_cursor % name) == 'restart')) then
                ! Don't attempt to interact with these two special streams
                ! (even though restart is not type input, including to be safe)
+               stream_cursor => stream_cursor % next
                cycle
             endif
             ! Only force a read of streams that are recurring.  To find out if a stream is recurring, we need to
@@ -181,22 +187,23 @@ module li_core
                      ! Force a read of this stream, and use the latest before time available in the file
                      call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
                              whence = MPAS_STREAM_LATEST_BEFORE, actualWhen=actualWhen, ierr=err_tmp)
-                     call mpas_log_write("Forced an initial read of input stream '" // stream_cursor%name //"' from time: " // &
-                                         trim(actualWhen))
+                     call mpas_log_write("  * Forced an initial read of input stream '" // trim(stream_cursor%name) // &
+                             "' from time: " // trim(actualWhen))
                      err = ior(err, err_tmp)
                   endif
                   exit ! skip the rest of this loop - we processed the alarm we were looking for
                endif
                alarm_cursor => alarm_cursor % next
             end do
-            stream_cursor => stream_cursor % next
          end if ! if stream direction is INPUT
+         stream_cursor => stream_cursor % next
       end do
       call mpas_timer_stop('io_read')
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
+      call mpas_log_write("Finished processing recurring input streams at initial time.")
 
       ! ===
       ! Initialize some time stuff on each block
