@@ -427,6 +427,8 @@ static void run_bfb_p3_main()
       REQUIRE(df90.precip_liq_surf[t]   == dcxx.precip_liq_surf[t]);
       REQUIRE(df90.precip_ice_surf[t]   == dcxx.precip_ice_surf[t]);
     }
+    REQUIRE(df90.precip_liq_flux[tot]   == dcxx.precip_liq_flux[tot]);
+    REQUIRE(df90.precip_ice_flux[tot]   == dcxx.precip_ice_flux[tot]);
     REQUIRE(df90.precip_liq_surf[tot]   == dcxx.precip_liq_surf[tot]);
     REQUIRE(df90.precip_ice_surf[tot]   == dcxx.precip_ice_surf[tot]);
   }
