@@ -44,20 +44,6 @@ TEST_CASE("shoc-stand-alone", "") {
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
 
-//ASD  // Set pref_mid for shoc.  Note this is only temporary.
-//ASD  // TODO: have pref_mid be part of the grid information and
-//ASD  // have the shoc interface grab it from the grid, not the FM.
-//ASD  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-//ASD  const auto& field_mgr = *ad.get_field_mgr(grid->name());
-//ASD  int nlay = grid->get_num_vertical_levels();
-//ASD  auto d_pref_mid = field_mgr.get_field("pref_mid").get_reshaped_view<Real*>();
-//ASD  auto h_pref_mid = Kokkos::create_mirror_view(d_pref_mid);
-//ASD  Kokkos::deep_copy(h_pref_mid,d_pref_mid);
-//ASD  for (int k=0;k<nlay;k++) {
-//ASD    h_pref_mid(k) = 1e5 - k*(1e5-8e5)/(nlay-1);
-//ASD  }
-//ASD  Kokkos::deep_copy(d_pref_mid,h_pref_mid);
-
   for (int i=0; i<num_iters; ++i) {
     printf("Run iteration %2d\n",i);
     ad.run(300.0);
