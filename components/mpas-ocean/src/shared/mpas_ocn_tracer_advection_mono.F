@@ -26,10 +26,11 @@ module ocn_tracer_advection_mono
 #endif
    use mpas_kind_types
 
-   use ocn_constants
+   use ocn_config
    use ocn_mesh
    use ocn_diagnostics_variables
    use ocn_tracer_advection_shared
+   use ocn_tracer_advection_vert
 
    implicit none
    private
@@ -40,12 +41,6 @@ module ocn_tracer_advection_mono
       coef3rdOrder        !< high-order horizontal coefficient
    logical ::            &
       monotonicityCheck   !< flag to check monotonicity
-   integer ::            &
-      vertOrder           !< choice of order for vertical advection
-   integer, parameter :: &! enum for supported vertical algorithm order
-      vertOrder2 = 2,    &!< 2nd order scheme
-      vertOrder3 = 3,    &!< 3rd order scheme
-      vertOrder4 = 4      !< 4th order scheme
 
    ! public method interfaces
    public :: ocn_tracer_advection_mono_tend, &
@@ -121,8 +116,6 @@ module ocn_tracer_advection_mono
          tracerWeight,      &! tracer weighting temporary
          invAreaCell1,      &! inverse cell area
          invAreaCell2,      &! inverse cell area
-         verticalWeightK,   &! vertical weighting
-         verticalWeightKm1, &! vertical weighting
          coef1, coef3        ! temporary coefficients
 
       real (kind=RKIND), dimension(:), allocatable :: &
@@ -538,12 +531,9 @@ module ocn_tracer_advection_mono
         !$omp parallel
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
-          do k=1, nVertLevels
-            highOrderFlx(k, iCell) = 0.0_RKIND
-            workTend(k, iCell) = 0.0_RKIND
-          end do ! k loop
-          highOrderFlx(nVertLevels+1, iCell) = 0.0_RKIND
-
+        do k=1, nVertLevels
+           workTend(k, iCell) = 0.0_RKIND
+        end do ! k loop
         end do ! iCell loop
         !$omp end do
         !$omp end parallel
@@ -588,104 +578,20 @@ module ocn_tracer_advection_mono
         !$omp end parallel
 
         ! Compute the high order vertical fluxes based on order selected.
-        ! Special cases for top and bottom layers handled in following loop.
 
-        select case (vertOrder)
-        case (vertOrder4)
+        call ocn_tracer_advection_vert_flx(tracerCur, w, hProv, &
+                                           highOrderFlx)
 
-          !$omp parallel
-          !$omp do schedule(runtime) private(kmin, kmax, k)
-          do iCell = 1, nCells
-            kmin = minLevelCell(iCell)
-            kmax = maxLevelCell(iCell)
-            do k=kmin+2,kmax-1
-              highOrderFlx(k, iCell) = w(k,iCell)*( &
-                  7.0_RKIND*(tracerCur(k  ,iCell) + tracerCur(k-1,iCell)) - &
-                            (tracerCur(k+1,iCell) + tracerCur(k-2,iCell)))/ &
-                  12.0_RKIND
-
-            end do
-          end do ! cell loop
-          !$omp end do
-          !$omp end parallel
-
-        case (vertOrder3)
-
-          !$omp parallel
-          !$omp do schedule(runtime) private(kmin, kmax, k)
-          do iCell = 1, nCells
-            kmin = minLevelCell(iCell)
-            kmax = maxLevelCell(iCell)
-            do k=kmin+2,kmax-1
-              highOrderFlx(k, iCell) = (w(k,iCell)* &
-                   (7.0_RKIND*(tracerCur(k  ,iCell) + tracerCur(k-1,iCell)) - &
-                              (tracerCur(k+1,iCell) + tracerCur(k-2,iCell))) - &
-                        coef3rdOrder*abs(w(k,iCell))* &
-                             ((tracerCur(k+1,iCell) - tracerCur(k-2,iCell)) - &
-                    3.0_RKIND*(tracerCur(k  ,iCell) - tracerCur(k-1,iCell))))/ &
-                   12.0_RKIND
-
-
-            end do
-          end do ! cell loop
-          !$omp end do
-          !$omp end parallel
-
-       case (vertOrder2)
-
-          !$omp parallel
-          !$omp do schedule(runtime) private(kmin, kmax, k, verticalWeightK, verticalWeightKm1)
-          do iCell = 1, nCells
-            kmin = minLevelCell(iCell)
-            kmax = maxLevelCell(iCell)
-            do k=kmin+2,kmax-1
-              verticalWeightK   = hProv(k-1,iCell) / &
-                                 (hProv(k  ,iCell) + hProv(k-1,iCell))
-              verticalWeightKm1 = hProv(k  ,iCell) / &
-                                 (hProv(k  ,iCell) + hProv(k-1,iCell))
-              highOrderFlx(k,iCell) = w(k,iCell)* &
-                                 (verticalWeightK  *tracerCur(k  ,iCell) + &
-                                  verticalWeightKm1*tracerCur(k-1,iCell))
-            end do
-          end do ! cell loop
-          !$omp end do
-          !$omp end parallel
-
-        end select ! vertical order
-
-        ! Treat special cases for high order flux
         ! Compute low order upwind vertical flux (monotonic and diffused)
         ! Remove low order flux from the high order flux.
         ! Store left over high order flux in highOrderFlx array.
+
         !$omp parallel
-        !$omp do schedule(runtime) private(kmin, kmax, verticalWeightK, verticalWeightKm1, k)
+        !$omp do schedule(runtime) private(kmin, kmax, k)
         do iCell = 1, nCells
           kmin = minLevelCell(iCell)
           kmax = maxLevelCell(iCell)
-          ! Next-to-top cell in column is second-order
-          highOrderFlx(kmin,iCell) = 0.0_RKIND
-          if (kmax > kmin) then
-            k = kmin+1
-            verticalWeightK   = hProv(k-1,iCell) / &
-                               (hProv(k  ,iCell) + hProv(k-1,iCell))
-            verticalWeightKm1 = hProv(k  ,iCell) / &
-                               (hProv(k  ,iCell) + hProv(k-1,iCell))
-            highOrderFlx(k,iCell) = w(k,iCell)* &
-                               (verticalWeightK  *tracerCur(k  ,iCell) + &
-                                verticalWeightKm1*tracerCur(k-1,iCell))
-          end if
-          ! Deepest vertical cell in column is second order
-          k = max(kmin+1,kmax)
-          verticalWeightK   = hProv(k-1,iCell) / &
-                             (hProv(k  ,iCell) + hProv(k-1,iCell))
-          verticalWeightKm1 = hProv(k  ,iCell) / &
-                             (hProv(k  ,iCell) + hProv(k-1,iCell))
-          highOrderFlx(k,iCell) = w(k,iCell)* &
-                             (verticalWeightK  *tracerCur(k  ,iCell) + &
-                              verticalWeightKm1*tracerCur(k-1,iCell))
-          highOrderFlx(k+1,iCell) = 0.0_RKIND
 
-          ! Compute low order (upwind) flux and remove from high order
           lowOrderFlx(kmin,iCell) = 0.0_RKIND
           do k = kmin+1, kmax
             lowOrderFlx(k,iCell) = &
@@ -881,22 +787,7 @@ module ocn_tracer_advection_mono
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_mono_init(nHalos, horizAdvOrder,        &
-                                             vertAdvOrder, inCoef3rdOrder, &
-                                             checkMonotonicity, err)!{{{
-
-      !*** input parameters
-
-      integer, intent(in) :: &
-         nHalos               !< [in] number of halos in current simulation
-      integer, intent(in) :: &
-         horizAdvOrder        !< [in] order for horizontal advection
-      integer, intent(in) :: &
-         vertAdvOrder         !< [in] order for vertical advection
-      real (kind=RKIND), intent(in) :: &
-         inCoef3rdOrder       !< [in] coefficient for blending advection orders
-      logical, intent(in) :: &
-         checkMonotonicity    !< [in] flag to check monotonicity of tracers
+   subroutine ocn_tracer_advection_mono_init(err)!{{{
 
       !*** output parameters
 
@@ -910,7 +801,7 @@ module ocn_tracer_advection_mono
       err = 0 ! initialize error code to success
 
       ! Check that the halo is wide enough for FCT
-      if (nHalos < 3) then
+      if (config_num_halos < 3) then
          call mpas_log_write( &
             'Monotonic advection cannot be used with less than 3 halos.', &
             MPAS_LOG_CRIT)
@@ -918,11 +809,11 @@ module ocn_tracer_advection_mono
       end if
 
       ! Set blending coefficient if 3rd order horizontal advection chosen
-      select case (horizAdvOrder)
+      select case (config_horiz_tracer_adv_order)
       case (2)
          coef3rdOrder = 0.0_RKIND
       case (3)
-         coef3rdOrder = inCoef3rdOrder
+         coef3rdOrder = config_coef_3rd_order
       case (4)
          coef3rdOrder = 0.0_RKIND
       case default
@@ -932,28 +823,13 @@ module ocn_tracer_advection_mono
             MPAS_LOG_WARN)
       end select ! horizontal advection order
 
-      ! Set vertical advection order
-      select case (vertAdvOrder)
-      case (2)
-         vertOrder = vertOrder2
-      case (3)
-         vertOrder = vertOrder3
-      case (4)
-         vertOrder = vertOrder4
-      case default
-         vertOrder = vertOrder2
-         call mpas_log_write( &
-            'Invalid value for vertical advection order, defaulting to 2', &
-            MPAS_LOG_WARN)
-      end select ! vertical advection order
-
       ! Set flag for checking monotonicity
-      monotonicityCheck = checkMonotonicity
+      monotonicityCheck = config_check_tracer_monotonicity
 
    end subroutine ocn_tracer_advection_mono_init!}}}
 
-!**********************************************************************
+!***********************************************************************
 
 end module ocn_tracer_advection_mono
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

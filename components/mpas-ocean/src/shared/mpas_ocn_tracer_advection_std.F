@@ -24,8 +24,10 @@ module ocn_tracer_advection_std
    use mpas_kind_types
    use mpas_derived_types
    use mpas_log
+   use ocn_config
    use ocn_mesh
    use ocn_tracer_advection_shared
+   use ocn_tracer_advection_vert
 
    implicit none
    private
@@ -34,14 +36,6 @@ module ocn_tracer_advection_std
    ! private module variables
    real (kind=RKIND) :: &
       coef3rdOrder       !< coefficient for blending high-order terms
-
-   integer :: vertOrder  !< choice of order for vertical advection
-   integer, parameter :: &! enumerator for supported vertical adv order
-      vertOrder2=2,      &!< 2nd order
-      vertOrder3=3,      &!< 3rd order
-      vertOrder4=4        !< 4th order
-
-   logical :: monotonicityCheck !< flag to check monotonicity
 
    ! public method interfaces
    public :: ocn_tracer_advection_std_tend, &
@@ -104,8 +98,6 @@ module ocn_tracer_advection_std
       real (kind=RKIND) :: &
          tracerWgt,        &! local temporary
          invAreaCell1,     &! inverse cell area
-         verticalWeightK,  &! weights for vertical advection
-         verticalWeightKm1,&! weights for vertical advection
          vertDivFactor      ! vertical divergence factor
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
@@ -124,9 +116,9 @@ module ocn_tracer_advection_std
       numTracers = size(tracers,dim=1)
 
       ! Allocate some arrays
-      allocate(tracerCur       (nVertLevels, nCellsAll), &
-               highOrderHorzFlx(nVertLevels, nEdgesAll), &
-               highOrderVertFlx(nVertLevels, nCellsAll))
+      allocate(tracerCur       (nVertLevels  , nCellsAll), &
+               highOrderHorzFlx(nVertLevels  , nEdgesAll), &
+               highOrderVertFlx(nVertLevels+1, nCellsAll))
 
       ! Loop over tracers. One tracer is advected at a time. It is
       ! copied into a temporary array in order to improve locality
@@ -138,7 +130,6 @@ module ocn_tracer_advection_std
         do iCell = 1, nCellsAll
         do k=1,nVertLevels
            tracerCur(k,iCell) = tracers(iTracer,k,iCell)
-           highOrderVertFlx(k, iCell) = 0.0_RKIND
         end do
         end do
         !$omp end do
@@ -153,109 +144,8 @@ module ocn_tracer_advection_std
 
         ! Compute the high order vertical flux.
 
-        ! First take care of levels at top, bottom defaulting
-        ! to lower order
-
-        !$omp do schedule(runtime) &
-        !$omp    private(k, verticalWeightK, verticalWeightKm1)
-        do iCell = 1, nCellsAll
-           ! top active level
-           k = max(minLevelCell(iCell), &
-                   min(maxLevelCell(iCell), minLevelCell(iCell)+1))
-           verticalWeightK   = layerThickness(k-1,iCell) / &
-                              (layerThickness(k  ,iCell) + &
-                               layerThickness(k-1,iCell))
-           verticalWeightKm1 = layerThickness(k  ,iCell) / &
-                              (layerThickness(k  ,iCell) + &
-                               layerThickness(k-1,iCell))
-           highOrderVertFlx(k,iCell) = w(k,iCell)&
-                            *(verticalWeightK  *tracerCur(k  ,iCell) + &
-                              verticalWeightKm1*tracerCur(k-1,iCell))
-
-           ! lowest active level
-           k = max(minLevelCell(iCell), maxLevelCell(iCell))
-           verticalWeightK   = layerThickness(k-1,iCell) / &
-                              (layerThickness(k  ,iCell) + &
-                               layerThickness(k-1,iCell))
-           verticalWeightKm1 = layerThickness(k  ,iCell) / &
-                              (layerThickness(k  ,iCell) + &
-                               layerThickness(k-1,iCell))
-           highOrderVertFlx(k,iCell) = w(k,iCell)* &
-                            (verticalWeightK  *tracerCur(k  ,iCell) + &
-                             verticalWeightKm1*tracerCur(k-1,iCell))
-        end do ! iCell Loop
-        !$omp end do
-
-        ! Now computer interior layers at high order based on
-        ! user-requested order
-
-        select case (vertOrder)
-        case (vertOrder4)
-
-           !$omp do schedule(runtime) &
-           !$omp    private(k, kmin, kmax, &
-           !$omp            verticalWeightK, verticalWeightKm1)
-           do iCell = 1, nCellsAll
-              kmin = minLevelCell(iCell)
-              kmax = maxLevelCell(iCell)
-              do k=kmin+2,kmax-1
-                 highOrderVertFlx(k, iCell) = w(k,iCell)* &
-                                 ( 7.0_RKIND*(tracerCur(k  ,iCell)+ &
-                                              tracerCur(k-1,iCell)) &
-                                           - (tracerCur(k+1,iCell)+ &
-                                              tracerCur(k-2,iCell)))/&
-                                              12.0_RKIND
-              end do ! vertical loop
-           end do ! iCell Loop
-           !$omp end do
-
-        case (vertOrder3)
-
-           !$omp do schedule(runtime) &
-           !$omp    private(k, kmin, kmax, &
-           !$omp            verticalWeightK, verticalWeightKm1)
-           do iCell = 1, nCellsAll
-              kmin = minLevelCell(iCell)
-              kmax = maxLevelCell(iCell)
-              do k=kmin+2,kmax-1
-                 highOrderVertFlx(k, iCell) = (w(k,iCell)* &
-                                 (7.0_RKIND * (tracerCur(k  ,iCell)+ &
-                                               tracerCur(k-1,iCell)) - &
-                                              (tracerCur(k+1,iCell)+ &
-                                               tracerCur(k-2,iCell))) - &
-                              coef3rdOrder*abs(w(k,iCell))* &
-                                             ((tracerCur(k+1,iCell)- &
-                                               tracerCur(k-2,iCell)) - &
-                                    3.0_RKIND*(tracerCur(k  ,iCell)- &
-                                               tracerCur(k-1,iCell))))/ &
-                                               12.0_RKIND
-              end do ! vertical loop
-           end do ! iCell Loop
-           !$omp end do
-
-        case (vertOrder2)
-
-           !$omp do schedule(runtime) &
-           !$omp    private(k, kmin, kmax, &
-           !$omp            verticalWeightK, verticalWeightKm1)
-           do iCell = 1, nCellsAll
-              kmin = minLevelCell(iCell)
-              kmax = maxLevelCell(iCell)
-              do k=kmin+2,kmax-1
-                 verticalWeightK   = layerThickness(k-1,iCell) / &
-                                    (layerThickness(k  ,iCell) + &
-                                     layerThickness(k-1,iCell))
-                 verticalWeightKm1 = layerThickness(k  ,iCell) / &
-                                    (layerThickness(k  ,iCell) + &
-                                     layerThickness(k-1,iCell))
-                 highOrderVertFlx(k,iCell) = w(k, iCell) * &
-                           (verticalWeightK  *tracerCur(k  ,iCell) + &
-                            verticalWeightKm1*tracerCur(k-1,iCell))
-              end do ! vertical loop
-           end do ! iCell Loop
-           !$omp end do
-
-        end select ! vertOrder
+        call ocn_tracer_advection_vert_flx(tracerCur, w, &
+                           layerThickness, highOrderVertFlx)
 
         ! Compute the high order horizontal flux
 
@@ -352,20 +242,7 @@ module ocn_tracer_advection_std
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_std_init(horzAdvOrder, vertAdvOrder, &
-                                            inCoef3rdOrder,             &
-                                            checkMonotonicity, err) !{{{
-
-      !*** input parameters
-
-      integer, intent(in) :: &
-         horzAdvOrder         !< [in] Order for horizontal advection
-      integer, intent(in) :: &
-         vertAdvOrder         !< [in] Order for vertical advection
-      real (kind=RKIND), intent(in) :: &
-         inCoef3rdOrder       !< [in] Coefficient for blending advection orders
-      logical, intent(in) :: &
-         checkMonotonicity    !< [in] Flag to check on monotonicity of tracers
+   subroutine ocn_tracer_advection_std_init(err) !{{{
 
       !*** output parameters
 
@@ -377,15 +254,12 @@ module ocn_tracer_advection_std
 
       err = 0 ! set error code to success
 
-      ! set monotonicity flag
-      monotonicityCheck = checkMonotonicity
-
       ! set 3rd order coefficient based on horizontal order choice
-      select case (horzAdvOrder)
+      select case (config_horiz_tracer_adv_order)
       case (2)
          coef3rdOrder = 0.0_RKIND
       case (3)
-         coef3rdOrder = inCoef3rdOrder
+         coef3rdOrder = config_coef_3rd_order
       case (4)
          coef3rdOrder = 0.0_RKIND
       case default
@@ -393,21 +267,6 @@ module ocn_tracer_advection_std
             'Invalid value for horz advection order, defaulting to 2nd order', &
             MPAS_LOG_WARN)
       end select ! horzAdvOrder
-
-      ! set choice of vertical advection order
-      select case (vertAdvOrder)
-      case (2)
-         vertOrder = vertOrder2
-      case (3)
-         vertOrder = vertOrder3
-      case (4)
-         vertOrder = vertOrder4
-      case default
-         vertOrder = vertOrder2
-         call mpas_log_write( &
-         'Invalid value for vertical advection order, defaulting to 2nd order',&
-         MPAS_LOG_WARN)
-      end select ! vertAdvOrder
 
    !--------------------------------------------------------------------
 

@@ -27,6 +27,7 @@ module ocn_tracer_advection_shared
    use mpas_geometry_utils
    use mpas_log
 
+   use ocn_config
    use ocn_mesh
 
    implicit none
@@ -55,7 +56,7 @@ module ocn_tracer_advection_shared
    ! Public member functions 
    !-------------------------------------------------------------------- 
 
-   public :: ocn_tracerAdvectSharedInit
+   public :: ocn_tracer_advection_shared_init
 
 !***********************************************************************
 
@@ -63,7 +64,7 @@ module ocn_tracer_advection_shared
 
 !***********************************************************************
 !
-!  routine ocn_tracerAdvectSharedInit
+!  routine ocn_tracer_advection_shared_init
 !
 !> \brief MPAS tracer advection coefficients
 !> \author Doug Jacobsen, Bill Skamarock
@@ -74,14 +75,7 @@ module ocn_tracer_advection_shared
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracerAdvectSharedInit(advOrder, err)!{{{
-
-      !-----------------------------------------------------------------
-      ! Input variables
-      !-----------------------------------------------------------------
-
-      integer, intent(in) :: &
-         advOrder            !< [in] Order of horizontal advection
+   subroutine ocn_tracer_advection_shared_init(err)!{{{
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -313,11 +307,12 @@ module ocn_tracer_advection_shared
 
       ! If 2nd order advection, disable high-order terms by
       ! setting mask to zero.
-      if (advOrder == 2) advMaskHighOrder(:,:) = 0.0_RKIND
+      if (config_horiz_tracer_adv_order == 2) &
+         advMaskHighOrder(:,:) = 0.0_RKIND
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracerAdvectSharedInit !}}}
+   end subroutine ocn_tracer_advection_shared_init !}}}
 
 !***********************************************************************
 !

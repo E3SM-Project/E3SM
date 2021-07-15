@@ -28,8 +28,8 @@ module ocn_tracer_advection
    use ocn_tracer_advection_shared
    use ocn_tracer_advection_std
    use ocn_tracer_advection_mono
+   use ocn_tracer_advection_vert
 
-   use ocn_constants
    use ocn_config
    use ocn_mesh
 
@@ -133,7 +133,7 @@ module ocn_tracer_advection
 
       !*** local variables
 
-      integer :: errTmp ! temporary error flag
+      integer :: err1, err2, err3, err4 ! local error flags
 
       ! end preamble
       !-------------
@@ -146,28 +146,21 @@ module ocn_tracer_advection
       monotonicOn  = config_monotonic
 
       ! set all other options from submodule initialization routines
-      call ocn_tracerAdvectSharedInit(config_horiz_tracer_adv_order, err)
-
-      call ocn_tracer_advection_std_init(config_horiz_tracer_adv_order,    &
-                                         config_vert_tracer_adv_order,     &
-                                         config_coef_3rd_order,            &
-                                         config_check_tracer_monotonicity, &
-                                         errTmp)
-      call ocn_tracer_advection_mono_init(config_num_halos,                 &
-                                          config_horiz_tracer_adv_order,    &
-                                          config_vert_tracer_adv_order,     &
-                                          config_coef_3rd_order,            &
-                                          config_check_tracer_monotonicity, &
-                                          err)
+      call ocn_tracer_advection_shared_init(err1)
+      call ocn_tracer_advection_std_init   (err2)
+      call ocn_tracer_advection_mono_init  (err3)
+      call ocn_tracer_advection_vert_init  (err4)
 
       ! if an error is returned from init routines, write an error
       ! message and return a non-zero error code
-      if (err /= 0 .or. errTmp /= 0) then
+      if (err1 /= 0 .or. err2 /= 0 .or. err3 /=0 .or. err4 /= 0) then
          err = 1
          call mpas_log_write(                                 &
             'Error encountered during tracer advection init', &
             MPAS_LOG_ERR, masterOnly=.true.)
       endif
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_advection_init!}}}
 
