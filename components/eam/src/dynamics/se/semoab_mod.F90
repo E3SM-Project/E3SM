@@ -842,7 +842,7 @@ contains
     do ie=1,num_elem
       do j=1,np
         do i=1,np
-          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%T(i,j,nlev,1) ! time level 1?
+          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%vtheta_dp(i,j,nlev,1) ! time level 1?
         enddo
       enddo
     enddo
@@ -901,7 +901,7 @@ contains
         do i= 1,np
          ix = local_map(i,j)
          idx = moabconn( je + ix ) !
-         valuesTag ( idx ) = elem(ie)%state%T(i,j,nlev,1)
+         valuesTag ( idx ) = elem(ie)%state%vtheta_dp(i,j,nlev,1)
         end do
       end do
     end do
