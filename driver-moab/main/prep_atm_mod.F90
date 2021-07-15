@@ -349,7 +349,7 @@ contains
     integer                  :: atm_id
     character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
-    integer                  :: monotonicity
+    integer                  :: fNoBubble, monotonicity
 
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
     integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
@@ -407,17 +407,18 @@ contains
       dm2 = "fv"//CHAR(0)
       dofnameOCN="GLOBAL_ID"//CHAR(0)
       orderOCN = 1  !  not much arguing
+      fNoBubble = 1
       monotonicity = 0 !
       noConserve = 0
       validate = 1
       if (iamroot_CPLID) then
         write(logunit,*) 'launch iMOAB weights with args ', mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                                monotonicity, volumetric, noConserve, validate
+                                                fNoBubble, monotonicity, volumetric, noConserve, validate
       end if
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                                monotonicity, volumetric, noConserve, validate, &
+                                                fNoBubble, monotonicity, volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing weights atm/ocn '
@@ -490,7 +491,7 @@ contains
     integer                  :: atm_id
     character*32             :: dm1, dm2, dofnameATM, dofnameLND, wgtIdef
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
-    integer                  :: monotonicity
+    integer                  :: fNoBubble, monotonicity
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
     integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
     integer                  :: typeA, typeB ! type for computing graph;
@@ -551,13 +552,14 @@ contains
         dm2 = "fv"//CHAR(0) ! land is FV
         volumetric = 1
       endif
+      fNoBubble = 1
       monotonicity = 0 !
       noConserve = 0
       validate = 1
 
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderLND, &
-                                                monotonicity, volumetric, noConserve, validate, &
+                                                fNoBubble, monotonicity, volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameLND) )
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing weights atm land '
