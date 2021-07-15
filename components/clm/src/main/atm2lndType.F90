@@ -89,8 +89,8 @@ module atm2lndType
      real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
 
 !JV
-     real(r8), pointer :: forc_ndep2_grc                (:)   => null() ! FAN nitrogen deposition (manure) rate (gN/m2/s)
-     real(r8), pointer :: forc_ndep3_grc                (:)   => null() ! FAN nitrogen deposition (fertilizer) rate (gN/m2/s)
+     real(r8), pointer :: forc_ndep_mgrz_grc            (:)   => null() ! FAN nitrogen deposition (manure) rate (gN/m2/s)
+     real(r8), pointer :: forc_ndep_past_grc            (:)   => null() ! FAN nitrogen deposition (fertilizer) rate (gN/m2/s)
      real(r8), pointer :: forc_ndep_urea_grc            (:)   => null() ! FAN nitrogen deposition, urea fertilizer fraction
      real(r8), pointer :: forc_ndep_nitr_grc            (:)   => null() ! FAN nitrogen deposition, nitrate fertilizer fraction
      real(r8), pointer :: forc_soilph_grc               (:)   => null() ! FAN soil pH
@@ -302,10 +302,10 @@ contains
     allocate(this%t_mo_min_patch                (begp:endp))        ; this%t_mo_min_patch           (:)   = spval ! TODO - initialize this elsewhere
 
     if ( use_fan ) then
-       allocate(this%forc_ndep2_grc             (begg:endg))        ; this%forc_ndep2_grc                (:)   = ival
-       allocate(this%forc_ndep3_grc             (begg:endg))        ; this%forc_ndep3_grc                (:)   = ival
-       allocate(this%forc_ndep_urea_grc         (begg:endg))        ; this%forc_ndep3_grc                (:)   = ival
-       allocate(this%forc_ndep_nitr_grc         (begg:endg))        ; this%forc_ndep3_grc                (:)   = ival
+       allocate(this%forc_ndep_mgrz_grc         (begg:endg))        ; this%forc_ndep_mgrz_grc            (:)   = ival
+       allocate(this%forc_ndep_past_grc         (begg:endg))        ; this%forc_ndep_past_grc            (:)   = ival
+       allocate(this%forc_ndep_urea_grc         (begg:endg))        ; this%forc_ndep_urea_grc           (:)   = ival
+       allocate(this%forc_ndep_nitr_grc         (begg:endg))        ; this%forc_ndep_nitr_grc            (:)   = ival
        allocate(this%forc_soilph_grc            (begg:endg))        ; this%forc_soilph_grc               (:)   = ival
     end if
 

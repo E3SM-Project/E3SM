@@ -1431,7 +1431,7 @@ sub setup_cmdl_maxpft {
     # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
   } else {
     my %maxpatchpft;
-    $maxpatchpft{'.true.'}   = 79;
+    $maxpatchpft{'.true.'}   = 25;
     $maxpatchpft{'.false.'} = 17;
     if ( $opts->{$var} ne "default") {
       $val = $opts->{$var};
@@ -1988,7 +1988,8 @@ sub process_namelist_inline_logic {
   ###############################
   setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv, 'ndep');
   setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv, 'fan');
-  
+  #setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
   ###############################
   # namelist group: pdepdyn_nml #
   ###############################
@@ -3028,13 +3029,18 @@ sub setup_logic_nitrogen_deposition {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv, $deptype) = @_;
   my $ndep;  
   if ($deptype eq 'fan') {
-      if (!value_is_true( $nl_flags->{'use_fan'})) { fatal_error("FAN not on but deptype == fan\n"); }
-      $ndep = 'fan';
+  #    if (!value_is_true( $nl_flags->{'use_fan'})) { fatal_error("FAN not on but deptype == fan\n"); }
+         $ndep = 'fan';
   } elsif ($deptype eq 'ndep') {
       $ndep = 'ndep';
   } else {
       fatal_error('Allowed deptypes are fan and ndep');
   }
+  #if (!value_is_true( $nl_flags->{'use_fan'})) {
+  #    $ndep = 'fan';
+  #} else {
+  #    $ndep = 'ndep';
+  #}
 
   #
   # Nitrogen deposition for bgc=CN (ndep) and FAN (ndep2)
@@ -3159,8 +3165,9 @@ sub setup_logic_fan {
   # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
   #
    my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+   #if ( $opts->{'fan'} ) {
    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
-       if ( $opts->{'fan'} ) {
+       if( $opts->{'fan'} ) {
 	   add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
 		       'use_cn'=>$nl_flags->{'use_cn'}, 'use_ed'=>$nl_flags->{'use_ed'} );
 	   $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
@@ -3168,6 +3175,56 @@ sub setup_logic_fan {
 		       'fan_mode'=>$opts->{'fan'});
 	   $nl_flags->{'fan_nh3_to_atm'} = $nl->get_value('fan_nh3_to_atm');
        }
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fan_mapalgo", 'phys'=>$nl_flags->{'phys'}, 
+#                       'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},
+#                       'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
+#                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_fan", 'phys'=>$nl_flags->{'phys'},
+#                       'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
+#                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#
+#       # Set align year, if first and last years are different
+#           if ( $nl->get_value('stream_year_first_fan') != $nl->get_value('stream_year_last_fan') ) {
+#              add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_fan", 'sim_year'=>$nl_flags->{'sim_year'},
+#                          'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#           }
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_fan", 'phys'=>$nl_flags->{'phys'},
+#                       'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
+#                       'hgrid'=>"1.9x2.5" );
+#
+#       } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fanmapalgo", 'phys'=>$nl_flags->{'phys'},
+#                       'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},
+#                       'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+#                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_fan", 'phys'=>$nl_flags->{'phys'},
+#                       'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+#                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#       # Set align year, if first and last years are different
+#           if ( $nl->get_value('stream_year_first_fan') != $nl->get_value('stream_year_last_fan') ) {
+#              add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_fan", 'sim_year'=>$nl_flags->{'sim_year'},
+#                          'sim_year_range'=>$nl_flags->{'sim_year_range'});
+#           }
+#           add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_fan", 'phys'=>$nl_flags->{'phys'},
+#                      'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'},
+#                      'hgrid'=>"1.9x2.5" );
+#       } else {
+#         # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
+#         if ( defined($nl->get_value('stream_year_first_fan')) ||
+#              defined($nl->get_value('stream_year_last_fan'))  ||
+#              defined($nl->get_value('model_year_align_fan'))  ||
+#              defined($nl->get_value('stream_fldfilename_fan'))
+#            ) {
+#            fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_fan," .
+#                        "stream_year_last_fan, model_year_align_fan, nor stream_fldfilename_fan" .
+#                        " can be set!\n");
+#
+#     } else {
+#        $nl_flags->{'use_fan'} = ".false.";
+#     }     
+
      if ( value_is_true( $nl_flags->{'use_ed'} ) && value_is_true( $nl_flags->{'use_fan'} ) ) {
         fatal_error("Cannot turn use_fan on when use_ed is on\n" );
      }
@@ -3178,7 +3235,6 @@ sub setup_logic_fan {
 	     
    }
 }
-
 
 #-------------------------------------------------------------------------------
 

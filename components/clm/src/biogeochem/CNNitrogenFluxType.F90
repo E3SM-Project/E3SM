@@ -176,7 +176,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: deadstemn_storage_to_xfer_patch           (:)     ! patch dead stem N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: livecrootn_storage_to_xfer_patch          (:)     ! patch live coarse root N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: deadcrootn_storage_to_xfer_patch          (:)     ! patch dead coarse root N shift storage to transfer (gN/m2/s)
-     real(r8), pointer :: fert_patch                               (:)     ! patch applied fertilizer (gN/m2/s)
+     real(r8), pointer :: synthfert_patch                           (:)     ! patch applied synthetic N fertilizer (gN/m2/s)
+     real(r8), pointer :: manure_patch                              (:)     ! patch applied manure (gN/m2/s)
      real(r8), pointer :: fert_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
      real(r8), pointer :: soyfixn_patch                             (:)     ! patch soybean fixed N (gN/m2/s)
 
@@ -626,7 +627,8 @@ contains
     allocate(this%grainn_to_food_patch              (begp:endp)) ; this%grainn_to_food_patch              (:) = nan
     allocate(this%grainn_xfer_to_grainn_patch       (begp:endp)) ; this%grainn_xfer_to_grainn_patch       (:) = nan
     allocate(this%grainn_storage_to_xfer_patch      (begp:endp)) ; this%grainn_storage_to_xfer_patch      (:) = nan
-    allocate(this%fert_patch                        (begp:endp)) ; this%fert_patch                        (:) = nan
+    allocate(this%synthfert_patch                   (begp:endp)) ; this%synthfert_patch                   (:) = nan
+    allocate(this%manure_patch                      (begp:endp)) ; this%manure_patch                      (:) = nan
     allocate(this%fert_counter_patch                (begp:endp)) ; this%fert_counter_patch                (:) = nan
     allocate(this%soyfixn_patch                     (begp:endp)) ; this%soyfixn_patch                     (:) = nan
     allocate(this%nfix_to_plantn_patch              (begp:endp)) ; this%nfix_to_plantn_patch              (:) = nan

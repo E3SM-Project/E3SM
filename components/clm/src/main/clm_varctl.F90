@@ -325,7 +325,16 @@ module clm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
-  logical, public :: use_fan = .false.
+
+  !----------------------------------------------------------
+  ! Fan controls (use_fan)
+  !----------------------------------------------------------
+  logical, public :: use_fan             = .false.
+  character(len=32), public :: fan_mode  = 'none'
+  logical, public :: fan_nh3_to_atm      = .false.
+  logical, public :: fan_to_bgc_crop     = .false.
+  logical, public :: fan_to_bgc_veg      = .false.
+
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------

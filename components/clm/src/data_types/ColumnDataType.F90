@@ -140,6 +140,8 @@ module ColumnDataType
     real(r8), pointer :: snow_persistence   (:)   => null() ! length of time that ground has had non-zero snow thickness (sec)
     real(r8), pointer :: snw_rds_top        (:)   => null() ! snow grain radius (top layer)  (m^-6, microns)
     logical , pointer :: do_capsnow         (:)   => null() ! true => do snow capping
+    real(r8), pointer :: h2osoi_tend_tsl_col(:)   => null() ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s) 
+
     ! Area fractions
     real(r8), pointer :: frac_sno           (:)   => null() ! fraction of ground covered by snow (0 to 1)
     real(r8), pointer :: frac_sno_eff       (:)   => null() ! fraction of ground covered by snow (0 to 1)
@@ -282,6 +284,7 @@ module ColumnDataType
     real(r8), pointer :: manure_n_stored          (:)     => null() ! (gN/m2) manure N in storage
     real(r8), pointer :: manure_tan_stored        (:)     => null() ! (gN/m2) manure TAN in storage
     real(r8), pointer :: fan_grz_fract            (:)     => null() ! unitless fraction of animals grazing
+    real(r8), pointer :: fan_totn                 (:)     => null() ! (gN/m2) total N in FAN pools
     real(r8), pointer :: totpftn_beg              (:)     => null() 
     real(r8), pointer :: totpftn_end              (:)     => null() 
     real(r8), pointer :: cwdn_beg                 (:)     => null() 
@@ -843,6 +846,11 @@ module ColumnDataType
     real(r8), pointer :: fert_nh4_to_soil                      (:)     => null() ! NH4 flux to soil mineral N pools from fertilizer (gN/m2/s)
     real(r8), pointer :: manure_nh4_runoff                     (:)     => null() ! NH4 runoff flux from manure, (gN/m2/s)
     real(r8), pointer :: fert_nh4_runoff                       (:)     => null() ! NH4 runoff flux from fertilizer, (gN/m2/s)
+    real(r8), pointer :: fan_totnout                           (:)     => null() ! Total input N into FAN pools, gN/m2/s
+    real(r8), pointer :: fan_totnin                            (:)     => null() ! Total output N from FAN pools, gN/m2/s
+    real(r8), pointer :: manure_n_to_sminn                     (:)     => null() ! Manure N from FAN pools to soil mineral pools, gN/m2/s
+    real(r8), pointer :: synthfert_n_to_sminn                  (:)     => null() ! Fertilizer N from FAN pools to soil mineral pools, gN/m2/s
+    real(r8), pointer :: manure_n_total                        (:)     => null() ! Total manure N produced, gN/m2/s
   contains
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
@@ -1340,6 +1348,9 @@ contains
     allocate(this%snow_depth         (begc:endc))                     ; this%snow_depth         (:)   = nan
     allocate(this%snowdp             (begc:endc))                     ; this%snowdp             (:)   = nan
     allocate(this%snow_persistence   (begc:endc))                     ; this%snow_persistence   (:)   = nan
+    if (use_fan) then
+       allocate(this%h2osoi_tend_tsl_col(begc:endc))                  ; this%h2osoi_tend_tsl_col(:)   = nan
+    end if
     allocate(this%snw_rds_top        (begc:endc))                     ; this%snw_rds_top        (:)   = nan
     allocate(this%do_capsnow         (begc:endc))                   
     allocate(this%frac_sno           (begc:endc))                     ; this%frac_sno           (:)   = nan
@@ -1461,6 +1472,15 @@ contains
        call hist_addfld1d (fname='SNOW_PERSISTENCE',  units='seconds',  &
             avgflag='I', long_name='Length of time of continuous snow cover (nat. veg. landunits only)', &
             ptr_col=this%snow_persistence, l2g_scale_type='natveg') 
+    end if
+
+    if (use_fan) then
+       this%h2osoi_tend_tsl_col(begc:endc) = spval
+       call hist_addfld1d ( &
+         fname='SOILWATERTEND_TSL',  units='kg/m2/s', &
+         avgflag='A', long_name='Tendency of soil water in the topmost soil layer', &
+         ptr_col=this%h2osoi_tend_tsl_col, l2g_scale_type='veg', &
+         default='inactive')
     end if
 
     this%frac_sno(begc:endc) = spval
@@ -3098,28 +3118,33 @@ contains
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = nan
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = nan
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = nan
-    allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = nan
-    allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = nan
-    allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = nan
-    allocate(this%tan_s0                (begc:endc))                     ; this%tan_s0                (:)   = nan
-    allocate(this%tan_s1                (begc:endc))                     ; this%tan_s1                (:)   = nan
-    allocate(this%tan_s2                (begc:endc))                     ; this%tan_s2                (:)   = nan
-    allocate(this%tan_s3                (begc:endc))                     ; this%tan_s3                (:)   = nan
-    allocate(this%tan_f1                (begc:endc))                     ; this%tan_f1                (:)   = nan
-    allocate(this%tan_f2                (begc:endc))                     ; this%tan_f2                (:)   = nan
-    allocate(this%tan_f3                (begc:endc))                     ; this%tan_f3                (:)   = nan
-    allocate(this%tan_f4                (begc:endc))                     ; this%tan_f4                (:)   = nan
-    allocate(this%fert_u1               (begc:endc))                     ; this%fert_u1               (:)   = nan
-    allocate(this%fert_u2               (begc:endc))                     ; this%fert_u2               (:)   = nan
-    allocate(this%manure_u_grz          (begc:endc))                     ; this%manure_u_grz          (:)   = nan
-    allocate(this%manure_a_grz          (begc:endc))                     ; this%manure_a_grz          (:)   = nan
-    allocate(this%manure_r_grz          (begc:endc))                     ; this%manure_r_grz          (:)   = nan
-    allocate(this%manure_u_app          (begc:endc))                     ; this%manure_u_app          (:)   = nan
-    allocate(this%manure_a_app          (begc:endc))                     ; this%manure_a_app          (:)   = nan
-    allocate(this%manure_r_app          (begc:endc))                     ; this%manure_r_app          (:)   = nan
-    allocate(this%manure_n_stored       (begc:endc))                     ; this%manure_n_stored       (:)   = nan
-    allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = nan
-    allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = nan
+
+    if (use_fan) then
+       allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = nan
+       allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = nan
+       allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = nan
+       allocate(this%tan_s0                (begc:endc))                     ; this%tan_s0                (:)   = nan
+       allocate(this%tan_s1                (begc:endc))                     ; this%tan_s1                (:)   = nan
+       allocate(this%tan_s2                (begc:endc))                     ; this%tan_s2                (:)   = nan
+       allocate(this%tan_s3                (begc:endc))                     ; this%tan_s3                (:)   = nan
+       allocate(this%tan_f1                (begc:endc))                     ; this%tan_f1                (:)   = nan
+       allocate(this%tan_f2                (begc:endc))                     ; this%tan_f2                (:)   = nan
+       allocate(this%tan_f3                (begc:endc))                     ; this%tan_f3                (:)   = nan
+       allocate(this%tan_f4                (begc:endc))                     ; this%tan_f4                (:)   = nan
+       allocate(this%fert_u1               (begc:endc))                     ; this%fert_u1               (:)   = nan
+       allocate(this%fert_u2               (begc:endc))                     ; this%fert_u2               (:)   = nan
+       allocate(this%manure_u_grz          (begc:endc))                     ; this%manure_u_grz          (:)   = nan
+       allocate(this%manure_a_grz          (begc:endc))                     ; this%manure_a_grz          (:)   = nan
+       allocate(this%manure_r_grz          (begc:endc))                     ; this%manure_r_grz          (:)   = nan
+       allocate(this%manure_u_app          (begc:endc))                     ; this%manure_u_app          (:)   = nan
+       allocate(this%manure_a_app          (begc:endc))                     ; this%manure_a_app          (:)   = nan
+       allocate(this%manure_r_app          (begc:endc))                     ; this%manure_r_app          (:)   = nan
+       allocate(this%manure_n_stored       (begc:endc))                     ; this%manure_n_stored       (:)   = nan
+       allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = nan
+       allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = nan
+    end if
+    allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = nan
+
     allocate(this%totpftn_beg           (begc:endc))                     ; this%totpftn_beg           (:)   = nan
     allocate(this%totpftn_end           (begc:endc))                     ; this%totpftn_end           (:)   = nan
     allocate(this%cwdn_beg              (begc:endc))                     ; this%cwdn_beg              (:)   = nan
@@ -3308,113 +3333,120 @@ contains
        this%tan_g1(begc:endc) = spval
        call hist_addfld1d (fname='TAN_G1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G1', &
-            ptr_col=this%tan_g1)
+            ptr_col=this%tan_g1, default='inactive')
 
        this%tan_g2(begc:endc) = spval
        call hist_addfld1d (fname='TAN_G2', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G2', &
-            ptr_col=this%tan_g2)
+            ptr_col=this%tan_g2, default='inactive')
 
        this%tan_g3(begc:endc) = spval
        call hist_addfld1d (fname='TAN_G3', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool G3', &
-            ptr_col=this%tan_g3)
+            ptr_col=this%tan_g3, default='inactive')
 
        this%tan_f1(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F0', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F0', &
-            ptr_col=this%tan_f1)
+            ptr_col=this%tan_f1, default='inactive')
 
        this%tan_f2(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
-            ptr_col=this%tan_f2)
+            ptr_col=this%tan_f2, default='inactive')
 
        this%tan_f3(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F2', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F2', &
-            ptr_col=this%tan_f3)
+            ptr_col=this%tan_f3, default='inactive')
 
        this%tan_f4(begc:endc) = spval
        call hist_addfld1d (fname='TAN_F3', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F3', &
-            ptr_col=this%tan_f4)
+            ptr_col=this%tan_f4, default='inactive')
 
        this%fert_u1(begc:endc) = spval
        call hist_addfld1d (fname='FERT_U0', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F0', &
-            ptr_col=this%fert_u1)
+            ptr_col=this%fert_u1, default='inactive')
 
        this%fert_u2(begc:endc) = spval
        call hist_addfld1d (fname='FERT_U1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool F1', &
-            ptr_col=this%fert_u2)
+            ptr_col=this%fert_u2, default='inactive')
 
        this%tan_s0(begc:endc) = spval
        call hist_addfld1d (fname='TAN_S0', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S0', &
-            ptr_col=this%tan_s0)
+            ptr_col=this%tan_s0, default='inactive')
 
        this%tan_s1(begc:endc) = spval
        call hist_addfld1d (fname='TAN_S1', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S1', &
-            ptr_col=this%tan_s1)
+            ptr_col=this%tan_s1, default='inactive')
 
        this%tan_s2(begc:endc) = spval
        call hist_addfld1d (fname='TAN_S2', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S2', &
-            ptr_col=this%tan_s2)
+            ptr_col=this%tan_s2, default='inactive')
 
        this%tan_s3(begc:endc) = spval
        call hist_addfld1d (fname='TAN_S3', units='gN/m^2', &
             avgflag='A', long_name='Total ammoniacal nitrogen in FAN pool S3', &
-            ptr_col=this%tan_s3)
+            ptr_col=this%tan_s3, default='inactive')
 
        this%manure_u_grz(begc:endc) = spval
        call hist_addfld1d (fname='MAN_U_GRZ', units='gN/m^2', &
             avgflag='A', long_name='Unavailable manure nitrogen, grazing', &
-            ptr_col=this%manure_u_grz)
+            ptr_col=this%manure_u_grz, default='inactive')
 
        this%manure_a_grz(begc:endc) = spval
        call hist_addfld1d (fname='MAN_A_GRZ', units='gN/m^2', &
             avgflag='A', long_name='Available manure nitrogen, grazing', &
-            ptr_col=this%manure_a_grz)
+            ptr_col=this%manure_a_grz, default='inactive')
 
        this%manure_r_grz(begc:endc) = spval
        call hist_addfld1d (fname='MAN_R_GRZ', units='gN/m^2', &
             avgflag='A', long_name='Resistant manure nitrogen, grazing', &
-            ptr_col=this%manure_r_grz)
+            ptr_col=this%manure_r_grz, default='inactive')
 
        this%manure_u_grz(begc:endc) = spval
        call hist_addfld1d (fname='MAN_U_APP', units='gN/m^2', &
             avgflag='A', long_name='Unavailable manure nitrogen, application', &
-            ptr_col=this%manure_u_app)
+            ptr_col=this%manure_u_app, default='inactive')
 
        this%manure_a_app(begc:endc) = spval
        call hist_addfld1d (fname='MAN_A_APP', units='gN/m^2', &
             avgflag='A', long_name='Available manure nitrogen, application', &
-            ptr_col=this%manure_a_app)
+            ptr_col=this%manure_a_app, default='inactive')
 
        this%manure_r_app(begc:endc) = spval
        call hist_addfld1d (fname='MAN_R_APP', units='gN/m^2', &
             avgflag='A', long_name='Resistant manure nitrogen, application', &
-            ptr_col=this%manure_r_app)
+            ptr_col=this%manure_r_app, default='inactive')
 
        this%manure_n_stored(begc:endc) = spval
        call hist_addfld1d (fname='MAN_N_STORED', units='gN/m^2', &
             avgflag='A', long_name='Manure nitrogen in storage', &
-            ptr_col=this%manure_n_stored)
+            ptr_col=this%manure_n_stored, default='inactive')
 
        this%manure_tan_stored(begc:endc) = spval
        call hist_addfld1d (fname='MAN_TAN_STORED', units='gN/m^2', &
             avgflag='A', long_name='Manure ammoniacal nitrogen in storage', &
-            ptr_col=this%manure_tan_stored)
+            ptr_col=this%manure_tan_stored, default='inactive')
 
        this%fan_grz_fract(begc:endc) = spval
        call hist_addfld1d (fname='FAN_GRZ_FRACT', units='', &
             avgflag='A', long_name='Fraction of animals grazing', &
-            ptr_col=this%fan_grz_fract)
-    end if
+            ptr_col=this%fan_grz_fract, default='inactive')
+
+   end if
+
+   this%fan_totn(begc:endc) = spval
+   call hist_addfld1d (fname='FAN_TOTN', units='gN/m2', &
+      avgflag='A', long_name='FAN total N', &
+      ptr_col=this%fan_totn, default='inactive')
+
 
 
     !-----------------------------------------------------------------------
@@ -3506,6 +3538,7 @@ contains
           this%fan_grz_fract(c) = 0.0_r8
           this%manure_n_stored(c) = 0.0_r8
        end if
+       this%fan_totn(c) = 0.0_r8
 
 
     end do
@@ -3803,7 +3836,11 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='fan_grz_fract', xtype=ncd_double, &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fan_grz_fract)
+
     end if
+    call restartvar(ncid=ncid, flag=flag, varname='fan_totn', xtype=ncd_double, &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fan_totn)
 
 
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
@@ -3948,6 +3985,29 @@ contains
        this%totsomn_1m(i)  = value_column
        this%totlitn_1m(i)  = value_column
     end do
+
+    if (use_fan) then
+       this%tan_g1(i)   = value_column
+       this%tan_g2(i)   = value_column
+       this%tan_g3(i)   = value_column
+       this%tan_s0(i)   = value_column
+       this%tan_s1(i)   = value_column
+       this%tan_s2(i)   = value_column
+       this%tan_s3(i)   = value_column
+       this%tan_f1(i)   = value_column
+       this%tan_f2(i)   = value_column
+       this%tan_f3(i)   = value_column
+       this%tan_f4(i)   = value_column
+       this%fert_u1(i)  = value_column
+       this%fert_u2(i)  = value_column
+       this%manure_u_grz(i) = value_column
+       this%manure_a_grz(i) = value_column
+       this%manure_r_grz(i) = value_column
+       this%manure_u_app(i) = value_column
+       this%manure_a_app(i) = value_column
+       this%manure_r_app(i) = value_column
+    end if
+    this%fan_totn(i)    = value_column
 
     do j = 1,nlevdecomp_full
        do fi = 1,num_column
@@ -4220,7 +4280,8 @@ contains
             this%prod1n(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
-            this%cropseedn_deficit(c)
+            this%cropseedn_deficit(c) + &
+            this%fan_totn(c)
             
        this%totabgn (c) =  &
             this%totpftn(c) + &
@@ -7910,28 +7971,35 @@ contains
     allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = nan
     allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = nan
-    allocate(this%manure_tan_appl                 (begc:endc))                    ; this%manure_tan_appl               (:)   = spval
-    allocate(this%manure_n_appl                   (begc:endc))                    ; this%manure_n_appl                 (:)   = spval
-    allocate(this%manure_n_grz                    (begc:endc))                    ; this%manure_n_grz                  (:)   = spval
-    allocate(this%manure_n_mix                    (begc:endc))                    ; this%manure_n_mix                  (:)   = spval
-    allocate(this%manure_n_barns                  (begc:endc))                    ; this%manure_n_barns                (:)   = spval
-    allocate(this%fert_n_appl                     (begc:endc))                    ; this%fert_n_appl                   (:)   = spval
-    allocate(this%otherfert_n_appl                (begc:endc))                    ; this%otherfert_n_appl              (:)   = spval
-    allocate(this%manure_n_transf                 (begc:endc))                    ; this%manure_n_transf               (:)   = spval
-    allocate(this%nh3_barns                       (begc:endc))                    ; this%nh3_barns                     (:)   = spval
-    allocate(this%nh3_stores                      (begc:endc))                    ; this%nh3_stores                    (:)   = spval
-    allocate(this%nh3_grz                         (begc:endc))                    ; this%nh3_grz                       (:)   = spval
-    allocate(this%nh3_manure_app                  (begc:endc))                    ; this%nh3_manure_app                (:)   = spval
-    allocate(this%nh3_fert                        (begc:endc))                    ; this%nh3_fert                      (:)   = spval
-    allocate(this%nh3_otherfert                   (begc:endc))                    ; this%nh3_otherfert                 (:)   = spval
-    allocate(this%nh3_total                       (begc:endc))                    ; this%nh3_total                     (:)   = spval
-    allocate(this%manure_no3_to_soil              (begc:endc))                    ; this%manure_no3_to_soil            (:)   = spval
-    allocate(this%fert_no3_to_soil                (begc:endc))                    ; this%fert_no3_to_soil              (:)   = spval
-    allocate(this%manure_nh4_to_soil              (begc:endc))                    ; this%manure_nh4_to_soil            (:)   = spval
-    allocate(this%fert_nh4_to_soil                (begc:endc))                    ; this%fert_nh4_to_soil              (:)   = spval
-    allocate(this%manure_nh4_runoff               (begc:endc))                    ; this%manure_nh4_runoff             (:)   = spval
-    allocate(this%fert_nh4_runoff                 (begc:endc))                    ; this%fert_nh4_runoff               (:)   = spval
-    
+    if (use_fan) then
+       allocate(this%manure_tan_appl                 (begc:endc))                    ; this%manure_tan_appl               (:)   = spval
+       allocate(this%manure_n_appl                   (begc:endc))                    ; this%manure_n_appl                 (:)   = spval
+       allocate(this%manure_n_grz                    (begc:endc))                    ; this%manure_n_grz                  (:)   = spval
+       allocate(this%manure_n_mix                    (begc:endc))                    ; this%manure_n_mix                  (:)   = spval
+       allocate(this%manure_n_barns                  (begc:endc))                    ; this%manure_n_barns                (:)   = spval
+       allocate(this%fert_n_appl                     (begc:endc))                    ; this%fert_n_appl                   (:)   = spval
+       allocate(this%otherfert_n_appl                (begc:endc))                    ; this%otherfert_n_appl              (:)   = spval
+       allocate(this%manure_n_transf                 (begc:endc))                    ; this%manure_n_transf               (:)   = spval
+       allocate(this%nh3_barns                       (begc:endc))                    ; this%nh3_barns                     (:)   = spval
+       allocate(this%nh3_stores                      (begc:endc))                    ; this%nh3_stores                    (:)   = spval
+       allocate(this%nh3_grz                         (begc:endc))                    ; this%nh3_grz                       (:)   = spval
+       allocate(this%nh3_manure_app                  (begc:endc))                    ; this%nh3_manure_app                (:)   = spval
+       allocate(this%nh3_fert                        (begc:endc))                    ; this%nh3_fert                      (:)   = spval
+       allocate(this%nh3_otherfert                   (begc:endc))                    ; this%nh3_otherfert                 (:)   = spval
+       allocate(this%nh3_total                       (begc:endc))                    ; this%nh3_total                     (:)   = spval
+       allocate(this%manure_no3_to_soil              (begc:endc))                    ; this%manure_no3_to_soil            (:)   = spval
+       allocate(this%fert_no3_to_soil                (begc:endc))                    ; this%fert_no3_to_soil              (:)   = spval
+       allocate(this%manure_nh4_to_soil              (begc:endc))                    ; this%manure_nh4_to_soil            (:)   = spval
+       allocate(this%fert_nh4_to_soil                (begc:endc))                    ; this%fert_nh4_to_soil              (:)   = spval
+       allocate(this%manure_nh4_runoff               (begc:endc))                    ; this%manure_nh4_runoff             (:)   = spval
+       allocate(this%fert_nh4_runoff                 (begc:endc))                    ; this%fert_nh4_runoff               (:)   = spval
+       allocate(this%manure_n_to_sminn               (begc:endc))                    ; this%manure_n_to_sminn             (:)   = spval
+       allocate(this%synthfert_n_to_sminn            (begc:endc))                    ; this%synthfert_n_to_sminn          (:)   = spval
+       allocate(this%manure_n_total                  (begc:endc))                    ; this%manure_n_total                (:)   = spval
+       allocate(this%fan_totnin                      (begc:endc))                    ; this%fan_totnin                    (:)   = spval
+       allocate(this%fan_totnout                     (begc:endc))                    ; this%fan_totnout                   (:)   = spval
+    end if
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_nf
     !-----------------------------------------------------------------------
@@ -8729,107 +8797,132 @@ contains
        this%manure_tan_appl(begc:endc) = spval
        call hist_addfld1d( fname='MAN_TAN_APP', units='gN/m^2/s', &
             avgflag='A', long_name='Manure TAN applied on soil', &
-            ptr_col=this%manure_tan_appl)
+            ptr_col=this%manure_tan_appl, default='inactive')
 
        this%manure_n_appl(begc:endc) = spval
        call hist_addfld1d( fname='MAN_N_APP', units='gN/m^2/s', &
             avgflag='A', long_name='Manure N applied on soil', &
-            ptr_col=this%manure_n_appl)
+            ptr_col=this%manure_n_appl, default='inactive')
 
        this%manure_n_grz(begc:endc) = spval
        call hist_addfld1d( fname='MAN_N_GRZ', units='gN/m^2/s', &
             avgflag='A', long_name='Manure N from grazing animals', &
-            ptr_col=this%manure_n_grz)
+            ptr_col=this%manure_n_grz, default='inactive')
 
        this%manure_n_mix(begc:endc) = spval
        call hist_addfld1d( fname='MAN_N_MIX', units='gN/m^2/s', &
             avgflag='A', long_name='Manure N in produced mixed systems', &
-            ptr_col=this%manure_n_mix)
+            ptr_col=this%manure_n_mix, default='inactive')
 
        this%manure_n_barns(begc:endc) = spval
         call hist_addfld1d( fname='MAN_N_BARNS', units='gN/m^2/s', &
              avgflag='A', long_name='Manure N in produced barns', &
-             ptr_col=this%manure_n_barns)
+             ptr_col=this%manure_n_barns, default='inactive')
 
        this%fert_n_appl(begc:endc) = spval
        call hist_addfld1d( fname='FERT_N_APP', units='gN/m^2/s', &
             avgflag='A', long_name='Fertilizer N applied on soil', &
-            ptr_col=this%fert_n_appl)
+            ptr_col=this%fert_n_appl, default='inactive')
 
        this%otherfert_n_appl(begc:endc) = spval
        call hist_addfld1d( fname='OTHERFERT_N_APP', units='gN/m^2/s', &
             avgflag='A', long_name='Non-urea fertilizer N applied on soil', &
-            ptr_col=this%otherfert_n_appl)
+            ptr_col=this%otherfert_n_appl, default='inactive')
 
        this%manure_n_transf(begc:endc) = spval
        call hist_addfld1d( fname='MAN_N_TRANSF', units='gN/m^2/s', &
             avgflag='A', long_name='Manure N moved from crop to natural column', &
-            ptr_col=this%manure_n_transf)
+            ptr_col=this%manure_n_transf, default='inactive')
 
        this%nh3_barns(begc:endc) = spval
        call hist_addfld1d( fname='NH3_BARNS', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from animal housings', &
-            ptr_col=this%nh3_barns)
+            ptr_col=this%nh3_barns, default='inactive')
 
        this%nh3_stores(begc:endc) = spval
        call hist_addfld1d( fname='NH3_STORES', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from stored manure', &
-            ptr_col=this%nh3_stores)
+            ptr_col=this%nh3_stores, default='inactive')
 
        this%nh3_grz(begc:endc) = spval
        call hist_addfld1d( fname='NH3_GRZ', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from manure on pastures', &
-            ptr_col=this%nh3_grz)
+            ptr_col=this%nh3_grz, default='inactive')
 
        this%nh3_manure_app(begc:endc) = spval
        call hist_addfld1d( fname='NH3_MAN_APP', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from manure applied on crops and grasslands', &
-            ptr_col=this%nh3_manure_app)
+            ptr_col=this%nh3_manure_app, default='inactive')
 
        this%nh3_fert(begc:endc) = spval
        call hist_addfld1d( fname='NH3_FERT', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from fertilizer applied on crops', &
-            ptr_col=this%nh3_fert)
+            ptr_col=this%nh3_fert, default='inactive')
 
        this%nh3_otherfert(begc:endc) = spval
        call hist_addfld1d( fname='NH3_OTHERFERT', units='gN/m^2/s', &
             avgflag='A', long_name='NH3 emitted from fertilizers other than urea', &
-            ptr_col=this%nh3_otherfert)
+            ptr_col=this%nh3_otherfert, default='inactive')
 
        this%nh3_total(begc:endc) = spval
        call hist_addfld1d( fname='NH3_TOTAL', units='gN/m^2/s', &
             avgflag='A', long_name='Total NH3 emitted from fertilizers and manure', &
-            ptr_col=this%nh3_total)
+            ptr_col=this%nh3_total, default='inactive')
 
        this%manure_no3_to_soil(begc:endc) = spval
        call hist_addfld1d( fname='MANURE_NO3_PROD', units='gN/m^2/s', &
             avgflag='A', long_name='Manure nitrification flux', &
-            ptr_col=this%manure_no3_to_soil)
+            ptr_col=this%manure_no3_to_soil, default='inactive')
 
        this%fert_no3_to_soil(begc:endc) = spval
        call hist_addfld1d( fname='FERT_NO3_PROD', units='gN/m^2/s', &
             avgflag='A', long_name='Fertilizer nitrification flux', &
-            ptr_col=this%fert_no3_to_soil)
+            ptr_col=this%fert_no3_to_soil, default='inactive')
 
        this%fert_nh4_to_soil(begc:endc) = spval
        call hist_addfld1d( fname='FERT_NH4_TO_SOIL', units='gN/m^2/s', &
             avgflag='A', long_name='Flux of NH4 to soil mineral pools, fertilizer', &
-            ptr_col=this%fert_nh4_to_soil)
+            ptr_col=this%fert_nh4_to_soil, default='inactive')
 
        this%manure_nh4_to_soil(begc:endc) = spval
        call hist_addfld1d( fname='MANURE_NH3_TO_SOIL', units='gN/m^2/s', &
             avgflag='A', long_name='Flux of NH4 to soil mineral pools, manure', &
-            ptr_col=this%manure_nh4_to_soil)
+            ptr_col=this%manure_nh4_to_soil, default='inactive')
 
        this%manure_nh4_runoff(begc:endc) = spval
        call hist_addfld1d( fname='MANURE_RUNOFF', units='gN/m^2/s', &
             avgflag='A', long_name='NH4 in surface runoff, manure', &
-            ptr_col=this%manure_nh4_runoff)
+            ptr_col=this%manure_nh4_runoff, default='inactive')
 
        this%fert_nh4_runoff(begc:endc) = spval
        call hist_addfld1d( fname='FERT_RUNOFF', units='gN/m^2/s', &
             avgflag='A', long_name='NH4 in surface runoff, fertilizer', &
-            ptr_col=this%fert_nh4_runoff)
+            ptr_col=this%fert_nh4_runoff, default='inactive')
+
+       this%synthfert_n_to_sminn(begc:endc) = spval
+       call hist_addfld1d( fname='SYNTHFERT_N_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='Fertilizer NH4, NO3 and urea-N from FAN to soil mineral pools', &
+            ptr_col=this%synthfert_n_to_sminn, default='inactive')
+
+       this%manure_n_to_sminn(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_N_TO_SMINN', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure NH4 and NO3 from FAN to soil mineral pools', &
+            ptr_col=this%manure_n_to_sminn, default='inactive')
+
+       this%manure_n_total(begc:endc) = spval
+       call hist_addfld1d( fname='MANURE_N_TOTAL', units='gN/m^2/s', &
+            avgflag='A', long_name='Total manure N produced', &
+            ptr_col=this%manure_n_total, default='inactive')
+
+       this%fan_totnin(begc:endc) = spval
+       call hist_addfld1d(fname='FAN_TOTNIN', units='gN/m^2/s', &
+            avgflag='A', long_name='Total N input into FAN', &
+            ptr_col=this%fan_totnin, default='inactive')
+
+       this%fan_totnout(begc:endc) = spval
+       call hist_addfld1d(fname='FAN_TOTNOUT', units='gN/m^2/s', &
+            avgflag='A', long_name='Total N output from FAN', &
+            ptr_col=this%fan_totnout, default='inactive')
     end if
 
 
@@ -9142,6 +9235,11 @@ contains
           this%fert_nh4_to_soil(i)   = value_column
           this%manure_nh4_runoff(i)  = value_column
           this%fert_nh4_runoff(i)    = value_column
+          this%manure_n_to_sminn(i)  = value_column
+          this%manure_n_total(i)     = value_column
+          this%synthfert_n_to_sminn(i) = value_column
+          this%fan_totnin(i)         = value_column
+          this%fan_totnout(i)        = value_column
        end if
 
     end do

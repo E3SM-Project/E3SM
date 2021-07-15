@@ -10,9 +10,10 @@ module lnd2atmMod
   use abortutils           , only : endrun
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_megan_mod        , only : shr_megan_mechcomps_n
+  use shr_fan_mod          , only : shr_fan_to_atm
   use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
+  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fan
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -21,6 +22,7 @@ module lnd2atmMod
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
+  use CNNitrogenFluxType   , only : nitrogenflux_type
   use DUSTMod              , only : dust_type
   use DryDepVelocity       , only : drydepvel_type
   use VocEmissionMod       , only : vocemis_type
@@ -33,7 +35,7 @@ module lnd2atmMod
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
-  use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es  
+  use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es, col_nf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
   
@@ -114,7 +116,7 @@ contains
   subroutine lnd2atm(bounds, &
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, &
-       solarabs_vars, carbonflux_vars, drydepvel_vars, &
+       solarabs_vars, carbonflux_vars, nitrogenflux_vars, drydepvel_vars, &
        vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     !
     ! !DESCRIPTION:
@@ -133,6 +135,7 @@ contains
     type(energyflux_type)  , intent(in)     :: energyflux_vars
     type(solarabs_type)    , intent(in)     :: solarabs_vars
     type(carbonflux_type)  , intent(in)     :: carbonflux_vars
+    type(nitrogenflux_type), intent(in)     :: nitrogenflux_vars
     type(drydepvel_type)   , intent(in)     :: drydepvel_vars
     type(vocemis_type)     , intent(in)     :: vocemis_vars
     type(dust_type)        , intent(in)     :: dust_vars
@@ -271,6 +274,14 @@ contains
             ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &
             c2l_scale_type= 'unity', l2g_scale_type='unity' )
+    end if
+
+    ! nh3 flux
+    if (shr_fan_to_atm) then
+       call c2g(bounds,     &
+            nitrogenflux_vars%nh3_total_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_nh3_grc  (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'unity', l2g_scale_type='unity')
     end if
 
     !----------------------------------------------------

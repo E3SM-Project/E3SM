@@ -2,10 +2,8 @@ module FanStreamMod
 
   !----------------------------------------------------------------------- 
   ! !DESCRIPTION: 
-  ! Contains methods for reading in FAN nitrogen deposition (in the form of
-  ! manure) data file
-  ! Also includes functions for dynamic ndep2 file handling and 
-  ! interpolation.
+  ! Contains methods for reading in FAN nitrogen deposition (in the form of manure) data file
+  ! Also includes functions for dynamic ndep2 file handling and interpolation.
   !
   ! !USES
   use shr_kind_mod, only: r8 => shr_kind_r8, CL => shr_kind_cl
@@ -21,9 +19,7 @@ module FanStreamMod
   use fileutils   , only: getavu, relavu
   use decompMod   , only: bounds_type, ldecomp, gsmap_lnd_gdc2glo 
   use domainMod   , only: ldomain
-!KO
   use ndepStreamMod, only: clm_domain_mct
-!KO
 
   ! !PUBLIC TYPES:
   implicit none
@@ -33,7 +29,6 @@ module FanStreamMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: fanstream_init     ! position datasets for dynamic ndep2
   public :: fanstream_interp   ! interpolates between two years of ndep2 file data
-!KO  public :: clm_domain_mct ! Sets up MCT domain for this resolution
 
   ! ! PRIVATE TYPES
   type(shr_strdata_type)  :: sdat_past, sdat_mix, sdat_urea, sdat_nitr, sdat_soilph         ! input data streams
@@ -48,6 +43,7 @@ module FanStreamMod
 contains
 
   !==============================================================================
+
 
   subroutine fanstream_init(bounds, NLFilename)
    !    
@@ -79,7 +75,7 @@ contains
 
    namelist /fan_nml/        &
         stream_year_first_fan,  &
-	stream_year_last_fan,   &
+        stream_year_last_fan,   &
         model_year_align_fan,   &
         fanmapalgo,             &
         stream_fldFileName_fan
@@ -274,7 +270,7 @@ contains
  end subroutine fanstream_init
   
  !================================================================
- subroutine fanstream_interp(bounds, atm2lnd_inst)
+ subroutine fanstream_interp(bounds, atm2lnd_vars)
 
    !-----------------------------------------------------------------------
    use clm_time_manager, only : get_curr_date, get_days_per_year
@@ -283,7 +279,7 @@ contains
    !
    ! Arguments
    type(bounds_type) , intent(in)    :: bounds  
-   type(atm2lnd_type), intent(inout) :: atm2lnd_inst
+   type(atm2lnd_type), intent(inout) :: atm2lnd_vars
    !
    ! Local variables
    integer :: g, ig 
@@ -304,7 +300,7 @@ contains
    ig = 0
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_inst%forc_ndep3_grc(g) = sdat_past%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
+      atm2lnd_vars%forc_ndep_past_grc(g) = sdat_past%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
    end do
 
    call shr_strdata_advance(sdat_mix, mcdate, sec, mpicom, 'clmfanmixed')
@@ -312,7 +308,7 @@ contains
    ig = 0
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_inst%forc_ndep2_grc(g) = sdat_mix%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
+      atm2lnd_vars%forc_ndep_mgrz_grc(g) = sdat_mix%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
    end do
 
    call shr_strdata_advance(sdat_urea, mcdate, sec, mpicom, 'clmfanurea')
@@ -320,7 +316,7 @@ contains
    ig = 0
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_inst%forc_ndep_urea_grc(g) = sdat_urea%avs(1)%rAttr(1,ig)
+      atm2lnd_vars%forc_ndep_urea_grc(g) = sdat_urea%avs(1)%rAttr(1,ig)
    end do
 
    call shr_strdata_advance(sdat_nitr, mcdate, sec, mpicom, 'clmfannitr')
@@ -328,7 +324,7 @@ contains
    ig = 0
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_inst%forc_ndep_nitr_grc(g) = sdat_nitr%avs(1)%rAttr(1,ig)
+      atm2lnd_vars%forc_ndep_nitr_grc(g) = sdat_nitr%avs(1)%rAttr(1,ig)
    end do
 
    call shr_strdata_advance(sdat_soilph, mcdate, sec, mpicom, 'clmfanph')
@@ -336,7 +332,7 @@ contains
    ig = 0
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_inst%forc_soilph_grc(g) = sdat_soilph%avs(1)%rAttr(1,ig)
+      atm2lnd_vars%forc_soilph_grc(g) = sdat_soilph%avs(1)%rAttr(1,ig)
    end do
 
    

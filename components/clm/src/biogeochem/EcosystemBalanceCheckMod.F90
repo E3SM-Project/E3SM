@@ -10,7 +10,7 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
+  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates, use_fan
   use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
@@ -342,6 +342,8 @@ contains
          nfix_to_ecosysn           =>    col_nf%nfix_to_ecosysn           , &
          fert_to_sminn             =>    col_nf%fert_to_sminn             , & ! Input:  [real(r8) (:)]
          soyfixn_to_sminn          =>    col_nf%soyfixn_to_sminn          , & ! Input:  [real(r8) (:)]
+         fan_totnin                =>    col_nf%fan_totnin                , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total N input into the FAN pools
+         fan_totnout               =>    col_nf%fan_totnout               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total N output from the FAN pools
          supplement_to_sminn       =>    col_nf%supplement_to_sminn       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
          denit                     =>    col_nf%denit                     , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s)
          sminn_leached             =>    col_nf%sminn_leached             , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
@@ -385,6 +387,8 @@ contains
 
          if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
               fert_to_sminn(c) + soyfixn_to_sminn(c)
+
+         if (use_fan) col_ninputs(c) = col_ninputs(c) + fan_totnin(c)
 
          do p = col_pp%pfti(c), col_pp%pftf(c)
             if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
@@ -435,6 +439,8 @@ contains
          col_noutputs(c) = col_noutputs(c) + col_prod1n_loss(c)
          
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
+
+         if (use_fan) col_noutputs(c) = col_noutputs(c) + fan_totnout(c)
 
          ! subtracted erosion flux
          if (ero_ccycle) then

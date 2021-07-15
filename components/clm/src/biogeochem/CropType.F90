@@ -79,6 +79,7 @@ module CropType
 
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory
+     procedure, private :: InitCold
      procedure, private, nopass :: checkDates
 
   end type crop_type
@@ -103,6 +104,7 @@ contains
 
     if (crop_prog) then
        call this%InitHistory(bounds)
+       call this%InitCold(bounds)
     end if
 
   end subroutine Init
@@ -285,7 +287,40 @@ contains
   end subroutine InitHistory
 
 
+  subroutine InitCold(this, bounds)
+    ! !USES:
+    use LandunitType, only : lun_pp                
+    use landunit_varcon, only : istcrop
+    use VegetationType, only : veg_pp
+    use clm_varsur, only : fert_cft, fert_p_cft
+    use shr_infnan_mod   , only : nan => shr_infnan_nan, assignment(=)
+    ! !ARGUMENTS:
+    class(crop_type),  intent(inout) :: this
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c, l, g, p, m, ivt ! indices
+
+    character(len=*), parameter :: subname = 'InitCold'
+    if (use_crop) then
+       do p= bounds%begp,bounds%endp
+          g = veg_pp%gridcell(p)
+          l = veg_pp%landunit(p)
+          c = veg_pp%column(p)
+
+          if (lun_pp%itype(l) == istcrop) then
+             m = veg_pp%itype(p)
+             this%fertnitro_patch(p) = fert_cft(g,m)
+             this%fertphosp_patch(p) = fert_p_cft(g,m)
+          end if
+       end do
+    end if
+
+  end subroutine InitCold
+
     !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
   subroutine InitAccBuffer (this, bounds)
     !
     ! !DESCRIPTION:

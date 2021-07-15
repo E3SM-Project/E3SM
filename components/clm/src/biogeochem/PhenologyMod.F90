@@ -1367,6 +1367,7 @@ contains
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use clm_varcon       , only : spval, secspday
     use CropType         , only : tcvp, tcvt, cst
+    use clm_varctl       , only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_pcropp       ! number of prog crop patches in filter
@@ -1415,7 +1416,6 @@ contains
 
          leafcn             =>    veg_vp%leafcn                                , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)                                  
          manunitro          =>    veg_vp%manunitro                             , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)    
-         
          t_ref2m_min        =>    veg_es%t_ref2m_min           , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10                =>    veg_es%t_a10                 , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)    
          a5tmin             =>    veg_es%t_a5min               , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature         
@@ -1460,7 +1460,8 @@ contains
          leafcp             =>    veg_vp%leafcp                                , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)                                  
          leafp_xfer         =>    veg_ps%leafp_xfer        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer                           
          crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level                
-         fert               =>    veg_nf%fert                             , & ! Output:  [real(r8) (:) ] (gN/m2/s) nitrogen  fertilizer applied each timestep 
+         synthfert          =>    veg_nf%synthfert                  , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
+         manure            =>     veg_nf%manure                     , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep 
          fert_p             =>    veg_pf%fert_p                           , & ! Output:  [real(r8) (:) ] (gP/m2/s) phosphorus fertilizer applied each timestep
          cvt                =>    crop_vars%cvt_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV precip
          cvp                =>    crop_vars%cvp_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV temp
@@ -1829,8 +1830,14 @@ contains
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = ((manunitro(ivt(p)) + fertnitro(p)) * 1000._r8) / fert_counter(p)
-                  fert_p(p) = (fertphosp(p) * 1000._r8) / fert_counter(p)
+                  fert_p(p) = fertphosp(p)  / fert_counter(p)
+                  synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  if (.not. fan_to_bgc_crop) then
+                     manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
+                  else
+                     ! CLM default manure not used; FAN determines the application.
+                     manure(p) = 0.0_r8
+                  end if
                else
                   ! this ensures no re-entry to onset of phase2
                   ! b/c onset_counter(p) = onset_counter(p) - dt
@@ -1877,7 +1884,8 @@ contains
             ! assumes that onset of phase 2 took one time step only
 
             if (fert_counter(p) <= 0._r8) then
-               fert(p) = 0._r8
+               synthfert(p) = 0._r8
+               manure(p) = 0._r8
                fert_p(p) = 0._r8
             else ! continue same fert application every timestep
                fert_counter(p) = fert_counter(p) - dt

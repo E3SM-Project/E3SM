@@ -185,7 +185,7 @@ module CNEcosystemDynBetrMod
        call t_startf('MaintenanceResp')
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc, &
-               nitrogenflux_vars)
+               num_pcropp, filter_pcropp, nitrogenflux_vars)
 
        end if
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &

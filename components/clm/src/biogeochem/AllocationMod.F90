@@ -3252,7 +3252,7 @@ contains
                  plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p)) 
                  plant_palloc(p) = plant_calloc(p) * (p_allometry(p)/c_allometry(p))
                  if (veg_vp%nstor(veg_pp%itype(p)) < 1e-6_r8) then 
-                     sminp_to_ppool(p) = plant_palloc(p) - retransp_to_ppool(p)
+                     sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p), 0.0_r8)
                  end if
              endif
   

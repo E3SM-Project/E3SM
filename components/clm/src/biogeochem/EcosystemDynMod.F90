@@ -7,7 +7,7 @@ module EcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
+  use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, use_fan
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -78,6 +78,7 @@ contains
     use PhenologyMod , only : PhenologyInit
     use FireMod      , only : FireInit
     use C14DecayMod  , only : C14_init_BombSpike
+    use FanUpdateMod , only : fanInit
     !
     ! !ARGUMENTS:
     implicit none
@@ -95,6 +96,10 @@ contains
     if(use_pheno_flux_limiter)then
       call InitPhenoFluxLimiter()
     endif
+
+    if(use_fan)then
+      call fanInit()
+    end if
   end subroutine EcosystemDynInit
 
 
@@ -269,6 +274,7 @@ contains
   subroutine EcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &
+       num_pcropp, filter_pcropp,                                       &
        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
        c13_carbonflux_vars,                                             &
        c14_carbonflux_vars,                                             &
@@ -329,8 +335,8 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-!    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
-!    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
+    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
+    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
 !    logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
@@ -417,15 +423,20 @@ contains
           call t_stopf('CNFixation')
        end if
 
-       call t_startf('MaintenanceResp')
        if (crop_prog) then
+          call t_startf('NitrogenFert')
           call NitrogenFert(bounds, num_soilc,filter_soilc, &
-               nitrogenflux_vars)
+               num_pcropp, filter_pcropp, nitrogenflux_vars)
+          call t_stopf('NitrogenFert')
 
+          call t_startf('CNSoyfix')
           call CNSoyfix(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                waterstate_vars, crop_vars, cnstate_vars, &
                nitrogenstate_vars, nitrogenflux_vars)
+          call t_stopf('CNSoyfix')
        end if
+
+       call t_startf('MaintenanceResp')
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, carbonstate_vars, nitrogenstate_vars)

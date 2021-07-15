@@ -71,6 +71,7 @@ contains
     ! Error check
 
     if ( maxpatch_pft /= numpft+1 )then
+    write(*,*) "maxpatch_pft, numpft+1", maxpatch_pft, numpft+1
        call endrun(msg=' maxpatch_pft does NOT equal numpft+1 -- this is invalid for dynamic PFT case'//&
             errMsg(__FILE__, __LINE__) )
     end if

@@ -956,6 +956,7 @@ contains
              call EcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
                        filter(nc)%num_soilp, filter(nc)%soilp,                          &
+                       filter(nc)%num_pcropp, filter(nc)%pcropp,                        &
                        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
                        c13_carbonflux_vars,                                             &
                        c14_carbonflux_vars,                                             &
@@ -1347,10 +1348,10 @@ contains
     endif
 
     call t_startf('lnd2atm')
-    call lnd2atm(bounds_proc,                                            &
-         atm2lnd_vars, surfalb_vars, frictionvel_vars, &
-         waterstate_vars, waterflux_vars, energyflux_vars,               &
-         solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
+    call lnd2atm(bounds_proc,                                               &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars,                      &
+         waterstate_vars, waterflux_vars, energyflux_vars,                  &
+         solarabs_vars, carbonflux_vars, nitrogenflux_vars, drydepvel_vars, &
          vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     call t_stopf('lnd2atm')
 

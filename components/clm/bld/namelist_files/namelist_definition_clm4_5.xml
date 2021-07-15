@@ -639,9 +639,23 @@ Max number of plant functional types in naturally vegetated landunit.
 Toggle to turn on the dynamic root model.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for FAN model                                                   -->
+<!-- ========================================================================================  -->
+
 <entry id="use_fan" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the Flow of Agricultural Nitrogen (FAN) model
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the Flow of Agricultural Nitrogen (FAN) model.
+Default configuration has no connection to soil or atmosphere.
+</entry>
+
+<entry id="fan_mode" type="char*32" category="physics"
+       group="clm_inparm" valid_values="fan_offline,fan_soil,fan_atm,fan_full">
+Optional flag to turn on the fan mode coupling atm/soil.
+    fan_offline = use only fan for calculating emissions (no coupling)
+    fan_soil    = fan coupled to soil bgc
+    fan_atm     = fan coupled to atmosphere 
+    fan_full    = fan coupled to both soil bgc and atmosphere
 </entry>
 
 <!--                                                   -->
@@ -1097,7 +1111,25 @@ Mapping method from FAN Nitrogen (manure) deposition input file to the model res
     copy     = copy using the same indices
 </entry>
 
+<entry id="fan_to_bgc_crop" type="logical" category="physics"
+       group="fan_nml" valid_values="" >
+Toggle to connect the FAN N pools to soil biogeochemistry for CROP VEGETATION columns
+</entry>
 
+<entry id="fan_to_bgc_veg" type="logical" category="physics"
+       group="fan_nml" valid_values="" >
+Toggle to connect the FAN N pools to soil biogeochemistry for NATIVE VEGETATION columns
+</entry>
+
+<entry id="fract_spread_grass" type="real" category="physics"
+       group="fan_nml" valid_values="" >
+Fraction of manure N produced in crop columns but spread on native vegetation columns (grasslands)
+</entry>
+
+<entry id="nh4_ads_coef" type="real" category="physics"
+       group="fan_nml" valid_values="">
+  Adsorption coefficient for ammonium in FAN. Must be >= 0, 0 means no adsorption.
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->

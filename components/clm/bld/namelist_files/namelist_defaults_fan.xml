@@ -14,6 +14,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 -->
 
 <fan_nh3_to_atm use_fan=".false.">.false.</fan_nh3_to_atm>
-<fan_nh3_to_atm use_fan=".true." fan_mode="atm">.true.</fan_nh3_to_atm>
+<fan_nh3_to_atm use_fan=".true." fan_mode="fan_atm">.true.</fan_nh3_to_atm>
 
 </namelist_defaults>
