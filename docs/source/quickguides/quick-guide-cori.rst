@@ -23,7 +23,7 @@ Both <obs_path> and <test_data_path> have two subdirectories:
 Also listed below are paths where the HTML files (<html_path>) must be located to be displayed
 at their corresponding web addresses (<web_address>).
 
-<activation_command>: ``source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh``
+<activation_command>: ``source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh``
 
 <obs_path>: ``/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/``
 
@@ -119,8 +119,9 @@ Interactive session on compute nodes
 '''''''''''''''''''''''''''''''''''''
 
 First, request an interactive session with a single node
-(32 cores with Cori Haswell, 68 cores with Cori KNL)
+(32 cores with Cori Haswell, 68 cores with Cori KNL). 
 for one hour (running this example should take much less than this).
+[Note: there is known issue with running e3sm_diags on KNL, running on Haswell is recommended.]
 If obtaining a session takes too long, try to use the ``debug`` partition.
 Note that the maximum time allowed for that partition is ``00:30:00``.
 

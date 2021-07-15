@@ -23,7 +23,7 @@ Both <obs_path> and <test_data_path> have two subdirectories:
 Also listed below are paths where the HTML files (<html_path>) must be located to be displayed
 at their corresponding web addresses (<web_address>).
 
-<activation_command>: ``source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified.sh``
+<activation_command>: ``source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified_acme1.sh``
 
 <obs_path>: ``/p/user_pub/e3sm/e3sm_diags_data/obs_for_e3sm_diags/``
 

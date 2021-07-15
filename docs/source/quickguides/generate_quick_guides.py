@@ -4,7 +4,7 @@ import subprocess
 EXPANSIONS = {
     'acme1': {
         'machine_name': 'Acme1',
-        'activation_path': '/usr/local/e3sm_unified/envs/load_latest_e3sm_unified.sh',
+        'activation_path': '/usr/local/e3sm_unified/envs/load_latest_e3sm_unified_acme1.sh',
         'obs_path': '/p/user_pub/e3sm/e3sm_diags_data/obs_for_e3sm_diags/',
         'test_data_path': '/p/user_pub/e3sm/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/var/www/acme/acme-diags/<username>/',
@@ -12,7 +12,7 @@ EXPANSIONS = {
     },
     'lcrc': {
         'machine_name': 'LCRC',
-        'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh',
+        'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh',
         'obs_path': '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/',
         'test_data_path': '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/lcrc/group/e3sm/public_html/diagnostic_output/<username>/',
@@ -20,7 +20,7 @@ EXPANSIONS = {
     },
     'compy': {
         'machine_name': 'Compy',
-        'activation_path': '/share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh',
+        'activation_path': '/share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh',
         'obs_path': '/compyfs/e3sm_diags_data/obs_for_e3sm_diags/',
         'test_data_path': '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/compyfs/www/<username>/',
@@ -28,7 +28,7 @@ EXPANSIONS = {
     },
     'cori': {
         'machine_name': 'Cori',
-        'activation_path': '/global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh',
+        'activation_path': '/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh',
         'obs_path': '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/',
         'test_data_path': '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/',
         'html_path': '/global/cfs/cdirs/e3sm/www/<username>/',
@@ -42,7 +42,7 @@ def generate_quick_guides():
     machine_names = EXPANSIONS.keys()
     git_top_level = subprocess.check_output(
         'git rev-parse --show-toplevel'.split()).strip().decode('utf-8')
-    quick_guides_dir = '{g}/source/quickguides/'.format(g=git_top_level)
+    quick_guides_dir = '{g}/docs/source/quickguides/'.format(g=git_top_level)
     generic_quick_guide = '{d}quick-guide-generic.rst'.format(
         d=quick_guides_dir)
     specific_quick_guides = {}

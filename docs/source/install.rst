@@ -14,37 +14,32 @@ The paths to ``e3sm_unified`` activation scripts are machine dependent:
 **Compy**
     ::
 
-     source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh
+     source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
 
 
 **NERSC**
     ::
 
-     source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
-
+     source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
 
 **LCRC**
     ::
 
-     source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh
+     source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
 
 
 **Cooley**
     ::
 
-     source /lus/theta-fs0/projects/ccsm/acme/tools/e3sm-unified/load_latest_e3sm_unified.sh
+     source /lus/theta-fs0/projects/ccsm/acme/tools/e3sm-unified/load_latest_e3sm_unified_cooley.sh
 
 
 **acme1**
     ::
 
-     source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified.sh
+     source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified_acme1.sh
 
 
-**Rhea**
-    ::
-
-     source /ccs/proj/cli900/sw/rhea/e3sm-unified/load_latest_e3sm_unified.sh
 
 
 Change ``.sh`` to ``.csh`` for csh shells.
