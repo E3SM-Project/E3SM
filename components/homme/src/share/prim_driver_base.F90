@@ -1632,7 +1632,6 @@ contains
                   !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
                   elem%state%Qdp(i,j,k,q,np1_qdp) = &
                        dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-                  
                   if (q==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
                           elem%state%Q(i,j,k,q))
@@ -1660,9 +1659,27 @@ contains
                      endif
                   endif
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
+#if 1
                   if (q==1) then
+#else
+!standalone homme calls with adjustment=.false., assume only 3 water tracers
+#define qvap 1
+#define qcld 2
+#define qrain 3 
+                  if (q==qvap .or. q==qcld .or. q==qrain ) then
+
+!print *, 'HERE'
+
+if ( q==qcld .or. q==qrain ) then
+if(fq > 0.0 )then
+!print *, 'fq is ', fq
+endif
+endif
+
+#endif
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
+
                   endif
                enddo
             enddo
