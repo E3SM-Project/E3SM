@@ -2577,7 +2577,11 @@ contains
 
                wfrac = elm_fates%fates(nc)%bc_out(s)%woody_frac_aere_pa(pf)
                poros_tiller = wfrac*0.3_r8 + (1._r8-wfrac)*0.3_r8*CH4ParamsInst%nongrassporosratio
-               is_vegetated = .true.
+               if(veg_pp%is_bareground(p)) then
+                  is_vegetated = .false.
+               else
+                  is_vegetated = .true.
+               end if
 
                annsum_npp_ptr   => elm_fates%fates(nc)%bc_out(s)%annsum_npp_pa(pf)
                annavg_agnpp_ptr => elm_fates%fates(nc)%bc_out(s)%annavg_agnpp_pa(pf)
