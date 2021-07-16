@@ -18,7 +18,7 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 
 # Test Homme standalone
-if (NOT SCREAM_AUTOTESTER)
+if (NOT SCREAM_AUTOTESTER AND NOT EKAT_ENABLE_VALGRIND)
   CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
   set_target_properties(homme_physics_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
   target_include_directories(homme_physics_stand_alone PUBLIC
