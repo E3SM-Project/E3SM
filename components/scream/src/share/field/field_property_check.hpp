@@ -22,6 +22,9 @@ template<typename RealType> class Field;
 //
 // FieldPropertyCheck is an abstract base class that provides an interface to
 // be implemented by a subclass.
+//
+// Predefined FieldPropertyCheck instances are stored in the field_property_checks
+// sub-directory.
 template<typename RealType>
 class FieldPropertyCheck {
 public:
@@ -38,6 +41,9 @@ public:
   FieldPropertyCheck& operator=(const FieldPropertyCheck&) = delete;
 
   virtual ~FieldPropertyCheck()  = default;
+
+  // Name of property check - override this method to give a name to the check.
+  virtual std::string name () const = 0;
 
   // Override this method to perform a property check on a Field. The method
   // returns true if the property check passes, and false if it fails.

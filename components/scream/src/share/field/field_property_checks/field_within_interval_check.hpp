@@ -36,6 +36,9 @@ public:
 
   // Overrides.
 
+  // The name of the field check
+  std::string name () const { return "Within Interval Field Check"; }
+
   bool check(const Field<const_RT>& field) const override {
     auto view = field.get_view();
     typename Kokkos::MinMax<non_const_RT>::value_type minmax;
