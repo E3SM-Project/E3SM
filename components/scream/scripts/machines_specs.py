@@ -25,12 +25,6 @@ def get_weaver_queue():
     return queue
 
 MACHINE_METADATA = {
-    "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],
-                 ["mpicxx","mpifort","mpicc"],
-                  "",
-                  24,
-                  24,
-                  ""),
     "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.12.3 python/3.7.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
@@ -48,7 +42,7 @@ MACHINE_METADATA = {
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-env sems-python/3.5.2 sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
+    "mappy"   : (["module purge", "module load sems-env sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   46,
