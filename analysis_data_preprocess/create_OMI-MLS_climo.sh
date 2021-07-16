@@ -35,6 +35,9 @@ for yr in {2005..2017}; do      # Loop over years
         mm=`printf "%02d" $mth`
         ncks -O -F -d time,${mth} ${tmp}sco${yyyy}.nc ${tmp}sco_${yyyy}${mm}.nc
         ncks -O -F -d time,${mth} ${tmp}tco${yyyy}.nc ${tmp}OMI-MLS_${yyyy}${mm}.nc
+        # It turned out attaching latidude depended SCO to TCO flipped latitude of TCO
+        # Add ncpdq command to flip SCO lat first
+        ncpdq -O -h -a -lat ${tmp}sco_${yyyy}${mm}.nc ${tmp}sco_${yyyy}${mm}.nc
         ncks -A ${tmp}sco_${yyyy}${mm}.nc ${tmp}OMI-MLS_${yyyy}${mm}.nc
         done
 done
