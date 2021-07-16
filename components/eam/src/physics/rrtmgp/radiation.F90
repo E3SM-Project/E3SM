@@ -15,7 +15,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column, swrad_off, lwrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -358,13 +358,15 @@ contains
       ! and the longwave. In practice, these are probably usually the same.
       select case (op)
          case ('sw') ! do a shortwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradsw == 1                     &
+            radiation_do = (nstep == 0 .or. iradsw == 1                    &
                           .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+                          .or. nstep <= irad_always)                       &
+                          .and. .not.swrad_off
          case ('lw') ! do a longwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradlw == 1                     &
+            radiation_do = (nstep == 0 .or. iradlw == 1                    &
                           .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+                          .or. nstep <= irad_always)                       &
+                          .and. .not.lwrad_off
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
