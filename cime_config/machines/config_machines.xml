@@ -2902,7 +2902,7 @@
         <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
-        <arg name="bind">--bind packed:smt:$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</arg>
+        <arg name="bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
       </arguments>
@@ -2975,6 +2975,7 @@
       <env name="GPU_PER_RS">0</env>
       <env name="LTC_PRT">cpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
     </environment_variables>
     <environment_variables compiler="ibmgpu">
       <env name="RS_PER_NODE">6</env>
