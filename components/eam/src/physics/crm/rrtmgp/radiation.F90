@@ -14,7 +14,7 @@ module radiation
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column, swrad_off, lwrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
@@ -2171,6 +2171,13 @@ contains
 
       ncol = size(pmid,1)
       nlev = size(pmid,2)
+
+      ! When lwrad_off is set to true, zero fluxes and return
+      if (lwrad_off) then
+         call reset_fluxes(fluxes_allsky)
+         call reset_fluxes(fluxes_clrsky)
+         return
+      end if
 
       ! Initialize gas concentrations with lower case names
       allocate(gas_names_lower(size(gas_names)))

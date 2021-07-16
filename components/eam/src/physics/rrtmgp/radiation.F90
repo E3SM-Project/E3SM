@@ -15,7 +15,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column, swrad_off, lwrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -1911,6 +1911,15 @@ contains
       ! exists or is assumed in the model we should use it here as well.
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
+
+      ! When lwrad_off=true, zero fluxes and radiative heating rate, and return 
+      if (lwrad_off) then
+         call reset_fluxes(fluxes_allsky)
+         call reset_fluxes(fluxes_clrsky)
+         qrl(1:ncol,1:pver) = 0
+         qrlc(1:ncol,1:pver) = 0
+         return
+      end if
 
       ! Populate RRTMGP optics
       call t_startf('longwave cloud optics')
