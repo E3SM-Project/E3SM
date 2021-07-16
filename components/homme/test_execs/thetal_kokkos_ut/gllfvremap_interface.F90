@@ -207,6 +207,17 @@ contains
     call gfr_f2g_dss(hybrid, elem, 1, nelemd)
   end subroutine gfr_fv_phys_to_dyn_f90
 
+  function equal(a, b) result(e)
+    real (c_double), intent(in) :: a, b
+    logical :: e
+    real (c_double), parameter :: eps = epsilon(1.0_c_double)
+#ifdef HOMMEXX_BFB_TESTING
+    e = a == b
+#else
+    e = abs(a - b) <= 1d10*eps*abs(a)
+#endif
+  end function equal
+
   subroutine cmp_dyn_data_f90(nk, nq, ft, fm, q, fq, nerr) bind(c)
     integer (c_int), value, intent(in) :: nk, nq
     real (c_double), intent(in) :: ft(nk,np,np,nelemd), &
@@ -222,37 +233,37 @@ contains
        do i = 1,np
           do j = 1,np
              do k = 1,nlev
-                if (.false. .and. elem(ie)%derived%FT(j,i,k) /= ft(k,j,i,ie)) then
+                if (.not. equal(elem(ie)%derived%FT(j,i,k), ft(k,j,i,ie))) then
                    nerr = nerr+1
                    if (nerr < outmax) then
-                      print '(a,i4,i2,i2,i3,es18.10,es18.10)', &
+                      print '(a,i4,i2,i2,i3,es23.15,es23.15)', &
                            'ft: ie,i,j,k',ie,i,j,k, &
                            elem(ie)%derived%FT(j,i,k), ft(k,j,i,ie)
                    end if
                 end if
                 do d = 1,2
-                   if (elem(ie)%derived%FM(j,i,d,k) /= fm(k,j,i,d,ie)) then
+                   if (.not. equal(elem(ie)%derived%FM(j,i,d,k), fm(k,j,i,d,ie))) then
                       nerr = nerr+1
                       if (nerr < outmax) then
-                         print '(a,i4,i2,i2,i2,i3,es18.10,es18.10)', &
+                         print '(a,i4,i2,i2,i2,i3,es23.15,es23.15)', &
                               'fm: ie,d,i,j,k',ie,d,i,j,k, &
                               elem(ie)%derived%FM(j,i,d,k), fm(k,j,i,d,ie)
                       end if
                    end if
                 end do
                 do iq = 1,qsize
-                   if (elem(ie)%state%Q(j,i,k,iq) /= q(k,j,i,iq,ie)) then
+                   if (.not. equal(elem(ie)%state%Q(j,i,k,iq), q(k,j,i,iq,ie))) then
                       nerr = nerr+1
                       if (nerr < outmax) then
-                         print '(a,i4,i3,i2,i2,i3,es18.10,es18.10)', &
+                         print '(a,i4,i3,i2,i2,i3,es23.15,es23.15)', &
                               'q: ie,iq,i,j,k',ie,iq,i,j,k, &
                               elem(ie)%state%Q(j,i,k,iq), q(k,j,i,iq,ie)
                       end if
                    end if
-                   if (elem(ie)%derived%FQ(j,i,k,iq) /= fq(k,j,i,iq,ie)) then
+                   if (.not. equal(elem(ie)%derived%FQ(j,i,k,iq), fq(k,j,i,iq,ie))) then
                       nerr = nerr+1
                       if (nerr < outmax) then
-                         print '(a,i4,i3,i2,i2,i3,es18.10,es18.10)', &
+                         print '(a,i4,i3,i2,i2,i3,es23.15,es23.15)', &
                               'fq: ie,iq,i,j,k',ie,iq,i,j,k, &
                               elem(ie)%derived%FQ(j,i,k,iq), fq(k,j,i,iq,ie)
                       end if

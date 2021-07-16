@@ -229,8 +229,15 @@ private:
     if ( ! ok && am_root)
       printf("gllfvremap_ut> Failed to parse command line, starting with: %s\n",
              hommexx_catch2_argv[i]);
-    if (am_root)
-      printf("gllfvremap_ut> ne %d qsize %d\n", ne, qsize);
+    if (am_root) {
+      const int bfb =
+#ifdef HOMMEXX_BFB_TESTING
+        1;
+#else
+        0;
+#endif
+      printf("gllfvremap_ut> bfb %d ne %d qsize %d\n", bfb, ne, qsize);
+    }
   }
 };
 
@@ -248,7 +255,7 @@ static bool almost_equal (const Real& a, const Real& b,
 
 static bool equal (const Real& a, const Real& b,
                    // Used only if not defined HOMMEXX_BFB_TESTING.
-                   const Real tol = 0) {
+                   const Real tol = 1e4*std::numeric_limits<Real>::epsilon()) {
 #ifdef HOMMEXX_BFB_TESTING
   if (a != b)
     printf("equal: a,b = %23.16e %23.16e re = %23.16e\n",
@@ -768,8 +775,7 @@ static void test_dyn_to_fv_phys (Session& s, const int nf, const int ftype,
         REQUIRE(equal(phis(ie,i), fphis(ie,i)));
         for (int k = 0; k < s.nlev; ++k) {
           REQUIRE(equal(omega(ie,i,k), fomega(ie,k,i)));
-#pragma message "fix T and f2g dir; uncomment .false. in interface when done"
-          //REQUIRE(equal(T(ie,i,k), fT(ie,k,i)));
+          REQUIRE(equal(T(ie,i,k), fT(ie,k,i)));
           for (int iq = 0; iq < s.qsize; ++iq)
             REQUIRE(equal(q(ie,i,iq,k), fq(ie,iq,k,i)));
           for (int d = 0; d < 2; ++d)
@@ -879,6 +885,7 @@ TEST_CASE ("gllfvremap_testing") {
     run_gfr_test(&nerr);
     REQUIRE(nerr == 0);
 
+    // Main remap routines.
     for (const bool theta_hydrostatic_mode : {false, true}) {
       auto& c = Context::singleton();
       for (const int nf : {2,3,4})

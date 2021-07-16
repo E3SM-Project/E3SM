@@ -239,9 +239,7 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
       ADD_SUBDIRECTORY(theta-nlev128)
     ENDIF()
 
-    IF (HOMMEXX_BFB_TESTING)
-      ADD_SUBDIRECTORY(thetal_kokkos_ut)
-    ENDIF()
+    ADD_SUBDIRECTORY(thetal_kokkos_ut)
   endif()
 
 ENDIF()
@@ -256,10 +254,8 @@ IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
-IF (HOMMEXX_BFB_TESTING)
-  # Test some stuff in the shared folder
-  ADD_SUBDIRECTORY (share_kokkos_ut)
-ENDIF ()
+# Test some stuff in the shared folder
+ADD_SUBDIRECTORY (share_kokkos_ut)
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(preqx-nlev26)

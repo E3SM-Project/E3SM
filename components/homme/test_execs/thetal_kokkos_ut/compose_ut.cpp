@@ -230,9 +230,16 @@ private:
     if ( ! ok && am_root)
       printf("compose_ut> Failed to parse command line, starting with: %s\n",
              hommexx_catch2_argv[i]);
-    if (am_root)
-      printf("compose_ut> ne %d qsize %d hv_q %d cdr_check %d\n",
-             ne, qsize, hv_q, cdr_check ? 1 : 0);
+    if (am_root) {
+      const int bfb =
+#ifdef HOMMEXX_BFB_TESTING
+        1;
+#else
+        0;
+#endif
+      printf("compose_ut> bfb %d ne %d qsize %d hv_q %d cdr_check %d\n",
+             bfb, ne, qsize, hv_q, cdr_check ? 1 : 0);
+    }
   }
 };
 

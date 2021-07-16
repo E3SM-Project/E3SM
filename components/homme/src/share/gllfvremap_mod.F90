@@ -260,6 +260,7 @@ contains
   end subroutine gfr_init
 
   subroutine gfr_init_hxx() bind(c)
+#if KOKKOS_TARGET
     use control_mod, only: ftype, theta_hydrostatic_mode
     use iso_c_binding, only: c_bool
     interface
@@ -278,6 +279,7 @@ contains
     thm = theta_hydrostatic_mode
     call init_gllfvremap_c(nelemd, np, gfr%nphys, nphys_max, ftype, thm, &
          gfr%fv_metdet, gfr%g2f_remapd, gfr%f2g_remapd, gfr%D_f, gfr%Dinv_f)
+#endif
   end subroutine gfr_init_hxx
 
   function gfr_get_nphys() result(nf)
@@ -433,10 +435,17 @@ contains
 
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
+#ifndef HOMMEXX_BFB_TESTING
        wf1(:nf2,:) = T(:nf2,:,ie)*(p0/p_fv(:nf2,:))**kappa
        call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wf1, &
             elem(ie)%derived%FT)
        elem(ie)%derived%FT = elem(ie)%derived%FT*(p/p0)**kappa
+#else
+       wf1(:nf2,:) = T(:nf2,:,ie)*bfb_pow(p0/p_fv(:nf2,:), kappa)
+       call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wf1, &
+            elem(ie)%derived%FT)
+       elem(ie)%derived%FT = elem(ie)%derived%FT*bfb_pow(p/p0, kappa)
+#endif
 
        do qi = 1,qsize
           if (q_adjustment) then

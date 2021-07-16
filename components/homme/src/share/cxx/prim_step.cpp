@@ -116,6 +116,7 @@ void prim_step (const Real dt, const bool compute_diagnostics)
 }
 
 void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
+#ifdef MODEL_THETA_L
   GPTLstart("tl-s prim_step_flexible");
   const auto& context = Context::singleton();
   const SimulationParams& params = context.get<SimulationParams>();
@@ -137,6 +138,7 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   apply_forcing = forcing_0or2;
   apply_test_forcing();
 #endif
+
   if (apply_forcing) {
     // Apply tracer forcings over tracer time step.
     apply_cam_forcing_tracers(dt_q);
@@ -193,6 +195,9 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
     Context::singleton().get<ComposeTransport>().remap_q(tl);
   
   GPTLstop("tl-s prim_step_flexible");
+#else
+  Errors::runtime_abort("prim_step_flexible not supported in non-theta-l builds.");
+#endif
 }
 
 } // namespace Homme

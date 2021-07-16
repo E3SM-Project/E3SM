@@ -406,10 +406,8 @@ IF (${HOMME_USE_KOKKOS})
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
-IF (HOMMEXX_BFB_TESTING)
-  # Add unit tests for C++ code
-  ADD_SUBDIRECTORY(test/unit_tests)
-ENDIF ()
+# Add unit tests for C++ code
+ADD_SUBDIRECTORY(test/unit_tests)
 
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.

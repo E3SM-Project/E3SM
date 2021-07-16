@@ -17,7 +17,7 @@ IF (HOMMEXX_BFB_TESTING)
 ENDIF()
 
 ### Infrastructure unit stest
-
+if (HOMMEXX_BFB_TESTING)
 SET (INFRASTRUCTURE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
@@ -45,9 +45,10 @@ SET (INFRASTRUCTURE_UT_INCLUDE_DIRS
 
 SET (NUM_CPUS 1)
 cxx_unit_test (infrastructure_ut "${INFRASTRUCTURE_UT_F90_SRCS}" "${INFRASTRUCTURE_UT_CXX_SRCS}" "${INFRASTRUCTURE_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+endif()
 
 ### Boundary exchange unit test ###
-
+if (HOMMEXX_BFB_TESTING)
 SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_DIR}/repro_sum_mod.F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
@@ -113,9 +114,10 @@ ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
 cxx_unit_test (boundary_exchange_ut "${BOUNDARY_EXCHANGE_UT_F90_SRCS}" "${BOUNDARY_EXCHANGE_UT_CXX_SRCS}" "${BOUNDARY_EXCHANGE_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+endif ()
 
 ### Sphere operators unit test ###
-
+if (HOMMEXX_BFB_TESTING)
 SET (SPHERE_OP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
@@ -156,6 +158,7 @@ ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
 cxx_unit_test (sphere_op_ut "${SPHERE_OP_UT_F90_SRCS}" "${SPHERE_OP_UT_CXX_SRCS}" "${SPHERE_OP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+endif ()
 
 ### Limiters unit test ###
 
@@ -201,7 +204,7 @@ ENDIF()
 cxx_unit_test (limiters_ut "${LIMITERS_UT_F90_SRCS}" "${LIMITERS_UT_CXX_SRCS}" "${LIMITERS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 
 ### ColumnOps unit tests
-
+if (HOMMEXX_BFB_TESTING)
 SET (COL_OPS_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
@@ -227,9 +230,10 @@ ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
 cxx_unit_test (col_ops_ut "${COL_OPS_UT_F90_SRCS}" "${COL_OPS_UT_CXX_SRCS}" "${COL_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+endif ()
 
 ### PpmRemap unit test ###
-
+if (HOMMEXX_BFB_TESTING)
 SET (PPM_REMAP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
@@ -265,3 +269,4 @@ ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
 cxx_unit_test (ppm_remap_ut "${PPM_REMAP_UT_F90_SRCS}" "${PPM_REMAP_UT_CXX_SRCS}" "${PPM_REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+endif ()
