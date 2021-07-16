@@ -5,8 +5,8 @@ module readParamsMod
   ! Read parameters
   ! module used to read parameters for individual modules
   !
-  use clm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
-  use clm_varctl   , only: use_lch4, use_fates
+  use elm_varctl   , only: use_cn, use_century_decomp
+  use elm_varctl   , only: use_lch4, use_fates
   implicit none
   save
   private
@@ -37,7 +37,7 @@ contains
 
     use SharedParamsMod       , only : ParamsReadShared
 
-    use clm_varctl              , only : paramfile, iulog
+    use elm_varctl              , only : paramfile, iulog
     use spmdMod                 , only : masterproc
     use fileutils               , only : getfil
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
@@ -89,14 +89,14 @@ contains
     use NitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
-    use clm_varctl               , only : paramfile, iulog, use_betr
+    use elm_varctl               , only : paramfile, iulog, use_betr
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
     use decompMod                , only : bounds_type, get_proc_bounds 
     use ALMBeTRNLMod             , only : do_betr_bgc_type 
-    use clm_instMod              , only : ep_betr
+    use elm_instMod              , only : ep_betr
     !
     ! !ARGUMENTS:
     implicit none
@@ -141,16 +141,14 @@ contains
             call readDecompCNParams(ncid)
          end if
        
-         if (use_nitrif_denitrif) then
-            call readNitrifDenitrifParams(ncid)
-         end if
+         call readNitrifDenitrifParams(ncid)
 
          call readSoilLittVertTranspParams(ncid)
        
          if (use_lch4) then
             call readCH4Params (ncid)
          end if
-      endif
+       endif
     end if
 
     if (use_cn) then

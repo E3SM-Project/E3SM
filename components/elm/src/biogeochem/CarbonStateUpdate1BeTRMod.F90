@@ -6,9 +6,9 @@ module CarbonStateUpdate1BeTRMod
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp
+  use elm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp
   use clm_time_manager       , only : get_step_size
-  use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use pftvarcon              , only : npcropmin, nc3crop
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_type
@@ -17,13 +17,13 @@ module CarbonStateUpdate1BeTRMod
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType, only : veg_vp
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   use VegetationType         , only : veg_pp
   use CropType               , only : crop_type
   use decompMod              , only : bounds_type
-  use clm_varcon             , only : dzsoi_decomp
+  use elm_varcon             , only : dzsoi_decomp
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode, use_fates
+  use elm_varctl             , only : use_pflotran, pf_cmode, use_fates
   use GridcellDataType        , only : gridcell_carbon_state, gridcell_carbon_flux
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
   use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux

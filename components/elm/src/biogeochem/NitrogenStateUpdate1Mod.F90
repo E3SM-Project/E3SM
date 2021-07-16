@@ -95,8 +95,6 @@ contains
          end do
       end if
 
-    end associate
-
   end subroutine NitrogenStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
@@ -169,14 +167,16 @@ contains
 
                ! plant to litter fluxes
                ! phenology and dynamic landcover fluxes
-               col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
-                    col_nf%phenology_n_to_litr_met_n(c,j) * dt
-               
-               col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
-                    col_nf%phenology_n_to_litr_cel_n(c,j) * dt
-               
-               col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
-                    col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+               if(.not.use_fates) then
+                  col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
+                       col_nf%phenology_n_to_litr_met_n(c,j) * dt
+                  
+                  col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
+                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt
+                  
+                  col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
+                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+               end if
             end do
          end do
 
@@ -187,18 +187,9 @@ contains
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  if (.not. use_nitrif_denitrif) then
-                     
-                     ! N deposition and fixation
-                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
-                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-                  else
-                     
-                     ! N deposition and fixation (put all into NH4 pool)
-                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
-                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-                     
-                  end if
+                  ! N deposition and fixation (put all into NH4 pool)
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
                end do
             end do
          end if
@@ -242,94 +233,41 @@ contains
             end if
          end do
          
-         if (.not. use_nitrif_denitrif) then
-            
-            !--------------------------------------------------------
-            !-------------    NITRIF_DENITRIF OFF -------------------
-            !--------------------------------------------------------
-            
-            ! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes and denitrification fluxes
-            do k = 1, ndecomp_cascade_transitions
-               if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-                  do j = 1, nlevdecomp
-                     ! column loop
-                     do fc = 1,num_soilc
-                        c = filter_soilc(fc)
-                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) - &
-                             (col_nf%sminn_to_denit_decomp_cascade_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k))* dt
-                     end do
-                  end do
-               else
-                  do j = 1, nlevdecomp
-                     ! column loop
-                     do fc = 1,num_soilc
-                        c = filter_soilc(fc)
-                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_decomp_cascade_vr(c,j,k)* dt
-                        
-                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)* dt
-                        
-                     end do
-                  end do
-               endif
-            end do
-            
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  ! "bulk denitrification"
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_excess_vr(c,j) * dt
-                  
-                  ! total plant uptake from mineral N
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_plant_vr(c,j)*dt
-                  
-                  ! flux that prevents N limitation (when Carbon_only is set)
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
-               end do
-            end do
-            
-         else   
-            
-            !--------------------------------------------------------
-            !-------------    NITRIF_DENITRIF ON --------------------
-            !--------------------------------------------------------
-            
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  
-                  ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
-                  
-                  ! immobilization fluxes
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
-                  
-                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
-                  
-                  ! plant uptake fluxes
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
-                  
-                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
-                  
-                  ! Account for nitrification fluxes
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
-                  
-                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
-                  
-                  ! Account for denitrification fluxes
-                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
-                  
-                  ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
-                  
-                  ! update diagnostic total
-                  col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
-                  
-               end do ! end of column loop
-            end do
-            
-         end if
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
+
+               ! immobilization fluxes
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
+
+               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
+
+               ! plant uptake fluxes
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
+
+               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
+
+               ! Account for nitrification fluxes
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
+
+               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
+
+               ! Account for denitrification fluxes
+               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
+
+               ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
+
+               ! update diagnostic total
+               col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
+
+            end do ! end of column loop
+         end do
+         
       endif  !end if is_active_betr_bgc 
 
       ! forest fertilization
@@ -339,21 +277,14 @@ contains
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
                .and. fert_type(c) == 1 &
                .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
-               if (.not. use_nitrif_denitrif) then
-                  do j = 1, nlevdecomp
-                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
-                  end do
-               else
-                  do j = 1, nlevdecomp
-                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                     col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                     col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
-                  end do
-               end if
+               do j = 1, nlevdecomp
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                  col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
+               end do
             end if
          end do
       end if
-
 
       ! patch loop (veg)
       if(.not.use_fates) then
@@ -493,7 +424,6 @@ contains
 
       end if ! if(.not.use_fates)
       
-
     end associate
 
   end subroutine NitrogenStateUpdate1

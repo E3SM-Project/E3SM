@@ -9,9 +9,9 @@ module lnd2atmMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use abortutils             , only : endrun
   use shr_megan_mod        , only : shr_megan_mechcomps_n
-  use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
+  use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
+  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -32,6 +32,7 @@ module lnd2atmMod
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type
 
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -61,6 +62,7 @@ contains
       !$acc routine seq
     use elm_varcon, only : sb
 
+    
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds
@@ -149,7 +151,7 @@ contains
     type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g             ! index
+    integer :: g, lvl             ! index
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
@@ -281,7 +283,7 @@ contains
          eflx_lh_tot_grc(bounds%begg:bounds%endg)      , &
          p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call c2g(bounds, &
             nee    (bounds%begc:bounds%endc)   , &
             nee_grc(bounds%begg:bounds%endg)   , &
@@ -331,7 +333,7 @@ contains
 
 
     ! ch4 flux
-    if (use_lch4 .and. (.not. is_active_betr_bgc)) then
+    if (use_lch4) then
        call c2g( bounds,     &
             ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
             flux_ch4_grc         (bounds%begg:bounds%endg) , &
@@ -382,7 +384,6 @@ contains
          c2l_scale_type= urbanf, l2g_scale_type=unity )
 
     call c2g( bounds, &
-<<<<<<< HEAD
          qflx_snwcp_ice (bounds%begc:bounds%endc)     ,  &
          qflx_rofice_grc(bounds%begg:bounds%endg)     ,  &
          c2l_scale_type= urbanf, l2g_scale_type=unity )
@@ -409,7 +410,6 @@ contains
        tws(g) = tws(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
 
-<<<<<<< HEAD
 
     call c2g( bounds, &
          t_grnd    (bounds%begc:bounds%endc)   , &
@@ -453,6 +453,7 @@ contains
         integer :: ilvl   !local index
         real(r8) :: depth_(nlevsoi), h_layer(nlevsoi), sum_h, sum_ht
 
+        
         ! calculate the thickness of each 15 soil layer, refer to Eqn. (6.5) and (6.6) in CLM4.0 tech note
         do ilvl = 1, nlevsoi
             depth_(ilvl) = 0.025_r8*(EXP(0.5_r8*(REAL(ilvl)-0.5_r8))-1._r8)
@@ -465,6 +466,7 @@ contains
 
         sum_h = 0._r8
         sum_ht = 0._r8
+        
         do ilvl = 1, 3
             sum_h = sum_h + h_layer(ilvl)
             sum_ht = sum_ht + h_layer(ilvl)*Tsoil_(ilvl)
@@ -484,6 +486,7 @@ contains
         integer :: ilvl,izwt   !local index
         real(r8) :: depth_(nlevsoi), h_layer(nlevsoi), sum_h, sum_ht
 
+        
         ! calculate the thickness of each 15 soil layer, refer to Eqn. (6.5) and (6.6) in CLM4.0 tech note
         do ilvl = 1, nlevsoi
             depth_(ilvl) = 0.025_r8*(EXP(0.5_r8*(REAL(ilvl)-0.5_r8))-1._r8)
@@ -494,6 +497,7 @@ contains
         end do
         h_layer(nlevsoi) = depth_(nlevsoi) - depth_(nlevsoi-1)
 
+        
         if(zwt_ <= 0._r8) then ! water table close to ground surface, average over the whole soil column
             sum_h = 0._r8
             sum_ht = 0._r8
@@ -524,6 +528,7 @@ contains
             avgT_ = sum_ht/sum_h
         end if
 
+        
         return
     end function avg_tsoil
 

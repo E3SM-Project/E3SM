@@ -170,7 +170,7 @@ contains
     tString='crit_dayl_stress'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) then 
-        crit_dayl_stress = secspday / 4 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+        crit_dayl_stress = secspqtrday !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     else
         PhenolParamsInst%crit_dayl_stress=tempr
     end if
@@ -178,7 +178,7 @@ contains
     tString='cumprec_onset'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) then
-        cumprec_onset = 0._r8 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+        PhenolParamsInst%cumprec_onset = 0._r8 !call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     else
         PhenolParamsInst%cumprec_onset=tempr
     end if
@@ -350,25 +350,10 @@ contains
     dt      = real( get_step_size(), r8 )
     fracday = dt/secspday
 
-    ! set constants for CNSeasonDecidPhenology 
-    ! (critical daylength from Biome-BGC, v4.1.2)
-    crit_dayl=PhenolParamsInst%crit_dayl
-
-    ! Set constants for CNSeasonDecidPhenology and CNStressDecidPhenology
-    ndays_on=PhenolParamsInst%ndays_on
-    ndays_off=PhenolParamsInst%ndays_off
-
-    ! set transfer parameters
-    fstor2tran=PhenolParamsInst%fstor2tran
 
     ! -----------------------------------------
     ! Constants for CNStressDecidPhenology
     ! -----------------------------------------
-
-    ! onset parameters
-    cumprec_onset=PhenolParamsInst%cumprec_onset
-    crit_dayl_stress=PhenolParamsInst%crit_dayl_stress
-    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     ! critical onset gdd now being calculated as a function of annual
     ! average 2m temp.
     ! crit_onset_gdd = 150.0 ! c3 grass value
@@ -839,7 +824,7 @@ contains
                   dormant_flag(p) = 0.0_r8
                   onset_gddflag(p) = 0.0_r8
                   onset_gdd(p) = 0.0_r8
-                  onset_counter(p) = ndays_on * secspday
+                  onset_counter(p) = PhenolParamsInst%ndays_on * secspday
 
                   ! move all the storage pools into transfer pools,
                   ! where they will be transfered to displayed growth over the onset period.
@@ -847,43 +832,43 @@ contains
                   ! inlined during vectorization
 
                   ! set carbon fluxes for shifting storage pools to transfer pools
-                  leafc_storage_to_xfer(p)  = fstor2tran * leafc_storage(p)/dt
-                  frootc_storage_to_xfer(p) = fstor2tran * frootc_storage(p)/dt
+                  leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
+                  frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemc_storage_to_xfer(p)  = fstor2tran * livestemc_storage(p)/dt
-                     deadstemc_storage_to_xfer(p)  = fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
-                     deadcrootc_storage_to_xfer(p) = fstor2tran * deadcrootc_storage(p)/dt
-                     gresp_storage_to_xfer(p)      = fstor2tran * gresp_storage(p)/dt
+                     livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
+                     deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
+                     livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
+                     deadcrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
+                     gresp_storage_to_xfer(p)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
                   end if
 
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
-                  leafn_storage_to_xfer(p)  = fstor2tran * leafn_storage(p)/dt
-                  frootn_storage_to_xfer(p) = fstor2tran * frootn_storage(p)/dt
+                  leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
+                  frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemn_storage_to_xfer(p)  = fstor2tran * livestemn_storage(p)/dt
-                     deadstemn_storage_to_xfer(p)  = fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
-                     deadcrootn_storage_to_xfer(p) = fstor2tran * deadcrootn_storage(p)/dt
+                     livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
+                     deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
+                     livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
+                     deadcrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
-                  leafp_storage_to_xfer(p)  = fstor2tran * leafp_storage(p)/dt
-                  frootp_storage_to_xfer(p) = fstor2tran * frootp_storage(p)/dt
+                  leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
+                  frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemp_storage_to_xfer(p)  = fstor2tran * livestemp_storage(p)/dt
-                     deadstemp_storage_to_xfer(p)  = fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
-                     deadcrootp_storage_to_xfer(p) = fstor2tran * deadcrootp_storage(p)/dt
+                     livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
+                     deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
+                     livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
+                     deadcrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
                   end if
                end if
 
                ! test for switching from growth period to offset period
             else if (offset_flag(p) == 0.0_r8) then
                ! only begin to test for offset daylength once past the summer sol
-               if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
+               if (ws_flag == 0._r8 .and. dayl(g) < PhenolParamsInst%crit_dayl) then
                   offset_flag(p) = 1._r8
-                  offset_counter(p) = ndays_off * secspday
+                  offset_counter(p) = PhenolParamsInst%ndays_off * secspday
                   prev_leafc_to_litter(p) = 0._r8
                   prev_frootc_to_litter(p) = 0._r8
                end if
@@ -925,7 +910,7 @@ contains
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    real(r8),parameter :: secspqtrday = secspday / 4  ! seconds per quarter day
+    real(r8),parameter :: secspqtrday = secspday / 4._r8  ! seconds per quarter day
     integer :: g,t,c,p           ! indices
     integer :: fp              ! lake filter pft index
     real(r8):: dayspyr         ! days per year
@@ -1195,16 +1180,16 @@ contains
                end if
 
                if (nu_com .ne. 'RD') then
-                   crit_dayl_stress = secspqtrday    !needed for BFB test
+                   PhenolParamsInst%crit_dayl_stress = secspqtrday    !needed for BFB test
                end if
 
                ! only allow onset if dayl > 6hrs
-               if (onset_flag(p) == 1._r8 .and. dayl(g) <= crit_dayl_stress) then
+               if (onset_flag(p) == 1._r8 .and. dayl(g) <= PhenolParamsInst%crit_dayl_stress) then
                   onset_flag(p) = 0._r8
                end if
                ! Require cumulative precipitation threshold for onset
                ! Dahlin et al., Biogeosciences 2015.
-               if (prec10(t) * 86400._r8 * 10._r8 < cumprec_onset .and. nu_com .eq. 'RD') then
+               if (prec10(t) * 86400._r8 * 10._r8 < PhenolParamsInst%cumprec_onset .and. nu_com .eq. 'RD') then
                   onset_flag(p) = 0._r8
                end if
 
@@ -1218,7 +1203,7 @@ contains
                   onset_fdd(p) = 0._r8
                   onset_gdd(p) = 0._r8
                   onset_swi(p) = 0._r8
-                  onset_counter(p) = ndays_on * secspday
+                  onset_counter(p) = PhenolParamsInst%ndays_on * secspday
 
                   ! call subroutine to move all the storage pools into transfer pools,
                   ! where they will be transfered to displayed growth over the onset period.
@@ -1226,34 +1211,34 @@ contains
                   ! inlined during vectorization
 
                   ! set carbon fluxes for shifting storage pools to transfer pools
-                  leafc_storage_to_xfer(p)  = fstor2tran * leafc_storage(p)/dt
-                  frootc_storage_to_xfer(p) = fstor2tran * frootc_storage(p)/dt
+                  leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
+                  frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemc_storage_to_xfer(p)  = fstor2tran * livestemc_storage(p)/dt
-                     deadstemc_storage_to_xfer(p)  = fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = fstor2tran * livecrootc_storage(p)/dt
-                     deadcrootc_storage_to_xfer(p) = fstor2tran * deadcrootc_storage(p)/dt
-                     gresp_storage_to_xfer(p)      = fstor2tran * gresp_storage(p)/dt
+                     livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
+                     deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
+                     livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
+                     deadcrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
+                     gresp_storage_to_xfer(p)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
                   end if
 
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
-                  leafn_storage_to_xfer(p)  = fstor2tran * leafn_storage(p)/dt
-                  frootn_storage_to_xfer(p) = fstor2tran * frootn_storage(p)/dt
+                  leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
+                  frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemn_storage_to_xfer(p)  = fstor2tran * livestemn_storage(p)/dt
-                     deadstemn_storage_to_xfer(p)  = fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = fstor2tran * livecrootn_storage(p)/dt
-                     deadcrootn_storage_to_xfer(p) = fstor2tran * deadcrootn_storage(p)/dt
+                     livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
+                     deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
+                     livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
+                     deadcrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
-                  leafp_storage_to_xfer(p)  = fstor2tran * leafp_storage(p)/dt
-                  frootp_storage_to_xfer(p) = fstor2tran * frootp_storage(p)/dt
+                  leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
+                  frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
                   if (woody(ivt(p)) == 1.0_r8) then
-                     livestemp_storage_to_xfer(p)  = fstor2tran * livestemp_storage(p)/dt
-                     deadstemp_storage_to_xfer(p)  = fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = fstor2tran * livecrootp_storage(p)/dt
-                     deadcrootp_storage_to_xfer(p) = fstor2tran * deadcrootp_storage(p)/dt
+                     livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
+                     deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
+                     livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
+                     deadcrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
                   end if
 
                end if
@@ -1297,7 +1282,7 @@ contains
                end if
 
                ! force offset if daylength is < 6 hrs
-               if (dayl(g) <= crit_dayl_stress) then
+               if (dayl(g) <= PhenolParamsInst%crit_dayl_stress) then
                   offset_flag(p) = 1._r8
                end if
 
@@ -1306,7 +1291,7 @@ contains
                if (offset_flag(p) == 1._r8) then
                   offset_fdd(p) = 0._r8
                   offset_swi(p) = 0._r8
-                  offset_counter(p) = ndays_off * secspday
+                  offset_counter(p) = PhenolParamsInst%ndays_off * secspday
                   prev_leafc_to_litter(p) = 0._r8
                   prev_frootc_to_litter(p) = 0._r8
                end if

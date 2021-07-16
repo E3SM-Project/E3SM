@@ -50,7 +50,6 @@ contains
     ! !USES:
     use elm_varcon, only : vkc
 
-
     implicit none
     !
     ! !ARGUMENTS:

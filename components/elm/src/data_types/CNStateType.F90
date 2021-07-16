@@ -6,19 +6,19 @@ module CNStateType
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevsoifl, nlevsoi, crop_prog
-  use clm_varpar     , only : ndecomp_cascade_transitions, nlevdecomp, nlevdecomp_full, more_vertlayers  
-  use clm_varcon     , only : spval, ispval, c14ratio, grlnd
+  use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevsoifl, nlevsoi, crop_prog
+  use elm_varpar     , only : ndecomp_cascade_transitions, nlevdecomp, nlevdecomp_full, more_vertlayers  
+  use elm_varcon     , only : spval, ispval, c14ratio, grlnd
   use landunit_varcon, only : istsoil, istcrop
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
-  use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
-  use clm_varctl     , only : iulog, fsurdat
+  use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
+  use elm_varctl     , only : use_vertsoilc, use_c14, use_cn 
+  use elm_varctl     , only : iulog, fsurdat
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
-  use clm_varctl     , only: forest_fert_exp
-  use clm_varctl          , only : nu_com
-  use clm_varctl   , only:  use_fates,use_crop
+  use elm_varctl     , only: forest_fert_exp
+  use elm_varctl          , only : nu_com
+  use elm_varctl   , only:  use_fates,use_crop
 
   ! 
   ! !PUBLIC TYPES:
@@ -156,8 +156,6 @@ module CNStateType
      real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
      real(r8), pointer :: cn_scalar_runmean            (:)     ! long term average of cn scaling factor for root n uptake kinetics (no units) 
      real(r8), pointer :: cp_scalar_runmean            (:)     ! long term average of cp scaling factor for root p uptake kinetics (no units)
-     real(r8), pointer :: water_scalar                 (:)     ! water scaling factor for plant dynamic allocation
-     real(r8), pointer :: water_scalar_runmean         (:)     ! long term average of water scaling factor for plant allocation
 
      real(r8), pointer :: frac_loss_lit_to_fire_col        (:)
      real(r8), pointer :: frac_loss_cwd_to_fire_col        (:)
@@ -269,7 +267,6 @@ contains
 
     allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
     allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
-    allocate(this%pdep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
     allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
     allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
 
@@ -342,8 +339,6 @@ contains
     allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
     allocate(this%cn_scalar_runmean           (begp:endp))                   ; this%cn_scalar_runmean (:) = 0.0
     allocate(this%cp_scalar_runmean           (begp:endp))                   ; this%cp_scalar_runmean (:) = 0.0
-    allocate(this%water_scalar                (begp:endp))                   ; this%water_scalar  (:) = 0._r8
-    allocate(this%water_scalar_runmean        (begp:endp))                   ; this%water_scalar_runmean(:) = 0._r8
     allocate(this%frac_loss_lit_to_fire_col       (begc:endc))               ; this%frac_loss_lit_to_fire_col(:) =0._r8
     allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
     allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
@@ -525,7 +520,7 @@ contains
          ptr_patch=this%tempavg_t2m_patch, default='inactive')
 
     this%dormant_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DORMANT_FLAG', units='none', &
+    call hist_addfld1d (fname='DORMANT_FLAG', units='1', &
          avgflag='A', long_name='dormancy flag', &
          ptr_patch=this%dormant_flag_patch, default='inactive')
 
@@ -535,7 +530,7 @@ contains
          ptr_patch=this%days_active_patch, default='inactive')
 
     this%onset_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_FLAG', units='none', &
+    call hist_addfld1d (fname='ONSET_FLAG', units='1', &
          avgflag='A', long_name='onset flag', &
          ptr_patch=this%onset_flag_patch, default='inactive')
 
@@ -545,7 +540,7 @@ contains
          ptr_patch=this%onset_counter_patch, default='inactive')
 
     this%onset_gddflag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_GDDFLAG', units='none', &
+    call hist_addfld1d (fname='ONSET_GDDFLAG', units='1', &
          avgflag='A', long_name='onset flag for growing degree day sum', &
          ptr_patch=this%onset_gddflag_patch, default='inactive')
 
@@ -560,12 +555,12 @@ contains
          ptr_patch=this%onset_gdd_patch, default='inactive')
 
     this%onset_swi_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_SWI', units='none', &
+    call hist_addfld1d (fname='ONSET_SWI', units='1', &
          avgflag='A', long_name='onset soil water index', &
          ptr_patch=this%onset_swi_patch, default='inactive')
 
     this%offset_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='OFFSET_FLAG', units='none', &
+    call hist_addfld1d (fname='OFFSET_FLAG', units='1', &
          avgflag='A', long_name='offset flag', &
          ptr_patch=this%offset_flag_patch, default='inactive')
 
@@ -580,7 +575,7 @@ contains
          ptr_patch=this%offset_fdd_patch, default='inactive')
 
     this%offset_swi_patch(begp:endp) = spval
-    call hist_addfld1d (fname='OFFSET_SWI', units='none', &
+    call hist_addfld1d (fname='OFFSET_SWI', units='1', &
          avgflag='A', long_name='offset soil water index', &
          ptr_patch=this%offset_swi_patch, default='inactive')
 
@@ -610,12 +605,12 @@ contains
          ptr_patch=this%alloc_pnow_patch, default='inactive')
 
     this%c_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='C_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='C_ALLOMETRY', units='1', &
          avgflag='A', long_name='C allocation index', &
          ptr_patch=this%c_allometry_patch, default='inactive')
 
     this%n_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='N_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='N_ALLOMETRY', units='1', &
          avgflag='A', long_name='N allocation index', &
          ptr_patch=this%n_allometry_patch, default='inactive')
 
@@ -647,7 +642,7 @@ contains
 
     !! add phosphorus -X.YANG
     this%p_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='P_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='P_ALLOMETRY', units='1', &
          avgflag='A', long_name='P allocation index', &
          ptr_patch=this%p_allometry_patch, default='inactive')
 
@@ -681,18 +676,8 @@ contains
        avgflag='A', long_name='runmean P limitation factor', &
        ptr_patch=this%cp_scalar_runmean, default='active')
 
-    this%water_scalar(begp:endp) = spval
-    call hist_addfld1d (fname='water_scalar', units='', &
-       avgflag='A', long_name='water limitation factor for plant dynamic allocation', &
-       ptr_patch=this%water_scalar, default='active')
-
-    this%water_scalar_runmean(begp:endp) = spval
-    call hist_addfld1d (fname='wlim_m', units='', &
-       avgflag='A', long_name='runmean water limitation factor for plant dynamic allocation', &
-       ptr_patch=this%water_scalar_runmean, default='active')
-
     this%r_mort_cal_patch(begp:endp) = spval
-    call hist_addfld1d (fname='R_MORT_CAL', units='none', &
+    call hist_addfld1d (fname='R_MORT_CAL', units='1', &
          avgflag='A', long_name='calcualted annual mortality rate', &
          ptr_patch=this%r_mort_cal_patch, default='inactive')
 
@@ -705,7 +690,7 @@ contains
     ! !USES:
     use spmdMod    , only : masterproc
     use fileutils  , only : getfil
-    use clm_varctl , only : nsrest, nsrStartup
+    use elm_varctl , only : nsrest, nsrStartup
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -798,25 +783,29 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
-       allocate(soilorder_rdin(bounds%begg:bounds%endg))
-       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) then
-          call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-       end if
+    ! Changes: RGK-2020
+    ! Before March 2021, soil order was only read when ECA and RD were active, and crops were
+    ! not active.  This was simplified so that it does not matter what modules are active,
+    ! if the soil-order data is available, the model will use it. If it is not, it will
+    ! use a default.
+ 
+    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+
+    if (readvar) then
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           this%isoilorder(c) = soilorder_rdin(g)
        end do
-       deallocate(soilorder_rdin)
-
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           this%isoilorder(c) = 12
-       end do 
+       end do
     end if
-
+    
+    deallocate(soilorder_rdin)
+    
     ! --------------------------------------------------------------------
     ! forest fertilization experiments info, Q. Z. 2017
     ! --------------------------------------------------------------------
@@ -1149,7 +1138,7 @@ contains
   
     call restartvar(ncid=ncid, flag=flag, varname='dormant_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='dormancy flag', units='unitless', &
+         long_name='dormancy flag', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%dormant_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='days_active', xtype=ncd_double,  &
@@ -1159,7 +1148,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='onset_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='flag if critical growing degree-day sum is exceeded', units='unitless' , &
+         long_name='flag if critical growing degree-day sum is exceeded', units='1' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='onset_counter', xtype=ncd_double,  &
@@ -1189,7 +1178,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='offset_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='offset flag', units='unitless' , &
+         long_name='offset flag', units='1' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='offset_counter', xtype=ncd_double,  &
@@ -1302,23 +1291,23 @@ contains
        ptr2d => this%fpi_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_vr', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
        ptr2d => this%fpi_p_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_p_vr', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus',  units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
        ptr1d => this%fpi_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
        call restartvar(ncid=ncid, flag=flag, varname='fpi', xtype=ncd_double,  &
             dim1name='column', &
-            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='1', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
        ptr1d => this%fpi_p_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
        call restartvar(ncid=ncid, flag=flag, varname='fpi_p', xtype=ncd_double,  &
             dim1name='column', &
-            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus',  units='1', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
@@ -1371,7 +1360,7 @@ contains
     ptr2d => this%scalaravg_col
     call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of phosphorus', units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus', units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
     if (crop_prog) then
@@ -1452,17 +1441,11 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%cp_scalar)
 
     call restartvar(ncid=ncid, flag=flag, varname='nlim_m', xtype=ncd_double,  &
-            dim1name='pft', long_name='runmean N limitation factor', units='-', &
+            dim1name='pft', long_name='cn_scalar_runmean', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cn_scalar_runmean)
     call restartvar(ncid=ncid, flag=flag, varname='plim_m', xtype=ncd_double,  &
-            dim1name='pft', long_name='runmean P limitation factor', units='-', &
+            dim1name='pft', long_name='cp_scalar_runmean', units='-', &
             interpinic_flag='interp', readvar=readvar, data=this%cp_scalar_runmean)
-    call restartvar(ncid=ncid, flag=flag, varname='water_scalar', xtype=ncd_double,  &
-            dim1name='pft', long_name='water_scalar', units='-', &
-            interpinic_flag='interp', readvar=readvar, data=this%water_scalar)
-    call restartvar(ncid=ncid, flag=flag, varname='wlim_m', xtype=ncd_double,  &
-            dim1name='pft', long_name='runmean water limitation factor', units='-', &
-            interpinic_flag='interp', readvar=readvar, data=this%water_scalar_runmean)
 
   end subroutine Restart
 
@@ -1477,20 +1460,15 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-     this%cn_scalar_runmean(bounds%begp:bounds%endp) = spval
-     call init_accum_field (name='nlim_m', units='-',                                              &
-         desc='runing average of N limitation strength',  accum_type='runmean', accum_period=-30,    &
-          subgrid_type='pft', numlev=1, init_value=0._r8)
- 
-     this%cp_scalar_runmean(bounds%begp:bounds%endp) = spval
-     call init_accum_field (name='plim_m', units='-',                                              &
-         desc='runing average of P limitation strength',  accum_type='runmean', accum_period=-30,    &
+    this%cn_scalar_runmean(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='nlim_m', units='-',                                              &
+         desc='runing average of N limitation strength',  accum_type='runmean', accum_period=-7300,    &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
-    this%water_scalar_runmean(bounds%begp:bounds%endp) = spval
-    call init_accum_field (name='wlim_m', units='-',                                              &
-         desc='runing average of water limitation strength',  accum_type='runmean', accum_period=-30,    &
-          subgrid_type='pft', numlev=1, init_value=0._r8)
+    this%cp_scalar_runmean(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='plim_m', units='-',                                              &
+         desc='runing average of P limitation strength',  accum_type='runmean', accum_period=-7300,    &
+         subgrid_type='pft', numlev=1, init_value=0._r8)
 
   end subroutine InitAccBuffer
 
@@ -1500,7 +1478,7 @@ contains
     ! !USES
     use accumulMod       , only : init_accum_field, extract_accum_field
     use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : nsrest
+    use elm_varctl       , only : nsrest
     use abortutils       , only : endrun
     !
     ! !ARGUMENTS:

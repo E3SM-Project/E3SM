@@ -16,7 +16,6 @@ module PhosphorusDynamicsMod
   use CNCarbonFluxType    , only : carbonflux_type
   use elm_varpar          , only : nlevdecomp
   use elm_varctl          , only : use_vertsoilc
-
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp

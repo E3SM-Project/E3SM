@@ -5,7 +5,7 @@ module EnergyFluxType
   !------------------------------------------------------------------------------
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varcon     , only : spval
+  use elm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
@@ -88,6 +88,9 @@ module EnergyFluxType
 
      ! Transpiration
      real(r8), pointer :: btran_patch             (:)   ! patch transpiration wetness factor (0 to 1)
+     !plant hydraulics
+     real(r8), pointer :: bsun_patch              (:)   ! patch sunlit canopy transpiration wetness factor (0 to 1)
+     real(r8), pointer :: bsha_patch              (:)   ! patch shaded canopy transpiration wetness factor (0 to 1)
 
      ! Roots
      real(r8), pointer :: btran2_patch            (:)   ! patch root zone soil wetness factor (0 to 1) 
@@ -153,7 +156,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
     !
     ! !ARGUMENTS:
     class(energyflux_type) :: this
@@ -246,6 +249,8 @@ contains
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = nan
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = nan
     allocate(this%btran2_patch             (begp:endp))             ; this%btran2_patch            (:)   = nan
+    allocate( this%bsun_patch              (begp:endp))             ; this%bsun_patch              (:)   = nan
+    allocate( this%bsha_patch              (begp:endp))             ; this%bsha_patch              (:)   = nan
 
     allocate( this%errsoi_patch            (begp:endp))             ; this%errsoi_patch            (:)   = nan
     allocate( this%errsoi_col              (begc:endc))             ; this%errsoi_col              (:)   = nan
@@ -271,8 +276,8 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
-    use clm_varctl     , only : use_cn
+    use elm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
+    use elm_varctl     , only : use_cn
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -292,7 +297,7 @@ contains
     begg = bounds%begg; endg= bounds%endg
 
     this%btran_patch(begp:endp) = spval
-    call hist_addfld1d (fname='BTRAN', units='unitless',  &
+    call hist_addfld1d (fname='BTRAN', units='1',  &
          avgflag='A', long_name='transpiration beta factor', &
          ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
 
@@ -315,12 +320,12 @@ contains
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use shr_const_mod   , only : SHR_CONST_TKFRZ
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
+    use elm_varcon      , only : denice, denh2o, sb
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon   , only : icol_shadewall, icol_road_perv
-    use clm_varctl      , only : iulog, use_vancouver, use_mexicocity
+    use elm_varctl      , only : iulog, use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(energyflux_type)         :: this

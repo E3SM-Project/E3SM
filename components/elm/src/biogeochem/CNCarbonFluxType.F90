@@ -3,20 +3,20 @@ module CNCarbonFluxType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
-  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar             , only : crop_prog
-  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
-  use clm_varcon             , only : spval, ispval, dzsoi_decomp
+  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar             , only : crop_prog
+  use elm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
+  use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
-  use clm_varctl             , only : use_c13, use_fates 
+  use elm_varctl             , only : use_c13, use_fates 
   use CH4varcon              , only : allowlakeprod
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationType         , only : veg_pp
   use ColumnType             , only : col_pp                
   use LandunitType           , only : lun_pp
-  use clm_varctl             , only : nu_com
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use elm_varctl             , only : nu_com
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, use_vertsoilc
   use AnnualFluxDribbler     , only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   ! 
   ! !PUBLIC TYPES:
@@ -870,12 +870,12 @@ contains
     ! add history fields for all CN variables, always set as default='inactive'
     !
     ! !USES:
-    use clm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
-    use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
-    use clm_varctl , only : hist_wrtch4diag
+    use elm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
+    use elm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
+    use elm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
     use tracer_varcon    , only : is_active_betr_bgc
-    use clm_varctl,  only : get_carbontag
+    use elm_varctl,  only : get_carbontag
     !
     ! !ARGUMENTS:
     class(carbonflux_type) :: this    
@@ -1108,13 +1108,13 @@ contains
     ! !USES:
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager , only : is_restart
-    use clm_varcon       , only : c13ratio, c14ratio
-    use clm_varctl       , only : use_lch4, use_betr
+    use elm_varcon       , only : c13ratio, c14ratio
+    use elm_varctl       , only : use_lch4, use_betr
     use restUtilMod
     use ncdio_pio
 
     ! pflotran
-!    use clm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
+!    use elm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
     !
     ! !ARGUMENTS:
     class (carbonflux_type) :: this
@@ -1577,14 +1577,14 @@ contains
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
-    use clm_varctl       , only : iulog
+    use elm_varctl       , only : iulog
     use clm_time_manager , only : get_step_size
-    use clm_varcon       , only : secspday
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use elm_varcon       , only : secspday
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc
     use MathfuncMod      , only : dot_sum
-    use clm_varpar       , only : nlevdecomp_full
+    use elm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -2082,7 +2082,7 @@ contains
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface.and. (use_pflotran .and. pf_cmode)) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     endif
     if(.not. (use_pflotran .and. pf_cmode))then
@@ -2316,8 +2316,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
 ! !USES:
    use shr_sys_mod, only: shr_sys_flush
-   use clm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
-   use clm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+   use elm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
+   use elm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 !
 ! !ARGUMENTS:
@@ -2538,7 +2538,7 @@ end subroutine CSummary_interface
   !summarize heterotrophic respiration for methane calculation
   !
     use tracer_varcon    , only : is_active_betr_bgc
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   ! !ARGUMENTS:
     class(carbonflux_type) :: this
     type(bounds_type), intent(in)  :: bounds

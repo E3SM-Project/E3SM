@@ -280,7 +280,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'p2c_2d error: sumwt is greater than 1.0 at c= ',index,' lev= ',j
-          call endrun(decomp_index=index, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
   end subroutine p2c_2d
@@ -463,7 +463,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'p2l_1d error: sumwt is greater than 1.0 at l= ',index
-       call endrun(decomp_index=index, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine p2l_1d
@@ -527,7 +527,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'p2l_2d error: sumwt is greater than 1.0 at l= ',index,' j= ',j
-          call endrun(decomp_index=index, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -597,7 +597,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'p2g_1d error: sumwt is greater than 1.0 at g= ',index
-       call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine p2g_1d
@@ -779,7 +779,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'p2g_2d error: sumwt gt 1.0 at g/sumwt = ',index,sumwt(index)
-          call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -954,7 +954,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'c2l_1d error: sumwt is greater than 1.0 at l= ',index
-       call endrun(decomp_index=index, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine c2l_1d
@@ -1061,7 +1061,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'c2g_1d error: sumwt is greater than 1.0 at g= ',index
-       call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine c2g_1d
@@ -1681,7 +1681,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'t2g_1d error: sumwt is greater than 1.0 at g= ',index
-       call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine t2g_1d
@@ -1735,7 +1735,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'t2g_2d error: sumwt is greater than 1.0 at g= ',index,' lev= ',j
-          call endrun(decomp_index=index, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 

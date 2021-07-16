@@ -10,7 +10,7 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
+  use elm_varctl          , only : iulog, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
@@ -22,15 +22,15 @@ module EcosystemBalanceCheckMod
   use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g, unity
   ! soil erosion
-  use clm_varctl          , only : use_erosion, ero_ccycle
+  use elm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
+  use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
   use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
-  use clm_varctl          , only : forest_fert_exp
+  use elm_varctl          , only : forest_fert_exp
   use pftvarcon           , only: noveg
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
   use GridcellDataType    , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
@@ -468,14 +468,14 @@ contains
 
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
-            if(use_pflotran .and. pf_cmode) then
-               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
-               col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-            else
+         if(use_pflotran .and. pf_cmode) then
+            ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
+         else
 
-               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
 
-            endif
+         endif
 
          endif
 

@@ -9,12 +9,12 @@ module CarbonStateUpdate3BeTRMod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use clm_time_manager , only : get_step_size
-  use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use clm_varctl       , only : use_erosion, ero_ccycle
+  use elm_varctl       , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
-  use clm_varctl       , only : use_pflotran, pf_cmode
+  use elm_varctl       , only : use_pflotran, pf_cmode
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
   use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux
 

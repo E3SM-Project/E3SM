@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 module VegetationDataType
 
   !-----------------------------------------------------------------------
@@ -8461,7 +8460,7 @@ module VegetationDataType
   end subroutine veg_cf_summary
 
   !------------------------------------------------------------
-  subroutine veg_cf_summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf_input)
+  subroutine veg_cf_summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf_input, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! summarize root respiration
@@ -8476,6 +8475,7 @@ module VegetationDataType
     integer, intent(in) :: num_soilc
     integer, intent(in) :: filter_soilc(:)
     type(column_carbon_flux), intent(inout) :: col_cf_input
+    type(cnstate_type), optional, intent(in) :: cnstate_vars
     !
     ! !LOCAL VARIABLES
     integer :: fp, p
@@ -8502,6 +8502,25 @@ module VegetationDataType
     call p2c_1d_filter(bounds, num_soilc, filter_soilc, &
             rr_patch(bounds%begp:bounds%endp), &
             rr_col(bounds%begc:bounds%endc))
+
+    if(present(cnstate_vars))then
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        col_cf_input%rr_vr(c,1:nlevdecomp_full)=0._r8
+      enddo
+      do j = 1, nlevdecomp_full
+        do pi = 1,maxpatch_pft
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
+              col_cf_input%rr_vr(c,j)=col_cf_input%rr_vr(c,j) + this%rr(p)*cnstate_vars%froot_prof_patch(p,j) * veg_pp%wtcol(p)
+            endif
+          enddo
+        enddo
+      enddo
+    endif
+
   end associate
 
   end subroutine veg_cf_summary_rr

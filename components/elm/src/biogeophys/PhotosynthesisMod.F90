@@ -202,6 +202,91 @@ contains
 contains
 
   !------------------------------------------------------------------------------
+  subroutine allocParams ( this )
+    ! 
+    ! !USES:
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+
+    implicit none
+
+    ! !ARGUMENTS:
+    class(photo_params_type) :: this
+    !
+    ! !LOCAL VARIABLES:
+    character(len=32)  :: subname = 'allocParams'
+    !-----------------------------------------------------------------------
+
+    ! allocate parameters
+
+    allocate( this%krmax       (0:mxpft) )          ; this%krmax(:)        = nan
+    allocate( this%kmax        (0:mxpft,nvegwcs) )  ; this%kmax(:,:)       = nan
+    allocate( this%psi50       (0:mxpft,nvegwcs) )  ; this%psi50(:,:)      = nan
+    allocate( this%ck          (0:mxpft,nvegwcs) )  ; this%ck(:,:)         = nan
+    allocate( this%psi_soil_ref(0:mxpft) )          ; this%psi_soil_ref(:) = nan
+
+    if ( use_hydrstress .and. nvegwcs /= 4 )then
+       call endrun(msg='Error:: the Plant Hydraulics Stress methodology is for the spacA function is hardcoded for nvegwcs==4' &
+                   //errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine allocParams
+
+  !------------------------------------------------------------------------------
+  subroutine readParams ( this, ncid )
+    !
+    ! !USES:
+    use ncdio_pio , only : file_desc_t,ncd_io
+    implicit none
+
+    ! !ARGUMENTS:
+    !class(photosyns_type) :: this
+    class(photo_params_type) :: this
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    ! !LOCAL VARIABLES:
+    character(len=32)  :: subname = 'readParams'
+    character(len=100) :: errCode = '-Error reading in parameters file:'
+    logical            :: readv ! has variable been read in or not
+    real(r8)           :: temp1d(0:mxpft) ! temporary to read in parameter
+    real(r8)           :: temp2d(0:mxpft,nvegwcs) ! temporary to read in parameter
+    character(len=100) :: tString ! temp. var for reading
+    !-----------------------------------------------------------------------
+
+    ! read in parameters
+
+
+    call params_inst%allocParams()
+
+    tString = "krmax"
+    call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%krmax=temp1d
+    tString = "psi_soil_ref"
+    call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%psi_soil_ref=temp1d
+    tString = "lmr_intercept_atkin"
+    call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%lmr_intercept_atkin=temp1d
+    tString = "kmax"
+    call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%kmax=temp2d
+    tString = "psi50"
+    call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%psi50=temp2d
+    tString = "ck"
+    call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    params_inst%ck=temp2d
+
+  end subroutine readParams
+
+
+
+  !------------------------------------------------------------------------------
   subroutine Photosynthesis ( bounds, fn, filterp, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, atm2lnd_vars, surfalb_vars, solarabs_vars, &
@@ -541,7 +626,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         if ( .not. nu_com_leaf_physiology .or. CNAllocate_Carbon_only()) then
+         if ( .not. nu_com_leaf_physiology) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
 
@@ -604,8 +689,6 @@ contains
                vcmax25top = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
-               vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
-               jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
             else
 
                ! nu_com_leaf_physiology is true, vcmax25, jmax25 is derived from leafn, leafp concentration
@@ -2633,7 +2716,7 @@ contains
             lmr_sha(p) = 0._r8
             rs_sha(p) = 0._r8
          end if
-
+         
          !KO  Here's how I'm combining bsun and bsha to get btran
          !KO  But this is not really an indication of soil moisture stress that can be
          !KO  used for, e.g., irrigation?
@@ -2766,7 +2849,7 @@ contains
        call ci_func_PHS(x,x0sun, x0sha, f0sun, f0sha, p, iv, c, t, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
             gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
             qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, soilstate_inst )
-
+       
        ! update bsun/bsha convergence vars
        dbsun=b0sun-bsun
        dbsha=b0sha-bsha
@@ -2887,7 +2970,6 @@ contains
     end associate
 
   end subroutine hybrid_PHS
-  !--------------------------------------------------------------------------------
 
   !------------------------------------------------------------------------------
   subroutine brent_PHS(xsun, x1sun, x2sun, f1sun, f2sun, xsha, x1sha, x2sha, f1sha, f2sha, &
@@ -2954,7 +3036,6 @@ contains
           call endrun(msg=errmsg(__FILE__, __LINE__))
        endif
     enddo
-
     c=b
     fc=fb
     iter = 0
@@ -3027,6 +3108,7 @@ contains
             gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
             qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst,  soilstate_inst )
 
+       
        if( (fb(sun) == 0._r8) .and. (fb(sha) == 0._r8) ) exit
     enddo
     if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
@@ -3036,12 +3118,12 @@ contains
     return
 
   end subroutine brent_PHS
-  !--------------------------------------------------------------------------------
 
   !------------------------------------------------------------------------------
   subroutine ci_func_PHS(x,cisun, cisha, fvalsun, fvalsha, p, iv, c, t, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
        gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
        qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, soilstate_inst )
+    
     !------------------------------------------------------------------------------
     !
     ! !DESCRIPTION:
@@ -3124,7 +3206,7 @@ contains
        call calcstress(p,c,t,x,bsun,bsha,gb_mol,gs0sun,gs0sha,qsatl,qaf, &
             atm2lnd_inst,canopystate_inst,soilstate_inst)
     endif
-
+    
     if (c3flag(p)) then
        ! C3: Rubisco-limited photosynthesis
        ac(p,sun,iv) = bsun * vcmax_z(p,sun,iv) * max(cisun-cp(p), 0._r8) / (cisun+kc(p)*(1._r8+oair/ko(p)))
@@ -3222,6 +3304,7 @@ contains
     call quadratic (aquad, bquad, cquad, r1, r2)
     gs_mol_sha = max(r1,r2)
 
+    
     ! Derive new estimate for cisun,cisha
     if (an_sun(p,iv) >= 0._r8) then
        if (gs_mol_sun > 0._r8) then
@@ -3239,7 +3322,6 @@ contains
     endif
     end associate
   end subroutine ci_func_PHS
-  !--------------------------------------------------------------------------------
 
   !------------------------------------------------------------------------------
   subroutine calcstress(p,c,t,x,bsun,bsha,gb_mol,gs_mol_sun,gs_mol_sha,qsatl,qaf, &
@@ -3362,6 +3444,7 @@ contains
           !dx = matmul(A,f)
           !cu_error = cublasdgemv(h, 0,nvegwcs , nvegwcs, 1d0, A, nvegwcs, f, 1, 0d0, dx, 1)
           call matvec_acc(1,nvegwcs,dx,A,f)
+       
        else
           !reduces to 3x3 system
           !in this case, dx is not always [sun,sha,xyl,root]
@@ -3391,6 +3474,7 @@ contains
           x(sun)=x(sun)+dx(sha)  ! implementation ugly bit, chose to flip dx(sun) and dx(sha) for laisha==0 case
           x(sha)=x(xyl) ! psi_sha = psi_xyl because laisha==0
 
+         
        endif
 
 
@@ -3399,11 +3483,13 @@ contains
           exit
        end if
 
+       
        ! this is a catch to force spac gradient to atmosphere
        if ( x(xyl) > x(root) ) x(xyl) = x(root)
        if ( x(sun) > x(xyl) )  x(sun) = x(xyl)
        if ( x(sha) > x(xyl) )  x(sha) = x(xyl)
 
+       
     end do
 
     else
@@ -3519,7 +3605,7 @@ contains
        call endrun(msg='Error:: this function is hardcoded for 4x4 matrices with nvegwcs==4'//errMsg(__FILE__, __LINE__))
     end if
 #endif
-
+    
     associate(                                                    &
          k_soil_root  => soilstate_inst%k_soil_root_patch       , & ! Input:  [real(r8) (:,:) ]  soil-root interface conductance (mm/s)
          laisun        => canopystate_inst%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit leaf area
@@ -3529,24 +3615,28 @@ contains
          ivt           => veg_pp%itype                             & ! Input:  [integer  (:)   ]  patch vegetation type
          )
 
+    
     ! initialize all elements to zero
     A = 0._r8
     invA = 0._r8
 
     grav1 = htop(p)*1000._r8
 
+    
     !compute conductance attentuation for each segment
     fsto1=  plc(x(sun),p,c,sun,veg)
     fsto2=  plc(x(sha),p,c,sha,veg)
     fx=     plc(x(xyl),p,c,xyl,veg)
     fr=     plc(x(root),p,c,root,veg)
 
+    
     !compute 1st deriv of conductance attenuation for each segment
     dfsto1=  d1plc(x(sun),p,c,sun,veg)
     dfsto2=  d1plc(x(sha),p,c,sha,veg)
     dfx=     d1plc(x(xyl),p,c,xyl,veg)
     dfr=     d1plc(x(root),p,c,root,veg)
 
+    
     !A - f=A*d(vegwp)
     A(1,1)= - laisun(p) * params_inst%kmax(veg_pp%itype(p),sun) * fx&
          - qflx_sun * dfsto1
@@ -3586,6 +3676,7 @@ contains
           flag = .false.
        end if
 
+    
        leading = 1._r8/determ
 
        !algebraic inversion of the matrix
@@ -3623,6 +3714,7 @@ contains
           flag = .false.
        end if
 
+       
        !algebraic inversion of the 3x3 matrix stored in A(2:4,2:4)
        invA(2,2)=A(3,3)*A(4,4)-A(3,4)*A(4,3)
        invA(2,3)=-A(2,3)*A(4,4)
@@ -3646,6 +3738,7 @@ contains
   !------------------------------------------------------------------------------
   subroutine spacF(p,c,x,f,qflx_sun,qflx_sha, &
        atm2lnd_inst,canopystate_inst,soilstate_inst )
+       
     !
     ! DESCRIPTION
     ! Returns f, the flux divergence across each vegetation segment
@@ -3700,6 +3793,7 @@ contains
     fx=     plc(x(xyl),p,c,xyl,veg)
     fr=     plc(x(root),p,c,root,veg)
 
+    
     !compute flux divergence across each plant segment
     f(sun)= qflx_sun * fsto1 - laisun(p) * params_inst%kmax(veg_pp%itype(p),sun) * fx * (x(xyl)-x(sun))
     f(sha)= qflx_sha * fsto2 - laisha(p) * params_inst%kmax(veg_pp%itype(p),sha) * fx * (x(xyl)-x(sha))
@@ -3795,6 +3889,7 @@ contains
                   /sum(k_soil_root(p,1:nlevsoi))
     endif
 
+    
     !calculate xylem water potential
     fr = plc(x(root),p,c,root,veg)
     if ( (tsai(p) > 0._r8) .and. (fr > 0._r8) ) then
@@ -3803,6 +3898,7 @@ contains
        x(xyl) = x(root) - grav1
     endif
 
+    
     !calculate sun/sha leaf water potential
     fx = plc(x(xyl),p,c,xyl,veg)
     if ( (laisha(p) > 0._r8) .and. (fx > 0._r8) ) then
@@ -3829,6 +3925,7 @@ contains
   !--------------------------------------------------------------------------------
   subroutine getqflx(p,c,t,gb_mol,gs_mol_sun,gs_mol_sha,qflx_sun,qflx_sha,qsatl,qaf,havegs, &
        atm2lnd_inst, canopystate_inst)
+  
     ! !DESCRIPTION:
     !  calculate sunlit and shaded transpiration using gb_MOL and gs_MOL
     ! !USES:
@@ -3860,6 +3957,7 @@ contains
     real(r8) :: cf                       ! s m**2/umol -> s/m
     !----------------------------------------------------------------------
 
+    
     associate(                                                    &
          laisun        => canopystate_inst%laisun_patch         , & ! Input: [real(r8) (:)   ]  sunlit leaf area
          laisha        => canopystate_inst%laisha_patch         , & ! Input: [real(r8) (:)   ]  shaded leaf area
@@ -3895,6 +3993,7 @@ contains
           qflx_sha      = 0._r8
        end if
 
+       
     else
        if (qflx_sun > 0._r8) then
           gs_mol_sun=gb_mol*qflx_sun*cf*elai(p)/(efpot*fdry(p)*laisun(p)-qflx_sun*cf*elai(p))
@@ -3949,7 +4048,6 @@ contains
     end associate
 
   end function plc
-  !--------------------------------------------------------------------------------
 
   !--------------------------------------------------------------------------------
   function d1plc(x,p,c,level,plc_method)

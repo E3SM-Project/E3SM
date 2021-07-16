@@ -9,9 +9,9 @@ module lnd2atmType
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use shr_megan_mod , only : shr_megan_mechcomps_n
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4
+  use elm_varpar    , only : numrad, ndst, nlevsno, nlevgrnd !ndst = number of dust bins.
+  use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   !
@@ -52,6 +52,7 @@ module lnd2atmType
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
      real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
+     real(r8), pointer :: coszen_str         (:)   => null() ! cosine of zenith angle used in stratification
      real(r8), pointer :: qflx_rofliq_qsurp_grc(:) => null() ! rof liq -- surface ponding runoff component
      real(r8), pointer :: qflx_rofliq_qsub_grc (:) => null() ! rof liq -- subsurface runoff component
      real(r8), pointer :: qflx_rofliq_qsubp_grc(:) => null() ! rof liq -- perched subsurface runoff component
@@ -62,7 +63,14 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qsur_doc_grc(:) => null()
      real(r8), pointer :: qflx_rofliq_qsur_dic_grc(:) => null()
      real(r8), pointer :: qflx_rofliq_qsub_doc_grc(:) => null()
-     real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()
+     real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()     
+     
+     real(r8), pointer :: t_grnd_grc(:) => null()            ! grc ground temperature (Kelvin)
+     real(r8), pointer :: zwt_grc(:) => null()               ! grc water table depth
+     real(r8), pointer :: t_soisno_grc(:,:) => null()        ! grc soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd) 
+     real(r8), pointer :: Tqsur_grc(:) => null()             ! grc Temperature of surface runoff
+     real(r8), pointer :: Tqsub_grc(:) => null()             ! grc Temperature of subsurface runoff
+     
    contains
 
      procedure, public  :: Init
@@ -125,6 +133,7 @@ contains
     allocate(this%flux_ch4_grc         (begg:endg))            ; this%flux_ch4_grc         (:) =ival
     allocate(this%qflx_rofliq_grc      (begg:endg))            ; this%qflx_rofliq_grc      (:) =ival
     allocate(this%qflx_rofliq_qsur_grc (begg:endg))            ; this%qflx_rofliq_qsur_grc (:) =ival
+    allocate(this%coszen_str           (begg:endg))            ; this%coszen_str           (:) =ival
     allocate(this%qflx_rofliq_qsurp_grc(begg:endg))            ; this%qflx_rofliq_qsurp_grc(:) =ival
     allocate(this%qflx_rofliq_qsub_grc (begg:endg))            ; this%qflx_rofliq_qsub_grc (:) =ival
     allocate(this%qflx_rofliq_qsubp_grc(begg:endg))            ; this%qflx_rofliq_qsubp_grc(:) =ival
@@ -137,6 +146,12 @@ contains
     allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
     allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
 
+    allocate(this%zwt_grc              (begg:endg))            ; this%zwt_grc              (:) =ival
+    allocate(this%t_grnd_grc           (begg:endg))            ; this%t_grnd_grc           (:) =ival
+    allocate(this%t_soisno_grc (begg:endg,-nlevsno+1:nlevgrnd)) ; this%t_soisno_grc        (:,:) =ival
+    allocate(this%Tqsur_grc            (begg:endg))            ; this%Tqsur_grc            (:) =ival
+    allocate(this%Tqsub_grc            (begg:endg))            ; this%Tqsub_grc            (:) =ival
+    
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
     endif

@@ -9,14 +9,14 @@ module EcosystemDynBeTRMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
-  use clm_varctl                , only : use_pheno_flux_limiter, iulog
-  use clm_varpar                , only : nlevsoi
-  use clm_varctl                , only : use_erosion
+  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl                , only : use_pheno_flux_limiter, iulog
+  use elm_varpar                , only : nlevsoi
+  use elm_varctl                , only : use_erosion
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
-  use clm_varctl                , only : use_century_decomp
+  use elm_varctl                , only : use_century_decomp
   use CNStateType               , only : cnstate_type
   use CNCarbonFluxType          , only : carbonflux_type
   use CNCarbonStateType         , only : carbonstate_type
@@ -103,7 +103,7 @@ module EcosystemDynBeTRMod
     use WoodProductsMod                  , only : WoodProducts
     use CropType                         , only : crop_type
     use dynHarvestMod                    , only : CNHarvest
-    use clm_varpar                       , only : crop_prog
+    use elm_varpar                       , only : crop_prog
     use NitrogenDynamicsMod              , only : NitrogenLeaching
     use CropHarvestPoolsMod              , only : CropHarvestPools
     use PlantMicKineticsMod              , only : PlantMicKinetics_type
@@ -522,7 +522,7 @@ module EcosystemDynBeTRMod
     use WoodProductsMod                   , only : WoodProducts
     use CropType                          , only : crop_type
     use dynHarvestMod                     , only : CNHarvest
-    use clm_varpar                        , only : crop_prog
+    use elm_varpar                        , only : crop_prog
     use CropHarvestPoolsMod               , only : CropHarvestPools
     use PlantMicKineticsMod               , only : PlantMicKinetics_type
     use AllocationMod                     , only : update_PlantMicKinetics_pars,Allocation3_PlantCNPAlloc
@@ -1009,7 +1009,7 @@ module EcosystemDynBeTRMod
     use WoodProductsMod         , only : WoodProducts
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
-    use clm_varpar                , only : crop_prog
+    use elm_varpar                , only : crop_prog
     use CropHarvestPoolsMod     , only : CropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc

@@ -9,8 +9,8 @@ module decompMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   ! Must use shr_sys_abort rather than endrun here to avoid circular dependency
   use shr_sys_mod , only : shr_sys_abort 
-  use clm_varctl  , only : iulog
-  use clm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
+  use elm_varctl  , only : iulog
+  use elm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
   use mct_mod     , only : mct_gsMap
   !
   ! !PUBLIC TYPES:
@@ -37,8 +37,8 @@ module decompMod
   public get_proc_total        ! total no. of gridcells, topounits, landunits, columns and pfts for any processor
   public get_proc_total_ghosts ! total no. of gridcells, topounits, landunits, columns and pfts for any processor
   public get_proc_global       ! total gridcells, topounits, landunits, columns, pfts across all processors
-  public get_clmlevel_gsize    ! get global size associated with clmlevel
-  public get_clmlevel_gsmap    ! get gsmap associated with clmlevel
+  public get_elmlevel_gsize    ! get global size associated with elmlevel
+  public get_elmlevel_gsmap    ! get gsmap associated with elmlevel
 
   interface get_clump_bounds
      module procedure get_clump_bounds_old
@@ -537,52 +537,52 @@ contains
    end function get_proc_clumps
 
    !-----------------------------------------------------------------------
-   integer function get_clmlevel_gsize (clmlevel)
+   integer function get_elmlevel_gsize (elmlevel)
      !
      ! !DESCRIPTION:
-     ! Determine 1d size from clmlevel
+     ! Determine 1d size from elmlevel
      !
      ! !USES:
      use domainMod , only : ldomain
      !
      ! !ARGUMENTS:
-     character(len=*), intent(in) :: clmlevel    !type of clm 1d array
+     character(len=*), intent(in) :: elmlevel    !type of clm 1d array
      !-----------------------------------------------------------------------
 
-     select case (clmlevel)
+     select case (elmlevel)
      case(grlnd)
-        get_clmlevel_gsize = ldomain%ns
+        get_elmlevel_gsize = ldomain%ns
      case(nameg)
-        get_clmlevel_gsize = numg
+        get_elmlevel_gsize = numg
      case(namet)
-        get_clmlevel_gsize = numt
+        get_elmlevel_gsize = numt
      case(namel)
-        get_clmlevel_gsize = numl
+        get_elmlevel_gsize = numl
      case(namec)
-        get_clmlevel_gsize = numc
+        get_elmlevel_gsize = numc
      case(namep)
-        get_clmlevel_gsize = nump
+        get_elmlevel_gsize = nump
      case(nameCohort)
-        get_clmlevel_gsize = numCohort
+        get_elmlevel_gsize = numCohort
      case default
-        write(iulog,*) 'get_clmlevel_gsize does not match clmlevel type: ', trim(clmlevel)
+        write(iulog,*) 'get_elmlevel_gsize does not match elmlevel type: ', trim(elmlevel)
         call shr_sys_abort()
      end select
 
-   end function get_clmlevel_gsize
+   end function get_elmlevel_gsize
 
    !-----------------------------------------------------------------------
-   subroutine get_clmlevel_gsmap (clmlevel, gsmap)
+   subroutine get_elmlevel_gsmap (elmlevel, gsmap)
      !
      ! !DESCRIPTION:
      ! Compute arguments for gatherv, scatterv for vectors
      !
      ! !ARGUMENTS:
-     character(len=*), intent(in) :: clmlevel     ! type of input data
+     character(len=*), intent(in) :: elmlevel     ! type of input data
      type(mct_gsmap) , pointer    :: gsmap
      !----------------------------------------------------------------------
 
-    select case (clmlevel)
+    select case (elmlevel)
     case(grlnd)
        gsmap => gsMap_lnd_gdc2glo
     case(nameg)
@@ -598,11 +598,11 @@ contains
     case(nameCohort)
        gsmap => gsMap_cohort_gdc2glo
     case default
-       write(iulog,*) 'get_clmlevel_gsmap: Invalid expansion character: ',trim(clmlevel)
+       write(iulog,*) 'get_elmlevel_gsmap: Invalid expansion character: ',trim(elmlevel)
        call shr_sys_abort()
     end select
 
-  end subroutine get_clmlevel_gsmap
+  end subroutine get_elmlevel_gsmap
 
    !------------------------------------------------------------------------------
    subroutine get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &

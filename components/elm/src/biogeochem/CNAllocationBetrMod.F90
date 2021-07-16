@@ -8,9 +8,9 @@ module CNAllocationBeTRMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use clm_varcon          , only : dzsoi_decomp
-  use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
-  use clm_varctl          , only : nyears_ad_carbon_only
+  use elm_varcon          , only : dzsoi_decomp
+  use elm_varctl          , only : use_c13, use_c14, spinup_state
+  use elm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
@@ -30,12 +30,12 @@ module CNAllocationBeTRMod
   use ColumnType          , only : col_pp
   use VegetationType      , only : veg_pp
   ! bgc interface & pflotran module switches
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use PlantMicKineticsMod , only : PlantMicKinetics_type
   use AllocationMod     , only : AllocParamsInst
-  use clm_varctl      , only: iulog
+  use elm_varctl      , only: iulog
   !
   implicit none
   save
@@ -98,14 +98,14 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     use clm_time_manager, only: get_step_size, get_curr_date
-    use clm_varpar      , only: crop_prog
-    use clm_varctl      , only: iulog, cnallocate_carbon_only_set
-    use clm_varctl      , only: cnallocate_carbonnitrogen_only_set
-    use clm_varctl      , only: cnallocate_carbonphosphorus_only_set
+    use elm_varpar      , only: crop_prog
+    use elm_varctl      , only: iulog, cnallocate_carbon_only_set
+    use elm_varctl      , only: cnallocate_carbonnitrogen_only_set
+    use elm_varctl      , only: cnallocate_carbonphosphorus_only_set
     use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
-    use clm_varpar      , only: nlevdecomp,nlevdecomp_full, nsoilorder
+    use elm_varpar      , only: nlevdecomp,nlevdecomp_full, nsoilorder
     !
     ! !ARGUMENTS:
     implicit none
@@ -191,7 +191,7 @@ contains
 
     ! !USES:
   use ncdio_pio       , only : file_desc_t,ncd_io
-  use clm_varpar      , only : nlevdecomp_full, nsoilorder
+  use elm_varpar      , only : nlevdecomp_full, nsoilorder
     ! !ARGUMENTS:
   implicit none
   type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -268,13 +268,13 @@ contains
     !! PHASE-1 of CNAllocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
-    use clm_varpar       , only: nlevdecomp
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
-    use clm_varctl       , only: cnallocate_carbon_only_set
+    use elm_varpar       , only: nlevdecomp
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varctl       , only: cnallocate_carbon_only_set
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size, get_curr_date
     !
@@ -686,7 +686,7 @@ contains
   use shr_const_mod          , only : SHR_CONST_PI, SHR_CONST_TKFRZ
   use SharedParamsMod        , only : ParamsShareInst
   use TemperatureType        , only : temperature_type
-  use clm_varpar             , only :  nlevdecomp
+  use elm_varpar             , only :  nlevdecomp
   implicit none
   type(bounds_type)      , intent(in)    :: bounds
   integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -768,10 +768,10 @@ contains
   !
   !DESCRIPTION
   !compute kinetic parameters for nutrient competition
-  use clm_varpar       , only :  nlevdecomp !!nlevsoi,
+  use elm_varpar       , only :  nlevdecomp !!nlevsoi,
   use pftvarcon        , only :  noveg
-  use clm_varcon       , only : spval
-  use clm_varctl       , only : iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+  use elm_varcon       , only : spval
+  use elm_varctl       , only : iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
 !  use bgcCalibMod      , only : calb_inst
   implicit none
@@ -1006,14 +1006,14 @@ contains
 
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
 !    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
 !    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use pftvarcon        , only: noveg
     use pftvarcon        , only:  npcropmin, grperc, grpnow
-    use clm_varpar       , only:  nlevdecomp !!nlevsoi,
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varpar       , only:  nlevdecomp !!nlevsoi,
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_nstep,get_step_size
     !
@@ -1196,10 +1196,8 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
-         water_scalar                 => cnstate_vars%water_scalar                             , &
          cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
          cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
-         water_scalar_runmean         => cnstate_vars%water_scalar_runmean                     , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch               , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
@@ -1247,7 +1245,6 @@ contains
          ! set allocation coefficients
          N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
          P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
-         W_lim_factor(p) = water_scalar_runmean(p) ! W stress factor
 
          if (cnallocate_carbon_only()) then
            N_lim_factor(p) = 0.0_r8
@@ -1257,10 +1254,9 @@ contains
          else if (cnallocate_carbonphosphorus_only()) then
            N_lim_factor(p) = 0.0_r8
          end if
-         ! integrate instant water scalar for plant dynamic allocation
-         water_scalar(p) = 0.0_r8
+         W_lim_factor(p) = 0.0_r8
          do j = 1 , nlevdecomp
-            water_scalar(p) = water_scalar(p) + w_scalar(c,j) * froot_prof(p,j) * dzsoi_decomp(j)
+           W_lim_factor(p) = W_lim_factor(p) + w_scalar(c,j) * froot_prof(p,j) 
          end do
          ! N_lim_factor/P_lim_factor ones: highly limited
          ! N_lim_factor/P_lim_factor zeros: not limited

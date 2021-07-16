@@ -1468,8 +1468,8 @@ contains
    use clm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
-   use clm_nlUtilsMod   , only : find_nlgroup_name
-   use ndepStreamMod    , only : clm_domain_mct
+   use elm_nlUtilsMod   , only : find_nlgroup_name
+   use ndepStreamMod    , only : elm_domain_mct
    use histFileMod      , only : hist_addfld1d
    !
    ! !ARGUMENTS:
@@ -1535,13 +1535,13 @@ contains
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_hdm,name="clmhdm",     &
         pio_subsystem=pio_subsystem,                   &
         pio_iotype=shr_pio_getiotype(inst_name),       &
         mpicom=mpicom, compid=comp_id,                 &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,        &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,        &
         nxg=ldomain%ni, nyg=ldomain%nj,                &
         yearFirst=stream_year_first_popdens,           &
         yearLast=stream_year_last_popdens,             &
@@ -1619,8 +1619,8 @@ subroutine lnfm_init( bounds )
   use clm_time_manager , only : get_calendar
   use ncdio_pio        , only : pio_subsystem
   use shr_pio_mod      , only : shr_pio_getiotype
-  use clm_nlUtilsMod   , only : find_nlgroup_name
-  use ndepStreamMod    , only : clm_domain_mct
+  use elm_nlUtilsMod   , only : find_nlgroup_name
+  use ndepStreamMod    , only : elm_domain_mct
   use histFileMod      , only : hist_addfld1d
   !
   ! !ARGUMENTS:
@@ -1686,13 +1686,13 @@ subroutine lnfm_init( bounds )
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
         pio_subsystem=pio_subsystem,                  &
         pio_iotype=shr_pio_getiotype(inst_name),      &
         mpicom=mpicom, compid=comp_id,                &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,       &
         nxg=ldomain%ni, nyg=ldomain%nj,               &
         yearFirst=stream_year_first_lightng,          &
         yearLast=stream_year_last_lightng,            &

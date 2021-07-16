@@ -6,10 +6,10 @@ module NitrogenStateUpdate1BeTRMod
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
   use clm_time_manager       , only : get_step_size
-  use clm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
-  use clm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, use_nitrif_denitrif
-  use clm_varcon             , only : nitrif_n2o_loss_frac
+  use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+  use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varctl             , only : iulog
+  use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -19,16 +19,16 @@ module NitrogenStateUpdate1BeTRMod
   use VegetationType              , only : veg_pp
   use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode
+  use elm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
   use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
-  use clm_varctl             , only : forest_fert_exp
-  use clm_varctl             , only : nu_com
-  use clm_varctl             , only : NFIX_PTASE_plant
+  use elm_varctl             , only : forest_fert_exp
+  use elm_varctl             , only : nu_com
+  use elm_varctl             , only : NFIX_PTASE_plant
   use decompMod              , only : bounds_type
-  use clm_varcon             , only : dzsoi_decomp
-  use clm_varctl             , only : use_fates
+  use elm_varcon             , only : dzsoi_decomp
+  use elm_varctl             , only : use_fates
   use GridcellDataType        , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
   use ColumnDataType          , only : column_nitrogen_state, column_nitrogen_flux
   use VegetationDataType      , only : vegetation_nitrogen_state, vegetation_nitrogen_flux
@@ -267,17 +267,11 @@ contains
           if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
              .and. fert_type(c) == 1 &
              .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
-             if (.not. use_nitrif_denitrif) then
-                do j = 1, nlevdecomp
-                  col_ns%sminn_vr(c,j) =col_ns%sminn_vr(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
-                end do
-             else
-                do j = 1, nlevdecomp
-                  col_ns%smin_nh4_vr(c,j) =col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                  col_ns%smin_no3_vr(c,j) =col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                  col_ns%sminn_vr(c,j) =col_ns%smin_nh4_vr(c,j) +col_ns%smin_no3_vr(c,j)
-                end do
-             end if
+             do j = 1, nlevdecomp
+               col_ns%smin_nh4_vr(c,j) =col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+               col_ns%smin_no3_vr(c,j) =col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+               col_ns%sminn_vr(c,j) =col_ns%smin_nh4_vr(c,j) +col_ns%smin_no3_vr(c,j)
+             end do
           end if
        end do
     end if

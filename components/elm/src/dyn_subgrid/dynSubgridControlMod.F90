@@ -14,7 +14,7 @@ module dynSubgridControlMod
 #include "shr_assert.h"
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use abortutils         , only : endrun
-  use clm_varctl         , only : fname_len
+  use elm_varctl         , only : fname_len
   !
   implicit none
   private
@@ -101,7 +101,7 @@ contains
     ! !USES:
     use fileutils      , only : getavu, relavu
     use clm_nlUtilsMod , only : find_nlgroup_name
-    use clm_varctl     , only : iulog
+    use elm_varctl     , only : iulog
     use spmdMod        , only : masterproc, mpicom
     use shr_mpi_mod    , only : shr_mpi_bcast
     !
@@ -186,7 +186,7 @@ contains
     ! Check consistency of namelist settingsn
     !
     ! !USES:
-    use clm_varctl     , only : iulog, use_fates, use_cn, use_crop
+    use elm_varctl     , only : iulog, use_fates, use_cn, use_crop
     !
     ! !ARGUMENTS:
     !

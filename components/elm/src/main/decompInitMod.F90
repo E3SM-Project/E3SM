@@ -11,13 +11,13 @@ module decompInitMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils      , only : endrun
-  use clm_varctl      , only : iulog, use_fates
-  use clm_varcon      , only : grlnd
+  use elm_varctl      , only : iulog, use_fates
+  use elm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use TopounitType    , only : top_pp                
   use ColumnType      , only : col_pp                
-  use FatesInterfaceMod, only : fates_maxElementsPerSite
+  use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
   use decompMod
   use mct_mod
@@ -48,7 +48,7 @@ contains
     ! set by clump_pproc
     !
     ! !USES:
-    use clm_varctl, only : nsegspc
+    use elm_varctl, only : nsegspc
     !
     ! !ARGUMENTS:
     implicit none
@@ -967,8 +967,9 @@ contains
     deallocate(cstart, ccount)
     deallocate(pstart, pcount)
     if ( use_fates ) then
-       deallocate(coStart,coCount)
+       deallocate(coStart)
     endif
+    deallocate(coCount)
     deallocate(ioff)
 
     ! Diagnostic output
@@ -1131,7 +1132,7 @@ contains
 #include <petsc/finclude/petsc.h>
 #endif
     ! !USES:
-    use clm_varctl, only : nsegspc
+    use elm_varctl, only : nsegspc
 #ifdef USE_PETSC_LIB
     use petscsys
     use petscvec
@@ -1714,7 +1715,7 @@ contains
     !  - cohorts.
     !
     ! !USES:
-    use clm_varctl           , only : lateral_connectivity
+    use elm_varctl           , only : lateral_connectivity
     use subgridMod           , only : subgrid_get_gcellinfo
 #ifdef USE_PETSC_LIB
     use domainLateralMod     , only : ldomain_lateral

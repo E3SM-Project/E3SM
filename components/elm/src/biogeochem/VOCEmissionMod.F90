@@ -7,8 +7,8 @@ module VOCEmissionMod
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use clm_varctl         , only : iulog
-  use clm_varpar         , only : numpft, nlevcan
+  use elm_varctl         , only : iulog
+  use elm_varpar         , only : numpft, nlevcan
   use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
   use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
   use pftvarcon          , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_brl_shrub
@@ -22,7 +22,7 @@ module VOCEmissionMod
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
   use fileutils          , only : getfil
-  use clm_varcon         , only : grlnd
+  use elm_varcon         , only : grlnd
   use atm2lndType        , only : atm2lnd_type
   use CanopyStateType    , only : canopystate_type
   use PhotosynthesisType , only : photosyns_type
@@ -173,7 +173,7 @@ contains
     ! Initialize history output fields for MEGAN emissions diagnositics
     !
     ! !USES 
-    use clm_varcon  , only : spval
+    use elm_varcon  , only : spval
     use histFileMod , only : hist_addfld1d
     !
     ! !ARGUMENTS:
@@ -304,7 +304,7 @@ contains
     !
     ! !USES
     use ncdio_pio
-    use clm_varctl, only : fsurdat
+    use elm_varctl, only : fsurdat
     !
     ! !ARGUMENTS:
     class(vocemis_type) :: this
@@ -489,7 +489,7 @@ contains
          fsun24        => canopystate_vars%fsun24_patch         , & ! Input:  [real(r8) (:)   ]  sunlit fraction of canopy last 24 hrs             
          fsun240       => canopystate_vars%fsun240_patch        , & ! Input:  [real(r8) (:)   ]  sunlit fraction of canopy last 240 hrs            
          elai          => canopystate_vars%elai_patch           , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
-         elai_p        => canopystate_vars%elai_p_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index from previous timestep  
+         elai240       => canopystate_vars%elai240_patch        , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow 240 hrs  
 
          cisun_z       => photosyns_vars%cisun_z_patch          , & ! Input:  [real(r8) (:,:) ]  sunlit intracellular CO2 (Pa)
          cisha_z       => photosyns_vars%cisha_z_patch          , & ! Input:  [real(r8) (:,:) ]  shaded intracellular CO2 (Pa)
@@ -594,7 +594,7 @@ contains
                                    betaT(class_num),LDF(class_num), Ceo(class_num), Eopt, topt)
 
              ! Activity factor for Leaf Age
-             gamma_a = get_gamma_A(veg_pp%itype(p), elai_p(p),elai(p),class_num)
+             gamma_a = get_gamma_A(veg_pp%itype(p), elai240(p),elai(p),class_num)
 
              ! Activity factor for CO2 (only for isoprene)
              if (trim(meg_cmp%name) == 'isoprene') then 
@@ -787,8 +787,8 @@ contains
     ! Guenther et al., 2006 eq 3
     !
     ! !USES:
-    use clm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varcon   , only : denice
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none
@@ -820,8 +820,8 @@ contains
     ! convert to volumetric soil water using equation 7.118 of the CLM4 Technical Note
     !
     ! !USES:
-    use clm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varcon   , only : denice
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none
@@ -943,7 +943,7 @@ contains
   end function get_gamma_T
 
   !-----------------------------------------------------------------------
-  function get_gamma_A(ivt_in, elai_p_in,elai_in,nclass_in)
+  function get_gamma_A(ivt_in, elai240_in,elai_in,nclass_in)
 
     ! Activity factor for leaf age (Guenther et al., 2006)
     !-----------------------------
@@ -957,7 +957,7 @@ contains
     implicit none
     integer,intent(in)  :: ivt_in
     integer,intent(in)  :: nclass_in
-    real(r8),intent(in) :: elai_p_in
+    real(r8),intent(in) :: elai240_in
     real(r8),intent(in) :: elai_in
     !
     ! !LOCAL VARIABLES:
@@ -967,8 +967,8 @@ contains
     !-----------------------------------------------------------------------
     if ( (ivt_in == ndllf_dcd_brl_tree) .or. (ivt_in >= nbrdlf_dcd_trp_tree) ) then  ! non-evergreen
        
-       if ( (elai_p_in > 0.0_r8) .and. (elai_p_in < 1.e30_r8) )then 
-          elai_prev = 2._r8*elai_p_in-elai_in  ! have accumulated average lai over last timestep
+       if ( (elai240_in > 0.0_r8) .and. (elai240_in < 1.e30_r8) )then 
+          elai_prev = 2._r8*elai240_in-elai_in  ! have accumulated average lai over last timestep
           if (elai_prev == elai_in) then
              fnew = 0.0_r8
              fgro = 0.0_r8
@@ -1011,7 +1011,7 @@ contains
     ! Author: Colette L. Heald (11/30/11)
     !
     ! !USES:
-    use clm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
+    use elm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
     !
     ! !ARGUMENTS:
     implicit none

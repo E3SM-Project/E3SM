@@ -322,16 +322,16 @@ contains
             write (iulog,*) 'h_r - z_d <= z_0'
             write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
          if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
             write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
             write (iulog,*) 'h_u - z_d <= z_0'
             write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 #endif
          ! Initialize winds for iteration.
@@ -909,13 +909,13 @@ contains
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
          if (abs(eflx_err(indexl)) > .01_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than .01 W/m**2'
+            write(iulog,*)'elm model is stopping - error is greater than .01 W/m**2'
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
             write(iulog,*)'eflx          = ',eflx(indexl)
             ! test code, PET
             write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(indexl))
-            call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 #endif
@@ -936,13 +936,28 @@ contains
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than 4.e-9 kg/m**2/s'
+            write(iulog,*)'elm model is stopping - error is greater than 4.e-9 kg/m**2/s'
             write(iulog,*)'qflx_scale    = ',qflx_scale(indexl)
             write(iulog,*)'qflx          = ',qflx(indexl)
-            call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 #endif
+
+      ! Check for convergence of stress.
+      if (implicit_stress) then
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
+            if (abs(tau_diff(l)) > dtaumin) then
+               if (nstep > 0) then ! Suppress common warnings on the first time step.
+                  write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
+                       ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                       ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
+                       ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+               end if
+            end if
+         end do
+      end if
 
       ! Check for convergence of stress.
       if (implicit_stress) then

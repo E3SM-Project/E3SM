@@ -10,7 +10,7 @@ module ExternalModelStubMod
   use EMI_DataMod, only : emi_data_list, emi_data
   use decompMod                    , only : bounds_type
   use ExternalModelBaseType        , only : em_base_type
-  use clm_varctl                            , only : iulog
+  use elm_varctl                            , only : iulog
   use ExternalModelConstants
   use EMI_Atm2LndType_Constants
   use EMI_CanopyStateType_Constants
@@ -332,7 +332,7 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use clm_varctl                , only : iulog
+    use elm_varctl                , only : iulog
     use ExternalModelConstants    , only : EM_STUB_SOIL_HYDRO_STAGE, EM_STUB_SOIL_THERMAL_STAGE
 
     !

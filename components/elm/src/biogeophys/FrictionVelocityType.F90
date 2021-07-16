@@ -103,6 +103,7 @@ contains
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = spval
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = spval
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = spval
+
   end subroutine InitAllocate
   !-----------------------------------------------------------------------
 
@@ -147,10 +148,10 @@ contains
          avgflag='A', long_name='atmospheric wind speed plus convective velocity', &
          ptr_patch=this%va_patch, default='inactive')
 
-    this%u10_clm_patch(begp:endp) = spval
+    this%u10_elm_patch(begp:endp) = spval
     call hist_addfld1d (fname='U10', units='m/s', &
          avgflag='A', long_name='10-m wind', &
-         ptr_patch=this%u10_clm_patch)
+         ptr_patch=this%u10_elm_patch)
 
     if (use_cn) then
        this%u10_patch(begp:endp) = spval
@@ -223,7 +224,7 @@ contains
     ! to set this properly (e.g., patch-level displacement height and roughness
     ! length). So leave at 30m.
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        do p = bounds%begp, bounds%endp
           this%forc_hgt_u_patch(p) = 30._r8
        end do

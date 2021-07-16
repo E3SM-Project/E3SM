@@ -231,6 +231,8 @@ contains
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =nan
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =nan
     allocate(this%dwood         (0:numpft))        ; this%dwood        (:)   =nan
+    allocate(this%root_radius   (0:numpft))        ; this%root_radius  (:)   =nan
+    allocate(this%root_density  (0:numpft))        ; this%root_density (:)   =nan
     allocate(this%rootprof_beta (0:numpft))        ; this%rootprof_beta(:)   =nan
     allocate(this%fertnitro     (0:numpft))        ; this%fertnitro    (:)   =nan
     allocate(this%fleafcn       (0:numpft))        ; this%fleafcn      (:)   =nan
@@ -350,6 +352,8 @@ contains
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
        this%dwood(m)        = dwood
+       this%root_radius(m)  = 0.29e-03_r8 !(m)
+       this%root_density(m) = 0.31e06_r8 !(g biomass / m3 root)
        this%fertnitro(m)    = fertnitro(m)
        this%fleafcn(m)      = fleafcn(m)
        this%ffrootcn(m)     = ffrootcn(m)
@@ -400,7 +404,6 @@ contains
         this%km_plant_p(m)     = km_plant_p(m)
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
-        this%nsc_rtime(m)      = nsc_rtime(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
         this%vmax_ptase(m)     = vmax_ptase(m)
@@ -435,9 +438,8 @@ contains
     this%km_den        = km_den
     this%km_ptase      = km_ptase
     this%lamda_ptase   = lamda_ptase
-
     this%tc_stress     = tc_stress
-     
+
   end subroutine veg_vp_init
 
 end module VegetationPropertiesType

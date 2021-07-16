@@ -17,11 +17,11 @@ module ncdio_pio
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc, mpicom, iam, npes
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
-  use clm_varcon     , only : grlnd, nameg, namel, namec, namep
-  use clm_varcon     , only : spval,ispval
-  use clm_varctl     , only : single_column, iulog
+  use elm_varcon     , only : grlnd, nameg, namel, namec, namep
+  use elm_varcon     , only : spval,ispval
+  use elm_varctl     , only : single_column, iulog
   use shr_sys_mod    , only : shr_sys_flush
-  use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
+  use decompMod      , only : get_elmlevel_gsize,get_elmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
   use fileutils      , only : getavu, relavu
   use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints
@@ -168,7 +168,7 @@ contains
     !
     ! !USES:
     use shr_pio_mod     , only : shr_pio_getiosys, shr_pio_getiotype
-    use clm_varctl      , only : inst_name
+    use elm_varctl      , only : inst_name
     !-----------------------------------------------------------------------
 
     PIO_subsystem => shr_pio_getiosys(inst_name)
@@ -915,7 +915,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ncd_defvar_bynf(ncid, varname, xtype, ndims, dimid, varid, &
-       long_name, units, cell_method, missing_value, fill_value, &
+       long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, comment, flag_meanings, &
        flag_values, nvalid_range )
     !
@@ -930,6 +930,7 @@ contains
     integer            , intent(inout) :: varid                 ! returned var id
     integer            , intent(in), optional :: dimid(:)       ! dimids
     character(len=*)   , intent(in), optional :: long_name      ! attribute
+    character(len=*)   , intent(in), optional :: standard_name  ! attribute
     character(len=*)   , intent(in), optional :: units          ! attribute
     character(len=*)   , intent(in), optional :: cell_method    ! attribute
     character(len=*)   , intent(in), optional :: comment        ! attribute
@@ -994,6 +995,11 @@ contains
     if (present(long_name)) then
        call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
     end if
+    if (present(standard_name)) then
+       if (standard_name /= ' ') then
+          call ncd_putatt(ncid, varid, 'standard_name', trim(standard_name))
+       end if
+    end if
     if (present(flag_values)) then
        status = PIO_put_att(ncid,varid,'flag_values',flag_values)
        if ( .not. present(flag_meanings)) then
@@ -1056,7 +1062,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ncd_defvar_bygrid(ncid, varname, xtype, &
        dim1name, dim2name, dim3name, dim4name, dim5name, &
-       long_name, units, cell_method, missing_value, fill_value, &
+       long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, switchdim, comment, &
        flag_meanings, flag_values, nvalid_range )
     !
@@ -1073,6 +1079,7 @@ contains
     character(len=*)   , intent(in), optional :: dim4name       ! dimension name
     character(len=*)   , intent(in), optional :: dim5name       ! dimension name
     character(len=*)   , intent(in), optional :: long_name      ! attribute
+    character(len=*)   , intent(in), optional :: standard_name  ! attribute
     character(len=*)   , intent(in), optional :: units          ! attribute
     character(len=*)   , intent(in), optional :: cell_method    ! attribute
     character(len=*)   , intent(in), optional :: comment        ! attribute
@@ -1123,7 +1130,7 @@ contains
     end if
 
     call ncd_defvar_bynf(ncid,varname,xtype,ndims,dimid,varid, &
-         long_name=long_name, units=units, cell_method=cell_method, &
+         long_name=long_name, standard_name=standard_name,units=units, cell_method=cell_method, &
          missing_value=missing_value, fill_value=fill_value, &
          imissing_value=imissing_value, ifill_value=ifill_value, &
          comment=comment, flag_meanings=flag_meanings, &
@@ -1455,7 +1462,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical          , optional, intent(in)  :: cnvrtnan2fill ! true => convert any NaN's to _FillValue (spval)
     !
     ! Local Variables
-    character(len=8)                 :: clmlevel   ! clmlevel
+    character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary
     integer                          :: n          ! index      
     integer                          :: iodnum     ! iodesc num in list
@@ -1478,10 +1485,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     start(:) = 0
     count(:) = 0
 
-    clmlevel = dim1name
+    elmlevel = dim1name
 
     if (masterproc .and. debug > 1) then
-       write(iulog,*) subname//' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
+       write(iulog,*) subname//' ',trim(flag),' ',trim(varname),' ',trim(elmlevel)
     end if
 
 #if ({ITYPE}==TYPEDOUBLE) 
@@ -1499,7 +1506,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if (varpresent) then
           if (single_column) then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid,clmlevel,vardesc,start,count)
+             call scam_field_offsets(ncid,elmlevel,vardesc,start,count)
              if (present(nt)) then
                n=3
                if (start(3) .eq. 0) n=2
@@ -1530,10 +1537,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 status = pio_inq_dimlen(ncid,dids(n),dims(n))
              enddo
 #if ({ITYPE}==TYPELOGICAL)
-             call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+             call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                   PIO_INT, iodnum)
 #else
-             call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+             call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                   PIO_{TYPE}, iodnum)
 #endif
              iodesc_plus => iodesc_list(iodnum)
@@ -1570,10 +1577,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           status = pio_inq_dimlen(ncid,dids(n),dims(n))
        enddo
 #if ({ITYPE}==TYPELOGICAL)
-       call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+       call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
             PIO_INT, iodnum)
 #else
-       call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+       call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
             PIO_{TYPE}, iodnum)
 #endif
        iodesc_plus => iodesc_list(iodnum)
@@ -1633,7 +1640,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     real(r8), pointer :: temp(:,:)
 #endif
     integer           :: ndim1,ndim2       
-    character(len=8)  :: clmlevel   ! clmlevel
+    character(len=8)  :: elmlevel   ! elmlevel
     character(len=32) :: dimname    ! temporary      
     integer           :: status     ! error status
     integer           :: ndims      ! ndims total for var
@@ -1656,10 +1663,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     start(:)=0
     count(:)=0
 
-    clmlevel = dim1name      
+    elmlevel = dim1name      
 
     if (masterproc .and. debug > 1) then
-       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
+       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(elmlevel)
     end if
 
 #if ({ITYPE}==TYPEDOUBLE) 
@@ -1688,7 +1695,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if (varpresent) then
           if (single_column) then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
+             call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
                 if (present(nt)) then
                    n=4
                    if (start(4) .eq. 0) n=3
@@ -1721,10 +1728,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 status = pio_inq_dimlen(ncid,dids(n),dims(n))
              enddo
              if (present(switchdim)) then
-                call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+                call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                      PIO_{TYPE}, iodnum, switchdim=.true.)
              else
-                call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+                call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                      PIO_{TYPE}, iodnum)
              end if
              iodesc_plus => iodesc_list(iodnum)
@@ -1775,10 +1782,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           status = pio_inq_dimlen(ncid,dids(n),dims(n))
        enddo
        if (present(switchdim)) then
-          call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+          call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                PIO_{TYPE}, iodnum, switchdim=.true.)
        else
-          call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+          call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                PIO_{TYPE}, iodnum)
        end if
        iodesc_plus => iodesc_list(iodnum)
@@ -1849,7 +1856,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     !
     ! !LOCAL VARIABLES:
     integer                          :: ndim1,ndim2       
-    character(len=8)                 :: clmlevel   ! clmlevel
+    character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary      
     integer                          :: status     ! error status
     integer                          :: ndims      ! ndims total for var
@@ -1867,10 +1874,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
 
-    clmlevel = dim1name      
+    elmlevel = dim1name      
 
     if (masterproc .and. debug > 1) then
-       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
+       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(elmlevel)
     end if
 
     if (flag == 'read') then
@@ -1880,7 +1887,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           if (single_column) then
              start(:) = 1 
              count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
+             call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
              if (present(nt)) then
                n=5
                if (start(5) .eq. 0) n=4
@@ -1904,7 +1911,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              do n = 1,ndims_iod
                 status = pio_inq_dimlen(ncid,dids(n),dims(n))
              enddo
-             call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+             call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                   PIO_{TYPE}, iodnum)
              iodesc_plus => iodesc_list(iodnum)
              if (present(nt)) then
@@ -1933,7 +1940,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        do n = 1,ndims_iod
           status = pio_inq_dimlen(ncid,dids(n),dims(n))
        enddo
-       call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+       call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
             PIO_{TYPE}, iodnum)
        iodesc_plus => iodesc_list(iodnum)
        if (present(nt)) then
@@ -1961,7 +1968,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     ! Read/Write initial data from/to netCDF instantaneous initial data file 
     !
     ! !USES:
-    use clm_varctl,     only: scmlon,scmlat,single_column
+    use elm_varctl,     only: scmlon,scmlat,single_column
     use shr_scam_mod,   only: shr_scam_getCloseLatLon
     use shr_string_mod, only: shr_string_toLower
     !
@@ -2154,7 +2161,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
   !------------------------------------------------------------------------
 
-  subroutine ncd_getiodesc(ncid, clmlevel, ndims, dims, dimids, &
+  subroutine ncd_getiodesc(ncid, elmlevel, ndims, dims, dimids, &
        xtype, iodnum, switchdim) 
     !
     ! !DESCRIPTION: 
@@ -2162,7 +2169,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     !
     ! !ARGUMENTS:
     class(file_desc_t) , intent(inout) :: ncid       ! PIO file descriptor
-    character(len=8)   , intent(in)    :: clmlevel   ! clmlevel
+    character(len=8)   , intent(in)    :: elmlevel   ! elmlevel
     integer            , intent(in)    :: ndims      ! ndims for var      
     integer            , intent(in)    :: dims(:)    ! dim sizes
     integer            , intent(in)    :: dimids(:)  ! dim ids
@@ -2176,7 +2183,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer :: gsmap_lsize                   ! local size of gsmap
     integer :: gsmap_gsize                   ! global size of gsmap
     integer :: fullsize                      ! size of entire array on cdf
-    integer :: gsize                         ! global size of clmlevel
+    integer :: gsize                         ! global size of elmlevel
     integer :: vsize                         ! other dimensions
     integer :: vsize1, vsize2                ! other dimensions
     integer :: status                        ! error status
@@ -2257,8 +2264,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        basetype = PIO_INT
     end if
 
-    call get_clmlevel_gsmap(clmlevel,gsmap)
-    gsize = get_clmlevel_gsize(clmlevel)
+    call get_elmlevel_gsmap(elmlevel,gsmap)
+    gsize = get_elmlevel_gsize(elmlevel)
     gsmap_lsize = mct_gsmap_lsize(gsmap,mpicom)
     gsmap_gsize = mct_gsmap_gsize(gsmap)
 

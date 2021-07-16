@@ -8,7 +8,7 @@ module subgridMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use spmdMod     , only : masterproc
   use abortutils  , only : endrun
-  use clm_varctl  , only : iulog
+  use elm_varctl  , only : iulog
 
   implicit none
   private   
@@ -39,13 +39,13 @@ contains
     ! Obtain gridcell properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use clm_varctl  , only : create_crop_landunit
-    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use elm_varctl  , only : create_crop_landunit
+    use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
     use topounit_varcon  , only : max_topounits
-    use FatesInterfaceMod, only : fates_maxElementsPerSite
+    use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
 
     !
     ! !ARGUMENTS
@@ -321,12 +321,12 @@ contains
     ! Obtain topounit properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use clm_varctl  , only : create_crop_landunit
-    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use elm_varctl  , only : create_crop_landunit
+    use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
-    use FatesInterfaceMod, only : fates_maxElementsPerSite
+    use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
 
     !
     ! !ARGUMENTS

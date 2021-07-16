@@ -2210,11 +2210,9 @@ contains
             end if
 
             ! Add oxygen demand for nitrification
-            if (use_nitrif_denitrif) then
-               if (.not. lake .and. j<= nlevdecomp_full ) then
-                  o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
-                  ! g N/m^3/s           mol O2 / g N
-               end if
+            if (.not. lake .and. j<= nlevdecomp_full ) then
+               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
+               ! g N/m^3/s           mol O2 / g N
             end if
 
             if (j  >  jwt(c)) then ! Below the water table so anaerobic CH4 production can occur

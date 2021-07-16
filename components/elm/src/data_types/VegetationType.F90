@@ -77,8 +77,6 @@ module VegetationType
 
      procedure, public :: Init => veg_pp_init
      procedure, public :: Clean => veg_pp_clean
-
-
   end type vegetation_physical_properties
 
   !-----------------------------------------------------------------------

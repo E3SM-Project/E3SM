@@ -25,7 +25,8 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology
   public :: init_soilwater_movement
-  public :: Compute_EffecRootFrac_And_VertTranSink_Default
+  public :: Compute_EffecRootFrac_And_VertTranSink
+!  public :: Compute_EffecRootFrac_And_VertTranSink_HydStress
   !
   ! !PUBLIC DATA MEMBERS:
   logical, public :: zengdecker_2009_with_var_soil_thick
@@ -1266,6 +1267,7 @@ contains
         !
         !USES:
       !$acc routine seq
+   
         use decompMod        , only : bounds_type
         use elm_varpar       , only : nlevsoi
         use elm_varpar       , only : max_patch_per_col
