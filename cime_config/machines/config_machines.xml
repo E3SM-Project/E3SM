@@ -2839,6 +2839,7 @@
       <env name="GPU_PER_RS">0</env>
       <env name="LTC_PRT">cpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
     </environment_variables>
     <environment_variables compiler="ibmgpu">
       <env name="RS_PER_NODE">6</env>
