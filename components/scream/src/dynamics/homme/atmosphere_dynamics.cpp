@@ -740,7 +740,11 @@ void HommeDynamics::homme_post_process () {
   // then we need to store w_int_old (to compute forcing for w next iteration)
   const bool has_w_forcing = m_ref_grid_fields.at("w_int").get_header().get_tracking().get_providers().size()>1;
 
-  constexpr auto P0 = physics::Constants<Real>::P0;
+  // Establish the boundary condition for the TOA
+  const auto& c = Homme::Context::singleton();
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 
@@ -749,7 +753,7 @@ void HommeDynamics::homme_post_process () {
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto p_int = ekat::subview(p_int_view,icol);
 
-    ColOps::column_scan<true>(team,nlevs,dp,p_int,P0);
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     
     // Convert VTheta_dp->VTheta->Theta->T
