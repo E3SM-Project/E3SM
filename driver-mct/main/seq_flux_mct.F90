@@ -45,6 +45,9 @@ module seq_flux_mct
   real(r8), allocatable ::  zbot (:)  ! atm level height
   real(r8), allocatable ::  ubot (:)  ! atm velocity, zonal
   real(r8), allocatable ::  vbot (:)  ! atm velocity, meridional
+  real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
+  real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
+  real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
   real(r8), allocatable ::  thbot(:)  ! atm potential T
   real(r8), allocatable ::  shum (:)  ! atm specific humidity
   real(r8), allocatable ::  shum_16O (:)  ! atm H2O tracer
@@ -118,6 +121,9 @@ module seq_flux_mct
   integer :: index_a2x_Sa_z
   integer :: index_a2x_Sa_u
   integer :: index_a2x_Sa_v
+  integer :: index_a2x_Sa_wsresp
+  integer :: index_a2x_Sa_tau_est
+  integer :: index_a2x_Sa_ugust
   integer :: index_a2x_Sa_tbot
   integer :: index_a2x_Sa_ptem
   integer :: index_a2x_Sa_shum
@@ -235,6 +241,19 @@ contains
     allocate( vbot(nloc))
     if(ier/=0) call mct_die(subName,'allocate vbot',ier)
     vbot = 0.0_r8
+    if (atm_flux_method == 'implicit_stress') then
+       allocate(wsresp(nloc))
+       if(ier/=0) call mct_die(subName,'allocate wsresp',ier)
+       wsresp = 0.0_r8
+       allocate(tau_est(nloc))
+       if(ier/=0) call mct_die(subName,'allocate tau_est',ier)
+       tau_est = 0.0_r8
+    end if
+    if (atm_gustiness) then
+       allocate(ugust_atm(nloc))
+       if(ier/=0) call mct_die(subName,'allocate ugust_atm',ier)
+       ugust_atm = 0.0_r8
+    end if
     allocate(thbot(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate thbot',ier)
     thbot = 0.0_r8
@@ -659,8 +678,18 @@ contains
     if(ier/=0) call mct_die(subName,'allocate zbot',ier)
     allocate( ubot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ubot',ier)
-    allocate( vbot(nloc_a2o))
+    allocate( vbot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate vbot',ier)
+    if (atm_flux_method == 'implicit_stress') then
+       allocate( wsresp(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate wsresp',ier)
+       allocate( tau_est(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate tau_est',ier)
+    end if
+    if (atm_gustiness) then
+       allocate( ugust_atm(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate ugust_atm',ier)
+    end if
     allocate(thbot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate thbot',ier)
     allocate(shum(nloc_a2o),stat=ier)
@@ -1022,6 +1051,13 @@ contains
           zbot(n) =  55.0_r8 ! atm height of bottom layer ~ m
           ubot(n) =   0.0_r8 ! atm velocity, zonal        ~ m/s
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = 0.0_r8 ! response of wind to surface stress ~ m/s/Pa
+             tau_est(n) = 0.0_r8 ! estimation of stress in equilibrium with ubot/vbot ~ Pa
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = 0.0_r8 ! gustiness                ~ m/s
+          end if
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
           shum_16O(n) = 1.e-2_r8 ! H216O specific humidity    ~ kg/kg
@@ -1058,6 +1094,13 @@ contains
           zbot(n) = a2x_e%rAttr(index_a2x_Sa_z   ,ia)
           ubot(n) = a2x_e%rAttr(index_a2x_Sa_u   ,ia)
           vbot(n) = a2x_e%rAttr(index_a2x_Sa_v   ,ia)
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = a2x_e%rAttr(index_a2x_Sa_wsresp,ia)
+             tau_est(n) = a2x_e%rAttr(index_a2x_Sa_tau_est,ia)
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = a2x_e%rAttr(index_a2x_Sa_ugust,ia)
+          end if
           thbot(n)= a2x_e%rAttr(index_a2x_Sa_ptem,ia)
           shum(n) = a2x_e%rAttr(index_a2x_Sa_shum,ia)
           shum_16O(n) = a2x_e%rAttr(index_a2x_Sa_shum_16O,ia)
@@ -1096,14 +1139,15 @@ contains
             tbulk, tskin, tskin_day, tskin_night, &
             cskin, cskin_night, tod, dt,          &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
-            cold_start=cold_start)
+            cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            wsresp=wsresp, tau_est=tau_est)
     else
 
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
@@ -1113,7 +1157,8 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            wsresp=wsresp, tau_est=tau_est, ugust=ugust)
     endif
 
     !--- create temporary aVects on exchange, atm, or ocn decomp as needed
@@ -1303,6 +1348,17 @@ contains
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
 
+       ! If flux_max_iteration is not set, choose a value based on
+       ! atm_flux_method.
+       if (flux_max_iteration == -1) then
+          select case(atm_flux_method)
+          case('implicit_stress')
+             flux_max_iteration = 30
+          case default
+             flux_max_iteration = 2
+          end select
+       end if
+
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
@@ -1346,6 +1402,13 @@ contains
        index_a2x_Sa_z      = mct_aVect_indexRA(a2x,'Sa_z')
        index_a2x_Sa_u      = mct_aVect_indexRA(a2x,'Sa_u')
        index_a2x_Sa_v      = mct_aVect_indexRA(a2x,'Sa_v')
+       if (atm_flux_method == 'implicit_stress') then
+          index_a2x_Sa_wsresp = mct_aVect_indexRA(a2x,'Sa_wsresp')
+          index_a2x_Sa_tau_est = mct_aVect_indexRA(a2x,'Sa_tau_est')
+       end if
+       if (atm_gustiness) then
+          index_a2x_Sa_ugust = mct_aVect_indexRA(a2x,'Sa_ugust')
+       end if
        index_a2x_Sa_tbot   = mct_aVect_indexRA(a2x,'Sa_tbot')
        index_a2x_Sa_pslv   = mct_aVect_indexRA(a2x,'Sa_pslv')
        index_a2x_Sa_ptem   = mct_aVect_indexRA(a2x,'Sa_ptem')
@@ -1399,6 +1462,13 @@ contains
           zbot(n) =  55.0_r8 ! atm height of bottom layer ~ m
           ubot(n) =   0.0_r8 ! atm velocity, zonal        ~ m/s
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = 0.0_r8 ! response of wind to surface stress ~ m/s/Pa
+             tau_est(n) = 0.0_r8 ! stress consistent w/ u/v  ~ Pa
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = 0.0_r8 ! gustiness                ~ m/s
+          end if
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
           !wiso note: shum_* should be multiplied by Rstd_* here?
@@ -1446,6 +1516,13 @@ contains
              zbot(n) = a2x%rAttr(index_a2x_Sa_z   ,n)
              ubot(n) = a2x%rAttr(index_a2x_Sa_u   ,n)
              vbot(n) = a2x%rAttr(index_a2x_Sa_v   ,n)
+             if (atm_flux_method == 'implicit_stress') then
+                wsresp(n) = a2x%rAttr(index_a2x_Sa_wsresp,n)
+                tau_est(n) = a2x%rAttr(index_a2x_Sa_tau_est,n)
+             end if
+             if (atm_gustiness) then
+                ugust_atm(n) = a2x%rAttr(index_a2x_Sa_ugust,n)
+             end if
              thbot(n)= a2x%rAttr(index_a2x_Sa_ptem,n)
              shum(n) = a2x%rAttr(index_a2x_Sa_shum,n)
              if ( index_a2x_Sa_shum_16O /= 0 ) shum_16O(n) = a2x%rAttr(index_a2x_Sa_shum_16O,n)
@@ -1524,14 +1601,14 @@ contains
                                 !missval should not be needed if flux calc
                                 !consistent with mrgx2a fraction
                                 !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-            cold_start=cold_start)
+            cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            duu10n,ustar, re  , ssq)
+            duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
@@ -1540,7 +1617,8 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq)
+            duu10n,ustar, re  , ssq, &
+            wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
        !duu10n,ustar, re  , ssq, missval = 0.0_r8 )

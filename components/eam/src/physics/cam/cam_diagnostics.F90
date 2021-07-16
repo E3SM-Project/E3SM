@@ -95,9 +95,12 @@ integer  ::      snow_sed_idx = 0
 integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
 
+integer  ::      wsresp_idx = 0
+integer  ::      tau_est_idx = 0
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
-logical :: prog_modal_aero 
+logical :: prog_modal_aero
+logical :: linearize_pbl_winds
 contains
 
 ! ===============================================================================
@@ -166,7 +169,8 @@ subroutine diag_init()
    integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: ierr
 
-   call phys_getopts(prog_modal_aero_out = prog_modal_aero )
+   call phys_getopts(prog_modal_aero_out = prog_modal_aero, &
+                     linearize_pbl_winds_out = linearize_pbl_winds)
 
    ! outfld calls in diag_phys_writeout
 
@@ -608,6 +612,11 @@ subroutine diag_init()
    call addfld ('PRECCav',horiz_only,    'A','m/s','Average large-scale precipitation (liq + ice)'                      )
    call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
 
+   if (linearize_pbl_winds) then
+      call addfld ('wsresp',horiz_only,    'A','m/s/Pa','first order response of winds to stress')
+      call addfld ('tau_est',horiz_only,    'A','Pa','estimated equilibrium wind stress')
+   end if
+
    ! outfld calls in diag_surf
 
    call addfld ('SHFLX',horiz_only,    'A','W/m2','Surface sensible heat flux', &
@@ -838,6 +847,11 @@ subroutine diag_init()
   prec_pcw_idx = pbuf_get_index('PREC_PCW')
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
   pblh_idx     = pbuf_get_index('pblh')
+
+  if (linearize_pbl_winds) then
+     wsresp_idx  = pbuf_get_index('wsresp')
+     tau_est_idx  = pbuf_get_index('tau_est')
+  end if
 
 end subroutine diag_init
 
@@ -1923,6 +1937,9 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
    real(r8), pointer :: pblh(:)                    ! PBLH depth
 
+   real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
+   real(r8), pointer :: tau_est(:)                 ! estimated equilibrium stress
+
 ! Local variables:
    
    integer :: i, k, m, lchnk, ncol
@@ -1953,6 +1970,10 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, pblh_idx, pblh)
+   if (linearize_pbl_winds) then
+      call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+      call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   end if
 
 ! Precipitation rates (multi-process)
    precc(:ncol) = prec_dp(:ncol)  + prec_sh(:ncol)
@@ -1972,6 +1993,11 @@ subroutine diag_conv(state, ztodt, pbuf)
 
    call outfld('PRECLav ', precl, pcols, lchnk )
    call outfld('PRECCav ', precc, pcols, lchnk )
+
+   if (linearize_pbl_winds) then
+      call outfld('wsresp', wsresp, pcols, lchnk)
+      call outfld('tau_est', tau_est, pcols, lchnk)
+   end if
 
 #if ( defined E3SM_SCM_REPLAY )
    call outfld('Prec   ' , prect, pcols, lchnk )

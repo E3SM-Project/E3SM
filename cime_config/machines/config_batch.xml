@@ -93,7 +93,7 @@
     <submit_args>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" ($TOTALPES + $MAX_MPITASKS_PER_NODE - 1)/$MAX_MPITASKS_PER_NODE"/>
+      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
@@ -359,14 +359,10 @@
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="20" default="true">skylake_8180</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="jlse-iris" type="cobalt_theta">
-      <batch_submit>qsub</batch_submit>
-      <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="20" default="true">iris</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="16">iris</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="18">yarrow</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">arcticus</queue>
       </queues>
     </batch_system>
 

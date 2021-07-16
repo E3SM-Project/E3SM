@@ -180,6 +180,36 @@
     <desc>Freezing point calculation for salt water.</desc>
   </entry>
 
+  <entry id="ATM_FLUX_INTEGRATION_METHOD">
+    <type>char</type>
+    <valid_values>explicit,implicit_stress</valid_values>
+    <default_value>explicit</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Time integration method for calculation of fluxes to the atmosphere.
+
+      explicit: Fluxes are calculated using the atmosphere's lowest-level state
+          at the current time step.
+
+      implicit_stress: The atmosphere model exports a linearization of the
+          response of the boundary layer scheme to surface stress, and other
+          components use this linearization to solve for surface stress at the
+          next time step implicitly.
+    </desc>
+  </entry>
+
+  <entry id="ATM_SUPPLIES_GUSTINESS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Whether or not the atmosphere should supply an extra gustiness field.
+    </desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
@@ -696,6 +726,7 @@
       <value compset="^2000.+AV1C-H01B"				>368.865</value>
       <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
+      <value compset="^1850.+CMIP6.+4xCO2"			>1137.268</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
       <value compset="^2010.+CMIP6"                             >388.717</value>
       <value compset="^SSP585.+CMIP6"				>0.000001</value>

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Namelist creator for E3SM's MPAS OCEAN component
@@ -261,7 +261,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '200904'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
-        analysis_mask_file = 'EC30to60E2r2_moc_masks_and_transects.nc'
+        analysis_mask_file = 'EC30to60E2r2_mocBasinsAndTransects20210623.nc'
         ic_date = '210210'
         ic_prefix = 'ocean.EC30to60E2r2'
         if ocn_ic_mode == 'spunup':
@@ -272,7 +272,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '200714'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
-        analysis_mask_file = 'WC14to60E2r3_moc_masks_and_transects.nc'
+        analysis_mask_file = 'WC14to60E2r3_mocBasinsAndTransects20210623.nc'
         ic_date = '210210'
         ic_prefix = 'ocean.WC14to60E2r3'
         if ocn_ic_mode == 'spunup':
@@ -294,7 +294,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '210107'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to60E2r4_nomask.210120.nc'
-        analysis_mask_file = 'SOwISC12to60E2r4_moc_masks_and_transects.nc'
+        analysis_mask_file = 'SOwISC12to60E2r4_mocBasinsAndTransects20210623.nc'
         ic_date = '210107'
         ic_prefix = 'ocean.SOwISC12to60E2r4'
         if ocn_ic_mode == 'spunup':
@@ -305,7 +305,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '200915'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
-        analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210331.nc'
+        analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210623.nc'
         ic_date = '210413'
         ic_prefix = 'ocean.ECwISC30to60E2r1'
         if ocn_ic_mode == 'spunup':

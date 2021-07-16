@@ -134,6 +134,7 @@ module ELMFatesInterfaceMod
    use EDBtranMod            , only : btran_ed, &
                                       get_active_suction_layers
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
+   use EDCanopyStructureMod  , only : UpdateFatesAvgSnowDepth
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
@@ -534,7 +535,8 @@ contains
 
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
-            if ( lun_pp%itype(l) == istsoil ) then
+
+            if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
@@ -546,7 +548,7 @@ contains
             endif
             
          enddo
-
+         
          if(debug)then
             write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
          end if
@@ -718,6 +720,12 @@ contains
 
       !-----------------------------------------------------------------------
 
+
+      if (masterproc) then
+         write(iulog, *) 'FATES dynamics start'
+      end if
+
+      
       nc = bounds_clump%clump_index
 
       ! ---------------------------------------------------------------------------------
@@ -803,20 +811,13 @@ contains
       enddo
 
       ! ---------------------------------------------------------------------------------
-      ! Part III: Process FATES output into the dimensions and structures that are part
-      ! of the HLMs API.  (column, depth, and litter fractions)
-      
-      ! ---------------------------------------------------------------------------------
-!      call this%UpdateLitterFluxes(bounds_clump)
-
-      ! ---------------------------------------------------------------------------------
-      ! Part III.2 (continued).
+      ! Part III
       ! Update diagnostics of the FATES ecosystem structure that are used in the HLM.
       ! ---------------------------------------------------------------------------------
       call this%wrap_update_hlmfates_dyn(nc,               &
                                          bounds_clump,     &
                                          canopystate_inst, &
-                                         frictionvel_inst)
+                                         frictionvel_inst, .false.)
       
       ! ---------------------------------------------------------------------------------
       ! Part IV: 
@@ -827,8 +828,7 @@ contains
                                               this%fates(nc)%sites) 
 
       if (masterproc) then
-         write(iulog, *) 'clm: leaving ED model', bounds_clump%begg, &
-                                                  bounds_clump%endg
+         write(iulog, *) 'FATES dynamics complete'
       end if
 
       
@@ -940,7 +940,7 @@ contains
    !--------------------------------------------------------------------------------------
 
    subroutine wrap_update_hlmfates_dyn(this, nc, bounds_clump,      &
-         canopystate_inst, frictionvel_inst )
+         canopystate_inst, frictionvel_inst, is_initing_from_restart)
 
       ! ---------------------------------------------------------------------------------
       ! This routine handles the updating of vegetation canopy diagnostics, (such as lai)
@@ -954,6 +954,10 @@ contains
      integer                 , intent(in)           :: nc
      type(canopystate_type)  , intent(inout)        :: canopystate_inst
      type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
+
+     ! is this being called during a read from restart sequence (if so then use the restarted fates
+     ! snow depth variable rather than the CLM variable).
+     logical                 , intent(in)           :: is_initing_from_restart
      
      integer :: npatch  ! number of patches in each site
      integer :: ifp     ! index FATES patch 
@@ -983,7 +987,12 @@ contains
           this%fates(nc)%bc_in(s)%snow_depth_si   = snow_depth(c)
           this%fates(nc)%bc_in(s)%frac_sno_eff_si = frac_sno_eff(c)
        end do
-       
+
+       ! Only update the fates internal snow burial if this is not a restart
+       if (.not. is_initing_from_restart) then
+          call UpdateFatesAvgSnowDepth(this%fates(nc)%sites,this%fates(nc)%bc_in)
+       end if
+
        ! Canopy diagnostics for FATES
        call canopy_summarization(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
@@ -1013,14 +1022,15 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       veg_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
-       veg_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
-       veg_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
-
        do s = 1,this%fates(nc)%nsites
           
           c = this%f2hmap(nc)%fcolumn(s)
 
+          veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
+          veg_pp%is_bareground(col_pp%pfti(c):col_pp%pftf(c)) = .false.
+          veg_pp%wt_ed(col_pp%pfti(c):col_pp%pftf(c))         = 0.0_r8
+
+          
           ! Other modules may have AI's we only flush values
           ! that are on the naturally vegetated columns
           elai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
@@ -1341,9 +1351,6 @@ contains
                        this%fates(nc)%bc_out(s))
                end do
 
-               ! this call transfers fates output bcs to the HLM
-!               call this%UpdateLitterFluxes(bounds_clump)
-
                ! ------------------------------------------------------------------------
                ! Re-populate all the hydraulics variables that are dependent
                ! on the key hydro state variables and plant carbon/geometry
@@ -1386,7 +1393,7 @@ contains
                ! Update diagnostics of FATES ecosystem structure used in HLM.
                ! ------------------------------------------------------------------------
                call this%wrap_update_hlmfates_dyn(nc,bounds_clump, &
-                     canopystate_inst,frictionvel_inst)
+                     canopystate_inst,frictionvel_inst, .true.)
                
                ! ------------------------------------------------------------------------
                ! Update the 3D patch level radiation absorption fractions
@@ -1519,13 +1526,11 @@ contains
                    this%fates(nc)%bc_out(s))
            end do
 
-!           call this%UpdateLitterFluxes(bounds_clump)
-
            ! ------------------------------------------------------------------------
            ! Update diagnostics of FATES ecosystem structure used in HLM.
            ! ------------------------------------------------------------------------
            call this%wrap_update_hlmfates_dyn(nc,bounds_clump, &
-                canopystate_inst,frictionvel_inst)
+                canopystate_inst,frictionvel_inst, .false.)
 
            ! ------------------------------------------------------------------------
            ! Update history IO fields that depend on ecosystem dynamics

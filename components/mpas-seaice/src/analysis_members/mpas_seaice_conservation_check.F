@@ -551,8 +551,9 @@ contains
            config_AM_conservationCheck_write_to_logfile
 
       integer, pointer :: &
-           nCellsSolve, &
-           nHemispheres
+           nCellsSolve,   &
+           nHemispheres,  &
+           nAccumulate
 
       integer :: &
            iCell, &
@@ -628,6 +629,10 @@ contains
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
 
+         call MPAS_pool_get_array(conservationCheckAMPool, "nAccumulate", nAccumulate)
+
+         accumulatedSeaIceArea(:) = accumulatedSeaIceArea(:)/nAccumulate
+
          call MPAS_pool_get_config(domain % configs, "config_earth_radius", earthRadius)
 
          !-------------------------------------------------------------
@@ -636,6 +641,7 @@ contains
 
          call MPAS_pool_get_array(conservationCheckAreaAMPool, "earthArea", earthArea)
          call MPAS_pool_get_array(conservationCheckAreaAMPool, "domainArea", domainArea)
+
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
@@ -2651,6 +2657,7 @@ contains
 
       type(MPAS_pool_type), pointer :: &
            conservationCheckAMPool, &
+           conservationCheckAreaAMPool, &
            conservationCheckEnergyAMPool, &
            conservationCheckMassAMPool, &
            conservationCheckSaltAMPool, &
@@ -2658,6 +2665,9 @@ contains
 
       integer, pointer :: &
            nAccumulate
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           accumulatedSeaIceArea
 
       real(kind=RKIND), dimension(:), pointer :: &
            energyConsSurfaceHeatFlux, &
@@ -2689,6 +2699,11 @@ contains
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
       call MPAS_pool_get_array(conservationCheckAMPool, "nAccumulate", nAccumulate)
       nAccumulate = 0
+
+      ! area
+      call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAreaAM", conservationCheckAreaAMPool)
+      call MPAS_pool_get_array(conservationCheckAreaAMPool, "accumulatedSeaIceArea", accumulatedSeaIceArea)
+      accumulatedSeaIceArea(:) = 0.0_RKIND
 
       ! heat
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckEnergyAM", conservationCheckEnergyAMPool)

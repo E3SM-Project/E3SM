@@ -50,6 +50,16 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1850-1pctCO2</alias>
+  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL1850-4xCO2</alias>
+  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCL1950</alias>
   <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
@@ -152,12 +162,12 @@
 <!-- E3SM V1 BGC experiment compsets -->
 
 <compset>
-  <alias>BGCEXP_BCRC_CNPRDCTC_1850</alias>
+  <alias>BGCEXP_CNTL_CNPRDCTC_1850</alias>
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
 <compset>
-  <alias>BGCEXP_BCRC_CNPRDCTC_1850S</alias>
+  <alias>BGCEXP_CNTL_CNPRDCTC_1850S</alias>
   <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
@@ -242,12 +252,12 @@
 </compset>
 
 <compset>
-  <alias>BGCEXP_BCRC_CNPECACNT_1850</alias>
+  <alias>BGCEXP_CNTL_CNPECACNT_1850</alias>
   <lname>1850_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
 <compset>
-  <alias>BGCEXP_BCRC_CNPECACNT_1850S</alias>
+  <alias>BGCEXP_CNTL_CNPECACNT_1850S</alias>
   <lname>1850SOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BCRC</lname>
 </compset>
 
@@ -315,6 +325,22 @@
   <alias>BGCEXP_BDRD_CNPECACNT_20TR</alias>
   <lname>20TR_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_SSP585_CMIP6</alias>
+  <lname>SSP585_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_20TRS</alias>
+  <lname>20TRSOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<compset>
+  <alias>BGCEXP_BDRD_CNPECACNT_SSP585_CMIP6S</alias>
+  <lname>SSP585SOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
 
 <!-- E3SM cryosphere compsets -->
 
