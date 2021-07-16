@@ -1,3 +1,4 @@
 #!/bin/bash
 if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAME --val netcdf; fi
 ./xmlchange --append ELM_BLDNML_OPTS="-nutrient cnp -nutrient_comp_pathway rd -soil_decomp ctc"
+./xmlchange NTHRDS=1
