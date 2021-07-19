@@ -16,7 +16,7 @@ set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtm
 
 # Test atmosphere processes. Temporarily disabled for AT because it has FPEs. Also
 # disabled if valgrind is ON because it takes too long.
-if (NOT SCREAM_AUTOTESTER AND NOT EKAT_ENABLE_VALGRIND)
+if (NOT SCREAM_AUTOTESTER)
   CreateUnitTest(shoc_cld_p3_rrtmgp "${SRC}" "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
   set_target_properties(shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
   target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
@@ -28,7 +28,7 @@ if (NOT SCREAM_AUTOTESTER AND NOT EKAT_ENABLE_VALGRIND)
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
-  )
+)
 endif()
 
 ## Copy yaml input file to run directory
@@ -52,5 +52,5 @@ CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/
 # Basic config files
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_init_ne4np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne4np4.nc COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc COPYONLY)
