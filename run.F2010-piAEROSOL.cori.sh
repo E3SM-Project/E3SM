@@ -197,7 +197,7 @@ cat << EOF >> user_nl_eam
  nudge_method           = 'Linear'
  nudge_file_ntime       = 4
  nudge_model            = .True.
- nudge_path             = '${CTL_CASE_PATH}/'
+ nudge_path             = '${CTL_CASE_PATH}/run/'
  nudge_pscoef           = 0.
  nudge_psprof           = 0
  nudge_qcoef            = 0.

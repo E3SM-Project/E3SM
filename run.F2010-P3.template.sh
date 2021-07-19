@@ -23,10 +23,10 @@ readonly MACHINE=cori-knl
 readonly PROJECT="e3sm"
 
 # Simulation
-readonly COMPSET="F20TR-P3"                  # or F20TR-P3-piAEROSOL 
+readonly COMPSET="F2010SC5-P3"               # 
 readonly sstplus4K=false                     # true if to run plus4k experiment, otherwise false
 readonly RESOLUTION="ne30pg2_r05_oECv3"      # or ne120pg2_r0125_oRRS18to6v3
-readonly DESCRIPTOR="F20TR-P3.NGD.ne30pg2"   # This will be the main part of the casename
+readonly DESCRIPTOR="F2010-P3.NGD.ne30pg2"   # This will be the main part of the casename
 
 readonly CASE_GROUP="NGD.Convection"
 
@@ -37,7 +37,7 @@ readonly DEBUG_COMPILE=false
 
 # Run options
 readonly MODEL_START_TYPE="initial"  # initial, continue
-readonly START_DATE="1991-01-01"
+readonly START_DATE="0001-01-01"
 
 # Case name
 #readonly CASE_NAME=${CHECKOUT}.${DESCRIPTOR}.${RESOLUTION}
@@ -87,7 +87,7 @@ else
   readonly PELAYOUT="M"
   readonly WALLTIME="24:00:00"
   readonly STOP_OPTION="nyears"
-  readonly STOP_N="20"
+  readonly STOP_N="11"
   readonly REST_OPTION="nyears"
   readonly REST_N="1"
   readonly RESUBMIT="0"
@@ -153,8 +153,8 @@ cat << EOF >> user_nl_eam
 
  fincl1 = 'TVQ','TUQ','U200','U850'
  fincl2 = 'PRECC','PRECT','U200','V200','TMQ','FLUT','U850','V850' ! h1 daily
- fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT'  ! h2 6-hourly
- fincl4 = 'PRECT','TMQ'  ! h3 hourly
+ fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT' !h2 6-hourly
+ fincl4 = 'PRECT','TMQ' ! h3 hourly
 
 ! Below fto save fields over ARM sites for ARM_diags.
 ! When ZM scheme not in use, remove ZMFLXPRC and ZMFLXSNW
@@ -164,13 +164,7 @@ cat << EOF >> user_nl_eam
  fincl5lonlat='262.5e_36.6n','204.6e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
 
  mfilt = 1,30,120,720,240
- history_budget = .true.
  
-EOF
-
-if [[ $RESOLUTION =~ "ne120" ]] || [ "$sstplus4K" == "true" ]; then
-
-cat << EOF >> user_nl_eam
  history_budget=.false.
  history_aerosol=.false.
  history_aero_optics=.false.
@@ -184,6 +178,13 @@ cat << EOF >> user_nl_eam
  'P3_sed_NUMLIQ','P3_sed_NUMRAIN'
 
 EOF
+
+cat >> user_nl_elm <<EOF
+ finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
+
+EOF
+
+if [[ $RESOLUTION =~ "ne120" ]]; then
 
 cat << EOF >> user_nl_elm
   hist_empty_htapes=.true.
