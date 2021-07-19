@@ -11,11 +11,11 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = Phase1_experiment_v2
+set job_name       = Phase2_experiment_lambda_thresh0pt03
 set compset        = F2010SC5-SHOC
 set resolution     = ne30pg2_r05_oECv3
 set machine        = compy
-set walltime       = 16:30:00
+set walltime       = 4:30:00
 setenv project       e3sm
 
 ### SOURCE CODE OPTIONS
@@ -67,10 +67,10 @@ set short_term_archive_root_dir = ${e3sm_simulations_dir}/${case_name}/archive
 #set restart_num      = $stop_num
 #set num_resubmits    = 0
 
-set stop_units       = nmonth
-set stop_num         = 72
-set restart_units    = nmonth
-set restart_num      = 4
+set stop_units       = nyears
+set stop_num         = 5
+set restart_units    = nyears
+set restart_num      = 1
 set num_resubmits    = 0
 
 set do_short_term_archiving      = false
@@ -1002,7 +1002,7 @@ cat <<EOF >> user_nl_eam
 
  history_budget = .true.
 
- shoc_lambda_thresh = 0.035D0
+ shoc_lambda_thresh = 0.03D0
 
 EOF
 
@@ -1327,11 +1327,6 @@ endif
 #============================================
 
 #NOTE:  This section is for making specific changes to the run options (ie env_run.xml).
-
-$xmlchange_exe --id PIO_TYPENAME  --val "netcdf"
-$xmlchange_exe --id PIO_NETCDF_FORMAT  --val "64bit_data"
-$xmlchange_exe --id PIO_VERSION  --val "2"
-$xmlchange_exe --id PIO_BUFFER_SIZE_LIMIT  --val "64200000"
 
 ### SST files :
 #$xmlchange_exe --id SSTICE_DATA_FILENAME --val "$input_data_dir/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc"

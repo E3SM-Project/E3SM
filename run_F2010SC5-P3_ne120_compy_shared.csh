@@ -11,11 +11,11 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = Phase1_experiment
+set job_name       = Phase2_experiment_test
 set compset        = F2010SC5-P3
 set resolution     = ne120pg2_r0125_oRRS18to6v3
 set machine        = compy
-set walltime       = 29:00:00
+set walltime       = 5:00:00
 setenv project       e3sm
 
 ### SOURCE CODE OPTIONS
@@ -25,7 +25,7 @@ set tag_name       = #E3SM_alpha5_59_v2candidate_NGD_Conv
 
 ### CUSTOM CASE_NAME
 #set case_name = ${tag_name}.${job_name}.${resolution}.${machine} 
-set case_name = E3SM_v2tests.${job_name}.${resolution}.${machine}  #TOCHANGE
+set case_name = E3SM_v2_ShortenedOutput.${job_name}.${resolution}.${machine}  #TOCHANGE
 
 
 ### BUILD OPTIONS
@@ -68,7 +68,7 @@ set short_term_archive_root_dir = ${e3sm_simulations_dir}/${case_name}/archive
 #set num_resubmits    = 0
 
 set stop_units       = nmonth
-set stop_num         = 12
+set stop_num         = 2
 set restart_units    = nmonth
 set restart_num      = 2
 set num_resubmits    = 0
@@ -996,10 +996,13 @@ $xmlchange_exe --id DEBUG --val `uppercase $debug_compile`
 cat <<EOF >> user_nl_eam
 
  cosp_lite = .true.
- history_budget = .true.
+ history_budget = .false.
+ history_aerosol = .false.
+ history_aero_optics  = .false.
  nhtfrq = 0,-24,-6,-1
  mfilt = 1,30,120,720
  fincl1 = 'TUQ','TVQ'
+ fexcl1 = 'ACCGRI_M', 'ACCGRS_M','ACCGR_M','ACCGR_N','ACCGSL_M','ACCGSL_N','ACCGSR_M','ACCGSR_N','ACCIGL_M','ACCIGL_N','ACCIGR_M', 'ACCIGR_N','ACCIL_M','ACCIL_N','ACCSIR_M','ACCSIR_N','ACCSRI_M','FALLG_M','FALLG_N','FALLR_M','FALLR_N','FALLS_M','FALLS_N','FHMR_M','P3_mtend_CLDICE','P3_mtend_CLDLIQ','P3_mtend_CLDRAIN','P3_mtend_NUMICE','P3_mtend_NUMLIQ','P3_mtend_NUMRAIN','P3_mtend_Q','P3_mtend_TH','P3_nc2ni_immers_frz_tend','P3_nc2nr_autoconv_tend','P3_nc_accret_tend','P3_nc_collect_tend','P3_nc_nuceat_tend','P3_nc_selfcollect_tend','P3_ncautr','P3_ncshdc','P3_ni2nr_melt_tend','P3_ni_nucleat_tend','P3_ni_selfcollect_tend','P3_ni_sublim_tend','P3_nr2ni_immers_frz_tend','P3_nr_collect_tend','P3_nr_evap_tend','P3_nr_ice_shed_tend','P3_nr_selfcollect_tend','P3_qc2qi_hetero_frz_tend'
  fincl2 = 'PRECC','PRECT','U200','V200','TMQ','FLUT','U850','V850'
  fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT'
  fincl4 = 'PRECT','TMQ'
