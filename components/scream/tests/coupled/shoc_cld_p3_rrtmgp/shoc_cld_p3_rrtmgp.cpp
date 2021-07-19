@@ -16,7 +16,7 @@ TEST_CASE("shoc-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 10;
+  constexpr int num_iters = 5;
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }

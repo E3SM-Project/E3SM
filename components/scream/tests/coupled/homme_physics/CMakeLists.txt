@@ -18,7 +18,7 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 
 # Test Homme standalone
-if (NOT SCREAM_AUTOTESTER AND NOT EKAT_ENABLE_VALGRIND)
+if (NOT SCREAM_AUTOTESTER)
   CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
   set_target_properties(homme_physics_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
   target_include_directories(homme_physics_stand_alone PUBLIC
@@ -40,7 +40,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 # Set homme's test options, so that we can configure the namelist correctly
 
 # Discretization/algorithm settings
-set (HOMME_TEST_NE 4)
+set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_QSIZE 1)
 set (HOMME_TEST_RSPLIT 3)
@@ -71,8 +71,8 @@ configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta-nmax.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rad_init_ne4np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_p3_rad_init_ne4np4.nc COPYONLY)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rad_init_ne2np4.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_p3_rad_init_ne2np4.nc COPYONLY)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
