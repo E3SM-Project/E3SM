@@ -6,6 +6,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_request.hpp"
+#include "share/field/field_property_checks/field_nan_check.hpp"
 #include "share/util/map_key_iterator.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
@@ -197,6 +198,10 @@ void FieldManager<RealType>::register_field (const FieldRequest& req)
       group->m_fields_names.push_back(id.name());
     }
   }
+
+  // Add not a NaN property check
+  auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
+  m_fields[id.name()]->add_property_check(nan_check);
 }
 
 template<typename RealType>

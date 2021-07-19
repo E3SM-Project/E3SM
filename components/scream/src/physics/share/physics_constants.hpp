@@ -139,6 +139,7 @@ Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   } else if (gas_name == "n2" ) {
     return 28.0134;
   }
+  return std::numeric_limits<Scalar>::quiet_NaN();
 }
 
 template <typename Scalar>

@@ -1023,7 +1023,7 @@ Int Functions<S,D>
     const auto oni_activated       = ekat::subview(diagnostic_inputs.ni_activated, i);
     const auto oinv_qc_relvar      = ekat::subview(diagnostic_inputs.inv_qc_relvar, i);
     const auto odpres              = ekat::subview(diagnostic_inputs.dpres, i);
-    const auto oinv_exner              = ekat::subview(diagnostic_inputs.inv_exner, i);
+    const auto oinv_exner          = ekat::subview(diagnostic_inputs.inv_exner, i);
     const auto ocld_frac_i         = ekat::subview(diagnostic_inputs.cld_frac_i, i);
     const auto ocld_frac_l         = ekat::subview(diagnostic_inputs.cld_frac_l, i);
     const auto ocld_frac_r         = ekat::subview(diagnostic_inputs.cld_frac_r, i);
