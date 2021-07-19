@@ -543,7 +543,9 @@ contains
     qclvar, thlprcp_out, &                                  ! intent(out)
 #endif
     wprcp, ice_supersat_frac, &                             ! intent(out)
-    rcm_in_layer, cloud_cover )                             ! intent(out)
+    rcm_in_layer, cloud_cover, &                            ! intent(out)
+    upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
+    um_pert, vm_pert, upwp_pert, vpwp_pert )                ! intent(inout)
 
     use advance_clubb_core_module, only : advance_clubb_core
 
@@ -716,6 +718,14 @@ contains
       RH_crit  ! critical relative humidity for droplet and ice nucleation
     logical, intent(in)                 ::  do_liquid_only_in_clubb
 #endif
+    real( kind = core_rknd ), intent(in), pointer ::  &
+      upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
+      vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  &
+      um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
+      vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]
+      vpwp_pert       ! pertubed v'w' (momentum levels)                         [m^2/s^2]
     call advance_clubb_core( &
       l_implemented, dt, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
       thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &    ! intent(in)
@@ -757,7 +767,9 @@ contains
                qclvar, thlprcp_out, &                         ! intent(out)
 #endif
       wprcp, ice_supersat_frac, &                             ! intent(out)
-      rcm_in_layer, cloud_cover )                             ! intent(out)
+      rcm_in_layer, cloud_cover, &                            ! intent(out)
+      upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
+      um_pert, vm_pert, upwp_pert, vpwp_pert )                ! intent(inout)
 
     err_code_api = err_code
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Namelist creator for E3SM's MPAS SEAICE component
@@ -646,7 +646,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
-        lines.append('        clobber_mode="truncate"')
+        lines.append('        clobber_mode="append"')
         lines.append('        packages="conservationCheckAMPKG">')
         lines.append('')
         lines.append('    <var name="xtime"/>')

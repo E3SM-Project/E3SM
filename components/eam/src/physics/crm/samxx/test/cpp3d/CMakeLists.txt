@@ -6,6 +6,8 @@ add_executable(cpp3d ../dmdf.F90 ../cpp_driver.F90
                ../../../crm_output_module.F90
                ../../../crm_rad_module.F90
                ../../../crm_state_module.F90
+               ../../../crm_ecpp_output_module.F90
+               ../../../ecppvars.F90
                ../../../openacc_utils.F90
                ${CPP_SRC})
 target_link_libraries(cpp3d yakl ${NCFLAGS})

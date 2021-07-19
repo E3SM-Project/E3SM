@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import netcdf4_functions as nffun
 import socket, os, sys, csv, time, math, numpy
