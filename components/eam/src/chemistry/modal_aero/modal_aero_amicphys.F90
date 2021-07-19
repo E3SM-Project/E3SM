@@ -3930,11 +3930,8 @@ time_loop: &
          dryvol_smallest, sz_factor, factoryy, tmp_alnsg2, lndp_cut, dp_belowcut, dp_cut, &
          qnum_cur, qnumcw_cur, qaer_cur, qaercw_cur)
 
-#if ( defined CAM_VERSION_IS_ACME )
-      use shr_spfn_mod, only: erfc => shr_spfn_erfc  ! acme version of cam
-#else
-      use error_function,  only: erfc                ! mozart-mosaic version of cam
-#endif
+      use shr_spfn_mod, only: erfc_shr => shr_spfn_erfc  ! acme version of cam
+
       !intent-ins
       integer,  intent(in) :: nmode, nspec, dest_mode_of_mode(:)
       logical,  intent(in) :: iscldy_subarea
@@ -3958,18 +3955,16 @@ time_loop: &
       real(r8) :: lndgv_new, tailfr_numnew, tailfr_volnew, dgn_t_old, dryvol_t_oldaa, lndgn_old, lndgv_old, tmpd
 
       real(r8), parameter :: onethird = 1.0_r8/3.0_r8
-      real(r8) :: xferfrac_max
-      xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps !FIXME: This can be a parameter???
-      !
-      !   loop over renaming pairs
-      !
-      mainloop1_ipair:  do imode = 1, nmode
+      real(r8), parameter :: xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8) !1-eps
+
+
+      pair_loop:  do imode = 1, nmode
 
          src_mode = imode                     !source mode
          dest_mode = dest_mode_of_mode(imode) !destination mode
 
          !if destination mode doesn't exist for the source mode, cycle loop
-         if (dest_mode <= 0) cycle mainloop1_ipair
+         if (dest_mode <= 0) cycle pair_loop
 
          !   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode
          !      in m^3-AP/kmol-air
@@ -3988,10 +3983,10 @@ time_loop: &
          dryvol_t_new = dryvol_t_old + dryvol_t_del
 
          !   no renaming if dryvol_t_new ~ 0 or dryvol_t_del ~ 0
-         if (dryvol_t_new .le. dryvol_smallest(src_mode)) cycle mainloop1_ipair
+         if (dryvol_t_new .le. dryvol_smallest(src_mode)) cycle pair_loop
          dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(src_mode) )
          if (rename_method_optaa .ne. 40) then
-            if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle mainloop1_ipair
+            if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle pair_loop
          end if
 
          num_t_old = max( 0.0_r8, num_t_old )
@@ -4001,15 +3996,15 @@ time_loop: &
 
          !   no renaming if dgnum < "base" dgnum,
          dgn_t_new = (dryvol_t_new/(num_t_oldbnd*sz_factor(src_mode)))**onethird
-         if (dgn_t_new .le. dgnum_aer(src_mode)) cycle mainloop1_ipair
+         if (dgn_t_new .le. dgnum_aer(src_mode)) cycle pair_loop
 
          !   compute new fraction of number and mass in the tail (dp > dp_cut)
          lndgn_new = log( dgn_t_new )
          lndgv_new = lndgn_new + tmp_alnsg2(src_mode)
          yn_tail = (lndp_cut(src_mode) - lndgn_new)*factoryy(src_mode)
          yv_tail = (lndp_cut(src_mode) - lndgv_new)*factoryy(src_mode)
-         tailfr_numnew = 0.5_r8*erfc( yn_tail )
-         tailfr_volnew = 0.5_r8*erfc( yv_tail )
+         tailfr_numnew = 0.5_r8*erfc_shr( yn_tail )
+         tailfr_volnew = 0.5_r8*erfc_shr( yv_tail )
 
          !   compute old fraction of number and mass in the tail (dp > dp_cut)
          dgn_t_old =   &
@@ -4023,7 +4018,7 @@ time_loop: &
                dryvol_t_old = dryvol_t_old * (dp_belowcut(src_mode)/dgn_t_old)**3
                dgn_t_old = dp_belowcut(src_mode)
             end if
-            if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+            if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle pair_loop
          else if (dgn_t_new .ge. dp_cut(src_mode)) then
             !         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and
             !         dp_belowcut to guarantee some transfer
@@ -4033,13 +4028,13 @@ time_loop: &
          lndgv_old = lndgn_old + tmp_alnsg2(src_mode)
          yn_tail = (lndp_cut(src_mode) - lndgn_old)*factoryy(src_mode)
          yv_tail = (lndp_cut(src_mode) - lndgv_old)*factoryy(src_mode)
-         tailfr_numold = 0.5_r8*erfc( yn_tail )
-         tailfr_volold = 0.5_r8*erfc( yv_tail )
+         tailfr_numold = 0.5_r8*erfc_shr( yn_tail )
+         tailfr_volold = 0.5_r8*erfc_shr( yv_tail )
 
          !   transfer fraction is difference between new and old tail-fractions
          !   transfer fraction for number cannot exceed that of mass
          tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
-         if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
+         if (tmpa .le. 0.0_r8) cycle pair_loop
 
          xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
          xferfrac_vol = min( xferfrac_vol, xferfrac_max )
@@ -4069,72 +4064,7 @@ time_loop: &
             end do ! ispec
          end if ! ( iscldy_subarea ) then
 
-
-      end do mainloop1_ipair
-
-#if 0
-#if ( defined( CAMBOX_ACTIVATE_THIS ) )
-      if ( ldiag98 ) write(lun98,'(/a,2i3,1p,10e11.3)') &
-         'rename i,k, xf n/v', i, k, xferfrac_num, xferfrac_vol
-#endif
-
-#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
-!   diagnostic output start ----------------------------------------
-       if (ldiag1 > 0) then
-       icol_diag = -1
-       if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
-       if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
- !      write(lund,97010) fromwhere, nstep, lchnk, i, k, ipair
-       write(lund,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
-       write(lund,97020) 'drv olda/oldbnd/old/new/del',   &
-             dryvol_t_oldaa, dryvol_t_oldbnd, dryvol_t_old, dryvol_t_new, dryvol_t_del
-       write(lund,97020) 'num old/oldbnd, dgnold/new ',   &
-             num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
-       write(lund,97020) 'tailfr v_old/new, n_old/new',   &
-             tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
-       tmpa = max(1.0d-10,xferfrac_vol) / max(1.0d-10,xferfrac_num)
-       dgn_xfer = dgn_t_new * tmpa**onethird
-       tmpa = max(1.0d-10,(1.0d0-xferfrac_vol)) /   &
-               max(1.0d-10,(1.0d0-xferfrac_num))
-       dgn_aftr = dgn_t_new * tmpa**onethird
-       write(lund,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
-             xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
- !97010      format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
- 97010      format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
- 97020      format( a, 6(1pe15.7) )
-       end if
-       end if ! (ldiag1 > 0)
-!   diagnostic output end   ------------------------------------------
-#endif
-
-
-
-#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
-!   diagnostic output start ----------------------------------------
-                if (ldiag1 > 0) then
-                if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
-                  if (lstooa .gt. 0) then
-                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
-                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
-                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend),   &
-                        deltat*dqdt(i,k,lstooa), deltat*(dqdt(i,k,lstooa) + xfertend)
-                  else
-                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
-                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
-                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend)
-                  end if
-                end if
-                end if
-!   diagnostic output end   ------------------------------------------
-#endif
-
-
-
-
-#endif
-
-
-
+      end do pair_loop
     end subroutine do_inter_mode_transfer
 
 !----------------------------------------------------------------------
