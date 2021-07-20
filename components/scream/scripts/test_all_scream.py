@@ -529,6 +529,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         if not self._submit:
             result += "-DNO_SUBMIT=True "
 
+        if test == "cov":
+            result += "-DDO_COVERAGE=True "
+
         for key, value in extra_configs:
             result += "-D{}={} ".format(key, value)
 
