@@ -53,12 +53,30 @@ else ()
       if (TEST_ERROR_CODE)
         set(TEST_FAILS TRUE)
       endif()
+      if (EKAT_ENABLE_COVERAGE)
+        message("JGF HERE")
+        ctest_coverage()
+      endif()
     endif()
   endif()
 endif ()
 
 if (NOT NO_SUBMIT)
   ctest_submit(RETRY_COUNT 10 RETRY_DELAY 60)
+
+  # if (EKAT_ENABLE_COVERAGE)
+  #   include(CTestCoverageCollectGCOV)
+  #   ctest_coverage_collect_gcov(
+  #     TARBALL gcov.tar
+  #     SOURCE ${CTEST_SOURCE_DIRECTORY}
+  #     BUILD ${CTEST_BINARY_DIRECTORY}
+  #     GCOV_COMMAND ${CTEST_COVERAGE_COMMAND}
+  #     )
+  #   if(EXISTS "${CTEST_BINARY_DIRECTORY}/gcov.tar")
+  #     ctest_submit(CDASH_UPLOAD "${CTEST_BINARY_DIRECTORY}/gcov.tar"
+  #       CDASH_UPLOAD_TYPE GcovTar)
+  #   endif()
+  # endif()
 endif()
 
 if (TEST_FAILS)
