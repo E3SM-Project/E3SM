@@ -3736,339 +3736,377 @@ time_loop: &
         real(r8), parameter :: frelax = 27.0_r8 !(3^3)
         real(r8), parameter :: smallest_dryvol_value = 1.0e-25
 
-      !number of pairs allowed to do inter-mode particle transfer
-      ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
-      ! inter-mode aerosol particle transfer where like particles in mode_1 can be
-      ! transferred to mode_2 and vice-versa)
-      num_pairs = 0 ! Let us assume there are none to start with
+        !number of pairs allowed to do inter-mode particle transfer
+        ! (e.g. if we have a pair "mode_1<-->mode_2", mode_1 and mode_2 can participate in
+        ! inter-mode aerosol particle transfer where like particles in mode_1 can be
+        ! transferred to mode_2 and vice-versa)
+        num_pairs = 0 ! Let us assume there are none to start with
 
-      !if there can be no possible pairs, just return
-      if (all(to_mode_of_mode(:)<=0)) return
+        !if there can be no possible pairs, just return
+        if (all(to_mode_of_mode(:)<=0)) return
 
-      !Go through all the modes to find if we have atleast one or more than one pairs
-      do imode = 1, nmodes
-         to_mode   = to_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
+        !Go through all the modes to find if we have atleast one or more than one pairs
+        do imode = 1, nmodes
+           to_mode   = to_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
 
-         !if to_mode is <=0, transfer is not possible for this mode, cycle the loop for the next mode
-         if(to_mode <= 0)cycle
+           !if to_mode is <=0, transfer is not possible for this mode, cycle the loop for the next mode
+           if(to_mode <= 0)cycle
 
-         from_mode = imode                  ! transfer "from" mode is the current mode (i.e. imode)
+           from_mode = imode                  ! transfer "from" mode is the current mode (i.e. imode)
 
-         !^^At this point, we know that particles can be tranfered from the
-         ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
+           !^^At this point, we know that particles can be tranfered from the
+           ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
 
-         !update number of pairs found so far
-         num_pairs = num_pairs + 1    !increment npair
+           !update number of pairs found so far
+           num_pairs = num_pairs + 1    !increment npair
 
-         !-------------------------------------------------------
-         !now precompute some common factors to be used later
-         !-------------------------------------------------------
+           !-------------------------------------------------------
+           !now precompute some common factors to be used later
+           !-------------------------------------------------------
 
-         call compute_size_factor (from_mode, sz_factor) !size factor for "from mode"
-         call compute_size_factor (to_mode,   sz_factor) !size factor for "to mode"
+           call compute_size_factor (from_mode, sz_factor) !size factor for "from mode"
+           call compute_size_factor (to_mode,   sz_factor) !size factor for "to mode"
 
-         !---------------------------------------------------------------------------------------------------------
-         ! We compute few factors below for the "from_mode", which will be used for inter-mode particle transfer
-         !---------------------------------------------------------------------------------------------------------
+           !---------------------------------------------------------------------------------------------------------
+           ! We compute few factors below for the "from_mode", which will be used for inter-mode particle transfer
+           !---------------------------------------------------------------------------------------------------------
 
-         fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_aer(from_mode) !factor for computing distribution tails of the  "from mode"
+           fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_aer(from_mode) !factor for computing distribution tails of the  "from mode"
 
-         dryvol_smallest(from_mode) = smallest_dryvol_value
-         !compute volume to number high and low limits with relaxation coefficients (watch out for repeated calculations)
-         v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * frelax
-         v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / frelax
+           dryvol_smallest(from_mode) = smallest_dryvol_value
+           !compute volume to number high and low limits with relaxation coefficients (watch out for repeated calculations)
+           v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * frelax
+           v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / frelax
 
-         !A factor for computing diameter at the tails of the distribution
-         ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
+           !A factor for computing diameter at the tails of the distribution
+           ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
 
-         !Cut-off (based on geometric mean) for making decision to do inter-mode transfers
-         diameter_cutoff(from_mode) = sqrt(   &
-            dgnum_aer(from_mode)*exp(1.5*(alnsg_aer(from_mode)**2)) *   &
-            dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
+           !Cut-off (based on geometric mean) for making decision to do inter-mode transfers
+           diameter_cutoff(from_mode) = sqrt(   &
+                dgnum_aer(from_mode)*exp(1.5*(alnsg_aer(from_mode)**2)) *   &
+                dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
 
-         ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
-         diameter_belowcutoff(from_mode) = 0.99*diameter_cutoff(from_mode) !99% of the cutoff
+           ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
+           diameter_belowcutoff(from_mode) = 0.99*diameter_cutoff(from_mode) !99% of the cutoff
 
-      enddo
+        enddo
 
-    end subroutine find_renaming_pairs
-    !----------------------------------------------------------------------
-    !----------------------------------------------------------------------
+      end subroutine find_renaming_pairs
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
 
-    subroutine compute_size_factor(imode, size_factor)
-      ! Compute size factor for a mode
-      implicit none
+      subroutine compute_size_factor(imode, size_factor)
+        ! Compute size factor for a mode
+        implicit none
 
-      integer,  intent(in) :: imode     !mode number
-      real(r8), intent(inout) :: size_factor(:) !size factor
+        integer,  intent(in) :: imode     !mode number
+        real(r8), intent(inout) :: size_factor(:) !size factor
 
-      size_factor(imode) = (pi/6.)*exp(4.5*(alnsg_aer(imode)**2))
+        size_factor(imode) = (pi/6.)*exp(4.5*(alnsg_aer(imode)**2))
 
-    end subroutine compute_size_factor
+      end subroutine compute_size_factor
 
-    !----------------------------------------------------------------------
-    !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
 
-    pure function compute_vol_to_num_ratio(imode, diameter) result(v2n)
-      !compute volume to number ratio for a mode
-      implicit none
-      integer,  intent(in) :: imode
-      real(r8), intent(in) :: diameter(:) ![m]
+      pure function compute_vol_to_num_ratio(imode, diameter) result(v2n)
+        !compute volume to number ratio for a mode
+        implicit none
+        integer,  intent(in) :: imode
+        real(r8), intent(in) :: diameter(:) ![m]
 
-      real(r8) :: v2n !return value
+        real(r8) :: v2n !return value
 
-      v2n = ( 1._r8 / ( (pi/6._r8)* &
-           (diameter(imode)**3._r8)*exp(4.5_r8*alnsg_aer(imode)**2._r8) ) )
+        v2n = ( 1._r8 / ( (pi/6._r8)* &
+             (diameter(imode)**3._r8)*exp(4.5_r8*alnsg_aer(imode)**2._r8) ) )
 
-    end function compute_vol_to_num_ratio
+      end function compute_vol_to_num_ratio
 
-    !----------------------------------------------------------------------
-    !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
 
-    subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
-         iscldy, qi_vmr, qi_del_growth, qcld_vmr, qcld_del_growth, &
-         dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
+      subroutine compute_dryvol_change_in_src_mode(nmode, nspec, dest_mode_of_mode, &
+           iscldy, qi_vmr, qi_del_growth, qcld_vmr, qcld_del_growth, &
+           dryvol_a, deldryvol_a, dryvol_c, deldryvol_c)
 
-      integer,  intent(in):: nmode ! total number of modes
-      integer,  intent(in):: nspec !total number of species in a mode
-      integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
+        integer,  intent(in):: nmode ! total number of modes
+        integer,  intent(in):: nspec !total number of species in a mode
+        integer,  intent(in):: dest_mode_of_mode(:) ! destination mode for a mode
 
-      logical,  intent(in) :: iscldy ! true if it is a cloudy cell
+        logical,  intent(in) :: iscldy ! true if it is a cloudy cell
 
-      real(r8), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
-      real(r8), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
-
-      real(r8), intent(in), optional :: qcld_vmr(:,:)
-      real(r8), intent(in), optional :: qcld_del_growth(:,:)
-
-      !intent-outs
-      real(r8), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
-      real(r8), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
-
-      integer :: imode
-      integer :: dest_mode
-
-      !For each mode, compute the initial (before growth) dryvolume and the growth in dryvolume
-      do imode = 1, nmode
-         !compute dry volume only for modes participating in inter-modal transfer
-         dest_mode = dest_mode_of_mode(imode)
-         if (dest_mode <= 0) cycle
-
-         !compute dry volumes (before growth) and its change for interstitial aerosols
-         call dryvolume_change(imode, nspec, qi_vmr, qi_del_growth, & !input
-              dryvol_a(imode), deldryvol_a(imode)) !output
-
-         if ( iscldy ) then ! if this grid cell has cloud
-            !if a grid cell is cloudy, clloud borne quantities has to be present
-            if(.not. present(qcld_vmr) .or. .not. present(qcld_del_growth)) then
-               call endrun('If a grid cell is cloudy, dryvol_c and deldryvol_c should be present'//errmsg(__FILE__,__LINE__))
-            endif
-            !compute dry volume (before growth) and its change for cloudborne aerosols
-            call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
-                 dryvol_c(imode), deldryvol_c(imode)) !output
-         end if !iscldy then
-      end do
+        real(r8), intent(in) :: qi_vmr(:,:)           ! mass mixing ratios (mmr) [kmol/kmol]
+        real(r8), intent(in) :: qi_del_growth(:,:) !growth in mmr [kmol/kmol]
+
+        real(r8), intent(in), optional :: qcld_vmr(:,:)
+        real(r8), intent(in), optional :: qcld_del_growth(:,:)
+
+        !intent-outs
+        real(r8), intent(out) :: dryvol_a(:), dryvol_c(:)       !dry volumes (before growth) [m3/kmol-air]
+        real(r8), intent(out) :: deldryvol_a(:), deldryvol_c(:) !change in dry volumes [m3/kmol-air]
+
+        integer :: imode
+        integer :: dest_mode
+
+        !For each mode, compute the initial (before growth) dryvolume and the growth in dryvolume
+        do imode = 1, nmode
+           !compute dry volume only for modes participating in inter-modal transfer
+           dest_mode = dest_mode_of_mode(imode)
+           if (dest_mode <= 0) cycle
+
+           !compute dry volumes (before growth) and its change for interstitial aerosols
+           call dryvolume_change(imode, nspec, qi_vmr, qi_del_growth, & !input
+                dryvol_a(imode), deldryvol_a(imode)) !output
+
+           if ( iscldy ) then ! if this grid cell has cloud
+              !if a grid cell is cloudy, clloud borne quantities has to be present
+              if(.not. present(qcld_vmr) .or. .not. present(qcld_del_growth)) then
+                 call endrun('If a grid cell is cloudy, dryvol_c and deldryvol_c should be present: '//errmsg(__FILE__,__LINE__))
+              endif
+              !compute dry volume (before growth) and its change for cloudborne aerosols
+              call dryvolume_change(imode, nspec, qcld_vmr, qcld_del_growth, &!input
+                   dryvol_c(imode), deldryvol_c(imode)) !output
+           end if !iscldy then
+        end do
 
-    end subroutine compute_dryvol_change_in_src_mode
+      end subroutine compute_dryvol_change_in_src_mode
+
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+
+      subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, &!input
+           dryvol, deldryvol) !output
 
-    !----------------------------------------------------------------------
-    !----------------------------------------------------------------------
-
-    subroutine dryvolume_change (imode, nspec, q_vmr, q_del_growth, &!input
-         dryvol, deldryvol) !output
-
-      !intent-ins
-      integer,  intent(in) :: imode           !current mode number
-      integer,  intent(in) :: nspec           !number of species in the current mode
-      real(r8), intent(in) :: q_vmr(:,:)        !volume mixing ratio [kmol/kmol] FIXME: units needs to be reverified
-      real(r8), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
-
-      !intent-outs
-      real(r8), intent(out) :: dryvol, deldryvol !dry volume (before growth) and its grwoth [m3/kmol]
-
-      !local variables
-      integer  :: ispec, s_spec_ind, e_spec_ind
-      real(r8) :: mass_2_vol(nspec) ! converts specie mass to dry volume !DO NOT PORT, we will construct it during "init"
-      real(r8) :: tmp_dryvol, tmp_del_dryvol
-
-      !Temporary variable name change- do not port
-      mass_2_vol(:) = fac_m2v_aer(:)
-      !
-
-      !For each mode, we compute a dry volume by combining (accumulating) mass/density for each specie in that mode.
-      !conversion from mass to volume is accomplished by multiplying with precomputed "mass_2_vol" factor
-
-      s_spec_ind = 1     !start specie index for this mode [These will be subroutine args]
-      e_spec_ind = nspec !end specie index for this mode
-
-      !initialize tmp accumulators
-      tmp_dryvol     = 0.0_r8 !dry volume accumulator
-      tmp_del_dryvol = 0.0_r8 !dry volume growth(change) accumulator
-
-      !Notes on mass_2_vol factor:Units:[m3/kmol-s]; where kmol-s is the amount of a specie "s"
-      ! This factor is obtained by  (molecular_weight/density) of a specie. That is,
-      ! [ (kg/kmol-s) / (kg/m3) ]; where molecular_weight has units [kg/kmol-s] and density units are [kg/m3]
-      ! which results in the units of m3/kmol-s
-
-      do ispec = s_spec_ind, e_spec_ind
-         !Multiply by mass_2_vol[m3/kmol-s] to convert q_vmr[kmol-s/kmol-air]) to volume units[m3/kmol-air]
-         tmp_dryvol     = tmp_dryvol     + q_vmr(ispec,imode)*mass_2_vol(ispec)        !compute current dryvolume
-         !accumulate the "grwoth" in volume units as well
-         tmp_del_dryvol = tmp_del_dryvol + q_del_growth(ispec,imode)*mass_2_vol(ispec) !compute dryvolume growth
-      end do
-
-      dryvol    = tmp_dryvol-tmp_del_dryvol ! This is dry volume before the growth
-      deldryvol = tmp_del_dryvol          ! change in dry volume due to growth
-
-    end subroutine dryvolume_change
-
-    !----------------------------------------------------------------------
-    !----------------------------------------------------------------------
-
-    subroutine do_inter_mode_transfer(nmode, nspec, dest_mode_of_mode, &
-         iscldy_subarea, v2nlorlx, v2nhirlx, dryvol_a, dryvol_c, deldryvol_a, deldryvol_c, &
-         dryvol_smallest, sz_factor, factoryy, tmp_alnsg2, lndp_cut, dp_belowcut, dp_cut, &
-         qnum_cur, qnumcw_cur, qaer_cur, qaercw_cur)
-
-      use shr_spfn_mod, only: erfc_shr => shr_spfn_erfc  ! acme version of cam
-
-      !intent-ins
-      integer,  intent(in) :: nmode, nspec, dest_mode_of_mode(:)
-      logical,  intent(in) :: iscldy_subarea
-      real(r8), intent(in) :: v2nlorlx(:), v2nhirlx(:)
-      real(r8), intent(in) :: dryvol_a(:), dryvol_c(:), deldryvol_a(:), deldryvol_c(:)
-      real(r8), intent(in) :: dryvol_smallest(:)
-      real(r8), intent(in) :: sz_factor(:), factoryy(:), tmp_alnsg2(:), lndp_cut(:), dp_belowcut(:), dp_cut(:)
-
-      !intent-inouts
-      real(r8), intent(inout) :: qaer_cur(:,:)
-      real(r8), intent(inout) :: qnum_cur(:)
-
-      real(r8), intent(inout), optional :: qaercw_cur(:,:)
-      real(r8), intent(inout), optional :: qnumcw_cur(:)
-
-      !local variables
-      integer :: src_mode, dest_mode, imode, ispec
-
-      real(r8) :: dryvol_t_old, dryvol_t_del, num_t_old, dryvol_t_new, dgn_t_oldaa, tailfr_volold, tmpa, xferfrac_vol
-      real(r8) :: dryvol_t_oldbnd, num_t_oldbnd, dgn_t_new, lndgn_new, yn_tail, yv_tail, tailfr_numold, xferfrac_num
-      real(r8) :: lndgv_new, tailfr_numnew, tailfr_volnew, dgn_t_old, dryvol_t_oldaa, lndgn_old, lndgv_old, tmpd
-
-      real(r8), parameter :: onethird = 1.0_r8/3.0_r8
-      real(r8), parameter :: xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8) !1-eps
-
-
-      pair_loop:  do imode = 1, nmode
-
-         src_mode = imode                     !source mode
-         dest_mode = dest_mode_of_mode(imode) !destination mode
-
-         !if destination mode doesn't exist for the source mode, cycle loop
-         if (dest_mode <= 0) cycle pair_loop
-
-         !   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode
-         !      in m^3-AP/kmol-air
-         !   dryvol_t_new is the new total dry-volume
-         !      (old/new = before/after the continuous growth)
-         !   num_t_old is total number in particles/kmol-air
-         if ( iscldy_subarea ) then
-            dryvol_t_old = dryvol_a(src_mode) + dryvol_c(src_mode)
-            dryvol_t_del = deldryvol_a(src_mode) + deldryvol_c(src_mode)
-            num_t_old = (qnum_cur(src_mode) + qnumcw_cur(src_mode))
-         else
-            dryvol_t_old = dryvol_a(src_mode)
-            dryvol_t_del = deldryvol_a(src_mode)
-            num_t_old = qnum_cur(src_mode)
-         end if
-         dryvol_t_new = dryvol_t_old + dryvol_t_del
-
-         !   no renaming if dryvol_t_new ~ 0 or dryvol_t_del ~ 0
-         if (dryvol_t_new .le. dryvol_smallest(src_mode)) cycle pair_loop
-         dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(src_mode) )
-         if (rename_method_optaa .ne. 40) then
-            if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle pair_loop
-         end if
-
-         num_t_old = max( 0.0_r8, num_t_old )
-         dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(src_mode) )
-         num_t_oldbnd = min( dryvol_t_oldbnd*v2nlorlx(src_mode), num_t_old )
-         num_t_oldbnd = max( dryvol_t_oldbnd*v2nhirlx(src_mode), num_t_oldbnd )
-
-         !   no renaming if dgnum < "base" dgnum,
-         dgn_t_new = (dryvol_t_new/(num_t_oldbnd*sz_factor(src_mode)))**onethird
-         if (dgn_t_new .le. dgnum_aer(src_mode)) cycle pair_loop
-
-         !   compute new fraction of number and mass in the tail (dp > dp_cut)
-         lndgn_new = log( dgn_t_new )
-         lndgv_new = lndgn_new + tmp_alnsg2(src_mode)
-         yn_tail = (lndp_cut(src_mode) - lndgn_new)*factoryy(src_mode)
-         yv_tail = (lndp_cut(src_mode) - lndgv_new)*factoryy(src_mode)
-         tailfr_numnew = 0.5_r8*erfc_shr( yn_tail )
-         tailfr_volnew = 0.5_r8*erfc_shr( yv_tail )
-
-         !   compute old fraction of number and mass in the tail (dp > dp_cut)
-         dgn_t_old =   &
-              (dryvol_t_oldbnd/(num_t_oldbnd*sz_factor(src_mode)))**onethird
-         dgn_t_oldaa = dgn_t_old
-         dryvol_t_oldaa = dryvol_t_old
-
-         if (rename_method_optaa .eq. 40) then
-            if (dgn_t_old .gt. dp_belowcut(src_mode)) then
-               ! this revised volume corresponds to dgn_t_old == dp_belowcut, and same number conc
-               dryvol_t_old = dryvol_t_old * (dp_belowcut(src_mode)/dgn_t_old)**3
-               dgn_t_old = dp_belowcut(src_mode)
-            end if
-            if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle pair_loop
-         else if (dgn_t_new .ge. dp_cut(src_mode)) then
-            !         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and
-            !         dp_belowcut to guarantee some transfer
-            dgn_t_old = min( dgn_t_old, dp_belowcut(src_mode) )
-         end if
-         lndgn_old = log( dgn_t_old )
-         lndgv_old = lndgn_old + tmp_alnsg2(src_mode)
-         yn_tail = (lndp_cut(src_mode) - lndgn_old)*factoryy(src_mode)
-         yv_tail = (lndp_cut(src_mode) - lndgv_old)*factoryy(src_mode)
-         tailfr_numold = 0.5_r8*erfc_shr( yn_tail )
-         tailfr_volold = 0.5_r8*erfc_shr( yv_tail )
-
-         !   transfer fraction is difference between new and old tail-fractions
-         !   transfer fraction for number cannot exceed that of mass
-         tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
-         if (tmpa .le. 0.0_r8) cycle pair_loop
-
-         xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
-         xferfrac_vol = min( xferfrac_vol, xferfrac_max )
-         xferfrac_num = tailfr_numnew - tailfr_numold
-         xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
-
-         !
-         !   compute changes to number and species masses
-         !
-         tmpd = qnum_cur(src_mode)*xferfrac_num
-         qnum_cur(src_mode) = qnum_cur(src_mode) - tmpd
-         qnum_cur(dest_mode) = qnum_cur(dest_mode) + tmpd
-         do ispec = 1, nspec
-            tmpd = qaer_cur(ispec,src_mode)*xferfrac_vol
-            qaer_cur(ispec,src_mode) = qaer_cur(ispec,src_mode) - tmpd
-            qaer_cur(ispec,dest_mode) = qaer_cur(ispec,dest_mode) + tmpd
-         end do ! ispec
-
-         if ( iscldy_subarea ) then
-            tmpd = qnumcw_cur(src_mode)*xferfrac_num
-            qnumcw_cur(src_mode) = qnumcw_cur(src_mode) - tmpd
-            qnumcw_cur(dest_mode) = qnumcw_cur(dest_mode) + tmpd
-            do ispec = 1, nspec
-               tmpd = qaercw_cur(ispec,src_mode)*xferfrac_vol
-               qaercw_cur(ispec,src_mode) = qaercw_cur(ispec,src_mode) - tmpd
-               qaercw_cur(ispec,dest_mode) = qaercw_cur(ispec,dest_mode) + tmpd
-            end do ! ispec
-         end if ! ( iscldy_subarea ) then
-
-      end do pair_loop
-    end subroutine do_inter_mode_transfer
-
-!----------------------------------------------------------------------
-!----------------------------------------------------------------------
+        !intent-ins
+        integer,  intent(in) :: imode           !current mode number
+        integer,  intent(in) :: nspec           !number of species in the current mode
+        real(r8), intent(in) :: q_vmr(:,:)        !volume mixing ratio [kmol/kmol] FIXME: units needs to be reverified
+        real(r8), intent(in) :: q_del_growth(:,:) !change (delta) in volume mixing ratio [kmol/kmol]
+
+        !intent-outs
+        real(r8), intent(out) :: dryvol, deldryvol !dry volume (before growth) and its grwoth [m3/kmol]
+
+        !local variables
+        integer  :: ispec, s_spec_ind, e_spec_ind
+        real(r8) :: mass_2_vol(nspec) ! converts specie mass to dry volume !DO NOT PORT, we will construct it during "init"
+        real(r8) :: tmp_dryvol, tmp_del_dryvol
+
+        !Temporary variable name change- do not port
+        mass_2_vol(:) = fac_m2v_aer(:)
+        !
+
+        !For each mode, we compute a dry volume by combining (accumulating) mass/density for each specie in that mode.
+        !conversion from mass to volume is accomplished by multiplying with precomputed "mass_2_vol" factor
+
+        s_spec_ind = 1     !start specie index for this mode [These will be subroutine args]
+        e_spec_ind = nspec !end specie index for this mode
+
+        !initialize tmp accumulators
+        tmp_dryvol     = 0.0_r8 !dry volume accumulator
+        tmp_del_dryvol = 0.0_r8 !dry volume growth(change) accumulator
+
+        !Notes on mass_2_vol factor:Units:[m3/kmol-s]; where kmol-s is the amount of a specie "s"
+        ! This factor is obtained by  (molecular_weight/density) of a specie. That is,
+        ! [ (kg/kmol-s) / (kg/m3) ]; where molecular_weight has units [kg/kmol-s] and density units are [kg/m3]
+        ! which results in the units of m3/kmol-s
+
+        do ispec = s_spec_ind, e_spec_ind
+           !Multiply by mass_2_vol[m3/kmol-s] to convert q_vmr[kmol-s/kmol-air]) to volume units[m3/kmol-air]
+           tmp_dryvol     = tmp_dryvol     + q_vmr(ispec,imode)*mass_2_vol(ispec)        !compute current dryvolume
+           !accumulate the "grwoth" in volume units as well
+           tmp_del_dryvol = tmp_del_dryvol + q_del_growth(ispec,imode)*mass_2_vol(ispec) !compute dryvolume growth
+        end do
+
+        dryvol    = tmp_dryvol-tmp_del_dryvol ! This is dry volume before the growth
+        deldryvol = tmp_del_dryvol          ! change in dry volume due to growth
+
+      end subroutine dryvolume_change
+
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+
+      subroutine do_inter_mode_transfer(nmode, nspec, dest_mode_of_mode, &
+           iscldy, v2nlorlx, v2nhirlx, dryvol_a, dryvol_c, deldryvol_a, deldryvol_c, &
+           dryvol_smallest, sz_factor, factoryy, tmp_alnsg2, lndp_cut, dp_belowcut, dp_cut, &
+           qnum_cur, qnumcw_cur, qaer_cur, qaercw_cur)
+        use spmd_utils, only   :  masterproc
+        use shr_spfn_mod, only: erfc_shr => shr_spfn_erfc  ! acme version of cam
+
+        !intent-ins
+        integer,  intent(in) :: nmode, nspec, dest_mode_of_mode(:)
+        logical,  intent(in) :: iscldy
+        real(r8), intent(in) :: v2nlorlx(:), v2nhirlx(:)
+        real(r8), intent(in) :: dryvol_a(:), dryvol_c(:), deldryvol_a(:), deldryvol_c(:)
+        real(r8), intent(in) :: dryvol_smallest(:)
+        real(r8), intent(in) :: sz_factor(:), factoryy(:), tmp_alnsg2(:), lndp_cut(:), dp_belowcut(:), dp_cut(:)
+
+        !intent-inouts
+        real(r8), intent(inout) :: qaer_cur(:,:)
+        real(r8), intent(inout) :: qnum_cur(:)
+
+        real(r8), intent(inout), optional :: qaercw_cur(:,:)
+        real(r8), intent(inout), optional :: qnumcw_cur(:)
+
+        !local variables
+        integer :: src_mode, dest_mode, imode, ispec
+
+        real(r8) :: bef_grwth_dryvol, dryvol_del, bef_grwth_num, aft_grwth_dryvol, bef_grwth_diameteraa, tailfr_volold, tmpa, xferfrac_vol
+        real(r8) :: bef_grwth_dryvolbnd, bef_grwth_numbnd, aft_grwth_diameter, lndgn_new, yn_tail, yv_tail, tailfr_numold, xferfrac_num
+        real(r8) :: lndgv_new, tailfr_numnew, tailfr_volnew, bef_grwth_diameter, bef_grwth_dryvolaa, lndgn_old, lndgv_old, tmpd
+
+        real(r8), parameter :: onethird = 1.0_r8/3.0_r8
+        real(r8), parameter :: xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8) !1-eps (this number is little less than 1, e.g. 0.99)
+
+
+        pair_loop:  do imode = 1, nmode
+
+           src_mode = imode                     !source mode
+           dest_mode = dest_mode_of_mode(imode) !destination mode
+
+           !if destination mode doesn't exist for the source mode, cycle loop
+           if (dest_mode <= 0) cycle pair_loop
+
+           !Compute total(i.e. cloud borne and interstitial) of dry volume (before growth)
+           ! and delta in dry volume in the source mode [units: (m3 of specie)/(kmol of air)]
+           !NOTE: cloudborne input can be optional, so we are sending "src_mode" as a argument
+           !as we cannot refecence a member of an optional array if it is not present
+           bef_grwth_dryvol = compute_total(iscldy, src_mode, dryvol_a ,   dryvol_c)
+           dryvol_del = compute_total(iscldy, src_mode, deldryvol_a, deldryvol_c)
+
+           !Total dryvolume after growth (add delta growth)
+           aft_grwth_dryvol = bef_grwth_dryvol + dryvol_del
+
+           !Skip inter-mode transfer for this mode if dry after grwoth is ~ 0
+           if (aft_grwth_dryvol .le. dryvol_smallest(src_mode)) cycle pair_loop
+
+           bef_grwth_dryvolbnd = max( bef_grwth_dryvol, dryvol_smallest(src_mode) )
+           if (rename_method_optaa .ne. 40) then
+              !Skip if dryvol_del is ~ 0
+              if (dryvol_del .le. 1.0e-6*bef_grwth_dryvolbnd) cycle pair_loop
+           end if
+
+           !Compute total before growth number [units: (# of particles)/(kmol of air)]
+           bef_grwth_num    = compute_total(iscldy, src_mode, qnum_cur, qnumcw_cur)
+           bef_grwth_num = max( 0.0_r8, bef_grwth_num ) !bound to have minimum of 0
+
+           !bound number within min and max of the source mode
+           bef_grwth_numbnd = min_max_bound(bef_grwth_dryvolbnd*v2nhirlx(src_mode), & !min value
+                bef_grwth_dryvolbnd*v2nlorlx(src_mode), bef_grwth_num) !max value and input
+
+           !   no renaming if dgnum < "base" dgnum,
+           aft_grwth_diameter = (aft_grwth_dryvol/(bef_grwth_numbnd*sz_factor(src_mode)))**onethird
+           if (aft_grwth_diameter .le. dgnum_aer(src_mode)) cycle pair_loop
+
+           !   compute new fraction of number and mass in the tail (dp > dp_cut)
+           lndgn_new = log( aft_grwth_diameter )
+           lndgv_new = lndgn_new + tmp_alnsg2(src_mode)
+           yn_tail = (lndp_cut(src_mode) - lndgn_new)*factoryy(src_mode)
+           yv_tail = (lndp_cut(src_mode) - lndgv_new)*factoryy(src_mode)
+           tailfr_numnew = 0.5_r8*erfc_shr( yn_tail )
+           tailfr_volnew = 0.5_r8*erfc_shr( yv_tail )
+
+           !   compute old fraction of number and mass in the tail (dp > dp_cut)
+           bef_grwth_diameter =   &
+                (bef_grwth_dryvolbnd/(bef_grwth_numbnd*sz_factor(src_mode)))**onethird
+           bef_grwth_diameteraa = bef_grwth_diameter
+           bef_grwth_dryvolaa = bef_grwth_dryvol
+
+           if (rename_method_optaa .eq. 40) then
+              if (bef_grwth_diameter .gt. dp_belowcut(src_mode)) then
+                 ! this revised volume corresponds to bef_grwth_diameter == dp_belowcut, and same number conc
+                 bef_grwth_dryvol = bef_grwth_dryvol * (dp_belowcut(src_mode)/bef_grwth_diameter)**3
+                 bef_grwth_diameter = dp_belowcut(src_mode)
+              end if
+              if ((aft_grwth_dryvol-bef_grwth_dryvol) .le. 1.0e-6_r8*bef_grwth_dryvolbnd) cycle pair_loop
+           else if (aft_grwth_diameter .ge. dp_cut(src_mode)) then
+              !         if aft_grwth_diameter exceeds dp_cut, use the minimum of bef_grwth_diameter and
+              !         dp_belowcut to guarantee some transfer
+              bef_grwth_diameter = min( bef_grwth_diameter, dp_belowcut(src_mode) )
+           end if
+           lndgn_old = log( bef_grwth_diameter )
+           lndgv_old = lndgn_old + tmp_alnsg2(src_mode)
+           yn_tail = (lndp_cut(src_mode) - lndgn_old)*factoryy(src_mode)
+           yv_tail = (lndp_cut(src_mode) - lndgv_old)*factoryy(src_mode)
+           tailfr_numold = 0.5_r8*erfc_shr( yn_tail )
+           tailfr_volold = 0.5_r8*erfc_shr( yv_tail )
+
+           !   transfer fraction is difference between new and old tail-fractions
+           !   transfer fraction for number cannot exceed that of mass
+           tmpa = tailfr_volnew*aft_grwth_dryvol - tailfr_volold*bef_grwth_dryvol
+           if (tmpa .le. 0.0_r8) cycle pair_loop
+
+           xferfrac_vol = min( tmpa, aft_grwth_dryvol )/aft_grwth_dryvol
+           xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+           xferfrac_num = tailfr_numnew - tailfr_numold
+           xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+
+           !
+           !   compute changes to number and species masses
+           !
+           tmpd = qnum_cur(src_mode)*xferfrac_num
+           qnum_cur(src_mode) = qnum_cur(src_mode) - tmpd
+           qnum_cur(dest_mode) = qnum_cur(dest_mode) + tmpd
+           do ispec = 1, nspec
+              tmpd = qaer_cur(ispec,src_mode)*xferfrac_vol
+              qaer_cur(ispec,src_mode) = qaer_cur(ispec,src_mode) - tmpd
+              qaer_cur(ispec,dest_mode) = qaer_cur(ispec,dest_mode) + tmpd
+           end do ! ispec
+
+           if ( iscldy ) then
+              tmpd = qnumcw_cur(src_mode)*xferfrac_num
+              qnumcw_cur(src_mode) = qnumcw_cur(src_mode) - tmpd
+              qnumcw_cur(dest_mode) = qnumcw_cur(dest_mode) + tmpd
+              do ispec = 1, nspec
+                 tmpd = qaercw_cur(ispec,src_mode)*xferfrac_vol
+                 qaercw_cur(ispec,src_mode) = qaercw_cur(ispec,src_mode) - tmpd
+                 qaercw_cur(ispec,dest_mode) = qaercw_cur(ispec,dest_mode) + tmpd
+              end do ! ispec
+           end if ! ( iscldy ) then
+
+        end do pair_loop
+      end subroutine do_inter_mode_transfer
+
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+
+      function compute_total(iscldy, imode, interstitial, cldbrn) result (total)
+
+        logical,  intent(in) :: iscldy       !TRUE, if a cell has cloud
+        integer,  intent(in) :: imode
+        real(r8), intent(in) :: interstitial(:) !interstital part
+        real(r8), intent(in), optional :: cldbrn(:)       !cloud borne part
+
+        !return value
+        real(r8) :: total
+
+
+        total = interstitial(imode) !if there is no cloud, total is just the interstitial value
+
+        if(iscldy) then
+           if(.not.present(cldbrn))then
+              call endrun("If a grid cell is cloudy, cloud borne aerosol values must be present:"//errmsg(__FILE__,__LINE__))
+           endif
+           total = total + cldbrn(imode)
+        endif
+      end function compute_total
+
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+
+      pure function min_max_bound(minlim, maxlim, input) result(bounded)
+
+        real(r8), intent(in) :: minlim, maxlim
+        real(r8), intent(in) :: input
+
+        !return value
+        real(r8) :: bounded
+
+        bounded = max(min(maxlim, input), minlim)
+
+      end function min_max_bound
+
+      !----------------------------------------------------------------------
+      !----------------------------------------------------------------------
       subroutine mam_newnuc_1subarea(                               &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
