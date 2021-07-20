@@ -15,7 +15,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column, swrad_off, lwrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -1489,7 +1489,7 @@ contains
       end if  ! dosw
 
       ! Do longwave stuff...
-      if (radiation_do('lw')) then
+      if (radiation_do('lw') .and. .not. lwrad_off) then
 
          ! Allocate longwave outputs; why is this not part of the
          ! ty_fluxes_byband object?
@@ -1553,6 +1553,7 @@ contains
                )
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+
             end if
          end do
 
