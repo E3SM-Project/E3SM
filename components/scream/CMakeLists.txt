@@ -8,7 +8,7 @@ else()
   set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
   # The new behavior for cmp0074 makes cmake use (rather than ignore)
   # any <PackageName>_ROOT env/cmake variable previously set.
   cmake_policy(SET CMP0074 NEW)
