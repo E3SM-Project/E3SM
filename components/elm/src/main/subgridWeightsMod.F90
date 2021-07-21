@@ -275,29 +275,30 @@ contains
     ! !LOCAL VARIABLES:
     integer :: l,c,p       ! loop counters
     !------------------------------------------------------------------------
-    call is_active_l_gpu(bounds,lun_pp%active)
-    !!do l = bounds%begl,bounds%endl
-    !!   lun_pp%active(l) = is_active_l(l)
-    !!end do
-    call is_active_c_gpu(bounds,col_pp%active)
-    !!!do c = bounds%begc,bounds%endc
-    !!!   l = col_pp%landunit(c)
-    !!!   col_pp%active(c) = is_active_c(c)
-    !!!   if (col_pp%active(c) .and. .not. lun_pp%active(l)) then
-    !!!      print *, ' ERROR: active column found on inactive landunit', &
-    !!!                     'at c = ', c, ', l = ', l
-    !!!   end if
-    !!!end do
+    !call is_active_l_gpu(bounds,lun_pp%active)
+    do l = bounds%begl,bounds%endl
+       lun_pp%active(l) = is_active_l(l)
+    end do
+    !call is_active_c_gpu(bounds,col_pp%active)
+    do c = bounds%begc,bounds%endc
+       l = col_pp%landunit(c)
+       col_pp%active(c) = is_active_c(c)
+       if (col_pp%active(c) .and. .not. lun_pp%active(l)) then
+          print *, ' ERROR: active column found on inactive landunit', &
+                         'at c = ', c, ', l = ', l
+       end if
+    end do
 
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
-       if (all_active) then
-          veg_pp%active(p) = .true.
-       else
-          c =veg_pp%column(p)
-          veg_pp%active(p) = .false.
-          if (col_pp%active(c) .and. veg_pp%wtcol(p) > 0._r8) veg_pp%active(p) = .true.
-       end if
+       veg_pp%active(p) = is_active_p(p)
+       !if (all_active) then
+       !   veg_pp%active(p) = .true.
+       !else
+       !   c =veg_pp%column(p)
+       !   veg_pp%active(p) = .false.
+       !   if (col_pp%active(c) .and. veg_pp%wtcol(p) > 0._r8) veg_pp%active(p) = .true.
+       !end if
        if (veg_pp%active(p) .and. .not. col_pp%active(c)) then
           print *,' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
