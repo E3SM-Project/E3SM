@@ -53,6 +53,9 @@ ifeq ($(FC),lf95)
   endif
 
 endif
+ifeq ($(FC),gfortran)
+  FFLAGS += -ffree-line-length-none -ffixed-line-length-none
+endif
 
 .F90.o:
 	$(FC) -c $(FFLAGS) $<
