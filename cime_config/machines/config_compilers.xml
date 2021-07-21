@@ -1967,6 +1967,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <KOKKOS_OPTIONS> --with-serial --with-openmp --cxxflags='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh' --ldflags='-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
@@ -1989,6 +1990,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <KOKKOS_OPTIONS> --with-serial --with-openmp --cxxflags='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh' --ldflags='-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
