@@ -50,9 +50,9 @@ if [ $skip_testing -eq 0 ]; then
 
   ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 
-  # Add a valgrind test for mappy for nightlies
+  # Add a valgrind and coverage tests for mappy for nightlies
   if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream -t valg --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+    ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
   fi
 
   # scripts-tests is pretty expensive, so we limit this testing to mappy

@@ -67,7 +67,8 @@ class TestAllScream(object):
             ("sp"  , "full_sp_debug"),
             ("fpe" , "debug_nopack_fpe"),
             ("opt" , "release"),
-            ("valg" , "valgrind"),
+            ("valg", "valgrind"),
+            ("cov" , "coverage"),
         ])
 
         if self._quick_rerun_failed:
@@ -95,6 +96,7 @@ class TestAllScream(object):
             # default to all test types except do not do fpe on CUDA
             self._tests = list(self._test_full_names.keys())
             self._tests.remove("valg") # don't want this on by default
+            self._tests.remove("cov") # don't want this on by default
             if is_cuda_machine(self._machine):
                 self._tests.remove("fpe")
         else:
@@ -232,6 +234,8 @@ class TestAllScream(object):
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
+            "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_COVERAGE", "True")],
         }
 
         ############################################
@@ -254,13 +258,7 @@ class TestAllScream(object):
         #  Compilation/testing resources  #
         ###################################
 
-        self._testing_res_count = {
-            "dbg" : ctest_max_jobs,
-            "sp"  : ctest_max_jobs,
-            "fpe" : ctest_max_jobs,
-            "opt" : ctest_max_jobs,
-            "valg" : ctest_max_jobs,
-        }
+        self._testing_res_count = dict(zip(self._tests, [ctest_max_jobs]*len(self._tests)))
 
         # Deduce how many compilation resources per test
         if make_parallel_level > 0:
@@ -270,13 +268,7 @@ class TestAllScream(object):
             make_max_jobs = get_mach_compilation_resources(self._machine)
             print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
 
-        self._compile_res_count = {
-            "dbg" : make_max_jobs,
-            "sp"  : make_max_jobs,
-            "fpe" : make_max_jobs,
-            "opt" : make_max_jobs,
-            "valg" : make_max_jobs,
-        }
+        self._compile_res_count = dict(zip(self._tests, [make_max_jobs]*len(self._tests)))
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
@@ -536,6 +528,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
+
+        if test == "cov":
+            result += "-DDO_COVERAGE=True "
 
         for key, value in extra_configs:
             result += "-D{}={} ".format(key, value)
