@@ -280,6 +280,7 @@ subroutine mkpft(ldomain, mapfname, fpft, ndiag, pctlnd_o, pctpft_o)
   if ( .not. use_input_pft ) then
      ! Obtain input grid info, read PCT_PFT
 
+     print *, 'Read domain from: ', trim(fpft)
      call domain_read(tdomain,fpft)
      ns_i = tdomain%ns
 

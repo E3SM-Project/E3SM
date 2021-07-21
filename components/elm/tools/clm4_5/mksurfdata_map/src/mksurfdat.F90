@@ -154,11 +154,11 @@ program mksurfdat
 
     character(len=32) :: subname = 'mksrfdat'  ! program name
 
-    namelist /clmexp/              &
-	 mksrf_fgrid,              &	
-	 mksrf_gridtype,           &	
+    namelist /elmexp/              &
+         mksrf_fgrid,              &  
+         mksrf_gridtype,           &  
          mksrf_fvegtyp,            &
-	 mksrf_fsoitex,            &
+         mksrf_fsoitex,            &
          mksrf_forganic,           &
          mksrf_fsoicol,            &
          mksrf_fsoiord,            &
@@ -319,7 +319,7 @@ program mksurfdat
     all_urban         = .false.
     no_inlandwet      = .true.
 
-    read(5, clmexp, iostat=ier)
+    read(5, elmexp, iostat=ier)
     if (ier /= 0) then
        write(6,*)'error: namelist input resulted in error code ',ier
        call abort()
@@ -1197,13 +1197,13 @@ program mksurfdat
              fname = ' '
              call mkpft_parse_oride(string)
              call mkharvest_parse_oride(string)
-	     write(6,*)'PFT and harvesting values are ',trim(string),' year is ',year
+        write(6,*)'PFT and harvesting values are ',trim(string),' year is ',year
           !
           ! Otherwise intrepret string as a filename with PFT and harvesting values in it
           !
           else
              fname = string
-	     write(6,*)'input pft dynamic dataset is  ',trim(fname),' year is ',year
+        write(6,*)'input pft dynamic dataset is  ',trim(fname),' year is ',year
           end if
           ntim = ntim + 1
 
@@ -1276,9 +1276,9 @@ program mksurfdat
           call check_ret(nf_inq_varid(ncid, 'input_pftdata_filename', varid), subname)
           call check_ret(nf_put_vara_text(ncid, varid, (/ 1, ntim /), (/ len_trim(string), 1 /), trim(string) ), subname)
 
-	  ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
+     ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
 
-	  call check_ret(nf_sync(ncid), subname)
+     call check_ret(nf_sync(ncid), subname)
 
        end do   ! end of read loop
 

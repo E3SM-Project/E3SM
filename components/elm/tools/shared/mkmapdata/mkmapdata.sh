@@ -498,10 +498,10 @@ until ((nfile>${#INGRID[*]})); do
     elif [ "$DST_LRGFIL" = "none" ] && [ "${SRC_LRGFIL[nfile]}" = "none" ]; then
         lrgfil=""
     else
-        echo "Unknown LRGFIL type:"
+        echo "WARNING: Unknown LRGFIL type for DST or SRC grids:"
         echo "DST_LRGFIL = $DST_LRGFIL"
         echo "SRC_LRGFIL = ${SRC_LRGFIL[nfile]}"
-        exit 4
+        lrgfil=""
     fi
  
     # Override file type

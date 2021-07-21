@@ -69,7 +69,7 @@ begin
 
   csmdata  = getenv("CSMDATA");
   clmroot  = getenv("CLM_ROOT");
-  querynml = "bld/queryDefaultNamelist.pl -silent -justvalue -namelist clmexp";
+  querynml = "bld/queryDefaultNamelist.pl -silent -justvalue -namelist elmexp";
   if ( .not. ismissing(csmdata) )then
      querynml = querynml+" -csmdata "+csmdata;
   end if

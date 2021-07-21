@@ -1,4 +1,4 @@
-&clmexp
+&elmexp
  nglcec           = 0
  mksrf_fgrid      = '/glade/p/cesm/cseg/inputdata/lnd/clm2/mappingdata/maps/10x15/map_0.5x0.5_landuse_to_10x15_aave_da_110307.nc'
  map_fpft         = '/glade/p/cesm/cseg/inputdata/lnd/clm2/mappingdata/maps/10x15/map_0.5x0.5_landuse_to_10x15_aave_da_110307.nc'

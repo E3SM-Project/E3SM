@@ -679,20 +679,20 @@ SCRIP format grid data file
 </entry>
 
 <entry id="scripgriddata_lrgfile_needed" type="char*256" category="mkmapdata"
-       group="clmexp" valid_values="none,64bit_offset,netcdf4" >
+       group="elmexp" valid_values="none,64bit_offset,netcdf4" >
 Flag to pass to the ESMF mapping utility, telling it what kind of large
 file support is needed for an output file generated with this grid as
 either the source or destination ('none', '64bit_offset' or 'netcdf4'). 
 </entry>
 
 <entry id="scripgriddata_type" type="char*256" category="mkmapdata"
-       group="clmexp" valid_values="SCRIP,UGRID" >
+       group="elmexp" valid_values="SCRIP,UGRID" >
 Flag to pass to the ESMF mapping utility, telling it what kind of grid
 file this is (SCRIP or UGRID).
 </entry>
 
 <entry id="scripgriddata_meshname" type="char*256" category="mkmapdata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 For UGRID files, flag to pass to the ESMF mapping utility, telling it the
 name of the dummy variable that has all of the topology information stored
 in its attributes. (Only used if scripgriddata_src_type = UGRID.)
@@ -708,210 +708,210 @@ Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
 
 <entry id="mksrf_fvegtyp" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Plant Function Type dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fglacier" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Dataset for percent glacier land-unit for mksurfdata
 </entry>
 
 <entry id="mksrf_furbtopo" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Dataset for topography used to define urban threshold
 </entry>
 
 <entry id="mksrf_flndtopo" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Dataset for land topography
 </entry>
 
 <entry id="mksrf_flai" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Leaf Area Index dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fsoitex" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil texture dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fsoicol" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil color dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fsoiord" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil order dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fmax" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil max fraction dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_ffrac" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 High resolution land mask/fraction dataset for mksurfdata
 (used for glacier_mec land-units)
 </entry>
 
 <entry id="mksrf_gridtype" type="char*256" category="mksurfdata"
-       group="clmexp" value="global" valid_values="global,regional" >
+       group="elmexp" value="global" valid_values="global,regional" >
 Type of grid to create for mksurfdata
 </entry>
 
 <entry id="mksrf_fgrid" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Grid file at the output resolution for mksurfdata
 </entry>
 
 <entry id="mksrf_fdynuse" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Text file with filepaths (or list of XML elements) for vegetation fractions
 and harvesting for each year to run over for mksurfdata to be able to model
 transient land-use change
 </entry>
 
 <entry id="mksrf_ftopo" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 High resolution topography dataset for mksurfdata
 (used for glacier_mec land-units)
 </entry>
 
 <entry id="mksrf_firrig" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Irrigation dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_forganic" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Organic soil dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_flakwat" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Lake water dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fwetlnd" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Wetland dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_furban" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Urban dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fvocef" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Biogenic Volatile Organic Compounds (VOC) emissions dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fgdp" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 GDP dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fpeat" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Peat dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fabm" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Agricultural burning dominant month dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_ftopostats" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Topography statistics dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fvic" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 VIC parameters dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fch4" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Inversion-derived CH4 parameters dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fphosphorus" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil phosphorus dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fgrvl" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Soil gravel content dataset
 </entry>
 
 <entry id="mksrf_fslp10" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Slope percentile dataset
 </entry>
 
 <entry id="mksrf_fero" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 ELM-Erosion parameters dataset
 </entry>
 
 <entry id="outnc_double" type="logical" category="mksurfdata"
-       group="clmexp" value=".true.">
+       group="elmexp" value=".true.">
 If TRUE, output variables in double precision for mksurfdata
 </entry>
 
 <entry id="all_urban" type="logical" category="mksurfdata"
-       group="clmexp" value=".false.">
+       group="elmexp" value=".false.">
 If TRUE, ignore other files, and set the output percentage to 100% urban and
 zero for other land-use types.
 </entry>
 
 <entry id="no_inlandwet" type="logical" category="mksurfdata"
-       group="clmexp" value=".true.">
+       group="elmexp" value=".true.">
 If TRUE, set wetland to 0% over land (renormalizing other landcover types as needed);
 wetland will only be used for ocean points.
 </entry>
 
 <entry id="numpft" type="integer" category="mksurfdata"
-       group="clmexp" value="16" valid_values="16,20" >
+       group="elmexp" value="16" valid_values="16,20" >
 Number of Plant Functional Types (excluding bare-soil)
 </entry>
 
 <entry id="pft_idx" type="integer" category="mksurfdata"
-       group="clmexp"
+       group="elmexp"
        valid_values="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20" >
 Plant Function Type index to override global file with for mksurfdata
 </entry>
 
 <entry id="pft_frc" type="real" category="mksurfdata"
-       group="clmexp" valid_values="">
+       group="elmexp" valid_values="">
 Plant Function Type fraction to override global file with for mksurfdata
 </entry>
 
 <entry id="soil_color" type="integer" category="mksurfdata"
-       group="clmexp"
+       group="elmexp"
        valid_values="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20" >
 Soil color index to override global file with for mksurfdata
 </entry>
 
 <entry id="soil_fmax" type="real" category="mksurfdata"
-       group="clmexp" >
+       group="elmexp" >
 Soil maximum fraction to override global file with for mksurfdata
 </entry>
 
 <entry id="soil_sand" type="real" category="mksurfdata"
-       group="clmexp" >
+       group="elmexp" >
 Soil percent sand to override global file with for mksurfdata
 </entry>
 
 <entry id="soil_clay" type="real" category="mksurfdata"
-       group="clmexp" >
+       group="elmexp" >
 Soil percent clay to override global file with for mksurfdata
 </entry>
 
@@ -920,62 +920,62 @@ Soil percent clay to override global file with for mksurfdata
 <!-- mkgriddata namelist                               -->
 <!--                                                   -->
 <entry id="mksrf_fnavyoro" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Orography file with surface heights and land area fraction
 </entry>
 
 <entry id="mksrf_fclmgrid" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 CLM grid file
 </entry>
 
 <entry id="mksrf_fccsmdom" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 CESM domain file
 </entry>
 
 <entry id="mksrf_fcamfile" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 CAM file
 </entry>
 
 <entry id="mksrf_frawtopo" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Raw topography file
 </entry>
 
 <entry id="mksrf_fcamtopo" type="char*256" category="mkgriddata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 CAM topography file
 </entry>
 
 <entry id="mksrf_lsmlon" type="integer" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Number of longitudes to use for a regional grid (for single-point set to 1)
 </entry>
 
 <entry id="mksrf_lsmlat" type="integer" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Number of latitudes to use for a regional grid (for single-point set to 1)
 </entry>
 
 <entry id="mksrf_edgen" type="real" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Northern edge of the regional grid
 </entry>
 
 <entry id="mksrf_edges" type="real" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Southern edge of the regional grid
 </entry>
 
 <entry id="mksrf_edgee" type="real" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Eastern edge of the regional grid
 </entry>
 
 <entry id="mksrf_edgew" type="real" category="mkgriddata"
-       group="clmexp" valid_values="" >
+       group="elmexp" valid_values="" >
 Western edge of the regional grid
 </entry>
 
@@ -984,7 +984,7 @@ Western edge of the regional grid
 <!-- mkghg       -->
 <!--             -->
 <entry id="mkghg_bndtvghg" type="char*256" category="tools"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Historical greenhouse gas concentrations from CAM, only used
 by getco2_historical.ncl
 </entry>
@@ -993,7 +993,7 @@ by getco2_historical.ncl
 <!-- files needed for tools/ncl_scripts                -->
 <!--                                                   -->
 <entry id="faerdep" type="char*256"  category="tools" 
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Aerosol deposition file name (only used for aerdepregrid.ncl)
 </entry>
 
@@ -1221,7 +1221,7 @@ Datm logfile name
 <!-- ========================================================================================  -->
 
 <entry id="map" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 Mapping file to go from one resolution/land-mask to another resolution/land-mask
 </entry>
 

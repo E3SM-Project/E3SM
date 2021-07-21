@@ -364,7 +364,7 @@ sub trim($)
    my @ncfiles;
    my @lfiles;
    my @tsfiles;
-   my $cfile = "clm.input_data_files";
+   my $cfile = "eam.input_data_files";
    if ( -f "$cfile" ) {
       `/bin/mv -f $cfile ${cfile}.previous`;
    }
@@ -394,7 +394,7 @@ EOF
       } else {
 	  $queryopts = "-res $res -csmdata $CSMDATA -silent -justvalue";
       }
-      $queryfilopts = "$queryopts -onlyfiles -phys clm4_5 ";
+      $queryfilopts = "$queryopts -onlyfiles ";
       my $mkcrop = ",crop='off'";
       my $setnumpft = "";
       if ( defined($opts{'crop'}) ) {
@@ -418,7 +418,7 @@ EOF
          $merge_gis = "on";
       }
       my $mopts  = "$queryopts -namelist default_settings $usrnam";
-      my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist clmexp $usrnam";
+      my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist elmexp $usrnam";
       foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
 		        "gdp", "peat","abm", "topostats" , "vic", "ch4", 
@@ -434,8 +434,9 @@ EOF
 	 if ( $opts{'hgrid'} eq "usrspec" ) {
 	     $map{$typ} = $opts{'usr_mapdir'}."/map_${hgrid}_${lmask}_to_${res}_nomask_aave_da_c${mapdate}\.nc";
 	 } else {
-	     $map{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts -namelist clmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
+	     $map{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts -namelist elmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
 	 }	     
+     print "type: ${typ}\n";
          $map{$typ} = trim($map{$typ});
          if ( $map{$typ} !~ /[^ ]+/ ) {
             die "ERROR: could NOT find a mapping file for this resolution: $res and type: $typ at $hgrid and $lmask.\n";
@@ -446,7 +447,7 @@ EOF
          $datfil{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $mkopts -options hgrid=$hgrid,lmask=$lmask,mergeGIS=$merge_gis$mkcrop -var $filnm`;
          $datfil{$typ} = trim($datfil{$typ});
          if ( $datfil{$typ} !~ /[^ ]+/ ) {
-            die "ERROR: could NOT find a $filnm data file for this resolution: $hgrid and type: $typ and $lmask.\n";
+            die "ERROR: could NOT find a $filnm data file for this resolution: $hgrid and type: $typ and $lmask.";
          }
          if ( ! defined($opts{'allownofile'}) && ! -f $datfil{$typ} ) {
             die "ERROR: data file for this resolution does NOT exist ($datfil{$typ}).\n";
@@ -510,7 +511,7 @@ EOF
             $fh->open( ">$nl" ) or die "** can't open file: $nl\n";
 	    print "CSMDATA is $CSMDATA \n";
             print $fh <<"EOF";
-&clmexp
+&elmexp
  nglcec            = $glc_nec
  mksrf_fgrid       = '$griddata'
  map_fpft          = '$map{'veg'}'
@@ -577,7 +578,7 @@ EOF
             } else {
                $rcp_option = ",rcp=$rcp";
             }
-            my $cmd    = "$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop$rcp_option -var mksrf_fvegtyp -namelist clmexp";
+            my $cmd    = "$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop$rcp_option -var mksrf_fvegtyp -namelist elmexp";
             my $vegtyp = `$cmd`;
             chomp( $vegtyp );
             if ( $vegtyp eq "" ) {
@@ -606,7 +607,7 @@ EOF
 		    $fh_landuse_timeseries->open( ">$landuse_timeseries_text_file" ) or die "** can't open file: $landuse_timeseries_text_file\n";
 		    print "Writing out landuse_timeseries text file: $landuse_timeseries_text_file\n";
 		    for( my $yr = $sim_yr0; $yr <= $sim_yrn; $yr++ ) {
-                        my $vegtypyr = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=$yr,rcp=${rcp}${mkcrop} -var mksrf_fvegtyp -namelist clmexp`;
+                        my $vegtypyr = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=$yr,rcp=${rcp}${mkcrop} -var mksrf_fvegtyp -namelist elmexp`;
 			chomp( $vegtypyr );
 			printf $fh_landuse_timeseries $dynpft_format, $vegtypyr, $yr;
 			if ( $yr % 100 == 0 ) {
