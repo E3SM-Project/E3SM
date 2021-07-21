@@ -8,12 +8,11 @@ module WaterBudgetMod
   use elm_varctl        , only : iulog
   use atm2lndType       , only : atm2lnd_type
   use lnd2atmType       , only : lnd2atm_type
-  use WaterstateType    , only : waterstate_type
-  use WaterfluxType     , only : waterflux_type
   use spmdMod           , only : masterproc
   use SoilHydrologyType , only : soilhydrology_type
   use GridcellDataType  , only : grc_ws
   use ColumnDataType    , only : col_ws
+  use timeinfoMod
 
   implicit none
   save
@@ -35,8 +34,9 @@ module WaterBudgetMod
   integer, parameter :: f_evap = 3
   integer, parameter :: f_roff = 4
   integer, parameter :: f_ioff = 5
+  integer, parameter :: f_irri = 6
 
-  integer, parameter, public :: f_size = f_ioff
+  integer, parameter, public :: f_size = f_irri
 
   character(len=12),parameter :: fname(f_size) = &
        (/&
@@ -44,7 +44,8 @@ module WaterBudgetMod
        '        snow', &
        '        evap', &
        '      runoff', &
-       '      frzrof'  &
+       '      frzrof', &
+       '       irrig'  &
        /)
 
   !--- S for state ---
@@ -98,9 +99,9 @@ module WaterBudgetMod
   character(len=8),parameter :: pname(p_size) = &
        (/'    inst','   daily',' monthly','  annual','all_time' /)
 
-  real(r8) :: budg_fluxL(f_size, p_size)
-  real(r8) :: budg_fluxG(f_size, p_size)
-  real(r8) :: budg_fluxN(f_size, p_size)
+  real(r8) :: budg_fluxL(f_size, p_size) ! local sum, valid on all pes
+  real(r8) :: budg_fluxG(f_size, p_size) ! global sum, valid only on root pe
+  real(r8) :: budg_fluxN(f_size, p_size) ! counter, valid only oon root pe
 
   real(r8) :: budg_stateL(s_size, p_size)
   real(r8), public :: budg_stateG(s_size, p_size)
@@ -259,11 +260,11 @@ contains
        nf = s_w_errh2o  ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + budg_stateL(nf, p_inst)
     end do
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1._r8
-    
+
   end subroutine WaterBudget_Accum
 
   !-----------------------------------------------------------------------
-  subroutine WaterBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, waterstate_vars, &
+  subroutine WaterBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, &
        soilhydrology_vars)
     !
     ! !DESCRIPTION:
@@ -276,7 +277,6 @@ contains
     type(bounds_type)        , intent(in) :: bounds
     type(atm2lnd_type)       , intent(in) :: atm2lnd_vars
     type(lnd2atm_type)       , intent(in) :: lnd2atm_vars
-    type(waterstate_type)    , intent(in) :: waterstate_vars
     type(soilhydrology_type) , intent(in) :: soilhydrology_vars
 
     integer  :: g, nf, ip
@@ -285,6 +285,7 @@ contains
     associate(                                                             &
          forc_rain          => atm2lnd_vars%forc_rain_not_downscaled_grc , &
          forc_snow          => atm2lnd_vars%forc_snow_not_downscaled_grc , &
+         qflx_irrig_supply  => atm2lnd_vars%supply_grc                   , &
          qflx_evap_tot      => lnd2atm_vars%qflx_evap_tot_grc            , &
          qflx_rofice        => lnd2atm_vars%qflx_rofice_grc              , &
          qflx_rofliq_qsur   => lnd2atm_vars%qflx_rofliq_qsur_grc         , &
@@ -327,6 +328,7 @@ contains
               - qflx_rofliq_qsub(g)*af - qflx_rofliq_qsubp(g)*af &
               - qflx_rofliq_qgwl(g)*af
          nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
+         nf = f_irri; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + qflx_irrig_supply(g)*af
 
          nf = s_w_beg     ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + begwb_grc(g)          *af
          nf = s_w_end     ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + endwb_grc(g)          *af
@@ -372,7 +374,7 @@ contains
 
     budg_fluxL            = 0._r8 ! reset all fluxes
     budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
-    
+
   end subroutine WaterBudget_Sum0
 
   !-----------------------------------------------------------------------
@@ -662,29 +664,27 @@ contains
   end subroutine WaterBudget_Restart_Read
 
    !-----------------------------------------------------------------------
-  subroutine WaterBudget_SetBeginningMonthlyStates(bounds, waterstate_vars)
+  subroutine WaterBudget_SetBeginningMonthlyStates(bounds )
     !
     ! !DESCRIPTION:
     ! Set grid-level water states at the beginning of a month
-    !
     ! !USES:
     use subgridAveMod    , only : p2c, c2g
     use elm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
     use elm_varcon       , only : spval
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
+    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
-    type(waterstate_type)     , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: year_prev, month_prev, day_prev, sec_prev
     integer :: year_curr, month_curr, day_curr, sec_curr
     !-----------------------------------------------------------------------
 
-    associate(                                                       & 
+    associate(                                                       &
          begwb             =>    col_ws%begwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass begining of the time step
          tws_month_beg_grc =>    grc_ws%tws_month_beg   & ! Output: [real(r8) (:)   ]  grid-level water mass at the begining of a month
@@ -693,6 +693,7 @@ contains
       ! Get current and previous dates to determine if a new month started
       call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
+
 
       ! If at the beginning of a simulation, save grid-level TWS based on
       ! 'begwb' from the current time step
@@ -706,7 +707,7 @@ contains
       ! If multiple steps into a simulation and the last time step was the
       ! end of a month, save grid-level TWS based on 'endwb' from the last
       ! time step
-      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
+      if ( get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
          call c2g( bounds, &
               endwb(bounds%begc:bounds%endc), &
               tws_month_beg_grc(bounds%begg:bounds%endg), &
@@ -718,7 +719,7 @@ contains
   end subroutine WaterBudget_SetBeginningMonthlyStates
 
    !-----------------------------------------------------------------------
-  subroutine WaterBudget_SetEndingMonthlyStates(bounds, waterstate_vars)
+  subroutine WaterBudget_SetEndingMonthlyStates(bounds )
     !
     ! !DESCRIPTION:
     ! Set grid-level water states at the end of a month
@@ -726,29 +727,27 @@ contains
     ! !USES:
     use subgridAveMod    , only : c2g
     use elm_varcon       , only : spval
-    use clm_time_manager , only : get_curr_date, get_nstep
-    !
+    use clm_time_manager , only : get_curr_date, get_nstep 
+
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
-    type(waterstate_type)     , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: year, mon, day, sec
     !-----------------------------------------------------------------------
 
-    associate(                                                       & 
+    associate(                                                       &
          endwb             =>    col_ws%endwb         , & ! Output: [real(r8) (:)   ]  water mass at end of the time step
          tws_month_end_grc =>    grc_ws%tws_month_end   & ! Output: [real(r8) (:)   ]  grid-level water mass at the end of a month
          )
 
       ! If this is the end of a month, save grid-level total water storage
-      call get_curr_date(year, mon, day, sec);
-
+        call get_curr_date(year, mon, day, sec);
       if (get_nstep() >= 1 .and. (day == 1 .and. sec == 0)) then
          call c2g( bounds, &
               endwb(bounds%begc:bounds%endc), &
               tws_month_end_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+              c2l_scale_type= 'urbanf', l2g_scale_type='unity')
       else
          tws_month_end_grc(bounds%begg:bounds%endg) = spval
       end if

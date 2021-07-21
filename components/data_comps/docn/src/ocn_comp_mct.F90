@@ -74,9 +74,12 @@ CONTAINS
     integer(IN)       :: shrloglev                 ! original log level
     integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
-    logical           :: iop_mode = .false.        ! IOP mode
+    logical           :: scm_multcols = .false.    ! SCM functionality for multiple columns
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    integer(IN)       :: scm_nx = -1               ! number of points to use SCM
+                                                   ! functionality (x-direction)
+    integer(IN)       :: scm_ny = -1               ! same but for y-direction
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
@@ -92,8 +95,9 @@ CONTAINS
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
          single_column=scmMode, &
-         iop_mode=iop_mode, &
+         scm_multcols=scm_multcols, &
          scmlat=scmlat, scmlon=scmLon, &
+         scm_nx=scm_nx,scm_ny=scm_ny, &
          read_restart=read_restart)
 
     ! Determine instance information
@@ -156,7 +160,7 @@ CONTAINS
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, iop_mode, scmlat, scmlon)
+         scmMode, scm_multcols, scmlat, scmlon, scm_nx, scm_ny)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from docn

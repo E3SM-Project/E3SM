@@ -122,7 +122,7 @@ program convterr
     stop
   end if
   
-  terr = -999999
+  terr = -32768  ! integer*2
   landfrac = -99.0
   
   status = NF_INQ_VARID(ncid, 'landfract', landid)
@@ -185,7 +185,8 @@ program convterr
   WRITE(*,*) "consistency of lat-lon area",area_latlon-4.0*pi
   WRITE(*,*) "volume of topography about sea-level (raw usgs data)",vol
 
-  
+#undef LANDM_COSLAT
+#ifdef LANDM_COSLAT
   !
   !****************************************************
   !
@@ -259,7 +260,7 @@ program convterr
   if (status .ne. NF_NOERR) call handle_err(status)
   
   WRITE(*,*) 'done reading in LANDM_COSLAT data from netCDF file'
-  
+#endif  
   !
   ! bin data on cubed-sphere grid
   !
@@ -292,7 +293,7 @@ program convterr
   end if
   landm_coslat_cube = 0.0
   
-  
+
   allocate ( idx(im,jm),stat=alloc_error )
   if( alloc_error /= 0 ) then
     print*,'Program could not allocate space for idx'
@@ -346,7 +347,8 @@ program convterr
       idp(i,j) = ipanel
     END DO
   END DO
-  
+
+#ifdef LANDM_COSLAT
   dx = deg2rad*(lon_landm(2)-lon_landm(1))
   !
   ! lat_landm is not exactly equally spaced so a search is needed in the loop below
@@ -415,6 +417,7 @@ program convterr
       END DO
     END DO
   END DO
+#endif
   WRITE(*,*) "min/max value of terr_cube:", MINVAL(terr_cube), MAXVAL(terr_cube)
   WRITE(*,*) "min/max value of landm_coslat_cube:", MINVAL(landm_coslat_cube), MAXVAL(landm_coslat_cube)
   !

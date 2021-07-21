@@ -28,16 +28,17 @@ module controlMod
   use AllocationMod         , only: suplnitro
   use AllocationMod         , only: suplphos
   use ColumnDataType          , only: nfix_timeconst
-  use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
+  use NitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
   use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
   use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
   use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyfluxesMod         , only: perchroot, perchroot_alt
+  use CanopyStateType       , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-  use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
+  use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
+  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
@@ -228,6 +229,10 @@ contains
     namelist /elm_inparm/  &
          urban_hac, urban_traffic
 
+    ! Stress options
+    namelist /elm_inparm/ &
+         implicit_stress, atm_gustiness
+
     ! vertical soil mixing variables
     namelist /elm_inparm/  &
          som_adv_flux, max_depth_cryoturb
@@ -265,7 +270,7 @@ contains
     namelist /elm_inparm/ &
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_snicar_ad, use_vancouver, use_mexicocity, use_noio
+         use_snicar_ad, use_extrasnowlayers, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -432,6 +437,11 @@ contains
                   errMsg(__FILE__, __LINE__))
           end if
 
+          if ( use_var_soil_thick ) then
+             call endrun(msg=' ERROR: use_var_soil_thick and use_fates cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
        end if
 
 
@@ -442,11 +452,6 @@ contains
        
        if (use_crop .and. .not. create_crop_landunit) then
           call endrun(msg=' ERROR: prognostic crop Patches require create_crop_landunit=.true.'//&
-            errMsg(__FILE__, __LINE__))
-       end if
-       
-       if (.not. use_crop .and. irrigate) then
-          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
 
@@ -483,6 +488,18 @@ contains
             if (use_pflotran) then
                 use_elm_bgc = .false.
             end if
+       end if
+
+       if (use_pflotran) then
+          if (use_var_soil_thick) then
+             call endrun(msg='ERROR: use_var_soil_thick and use_pflotran cannot both be set to true.'//&
+                      errMsg(__FILE__, __LINE__))
+          end if
+       end if
+
+       if (use_betr .and. use_var_soil_thick ) then
+          call endrun(msg=' ERROR: use_var_soil_thick and use_betr cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
        end if
 
     endif   ! end of if-masterproc if-block
@@ -558,6 +575,11 @@ contains
     end if
 
     ! Consistency settings for vsfm settings
+    if (use_vsfm .and. use_var_soil_thick) then
+       call endrun(msg=' ERROR:: use_vsfm and use_var_soil_thick cannot both be set to true.'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
     if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
         vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
@@ -632,6 +654,7 @@ contains
     call mpi_bcast (use_lch4, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vertsoilc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_extrasnowlayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -764,6 +787,8 @@ contains
     ! physics variables
     call mpi_bcast (urban_hac, len(urban_hac), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (atm_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nsegspc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (subgridflag , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (wrtdia, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -896,6 +921,7 @@ contains
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
+    write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
@@ -1040,6 +1066,8 @@ contains
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
+    write(iulog,*) '   implicit_stress   = ', implicit_stress
+    write(iulog,*) '   atm_gustiness   = ', atm_gustiness
     write(iulog,*) '   more vertical layers = ', more_vertlayers
     if (nsrest == nsrContinue) then
        write(iulog,*) 'restart warning:'

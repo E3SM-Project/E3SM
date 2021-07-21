@@ -178,6 +178,13 @@
     </desc>
   </entry>
 
+  <entry id="CASE_HASH">
+    <type>char</type>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>Unique identifier for case</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- definitions runtimes -->
   <!-- ===================================================================== -->
@@ -1151,13 +1158,29 @@
     <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="IOP_MODE">
+  <entry id="PTS_MULTCOLS_MODE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>Propogate a single point to the global grid  - DO NOT EDIT (for experts only)</desc>
+    <desc>Use a single point of the global grid but propogate that point to multiple columns  - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="PTS_NX">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>number of cells for single point mode when operating on multiple columns in i direction</desc>
+  </entry>
+
+  <entry id="PTS_NY">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>number of cells for single point mode when operating on multiple columns in j directions</desc>
   </entry>
 
   <entry id="PTS_MODE">

@@ -172,7 +172,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
                               phis, zm, zi, calday, &
-                              tfld, pmid, pdel, pint,  &
+                              tfld, pmid, pdel, pdeldry, pint,  &
                               cldw, troplev, &
                               ncldwtr, ufld, vfld,  &
                               delt, ps, xactive_prates, &
@@ -259,6 +259,7 @@ contains
     real(r8),       intent(in)    :: tfld(pcols,pver)               ! midpoint temperature (K)
     real(r8),       intent(in)    :: pmid(pcols,pver)               ! midpoint pressures (Pa)
     real(r8),       intent(in)    :: pdel(pcols,pver)               ! pressure delta about midpoints (Pa)
+    real(r8),       intent(in)    :: pdeldry(pcols,pver)            ! dry pressure delta about midpoints (Pa)
     real(r8),       intent(in)    :: ufld(pcols,pver)               ! zonal velocity (m/s)
     real(r8),       intent(in)    :: vfld(pcols,pver)               ! meridional velocity (m/s)
     real(r8),       intent(in)    :: cldw(pcols,pver)               ! cloud water (kg/kg)
@@ -936,7 +937,7 @@ contains
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
-                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pbuf  )
+                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol)  )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk )
     call t_stopf('chemdr_diags')
