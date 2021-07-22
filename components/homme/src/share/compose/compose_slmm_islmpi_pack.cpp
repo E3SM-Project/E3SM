@@ -222,7 +222,7 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
   const Int start = 0, end = cm.mylid_with_comm_h.n();
 #else
   const int tid = get_tid();
-  const Int
+  ConstExceptGnu Int
     start = cm.mylid_with_comm_tid_ptr_h(tid),
     end = cm.mylid_with_comm_tid_ptr_h(tid+1);
 #endif
@@ -237,7 +237,7 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
       });
   }
   {
-    const Int np2 = cm.np2, nlev = cm.nlev, qsize = cm.qsize;
+    ConstExceptGnu Int np2 = cm.np2, nlev = cm.nlev, qsize = cm.qsize;
     const auto& ed_d = cm.ed_d;
     const auto& mylid_with_comm_d = cm.mylid_with_comm_d;
     const auto& sendbuf = cm.sendbuf;

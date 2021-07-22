@@ -306,7 +306,7 @@ void calc_approx_nearest_point_on_arc (
 template <typename ES> SLMM_KF
 void calc (const LocalMesh<ES>& m, Real* v) {
   using geo = siqk::SphereGeometry;
-  const Int nedge = m.perimp.size();
+  ConstExceptGnu Int nedge = m.perimp.size();
   const bool sphere = m.is_sphere();
   const auto canpoa = [&] (const Int& ie, Real* vn) {
     calc_approx_nearest_point_on_arc(slice(m.p, m.perimp(ie)),

@@ -7,6 +7,14 @@
 
 namespace Kokkos {
 
+#ifndef ConstExceptGnu
+# if defined KOKKOS_COMPILER_GNU
+#  define ConstExceptGnu
+# else
+#  define ConstExceptGnu const
+# endif
+#endif
+
 template <typename View>
 using Const = typename View::const_type;
 
