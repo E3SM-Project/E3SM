@@ -868,6 +868,7 @@ contains
     real(r8) :: relative_error
     real(r8), parameter :: error_tol = 0.01_r8
     real(r8), parameter :: relative_error_tol = 1.e-10_r8 ! [%]
+    real(r8), parameter :: error_tol_orig = 1.0e-8_r8
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -926,7 +927,11 @@ contains
 
     relative_error = abs(time_integrated_flux - state_net_change)/(budg_stateG(s_totc_end, ip)*unit_conversion) * 100._r8
 
-    if (relative_error > relative_error_tol) then
+    !if (relative_error > relative_error_tol) then
+
+    ! The error tolerance is 1.e-8 (kg/m2) in EcosystemBalanceCheckMod.F90,
+    ! It's better to be consistent. Note: 1.e-8*unit_conversion is ~0.79.
+    if (abs(time_integrated_flux - state_net_change) > error_tol_orig*unit_conversion) then
        write(iulog,*)'time integrated flux = ',time_integrated_flux
        write(iulog,*)'net change in state  = ',state_net_change
        write(iulog,*)'current state        = ',budg_stateG(s_totc_end, ip)
