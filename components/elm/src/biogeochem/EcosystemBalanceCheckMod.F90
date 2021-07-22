@@ -954,7 +954,11 @@ contains
             grc_coutputs(g) = grc_coutputs(g) + grc_som_c_yield(g)
          end if
 
-         grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
+         ! To be consistent with CNPBudgetMod.F90: L876-879, it shall include 'grc_errcb' from
+         ! after calling 'EndGridCBalanceAfterDynSubgridDriver()'.
+         !grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
+         grc_errcb(g) = grc_errcb(g) + &
+            (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
          if (grc_errcb(g) > error_tol .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g

@@ -857,7 +857,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: f, s, s_beg, s_end ! data array indicies
     real(r8) :: time_integrated_flux, state_net_change
-    real(r8), parameter :: error_tol = 0.01_r8
+    real(r8), parameter :: error_tol = 0.01_r8, error_tol_orig = 1.0e-8_r8
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -914,7 +914,10 @@ contains
     state_net_change = (budg_stateG(s_totc_end, ip) - budg_stateG(s_totc_beg, ip))*unit_conversion + &
          budg_stateG(s_c_error,ip) *unit_conversion
 
-    if (abs(time_integrated_flux - state_net_change) > error_tol) then
+    ! The error tolerance is 1.e-8 (kg/m2) in EcosystemBalanceCheckMod.F90,
+    ! It's better to be consistent. Note: 1.e-8*unit_conversion is ~0.79.
+    !if (abs(time_integrated_flux - state_net_change) > error_tol) then
+    if (abs(time_integrated_flux - state_net_change) > error_tol_orig*unit_conversion) then
        write(iulog,*)'time integrated flux = ',time_integrated_flux
        write(iulog,*)'net change in state  = ',state_net_change
        write(iulog,*)'error                = ',abs(time_integrated_flux - state_net_change)
