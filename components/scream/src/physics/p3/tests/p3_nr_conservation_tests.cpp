@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -17,12 +18,14 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     NrConservationData f90_data[max_pack_size];
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that

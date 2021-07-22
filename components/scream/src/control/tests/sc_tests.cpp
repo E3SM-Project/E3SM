@@ -1,4 +1,5 @@
 #include "share/grid/point_grid.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 #include "control/surface_coupling.hpp"
 
 #include <ekat/util/ekat_test_utils.hpp>
@@ -22,7 +23,6 @@ TEST_CASE ("surface_coupling")
   using FL = FieldLayout;
   using FID = FieldIdentifier;
   using RPDF = std::uniform_real_distribution<Real>;
-  using rngAlg = std::mt19937_64;
 
   // Some constants
   constexpr int ncols = 4;
@@ -33,13 +33,7 @@ TEST_CASE ("surface_coupling")
   ekat::Comm comm (MPI_COMM_WORLD);
 
   // The random numbers generator
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  if (comm.am_i_root()) {
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  }
-  rngAlg engine(seed);
+  auto engine = setup_random_test(&comm);
   RPDF pdf(0.0,1.0);
 
   // Create a grid

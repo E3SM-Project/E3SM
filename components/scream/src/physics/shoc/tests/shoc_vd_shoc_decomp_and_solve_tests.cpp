@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -17,6 +18,8 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     VdShocDecompandSolveData f90_data[] = {
       // shcol, nlev, nlevi, dtime, n_rhs
       VdShocDecompandSolveData(10, 71, 72, 5, 19),
@@ -31,7 +34,7 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve {
     // after results of decomp routine.
     for (Int i = 0; i < num_runs; ++i) {
       VdShocDecompandSolveData& d_f90 = f90_data[i];
-      d_f90.randomize();
+      d_f90.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -316,6 +317,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocMainData f90_data[] = {
       // shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
       ShocMainData(12, 72, 73,  5, 5, 15, 72, 0),
@@ -327,7 +330,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Generate random input data
     int count = 0;
     for (auto& d : f90_data) {
-      d.randomize({{d.presi, {700e2,1000e2}},
+      d.randomize(engine, {{d.presi, {700e2,1000e2}},
                    {d.tkh, {3,20}},
                    {d.wthl_sfc, {-1,1}},
                    {d.thetal, {900, 1000}}});

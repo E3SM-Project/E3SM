@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -27,11 +28,13 @@ static void run_phys()
 
 static void run_bfb()
 {
+  auto engine = setup_random_test();
+
   // Generate n test structs, each populated with random data (values within
   // [0,1]) by the default constructor.
   BackToCellAverageData back_to_cell_average_data[Spack::n];
   for (Int i = 0; i < Spack::n; ++i) {
-    back_to_cell_average_data[i].randomize();
+    back_to_cell_average_data[i].randomize(engine);
   }
 
   // Sync to device.

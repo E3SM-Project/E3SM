@@ -5,6 +5,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -395,6 +396,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocAssumedPdfData SDS_f90[] = {
       //              shcol, nlev, nlevi
       ShocAssumedPdfData(10, 71, 72),
@@ -405,7 +408,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize({ {d.thetal, {500, 700}} });
+      d.randomize(engine, { {d.thetal, {500, 700}} });
 
       // Generate grid as decreasing set of points.
       // Allows interpolated values to stay withing

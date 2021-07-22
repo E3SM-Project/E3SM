@@ -5,6 +5,7 @@
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -163,6 +164,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocDiagObklenData SDS_f90[] = {
       //             shcol
       ShocDiagObklenData(12),
@@ -173,7 +176,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

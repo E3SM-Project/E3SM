@@ -286,45 +286,44 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
-void BackToCellAverageData::randomize()
+void BackToCellAverageData::randomize(std::mt19937_64& engine)
 {
   // Populate the struct with numbers between 0 and 1.
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
-  cld_frac_l = data_dist(generator);
-  cld_frac_r = data_dist(generator);
-  cld_frac_i = data_dist(generator);
-  qc2qr_accret_tend = data_dist(generator);
-  qr2qv_evap_tend = data_dist(generator);
-  qc2qr_autoconv_tend = data_dist(generator);
-  nc_accret_tend = data_dist(generator);
-  nc_selfcollect_tend = data_dist(generator);
-  nc2nr_autoconv_tend = data_dist(generator);
-  nr_selfcollect_tend = data_dist(generator);
-  nr_evap_tend = data_dist(generator);
-  ncautr = data_dist(generator);
-  qcnuc = data_dist(generator);
-  nc_nuceat_tend = data_dist(generator);
-  qi2qv_sublim_tend = data_dist(generator);
-  nr_ice_shed_tend = data_dist(generator);
-  qc2qi_hetero_freeze_tend = data_dist(generator);
-  qr2qi_collect_tend = data_dist(generator);
-  qc2qr_ice_shed_tend = data_dist(generator);
-  qi2qr_melt_tend = data_dist(generator);
-  qc2qi_collect_tend = data_dist(generator);
-  qr2qi_immers_freeze_tend = data_dist(generator);
-  ni2nr_melt_tend = data_dist(generator);
-  nc_collect_tend = data_dist(generator);
-  ncshdc = data_dist(generator);
-  nc2ni_immers_freeze_tend = data_dist(generator);
-  nr_collect_tend = data_dist(generator);
-  ni_selfcollect_tend = data_dist(generator);
-  qv2qi_vapdep_tend = data_dist(generator);
-  nr2ni_immers_freeze_tend = data_dist(generator);
-  ni_sublim_tend = data_dist(generator);
-  qv2qi_nucleat_tend = data_dist(generator);
-  ni_nucleat_tend = data_dist(generator);
-  qc2qi_berg_tend = data_dist(generator);
+  cld_frac_l = data_dist(engine);
+  cld_frac_r = data_dist(engine);
+  cld_frac_i = data_dist(engine);
+  qc2qr_accret_tend = data_dist(engine);
+  qr2qv_evap_tend = data_dist(engine);
+  qc2qr_autoconv_tend = data_dist(engine);
+  nc_accret_tend = data_dist(engine);
+  nc_selfcollect_tend = data_dist(engine);
+  nc2nr_autoconv_tend = data_dist(engine);
+  nr_selfcollect_tend = data_dist(engine);
+  nr_evap_tend = data_dist(engine);
+  ncautr = data_dist(engine);
+  qcnuc = data_dist(engine);
+  nc_nuceat_tend = data_dist(engine);
+  qi2qv_sublim_tend = data_dist(engine);
+  nr_ice_shed_tend = data_dist(engine);
+  qc2qi_hetero_freeze_tend = data_dist(engine);
+  qr2qi_collect_tend = data_dist(engine);
+  qc2qr_ice_shed_tend = data_dist(engine);
+  qi2qr_melt_tend = data_dist(engine);
+  qc2qi_collect_tend = data_dist(engine);
+  qr2qi_immers_freeze_tend = data_dist(engine);
+  ni2nr_melt_tend = data_dist(engine);
+  nc_collect_tend = data_dist(engine);
+  ncshdc = data_dist(engine);
+  nc2ni_immers_freeze_tend = data_dist(engine);
+  nr_collect_tend = data_dist(engine);
+  ni_selfcollect_tend = data_dist(engine);
+  qv2qi_vapdep_tend = data_dist(engine);
+  nr2ni_immers_freeze_tend = data_dist(engine);
+  ni_sublim_tend = data_dist(engine);
+  qv2qi_nucleat_tend = data_dist(engine);
+  ni_nucleat_tend = data_dist(engine);
+  qc2qi_berg_tend = data_dist(engine);
 }
 
 void back_to_cell_average(BackToCellAverageData& d)
@@ -483,23 +482,22 @@ void ice_relaxation_timescale(IceRelaxationData& d)
                              &d.epsi, &d.epsi_tot);
 }
 
-void CalcLiqRelaxationData::randomize()
+void CalcLiqRelaxationData::randomize(std::mt19937_64& engine)
 {
   // Populate the struct's input fields with numbers between 0 and 1.
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
-  rho = data_dist(generator);
-  f1r = data_dist(generator);
-  f2r = data_dist(generator);
-  dv = data_dist(generator);
-  mu = data_dist(generator);
-  sc = data_dist(generator);
-  mu_r = data_dist(generator);
-  lamr = data_dist(generator);
-  cdistr = data_dist(generator);
-  cdist = data_dist(generator);
-  qr_incld = data_dist(generator);
-  qc_incld = data_dist(generator);
+  rho = data_dist(engine);
+  f1r = data_dist(engine);
+  f2r = data_dist(engine);
+  dv = data_dist(engine);
+  mu = data_dist(engine);
+  sc = data_dist(engine);
+  mu_r = data_dist(engine);
+  lamr = data_dist(engine);
+  cdistr = data_dist(engine);
+  cdist = data_dist(engine);
+  qr_incld = data_dist(engine);
+  qc_incld = data_dist(engine);
 }
 
 void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d)
@@ -863,68 +861,64 @@ void ni_conservation(NiConservationData& d)
   ni_conservation_c(d.ni, d.ni_nucleat_tend, d.nr2ni_immers_freeze_tend, d.nc2ni_immers_freeze_tend, d.dt, &d.ni2nr_melt_tend, &d.ni_sublim_tend, &d.ni_selfcollect_tend);
 }
 
-void IceSupersatConservationData::randomize()
+void IceSupersatConservationData::randomize(std::mt19937_64& engine)
 {
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
-  cld_frac_i         = data_dist(generator);
-  qv                 = data_dist(generator);
-  qv_sat_i           = data_dist(generator);
-  latent_heat_sublim = data_dist(generator);
-  t_atm              = data_dist(generator);
-  dt                 = data_dist(generator);
-  qi2qv_sublim_tend  = data_dist(generator);
-  qr2qv_evap_tend    = data_dist(generator);
-  qidep              = data_dist(generator);
-  qinuc              = data_dist(generator);
+  cld_frac_i         = data_dist(engine);
+  qv                 = data_dist(engine);
+  qv_sat_i           = data_dist(engine);
+  latent_heat_sublim = data_dist(engine);
+  t_atm              = data_dist(engine);
+  dt                 = data_dist(engine);
+  qi2qv_sublim_tend  = data_dist(engine);
+  qr2qv_evap_tend    = data_dist(engine);
+  qidep              = data_dist(engine);
+  qinuc              = data_dist(engine);
 }
 
-void NcConservationData::randomize()
+void NcConservationData::randomize(std::mt19937_64& engine)
 {
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
-  nc                       = data_dist(generator);
-  nc_selfcollect_tend      = data_dist(generator);
-  dt                       = data_dist(generator);
-  nc_collect_tend          = data_dist(generator);
-  nc2ni_immers_freeze_tend = data_dist(generator);
-  nc_accret_tend           = data_dist(generator);
-  nc2nr_autoconv_tend      = data_dist(generator);
+  nc                       = data_dist(engine);
+  nc_selfcollect_tend      = data_dist(engine);
+  dt                       = data_dist(engine);
+  nc_collect_tend          = data_dist(engine);
+  nc2ni_immers_freeze_tend = data_dist(engine);
+  nc_accret_tend           = data_dist(engine);
+  nc2nr_autoconv_tend      = data_dist(engine);
 }
 
-void NrConservationData::randomize()
+void NrConservationData::randomize(std::mt19937_64& engine)
 {
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
-  nr                       = data_dist(generator);
-  ni2nr_melt_tend          = data_dist(generator);
-  nr_ice_shed_tend         = data_dist(generator);
-  ncshdc                   = data_dist(generator);
-  nc2nr_autoconv_tend      = data_dist(generator);
-  dt                       = data_dist(generator);
-  nmltratio                = data_dist(generator);
-  nr_collect_tend          = data_dist(generator);
-  nr2ni_immers_freeze_tend = data_dist(generator);
-  nr_selfcollect_tend      = data_dist(generator);
-  nr_evap_tend             = data_dist(generator);
+  nr                       = data_dist(engine);
+  ni2nr_melt_tend          = data_dist(engine);
+  nr_ice_shed_tend         = data_dist(engine);
+  ncshdc                   = data_dist(engine);
+  nc2nr_autoconv_tend      = data_dist(engine);
+  dt                       = data_dist(engine);
+  nmltratio                = data_dist(engine);
+  nr_collect_tend          = data_dist(engine);
+  nr2ni_immers_freeze_tend = data_dist(engine);
+  nr_selfcollect_tend      = data_dist(engine);
+  nr_evap_tend             = data_dist(engine);
 }
 
-void NiConservationData::randomize()
+void NiConservationData::randomize(std::mt19937_64& engine)
 {
-  std::default_random_engine generator;
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
-  ni                       = data_dist(generator);
-  ni_nucleat_tend          = data_dist(generator);
-  nr2ni_immers_freeze_tend = data_dist(generator);
-  nc2ni_immers_freeze_tend = data_dist(generator);
-  dt                       = data_dist(generator);
-  ni2nr_melt_tend          = data_dist(generator);
-  ni_sublim_tend           = data_dist(generator);
-  ni_selfcollect_tend      = data_dist(generator);
+  ni                       = data_dist(engine);
+  ni_nucleat_tend          = data_dist(engine);
+  nr2ni_immers_freeze_tend = data_dist(engine);
+  nc2ni_immers_freeze_tend = data_dist(engine);
+  dt                       = data_dist(engine);
+  ni2nr_melt_tend          = data_dist(engine);
+  ni_sublim_tend           = data_dist(engine);
+  ni_selfcollect_tend      = data_dist(engine);
 }
 // end _c impls
 
