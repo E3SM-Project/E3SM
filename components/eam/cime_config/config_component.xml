@@ -218,8 +218,8 @@
     <desc compset="_EAM%SMA7">EAM trop_strat_mam7 chemistry:</desc>
     <desc compset="_EAM%SSOA">EAM trop_strat_soa chemistry: </desc>
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
-    <desc compset="AR95_EAM%*SCAM">stand-alone single column EAM ARM95 IOP test case:</desc>
-    <desc compset="AR97_EAM%*SCAM">stand-alone single column EAM ARM97 IOP test case:</desc>
+    <desc compset="AR95_EAM%">stand-alone single column EAM ARM95 IOP test case:</desc>
+    <desc compset="AR97_EAM%">stand-alone single column EAM ARM97 IOP test case:</desc>
     <desc compset="RICO_EAM%">stand-alone single column RICO IOP test case:</desc>
     <desc compset="GEOS_EAM%([^W]|W[^C])" >EAM winds and temperature driven by GEOS5 meteorology:</desc>
     <desc compset="GEOS_EAM%WC" >EAM WACCM winds and temperature nudged toward GEOS5 meteorology each time step:</desc>
@@ -247,6 +247,7 @@
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%MMF*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="%MMF[12OX]*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/mmf-scm</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
