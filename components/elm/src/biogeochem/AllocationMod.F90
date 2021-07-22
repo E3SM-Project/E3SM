@@ -3602,7 +3602,7 @@ contains
           if (potential_immob_p_vr(j) > 0.0_r8) then
              fpi_p_vr(j) = actual_immob_p_vr(j) / potential_immob_p_vr(j)
           else
-             fpi_p_vr(j) = 1.0_r8
+             fpi_p_vr(j) = 0.0_r8
           end if
 
           sminp_to_plant_vr(j) = max( 0._r8,(solutionp_vr(j)/dt) - actual_immob_p_vr(j) ) 
