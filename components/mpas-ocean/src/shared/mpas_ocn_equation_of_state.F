@@ -183,6 +183,14 @@ contains
 
       case (ocnEqStateTypeLinear)
 
+#ifdef MPAS_OPENACC
+      if (displacement_type == 'surfaceDisplaced') then
+         !$acc enter data copyin(tracersSurfaceValue)
+      else
+         !$acc enter data copyin(activeTracers)
+      endif
+#endif
+
          if (present(thermalExpansionCoeff) .or. &
              present(salineContractionCoeff)) then
             call ocn_equation_of_state_linear_density(nVertLevels,  &
@@ -196,6 +204,20 @@ contains
                      indexT, indexS, activeTracers, density, err,  &
                      tracersSurfaceValue)
          endif
+
+#ifdef MPAS_OPENACC
+      !$acc update host(density)
+      if (present(thermalExpansionCoeff) .or. &
+          present(salineContractionCoeff)) then
+         !$acc update host(thermalExpansionCoeff,  &
+         !$acc&            salineContractionCoeff)
+      endif
+      if (displacement_type == 'surfaceDisplaced') then
+         !$acc exit data delete(tracersSurfaceValue)
+      else
+         !$acc exit data delete(activeTracers)
+      endif
+#endif
 
       case (ocnEqStateTypeJM)
 
