@@ -195,6 +195,9 @@ flags should be captured within MPAS CMake files.
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
   </CPPDEFS>
+  <CPPDEFS>
+    <append DEBUG="TRUE"> -DYAKL_DEBUG </append>
+  </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
     <base> -fdefault-real-8 </base>
