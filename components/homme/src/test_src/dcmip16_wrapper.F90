@@ -446,11 +446,14 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: pbl_type, prec_type, qi
   integer, parameter :: test = 1
+  logical :: toy_chemistry_on
 
   if (case_planar_bubble) then
+    toy_chemistry_on = .false.
     prec_type = bubble_prec_type
-    if (qsize<3) call abortmp('ERROR: moist bubble test requires qsize=3')
+    if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
   else
+    toy_chemistry_on = .true.
     prec_type = dcmip16_prec_type
   endif
 
@@ -476,7 +479,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qi=1;  qv  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=2;  qc  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=3;  qr  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    if (.not. case_planar_bubble) then
+    if (toy_chemistry_on) then
       qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
       qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     endif
@@ -525,7 +528,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qr(i,j,:) = qr_c(nlev:1:-1)
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
-      if (.not. case_planar_bubble ) then 
+      if (toy_chemistry_on) then 
         lon = elem(ie)%spherep(i,j)%lon
         lat = elem(ie)%spherep(i,j)%lat
 
@@ -559,7 +562,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
 
 
-    if (.not. case_planar_bubble ) then 
+    if (toy_chemistry_on) then 
     qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
     qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
     endif
