@@ -26,6 +26,8 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
       d.randomize(engine);
+      d.dt = f90_data[0].dt; // hold dt fixed, it is not packed data
+      d.nmltratio = f90_data[0].nmltratio; // hold nmltratio fixed, it is not packed data
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -58,7 +60,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
         nr_selfcollect_tend[s] = cxx_device(vs).nr_selfcollect_tend;
       }
 
-      Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, cxx_device(0).dt, cxx_device(0).nmltratio, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
+      Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, cxx_device(offset).dt, cxx_device(offset).nmltratio, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

@@ -26,6 +26,7 @@ struct UnitWrap::UnitTest<D>::TestNiConservation {
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
       d.randomize(engine);
+      d.dt = f90_data[0].dt; // hold dt fixed, it is not packed data
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -56,7 +57,7 @@ struct UnitWrap::UnitTest<D>::TestNiConservation {
         nr2ni_immers_freeze_tend[s] = cxx_device(vs).nr2ni_immers_freeze_tend;
       }
 
-      Functions::ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, cxx_device(0).dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend);
+      Functions::ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, cxx_device(offset).dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
