@@ -31,6 +31,7 @@ module ocn_vertical_remap
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_diagnostics
 
    use ppr_1d
 
@@ -80,7 +81,7 @@ module ocn_vertical_remap
 
       integer :: nCells, nEdges
       integer :: nLayers, nLevels, nVars, nDoFs, nTracers
-      integer :: iCell, jCell, iEdge, iTrac, k, kTop, kBot
+      integer :: cell1, cell2, iCell, jCell, iEdge, iTrac, k, kTop, kBot
 
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: statePool
@@ -91,8 +92,11 @@ module ocn_vertical_remap
       type(rcon_ends), dimension(:), allocatable :: bcUpper, bcLower
 
       real (kind=RKIND), dimension(:, :, :), allocatable :: dataNow, dataNew
-      real (kind=RKIND), dimension(:, :), allocatable :: heightCellNow, heightEdgeNow
-      real (kind=RKIND), dimension(:, :), allocatable :: heightCellNew, heightEdgeNew
+      real (kind=RKIND), dimension(:, :), allocatable :: &
+         layerThickEdge,               & ! layerThickness at edges (lagrangian grid)
+         layerThickEdgeNew,            & ! layerThickness at edges (new target grid)
+         heightCellNow, heightEdgeNow, & ! depth at layer interfaces (lagrangian grid)
+         heightCellNew, heightEdgeNew    ! depth at layer interfaces (new target grid)      
       
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
@@ -107,7 +111,6 @@ module ocn_vertical_remap
 
       ! Remapping currently only supports one block for the whole domain rather
       ! than sub-blocks
-      
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
@@ -125,41 +128,35 @@ module ocn_vertical_remap
       nCells = nCellsAll
       nEdges = nEdgesAll
 
-   !----------------------------------------------------------------------------
-   !- SETUP VERTICAL GRIDS:
-   !- heightCellNow, heightEdgeNow: depth at layer interfaces (lagrangian grid)
-   !- heightCellNew, heighyEdgeNew: depth at layer interfaces (new target grid)      
-
-   !- this should all go into a separate "regrid" routine
-   !- (eventually) this would handle regridding to "other" coordinates, rather
-   !- than just the z* approach here.
+      ! SETUP VERTICAL GRIDS:
 
       allocate(heightCellNow(nVertLevels + 1, nCells))
       allocate(heightCellNew(nVertLevels + 1, nCells))
       allocate(heightEdgeNow(nVertLevels + 1, nEdges))
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
+      allocate(layerThickEdge(nVertLevels, nEdges))
+      allocate(layerThickEdgeNew(nVertLevels, nEdges))
       
-   !- There's currently a silly issue in PPR: it assumes the "coordinates" for
-   !- the data being remapped increases with index. Here, we have the opposite 
-   !- (z becomes more -ve with k)... 
-   !- I'll make some updates to PPR to handle this, but for now, just flip the
-   !- signs to make PPR happy. This shouldn't have any actual impact.
+
+      ! There's currently a silly issue in PPR: it assumes the "coordinates" for
+      ! the data being remapped increases with index. Here, we have the opposite 
+      ! (z becomes more -ve with k)... 
+      ! I'll make some updates to PPR to handle this, but for now, just flip the
+      ! signs to make PPR happy. This shouldn't have any actual impact.
+
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          heightCellNow(:, iCell) = bottomDepth(iCell)
          heightCellNew(:, iCell) = bottomDepth(iCell)
 
-      !- reconstruct "now" heights
-
+         ! reconstruct "now" heights
          do k = maxLevelCell(iCell), minLevelCell(iCell), -1
             heightCellNow(k, iCell) = &
                heightCellNow(k + 1, iCell) - layerThickness(k, iCell)
          end do
 
-      !- reconstruct "new" heights
-      !- Assign new layerThicknesses
-
+         ! reconstruct "new" heights
          heightCellNew(minLevelCell(iCell), iCell) = heightCellNow(minLevelCell(iCell), iCell)
          do k = maxLevelCell(iCell), minLevelCell(iCell)+1, -1
             heightCellNew(k, iCell) = &
@@ -168,31 +165,45 @@ module ocn_vertical_remap
       end do
       !$omp end do
       !$omp end parallel
-      layerThickness = layerThicknessNew
+
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThicknessNew, layerThickEdgeNew)
 
       !$omp parallel
-      !$omp do schedule(runtime) private(k, iCell, jCell)
+      !$omp do schedule(runtime) private(k,kTop,kBot,cell1,cell2)
       do iEdge = 1, nEdges
-         iCell = cellsOnEdge(1, iEdge)
-         jCell = cellsOnEdge(2, iEdge)
 
-         heightEdgeNow(:, iEdge) = bottomDepth(iCell)
-         heightEdgeNew(:, iEdge) = bottomDepth(iCell)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
 
-      !- this is just a quick hack for the edge heights
-      !- really should use layerThicknessEdge here, but it's unclear if this has
-      !- been properly initiallised at this point...
-      !- layerThicknessEdge could involve upwinding, so need to be careful!
+         kTop = minLevelEdgeBot(iEdge)
+         kBot = maxLevelEdgeTop(iEdge)
 
-         do k = maxLevelEdgeTop(iEdge), minLevelEdgeBot(iEdge), -1
-            heightEdgeNow(k, iEdge) = &
-                           0.5_RKIND * (heightCellNow(k, iCell) + heightCellNow(k, jCell))
-            heightEdgeNew(k, iEdge) = &
-                           0.5_RKIND * (heightCellNew(k, iCell) + heightCellNew(k, jCell))
+         ! We only need to define the kBot+1 depth for one active cell
+         ! as the absolute kBot+1 depth has no effect on remapping
+         if (cell1 <= nCellsAll .and. maxLevelCell(cell1) > 0) then
+            heightEdgeNow(:, iEdge) = heightCellNow(kBot+1, cell1)
+            heightEdgeNew(:, iEdge) = heightCellNew(kBot+1, cell1)
+         elseif (cell2 <= nCellsAll .and. maxLevelCell(cell2) > 0) then
+            heightEdgeNow(:, iEdge) = heightCellNow(kBot+1, cell2)
+            heightEdgeNew(:, iEdge) = heightCellNew(kBot+1, cell2)
+         else
+            call mpas_log_write('No valid cell for edge remapping', MPAS_LOG_WARN)
+            heightEdgeNow(:,iEdge) = 0.0_RKIND
+            cycle
+         endif
+
+         do k = kBot, kTop, -1
+            heightEdgeNow(k, iEdge) = heightEdgeNow(k+1, iEdge) - layerThickEdge(k, iEdge)
+            heightEdgeNew(k, iEdge) = heightEdgeNew(k+1, iEdge) - layerThickEdgeNew(k, iEdge)
          end do
+
       end do
       !$omp end do
       !$omp end parallel
+
+      ! Assign new layerThicknesses
+      layerThickness = layerThicknessNew
 
       !----------------------------------------------------------------------------
       ! ACTUAL REMAPPING FROM HERE
@@ -391,14 +402,15 @@ module ocn_vertical_remap
          opts%cell_meth = pqm_method ! PPM method
          opts%edge_meth = p5e_method ! 3rd-order edge interp.
       endif
-      opts%cell_lims = mono_limit ! monotone slope limits TODO: consider config_monotonic
+      opts%cell_lims = mono_limit ! monotone slope limits TODO: consider
+onfig_monotonic
       ! TODO replace hardcoded bcon_loose with config option 
       !select case (config_vert_remap_bc_upper)
       !case ('extrapolate')
-      bc_upper = bcon_loose
+       bc_upper = bcon_loose
       !case ('dirichlet')
       !bc_upper = bcon_value
-      bc_lower = bcon_loose
+       bc_lower = bcon_loose
       !bc_lower = bcon_value
 
    end subroutine ocn_vertical_remap_init

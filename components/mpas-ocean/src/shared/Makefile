@@ -218,6 +218,8 @@ mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o
 
 mpas_ocn_vel_tidal_potential.o: mpas_ocn_diagnostics_variables.o
 
+mpas_ocn_vertical_remap.o: mpas_ocn_diagnostics.o mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o
+
 clean:
 	$(RM) *.o *.i *.mod *.f90
 
