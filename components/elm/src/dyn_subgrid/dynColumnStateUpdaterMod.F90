@@ -90,9 +90,9 @@ module dynColumnStateUpdaterMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use shr_log_mod          , only : errMsg => shr_log_errMsg
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils           , only : endrun
-  use elm_varctl           , only : iulog  
+  use elm_varctl           , only : iulog
   use elm_varcon           , only : namec, spval
   use decompMod            , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType           , only : col_pp
@@ -106,8 +106,19 @@ module dynColumnStateUpdaterMod
   ! !PUBLIC TYPES:
   public :: column_state_updater_type
 
-  type column_state_updater_type
-     private
+  public :: update_column_state_no_special_handling
+  ! Public routines
+  public :: set_old_column_weights   ! set weights before dyn subgrid updates
+  public :: set_new_column_weights   ! set weights after dyn subgrid updates
+  ! intermediate routine between the public routines and the real work routine
+  ! (update_column_state); this routine determines the fractional_areas to use in
+  ! update_column_state
+  private :: update_column_state_with_optional_fractions
+  ! do the work of updating a column state
+  private :: update_column_state
+
+  type :: column_state_updater_type
+
      real(r8), allocatable :: cwtgcell_old(:)  ! old column weights on the grid cell
      real(r8), allocatable :: cwtgcell_new(:)  ! new column weights on the grid cell
 
@@ -129,30 +140,21 @@ module dynColumnStateUpdaterMod
      logical, allocatable :: any_changes(:)
 
    contains
-     ! Public routines
-     procedure, public :: set_old_weights     ! set weights before dyn subgrid updates
-     procedure, public :: set_new_weights     ! set weights after dyn subgrid updates
+
 
      ! Various ways to update a column-level state variable based on changing column areas:
-     procedure, public :: update_column_state_no_special_handling
+     !procedure, public :: update_column_state_no_special_handling
      procedure, public :: update_column_state_fill_special_using_natveg
      procedure, public :: update_column_state_fill_using_fixed_values
      procedure, public :: update_column_state_fill_special_using_fixed_value
 
-     ! Private routines
 
-     ! intermediate routine between the public routines and the real work routine
-     ! (update_column_state); this routine determines the fractional_areas to use in
-     ! update_column_state
-     procedure, private :: update_column_state_with_optional_fractions
-
-     ! do the work of updating a column state
-     procedure, private :: update_column_state
   end type column_state_updater_type
 
   interface column_state_updater_type
      module procedure constructor  ! initialize a column_state_updater_type object
   end interface column_state_updater_type
+
 
   ! !PUBLIC VARIABLES:
   ! For update_column_state_fill_using_fixed_values, any landunit with
@@ -208,7 +210,7 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  subroutine set_old_weights(this, bounds)
+  subroutine set_old_column_weights(this, bounds)
     !
     ! !DESCRIPTION:
     ! Set subgrid weights before dyn subgrid updates
@@ -224,24 +226,28 @@ contains
 
     character(len=*), parameter :: subname = 'set_old_weights'
     !-----------------------------------------------------------------------
-
+    associate( &
+             active_col => col_pp%active ,&
+             natveg_template_col => this%natveg_template_col &
+               )
     do c = bounds%begc, bounds%endc
-       this%cwtgcell_old(c) = col_pp%wtgcell(c)
+      this%cwtgcell_old(c) = col_pp%wtgcell(c)
     end do
 
-    call template_col_from_natveg_array(bounds, col_pp%active(bounds%begc:bounds%endc), &
-         this%natveg_template_col(bounds%begc:bounds%endc))
+    call template_col_from_natveg_array(bounds, active_col(bounds%begc:bounds%endc), &
+           natveg_template_col(bounds%begc:bounds%endc))
+    end associate
 
-  end subroutine set_old_weights
+  end subroutine set_old_column_weights
 
   !-----------------------------------------------------------------------
-  subroutine set_new_weights(this, bounds, clump_index)
+  subroutine set_new_column_weights(this, bounds, clump_index)
     !
     ! !DESCRIPTION:
     ! Set subgrid weights after dyn subgrid updates
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     class(column_state_updater_type) , intent(inout) :: this
     type(bounds_type)                , intent(in) :: bounds
@@ -266,7 +272,7 @@ contains
        end if
     end do
 
-  end subroutine set_new_weights
+  end subroutine set_new_column_weights
 
   !-----------------------------------------------------------------------
   subroutine update_column_state_no_special_handling(this, bounds, clump_index, &
@@ -279,9 +285,9 @@ contains
     ! This method does no special handling of any columns.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(column_state_updater_type), intent(in) :: this
+    type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
 
     ! Index of clump on which we're currently operating. Note that this implies that this
@@ -313,12 +319,10 @@ contains
     character(len=*), parameter :: subname = 'update_column_state_no_special_handling'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(var) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
 
     ! Even if there's no work to be done, need to zero out adjustment, since it's
     ! intent(out), and caller may expect it to return in a reasonable state.
     if (present(adjustment)) then
-       SHR_ASSERT_ALL((ubound(adjustment) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
        adjustment(bounds%begc:bounds%endc) = 0._r8
     end if
 
@@ -332,7 +336,7 @@ contains
        ! explicit bounds not needed on any of these arguments - and specifying explicit
        ! bounds defeats some later bounds checking (for fractional_area_old and
        ! fractional_area_new)
-       call this%update_column_state_with_optional_fractions(&
+       call update_column_state_with_optional_fractions(this, &
             bounds = bounds, &
             vals_input = vals_input, &
             vals_input_valid = vals_input_valid, &
@@ -414,13 +418,10 @@ contains
     character(len=*), parameter :: subname = 'update_column_state_fill_special_using_natveg'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(var) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(non_conserved_mass_grc) == (/bounds%begg/)), errMsg(sourcefile, __LINE__))
 
     ! Even if there's no work to be done, need to zero out adjustment, since it's
     ! intent(out), and caller may expect it to return in a reasonable state.
     if (present(adjustment)) then
-       SHR_ASSERT_ALL((ubound(adjustment) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
        adjustment(bounds%begc:bounds%endc) = 0._r8
     end if
 
@@ -449,7 +450,7 @@ contains
        ! explicit bounds not needed on any of these arguments - and specifying explicit
        ! bounds defeats some later bounds checking (for fractional_area_old and
        ! fractional_area_new)
-       call this%update_column_state_with_optional_fractions(&
+       call update_column_state_with_optional_fractions(this,&
             bounds = bounds, &
             vals_input = vals_input, &
             vals_input_valid = vals_input_valid, &
@@ -534,7 +535,7 @@ contains
     real(r8), optional, intent(out) :: adjustment( bounds%begc: )
     !
     ! !LOCAL VARIABLES:
-    character(len=:), allocatable :: err_msg
+    !character(len=:), allocatable :: err_msg
     integer  :: c, l
     integer  :: ltype
     real(r8) :: my_fillval
@@ -542,18 +543,15 @@ contains
     logical  :: vals_input_valid(bounds%begc:bounds%endc)
     logical  :: has_prognostic_state(bounds%begc:bounds%endc)
 
-    character(len=*), parameter :: subname = 'update_column_state_fill_using_fixed_values'
+    !character(len=*), parameter :: subname = 'update_column_state_fill_using_fixed_values'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(var) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    err_msg = subname//': must provide values for all landunits'
-    SHR_ASSERT((size(landunit_values) == max_lunit), err_msg)
-    SHR_ASSERT_ALL((ubound(non_conserved_mass_grc) == (/bounds%begg/)), errMsg(sourcefile, __LINE__))
+    !err_msg = subname//': must provide values for all landunits'
+    !SHR_ASSERT((size(landunit_values) == max_lunit), err_msg)
 
     ! Even if there's no work to be done, need to zero out adjustment, since it's
     ! intent(out), and caller may expect it to return in a reasonable state.
     if (present(adjustment)) then
-       SHR_ASSERT_ALL((ubound(adjustment) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
        adjustment(bounds%begc:bounds%endc) = 0._r8
     end if
 
@@ -578,7 +576,7 @@ contains
        ! explicit bounds not needed on any of these arguments - and specifying explicit
        ! bounds defeats some later bounds checking (for fractional_area_old and
        ! fractional_area_new)
-       call this%update_column_state_with_optional_fractions( &
+       call update_column_state_with_optional_fractions( this,&
             bounds = bounds, &
             vals_input = vals_input, &
             vals_input_valid = vals_input_valid, &
@@ -692,7 +690,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(column_state_updater_type), intent(in) :: this
+    type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
 
     ! value used as input for each column, if that column is shrinking (can differ from
@@ -745,20 +743,18 @@ contains
     end if
 
     if (present(fractional_area_old)) then
-       SHR_ASSERT_ALL((ubound(fractional_area_old) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
        my_fractional_area_old(bounds%begc:bounds%endc) = fractional_area_old(bounds%begc:bounds%endc)
     else
        my_fractional_area_old(bounds%begc:bounds%endc) = 1._r8
     end if
 
     if (present(fractional_area_new)) then
-       SHR_ASSERT_ALL((ubound(fractional_area_new) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
        my_fractional_area_new(bounds%begc:bounds%endc) = fractional_area_new(bounds%begc:bounds%endc)
     else
        my_fractional_area_new(bounds%begc:bounds%endc) = 1._r8
     end if
 
-    call this%update_column_state(&
+    call update_column_state(this,&
          bounds = bounds, &
          vals_input = vals_input(bounds%begc:bounds%endc), &
          vals_input_valid = vals_input_valid(bounds%begc:bounds%endc), &
@@ -783,9 +779,9 @@ contains
     ! weights.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(column_state_updater_type), intent(in) :: this
+    type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
 
     ! value used as input for each column, if that column is shrinking (can differ from
@@ -847,25 +843,6 @@ contains
     ! value in a column before update
     real(r8) :: val_old
 
-    character(len=:), allocatable :: message
-
-    character(len=*), parameter :: subname = 'update_column_state'
-    !-----------------------------------------------------------------------
-
-    ! ------------------------------------------------------------------------
-    ! Error-checking on inputs
-    ! ------------------------------------------------------------------------
-
-    SHR_ASSERT_ALL((ubound(var) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(vals_input) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(has_prognostic_state) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(fractional_area_old) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(fractional_area_new) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(non_conserved_mass) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
-    if (present(adjustment)) then
-       SHR_ASSERT_ALL((ubound(adjustment) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    end if
-
     ! For the sake of conservation - including the calculation of non_conserved_mass - we
     ! assume that vals_input == var wherever has_prognostic_state is .true. We ensure that
     ! is the case here.
@@ -875,8 +852,6 @@ contains
        ! where has_prognostic_state is false, vals_input can be anything
        bad_vals_input = .false.
     end where
-    message = subname//': ERROR: where has_prognostic_state is true, vals_input must equal var'
-    SHR_ASSERT_ALL(.not. bad_vals_input, message)
 
     ! ------------------------------------------------------------------------
     ! Begin main work
@@ -890,8 +865,10 @@ contains
        g = col_pp%gridcell(c)
        if (this%area_gained_col(c) < 0._r8) then
           if (.not. vals_input_valid(c)) then
-             write(iulog,*) subname//' ERROR: shrinking column without valid input value'
+#ifndef _OPENACC
+             write(iulog,*) ' ERROR: shrinking column without valid input value'
              call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
+#endif
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost

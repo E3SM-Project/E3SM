@@ -50,12 +50,13 @@ end subroutine crm_history_register
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
 subroutine crm_history_init(species_class)
-   use phys_control,    only: phys_getopts
-   use physconst,       only: mwdry, cpair, spec_class_gas
-   use ppgrid,          only: pcols, pver, pverp
-   use constituents,    only: pcnst, cnst_name
-   use cam_history,     only: addfld, add_default, horiz_only
-   use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
+   use phys_control,     only: phys_getopts
+   use physconst,        only: mwdry, cpair, spec_class_gas
+   use ppgrid,           only: pcols, pver, pverp
+   use constituents,     only: pcnst, cnst_name
+   use cam_history,      only: addfld, add_default, horiz_only
+   use crmdims,          only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
+   use cloud_cover_diags,only: cloud_cover_diags_init
 #ifdef MODAL_AERO
    use cam_history,     only: fieldname_len
    use modal_aero_data, only: cnst_name_cw, lmassptr_amode, &
@@ -89,13 +90,13 @@ subroutine crm_history_init(species_class)
 
    character(len=12), dimension(4) :: ecpp_coord_i = (/'ilev        ','NCLASS_CL   ','ncls_ecpp_in','NCLASS_PR   '/)
    character(len=12), dimension(4) :: ecpp_coord_m = (/'lev         ','NCLASS_CL   ','ncls_ecpp_in','NCLASS_PR   '/)
-    
+
    !----------------------------------------------------------------------------
    ! Register available MMF output variables
-   !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
+   !----------------------------------------------------------------------------
    ! Instantaneous CRM grid variables
    call addfld('CRM_U    ',dims_crm_3D, 'I','m/s',     'CRM x-wind' )
    call addfld('CRM_V    ',dims_crm_3D, 'I','m/s',     'CRM y-wind' )
@@ -119,14 +120,9 @@ subroutine crm_history_init(species_class)
    call addfld('CRM_FLNS ',dims_crm_2D, 'A','unitless','net surface longwave fluxes at CRM grids')
    call addfld('CRM_FLNSC',dims_crm_2D, 'A','unitless','net surface clear-sky longwave fluxes at CRM grids')
    call addfld('CRM_TK   ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
-   call addfld('CRM_TKH  ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
-#ifdef MAML
-   call addfld('CRM_SHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc sensible heat flux')
-   call addfld('CRM_LHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc latent heat flux'  )
-   call addfld('CRM_SNOW ',dims_crm_2D, 'I', 'm/s',      'CRM Snow Rate'             )
-   call addfld('CRM_PCP  ',dims_crm_2D, 'I', 'm/s',      'CRM Precipitation Rate'    )
-#endif
+   call addfld('CRM_TKH  ',dims_crm_3D, 'A','m^2/s',   'Eddy conductivity/thermal diffusion from CRM')
 
+   !----------------------------------------------------------------------------
    ! Aerosol optical depth
    call addfld('CRM_AODVIS', dims_crm_2D,'A', 'unitless', 'Aerosol optical depth at 550nm in CRM grids', flag_xyfill=.true.)
    call addfld('CRM_AOD400', dims_crm_2D,'A', 'unitless', 'Aerosol optical depth at 400nm in CRM grids', flag_xyfill=.true.)
@@ -135,6 +131,7 @@ subroutine crm_history_init(species_class)
    call addfld('AOD400', horiz_only,'A', 'unitless', 'Aerosol optical depth at 400nm', flag_xyfill=.true.)
    call addfld('AOD700', horiz_only,'A', 'unitless', 'Aerosol optical depth at 700nm', flag_xyfill=.true.)
 
+   !----------------------------------------------------------------------------
    ! 2-moment microphysics variables
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call addfld('MMF_NC    ',(/'lev'/), 'A', '/kg',    'Cloud water dropet number from CRM')
@@ -185,9 +182,10 @@ subroutine crm_history_init(species_class)
       call addfld('CRM_WVAR',  dims_crm_3D,'A','m/s',  'vertical velocity variance from CRM')
    end if  ! MMF_microphysics_scheme .eq. 'm2005'
 
+   !----------------------------------------------------------------------------
+   ! ECPP output variables
 #ifdef ECPP
    if (use_ECPP) then
-      ! ECPP output variables
       call addfld('ABND    ',    ecpp_coord_i,'A','fraction','cloud fraction for each class for full time period at layer boundary')
       call addfld('ABND_TF ',    ecpp_coord_i,'A','fraction','cloud fraction for each class for end-portion of time period at layer boundary')
       call addfld('MASFBND ',    ecpp_coord_i,'A','kg/m2/s', 'sub-class vertical mass flux (kg/m2/s) at layer boundary')
@@ -211,21 +209,7 @@ subroutine crm_history_init(species_class)
    endif
 #endif /* ECPP */
 
-   call addfld('MU_CRM',(/'lev'/),'A','Pa/s','mass flux up from CRM')
-   call addfld('MD_CRM',(/'lev'/),'A','Pa/s','mass flux down from CRM')
-   call addfld('DU_CRM',(/'lev'/),'A','/s',  'detrainment from updraft from CRM')
-   call addfld('EU_CRM',(/'lev'/),'A','/s',  'entraiment rate from updraft')
-   call addfld('ED_CRM',(/'lev'/),'A','/s',  'entraiment rate from downdraft')
- 
-   do m = 1, pcnst 
-     if(cnst_name(m) == 'DMS') then 
-        call addfld('DMSCONV',   (/ 'lev' /), 'A', 'kg/kg/s',  'DMS tendency from ZM convection')
-     end if
-     if(cnst_name(m) == 'SO2') then 
-        call addfld('SO2CONV',   (/ 'lev' /), 'A', 'kg/kg/s',  'SO2 tendency from ZM convection')
-      end if
-   end do
- 
+   !----------------------------------------------------------------------------
    ! MMF variables on the GCM grid
    call addfld('PRES',       (/'lev'/), 'A','Pa',     'Pressure' )
    call addfld('DPRES',      (/'lev'/), 'A','Pa',     'Pressure thickness of layer' )
@@ -238,6 +222,11 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_MCDN',   (/'lev'/), 'A','kg/m2/s','Downdraft mass flux from CRM' )
    call addfld('MMF_MCUUP',  (/'lev'/), 'A','kg/m2/s','Unsaturated updraft mass flux from CRM' )
    call addfld('MMF_MCUDN',  (/'lev'/), 'A','kg/m2/s','Unsaturated downdraft mass flux from CRM' )
+   call addfld('MU_CRM',     (/'lev'/), 'A','Pa/s',   'mass flux up from CRM')
+   call addfld('MD_CRM',     (/'lev'/), 'A','Pa/s',   'mass flux down from CRM')
+   call addfld('DU_CRM',     (/'lev'/), 'A','/s',     'detrainment from updraft from CRM')
+   call addfld('EU_CRM',     (/'lev'/), 'A','/s',     'entraiment rate from updraft')
+   call addfld('ED_CRM',     (/'lev'/), 'A','/s',     'entraiment rate from downdraft')
    call addfld('MMF_QC',     (/'lev'/), 'A','kg/kg',  'Cloud water from CRM' )
    call addfld('MMF_QI',     (/'lev'/), 'A','kg/kg',  'Cloud ice from CRM' )
    call addfld('MMF_QS',     (/'lev'/), 'A','kg/kg',  'Snow from CRM' )
@@ -276,15 +265,11 @@ subroutine crm_history_init(species_class)
    call addfld('U_TEND_ESMT',(/'lev'/), 'A', 'm/s2 ','U tendency due to CRM (ESMT)' )
    call addfld('V_TEND_ESMT',(/'lev'/), 'A', 'm/s2 ','V tendency due to CRM (ESMT)' )
 #endif
-   ! mixing diagnostics for dropmixnuc in the GCM grid
-   call addfld('MMF_KVH     ',(/'ilev'/),'A','m2/s',  'Vertical diffusivity in dropmixnuc for MMF')
-   call addfld('MMF_LCLOUD  ',(/'lev'/), 'A',' ',     'Liquid cloud fraction')
-   call addfld('MMF_NDROPMIX',(/'lev'/), 'A','#/kg/s','Droplet number mixing')
-   call addfld('MMF_NDROPSRC',(/'lev'/), 'A','#/kg/s','Droplet number source')
-   call addfld('MMF_NDROPCOL',horiz_only,'A','#/m2',  'Column droplet number')
 
    call addfld('MMF_SUBCYCLE_FAC', horiz_only,'A',' ', 'CRM subcycle ratio: 1.0 = no subcycling' )
 
+   !----------------------------------------------------------------------------
+   ! MMF CRM variance transport
    call addfld('MMF_VT_T'     ,(/'lev'/), 'A',' ','CRM T Variance')
    call addfld('MMF_VT_Q'     ,(/'lev'/), 'A',' ','CRM Q Variance')
    call addfld('MMF_VT_TEND_T',(/'lev'/), 'A',' ','CRM T Variance Tendency')
@@ -293,8 +278,16 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_VT_QLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
 
    !----------------------------------------------------------------------------
-   ! add dropmixnuc tendencies for all modal aerosol species
+   ! mixing diagnostics for dropmixnuc in the GCM grid
+   call addfld('MMF_NDROPMIX   ',(/'lev'/), 'A','#/kg/s','Droplet number mixing')
+   call addfld('MMF_NDROPSRC   ',(/'lev'/), 'A','#/kg/s','Droplet number source')
+   call addfld('MMF_NDROPCOL   ',horiz_only,'A','#/m2',  'Column droplet number')
+   call addfld('MMF_NDROPLCLOUD',(/'lev'/), 'A',' ',     'Liquid cloud fraction')
+   call addfld('MMF_NDROPKVH   ',(/'ilev'/),'A','m2/s',  'Vertical diffusivity in dropmixnuc for MMF')
+   call addfld('MMF_NDROPWTKE  ',(/'lev'/), 'A',' ',     'Vertical velocity variance')
+
    !----------------------------------------------------------------------------
+   ! add dropmixnuc tendencies for all modal aerosol species
 #ifdef MODAL_AERO
    do m = 1, ntot_amode
       do lphase = 1, 2
@@ -322,7 +315,7 @@ subroutine crm_history_init(species_class)
                tmpname = cnst_name_cw(l)
             end if
 
-            fieldname = trim(tmpname) // '_mixnuc_mmf'
+            fieldname = 'MMF_' // trim(tmpname) // '_mixnuc1'
             long_name = trim(tmpname) // ' dropmixnuc mixnuc column tendency in the mmf one '
             call addfld( fieldname,  horiz_only, 'A', unit, long_name)
 
@@ -332,7 +325,7 @@ subroutine crm_history_init(species_class)
 
    do m = 1, pcnst
       if(species_class(m).eq.spec_class_gas) then
-         fieldname = trim(cnst_name(m)) // '_mixnuc_mmf'
+         fieldname = 'MMF_' // trim(cnst_name(m)) // '_mixnuc1'
          long_name = trim(cnst_name(m)) // ' dropmixnuc mixnuc column tendency in the mmf one '
          call addfld( fieldname,  horiz_only, 'A', unit, long_name)
       end if
@@ -341,7 +334,6 @@ subroutine crm_history_init(species_class)
 
    !----------------------------------------------------------------------------
    ! Set default MMF fields in monthly h0 files
-   !----------------------------------------------------------------------------
    call add_default('MMF_DT    ', 1, ' ')
    call add_default('MMF_DQ    ', 1, ' ')
    call add_default('MMF_DQC   ', 1, ' ')
@@ -370,7 +362,7 @@ subroutine crm_history_init(species_class)
    call add_default ('MMF_DU', 1, ' ')
    call add_default ('MMF_DV', 1, ' ')
 #endif
-   !----------------------------------------------------------------------------
+
    !----------------------------------------------------------------------------
 
 end subroutine crm_history_init
@@ -470,6 +462,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
       call outfld('CRM_QV  ',crm_state%qt-crm_output%qcl, pcols, lchnk )
    endif
 
+   !----------------------------------------------------------------------------
    ! CRM condensate and precipitation on CRM grid
    call outfld('CRM_QC  ',crm_output%qcl,         pcols, lchnk )
    call outfld('CRM_QI  ',crm_output%qci,         pcols, lchnk )
@@ -479,6 +472,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('CRM_TK ', crm_output%tk(:,:,:,:), pcols, lchnk )  
    call outfld('CRM_TKH', crm_output%tkh(:,:,:,:),pcols, lchnk ) 
 
+   !----------------------------------------------------------------------------
    ! CRM domain average condensate and precipitation
    call outfld('MMF_QC    ',crm_output%qc_mean, pcols ,lchnk )
    call outfld('MMF_QI    ',crm_output%qi_mean, pcols ,lchnk )
@@ -486,6 +480,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('MMF_QG    ',crm_output%qg_mean, pcols ,lchnk )
    call outfld('MMF_QR    ',crm_output%qr_mean, pcols ,lchnk )
 
+   !----------------------------------------------------------------------------
    ! CRM domain average fluxes
    call outfld('MMF_QTFLX ',crm_output%flux_qt,        pcols, lchnk )
    call outfld('MMF_UFLX  ',crm_output%flux_u,         pcols, lchnk )
@@ -515,6 +510,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
 
    call outfld('MMF_SUBCYCLE_FAC',crm_output%subcycle_factor  ,pcols,lchnk)
 
+   !----------------------------------------------------------------------------
    ! CRM mass flux
    call outfld('MMF_MC    ', crm_output%mctot,  pcols, lchnk )
    call outfld('MMF_MCUP  ', crm_output%mcup,   pcols, lchnk )
@@ -526,14 +522,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('EU_CRM  ', crm_output%eu_crm, pcols, lchnk )
    call outfld('DU_CRM  ', crm_output%du_crm, pcols, lchnk )
    call outfld('ED_CRM  ', crm_output%ed_crm, pcols, lchnk )
-
-#ifdef MAML
-   ! Lower boundary fluxes
-   call outfld('CRM_SHF ', cam_in%shf,         pcols, lchnk )
-   call outfld('CRM_LHF ', cam_in%lhf,         pcols, lchnk )
-   call outfld('CRM_SNOW', crm_output%crm_pcp, pcols, lchnk )
-   call outfld('CRM_PCP',  crm_output%crm_snw, pcols, lchnk )
-#endif
 
 #ifdef m2005
    if (MMF_microphysics_scheme .eq. 'm2005') then
@@ -580,7 +568,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
 
    !----------------------------------------------------------------------------
    ! Compute liquid water paths (for diagnostics only)
-   !----------------------------------------------------------------------------
    tgicewp(:ncol) = 0.
    tgliqwp(:ncol) = 0.
    do k = 1,pver
@@ -603,7 +590,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('ICLDIWP' ,cicewp,  pcols, lchnk)
 
    !----------------------------------------------------------------------------
-   !----------------------------------------------------------------------------
+   ! ECPP
 #ifdef ECPP
    if (use_ECPP) then
       call outfld('ACEN    ',      crm_ecpp_output%acen,             pcols, lchnk )
@@ -628,21 +615,21 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
       call outfld('PRAINCEN',      crm_ecpp_output%praincen,         pcols, lchnk )
    end if ! use_ECPP
 #endif /* ECPP */
+
    !----------------------------------------------------------------------------
    ! CRM momentum tendencies
-   !----------------------------------------------------------------------------
-
 #if defined( MMF_ESMT )
    call outfld('U_TEND_ESMT',crm_output%u_tend_esmt, pcols, lchnk )
    call outfld('V_TEND_ESMT',crm_output%v_tend_esmt, pcols, lchnk )
 #endif /* MMF_ESMT */
 
 #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
-   ! Make sure these tendencies are set (and rotated) in crm_physics_tend()
    call outfld('MMF_DU',ptend%u, pcols, lchnk )
    call outfld('MMF_DV',ptend%v, pcols, lchnk )
-#endif /* MMF_MOMENTUM_FEEDBACK */
+#endif /* MMF_MOMENTUM_FEEDBACK or MMF_ESMT */
 
+   !----------------------------------------------------------------------------
+   ! CRM variance transport tracer values and tendencies
    if (use_MMF_VT) then
       call cnst_get_ind( 'VT_T', idx_vt_t )
       call cnst_get_ind( 'VT_Q', idx_vt_q )
@@ -653,6 +640,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
       call outfld('MMF_VT_TLS',    crm_output%t_vt_ls,    pcols, lchnk )
       call outfld('MMF_VT_QLS',    crm_output%q_vt_ls,    pcols, lchnk )
    end if
+
+   !----------------------------------------------------------------------------
 
 end subroutine crm_history_out
 !---------------------------------------------------------------------------------------------------

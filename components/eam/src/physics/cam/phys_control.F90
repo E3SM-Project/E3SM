@@ -63,7 +63,6 @@ integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arith
 character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
 logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
-logical           :: use_MAML             = .false.    ! true => use Multiple Atmosphere and Multiple Land
 logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
 integer           :: MMF_VT_wn_max        = 0          ! if >0 then use filtered MMF variance transport
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
@@ -116,6 +115,8 @@ logical           :: do_tms
 logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
+logical           :: linearize_pbl_winds  = .false.
+logical           :: export_gustiness  = .false.
 logical, public, protected :: use_mass_borrower    = .false.     ! switch on tracer borrower, instead of using the QNEG3 clipping
 logical, public, protected :: use_qqflx_fixer      = .false.     ! switch on water vapor fixer to compensate changes in qflx
 logical, public, protected :: print_fixer_message  = .false.     ! switch on error message printout in log file
@@ -187,13 +188,14 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      MMF_microphysics_scheme, use_MMF, use_ECPP, use_MAML, &
+      MMF_microphysics_scheme, use_MMF, use_ECPP, &
       use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
+      linearize_pbl_winds, export_gustiness, &
       use_mass_borrower, do_aerocom_ind3, &
       ieflx_opt, &
       use_qqflx_fixer, & 
@@ -238,7 +240,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
    call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
-   call mpibcast(use_MAML,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
    call mpibcast(MMF_VT_wn_max,                   1 , mpiint,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
@@ -266,6 +267,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(print_fixer_message,             1 , mpilog,  0, mpicom)
    call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
+   call mpibcast(linearize_pbl_winds,             1 , mpilog,  0, mpicom)
+   call mpibcast(export_gustiness,                1 , mpilog,  0, mpicom)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
@@ -322,11 +325,11 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS') ) then
+              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK')) then
+   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. microp_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
       call endrun('phys_setopts: illegal value of microp_scheme')
    endif
@@ -444,10 +447,11 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
-                        use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, use_MAML_out, &
+                        use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
                         use_MMF_VT_out, MMF_VT_wn_max_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+                        linearize_pbl_winds_out, export_gustiness_out, &
                         do_aerocom_ind3_out,  &
                         use_mass_borrower_out, & 
                         use_qqflx_fixer_out, & 
@@ -478,7 +482,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
-   logical,           intent(out), optional :: use_MAML_out
    logical,           intent(out), optional :: use_MMF_VT_out
    integer,           intent(out), optional :: MMF_VT_wn_max_out
    logical,           intent(out), optional :: use_crm_accel_out
@@ -508,6 +511,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: use_qqflx_fixer_out
    logical,           intent(out), optional :: print_fixer_message_out
    logical,           intent(out), optional :: state_debug_checks_out
+   logical,           intent(out), optional :: linearize_pbl_winds_out
+   logical,           intent(out), optional :: export_gustiness_out
    logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
    logical,           intent(out), optional :: ssalt_tuning_out    
    logical,           intent(out), optional :: resus_fix_out       
@@ -551,7 +556,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
    if ( present(use_MMF_out             ) ) use_MMF_out              = use_MMF
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
-   if ( present(use_MAML_out            ) ) use_MAML_out             = use_MAML
    if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
    if ( present(MMF_VT_wn_max_out       ) ) MMF_VT_wn_max_out        = MMF_VT_wn_max
    
@@ -584,6 +588,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
+   if ( present(linearize_pbl_winds_out ) ) linearize_pbl_winds_out  = linearize_pbl_winds
+   if ( present(export_gustiness_out    ) ) export_gustiness_out     = export_gustiness
    if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   
    if ( present(resus_fix_out           ) ) resus_fix_out            = resus_fix      

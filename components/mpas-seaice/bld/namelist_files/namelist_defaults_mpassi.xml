@@ -395,13 +395,11 @@
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
-<config_use_high_frequency_coupling ice_grid="WC14to60E2r3">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="WCAtl12to45E2r4">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="SOwISC12to60E2r4">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="ECwISC30to60E2r1">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="EC30to60E2r2">false</config_use_high_frequency_coupling>
 <config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
-<config_boundary_layer_iteration_number ice_grid="WC14to60E2r3">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="WCAtl12to45E2r4">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="SOwISC12to60E2r4">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="ECwISC30to60E2r1">5</config_boundary_layer_iteration_number>
@@ -469,9 +467,10 @@
 <config_AM_conservationCheck_enable>false</config_AM_conservationCheck_enable>
 <config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
 <config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
-<config_AM_conservationCheck_compute_on_startup>true</config_AM_conservationCheck_compute_on_startup>
-<config_AM_conservationCheck_write_on_startup>true</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_compute_on_startup>false</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_write_on_startup>false</config_AM_conservationCheck_write_on_startup>
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
+<config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>

@@ -278,8 +278,7 @@ OPTIONS
      -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
-     -crm <model>       CRM model [sam | samxx]
-     -use_MAML          use multiple atmosphere and multiple land version of MMF
+     -crm <model>       CRM model [sam | samomp | samxx]
 EOF
 }
 
@@ -342,7 +341,6 @@ GetOptions(
     "use_MMF"                   => \$opts{'use_MMF'},
     "use_MMF_VT"                => \$opts{'use_MMF_VT'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
-    "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},
     "crm_ny=s"                  => \$opts{'crm_ny'},
     "crm_nz=s"                  => \$opts{'crm_nz'},
@@ -1219,8 +1217,13 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
+    # disable other scheme options
+    $pbl_pkg = 'none';
+    $microphys_pkg = 'none';
+    $cfg_ref->set('pbl', $pbl_pkg);
+    $cfg_ref->set('microphys', $microphys_pkg);
+    $cfg_ref->set('macrophys', 'none');
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
-    if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
     if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
@@ -1419,10 +1422,10 @@ else {
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
 
-	if ($clubb_do_adv) {
-	    $nadv += 9;
-            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
-	}
+        if ($clubb_do_adv) {
+            $nadv += 9;
+                if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
 
         # co2_cycle
         if ($co2_cycle) {
@@ -1434,11 +1437,26 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
-    }
+        # Advected tracers for MMF - same for 1-mom and 2-mom (1-mom ignores number concentration)
+        # - cloud liquid amount
+        # - cloud ice amount
+        # - cloud liquid number
+        # - cloud ice number
+        # - precipitating rain amount
+        # - precipitating snow amount
+        # - precipitating rain number
+        # - precipitating snow number
+        if (defined $opts{'use_MMF'}) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
+        }
 
-    if (defined $opts{'use_MMF_VT'}) {
-        $nadv += 2; # add tracers for CRM t and q variance transport
-        if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+        # MMF variance transport tracers
+        if (defined $opts{'use_MMF_VT'}) {
+            $nadv += 2; # add tracers for CRM t and q variance transport
+            if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+        }
+
     }
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
@@ -1721,7 +1739,6 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
-    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
     if (defined $opts{'crm_nx_rad'}) {
         $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad "
     } else {
@@ -1736,6 +1753,8 @@ if (defined $opts{'use_MMF'}) {
     my $crm = $cfg_ref->get('crm');
     if    ($crm eq 'sam') {
         $cfg_cppdefs .= " -DMMF_SAM "
+    } elsif ($crm eq 'samomp') {
+        $cfg_cppdefs .= " -DMMF_SAMOMP"
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     }
@@ -2523,6 +2542,31 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
           }
 
+        } elsif ($crm eq 'samomp') {
+          #####################################################
+          ## -crm samomp will GLOB directories for CMake
+          ######################################################
+          print $fh "$camsrcdir/eam/src/physics/crm/samomp\n";
+          #
+          # microphysics
+          my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+          if ($MMF_microphysics_scheme eq 'sam1mom') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_SAM1MOM\n";
+          } elsif ($MMF_microphysics_scheme eq 'm2005') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_M2005\n";
+          }
+
+          # turbulence closure
+          print $fh "$camsrcdir/eam/src/physics/crm/samomp/SGS_TKE\n";
+
+          # advection scheme
+          my $crm_adv = $cfg_ref->get('crm_adv');
+          if ($crm_adv eq 'UM5') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_UM5\n";
+          } else {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_MPDATA\n";
+          }
+                              
         } elsif ($crm eq 'samxx') {
           #####################################################
           ## -crm samxx will add_subdirectory in CMake rather

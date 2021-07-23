@@ -1,0 +1,68 @@
+	<nml_record name="tracer_forcing_TEMPLATEGRP">
+		<nml_option name="config_use_TEMPLATEGRP" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'TEMPLATEGRP' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_surface_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, surface restoring source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_interior_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, interior restoring source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_exponential_decay" type="logical" default_value=".false." units="unitless"
+			description="if true, exponential decay source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, idealAge forcing source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_ttd_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, transit time distribution forcing source is applied to tracers in 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_TEMPLATEGRP_surface_value" type="logical" default_value=".false." units="unitless"
+			description="if true, surface value is computed for 'TEMPLATEGRP' category"
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="TEMPLATEGRPPKG" description="This package includes variables required to include TEMPLATEGRP."/>
+		<package name="TEMPLATEGRPBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the TEMPLATEGRP group."/>
+		<package name="TEMPLATEGRPSurfaceRestoringsPKG" description="This package includes variables required to compute surface restoring on the TEMPLATEGRP group."/>
+		<package name="TEMPLATEGRPInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the TEMPLATEGRP group."/>
+		<package name="TEMPLATEGRPExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the TEMPLATEGRP group."/>
+		<package name="TEMPLATEGRPIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the TEMPLATEGRP group."/>
+		<package name="TEMPLATEGRPTTDPKG" description="This package includes variables required to compute transit-time distribution forcing on the TEMPLATEGRP group."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="TEMPLATEGRP" dimensions="nVertLevels nCells Time" type="real" packages="TEMPLATEGRPPKG" >
+				<!-- Add constituents of tracer group -->
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="TEMPLATEGRPTend" type="real" dimensions="nVertLevels nCells Time" packages="TEMPLATEGRPPKG">
+				<!-- Add constituents of tracer group -->
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="TEMPLATEGRPSurfaceFlux" type="real" dimensions="nCells Time" packages="TEMPLATEGRPPKG">
+				<!-- Add constituents of tracer group -->
+			</var_array>
+		</var_struct>
+	</var_struct>

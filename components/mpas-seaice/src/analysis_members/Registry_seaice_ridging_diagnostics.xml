@@ -1,0 +1,39 @@
+	<nml_record name="AM_ridgingDiagnostics">
+		<nml_option name="config_AM_ridgingDiagnostics_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member ridgingDiagnostics is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_ridgingDiagnostics_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_ridgingDiagnostics_output_stream" type="character" default_value="output" units="unitless"
+			description="Name of the stream that the ridgingDiagnostics analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_ridgingDiagnostics_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_ridgingDiagnostics_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="ridgingDiagnosticsAMPKG" description="This package includes variables required for the ridgingDiagnostics analysis member."/>
+	</packages>
+	<var_struct name="ridgingDiagnosticsAM" time_levs="1" packages="ridgingDiagnosticsAMPKG">
+		<var name="levelIceAreaAverage" type="real" dimensions="nCells Time" units="-"
+			description="level ice cell fraction"
+		/>
+		<var name="ridgedIceAreaAverage" type="real" dimensions="nCells Time" units="-"
+			description="ridged ice cell fraction"
+		/>
+		<var name="levelIceVolumeAverage" type="real" dimensions="nCells Time" units="-"
+			description="level ice cell volume"
+		/>
+		<var name="ridgedIceVolumeAverage" type="real" dimensions="nCells Time" units="-"
+			description="ridged ice cell volume"
+		/>
+	</var_struct>

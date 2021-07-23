@@ -44,11 +44,13 @@ Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 <entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic,default" value="">
 Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, default (eam).
 </entry>
-<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
+<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,none" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
+A value of "none" indicates no microphysics parameterization is used.
 </entry>
 <entry id="macrophys" valid_values="rk,park,clubb_sgs,none" value="">
 Macrophysics package: RK, Park, CLUBB_SGS.
+A value of "none" indicates no microphysics parameterization is used.
 </entry>
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
@@ -62,9 +64,12 @@ Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 <entry id="clubb_single_prec" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB single : 0 => double precision, 1 => single precision
 </entry>
-<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs" value="">
+<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,none" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.
+ A value of "none" indicates no PBL parameterization is used.
+ For the MMF a "none" is set by default, but a separate version of 
+ the HB scheme is used for stability.
 </entry>
 <entry id="rad" valid_values="rrtmg,rrtmgp" value="">
 Radiative transfer calculation: 
@@ -326,20 +331,17 @@ Switch to enable or disable MMF variance transport: 0=off, 1=on.
 <entry id="use_ECPP" valid_values="0,1" value="0">
 Switch to enable or disable ECPP in CAM: 0=off, 1=on.
 </entry>
-<entry id="use_MAML" valid_values="0,1" value="0">
-Switch to enable or disable MAML in CAM: 0=off, 1=on.
-</entry>
 <entry id="use_crm_cldfrac" valid_values="0,1" value="0">
 Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 0=off, 1=on.
 </entry>
 <entry id="MMF_microphysics_scheme" valid_values="sam1mom,m2005" value="sam1mom">
-SPCAM Cloud microphysics type.
+MMF CRM cloud microphysics scheme
 </entry>
-<entry id="crm" valid_values="sam,samxx" value="sam">
-SPCAM model
+<entry id="crm" valid_values="sam,samomp,samxx" value="sam">
+MMF CRM model
 </entry>
 <entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">
-SPCAM Cloud microphysics type.
+MMF CRM advection scheme
 </entry>
 <entry id="crm_nx" value="1">
 CRM number of grid points in x
