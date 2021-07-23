@@ -101,9 +101,12 @@ module ocn_vertical_remap
 
       err = 0
 
+      itimestepLastRemap = itimestepLastRemap + 1
+      if (itimestepLastRemap < config_vert_remap_interval) return
+      itimestepLastRemap = 0
+
       ! Remapping currently only supports one block for the whole domain rather
       ! than sub-blocks
-      call mpas_log_write('Entering vertical remapping')
       
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -136,15 +139,16 @@ module ocn_vertical_remap
       allocate(heightEdgeNow(nVertLevels + 1, nEdges))
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
       
-      call mpas_log_write('  -- cells')
    !- There's currently a silly issue in PPR: it assumes the "coordinates" for
    !- the data being remapped increases with index. Here, we have the opposite 
    !- (z becomes more -ve with k)... 
    !- I'll make some updates to PPR to handle this, but for now, just flip the
    !- signs to make PPR happy. This shouldn't have any actual impact.
+      !$omp parallel
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-         heightCellNow(nVertLevels+1:maxLevelCell(iCell)+1, iCell) = bottomDepth(iCell)
-         heightCellNew(nVertLevels+1:maxLevelCell(iCell)+1, iCell) = bottomDepth(iCell)
+         heightCellNow(:, iCell) = bottomDepth(iCell)
+         heightCellNew(:, iCell) = bottomDepth(iCell)
 
       !- reconstruct "now" heights
 
@@ -162,9 +166,12 @@ module ocn_vertical_remap
                heightCellNew(k + 1, iCell) - layerThicknessNew(k, iCell)
          end do
       end do
+      !$omp end do
+      !$omp end parallel
       layerThickness = layerThicknessNew
 
-      call mpas_log_write('  -- edges')
+      !$omp parallel
+      !$omp do schedule(runtime) private(k, iCell, jCell)
       do iEdge = 1, nEdges
          iCell = cellsOnEdge(1, iEdge)
          jCell = cellsOnEdge(2, iEdge)
@@ -184,34 +191,39 @@ module ocn_vertical_remap
                            0.5_RKIND * (heightCellNew(k, iCell) + heightCellNew(k, jCell))
          end do
       end do
+      !$omp end do
+      !$omp end parallel
 
-   !----------------------------------------------------------------------------
-   !- ACTUAL REMAPPING FROM HERE
+      !----------------------------------------------------------------------------
+      ! ACTUAL REMAPPING FROM HERE
 
-   !- just simple hard-coded options for PPR at this stage...
-
-      if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
-         nVars = 3 ! how many tracers to be remapped concurrently per column
-      else
-         nVars = 1 ! how many tracers to be remapped concurrently per column
-      endif
       nDoFs = 1 ! always 1 for MPAS, it'd be >1 for DG methods (with more DoF per layer)
 
+      ! how many variables to be remapped concurrently per column
+      if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
+         nVars = 3
+      else
+         nVars = 1
+      endif
+      
       allocate(dataNow(nDoFs, nVars, nVertLevels+1))
       allocate(dataNew(nDoFs, nVars, nVertLevels+1))
       allocate(bcUpper(nVars))
       allocate(bcLower(nVars))
       
+      ! set boundary conditions
+      bcUpper%bcopt = bc_upper
+      bcLower%bcopt = bc_lower
+
       dataNow = 0.0_RKIND
       dataNew = 0.0_RKIND
 
-      bcUpper%bcopt = bc_upper ! "loose" => extrapolate
-      bcLower%bcopt = bc_lower
-
       call work%init(nVertLevels + 1, nVars, opts) ! this is internal workspace for PPR
 
-   !- Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
+      ! Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
       if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(iEdge, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -226,17 +238,23 @@ module ocn_vertical_remap
             dataNow(1, 2, 1:nLayers) = highFreqThickness(kTop:kBot, iEdge)
             dataNow(1, 3, 1:nLayers) = lowFreqDivergence(kTop:kBot, iEdge)
 
+            call mpas_timer_start("ppr")
             call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
                heightEdgeNow(kTop:kBot+1, iEdge), &
                heightEdgeNew(kTop:kBot+1, iEdge), &
                dataNow, dataNew, &
                bcUpper, bcLower, work, opts)
+            call mpas_timer_stop("ppr")
 
             normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
             highFreqThickness(kTop:kBot, iEdge) = dataNew(1, 2, 1:nLayers)
             lowFreqDivergence(kTop:kBot, iEdge) = dataNew(1, 3, 1:nLayers)
          end do
+         !$omp end do
+         !$omp end parallel
       else
+         !$omp parallel
+         !$omp do schedule(runtime) private(iEdge, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -249,21 +267,25 @@ module ocn_vertical_remap
 
             dataNow(1, 1, 1:nLayers) = normalVelocity(kTop:kBot, iEdge)
 
+            call mpas_timer_start("ppr")
             call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
                heightEdgeNow(kTop:kBot+1, iEdge), &
                heightEdgeNew(kTop:kBot+1, iEdge), &
                dataNow, dataNew, &
                bcUpper, bcLower, work, opts)
+            call mpas_timer_stop("ppr")
 
             normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
          
          end do
+         !$omp end do
+         !$omp end parallel
       end if
       deallocate(dataNow,dataNew)
       deallocate(bcUpper,bcLower)
       call work%free()
    
-   !- Remap all cell-centred variables from heightCellNow to heightCellNew
+      ! Remap all cell-centred variables from heightCellNow to heightCellNew
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
@@ -271,9 +293,6 @@ module ocn_vertical_remap
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 2)
             if ( associated(tracersGroup) ) then
                
-            !- we can remap all of the tracers in one go via PPR, but for now
-            !- just a simple loop over each one at a time for clarity...
-
                nTracers = size(tracersGroup, dim=1)
                
                allocate(dataNow(nDoFs, nTracers, nVertLevels))
@@ -283,9 +302,11 @@ module ocn_vertical_remap
 
                allocate(bcUpper(nTracers))
                allocate(bcLower(nTracers))
-               bcUpper%bcopt = bc_upper ! "loose" => extrapolate
+               bcUpper%bcopt = bc_upper
                bcLower%bcopt = bc_lower
                
+               !$omp parallel
+               !$omp do schedule(runtime) private(iCell, iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
                do iCell = 1, nCells
 
                   kTop = minLevelCell(iCell)
@@ -301,17 +322,21 @@ module ocn_vertical_remap
                      dataNow(1, iTrac, 1:nLayers) = tracersGroup(iTrac, kTop:kBot, iCell)
 
                   end do
+                  call mpas_timer_start("ppr")
                   call rmap1d(nLevels, nLevels, nTracers,nDoFs, &
                      heightCellNow(kTop:kBot+1, iCell), &
                      heightCellNew(kTop:kBot+1, iCell), &
                      dataNow, dataNew, &
                      bcUpper, bcLower, work, opts)
+                  call mpas_timer_stop("ppr")
 
                   do iTrac = 1, nTracers
                      tracersGroup(iTrac, kTop:kBot, iCell) = dataNew(1, iTrac, 1:nLayers)
                   end do
                      
                end do
+               !$omp end do
+               !$omp end parallel
 
                deallocate(dataNow,dataNew)
                deallocate(bcUpper,bcLower)
@@ -330,6 +355,19 @@ module ocn_vertical_remap
 
    end subroutine ocn_remap_vert_state
   
+!***********************************************************************
+!
+!  routine ocn_vertical_remap_init
+!
+!> \brief   Initializes ocean vertical remapping
+!> \author  Carolyn Begeman
+!> \date    July 2021
+!> \details
+!>  This routine initializes parameters required for vertical Lagrangian
+!>  remapping
+!
+!-----------------------------------------------------------------------
+
    subroutine ocn_vertical_remap_init(err)
       
       integer, intent(out) :: err !< Output: Error flag

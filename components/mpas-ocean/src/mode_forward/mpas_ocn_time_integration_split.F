@@ -2442,7 +2442,9 @@ module ocn_time_integration_split
       call mpas_timer_stop("se implicit vert mix")
 
       if ( configVertAdvMethod == 2 ) then
-            
+
+         call mpas_timer_start("vertical remap")
+
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
          call mpas_pool_get_array(statePool, 'layerThicknessLag', layerThicknessLagNew, 2)
 
@@ -2472,7 +2474,9 @@ module ocn_time_integration_split
          call ocn_remap_vert_state(block, layerThicknessRemap, err)
 
          deallocate(layerThicknessRemap)
-      
+
+         call mpas_timer_stop("vertical remap")
+
       end if
 
       call mpas_timer_start('se fini')
