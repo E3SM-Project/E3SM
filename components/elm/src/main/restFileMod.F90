@@ -295,8 +295,6 @@ contains
 
     end if
 
-    end if
-
 
     if (use_fates) then
        call alm_fates%restart(bounds, ncid, flag='define',  &

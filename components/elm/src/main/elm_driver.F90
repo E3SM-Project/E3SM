@@ -13,7 +13,7 @@ module elm_driver
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
-  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use elm_varctl             , only : use_erosion
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
@@ -130,7 +130,6 @@ module elm_driver
   use elm_instMod            , only : PlantMicKinetics_vars
   use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR0, CNFluxStateBeTR0Summary
   use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR1, CNFluxStateBeTR1Summary
-  use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR2, CNFluxStateBeTR2Summary
   use UrbanParamsType        , only : urbanparams_vars
 
   use GridcellType           , only : grc_pp
@@ -147,7 +146,7 @@ module elm_driver
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : veg_es, veg_ws, veg_wf
+  use VegetationDataType     , only : veg_es, veg_ws, veg_wf, veg_cf
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
@@ -994,45 +993,20 @@ contains
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-                 cnstate_vars, carbonflux_vars, carbonstate_vars,               &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                     &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                     &
-                 nitrogenflux_vars, nitrogenstate_vars,                         &
-                 atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
-                 canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
-                 photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                 PlantMicKinetics_vars, ch4_vars,                               &
-                 phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
+                 cnstate_vars, atm2lnd_vars, canopystate_vars, soilstate_vars,  &
+                 crop_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                 PlantMicKinetics_vars, ch4_vars, sedflux_vars)
 
            if(do_betr_bgc_type('type1_bgc')) &
            call CNEcosystemDynBeTR1(bounds_clump, col_pp, veg_pp,               &
                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-                 cnstate_vars, carbonflux_vars, carbonstate_vars,               &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                     &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                     &
-                 nitrogenflux_vars, nitrogenstate_vars,                         &
-                 atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
-                 canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
-                 photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                 PlantMicKinetics_vars,  ch4_vars,                              &
-                 phosphorusflux_vars, phosphorusstate_vars, ep_betr,soil_water_retention_curve)
+                 cnstate_vars, atm2lnd_vars, canopystate_vars, soilstate_vars,  &
+                 crop_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                 PlantMicKinetics_vars,  ch4_vars, sedflux_vars,                &
+                 ep_betr,soil_water_retention_curve)
 
-           if(do_betr_bgc_type('type2_bgc')) &
-           call CNEcosystemDynBeTR2(bounds_clump,                               &
-                 filter(nc)%num_soilc, filter(nc)%soilc,                        &
-                 filter(nc)%num_soilp, filter(nc)%soilp,                        &
-                 filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-                 cnstate_vars, carbonflux_vars, carbonstate_vars,               &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                     &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                     &
-                 nitrogenflux_vars, nitrogenstate_vars,                         &
-                 atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
-                 canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
-                 photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                 PlantMicKinetics_vars,                                         &
-                 phosphorusflux_vars, phosphorusstate_vars)
 
            call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -1043,7 +1017,7 @@ contains
 
        ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
 
-       if( .not. is_active_betr_bgc) then
+       if( .not. do_betr_bgc_type('bgc')) then
 
           if (use_cn .or. use_fates) then
 
@@ -1188,13 +1162,6 @@ contains
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
              cnstate_vars = cnstate_vars, carbonstate_vars=col_cs)
 
-           if(do_betr_bgc_type('bgc'))then
-             call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
-               filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
-               col_cs, col_cf, c13_col_cs, c13_col_cf, c14_col_cs, c14_col_cf, &
-               col_ns, col_nf, col_ps, col_pf,&
-               PlantMicKinetics_vars)
-           endif
            call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
        endif  !end use_betr
 
@@ -1273,7 +1240,7 @@ contains
           call t_stopf('betr balchk')
           call ep_betr%HistRetrieval(filter(nc)%num_nolakec, filter(nc)%nolakec)
 
-          if(do_betr_bgc_type('type1_bgc') .or. do_betr_bgc_type('type2_bgc'))then
+          if(do_betr_bgc_type('type1_bgc'))then
 
             !extract nitrogen pool and flux from betr
             call ep_betr%PlantSoilBGCRecv(bounds_clump, col_pp, veg_pp, filter(nc)%num_soilc, filter(nc)%soilc,&
@@ -1288,14 +1255,7 @@ contains
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-                 cnstate_vars,                                                 &
-                 carbonflux_vars, carbonstate_vars,                            &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                    &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                    &
-                 nitrogenflux_vars, nitrogenstate_vars,                        &
-                 waterstate_vars, waterflux_vars,                              &
-                 frictionvel_vars, canopystate_vars,                           &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 cnstate_vars, frictionvel_vars, canopystate_vars)
           endif
 
           if(do_betr_bgc_type('type1_bgc'))then
@@ -1304,33 +1264,15 @@ contains
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-                 cnstate_vars,                                                 &
-                 carbonflux_vars, carbonstate_vars,                            &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                    &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                    &
-                 nitrogenflux_vars, nitrogenstate_vars,                        &
-                 waterstate_vars, waterflux_vars,                              &
-                 frictionvel_vars, canopystate_vars,                           &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 cnstate_vars, frictionvel_vars, canopystate_vars)
           endif
 
-          if(do_betr_bgc_type('type2_bgc'))then
-            !summarize total column nitrogen and carbon, plants have nutrient buffer
-            call CNFluxStateBeTR2Summary(bounds_clump, col_pp, veg_pp,         &
-                 filter(nc)%num_soilc, filter(nc)%soilc,                       &
-                 filter(nc)%num_soilp, filter(nc)%soilp,                       &
-                 carbonflux_vars, carbonstate_vars,                            &
-                 c13_carbonflux_vars, c13_carbonstate_vars,                    &
-                 c14_carbonflux_vars, c14_carbonstate_vars,                    &
-                 nitrogenflux_vars, nitrogenstate_vars,                        &
-                 phosphorusflux_vars, phosphorusstate_vars)
-          endif
        endif  !end use_betr
 
        ! Execute FATES dynamics
 
        if (use_cn .or. use_fates) then
-          if (.not. is_active_betr_bgc)then
+          if (.not. do_betr_bgc_type('bgc'))then
             call EcosystemDynLeaching(bounds_clump,                &
                filter(nc)%num_soilc, filter(nc)%soilc,             &
                filter(nc)%num_soilp, filter(nc)%soilp,             &

@@ -263,16 +263,16 @@ contains
                  col_prod1c_loss(c) + col_prod10c_loss(c) + col_prod100c_loss(c)
 
          ! subtract leaching flux
-         col_coutputs = col_coutputs - som_c_leached(c)
+         col_coutputs(c) = col_coutputs(c) - som_c_leached(c)
 
          ! add erosion flux
          if (ero_ccycle) then
-            col_coutputs = col_coutputs + som_c_yield(c)
+            col_coutputs(c) = col_coutputs(c) + som_c_yield(c)
          end if
 
 
          ! calculate the total column-level carbon balance error for this time step
-         col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
+         col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
 
          ! adjusting the time-lag of org. C increments to decomposing pools when coupled with PFLOTRAN bgc
          ! (because PF bgc uses the extern C as sink (in, + ) at previous time-step,
@@ -380,10 +380,13 @@ contains
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
+         plant_to_litter_nflux     =>    col_nf%plant_to_litter_nflux     , & ! Input                   flux of N from FATES litter into ELM
+                                                                              !                         litter (gP/m2/s)
          col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) crop leafc harvested
+         col_prod10n_loss          =>    col_nf%prod10n_loss              , & ! Input:  [real(r8) (:)]  10-year wood product harvested [gN/m2/s]
+         col_prod100n_loss         =>    col_nf%prod100n_loss             , & ! Input:  [real(r8) (:)]  100-year wood product harvestd [gN/m2/s]
+
          col_fire_nloss            =>    col_nf%fire_nloss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
-         hrv_deadstemn_to_prod10n  =>    col_nf%hrv_deadstemn_to_prod10n  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
-         hrv_deadstemn_to_prod100n =>    col_nf%hrv_deadstemn_to_prod100n , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
          som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
          som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
          supplement_to_plantn      =>    col_nf%supplement_to_plantn      , &
@@ -393,8 +396,10 @@ contains
          col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    col_ns%errnb                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         )
+         col_errnb                 =>    col_ns%errnb                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
+
+         
 
       ! set time steps
       dt = dtime_mod
@@ -1073,8 +1078,6 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
-    real(r8) :: grc_cinputs
-    real(r8) :: grc_coutputs
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
@@ -1084,6 +1087,8 @@ contains
          dwt_conv_cflux_grc        =>    grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_leaf_grc     =>    grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
+         grc_coutputs              =>    grc_cf%coutputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
          begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
          errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
@@ -1103,7 +1108,7 @@ contains
       do g = bounds%begg, bounds%endg
          endcb_grc(g) = endcb_grc(g)
 
-         grc_cinputs = &
+         grc_cinputs(g) = &
               dwt_seedc_to_leaf_grc(g)     + &
               dwt_seedc_to_deadstem_grc(g)
 
@@ -1111,7 +1116,7 @@ contains
               dwt_conv_cflux_grc(g)
 
 
-         errcb_grc(g) = (grc_cinputs - grc_coutputs)*dt - (endcb_grc(g) - begcb_grc(g))
+         errcb_grc(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (endcb_grc(g) - begcb_grc(g))
 
          ! check for significant errors
          if (abs(errcb_grc(g)) > balance_check_tolerance) then
@@ -1126,8 +1131,8 @@ contains
          g = err_index
          write(iulog,*)'Grid cbalance error   = ',errcb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         write(iulog,*)'input                 = ',grc_cinputs*dt
-         write(iulog,*)'output                = ',grc_coutputs*dt
+         write(iulog,*)'input                 = ',grc_cinputs(g)*dt
+         write(iulog,*)'output                = ',grc_coutputs(g)*dt
          write(iulog,*)'error                 = ',errcb_grc(g)*dt
          write(iulog,*)'begcb                 = ',begcb_grc(g)
          write(iulog,*)'endcb                 = ',endcb_grc(g)
@@ -1160,8 +1165,6 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
-    real(r8) :: grc_ninputs
-    real(r8) :: grc_noutputs
     !-----------------------------------------------------------------------
 
     associate(                                                          &
@@ -1190,7 +1193,7 @@ contains
       do g = bounds%begg, bounds%endg
          endnb_grc(g) = endnb_grc(g)
 
-         grc_ninputs = &
+         grc_ninputs(g) = &
               dwt_seedn_to_leaf_grc(g)     + &
               dwt_seedn_to_deadstem_grc(g)
 
@@ -1199,7 +1202,7 @@ contains
 
 
 
-         errnb_grc(g) = (grc_ninputs - grc_noutputs)*dt - (endnb_grc(g) - begnb_grc(g))
+         errnb_grc(g) = (grc_ninputs(g) - grc_noutputs(g))*dt - (endnb_grc(g) - begnb_grc(g))
 
          ! check for significant errors
          if (abs(errnb_grc(g)) > balance_check_tolerance) then
@@ -1222,8 +1225,6 @@ contains
          write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
          write(iulog,*)''
          write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
-         write(iulog,*)'dwt_prod10              ',dwt_prod10n_gain_grc(g)
-         write(iulog,*)'dwt_prod100             ',dwt_prod100n_gain_grc(g)
          write(iulog,*)''
          write(iulog,*)'dwt_seedn_leaf          ',dwt_seedn_to_leaf_grc(g)
          write(iulog,*)'dwt_seedn_deadstem      ',dwt_seedn_to_deadstem_grc(g)
@@ -1256,8 +1257,6 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
-    real(r8) :: grc_pinputs
-    real(r8) :: grc_poutputs
     !-----------------------------------------------------------------------
 
     associate(                                                          &
@@ -1286,14 +1285,14 @@ contains
       do g = bounds%begg, bounds%endg
          endpb_grc(g) = endpb_grc(g)
 
-         grc_pinputs = &
+         grc_pinputs(g) = &
               dwt_seedp_to_leaf_grc(g)     + &
               dwt_seedp_to_deadstem_grc(g)
 
          grc_poutputs(g) = &
               dwt_conv_pflux_grc(g)
 
-         errpb_grc(g) = (grc_pinputs - grc_poutputs)*dt - (endpb_grc(g) - begpb_grc(g))
+         errpb_grc(g) = (grc_pinputs(g) - grc_poutputs(g))*dt - (endpb_grc(g) - begpb_grc(g))
 
          ! check for significant errors
          if (abs(errpb_grc(g)) > balance_check_tolerance) then
@@ -1308,8 +1307,8 @@ contains
          g = err_index
          write(iulog,*)'Grid pbalance error   = ',errpb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         write(iulog,*)'input                 = ',grc_pinputs*dt
-         write(iulog,*)'output                = ',grc_poutputs*dt
+         write(iulog,*)'input                 = ',grc_pinputs(g)*dt
+         write(iulog,*)'output                = ',grc_poutputs(g)*dt
          write(iulog,*)'error                 = ',errpb_grc(g)*dt
          write(iulog,*)'begpb                 = ',begpb_grc(g)
          write(iulog,*)'endpb                 = ',endpb_grc(g)

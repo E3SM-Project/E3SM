@@ -28,6 +28,7 @@ module VegetationDataType
   use restUtilMod
   use CNStateType     , only: cnstate_type
   use SpeciesMod              , only : species_from_string
+  use ColumnType      , only : col_pp
   use VegetationType            , only : veg_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
@@ -837,6 +838,8 @@ module VegetationDataType
     real(r8), pointer :: fire_nloss_litter                   (:)   => null()  ! total nloss from veg to litter pool due to fire
     real(r8), pointer :: hrv_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to harvest mortality
     real(r8), pointer :: sen_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to senescence
+    real(r8), pointer :: smin_nh4_to_plant_vr               (:,:) => null()  ! vertically resolved nh4 uptake
+    real(r8), pointer :: smin_no3_to_plant_vr               (:,:) => null()  ! vertically resolved no3 uptake    
   contains
     procedure, public :: Init      => veg_nf_init
     procedure, public :: Restart   => veg_nf_restart
@@ -1002,6 +1005,7 @@ module VegetationDataType
     real(r8), pointer :: fire_ploss_litter                   (:)     ! total ploss from veg to litter pool due to fire
     real(r8), pointer :: hrv_ploss_litter                    (:)     ! total ploss from veg to litter pool due to harvest mortality
     real(r8), pointer :: sen_ploss_litter                    (:)     ! total ploss from veg to litter pool due to senescence
+    real(r8), pointer :: sminp_to_plant_trans                (:)     ! mineral p flux to plant through transpiration, gP/m2/s
   contains
     procedure, public :: Init      => veg_pf_init
     procedure, public :: Restart   => veg_pf_restart
@@ -8467,6 +8471,7 @@ module VegetationDataType
     !
     ! !USES:
     !
+    use elm_varpar, only : maxpatch_pft
     ! !ARGUMENTS:
     class(vegetation_carbon_flux) :: this
     type(bounds_type), intent(in) :: bounds
@@ -8478,7 +8483,7 @@ module VegetationDataType
     type(cnstate_type), optional, intent(in) :: cnstate_vars
     !
     ! !LOCAL VARIABLES
-    integer :: fp, p
+    integer :: fp, p, fc, c, j, pi
     !------------------------------------------------------------
     associate( &
       rr_patch => this%rr, &
@@ -9004,6 +9009,8 @@ module VegetationDataType
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
     allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+    allocate(this%smin_no3_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_no3_to_plant_vr  (:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_nh4_to_plant_vr  (:,:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
@@ -10128,7 +10135,7 @@ module VegetationDataType
     allocate(this%fire_ploss_litter                   (begp:endp)) ; this%fire_ploss_litter                   (:) = nan
     allocate(this%hrv_ploss_litter                    (begp:endp)) ; this%hrv_ploss_litter                    (:) = nan
     allocate(this%sen_ploss_litter                    (begp:endp)) ; this%sen_ploss_litter                    (:) = nan
-
+    allocate(this%sminp_to_plant_trans                (begp:endp)) ; this%sminp_to_plant_trans                (:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_pf

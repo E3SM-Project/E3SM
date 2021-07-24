@@ -55,18 +55,19 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
-    integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
-    integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+    integer                  , intent(in)    :: num_soilc       ! number of column soil points in column filter
+    integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(CanopyState_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(sedflux_type)       , intent(inout) :: sedflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: c, fc, p, t, pi, l, j                      ! indices
+    integer  :: c, fc, p, t, l, j                          ! indices
     integer  :: dtime                                      ! timestep size [seconds]
     real(r8) :: sinslp, fslp, factor_slp                   ! topo gradient
     real(r8) :: gndbare, vegcc, fbare                      ! veg cover factors
+    real(r8) :: gndbare_crp                                ! crop veg cover factor
     real(r8) :: fungrvl                                    ! ground uncovered by gravel
     real(r8) :: K, COH                                     ! soil erodibility
     real(r8) :: Qs, Ptot, Ie, Dl                           ! water fluxes
@@ -104,6 +105,7 @@ contains
          flx_p_ero        =>    sedflux_vars%sed_p_ero_col          , & ! Output: [real(r8) (:) ] sed detached by rainfall (kg/m2/s)
          flx_q_ero        =>    sedflux_vars%sed_q_ero_col          , & ! Output: [real(r8) (:) ] sed detached by runoff (kg/m2/s)
          flx_sed_ero      =>    sedflux_vars%sed_ero_col            , & ! Output: [real(r8) (:) ] total detachment (kg/m2/s)
+         flx_sed_crop_ero =>    sedflux_vars%sed_crop_ero_col       , & ! Output: [real(r8) (:) ] cropland detachment (kg/m2/s)
          flx_sed_yld      =>    sedflux_vars%sed_yld_col              & ! Output: [real(r8) (:) ] sed flux to inland waters (kg/m2/s)
          )
 
@@ -111,8 +113,8 @@ contains
          dtime = dtime_mod
 
          ! nolakec or other col filters
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
             l = col_pp%landunit(c)
             t = col_pp%topounit(c)
 
@@ -120,6 +122,7 @@ contains
             flx_p_ero(c)          = 0._r8
             flx_q_ero(c)          = 0._r8
             flx_sed_ero(c)        = 0._r8
+            flx_sed_crop_ero(c)   = 0._r8
             flx_sed_yld(c)        = 0._r8
 
             ! check landunit type and ground covered by snow/ice
@@ -135,6 +138,7 @@ contains
             K = SoilDetachability(stxt)
             COH = SoilCohesion(stxt)
             Es_P = 0._r8    ! detachment by throughfall + leap drip
+            Es_Pcrp = 0._r8 ! cropland detachment by throughfall + leap drip
             if (forc_t(t)>T0 .and. forc_rain(t)>0._r8) then
                fungrvl = 1._r8 - 0.01_r8 * fgrvl(c,1)
                do p = col_pp%pfti(c), col_pp%pftf(c)
@@ -155,23 +159,26 @@ contains
                   end if
                end do
             end if
-            Es_P = 1e-7_r8 / 8.64_r8 * Es_P   ! kg/m2/s
+            Es_P = 1e-3_r8 / dtime * Es_P        ! kg/m2/s
+            Es_Pcrp = 1e-3_r8 / dtime * Es_Pcrp  ! kg/m2/s
 
             ! soil detachment by runoff
             gndbare = 0._r8
+            gndbare_crp = 0._r8
             vegcc = 0._r8
-            do pi = 1, max_patch_per_col
-               if ( pi<=col_pp%npfts(c) ) then
-                  p = col_pp%pfti(c) + pi - 1
-                  if (veg_pp%active(p)) then
-                     fbare = exp( -gcpsi(veg_pp%itype(p)) * tlai(p) )
-                     gndbare = gndbare + veg_pp%wtcol(p) * fbare
-                     vegcc = vegcc + veg_pp%wtcol(p) * pftcc(veg_pp%itype(p))
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
+                  fbare = exp( -gcpsi(veg_pp%itype(p)) * tlai(p) )
+                  gndbare = gndbare + veg_pp%wtcol(p) * fbare
+                  if ( veg_pp%itype(p) > nc4_grass ) then
+                     gndbare_crp = gndbare_crp + veg_pp%wtcol(p) * fbare
                   end if
+                  vegcc = vegcc + veg_pp%wtcol(p) * pftcc(veg_pp%itype(p))
                end if
             end do
 
             Es_Q = 0._r8
+            Es_Qcrp = 0._r8
             Tc = 0._r8
             if (qflx_surf(c)>0._r8) then
                Qs = 8.64e4_r8 * qflx_surf(c)  ! mm/d
@@ -183,10 +190,13 @@ contains
                end do
                Es_Q = 19.1_r8 * qfactor(c) * 2.0_r8 / COH * factor_slp * &
                   gndbare * Qs**1.5_r8
+               Es_Qcrp = 19.1_r8 * qfactor(c) * 2.0_r8 / COH * factor_slp * &
+                  gndbare_crp * Qs**1.5_r8
                Tc = 19.1_r8 * tfactor(c) * factor_slp * vegcc * Qs**2.0_r8
             end if
-            Es_Q = 1e-7_r8 / 8.64_r8 * Es_Q
-            Tc = 1e-7_r8 / 8.64_r8 * Tc
+            Es_Q = 1e-7_r8 / 8.64_r8 * Es_Q        ! kg/m2/s
+            Es_Qcrp = 1e-7_r8 / 8.64_r8 * Es_Qcrp  ! kg/m2/s
+            Tc = 1e-7_r8 / 8.64_r8 * Tc            ! kg/m2/s
 
             ! assign flux values
             flx_p_ero(c) = flx_p_ero(c) + Es_P

@@ -27,7 +27,7 @@ contains
     ! !USES:
     use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
-    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
+    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 

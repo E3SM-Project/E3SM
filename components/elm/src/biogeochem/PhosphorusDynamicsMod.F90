@@ -24,6 +24,8 @@ module PhosphorusDynamicsMod
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
   use elm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : use_fates
+  use elm_instMod         , only : alm_fates
 
   !
   implicit none
@@ -582,10 +584,11 @@ contains
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
     real(r8) :: biochem_pmin_to_ecosysp_vr_col_pot(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp)
+    real(r8), allocatable :: biochem_pmin_to_plant_vr_patch(:,:)
     real(r8) :: sop_tot
     real(r8) :: fr_frac        ! fine-root fraction of mass in current layer
     real(r8) :: ptase_tmp
+    integer  :: max_comps
     !-----------------------------------------------------------------------
 
     associate(                                                              &
@@ -699,7 +702,6 @@ contains
                         sop_profile(l) = 0._r8
                     end if
                 end if
-              end if
             end do
             ! cauculation actual biochem_pmin_ppool
             do l = 1,ndecomp_pools
@@ -710,11 +712,9 @@ contains
                 end if
             end do
         end do
-    end do
-    ! update biochem_pmin_to_ecosysp_vr_col,biochem_pmin_vr,biochem_pmin_to_plant_vr
-    do j = 1,nlevdecomp
-        do fc = 1,num_soilc
-            c = filter_soilc(fc)
+
+        ! update biochem_pmin_to_ecosysp_vr_col,biochem_pmin_vr,biochem_pmin_to_plant_vr
+        do j = 1,nlevdecomp
             biochem_pmin_to_ecosysp_vr_col(c,j)=0._r8
             do l = 1, ndecomp_pools
                 if (is_soil(l)) then
@@ -815,8 +815,7 @@ contains
   end subroutine PhosphorusBiochemMin_balance
 
 !------------------------------------------------------------------------------------
-  subroutine PhosphorusBiochemMin_Ptaseact(bounds,num_soilc, filter_soilc, &
-       cnstate_vars,nitrogenstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+  subroutine PhosphorusBiochemMin_Ptaseact(bounds,num_soilc, filter_soilc, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! created, Aug 2015 by Q. Zhu
@@ -833,9 +832,6 @@ contains
     integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)         , intent(in)    :: cnstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     integer  :: c,fc,p,j,l
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake

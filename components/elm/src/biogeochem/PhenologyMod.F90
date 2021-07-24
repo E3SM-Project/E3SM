@@ -16,6 +16,7 @@ module PhenologyMod
   use elm_varpar          , only : numpft
   use elm_varctl          , only : iulog
   use elm_varcon          , only : tfrz
+  use elm_varcon          , only : secspday
   use abortutils          , only : endrun
   use CanopyStateType     , only : canopystate_type
   use CNStateType         , only : cnstate_type

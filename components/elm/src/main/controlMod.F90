@@ -249,7 +249,7 @@ contains
     namelist /elm_inparm / use_c13, use_c14
 
     namelist /elm_inparm/ fates_paramfile, use_fates,      &
-          use_fates_spitfire, use_fates_logging,        &
+          fates_spitfire_mode, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
@@ -273,7 +273,7 @@ contains
     namelist /elm_inparm/ maxpatch_pft
 
     namelist /elm_inparm/ &
-         use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
+         use_nofire, use_lch4,  use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_extrasnowlayers, use_vancouver, use_mexicocity, use_noio
 

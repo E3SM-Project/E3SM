@@ -81,11 +81,9 @@ contains
     use DecompCascadeBGCMod    , only : readDecompBGCParams
     use DecompCascadeCNMod     , only : readDecompCNParams
     use PhenologyMod             , only : readPhenolParams
-    use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
     use MaintenanceRespMod               , only : readMaintenanceRespParams
     use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
     use GapMortalityMod          , only : readGapMortParams 
-    use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
     use NitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params

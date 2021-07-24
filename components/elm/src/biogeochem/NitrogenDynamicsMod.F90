@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl          , only : use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNStateType         , only : cnstate_type
@@ -293,11 +293,6 @@ contains
          drain_tot(c) = qflx_drain(c)
       end do
 
-      do j = 1,nlevdecomp
-         ! Loop through columns
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
 
       !----------------------------------------
       ! --------- NITRIF_NITRIF ON-------------
@@ -446,6 +441,9 @@ contains
          gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest                             
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested                  
 
+         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
+         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
+         
          soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop
          soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]
          )

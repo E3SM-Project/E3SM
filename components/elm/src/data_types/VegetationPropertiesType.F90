@@ -173,7 +173,7 @@ contains
     use pftvarcon , only : vmax_nfix, km_nfix
     use pftvarcon , only : alpha_nfix, alpha_ptase,ccost_nfix,ccost_ptase
     use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
-    use pftvarcon , only : i_vc, s_vc, nsc_rtime
+    use pftvarcon , only : i_vc, s_vc
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
@@ -266,7 +266,6 @@ contains
     allocate( this%vmax_ptase(0:numpft))                         ; this%vmax_ptase(:)            =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
-    allocate( this%nsc_rtime(0:numpft))                          ; this%nsc_rtime(:)             =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
     allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan

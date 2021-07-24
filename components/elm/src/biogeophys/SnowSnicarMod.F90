@@ -11,7 +11,7 @@ module SnowSnicarMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use elm_varctl      , only : iulog
+  use elm_varctl      , only : iulog, use_extrasnowlayers
   use elm_varcon      , only : namec 
   use shr_const_mod   , only : SHR_CONST_RHOICE
   use abortutils      , only : endrun

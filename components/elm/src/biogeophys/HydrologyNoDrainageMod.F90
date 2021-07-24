@@ -17,7 +17,7 @@ Module HydrologyNoDrainageMod
   use SoilStateType     , only : soilstate_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws
+  use ColumnDataType    , only : col_es, col_ws, col_wf
   use VegetationType    , only : veg_pp
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use elm_instMod       , only : alm_fates , ep_betr

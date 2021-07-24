@@ -30,7 +30,7 @@ module AllocationMod
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   use VegetationDataType  , only : vegetation_carbon_state, vegetation_nitrogen_state,vegetation_nitrogen_flux
   ! bgc interface & pflotran module switches
-  use elm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
+  use elm_varctl          , only: use_elm_interface,use_elm_bgc, use_pflotran, pf_cmode
   use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use elm_varctl          , only : NFIX_PTASE_plant
@@ -1077,8 +1077,8 @@ contains
 
          ! Starting resolving N/P limitation
          ! calculate nuptake & puptake profile
-         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
-         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
+         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
+         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, puptake_prof)
 
       end if
 
@@ -1920,9 +1920,7 @@ contains
 !-------------------------------------------------------------------------------------------------
   subroutine Allocation3_PlantCNPAlloc (bounds            , &
         num_soilc, filter_soilc, num_soilp, filter_soilp    , &
-        canopystate_vars                                    , &
-        cnstate_vars, crop_vars , &
-        dt )
+        canopystate_vars, cnstate_vars, crop_vars, dt )
     ! PHASE-3 of Allocation: start new pft loop to distribute the available N/P between the
     ! competing patches on the basis of relative demand, and allocate C/N/P to new growth and storage
 
@@ -3242,11 +3240,8 @@ contains
   end subroutine dynamic_plant_alloc
 
 !-----------------------------------------------------------------------
-!-----------------------------------------------------------------------
   subroutine update_PlantMicKinetics_pars(bounds, num_soilc, filter_soilc  , &
-      cnstate_vars, carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, &
-      nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars, &
-      PlantMicKinetics_vars)
+      cnstate_vars, PlantMicKinetics_vars)
 
   use PlantMicKineticsMod, only : PlantMicKinetics_type
   implicit none
@@ -3254,29 +3249,20 @@ contains
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type), intent(inout) :: cnstate_vars
-  type(carbonstate_type), intent(in) :: carbonstate_vars
-  type(carbonflux_type), intent(in) :: carbonflux_vars
-  type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-  type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
-  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
-  type(phosphorusflux_type), intent(in) :: phosphorusflux_vars
   type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
 
 
   call update_stoichiometry_scalar(bounds, num_soilc, filter_soilc  , &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
-      phosphorusstate_vars)
+      cnstate_vars)
 
   call update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
-    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
-    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
+    cnstate_vars, PlantMicKinetics_vars)
 
   end subroutine update_PlantMicKinetics_pars
 
 !-----------------------------------------------------------------------
   subroutine update_stoichiometry_scalar(bounds, num_soilc, filter_soilc  , &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
-      phosphorusstate_vars)
+      cnstate_vars)
 
   !
   !DESCRIPTION
@@ -3290,9 +3276,6 @@ contains
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type)       , intent(inout) :: cnstate_vars
-  type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-  type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-  type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
 
   integer :: p, fc, c
   real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
@@ -3349,8 +3332,7 @@ contains
 
 !-----------------------------------------------------------------------
   subroutine update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
-    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
-    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
+    cnstate_vars,  PlantMicKinetics_vars)
 
   use pftvarcon        , only: noveg
   use PlantMicKineticsMod, only : PlantMicKinetics_type
@@ -3361,11 +3343,6 @@ contains
   integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
   type(cnstate_type), intent(in) :: cnstate_vars
-  type(carbonstate_type), intent(in) :: carbonstate_vars
-  type(carbonflux_type) , intent(in) :: carbonflux_vars
-  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
-  type(phosphorusflux_type), intent(in):: phosphorusflux_vars
-  type(phosphorusstate_type), intent(in) :: phosphorusstate_vars
   type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
   integer :: j, fc, c, p
   real(r8) :: dt

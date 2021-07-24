@@ -21,6 +21,7 @@ module ColumnDataType
   use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
   use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use elm_varctl      , only : use_hydrstress
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use elm_varctl      , only : use_erosion
   use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
@@ -915,6 +916,7 @@ module ColumnDataType
     real(r8), pointer :: biochem_pmin_vr                       (:,:)   ! vertically-resolved total biochemical P mineralization (gP/m3/s)
     real(r8), pointer :: biochem_pmin_to_ecosysp_vr            (:,:)   ! biochemical P mineralization directly goes to soil (gP/m3/s)
     real(r8), pointer :: biochem_pmin                          (:)     ! vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
+    real(r8), pointer :: biochem_pmin_to_plant                 (:)     =>null() ! vert-int total biochemical P mineralization to plants (gP/m2/s)
     real(r8), pointer :: primp_to_labilep_vr                   (:,:)   ! (gP/m3/s) flux of P from primary mineral to labile
     real(r8), pointer :: primp_to_labilep                      (:)     ! (gP/m3/s) flux of P from primary mineral to labile
     real(r8), pointer :: labilep_to_secondp_vr                 (:,:)   ! (gP/m3/s) flux of labile P to secondary mineral P
@@ -2070,10 +2072,6 @@ contains
               avgflag='A', long_name='column-level sink for C truncation', &
                ptr_col=this%ctrunc, default='inactive')
 
-       this%seedc(begc:endc) = spval
-       call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
-             avgflag='A', long_name='pool for seeding new Patches', &
-             ptr_col=this%seedc, default='inactive')
 
        call hist_addfld1d (fname='SOILC', units='gC/m^2', &
              avgflag='A', long_name='soil C', &
@@ -3112,34 +3110,6 @@ contains
     end do
   end subroutine col_cs_zero_forfates_veg
 
-  subroutine col_cs_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
-    !
-    ! !DESCRIPTION:
-    ! As an alternative to summarizing vegetation states in CTC and then
-    ! upscaling to the column level, we just zero them when FATES is turned on
-    ! (or other potential models).
-    !
-    ! !ARGUMENTS:
-    class(column_carbon_state) :: this
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    ! locals
-    integer :: fc
-    integer :: c
-
-    if(.not.use_fates) return
-    
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%totpftc(c) = 0._r8
-       this%totvegc(c) = 0._r8
-       this%totvegc_abg(c) = 0._r8
-       this%cropseedc_deficit(c) = 0._r8
-    end do
-
-    return
-  end subroutine col_cs_zero_forfates_veg
   !------------------------------------------------------------------------
   subroutine col_cs_clean(this)
     !
@@ -6163,11 +6133,6 @@ contains
              avgflag='A', long_name='landcover change-driven addition to crop product pool', &
              ptr_col=this%dwt_crop_productc_gain, default='inactive')
 
-        this%dwt_crop_productc_gain(begc:endc) = spval
-        call hist_addfld1d (fname='DWT_CROP_PRODUCTC_GAIN', units='gC/m^2/s', &
-             avgflag='A', long_name='landcover change-driven addition to crop product pool', &
-             ptr_col=this%dwt_crop_productc_gain, default='inactive')
-
        this%prod100c_loss(begc:endc) = spval
         call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 100-yr wood product pool', &
@@ -6383,11 +6348,6 @@ contains
              avgflag='A', long_name='C13 addition to crop product pool', &
              ptr_col=this%dwt_crop_productc_gain)
 
-
-        this%dwt_crop_productc_gain(begc:endc) = spval
-        call hist_addfld1d (fname='C13_DWT_CROP_PRODUCTC_GAIN', units='gC13/m^2/s', &
-             avgflag='A', long_name='C13 addition to crop product pool', &
-             ptr_col=this%dwt_crop_productc_gain)
 
        this%dwt_prod10c_gain(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN', units='gC13/m^2/s', &
@@ -8330,6 +8290,7 @@ contains
        call hist_addfld_decomp (fname='F_NIT'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
              avgflag='A', long_name='nitrification flux', &
               ptr_col=this%f_nit_vr)
+    endif
 
     if ((nlevdecomp_full > 1)  .or. (use_pflotran .and. pf_cmode)) then
        this%f_denit_vr(begc:endc,:) = spval
@@ -8587,11 +8548,6 @@ contains
      call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
           avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
            ptr_col=this%dwt_conv_nflux, default='inactive')
-
-    this%dwt_crop_productn_gain(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN', units='gN/m^2/s', &
-        avgflag='A', long_name='addition to crop product pool', &
-        ptr_col=this%dwt_crop_productn_gain, default='inactive')
 
     this%dwt_crop_productn_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN', units='gN/m^2/s', &
@@ -9792,6 +9748,7 @@ contains
     allocate(this%biochem_pmin_ppools_vr           (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%biochem_pmin_ppools_vr      (:,:,:) = nan
     allocate(this%biochem_pmin_vr                  (begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_vr               (:,:) = nan
     allocate(this%biochem_pmin                     (begc:endc))                   ; this%biochem_pmin                  (:)   = nan
+    allocate(this%biochem_pmin_to_plant            (begc:endc))                   ; this%biochem_pmin_to_plant         (:)   = nan
     allocate(this%dwt_slash_pflux                  (begc:endc))                   ; this%dwt_slash_pflux               (:)   = nan
     allocate(this%dwt_conv_pflux                   (begc:endc))                   ; this%dwt_conv_pflux                (:)   = nan
     allocate(this%dwt_prod10p_gain                 (begc:endc))                   ; this%dwt_prod10p_gain              (:)   = nan
@@ -10339,11 +10296,6 @@ contains
         avgflag='A', long_name='addition to crop product pool', &
         ptr_col=this%dwt_crop_productp_gain, default='inactive')
 
-    this%dwt_crop_productp_gain(begc:endc) = spval
-    call hist_addfld1d (fname='DWT_CROP_PRODUCTP_GAIN', units='gP/m^2/s', &
-        avgflag='A', long_name='addition to crop product pool', &
-        ptr_col=this%dwt_crop_productp_gain, default='inactive')
-
 
     this%dwt_prod10p_gain(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
@@ -10780,30 +10732,6 @@ contains
 
   end subroutine col_pf_zerodwt
   !-----------------------------------------------------------------------
-  subroutine col_pf_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
-
-    !
-    ! !DESCRIPTION:
-    ! As an alternative to summarizing vegetation fluxes in CTC and then
-    ! upscaling to the column level, we just zero them when FATES is turned on
-    ! (or other potential models).
-    !
-    ! !ARGUMENTS:
-    class(column_phosphorus_flux) :: this
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    ! locals
-    integer :: fc
-    integer :: c
-
-    if(.not.use_fates) return
-    
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%fire_ploss_p2c(c) = 0._r8
-       this%wood_harvestp(c)  = 0._r8
-    end do
 
 
   subroutine col_pf_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)

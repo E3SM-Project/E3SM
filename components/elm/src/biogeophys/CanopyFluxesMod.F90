@@ -567,6 +567,7 @@ contains
       if(use_fates)then
 #ifndef _OPENACC
          call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, &
+               temperature_vars, energyflux_vars, soil_water_retention_curve)
 #endif
       else
          !calculate root moisture stress
