@@ -179,10 +179,6 @@ contains
 
       !*** call specific equation of state based on user choice
 
-      select case (ocnEqStateChoice)
-
-      case (ocnEqStateTypeLinear)
-
 #ifdef MPAS_OPENACC
       if (displacement_type == 'surfaceDisplaced') then
          !$acc enter data copyin(tracersSurfaceValue)
@@ -190,6 +186,10 @@ contains
          !$acc enter data copyin(activeTracers)
       endif
 #endif
+
+      select case (ocnEqStateChoice)
+
+      case (ocnEqStateTypeLinear)
 
          if (present(thermalExpansionCoeff) .or. &
              present(salineContractionCoeff)) then
@@ -205,29 +205,7 @@ contains
                      tracersSurfaceValue)
          endif
 
-#ifdef MPAS_OPENACC
-      !$acc update host(density)
-      if (present(thermalExpansionCoeff) .or. &
-          present(salineContractionCoeff)) then
-         !$acc update host(thermalExpansionCoeff,  &
-         !$acc&            salineContractionCoeff)
-      endif
-      if (displacement_type == 'surfaceDisplaced') then
-         !$acc exit data delete(tracersSurfaceValue)
-      else
-         !$acc exit data delete(activeTracers)
-      endif
-#endif
-
       case (ocnEqStateTypeJM)
-
-#ifdef MPAS_OPENACC
-      if (displacement_type == 'surfaceDisplaced') then
-         !$acc enter data copyin(tracersSurfaceValue)
-      else
-         !$acc enter data copyin(activeTracers)
-      endif
-#endif
 
          if (present(thermalExpansionCoeff) .or. &
              present(salineContractionCoeff)) then
@@ -243,20 +221,6 @@ contains
                      indexT, indexS, activeTracers, density, err,     &
                      tracersSurfaceValue)
          endif
-
-#ifdef MPAS_OPENACC
-      !$acc update host(density)
-      if (present(thermalExpansionCoeff) .or. &
-          present(salineContractionCoeff)) then
-         !$acc update host(thermalExpansionCoeff,  &
-         !$acc&            salineContractionCoeff)
-      endif
-      if (displacement_type == 'surfaceDisplaced') then
-         !$acc exit data delete(tracersSurfaceValue)
-      else
-         !$acc exit data delete(activeTracers)
-      endif
-#endif
 
       case (ocnEqStateTypeWright)
 
@@ -279,6 +243,20 @@ contains
       case default
          !*** error handled during init
       end select
+
+#ifdef MPAS_OPENACC
+      !$acc update host(density)
+      if (present(thermalExpansionCoeff) .or. &
+          present(salineContractionCoeff)) then
+         !$acc update host(thermalExpansionCoeff,  &
+         !$acc&            salineContractionCoeff)
+      endif
+      if (displacement_type == 'surfaceDisplaced') then
+         !$acc exit data delete(tracersSurfaceValue)
+      else
+         !$acc exit data delete(activeTracers)
+      endif
+#endif
 
       !*** stop timer and exit
 
