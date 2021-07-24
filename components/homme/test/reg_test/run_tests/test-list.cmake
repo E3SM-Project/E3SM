@@ -83,6 +83,7 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
      theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
+     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
   )
   set(HOMME_THETA_TESTS_WITH_PROFILE "")
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
