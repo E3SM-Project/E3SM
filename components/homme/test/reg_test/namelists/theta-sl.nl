@@ -9,7 +9,7 @@ rotate_grid       = 0
 ne                = ${HOMME_TEST_NE}
 qsize             = ${HOMME_TEST_QSIZE}
 ndays             = ${HOMME_TEST_NDAYS}
-statefreq         = 9999
+statefreq         = 10
 restartfreq       = 43200
 restartfile       = "./R0001"
 runtype           = 0
@@ -39,6 +39,7 @@ transport_alg     = 12
 semi_lagrange_hv_q = 1
 hypervis_subcycle_q = 6
 semi_lagrange_nearest_point_lev = 256
+moisture = '${HOMME_TEST_MOISTURE}'
 /
 &solver_nl
 precon_method = "identity"

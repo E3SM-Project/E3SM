@@ -20,7 +20,7 @@ SET(NC_OUTPUT_FILES
 # Specify test options, used to replace the cmake variables in the namelist
 #DO NOT MOD
 SET (HOMME_TEST_LIM 9)
-SET (HOMME_TEST_MOISTURE dry)
+SET (HOMME_TEST_MOISTURE wet)
 SET (HOMME_TEST_HVSCALING 0) #const HV for now, tensor is tested in preqx
 
 #mod
