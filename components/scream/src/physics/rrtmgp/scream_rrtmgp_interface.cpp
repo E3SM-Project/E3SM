@@ -293,7 +293,7 @@ namespace scream {
             auto &flux_up = fluxes.flux_up;
             auto &flux_dn = fluxes.flux_dn;
             auto &flux_dn_dir = fluxes.flux_dn_dir;
-            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int icol) {
+            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
                 flux_up    (icol,ilev) = 0;
                 flux_dn    (icol,ilev) = 0;
                 flux_dn_dir(icol,ilev) = 0;
