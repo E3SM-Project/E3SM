@@ -40,7 +40,7 @@ public:
     return false;
   }
 
-  void repair(Field<non_const_RT>& field) const override {
+  void repair(Field<non_const_RT>& /* field */) const override {
     // Do Nothing
   }
 
