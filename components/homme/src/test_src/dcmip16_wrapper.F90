@@ -661,20 +661,20 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      zs_fv(:nf,:nf) = reshape(pg_data%zs(:,ie), (/nf,nf/))
      zs_fv(:nf,:nf) = zs_fv(:nf,:nf)/g
      do k = 1,nlev
-        p_fv(:nf,:nf,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_fv
+        p_fv(:nf,:nf,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_fv(:nf,:nf)
         dp_fv(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_fv
+                           (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_fv(:nf,:nf)
      end do
 
      ! Rederive the remaining vars so they are self-consistent; use
      ! hydrostatic assumption.
      if (use_moisture) then
-        Rstar = Rgas + (Rwater_vapor - Rgas)*Q_fv(:nf,:nf,:,iqv)
+        Rstar(:nf,:nf,:) = Rgas + (Rwater_vapor - Rgas)*Q_fv(:nf,:nf,:,iqv)
      else
-        Rstar = Rgas
+        Rstar(:nf,:nf,:) = Rgas
      end if
-     rho_fv = p_fv/(Rstar*T_fv)
-     phi_i(:nf,:nf,nlevp) = g*zs_fv
+     rho_fv(:nf,:nf,:) = p_fv(:nf,:nf,:)/(Rstar(:nf,:nf,:)*T_fv(:nf,:nf,:))
+     phi_i(:nf,:nf,nlevp) = g*zs_fv(:nf,:nf)
      do k = nlev,1,-1
         phi_i(:nf,:nf,k) = phi_i(:nf,:nf,k+1) + &
              (Rstar(:nf,:nf,k)*(dp_fv(:nf,:nf,k)*T_fv(:nf,:nf,k)))/p_fv(:nf,:nf,k)
@@ -736,8 +736,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      do i = 1,3
         Q_fv(:nf,:nf,:,i) = (rho_dry_fv(:nf,:nf,:)/rho_fv(:nf,:nf,:))*Q_fv(:nf,:nf,:,i)
      end do
-     Q_fv(:nf,:nf,:,4) = Q_fv(:nf,:nf,:,4) + dt*ddt_cl
-     Q_fv(:nf,:nf,:,5) = Q_fv(:nf,:nf,:,5) + dt*ddt_cl2
+     Q_fv(:nf,:nf,:,4) = Q_fv(:nf,:nf,:,4) + dt*ddt_cl(:nf,:nf,:)
+     Q_fv(:nf,:nf,:,5) = Q_fv(:nf,:nf,:,5) + dt*ddt_cl2(:nf,:nf,:)
 
      ! Convert from theta to T w.r.t. new model state.
      ! Assume hydrostatic pressure pi changed by qv forcing.
