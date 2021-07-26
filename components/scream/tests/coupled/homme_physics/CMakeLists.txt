@@ -17,21 +17,6 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 # Add source files
 set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 
-# Test Homme + SHOC + CLD + P3 + RRTGMP
-#if (NOT SCREAM_AUTOTESTER)
-#  CreateUnitTest(homme_physics_stand_alone "homme_physics_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-#  set_target_properties(homme_physics_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-#  target_include_directories(homme_physics_stand_alone PUBLIC
-#    ${SCREAM_BASE_DIR}/src/physics/rrtmgp
-#    ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
-#    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
-#  )
-#endif()
 if (NOT SCREAM_AUTOTESTER)
   CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
   set_target_properties(homme_shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
