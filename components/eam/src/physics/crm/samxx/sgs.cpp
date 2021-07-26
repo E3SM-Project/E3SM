@@ -97,12 +97,8 @@ void sgs_scalars() {
   }
 
 #if defined(MMF_ESMT)
-  for (int k=0; k<nmicro_fields; k++) {
-    if (k==index_water_vapor || (docloud && flag_precip(k)!=1) || (doprecip && flag_precip(k)==1)) {
-      diffuse_scalar(sgs_field_diag,1,u_esmt,k,fluxb_u_esmt,k,fluxt_u_esmt,k,u_esmt_diff,k,u_esmt_sgs,k);
-      diffuse_scalar(sgs_field_diag,1,v_esmt,k,fluxb_v_esmt,k,fluxt_v_esmt,k,v_esmt_diff,k,v_esmt_sgs,k);
-    }
-  }
+  diffuse_scalar(sgs_field_diag,1,u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs);
+  diffuse_scalar(sgs_field_diag,1,v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs);
 #endif
 }
 
