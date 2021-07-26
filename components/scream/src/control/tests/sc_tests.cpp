@@ -51,7 +51,7 @@ TEST_CASE ("surface_coupling")
   FID s3d_id("s3d",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
   FID v3d_id("v3d",FL{{COL,CMP,LEV},{ncols,2,nlevs}},m/s,grid->name());
 
-  // NOTE: if you add fields abovew, you will have to modify these counters too.
+  // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_s2d = 1;
   const int num_s3d = 1;
   const int num_v3d = 1;
@@ -145,12 +145,263 @@ TEST_CASE ("surface_coupling")
     v3d_imp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (s2d_exp_h(icol)==s2d_imp_h(icol));
-      REQUIRE (s3d_exp_h(icol,0)==s3d_imp_h(icol,0));
-      REQUIRE (v3d_exp_h(icol,0,0)==v3d_imp_h(icol,0,0));
+      REQUIRE (s3d_exp_h(icol,nlevs-1)==s3d_imp_h(icol,nlevs-1));
+      REQUIRE (v3d_exp_h(icol,0,0)==v3d_imp_h(icol,0,0)); // Is this correct?
       REQUIRE (v3d_exp_h(icol,0,1)==v3d_imp_h(icol,0,1));
     }
   }
 
   // Clean up
   delete[] raw_data;
+}
+
+
+TEST_CASE ("recreate_mct_coupling")
+{
+  /*
+   * This test aims to recreate the import/export of fields inside the mct-coupling
+   * for CIME runs. Much of the code inside surface coupling is hard-coded for these runs.
+   */
+
+  // Some namespaces/aliases
+  using namespace scream;
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  using FL     = FieldLayout;
+  using FID    = FieldIdentifier;
+  using FR     = FieldRequest;
+  using GR     = GroupRequest;
+  using RPDF   = std::uniform_real_distribution<Real>;
+  using rngAlg = std::mt19937_64;
+
+  // Some constants
+  constexpr int ncols = 4;
+  constexpr int nlevs = 8;
+
+  // Create a comm
+  ekat::Comm comm (MPI_COMM_WORLD);
+
+  // The random numbers generator
+  std::random_device rd;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  if (comm.am_i_root()) {
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  }
+  rngAlg engine(seed);
+  RPDF pdf(0.0,1.0);
+
+  // Create a grid
+  auto grid = create_point_grid("my_grid",ncols*comm.size(), nlevs, comm);
+  const auto grid_name = grid->name();
+
+  // Layouts matching those in AD
+  FL scalar2d_layout{ {COL          }, {ncols          } };
+  FL scalar3d_layout{ {COL, LEV     }, {ncols,    nlevs} };
+  FL vector3d_layout{ {COL, CMP, LEV}, {ncols, 2, nlevs} };
+
+  // Create import fields
+  FID surf_latent_flux_id ("surf_latent_flux", scalar2d_layout, W/(m*m), grid_name);
+  FID surf_sens_flux_id   ("surf_sens_flux",   scalar2d_layout, W/(m*m), grid_name);
+  FID surf_u_mom_flux_id  ("surf_u_mom_flux",  scalar2d_layout, W/(m*m), grid_name);
+  FID surf_v_mom_flux_id  ("surf_v_mom_flux",  scalar2d_layout, W/(m*m), grid_name);
+
+  // Create necessary fields for export. Tracers qc and qr are unnecessary, but
+  // are included to verify that subviewed fields (qv) are correctly handled
+  const auto nondim = Units::nondimensional();
+  FID T_mid_id           ("T_mid",           scalar3d_layout, K,      grid_name);
+  FID p_mid_id           ("p_mid",           scalar3d_layout, Pa,     grid_name);
+  FID z_mid_id           ("z_mid",           scalar3d_layout, m,      grid_name);
+  FID horiz_winds_id     ("horiz_winds",     vector3d_layout, m/s,    grid_name);
+  FID pseudo_density_id  ("pseudo_density",  scalar3d_layout, Pa,     grid_name);
+  FID qv_id              ("qv",              scalar3d_layout, nondim, grid_name);
+  FID qc_id              ("qc",              scalar3d_layout, nondim, grid_name);
+  FID qr_id              ("qr",              scalar3d_layout, nondim, grid_name);
+  FID precip_liq_surf_id ("precip_liq_surf", scalar2d_layout, m/s,    grid_name);
+
+  // NOTE: if you add fields above, you will have to modify these counters too.
+  const int num_total_imports  = 21;
+  const int num_scream_imports = 4;
+  const int num_exports        = 13;
+
+  // Register fields and tracer group in a FieldManager
+  auto fm = std::make_shared<FieldManager<Real>> (grid);
+  fm->registration_begins();
+  fm->register_field(FR{surf_latent_flux_id});
+  fm->register_field(FR{surf_sens_flux_id});
+  fm->register_field(FR{surf_u_mom_flux_id});
+  fm->register_field(FR{surf_v_mom_flux_id});
+  fm->register_field(FR{T_mid_id});
+  fm->register_field(FR{p_mid_id});
+  fm->register_field(FR{z_mid_id});
+  fm->register_field(FR{horiz_winds_id});
+  fm->register_field(FR{pseudo_density_id});
+  fm->register_field(FR{qv_id,"tracers"});
+  fm->register_field(FR{qc_id,"tracers"});
+  fm->register_field(FR{qr_id,"tracers"});
+  fm->register_field(FR{precip_liq_surf_id});
+
+  fm->register_group(GR("tracers", grid_name ,Bundling::Required));
+  fm->registration_ends();
+
+  // Create alias to field views
+  auto surf_latent_flux_f = fm->get_field(surf_latent_flux_id);
+  auto surf_sens_flux_f   = fm->get_field(surf_sens_flux_id);
+  auto surf_u_mom_flux_f  = fm->get_field(surf_u_mom_flux_id);
+  auto surf_v_mom_flux_f  = fm->get_field(surf_v_mom_flux_id);
+  auto T_mid_f            = fm->get_field(T_mid_id);
+  auto p_mid_f            = fm->get_field(p_mid_id);
+  auto z_mid_f            = fm->get_field(z_mid_id);
+  auto horiz_winds_f      = fm->get_field(horiz_winds_id);
+  auto pseudo_density_f   = fm->get_field(pseudo_density_id);
+  auto qv_f               = fm->get_field(qv_id);
+  auto precip_liq_surf_f  = fm->get_field(precip_liq_surf_id);
+
+  auto group = fm->get_field_group("tracers");
+  const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
+  auto Q = fm->get_field(Q_name);
+
+  auto surf_latent_flux_d = surf_latent_flux_f.get_reshaped_view<Real*>();
+  auto surf_sens_flux_d   = surf_sens_flux_f.get_reshaped_view<Real*>();
+  auto surf_u_mom_flux_d  = surf_u_mom_flux_f.get_reshaped_view<Real*>();
+  auto surf_v_mom_flux_d  = surf_v_mom_flux_f.get_reshaped_view<Real*>();
+  auto T_mid_d            = T_mid_f.get_reshaped_view<Real**>();
+  auto p_mid_d            = p_mid_f.get_reshaped_view<Real**>();
+  auto z_mid_d            = z_mid_f.get_reshaped_view<Real**>();
+  auto horiz_winds_d      = horiz_winds_f.get_reshaped_view<Real***>();
+  auto pseudo_density_d   = pseudo_density_f.get_reshaped_view<Real**>();
+  auto qv_d               = qv_f.get_reshaped_view<Real**>();
+  auto precip_liq_surf_d  = precip_liq_surf_f.get_reshaped_view<Real*>();
+
+  auto surf_latent_flux_h = surf_latent_flux_f.get_reshaped_view<Real*,Host>();
+  auto surf_sens_flux_h   = surf_sens_flux_f.get_reshaped_view<Real*,Host>();
+  auto surf_u_mom_flux_h  = surf_u_mom_flux_f.get_reshaped_view<Real*,Host>();
+  auto surf_v_mom_flux_h  = surf_v_mom_flux_f.get_reshaped_view<Real*,Host>();
+  auto T_mid_h            = T_mid_f.get_reshaped_view<Real**,Host>();
+  auto p_mid_h            = p_mid_f.get_reshaped_view<Real**,Host>();
+  auto z_mid_h            = z_mid_f.get_reshaped_view<Real**,Host>();
+  auto pseudo_density_h   = pseudo_density_f.get_reshaped_view<Real**,Host>();
+  auto horiz_winds_h      = horiz_winds_f.get_reshaped_view<Real***,Host>();
+  auto qv_h               = qv_f.get_reshaped_view<Real**,Host>();
+  auto precip_liq_surf_h  = precip_liq_surf_f.get_reshaped_view<Real*,Host>();
+
+  // Set import field views to 0
+  surf_latent_flux_f.deep_copy(0.0);
+  surf_sens_flux_f.deep_copy(0.0);
+  surf_u_mom_flux_f.deep_copy(0.0);
+  surf_v_mom_flux_f.deep_copy(0.0);
+
+  // Fill views needed in the export with random values
+  ekat::genRandArray(T_mid_d,engine,pdf);
+  ekat::genRandArray(p_mid_d,engine,pdf);
+  ekat::genRandArray(z_mid_d,engine,pdf);
+  ekat::genRandArray(horiz_winds_d,engine,pdf);
+  ekat::genRandArray(pseudo_density_d,engine,pdf);
+  ekat::genRandArray(precip_liq_surf_d,engine,pdf);
+  ekat::genRandArray(Q.get_view(),engine,pdf);
+
+  // Sync host to device
+  surf_latent_flux_f.sync_to_host();
+  surf_sens_flux_f.sync_to_host();
+  surf_u_mom_flux_f.sync_to_host();
+  surf_v_mom_flux_f.sync_to_host();
+  T_mid_f.sync_to_host();
+  p_mid_f.sync_to_host();
+  z_mid_f.sync_to_host();
+  horiz_winds_f.sync_to_host();
+  pseudo_density_f.sync_to_host();
+  precip_liq_surf_f.sync_to_host();
+  Q.sync_to_host();
+
+  // Import/Export data
+  double* import_raw_data = new Real[ncols*num_total_imports];
+  double* export_raw_data = new Real[ncols*num_exports];
+
+  // Fill import_raw_data with random values
+  for (int i=0; i<ncols*num_total_imports; ++i) {
+    import_raw_data[i] = pdf(engine);
+  }
+
+  // Set all export_raw_data to -1 (might be helpful for debugging)
+  std::fill_n(export_raw_data, num_exports*ncols, -1);
+
+  // Create SC object and set number of import/export fields
+  control::SurfaceCoupling coupler(fm);
+  coupler.set_num_fields(num_total_imports, num_scream_imports, num_exports);
+
+  // Register fields in the coupler. These match the scr_names_x2a/a2x from
+  // scream_cpl_indices.F90. When radiation is fully implemented, RRTMGP
+  // fields will be replaced with correct fields.
+  coupler.register_import("surf_latent_flux", 0);
+  coupler.register_import("surf_sens_flux",   1);
+  coupler.register_import("unused",           2);
+  coupler.register_import("surf_u_mom_flux",  3);
+  coupler.register_import("surf_v_mom_flux",  4);
+  coupler.register_import("RRTMGP",           5);
+  coupler.register_import("RRTMGP",           6);
+  coupler.register_import("RRTMGP",           7);
+  coupler.register_import("RRTMGP",           8);
+  coupler.register_import("RRTMGP",           9);
+  coupler.register_import("unused",           10);
+  coupler.register_import("unused",           11);
+  coupler.register_import("unused",           12);
+  coupler.register_import("unused",           13);
+  coupler.register_import("unused",           14);
+  coupler.register_import("unused",           15);
+  coupler.register_import("RRTMGP",           16);
+  coupler.register_import("unused",           17);
+  coupler.register_import("RRTMGP",           18);
+  coupler.register_import("unused",           19);
+  coupler.register_import("unused",           20);
+
+  coupler.register_export("T_mid",            0);
+  coupler.register_export("Sa_ptem",          1);
+  coupler.register_export("z_mid",            2);
+  coupler.register_export("Sa_u",             3);
+  coupler.register_export("Sa_v",             4);
+  coupler.register_export("p_mid",            5);
+  coupler.register_export("Sa_dens",          6);
+  coupler.register_export("qv",               7);
+  coupler.register_export("set_zero",         8);
+  coupler.register_export("precip_liq_surf",  9);
+  coupler.register_export("set_zero",         10);
+  coupler.register_export("set_zero",         11);
+  coupler.register_export("set_zero",         12);
+
+  // Complete setup of importer/exporter
+  coupler.registration_ends(import_raw_data, export_raw_data);
+
+  // Perform import
+  coupler.do_import();
+
+  // Perform export
+  coupler.do_export();
+
+  for (int icol=0; icol<ncols; ++icol) {
+
+    // Check imports
+
+    REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_total_imports]); // 1st scream import
+    REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_total_imports]); // 2nd scream import
+    REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_total_imports]); // 3rd scream import (4th total import)
+    REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_total_imports]); // 4th scream import (5th total import)
+
+    // Check exports
+
+    // These exports are direct values from a scream field
+    REQUIRE (export_raw_data[0  + icol*num_exports] == T_mid_h          (icol,    nlevs-1)); // 1st export
+    REQUIRE (export_raw_data[2  + icol*num_exports] == z_mid_h          (icol,    nlevs-1)); // 3rd export
+    REQUIRE (export_raw_data[3  + icol*num_exports] == horiz_winds_h    (icol, 0, nlevs-1)); // 4th export
+    REQUIRE (export_raw_data[4  + icol*num_exports] == horiz_winds_h    (icol, 1, nlevs-1)); // 5th export
+    REQUIRE (export_raw_data[5  + icol*num_exports] == p_mid_h          (icol,    nlevs-1)); // 6th export
+    REQUIRE (export_raw_data[7  + icol*num_exports] == qv_h             (icol,    nlevs-1)); // 8th export
+    REQUIRE (export_raw_data[9  + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
+
+    // These exports should be set to 0
+    const auto eps = std::numeric_limits<Real>::epsilon();
+    REQUIRE (abs(export_raw_data[8  + icol*num_exports]) < eps); // 9th export
+    REQUIRE (abs(export_raw_data[10 + icol*num_exports]) < eps); // 11th export
+    REQUIRE (abs(export_raw_data[11 + icol*num_exports]) < eps); // 12th export
+    REQUIRE (abs(export_raw_data[12 + icol*num_exports]) < eps); // 13th export
+  }
 }

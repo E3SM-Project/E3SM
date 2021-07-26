@@ -119,7 +119,8 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
 }
 
 void scream_setup_surface_coupling (
-    const char*& x2a_names, const int*& x2a_indices, double*& cpl_x2a_ptr, const int& num_imports,
+    const char*& x2a_names, const int*& x2a_indices, double*& cpl_x2a_ptr,
+    const int& num_imports, const int& num_scream_imports,
     const char*& a2x_names, const int*& a2x_indices, double*& cpl_a2x_ptr, const int& num_exports)
 {
   fpe_guard_wrapper([&](){
@@ -137,7 +138,7 @@ void scream_setup_surface_coupling (
     const auto& sc = ad.get_surface_coupling();
 
     // Register import/export fields
-    sc->set_num_fields(num_imports,num_exports);
+    sc->set_num_fields(num_imports,num_scream_imports,num_exports);
     for (int i=0; i<num_imports; ++i) {
       sc->register_import(names_in[i],x2a_indices[i]);
     }

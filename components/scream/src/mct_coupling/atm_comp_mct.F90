@@ -146,13 +146,13 @@ CONTAINS
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
 
+    ! Complete AD initialization
+    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT))
+
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
     call scream_setup_surface_coupling (c_loc(scr_names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), num_imports, &
                                         c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), num_exports)
-
-    ! Complete AD initialization
-    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT))
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
