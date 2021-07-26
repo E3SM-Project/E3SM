@@ -243,18 +243,6 @@
   <!-- ****************************************** -->
 
   <!-- ********** F compsets ********** -->
-
-  <!-- Old MMF compsets for comparing with original ECP fork -->
-  <compset>
-    <alias>FSP1V1</alias>
-    <lname>2000_EAM%SP1V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>FSP2V1</alias>
-    <lname>2000_EAM%SP2V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <!-- New MMF compsets for new implementation in E3SM repo -->
   <compset>
     <alias>F-MMF1</alias>
     <lname>2000_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
