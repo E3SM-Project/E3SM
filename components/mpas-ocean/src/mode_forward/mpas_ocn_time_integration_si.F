@@ -3422,7 +3422,7 @@ module ocn_time_integration_si
 
       ! Determination of nSiLargeIter (the barotropic system 
       !                                large iteration loop)
-      !    - Currently, it is set as 2 for the ISMF case.
+      !    - Currently, it is set as 2 when numTSIterations is 1.
       !    - Also, nSiLargeIter can be controlled by user if needed.
       !    - Higher nSiLargeIter can make simulations more stable and
       !      accurate, but runtime for the barotropic system will 
