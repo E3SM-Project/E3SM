@@ -17,16 +17,52 @@
 namespace scream {
 namespace shoc {
 
-struct ShocGridData : public PhysicsTestData {
+struct ShocTestGridDataBase : public PhysicsTestData
+{
+  Real *zt_grid, *zi_grid;
+
+  ShocTestGridDataBase(
+    const std::vector<std::vector<Int> >& dims,
+    const std::vector<std::vector<Real**> >& reals,
+    const std::vector<std::vector<Int**> >& ints = {},
+    const std::vector<std::vector<bool**> >& bools = {}) :
+    PhysicsTestData(dims, reals, ints, bools)
+  {}
+
+  template <typename Engine>
+  void randomize(Engine& engine, const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {})
+  {
+    PhysicsTestData::randomize(engine, ranges);
+
+    // Don't want true randomness in the grid data, need interleaved grid points
+    const auto shcol = dim(zt_grid, 0);
+    const auto nlev  = dim(zt_grid, 1);
+    const auto nlevi = dim(zi_grid, 1);
+
+    EKAT_REQUIRE_MSG(shcol == dim(zi_grid, 0), "Mismatched shcol dim for zt_grid and zi_grid");
+    EKAT_REQUIRE_MSG(nlev == nlevi-1, "Mismatched lev dim for zt_grid and zi_grid");
+
+    // sort the nlevi data
+    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
+      std::sort(zi_grid + nlevi*i, zi_grid + nlevi*(i+1));
+      for (auto k = decltype(nlev){0}; k < nlev; ++k) {
+        std::uniform_real_distribution<Real> x2_dist(zi_grid[nlevi*i + k], zi_grid[nlevi*i + k+1]);
+        zt_grid[nlev*i + k] = x2_dist(engine);
+      }
+    }
+  }
+};
+
+struct ShocGridData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *zt_grid, *zi_grid, *pdel;
+  Real *pdel;
 
   // Outputs
   Real *dz_zt, *dz_zi, *rho_zt;
 
   ShocGridData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &zt_grid, &pdel, &dz_zt, &rho_zt }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &zt_grid, &pdel, &dz_zt, &rho_zt }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocGridData, 3, shcol, nlev, nlevi);
 };
@@ -59,17 +95,17 @@ struct UpdateHostDseData : public PhysicsTestData {
   PTD_STD_DEF(UpdateHostDseData, 2, shcol, nlev);
 };
 
-struct ShocEnergyFixerData : public PhysicsTestData {
+struct ShocEnergyFixerData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, nadv;
   Real dtime;
-  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt, *tke, *pint;
+  Real *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt, *tke, *pint;
 
   // Inputs/Outputs
   Real *host_dse;
 
   ShocEnergyFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt, &tke, &host_dse }, { &zi_grid, &pint }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt, &tke, &host_dse }, { &zi_grid, &pint }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
 
   PTD_STD_DEF(ShocEnergyFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
 };
@@ -88,17 +124,17 @@ struct ShocEnergyIntegralsData : public PhysicsTestData {
   PTD_STD_DEF(ShocEnergyIntegralsData, 2, shcol, nlev);
 };
 
-struct ShocEnergyTotalFixerData : public PhysicsTestData {
+struct ShocEnergyTotalFixerData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, nadv;
   Real dtime;
-  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
+  Real *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
 
   // Outputs
   Real *te_a, *te_b;
 
   ShocEnergyTotalFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
 
   PTD_STD_DEF(ShocEnergyTotalFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
 };
@@ -261,11 +297,11 @@ struct CheckTkeData : public PhysicsTestData {
   PTD_STD_DEF(CheckTkeData, 2, shcol, nlev);
 };
 
-struct ShocTkeData : public PhysicsTestData {
+struct ShocTkeData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
   Real dtime;
-  Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *u_wind, *v_wind, *brunt, *obklen, *zt_grid, *zi_grid, *pblh;
+  Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *u_wind, *v_wind, *brunt, *obklen, *pblh;
 
   // Inputs/Outputs
   Real *tke, *tk, *tkh;
@@ -274,7 +310,7 @@ struct ShocTkeData : public PhysicsTestData {
   Real *isotropy;
 
   ShocTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy }, { &dz_zi, &zi_grid }, { &obklen, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy }, { &dz_zi, &zi_grid }, { &obklen, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
 
   PTD_STD_DEF(ShocTkeData, 4, shcol, nlev, nlevi, dtime);
 };
@@ -339,16 +375,16 @@ struct EddyDiffusivitiesData : public PhysicsTestData {
   PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
 };
 
-struct ShocLengthData : public PhysicsTestData {
+struct ShocLengthData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *host_dx, *host_dy, *tke, *zt_grid, *zi_grid, *dz_zt, *thv;
+  Real *host_dx, *host_dy, *tke, *dz_zt, *thv;
 
   // Outputs
   Real *brunt, *shoc_mix;
 
   ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };
@@ -514,16 +550,16 @@ struct LinearInterpData : public PhysicsTestData {
   PTD_STD_DEF(LinearInterpData, 4, ncol, km1, km2, minthresh);
 };
 
-struct DiagThirdShocMomentsData : public PhysicsTestData {
+struct DiagThirdShocMomentsData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *w_sec, *thl_sec, *wthl_sec, *isotropy, *brunt, *thetal, *tke, *dz_zt, *dz_zi, *zt_grid, *zi_grid;
+  Real *w_sec, *thl_sec, *wthl_sec, *isotropy, *brunt, *thetal, *tke, *dz_zt, *dz_zi;
 
   // Outputs
   Real *w3;
 
   DiagThirdShocMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &isotropy, &brunt, &thetal, &tke, &dz_zt, &zt_grid }, { &thl_sec, &wthl_sec, &dz_zi, &zi_grid, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &isotropy, &brunt, &thetal, &tke, &dz_zt, &zt_grid }, { &thl_sec, &wthl_sec, &dz_zi, &zi_grid, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(DiagThirdShocMomentsData, 3, shcol, nlev, nlevi);
 };
@@ -542,16 +578,16 @@ struct ComputeDiagThirdShocMomentData : public PhysicsTestData {
   PTD_STD_DEF(ComputeDiagThirdShocMomentData, 3, shcol, nlev, nlevi);
 };
 
-struct ShocAssumedPdfData : public PhysicsTestData {
+struct ShocAssumedPdfData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec, *wqw_sec, *qwthl_sec, *w3, *pres, *zt_grid, *zi_grid;
+  Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec, *wqw_sec, *qwthl_sec, *w3, *pres;
 
   // Outputs
   Real *shoc_cldfrac, *shoc_ql, *wqls, *wthv_sec, *shoc_ql2;
 
   ShocAssumedPdfData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2 }, { &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &w3, &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2 }, { &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &w3, &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocAssumedPdfData, 3, shcol, nlev, nlevi);
 };
@@ -708,10 +744,10 @@ struct DiagSecondMomentsLbycondData : public PhysicsTestData {
   PTD_STD_DEF(DiagSecondMomentsLbycondData, 1, shcol);
 };
 
-struct DiagSecondMomentsData : public PhysicsTestData {
+struct DiagSecondMomentsData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *zt_grid, *zi_grid, *shoc_mix;
+  Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *shoc_mix;
 
   // Inputs/Outputs
   Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec, *uw_sec, *vw_sec, *wtke_sec;
@@ -720,21 +756,21 @@ struct DiagSecondMomentsData : public PhysicsTestData {
   Real *w_sec;
 
   DiagSecondMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(DiagSecondMomentsData, 3, shcol, nlev, nlevi);
 };
 
-struct DiagSecondShocMomentsData : public PhysicsTestData {
+struct DiagSecondShocMomentsData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *zt_grid, *zi_grid, *shoc_mix, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc;
+  Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *shoc_mix, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc;
 
   // Outputs
   Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec, *uw_sec, *vw_sec, *wtke_sec, *w_sec;
 
   DiagSecondShocMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }, { &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }, { &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(DiagSecondShocMomentsData, 3, shcol, nlev, nlevi);
 };
@@ -753,26 +789,26 @@ struct ComputeShocVaporData : public PhysicsTestData {
   PTD_STD_DEF(ComputeShocVaporData, 2, shcol, nlev);
 };
 
-struct UpdatePrognosticsImplicitData : public PhysicsTestData {
+struct UpdatePrognosticsImplicitData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, num_tracer;
   Real dtime;
-  Real *dz_zt, *dz_zi, *rho_zt, *zt_grid, *zi_grid, *tk, *tkh, *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *wtracer_sfc;
+  Real *dz_zt, *dz_zi, *rho_zt, *tk, *tkh, *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *wtracer_sfc;
 
   // Inputs/Outputs
   Real *thetal, *qw, *tracer, *tke, *u_wind, *v_wind;
 
   UpdatePrognosticsImplicitData(Int shcol_, Int nlev_, Int nlevi_, Int num_tracer_, Real dtime_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }, { shcol_, num_tracer_ }, { shcol_, nlev_, num_tracer_ }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &wtracer_sfc }, { &tracer }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }, { shcol_, num_tracer_ }, { shcol_, nlev_, num_tracer_ }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &wtracer_sfc }, { &tracer }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
 
   PTD_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
 };
 
-struct ShocMainData : public PhysicsTestData {
+struct ShocMainData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, nadv, num_qtracers;
   Real dtime;
-  Real *host_dx, *host_dy, *thv, *zt_grid, *zi_grid, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *wtracer_sfc, *w_field, *exner, *phis;
+  Real *host_dx, *host_dy, *thv, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *wtracer_sfc, *w_field, *exner, *phis;
 
   // Inputs for shoc_init
   Int nbot_shoc, ntop_shoc;
@@ -787,7 +823,7 @@ struct ShocMainData : public PhysicsTestData {
   Real elapsed_s;
 
   ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_, Int nbot_shoc_, Int ntop_shoc_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }, { nlev_ }},
+    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }, { nlev_ }},
                     {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh },
                      { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal,
                        &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac,

@@ -268,7 +268,7 @@ class PhysicsTestData
     m_ints.randomize(engine, default_int_dist);
     m_bools.randomize(engine, default_bool_dist);
 
-    // override defauls if user requested something specific
+    // override defaults if user requested something specific
     for (const auto& p : ranges) {
       const auto& range = p.second;
       const Real bottom_range = range.first;
