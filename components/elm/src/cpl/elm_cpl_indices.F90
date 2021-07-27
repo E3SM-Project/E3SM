@@ -45,6 +45,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_fv           ! friction velocity  
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
   integer, public ::index_l2x_Sl_soilw        ! volumetric soil water
+  integer, public ::index_l2x_Sl_wslake       ! lake water storage
   integer, public ::index_l2x_Fall_taux       ! wind stress, zonal
   integer, public ::index_l2x_Fall_tauy       ! wind stress, meridional
   integer, public ::index_l2x_Fall_lat        ! latent          heat flux
@@ -191,6 +192,7 @@ contains
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')
+    index_l2x_Sl_wslake     = mct_avect_indexra(l2x,'Sl_wslake')
     if ( lnd_drydep )then
        index_l2x_Sl_ddvel = mct_avect_indexra(l2x, trim(drydep_fields_token))
     else

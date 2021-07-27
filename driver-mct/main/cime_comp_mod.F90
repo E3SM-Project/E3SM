@@ -4770,7 +4770,7 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
        call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
-          call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          call seq_diag_lnd_mct(Eclock_l, lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
        endif
        if (rof_present) then
           call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)

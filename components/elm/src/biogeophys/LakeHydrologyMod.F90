@@ -166,6 +166,7 @@ contains
          h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
          h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+         wslake               =>  waterstate_vars%wslake_col, &
 
          qflx_floodc          =>  col_wf%qflx_floodc        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
          qflx_prec_grnd       =>  veg_wf%qflx_prec_grnd   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
@@ -722,7 +723,7 @@ contains
             else
                qflx_snwcp = qflx_snwcp_ice_col(c)
             end if
-            qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice - &
+            qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
                 (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          end if
 

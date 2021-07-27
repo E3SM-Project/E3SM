@@ -1387,6 +1387,15 @@ contains
     attname  = 'Faxx_evap'
     call metadata_set(attname, longname, stdname, units)
 
+    if (trim(cime_model) == 'e3sm') then
+       call seq_flds_add(l2x_states,"Sl_wslake")
+       longname = 'Lake water storage'
+       stdname  = 'lake_water_storage'
+       units    = 'kg m-2'
+       attname  = 'Sl_wslake'
+       call metadata_set(attname, longname, stdname, units)
+    end if
+
     ! Dust flux (particle bin number 1)
     call seq_flds_add(l2x_fluxes,"Fall_flxdst1")
     call seq_flds_add(x2a_fluxes,"Fall_flxdst1")

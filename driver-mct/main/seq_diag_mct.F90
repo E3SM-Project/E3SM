@@ -255,6 +255,8 @@ module seq_diag_mct
   integer :: index_l2x_Flrl_rofdto
   integer :: index_l2x_Flrl_rofi
   integer :: index_l2x_Flrl_irrig
+  integer :: index_l2x_Sl_wslake
+
 
   integer :: index_x2l_Faxa_lwdn
   integer :: index_x2l_Faxa_rainc
@@ -819,8 +821,9 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
+  subroutine seq_diag_lnd_mct( Eclock, lnd, frac_l, infodata, do_l2x, do_x2l)
 
+    type(ESMF_Clock)        , intent(in)           :: EClock    
     type(component_type)    , intent(in)           :: lnd    ! component type for instance1
     type(mct_aVect)         , intent(in)           :: frac_l ! frac bundle
     type(seq_infodata_type) , intent(in)           :: infodata
@@ -837,6 +840,7 @@ contains
     integer(in)              :: kArea        ! index of area field in aVect
     integer(in)              :: kl           ! fraction indices
     integer(in)              :: lSize        ! size of aVect
+    integer                  :: dt           ! timestep size
     real(r8)                 :: ca_l         ! area of a grid cell
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_lnd = .false.
@@ -861,6 +865,8 @@ contains
     kArea = mct_aVect_indexRA(dom_l%data,afldname)
     kl    = mct_aVect_indexRA(frac_l,lfrinname)
 
+    call seq_timemgr_EClockGetData(EClock,dtime=dt)
+
     if (present(do_l2x)) then
        if (first_time) then
           index_l2x_Fall_swnet  = mct_aVect_indexRA(l2x_l,'Fall_swnet')
@@ -874,6 +880,7 @@ contains
           index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
           index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
+          index_l2x_Sl_wslake   = mct_aVect_indexRA(l2x_l,'Sl_wslake')
 
           index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
           if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -903,7 +910,8 @@ contains
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
-               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Sl_wslake,n)/dt
           if (index_l2x_Flrl_irrig /= 0) then
              nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
           end if

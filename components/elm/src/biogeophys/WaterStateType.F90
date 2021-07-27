@@ -52,6 +52,7 @@ module WaterstateType
      real(r8), pointer :: h2ocan_patch           (:)   ! patch canopy water (mm H2O)
      real(r8), pointer :: h2ocan_col             (:)   ! col canopy water (mm H2O)
      real(r8), pointer :: h2osfc_col             (:)   ! col surface water (mm H2O)
+     real(r8), pointer :: wslake_col             (:)   ! col lake water storage (mm H2O)
      real(r8), pointer :: swe_old_col            (:,:) ! col initial snow water
      real(r8), pointer :: liq1_grc               (:)   ! grc initial gridcell total h2o liq content
      real(r8), pointer :: liq2_grc               (:)   ! grc post land cover change total liq content
@@ -225,6 +226,7 @@ contains
     allocate(this%h2ocan_col             (begc:endc))                     ; this%h2ocan_col             (:)   = nan  
     allocate(this%h2osfc_col             (begc:endc))                     ; this%h2osfc_col             (:)   = nan   
     allocate(this%swe_old_col            (begc:endc,-nlevsno+1:0))        ; this%swe_old_col            (:,:) = nan   
+    allocate(this%wslake_col             (begc:endc))                     ; this%wslake_col             (:)   = nan
     allocate(this%liq1_grc               (begg:endg))                     ; this%liq1_grc               (:)   = nan
     allocate(this%liq2_grc               (begg:endg))                     ; this%liq2_grc               (:)   = nan
     allocate(this%ice1_grc               (begg:endg))                     ; this%ice1_grc               (:)   = nan
