@@ -321,7 +321,6 @@ contains
     use elm_varctl      , only : carbonphosphorus_only!
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
-    use pftvarcon        , only: percrop
     use elm_varpar       , only: nlevdecomp
     use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
     !
@@ -613,7 +612,7 @@ contains
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
 
-            if (croplive(p) .and. percrop(ivt(p)) == 0.0_r8 ) then
+            if (croplive(p)) then
                ! same phases appear in subroutine CropPhenology
 
                ! Phase 1 completed:
@@ -720,22 +719,6 @@ contains
                   aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
                   arepr(p) = 0._r8    ! a few lines down
                end if
-
-               f1 = aroot(p) / aleaf(p)
-               f3 = astem(p) / aleaf(p)
-               f5 = arepr(p) / aleaf(p)
-               g1 = 0.25_r8
-
-            else if (croplive(p) .and. percrop(ivt(p)) == 1.0_r8) then
-               arepr(p) = 0._r8
-               aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
-                    (arooti(ivt(p)) - arootf(ivt(p))) *  &
-                    min(1._r8, hui(p)/gddmaturity(p))))
-               fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
-                    exp(-bfact(ivt(p))*hui(p)/gddmaturity(p))) / &      ! replacing huigrain with gddmaturity since huigrain does not exist for perennial crops
-                    (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
-               aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
-               astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
 
                f1 = aroot(p) / aleaf(p)
                f3 = astem(p) / aleaf(p)

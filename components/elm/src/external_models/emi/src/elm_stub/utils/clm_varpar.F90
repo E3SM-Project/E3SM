@@ -45,18 +45,16 @@ module clm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  integer, parameter :: mxpft       =  50     ! maximum number of PFT's for any mode;
+  integer, parameter :: mxpft       =  24     ! maximum number of PFT's for any mode;
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
   integer :: numpft      = mxpft   ! actual # of patches (without bare)
-  integer :: numcft      =  36     ! actual # of crops
+  integer :: numcft      =  10     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
-
-  integer :: mxpft_nc            ! maximum number of PFT's when use_crop=False;
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 
@@ -111,12 +109,11 @@ contains
 
     if (use_crop) then
        numpft      = mxpft   ! actual # of patches (without bare)
-       numcft      =  36     ! actual # of crops
+       numcft      =  10     ! actual # of crops
        crop_prog   = .true.  ! If prognostic crops is turned on
     else
        numpft      = numveg  ! actual # of patches (without bare)
        numcft      =   2     ! actual # of crops
-       mxpft_nc    =  24     ! maximum number of PFT's when use_crop=False;
        crop_prog   = .false. ! If prognostic crops is turned on
     end if
 

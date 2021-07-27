@@ -10,7 +10,6 @@ module pftvarcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use elm_varpar  , only:  mxpft_nc
   use elm_varctl  , only : iulog, use_vertsoilc
   use elm_varpar  , only : nlevdecomp_full, nsoilorder
   use elm_varctl  , only : nu_com
@@ -38,7 +37,6 @@ module pftvarcon
   integer :: nc3_nonarctic_grass    !value for C3 non-arctic grass
   integer :: nc4_grass              !value for C4 grass
   integer :: npcropmin              !value for first crop
-  integer :: nppercropmin           !value for first perennial crop
   integer :: ncorn                  !value for corn, rain fed (rf)
   integer :: ncornirrig             !value for corn, irrigated (ir)
   integer :: nscereal               !value for spring temperate cereal (rf)
@@ -48,36 +46,9 @@ module pftvarcon
   integer :: nsoybean               !value for soybean (rf)
   integer :: nsoybeanirrig          !value for soybean (ir)
   integer :: npcropmax              !value for last prognostic crop in list
-  integer :: nppercropmax           !value for last prognostic perennial crop in list
   integer :: nc3crop                !value for generic crop (rf)
   integer :: nc3irrig               !value for irrigated generic crop (ir)
-  integer :: ncassava               !value for cassava, rain fed (rf)
-  integer :: ncassavairrig          !value for cassava, irrigated (ir)
-  integer :: ncotton                !value for cotton, rain fed (rf)
-  integer :: ncottonirrig           !value for cotton, irrigated (ir)
-  integer :: nfoddergrass           !value for foddergrass, rain fed (rf)
-  integer :: nfoddergrassirrig      !value for foddergrass, irrigated (ir)
-  integer :: noilpalm               !value for oilpalm, rain fed (rf)
-  integer :: noilpalmirrig          !value for oilpalm, irrigated (ir)
-  integer :: nograins               !value for other grains, rain fed (rf)
-  integer :: nograinsirrig          !value for other grains, irrigated (ir)
-  integer :: nrapeseed              !value for rapeseed, rain fed (rf)
-  integer :: nrapeseedirrig         !value for rapeseed, irrigated (ir)
-  integer :: nrice                  !value for rice, rain fed (rf)
-  integer :: nriceirrig             !value for rice, irrigated (ir)
-  integer :: nrtubers               !value for root tubers, rain fed (rf)
-  integer :: nrtubersirrig          !value for root tubers, irrigated (ir)
-  integer :: nsugarcane             !value for sugarcane, rain fed (rf)
-  integer :: nsugarcaneirrig        !value for sugarcane, irrigated (ir)  
-  integer :: nmiscanthus            !value for miscanthus, rain fed (rf)
-  integer :: nmiscanthusirrig       !value for miscanthus, irrigated (ir)
-  integer :: nswitchgrass           !value for switchgrass, rain fed (rf)
-  integer :: nswitchgrassirrig      !value for switchgrass, irrigated (ir)
-  integer :: npoplar                !value for poplar, rain fed (rf)
-  integer :: npoplarirrig           !value for poplar, irrigated (ir)
-  integer :: nwillow                !value for willow, rain fed (rf)
-  integer :: nwillowirrig           !value for willow, irrigated (ir)  
-  
+
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
@@ -96,7 +67,6 @@ module pftvarcon
   real(r8), allocatable :: roota_par(:)   !CLM rooting distribution parameter [1/m]
   real(r8), allocatable :: rootb_par(:)   !CLM rooting distribution parameter [1/m]
   real(r8), allocatable :: crop(:)        !crop pft: 0. = not crop, 1. = crop pft
-  real(r8), allocatable :: percrop(:)     !perennial crop pft: 0. = not annual crop, 1. = perennial crop pft
   real(r8), allocatable :: irrigated(:)   !irrigated pft: 0. = not, 1. = irrigated
   real(r8), allocatable :: smpso(:)       !soil water potential at full stomatal opening (mm)
   real(r8), allocatable :: smpsc(:)       !soil water potential at full stomatal closure (mm)
@@ -160,8 +130,6 @@ module pftvarcon
   integer , allocatable :: mxSHplantdate(:)!maximum planting date for SouthHemisphere (YYYYMMDD)
   real(r8), allocatable :: planttemp(:)    !planting temperature used in Phenology (K)
   real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in Phenology (K)
-  real(r8), allocatable :: senestemp(:)    !senescence temperature for perennial crops used in Phenology (K)
-  real(r8), allocatable :: min_days_senes(:)   !minimum leaf age to allow for leaf senescence
   real(r8), allocatable :: froot_leaf(:)   !allocation parameter: new fine root C per new leaf C (gC/gC) 
   real(r8), allocatable :: stem_leaf(:)    !allocation parameter: new stem c per new leaf C (gC/gC)
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)
@@ -378,32 +346,6 @@ contains
     expected_pftnames(22) = 'irrigated_winter_temperate_cereal  '
     expected_pftnames(23) = 'soybean                            '
     expected_pftnames(24) = 'irrigated_soybean                  '
-    expected_pftnames(25) = 'cassava                            '
-    expected_pftnames(26) = 'irrigated_cassava                  '
-    expected_pftnames(27) = 'cotton                             '
-    expected_pftnames(28) = 'irrigated_cotton                   '
-    expected_pftnames(29) = 'foddergrass                        '
-    expected_pftnames(30) = 'irrigated_foddergrass              '
-    expected_pftnames(31) = 'oilpalm                            '
-    expected_pftnames(32) = 'irrigated_oilpalm                  '
-    expected_pftnames(33) = 'other_grains                       '
-    expected_pftnames(34) = 'irrigated_other_grains             '
-    expected_pftnames(35) = 'rapeseed                           '
-    expected_pftnames(36) = 'irrigated_rapeseed                 '
-    expected_pftnames(37) = 'rice                               '
-    expected_pftnames(38) = 'irrigated_rice                     '
-    expected_pftnames(39) = 'root_tubers                        '
-    expected_pftnames(40) = 'irrigated_root_tubers              '
-    expected_pftnames(41) = 'sugarcane                          '
-    expected_pftnames(42) = 'irrigated_sugarcane                '
-    expected_pftnames(43) = 'miscanthus                         '
-    expected_pftnames(44) = 'irrigated_miscanthus               '
-    expected_pftnames(45) = 'switchgrass                        '
-    expected_pftnames(46) = 'irrigated_switchgrass              '
-    expected_pftnames(47) = 'poplar                             '
-    expected_pftnames(48) = 'irrigated_poplar                   '
-    expected_pftnames(49) = 'willow                             '
-    expected_pftnames(50) = 'irrigated_willow                   '
 
     allocate( dleaf         (0:mxpft) )       
     allocate( c3psn         (0:mxpft) )       
@@ -417,14 +359,13 @@ contains
     allocate( roota_par     (0:mxpft) )   
     allocate( rootb_par     (0:mxpft) )   
     allocate( crop          (0:mxpft) )        
-    allocate( percrop       (0:mxpft) )
     allocate( irrigated     (0:mxpft) )   
     allocate( smpso         (0:mxpft) )       
     allocate( smpsc         (0:mxpft) )       
     allocate( fnitr         (0:mxpft) )       
     allocate( slatop        (0:mxpft) )      
     allocate( dsladlai      (0:mxpft) )    
-    allocate( leafcn        (0:mxpft) )
+    allocate( leafcn        (0:mxpft) )      
     allocate( flnr          (0:mxpft) )        
     allocate( woody         (0:mxpft) )       
     allocate( lflitcn       (0:mxpft) )      
@@ -472,8 +413,6 @@ contains
     allocate( mxSHplantdate (0:mxpft) )
     allocate( planttemp     (0:mxpft) )    
     allocate( minplanttemp  (0:mxpft) ) 
-    allocate( senestemp     (0:mxpft) )
-    allocate( min_days_senes (0:mxpft) )
     allocate( froot_leaf    (0:mxpft) )   
     allocate( stem_leaf     (0:mxpft) )    
     allocate( croot_stem    (0:mxpft) )   
@@ -714,13 +653,7 @@ contains
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
        call ncd_io('fyield',fyield, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-       call ncd_io('percrop', percrop, 'read', ncid, readvar=readv)
-       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-       call ncd_io('senescence_temp', senestemp, 'read', ncid, readvar=readv)
-       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-       call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
-       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    end if
+    endif
     if(use_dynroot)then
        call ncd_io('root_dmx',root_dmx, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -1003,7 +936,6 @@ contains
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_fates)then
-          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
@@ -1036,103 +968,30 @@ contains
        if ( trim(pftname(i)) == 'irrigated_winter_temperate_cereal'   ) nwcerealirrig        = i
        if ( trim(pftname(i)) == 'soybean'                             ) nsoybean             = i
        if ( trim(pftname(i)) == 'irrigated_soybean'                   ) nsoybeanirrig        = i
-       if ( trim(pftname(i)) == 'cassava'                             ) ncassava             = i
-       if ( trim(pftname(i)) == 'irrigated_cassava'                   ) ncassavairrig        = i
-       if ( trim(pftname(i)) == 'cotton'                              ) ncotton              = i
-       if ( trim(pftname(i)) == 'irrigated_cotton'                    ) ncottonirrig         = i
-       if ( trim(pftname(i)) == 'foddergrass'                         ) nfoddergrass         = i
-       if ( trim(pftname(i)) == 'irrigated_foddergrass'               ) nfoddergrassirrig    = i
-       if ( trim(pftname(i)) == 'oilpalm'                             ) noilpalm             = i
-       if ( trim(pftname(i)) == 'irrigated_oilpalm'                   ) noilpalmirrig        = i
-       if ( trim(pftname(i)) == 'other_grains'                        ) nograins             = i
-       if ( trim(pftname(i)) == 'irrigated_other_grains'              ) nograinsirrig        = i
-       if ( trim(pftname(i)) == 'rapeseed'                            ) nrapeseed            = i
-       if ( trim(pftname(i)) == 'irrigated_rapeseed'                  ) nrapeseedirrig       = i
-       if ( trim(pftname(i)) == 'rice'                                ) nrice                = i
-       if ( trim(pftname(i)) == 'irrigated_rice'                      ) nriceirrig           = i
-       if ( trim(pftname(i)) == 'root_tubers'                         ) nrtubers             = i
-       if ( trim(pftname(i)) == 'irrigated_root_tubers'               ) nrtubersirrig        = i
-       if ( trim(pftname(i)) == 'sugarcane'                           ) nsugarcane           = i
-       if ( trim(pftname(i)) == 'irrigated_sugarcane'                 ) nsugarcaneirrig      = i
-       if ( trim(pftname(i)) == 'miscanthus'                          ) nmiscanthus          = i
-       if ( trim(pftname(i)) == 'irrigated_miscanthus'                ) nmiscanthusirrig     = i
-       if ( trim(pftname(i)) == 'switchgrass'                         ) nswitchgrass         = i
-       if ( trim(pftname(i)) == 'irrigated_switchgrass'               ) nswitchgrassirrig    = i
-       if ( trim(pftname(i)) == 'poplar'                              ) npoplar              = i
-       if ( trim(pftname(i)) == 'irrigated_poplar'                    ) npoplarirrig         = i
-       if ( trim(pftname(i)) == 'willow'                              ) nwillow              = i
-       if ( trim(pftname(i)) == 'irrigated_willow'                    ) nwillowirrig         = i
     end do
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
-    if( .not. use_crop) then
-       npcropmax            = nsoybeanirrig        ! last prognostic crop in list
-    else
-       npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
-       nppercropmin         = nmiscanthus          ! first prognostic perennial crop
-       nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
-    end if
+    npcropmax            = nsoybeanirrig        ! last prognostic crop in list
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
 
     if( .not. use_fates ) then
-       if( .not. use_crop) then
-          if ( npcropmax /= mxpft_nc )then
-             call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
-          end if
-       else
-          if ( nppercropmax /= mxpft )then
-             call endrun(msg=' ERROR: nppercropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
-          end if
+       if ( npcropmax /= mxpft )then
+          call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
        end if
        do i = 0, mxpft
-          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
-          if( .not. use_crop) then
-             if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
-                                                 i == ncornirrig .or. &
-                                                 i == nscerealirrig .or. &
-                                                 i == nwcerealirrig .or. &
-                                                 i == nsoybeanirrig ) ) then
-                ! correct
-             else if ( irrigated(i) == 0.0_r8 )then
-                ! correct
-             else
-                call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
-             end if
+          if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
+                                              i == ncornirrig .or. &
+                                              i == nscerealirrig .or. &
+                                              i == nwcerealirrig .or. &
+                                              i == nsoybeanirrig) )then
+             ! correct
+          else if ( irrigated(i) == 0.0_r8 )then
+             ! correct
           else
-             if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
-                                                 i == ncornirrig .or. &
-                                                 i == nscerealirrig .or. &
-                                                 i == nwcerealirrig .or. &
-                                                 i == nsoybeanirrig .or. &
-                                                 i == ncassavairrig .or. &
-                                                 i == ncottonirrig .or. &
-                                                 i == nfoddergrassirrig .or. &
-                                                 i == noilpalmirrig .or. &
-                                                 i == nograinsirrig .or. &
-                                                 i == nrapeseedirrig .or. &
-                                                 i == nriceirrig .or. &
-                                                 i == nrtubersirrig .or. &
-                                                 i == nsugarcaneirrig .or. &
-                                                 i == nmiscanthusirrig .or. &
-                                                 i == nswitchgrassirrig .or. &
-                                                 i == npoplarirrig .or. &
-                                                 i == nwillowirrig ) )then
-                ! correct
-             else if ( irrigated(i) == 0.0_r8 )then
-                ! correct
-             else
-                call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
-             end if
-             if (      percrop(i) == 1.0_r8 .and. (i >= nmiscanthus .and. i <= nppercropmax))then
-                ! correct
-             else if ( percrop(i) == 0.0_r8 )then
-                ! correct
-             else
-                call endrun(msg=' ERROR: perennial crop has wrong values'//errMsg(__FILE__, __LINE__))
-             end if
+             call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
           end if
           if (      crop(i) == 1.0_r8 .and. (i >= nc3crop .and. i <= npcropmax) )then
              ! correct

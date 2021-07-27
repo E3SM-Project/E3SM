@@ -110,7 +110,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c210219.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
@@ -296,7 +296,7 @@ lnd/clm2/surfdata_map/surfdata_10x15_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_numaIA"       sim_year="2000" use_crop=".true." >
 lnd/clm2/surfdata_map/surfdata_1x1_numaIA_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_smallvilleIA" sim_year="2000" use_crop=".true." >
-lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c210617.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp24_simyr2000_c130927.nc</fsurdat>
 
 <fsurdat hgrid="5x5_amazon"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>

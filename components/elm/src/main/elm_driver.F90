@@ -1078,11 +1078,11 @@ contains
              end if !if (use_elm_interface)
              !--------------------------------------------------------------------------------
 
+
              call EcosystemDynNoLeaching2(bounds_clump,                &
                    filter(nc)%num_soilc, filter(nc)%soilc,             &
                    filter(nc)%num_soilp, filter(nc)%soilp,             &
                    filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,    &
-                   filter(nc)%num_ppercropp, filter(nc)%ppercropp,     &
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,   &
