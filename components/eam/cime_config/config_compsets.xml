@@ -312,7 +312,7 @@
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
-   <value  compset="RICO_EAM">GREGORIAN</value>
+	<value  compset="RICO_EAM">GREGORIAN</value>
       </values>
     </entry>
 
