@@ -137,9 +137,9 @@ struct TempTagStruct  {};
 
 int VerticalRemapManager::requested_buffer_size () const {
   assert (p_);
-  assert (p_->remapper);
 
   if (is_setup) {
+    assert (p_->remapper);
     return p_->remapper->requested_buffer_size();
   }
   // If the struct is not fully setup, we must manually compute
