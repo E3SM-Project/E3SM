@@ -367,18 +367,17 @@ real(r8) function radiation_nextsw_cday()
    nstep  = get_nstep()
    dtime  = get_step_size()
    offset = 0
-   do while (.not. dosw)
-      nstep = nstep + 1
-      offset = offset + dtime
-      if (radiation_do('sw', nstep)) then
-         radiation_nextsw_cday = get_curr_calday(offset=offset) 
-         dosw = .true.
-      end if
-   end do
-   if(radiation_nextsw_cday == -1._r8) then
-      call endrun('error in radiation_nextsw_cday')
+   if (iradsw/=0) then
+      do while (.not. dosw)
+         nstep = nstep + 1
+         offset = offset + dtime
+         if (radiation_do('sw', nstep)) then
+            radiation_nextsw_cday = get_curr_calday(offset=offset) 
+            dosw = .true.
+         end if
+      end do
    end if
-        
+
 end function radiation_nextsw_cday
 
 !================================================================================================
