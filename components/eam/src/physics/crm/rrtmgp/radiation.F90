@@ -364,13 +364,21 @@ contains
       ! and the longwave. In practice, these are probably usually the same.
       select case (op)
          case ('sw') ! do a shortwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradsw == 1                     &
-                          .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+            if (iradsw==0) then
+               radiation_do = .false.
+            else
+               radiation_do = nstep == 0 .or. iradsw == 1                     &
+                             .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
+                             .or. nstep <= irad_always
+            end if
          case ('lw') ! do a longwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradlw == 1                     &
-                          .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+            if (iradlw==0) then
+               radiation_do = .false.
+            else
+               radiation_do = nstep == 0 .or. iradlw == 1                     &
+                             .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
+                             .or. nstep <= irad_always
+            end if
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
