@@ -14,7 +14,7 @@ module radiation
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
@@ -1446,11 +1446,6 @@ contains
                ! history buffer
                call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
                call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
-
-               ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
-               ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
-               ! and skip the loop?
-               if (swrad_off) coszrs(:) = 0._r8
 
                ! Gather night/day column indices for subsetting SW inputs; we only want to
                ! do the shortwave radiative transfer during the daytime to save

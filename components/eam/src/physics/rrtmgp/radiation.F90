@@ -15,7 +15,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -1281,10 +1281,6 @@ contains
          ! Get cosine solar zenith angle for current time step. 
          call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
          call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
-         ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
-         ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
-         ! and skip the loop?
-         if (swrad_off) coszrs(:) = 0._r8
 
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')
