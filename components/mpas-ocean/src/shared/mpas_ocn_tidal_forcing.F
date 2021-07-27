@@ -27,7 +27,6 @@ module ocn_tidal_forcing
    use mpas_timer
    use ocn_constants
    use ocn_config
-   use ocn_equation_of_state
    use ocn_diagnostics_variables
 
    implicit none

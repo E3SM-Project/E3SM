@@ -666,8 +666,7 @@ contains
          !$acc                   advCoefs3rd,              &
          !$acc                   derivTwo,                 &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct,       &
-         !$acc                   edgeAreaFractionOfCell)
+         !$acc                   coeffs_reconstruct)
 
 !-------------------------------------------------------------------------------
 
@@ -801,8 +800,7 @@ contains
       !$acc                  advCoefs3rd,       &
       !$acc                  derivTwo,          &
       !$acc                  cellTangentPlane,  &
-      !$acc                  coeffs_reconstruct,&
-      !$acc                  edgeAreaFractionOfCell)
+      !$acc                  coeffs_reconstruct)
 
       ! Reset all scalars to zero
       nCellsAll = 0
@@ -889,6 +887,9 @@ contains
                cellTangentPlane, &
                coeffs_reconstruct)
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(edgeAreaFractionOfCell)
+#endif
       deallocate (nEdgesHalo, &
                   nCellsHalo, &
                   nVerticesHalo, &
@@ -1251,8 +1252,7 @@ contains
       !$acc               advCoefs3rd,              &
       !$acc               derivTwo,                 &
       !$acc               cellTangentPlane,         &
-      !$acc               coeffs_reconstruct,       &
-      !$acc               edgeAreaFractionOfCell)
+      !$acc               coeffs_reconstruct)
 
 !-------------------------------------------------------------------------------
 
@@ -1759,6 +1759,9 @@ contains
 
       ! Allocate space
       allocate (edgeAreaFractionOfCell(maxEdges,nCellsAll), STAT=ierr)
+#ifdef MPAS_OPENACC
+      !$acc enter data create(edgeAreaFractionOfCell)
+#endif
       if (ierr /= 0) call mpas_log_write( &
          'Error allocating edgeAreaFractionOfCell in ocn_mesh', &
           MPAS_LOG_CRIT)
@@ -1770,6 +1773,9 @@ contains
                dcEdge(iEdge)*dvEdge(iEdge)/areaCell(iCell)
       end do
       end do
+#ifdef MPAS_OPENACC
+      !$acc update device(edgeAreaFractionOfCell)
+#endif
 
    !--------------------------------------------------------------------
 
