@@ -195,16 +195,21 @@ namespace scream {
             int ngas = gas_concs.get_num_gases();
 
             // Get daytime indices
-            // TODO: this won't be GPU friendly; need to copy back and forth to host
             auto dayIndices = int1d("dayIndices", ncol);
             memset(dayIndices, -1);
+            // Loop below has to be done on host, so create host copies
+            // TODO: there is probably a way to do this on the device
+            auto dayIndices_h = dayIndices.createHostCopy();
+            auto mu0_h = mu0.createHostCopy();
             int nday = 0;
             for (int icol = 1; icol <= ncol; icol++) {
-                if (mu0(icol) > 0) {
+                if (mu0_h(icol) > 0) {
                     nday++;
-                    dayIndices(nday) = icol;
+                    dayIndices_h(nday) = icol;
                 }
             }
+            // Copy data back to the device
+            dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
                 std::cout << "WARNING: no daytime columns found for this chunk!\n";
                 return;
