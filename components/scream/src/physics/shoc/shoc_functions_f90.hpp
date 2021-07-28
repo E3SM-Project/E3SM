@@ -876,6 +876,9 @@ struct ShocMainData : public ShocTestGridDataBase {
           consts::gravit * zt_grid[nlev_offset + k];
       }
     }
+
+    // TKH and TK get the same values on purpose
+    std::copy(tkh, tkh + shcol*nlev, tk);
   }
 };
 
