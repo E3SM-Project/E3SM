@@ -24,11 +24,12 @@ Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns:   866
+    Number of global columns:   218
     Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Initial Conditions File: shoc_cld_p3_rrtmgp_init_ne4np4.nc
-  pref_mid: 0.0 # Will want to remove this when pref_mid becomes a part of the grid info: TODO
+  Initial Conditions File: shoc_cld_p3_rrtmgp_init_ne2np4.nc
+  skip_init_lat: false
+  skip_init_lon: false
 ...

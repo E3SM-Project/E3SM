@@ -335,15 +335,15 @@ contains
                                              sfcStressMag)
 
       !*** Transfer data to device
+      !$acc update device(zMid, divergence, relativeVorticity, normPlanetVortEdge, &
+      !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
+      !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
+      !$acc               layerThickEdge, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
+      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
-      !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
-      !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, activeTracers, &
-      !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
-      !$acc    normPlanetVortEdge, montgomeryPotential, &
-      !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
-      !$acc    thermExpCoeff, salineContractCoeff, wettingVelocity)
+      !$acc    ssh, normalVelocity, &
+      !$acc    layerThickness, activeTracers)
 
       !*** Set output variables to zero before accumulating results
       
@@ -450,13 +450,8 @@ contains
       !$acc exit data &
       !$acc    copyout(tendVel, sfcStress, sfcStressMag) &
       !$acc    delete( &
-      !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
-      !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, activeTracers, &
-      !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
-      !$acc    normPlanetVortEdge, montgomeryPotential, &
-      !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
-      !$acc    thermExpCoeff, salineContractCoeff, wettingVelocity)
+      !$acc    ssh, normalVelocity, &
+      !$acc    layerThickness, activeTracers)
 
       ! stop the timer and exit
 

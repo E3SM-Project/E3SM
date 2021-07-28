@@ -180,7 +180,7 @@ namespace scream {
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
         auto d_cld = field_mgr.get_field("cldfrac_tot").get_reshaped_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
+        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
 
         auto d_qv  = field_mgr.get_field("qv").get_reshaped_view<Real**>();
         auto d_co2 = field_mgr.get_field("co2").get_reshaped_view<Real**>();

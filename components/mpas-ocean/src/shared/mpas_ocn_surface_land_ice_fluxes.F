@@ -189,8 +189,7 @@ contains
       call mpas_timer_start("top_drag", .false.)
 
       !*** Transfer data to device
-      !$acc enter data &
-      !$acc    copyin(topDrag, topDragMag)
+      !$acc update device (topDrag, topDragMag)
 
       !*** simply add input values to accumulated stresses
 
@@ -223,8 +222,6 @@ contains
 #endif
 
       !*** Transfer any needed data back to host and delete inputs
-      !$acc exit data &
-      !$acc    delete(topDrag, topDragMag)
 
       call mpas_timer_stop("top_drag")
 

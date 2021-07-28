@@ -12,22 +12,22 @@ module dynPriorWeightsMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType     , only : col_pp
-  use VegetationType      , only : veg_pp                
+  use VegetationType , only : veg_pp
   !
   implicit none
   save
   private
   !
+
   ! !PUBLIC TYPES:
   public :: prior_weights_type
+  public :: set_prior_weights
 
   type prior_weights_type
      ! Components are public for ease-of-use and efficiency. However, these components
      ! should be treated as read-only!
-     real(r8), allocatable, public :: pwtcol(:)     ! prior pft weight on the column
-     logical , allocatable, public :: cactive(:)    ! prior col_pp%active flags
-   contains
-     procedure :: set_prior_weights      ! set prior weights to current weights
+     real(r8), pointer, public :: pwtcol(:)  => null()   ! prior pft weight on the column
+     logical , pointer, public :: cactive(:) => null()   ! prior col_pp%active flags
   end type prior_weights_type
 
   interface prior_weights_type
@@ -35,7 +35,7 @@ module dynPriorWeightsMod
   end interface prior_weights_type
 
 contains
-  
+
   ! ======================================================================
   ! Constructors
   ! ======================================================================
@@ -50,12 +50,12 @@ contains
     type(bounds_type), intent(in) :: bounds   ! processor bounds
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'prior_weights_type constructor'
     ! ----------------------------------------------------------------------
-     
+
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
-    
+
     allocate(constructor%pwtcol(bounds%begp:bounds%endp))
     allocate(constructor%cactive(bounds%begc:bounds%endc))
   end function constructor
@@ -64,21 +64,21 @@ contains
   ! ======================================================================
   ! Public methods
   ! ======================================================================
-  
+
   ! ----------------------------------------------------------------------
   subroutine set_prior_weights(this, bounds)
     !
     ! !DESCRIPTION:
     ! Set prior weights to current weights
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(prior_weights_type) , intent(inout) :: this   ! this object
-    type(bounds_type)         , intent(in)    :: bounds 
+    type(prior_weights_type) , intent(inout) :: this   ! this object
+    type(bounds_type)         , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: p, c   ! patch & col indices
     ! ----------------------------------------------------------------------
-    
+
     do p = bounds%begp, bounds%endp
        this%pwtcol(p) = veg_pp%wtcol(p)
     end do
@@ -87,5 +87,6 @@ contains
        this%cactive(c) = col_pp%active(c)
     end do
   end subroutine set_prior_weights
+
 
 end module dynPriorWeightsMod

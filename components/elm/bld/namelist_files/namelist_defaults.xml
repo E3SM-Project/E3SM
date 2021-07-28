@@ -83,6 +83,11 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <glc_snow_persistence_max_days>7300</glc_snow_persistence_max_days>
 
+<!-- Use implicit method for stress sent to atmosphere -->
+<implicit_stress>.false.</implicit_stress>
+<!-- The atmosphere provides gustiness separate from mean wind. -->
+<atm_gustiness>.false.</atm_gustiness>
+
 <!-- ========================================================================================  -->
 <!-- VSFM default                                                                              -->
 <!-- ========================================================================================  -->
@@ -418,7 +423,7 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 <flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2000" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
  <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2000" 
- use_crop=".false."  >DUMMY</flanduse_timeseries>
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4.pg2_hist_simyr1850-2015_c210113.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"

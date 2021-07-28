@@ -34,7 +34,6 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using Smask                = typename SHF::Smask;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;
-  using view_1d_const_double = typename SHF::view_1d<const double>;
   using view_2d              = typename SHF::view_2d<SHF::Spack>;
   using view_2d_const        = typename SHF::view_2d<const Spack>;
   using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
@@ -175,7 +174,7 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_const_double area;
+    view_1d_const        area;
     view_2d_const        T_mid;
     view_2d_const        z_int;
     view_2d_const        z_mid;
@@ -214,7 +213,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_const_double& area_,
+                       const view_1d_const& area_,
                        const view_2d_const& T_mid_, const view_2d_const& z_int_,
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
@@ -423,7 +422,7 @@ protected:
   Int m_num_tracers;
   Int hdtime;
 
-  KokkosTypes<DefaultDevice>::view_1d<double> m_cell_area;
+  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_area;
 
   // Struct which contains local variables
   Buffer m_buffer;

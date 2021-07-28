@@ -26,7 +26,7 @@ void AtmosphereOutput::init()
   m_is_restart = m_params.get<bool>("RESTART FILE",false);  // optional, default to false
 
   // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
+  EKAT_REQUIRE_MSG(m_grid_name=="Physics" || m_grid_name=="Physics GLL","Error with output grid! scorpio_output.hpp class only supports output on a Physics or Physics GLL grid for now.\n");
   auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
   m_gids_host = Kokkos::create_mirror_view( gids_dev );
   Kokkos::deep_copy(m_gids_host,gids_dev); 

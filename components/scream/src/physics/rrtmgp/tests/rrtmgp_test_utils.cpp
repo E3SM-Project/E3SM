@@ -28,7 +28,7 @@ namespace rrtmgpTest {
         auto arr2_h = arr2.createHostCopy();
         for (int i=1; i<nx+1; i++) {
             for (int j=1; j<ny+1; j++) {
-                if (abs(arr1_h(i,j) - arr2_h(i,j)) > tolerance || isnan(arr1_h(i,j) - arr2_h(i,j))) {
+                if (abs(arr1_h(i,j) - arr2_h(i,j)) > tolerance || std::isnan(arr1_h(i,j) - arr2_h(i,j))) {
                     printf("arr1 = %f, arr2 = %f\n", arr1_h(i,j), arr2_h(i,j));
                     return false;
                 }

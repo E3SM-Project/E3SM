@@ -4,6 +4,7 @@
 #include "share/scream_types.hpp"
 
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 
 #include <vector>
 
@@ -139,6 +140,7 @@ Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   } else if (gas_name == "n2" ) {
     return 28.0134;
   }
+  return ekat::ScalarTraits<Scalar>::invalid();
 }
 
 template <typename Scalar>

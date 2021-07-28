@@ -695,7 +695,11 @@ do_remap_fwd() const
 
   const auto concurrency = KT::ExeSpace::concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_DEBUG
+  const int team_size = std::min(256, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#else
   const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#endif
 #else
   const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
 #endif

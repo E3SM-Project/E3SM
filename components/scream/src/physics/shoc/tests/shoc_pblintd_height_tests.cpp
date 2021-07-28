@@ -17,7 +17,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
 
   static void run_property()
   {
-    const auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
+    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static const auto approx_zero = Approx(0.0).margin(1e-16);
     static constexpr Int shcol = 4;
     static constexpr Int nlev = 9;

@@ -4,9 +4,10 @@
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
-#include "share/field/field_positivity_check.hpp"
-#include "share/field/field_within_interval_check.hpp"
-#include "share/field/field_monotonicity_check.hpp"
+#include "share/field/field_property_checks/field_positivity_check.hpp"
+#include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/field/field_property_checks/field_monotonicity_check.hpp"
+#include "share/field/field_property_checks/field_nan_check.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "share/grid/point_grid.hpp"
@@ -681,6 +682,34 @@ TEST_CASE("field_property_check", "") {
       REQUIRE(not iter->check(f1));
       iter->repair(f1);
       REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check that values are not NaN
+  SECTION("field_not_nan_check") {
+    Field<Real> f1(fid);
+    auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
+    f1.add_property_check(nan_check);
+    f1.allocate_view();
+
+    // Assign  values to the field and make sure it passes our test for
+    // NaNs.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
+      host_view(i) = i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign a NaN value to the field, make sure it fails the check,
+    Int midpt = host_view.extent(0)/2;
+    host_view(midpt) = std::numeric_limits<Real>::quiet_NaN();
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
     }
   }
 

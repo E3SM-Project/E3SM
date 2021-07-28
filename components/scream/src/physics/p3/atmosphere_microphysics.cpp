@@ -101,7 +101,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 // =========================================================================================
 int P3Microphysics::requested_buffer_size_in_bytes() const
 {
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
   const int interface_request =
@@ -109,6 +110,7 @@ int P3Microphysics::requested_buffer_size_in_bytes() const
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
       Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
+      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Spack) +
       // 2d view scalar, size (ncol, 3)
       m_num_cols*3*sizeof(Real);
 
@@ -137,7 +139,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
   // 2d packed views
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
   m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.inv_exner.size();
@@ -155,9 +158,9 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.qv2qi_depos_tend.size();
   m_buffer.rho_qi = decltype(m_buffer.rho_qi)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.rho_qi.size();
-  m_buffer.precip_liq_flux = decltype(m_buffer.precip_liq_flux)(s_mem, m_num_cols, nk_pack);
+  m_buffer.precip_liq_flux = decltype(m_buffer.precip_liq_flux)(s_mem, m_num_cols, nk_pack_p1);
   s_mem += m_buffer.precip_liq_flux.size();
-  m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack);
+  m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack_p1);
   s_mem += m_buffer.precip_ice_flux.size();
 
   // WSM data

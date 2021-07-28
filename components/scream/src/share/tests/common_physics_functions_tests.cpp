@@ -16,7 +16,7 @@ template<typename ScalarT, int NumLevels>
 struct ChecksHelpers {
 
   static bool is_non_negative (const ScalarT& s, const int k) {
-    return not ( k<NumLevels && (s<0 || isnan(s)) );
+    return not ( k<NumLevels && (s<0 || std::isnan(s)) );
   }
   static bool equal (const ScalarT& lhs, const ScalarT& rhs) {
     return lhs==rhs;

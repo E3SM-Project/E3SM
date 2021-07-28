@@ -46,6 +46,7 @@ TEST_CASE("shoc-stand-alone", "") {
   // Init and run
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
+
   for (int i=0; i<num_iters; ++i) {
     ad.run(300.0);
   }

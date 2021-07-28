@@ -16,7 +16,7 @@ TEST_CASE("shoc-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 10;
+  constexpr int num_iters = 5;
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
@@ -43,20 +43,6 @@ TEST_CASE("shoc-stand-alone", "") {
   // Init and run 
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
-
-  // Set pref_mid for shoc.  Note this is only temporary.
-  // TODO: have pref_mid be part of the grid information and
-  // have the shoc interface grab it from the grid, not the FM.
-  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
-  int nlay = grid->get_num_vertical_levels();
-  auto d_pref_mid = field_mgr.get_field("pref_mid").get_reshaped_view<Real*>();
-  auto h_pref_mid = Kokkos::create_mirror_view(d_pref_mid);
-  Kokkos::deep_copy(h_pref_mid,d_pref_mid);
-  for (int k=0;k<nlay;k++) {
-    h_pref_mid(k) = 1e5 - k*(1e5-8e5)/(nlay-1);
-  }
-  Kokkos::deep_copy(d_pref_mid,h_pref_mid);
 
   for (int i=0; i<num_iters; ++i) {
     printf("Run iteration %2d\n",i);
