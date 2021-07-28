@@ -8,7 +8,7 @@ save
 
 public :: elm_instance_init
 
-integer,           public :: lnd_id
+integer,           public :: lnd_id      ! land component identifier for the current instance
 integer,           public :: inst_index
 character(len=16), public :: inst_name
 character(len=16), public :: inst_suffix
