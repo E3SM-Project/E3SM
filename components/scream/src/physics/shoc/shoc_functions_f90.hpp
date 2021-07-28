@@ -5,6 +5,7 @@
 #include "physics/share/physics_test_data.hpp"
 
 #include "shoc_functions.hpp"
+#include "physics_constants.hpp"
 
 #include <vector>
 #include <array>
@@ -16,6 +17,19 @@
 
 namespace scream {
 namespace shoc {
+
+template <typename Engine, typename Compare=std::less<Real> >
+void interleaved_sort(Engine& engine, const Int shcol, const Int nlev, const int nlevi, Real* nlev_data, Real* nlevi_data)
+{
+  // sort the nlevi data
+  for (auto i = decltype(shcol){0}; i < shcol; ++i) {
+    std::sort(nlevi_data + nlevi*i, nlevi_data + nlevi*(i+1), Compare());
+    for (auto k = decltype(nlev){0}; k < nlev; ++k) {
+      std::uniform_real_distribution<Real> x2_dist(nlevi_data[nlevi*i + k], nlevi_data[nlevi*i + k+1]);
+      nlev_data[nlev*i + k] = x2_dist(engine);
+    }
+  }
+}
 
 struct ShocTestGridDataBase : public PhysicsTestData
 {
@@ -34,7 +48,6 @@ struct ShocTestGridDataBase : public PhysicsTestData
   {
     PhysicsTestData::randomize(engine, ranges);
 
-    // Don't want true randomness in the grid data, need interleaved grid points
     const auto shcol = dim(zt_grid, 0);
     const auto nlev  = dim(zt_grid, 1);
     const auto nlevi = dim(zi_grid, 1);
@@ -42,14 +55,8 @@ struct ShocTestGridDataBase : public PhysicsTestData
     EKAT_REQUIRE_MSG(shcol == dim(zi_grid, 0), "Mismatched shcol dim for zt_grid and zi_grid");
     EKAT_REQUIRE_MSG(nlev == nlevi-1, "Mismatched lev dim for zt_grid and zi_grid");
 
-    // sort the nlevi data
-    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
-      std::sort(zi_grid + nlevi*i, zi_grid + nlevi*(i+1));
-      for (auto k = decltype(nlev){0}; k < nlev; ++k) {
-        std::uniform_real_distribution<Real> x2_dist(zi_grid[nlevi*i + k], zi_grid[nlevi*i + k+1]);
-        zt_grid[nlev*i + k] = x2_dist(engine);
-      }
-    }
+    // Don't want true randomness in the grid data, need interleaved grid points
+    interleaved_sort<Engine, std::greater<Real> >(engine, shcol, nlev, nlevi, zt_grid, zi_grid);
   }
 };
 
@@ -837,6 +844,39 @@ struct ShocMainData : public ShocTestGridDataBase {
                     num_qtracers(num_qtracers_), dtime(dtime_), nbot_shoc(nbot_shoc_), ntop_shoc(ntop_shoc_) {}
 
   PTD_STD_DEF(ShocMainData, 8, shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc);
+
+  template <typename Engine>
+  void randomize(Engine& engine, const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {})
+  {
+    using consts = scream::physics::Constants<Real>;
+
+    ShocTestGridDataBase::randomize(engine, ranges);
+
+    const auto shcol = dim(zt_grid, 0);
+    const auto nlev  = dim(zt_grid, 1);
+    const auto nlevi = dim(zi_grid, 1);
+
+    EKAT_REQUIRE_MSG(shcol == dim(zi_grid, 0), "Mismatched shcol dim for zt_grid and zi_grid");
+    EKAT_REQUIRE_MSG(nlev == nlevi-1, "Mismatched lev dim for zt_grid and zi_grid");
+
+    // Don't want true randomness in the pressure data, need interleaved
+    interleaved_sort(engine, shcol, nlev, nlevi, pres, presi);
+
+    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
+      std::sort(thetal + nlev*i, thetal + nlev*(i+1), std::greater<Real>());
+      std::sort(qw + nlev*i, qw + nlev*(i+1));
+      std::sort(qw + nlev*i, qw + nlev*(i+1));
+
+      const auto nlev_offset = i * nlev;
+      const auto nlevi_offset = i * nlevi;
+      for (auto k = decltype(nlev){0}; k < nlev; ++k) {
+        pdel[nlev_offset + k] = std::abs(presi[nlevi_offset + k] - presi[nlevi_offset + k+1]);
+        exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
+        host_dse[nlev_offset + k] = consts::Cpair * exner[nlev_offset + k] * thv[nlev_offset + k] +
+          consts::gravit * zt_grid[nlev_offset + k];
+      }
+    }
+  }
 };
 
 struct PblintdHeightData : public PhysicsTestData {

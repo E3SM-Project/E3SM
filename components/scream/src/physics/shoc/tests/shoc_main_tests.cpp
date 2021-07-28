@@ -320,38 +320,27 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     auto engine = setup_random_test();
 
     ShocMainData f90_data[] = {
-      // shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
-      ShocMainData(12, 72, 73,  5, 5, 15, 72, 0),
-      ShocMainData(8,  12, 13,  3, 6, 10, 8, 3),
-      ShocMainData(7,  16, 17,  3, 1,  1, 12, 0),
-      ShocMainData(2,   7,  8,  2, 1,  5, 7, 4)
+      //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
+      ShocMainData(12,      72,    73,            5,   300,   15,        72, 0),
+      ShocMainData(8,       12,    13,            3,     6,   10,         8, 3),
+      ShocMainData(7,       16,    17,            3,     1,    1,        12, 0),
+      ShocMainData(2,       7,      8,            2,     1,    5,         7, 4)
     };
 
     // Generate random input data
     int count = 0;
     for (auto& d : f90_data) {
-      d.randomize(engine, {{d.presi, {700e2,1000e2}},
-                   {d.tkh, {3,20}},
-                   {d.wthl_sfc, {-1,1}},
-                   {d.thetal, {900, 1000}}});
-
-      // Generate grid as decreasing set of points.
-      // Allows interpolated values to stay withing
-      // reasonable range, avoiding errors in
-      // shoc_assumed_pdf.
-      Real upper = 10;
-      Real lower = 0;
-      for (Int s = 0; s < d.shcol; ++s) {
-        for (Int k=0; k<d.nlevi; ++k) {
-          const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
-          d.zi_grid[k+s*d.nlevi] = zi_k;
-
-          if (k!=d.nlevi-1) {
-            const auto zi_kp1 = upper - (k+1)*(upper-lower)/(d.nlevi-1);
-            d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
-          }
-        }
-      }
+      d.randomize(engine,
+                  {
+                    {d.presi, {700e2,1000e2}},
+                    {d.tkh, {3,20}},
+                    {d.tk, {3,20}},
+                    {d.zi_grid, {0, 3000}},
+                    {d.wthl_sfc, {-1,1}},
+                    {d.thetal, {900, 1000}},
+                    {d.host_dx, {3000, 3000}},
+                    {d.host_dy, {3000, 3000}},
+                  });
 
       // 3 types of pref_mid ranges:
       std::pair<Real,Real> pref_mid_range;
@@ -373,8 +362,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       ++count;
 
       // pref_mid must be monotonically increasing
-      upper = pref_mid_range.first;
-      lower = pref_mid_range.second;
+      Real upper = pref_mid_range.first;
+      Real lower = pref_mid_range.second;
       for (Int k=0; k<d.nlev; ++k) {
         d.pref_mid[k] = upper - k*(upper-lower)/(d.nlev-1);
       }
