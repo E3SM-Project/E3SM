@@ -48,6 +48,7 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports, const i
   Sa_v         = decltype(Sa_v)        ("", m_num_cols);
   Sa_dens      = decltype(Sa_dens)     ("", m_num_cols);
   zero_view    = decltype(zero_view)   ("", m_num_cols);
+  Kokkos::deep_copy(zero_view, 0.0);
 
   // These will be incremented every time we register an import/export.
   // At registration end, they should match the length of the corresponding view above.
@@ -316,7 +317,6 @@ void SurfaceCoupling::do_export ()
       Sa_v(i)    = horiz_winds(i, 1, last_entry);
       Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
     });
-    Kokkos::deep_copy(zero_view, 0.0);
   }
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -381,7 +381,7 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
     if (lt==LayoutType::Vector3D) {
       col_offset *= fh->get_alloc_properties().get_last_extent();;
     }
-    col_offset += m_num_levs-1;
+    col_offset += dims.back()-1;
   }
 
   // If rank>1, there always is some stride
@@ -392,7 +392,6 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
       col_stride *= dims[1];
     }
   }
-
 
   // Recursively go through parent field, adding offset depending
   // on the location of the slice.

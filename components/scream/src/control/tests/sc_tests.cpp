@@ -235,8 +235,6 @@ TEST_CASE ("recreate_mct_coupling")
   FID horiz_winds_id     ("horiz_winds",     vector3d_layout, m/s,    grid_name);
   FID pseudo_density_id  ("pseudo_density",  scalar3d_layout, Pa,     grid_name);
   FID qv_id              ("qv",              scalar3d_layout, nondim, grid_name);
-  FID qc_id              ("qc",              scalar3d_layout, nondim, grid_name);
-  FID qr_id              ("qr",              scalar3d_layout, nondim, grid_name);
   FID precip_liq_surf_id ("precip_liq_surf", scalar2d_layout, m/s,    grid_name);
 
   // NOTE: if you add fields above, you will have to modify these counters too.
@@ -257,8 +255,6 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{horiz_winds_id});
   fm->register_field(FR{pseudo_density_id});
   fm->register_field(FR{qv_id,"tracers"});
-  fm->register_field(FR{qc_id,"tracers"});
-  fm->register_field(FR{qr_id,"tracers"});
   fm->register_field(FR{precip_liq_surf_id});
 
   fm->register_group(GR("tracers", grid_name ,Bundling::Required));
@@ -426,4 +422,8 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (abs(export_raw_data[12 + icol*num_exports]) < eps); // 13th export
     }
   }
+
+  // Clean up
+  delete[] export_raw_data;
+  delete[] import_raw_data;
 }
