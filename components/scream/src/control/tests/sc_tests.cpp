@@ -49,13 +49,15 @@ TEST_CASE ("surface_coupling")
   // Note: we create two fms, so we can compare outputs with inputs
   FID s2d_id("s2d",FL{{COL},{ncols}},Pa,grid->name());
   FID s3d_id("s3d",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
+  FID v2d_id("v2d",FL{{COL,CMP},{ncols,2}},m/s,grid->name());
   FID v3d_id("v3d",FL{{COL,CMP,LEV},{ncols,2,nlevs}},m/s,grid->name());
 
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_s2d = 1;
   const int num_s3d = 1;
+  const int num_v2d = 1;
   const int num_v3d = 1;
-  const int num_fields = num_s2d+num_s3d+2*num_v3d;
+  const int num_fields = num_s2d+num_s3d+2*(num_v2d+num_v3d);
 
   // Keep two separate fms, so we can compare original and final fields.
   auto fm_in = std::make_shared<FieldManager<Real>> (grid);
@@ -63,11 +65,13 @@ TEST_CASE ("surface_coupling")
   fm_in->registration_begins();
   fm_in->register_field(s2d_id);
   fm_in->register_field(s3d_id);
+  fm_in->register_field(v2d_id);
   fm_in->register_field(v3d_id);
   fm_in->registration_ends();
   fm_out->registration_begins();
   fm_out->register_field(s2d_id);
   fm_out->register_field(s3d_id);
+  fm_out->register_field(v2d_id);
   fm_out->register_field(v3d_id);
   fm_out->registration_ends();
 
@@ -85,12 +89,16 @@ TEST_CASE ("surface_coupling")
   //       vector field is imported/exported.
   importer.register_import("s2d",0);
   importer.register_import("s3d",1);
-  importer.register_import("v3d",2,0);
-  importer.register_import("v3d",3,1);
+  importer.register_import("v2d",2,0);
+  importer.register_import("v2d",3,1);
+  importer.register_import("v3d",4,0);
+  importer.register_import("v3d",5,1);
   exporter.register_export("s2d",0);
   exporter.register_export("s3d",1);
-  exporter.register_export("v3d",2,0);
-  exporter.register_export("v3d",3,1);
+  exporter.register_export("v2d",2,0);
+  exporter.register_export("v2d",3,1);
+  exporter.register_export("v3d",4,0);
+  exporter.register_export("v3d",5,1);
 
   // Create a raw array big enough to contain all the 2d data for import/export
   double* raw_data = new double[ncols*num_fields];
@@ -102,29 +110,36 @@ TEST_CASE ("surface_coupling")
   // Repeat experiment N times: fill export fields, export, import, check import fields
   auto s2d_exp = fm_out->get_field(s2d_id);
   auto s3d_exp = fm_out->get_field(s3d_id);
+  auto v2d_exp = fm_out->get_field(v2d_id);
   auto v3d_exp = fm_out->get_field(v3d_id);
   auto s2d_imp = fm_in->get_field(s2d_id);
   auto s3d_imp = fm_in->get_field(s3d_id);
+  auto v2d_imp = fm_in->get_field(v2d_id);
   auto v3d_imp = fm_in->get_field(v3d_id);
 
   auto s2d_exp_d = s2d_exp.get_reshaped_view<Real*>();
   auto s3d_exp_d = s3d_exp.get_reshaped_view<Real**>();
+  auto v2d_exp_d = v2d_exp.get_reshaped_view<Real**>();
   auto v3d_exp_d = v3d_exp.get_reshaped_view<Real***>();
   auto s2d_imp_d = s2d_imp.get_reshaped_view<Real*>();
   auto s3d_imp_d = s3d_imp.get_reshaped_view<Real**>();
+  auto v2d_imp_d = v2d_imp.get_reshaped_view<Real**>();
   auto v3d_imp_d = v3d_imp.get_reshaped_view<Real***>();
 
   auto s2d_exp_h = s2d_exp.get_reshaped_view<Real*,Host>();
   auto s3d_exp_h = s3d_exp.get_reshaped_view<Real**,Host>();
+  auto v2d_exp_h = v2d_exp.get_reshaped_view<Real**,Host>();
   auto v3d_exp_h = v3d_exp.get_reshaped_view<Real***,Host>();
   auto s2d_imp_h = s2d_imp.get_reshaped_view<Real*,Host>();
   auto s3d_imp_h = s3d_imp.get_reshaped_view<Real**,Host>();
+  auto v2d_imp_h = v2d_imp.get_reshaped_view<Real**,Host>();
   auto v3d_imp_h = v3d_imp.get_reshaped_view<Real***,Host>();
 
   for (int i=0; i<nruns; ++i) {
     // Fill export fields
     ekat::genRandArray(s2d_exp_d,engine,pdf);
     ekat::genRandArray(s3d_exp_d,engine,pdf);
+    ekat::genRandArray(v2d_exp_d,engine,pdf);
     ekat::genRandArray(v3d_exp_d,engine,pdf);
 
     // Set all raw_data to -1 (might be helpful for debugging)
@@ -139,15 +154,19 @@ TEST_CASE ("surface_coupling")
     // Check f_imported==f_exported (on surface only)
     s2d_exp.sync_to_host();
     s3d_exp.sync_to_host();
+    v2d_exp.sync_to_host();
     v3d_exp.sync_to_host();
     s2d_imp.sync_to_host();
     s3d_imp.sync_to_host();
+    v2d_imp.sync_to_host();
     v3d_imp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (s2d_exp_h(icol)==s2d_imp_h(icol));
       REQUIRE (s3d_exp_h(icol,nlevs-1)==s3d_imp_h(icol,nlevs-1));
-      REQUIRE (v3d_exp_h(icol,0,0)==v3d_imp_h(icol,0,0)); // Is this correct?
-      REQUIRE (v3d_exp_h(icol,0,1)==v3d_imp_h(icol,0,1));
+      REQUIRE (v2d_exp_h(icol,0)==v2d_imp_h(icol,0));
+      REQUIRE (v2d_exp_h(icol,1)==v2d_imp_h(icol,1));
+      REQUIRE (v3d_exp_h(icol,0,nlevs-1)==v3d_imp_h(icol,0,nlevs-1));
+      REQUIRE (v3d_exp_h(icol,1,nlevs-1)==v3d_imp_h(icol,1,nlevs-1));
     }
   }
 
@@ -177,6 +196,7 @@ TEST_CASE ("recreate_mct_coupling")
   // Some constants
   constexpr int ncols = 4;
   constexpr int nlevs = 8;
+  constexpr int nruns = 10;
 
   // Create a comm
   ekat::Comm comm (MPI_COMM_WORLD);
@@ -285,46 +305,6 @@ TEST_CASE ("recreate_mct_coupling")
   auto qv_h               = qv_f.get_reshaped_view<Real**,Host>();
   auto precip_liq_surf_h  = precip_liq_surf_f.get_reshaped_view<Real*,Host>();
 
-  // Set import field views to 0
-  surf_latent_flux_f.deep_copy(0.0);
-  surf_sens_flux_f.deep_copy(0.0);
-  surf_u_mom_flux_f.deep_copy(0.0);
-  surf_v_mom_flux_f.deep_copy(0.0);
-
-  // Fill views needed in the export with random values
-  ekat::genRandArray(T_mid_d,engine,pdf);
-  ekat::genRandArray(p_mid_d,engine,pdf);
-  ekat::genRandArray(z_mid_d,engine,pdf);
-  ekat::genRandArray(horiz_winds_d,engine,pdf);
-  ekat::genRandArray(pseudo_density_d,engine,pdf);
-  ekat::genRandArray(precip_liq_surf_d,engine,pdf);
-  ekat::genRandArray(Q.get_view(),engine,pdf);
-
-  // Sync host to device
-  surf_latent_flux_f.sync_to_host();
-  surf_sens_flux_f.sync_to_host();
-  surf_u_mom_flux_f.sync_to_host();
-  surf_v_mom_flux_f.sync_to_host();
-  T_mid_f.sync_to_host();
-  p_mid_f.sync_to_host();
-  z_mid_f.sync_to_host();
-  horiz_winds_f.sync_to_host();
-  pseudo_density_f.sync_to_host();
-  precip_liq_surf_f.sync_to_host();
-  Q.sync_to_host();
-
-  // Import/Export data
-  double* import_raw_data = new Real[ncols*num_total_imports];
-  double* export_raw_data = new Real[ncols*num_exports];
-
-  // Fill import_raw_data with random values
-  for (int i=0; i<ncols*num_total_imports; ++i) {
-    import_raw_data[i] = pdf(engine);
-  }
-
-  // Set all export_raw_data to -1 (might be helpful for debugging)
-  std::fill_n(export_raw_data, num_exports*ncols, -1);
-
   // Create SC object and set number of import/export fields
   control::SurfaceCoupling coupler(fm);
   coupler.set_num_fields(num_total_imports, num_scream_imports, num_exports);
@@ -361,47 +341,89 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("Sa_v",             4);
   coupler.register_export("p_mid",            5);
   coupler.register_export("Sa_dens",          6);
-  coupler.register_export("qv",               7);
+  coupler.register_export("tracers",          7, 0);
   coupler.register_export("set_zero",         8);
   coupler.register_export("precip_liq_surf",  9);
   coupler.register_export("set_zero",         10);
   coupler.register_export("set_zero",         11);
   coupler.register_export("set_zero",         12);
 
-  // Complete setup of importer/exporter
+  // Complete setup of importer/exporter, providing raw_data
+  double* import_raw_data = new Real[ncols*num_total_imports];
+  double* export_raw_data = new Real[ncols*num_exports];
   coupler.registration_ends(import_raw_data, export_raw_data);
 
-  // Perform import
-  coupler.do_import();
+  for (int i=0; i<nruns; ++i) {
 
-  // Perform export
-  coupler.do_export();
+    // Set import field views to 0
+    surf_latent_flux_f.deep_copy(0.0);
+    surf_sens_flux_f.deep_copy(0.0);
+    surf_u_mom_flux_f.deep_copy(0.0);
+    surf_v_mom_flux_f.deep_copy(0.0);
 
-  for (int icol=0; icol<ncols; ++icol) {
+    // Fill views needed in the export with random values
+    ekat::genRandArray(T_mid_d,engine,pdf);
+    ekat::genRandArray(p_mid_d,engine,pdf);
+    ekat::genRandArray(z_mid_d,engine,pdf);
+    ekat::genRandArray(horiz_winds_d,engine,pdf);
+    ekat::genRandArray(pseudo_density_d,engine,pdf);
+    ekat::genRandArray(precip_liq_surf_d,engine,pdf);
+    ekat::genRandArray(Q.get_view(),engine,pdf);
 
-    // Check imports
+    // Fill import_raw_data with random values
+    for (int i=0; i<ncols*num_total_imports; ++i) {
+      import_raw_data[i] = pdf(engine);
+    }
 
-    REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_total_imports]); // 1st scream import
-    REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_total_imports]); // 2nd scream import
-    REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_total_imports]); // 3rd scream import (4th total import)
-    REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_total_imports]); // 4th scream import (5th total import)
+    // Set all export_raw_data to -1 (might be helpful for debugging)
+    std::fill_n(export_raw_data, num_exports*ncols, -1);
 
-    // Check exports
+    // Perform import
+    coupler.do_import();
 
-    // These exports are direct values from a scream field
-    REQUIRE (export_raw_data[0  + icol*num_exports] == T_mid_h          (icol,    nlevs-1)); // 1st export
-    REQUIRE (export_raw_data[2  + icol*num_exports] == z_mid_h          (icol,    nlevs-1)); // 3rd export
-    REQUIRE (export_raw_data[3  + icol*num_exports] == horiz_winds_h    (icol, 0, nlevs-1)); // 4th export
-    REQUIRE (export_raw_data[4  + icol*num_exports] == horiz_winds_h    (icol, 1, nlevs-1)); // 5th export
-    REQUIRE (export_raw_data[5  + icol*num_exports] == p_mid_h          (icol,    nlevs-1)); // 6th export
-    REQUIRE (export_raw_data[7  + icol*num_exports] == qv_h             (icol,    nlevs-1)); // 8th export
-    REQUIRE (export_raw_data[9  + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
+    // Perform export
+    coupler.do_export();
 
-    // These exports should be set to 0
-    const auto eps = std::numeric_limits<Real>::epsilon();
-    REQUIRE (abs(export_raw_data[8  + icol*num_exports]) < eps); // 9th export
-    REQUIRE (abs(export_raw_data[10 + icol*num_exports]) < eps); // 11th export
-    REQUIRE (abs(export_raw_data[11 + icol*num_exports]) < eps); // 12th export
-    REQUIRE (abs(export_raw_data[12 + icol*num_exports]) < eps); // 13th export
+    // Sync host to device
+    surf_latent_flux_f.sync_to_host();
+    surf_sens_flux_f.sync_to_host();
+    surf_u_mom_flux_f.sync_to_host();
+    surf_v_mom_flux_f.sync_to_host();
+    T_mid_f.sync_to_host();
+    p_mid_f.sync_to_host();
+    z_mid_f.sync_to_host();
+    horiz_winds_f.sync_to_host();
+    pseudo_density_f.sync_to_host();
+    precip_liq_surf_f.sync_to_host();
+    Q.sync_to_host();
+
+    // Check values
+    for (int icol=0; icol<ncols; ++icol) {
+
+      // Imports
+
+      REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_total_imports]); // 1st scream import
+      REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_total_imports]); // 2nd scream import
+      REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_total_imports]); // 3rd scream import (4th total import)
+      REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_total_imports]); // 4th scream import (5th total import)
+
+      // Exports
+
+      // These exports are direct values from a scream field
+      REQUIRE (export_raw_data[0  + icol*num_exports] == T_mid_h          (icol,    nlevs-1)); // 1st export
+      REQUIRE (export_raw_data[2  + icol*num_exports] == z_mid_h          (icol,    nlevs-1)); // 3rd export
+      REQUIRE (export_raw_data[3  + icol*num_exports] == horiz_winds_h    (icol, 0, nlevs-1)); // 4th export
+      REQUIRE (export_raw_data[4  + icol*num_exports] == horiz_winds_h    (icol, 1, nlevs-1)); // 5th export
+      REQUIRE (export_raw_data[5  + icol*num_exports] == p_mid_h          (icol,    nlevs-1)); // 6th export
+      REQUIRE (export_raw_data[7  + icol*num_exports] == qv_h             (icol,    nlevs-1)); // 8th export
+      REQUIRE (export_raw_data[9  + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
+
+      // These exports should be set to 0
+      const auto eps = std::numeric_limits<Real>::epsilon();
+      REQUIRE (abs(export_raw_data[8  + icol*num_exports]) < eps); // 9th export
+      REQUIRE (abs(export_raw_data[10 + icol*num_exports]) < eps); // 11th export
+      REQUIRE (abs(export_raw_data[11 + icol*num_exports]) < eps); // 12th export
+      REQUIRE (abs(export_raw_data[12 + icol*num_exports]) < eps); // 13th export
+    }
   }
 }

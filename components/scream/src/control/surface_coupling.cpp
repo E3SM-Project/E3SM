@@ -20,7 +20,7 @@ SurfaceCoupling (const field_mgr_ptr& field_mgr)
   using namespace ekat::units;
 
   FieldLayout layout { {COL}, {m_num_cols} };
-  Units nondim(0,0,0,0,0,0,0);
+  const auto nondim = Units::nondimensional();
   auto grid_name = grid->name();
   FieldIdentifier id ("dummy_field", layout, nondim, grid_name);
   dummy_field = Field<const double>(id);
@@ -31,7 +31,7 @@ SurfaceCoupling (const field_mgr_ptr& field_mgr)
 }
 
 void SurfaceCoupling::
-set_num_fields (const int num_total_imports, const int num_scream_imports, const int num_exports)
+set_num_fields (const int num_cpl_imports, const int num_scream_imports, const int num_exports)
 {
   EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
                      "Error! You can only set the number of fields in SurfaceCoupling once.\n");
@@ -43,20 +43,19 @@ set_num_fields (const int num_total_imports, const int num_scream_imports, const
   m_scream_exports_host = Kokkos::create_mirror_view(m_scream_exports_dev);
 
   // These fields contain computation needed for some export fields
-  qv_sfc    = decltype(qv_sfc)   ("", m_num_cols);
-  Sa_ptem   = decltype(Sa_ptem)  ("", m_num_cols);
-  Sa_u      = decltype(Sa_u)     ("", m_num_cols);
-  Sa_v      = decltype(Sa_v)     ("", m_num_cols);
-  Sa_dens   = decltype(Sa_dens)  ("", m_num_cols);
-  zero_view = decltype(zero_view)("", m_num_cols);
+  Sa_ptem      = decltype(Sa_ptem)     ("", m_num_cols);
+  Sa_u         = decltype(Sa_u)        ("", m_num_cols);
+  Sa_v         = decltype(Sa_v)        ("", m_num_cols);
+  Sa_dens      = decltype(Sa_dens)     ("", m_num_cols);
+  zero_view    = decltype(zero_view)   ("", m_num_cols);
 
   // These will be incremented every time we register an import/export.
   // At registration end, they should match the length of the corresponding view above.
-  m_num_imports = 0;
-  m_num_exports = 0;
+  m_num_scream_imports = 0;
+  m_num_exports        = 0;
 
   // We keep up with the total number of imports for indexing input data
-  m_num_total_imports = num_total_imports;
+  m_num_cpl_imports = num_cpl_imports;
 
   m_state = RepoState::Open;
 }
@@ -77,7 +76,7 @@ register_import(const std::string& fname,
     // Do nothing
   } else {
     // Check that we still have room
-    EKAT_REQUIRE_MSG(m_num_imports<m_scream_imports_host.extent_int(0),
+    EKAT_REQUIRE_MSG(m_num_scream_imports<m_scream_imports_host.extent_int(0),
                        "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
     // Get the field, and check that is valid
@@ -88,16 +87,17 @@ register_import(const std::string& fname,
     EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
 
     // Check that this cpl_idx wasn't already registered
-    for (int i=0; i<m_num_imports; ++i) {
+    for (int i=0; i<m_num_scream_imports; ++i) {
       EKAT_REQUIRE_MSG(cpl_idx!=m_scream_imports_host(i).cpl_idx,
                          "Error! An import with cpl_idx " + std::to_string(cpl_idx) + " was already registered.\n");
     }
 
-    auto& info = m_scream_imports_host(m_num_imports);
+    auto& info = m_scream_imports_host(m_num_scream_imports);
 
     EKAT_ASSERT_MSG (field.get_header().get_parent().lock() == nullptr,
-                     "Error! " + fname + "has a parent. Currently SurfaceCoupling does not support "
-                     "importing or exporting fields which have parents since get_view().data() is unsafe.");
+                     "Error! The field " + fname + " has a parent. Currently SurfaceCoupling does not support "
+                     "importing or exporting fields which have parents since get_view().data() is unsafe. "
+                     "Instead call register_import(parent_field, cpl_indx, field_cmp_indx).");
 
     // Set view data ptr
     info.data = field.get_view().data();
@@ -112,7 +112,7 @@ register_import(const std::string& fname,
     m_imports_fids.insert(field.get_header().get_identifier());
 
     // Update number of imports stored
-    ++m_num_imports;
+    ++m_num_scream_imports;
   }
 }
 
@@ -145,24 +145,24 @@ register_export (const std::string& fname,
   //   1. General case: fname describes a field in the FieldManager which has no parent.
   //      In this case, gather info directly from the field.
   //   2. Special cases
-  //      a. qv: fname describes a field in the FieldManager which has a parent.
-  //         In this case, we need to create a view and store and copy over data
-  //      b. fname == set_zero, which indicates that this field is not
-  //         used in SCREAM. In this case, create a view with all entries
-  //         zero.
-  //      c. fname corresponeds to a field which is a combination of
-  //         SCREAM fields. In this case, query the FieldManager for
-  //         these fields and create fill the correct view with the computed
-  //         values (only at the surface).
-  if (m_field_mgr->has_field(fname)
-      &&
-      m_field_mgr->get_field(fname).get_header().get_parent().lock() == nullptr) {
+  //      a. fname == set_zero, which indicates that this field is not used in SCREAM.
+  //      c. fname corresponeds to a field which is a combination of SCREAM fields.
+  //      For these special cases, we have member variable 1d views which we will store the correct
+  //      values at the surface for each field during do_export(). Here, just set the data
+  //      to point to these views, and fill in stride/offset info using a field setup in
+  //      the constructor of the class
+  if (m_field_mgr->has_field(fname)) {
 
     // If fname is a field in the the field manager, then set the data and column info based on this field.
     // Note that the field must not have a parent as get_view() would be unsafe.
     export_field_type field = m_field_mgr->get_field(fname);
 
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
+
+    EKAT_ASSERT_MSG (field.get_header().get_parent().lock() == nullptr,
+                     "Error! The field " + fname + " has a parent. Currently SurfaceCoupling does not support "
+                     "importing or exporting fields which have parents since get_view().data() is unsafe. "
+                     "Instead call register_export(parent_field, cpl_indx, field_cmp_indx).");
 
     // Set view data ptr
     info.data = field.get_view().data();
@@ -175,86 +175,19 @@ register_export (const std::string& fname,
 
   } else {
 
-    using PF = PhysicsFunctions<device_type>;
-    const int last_entry = m_num_levs-1;
-
-    if (fname == "qv") {
-
-      const auto qv = m_field_mgr->get_field(fname).get_reshaped_view<const Real**>();
-      const auto policy = KokkosTypes<device_type>::RangePolicy(0, m_num_cols);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-        qv_sfc(i) = qv(i, last_entry);
-      });
-
-      // Set view data ptr
-      info.data = qv_sfc.data();
-
-    } else if (fname == "set_zero") {
-
-      Kokkos::deep_copy(zero_view, 0.0);
-
-      // Set view data ptr
-      info.data = zero_view.data();
-
-    } else if (fname == "Sa_ptem") {
-
-      const auto T_mid = m_field_mgr->get_field("T_mid").get_reshaped_view<const Real**>();
-      const auto p_mid = m_field_mgr->get_field("p_mid").get_reshaped_view<const Real**>();
-      const auto policy = KokkosTypes<device_type>::RangePolicy(0, m_num_cols);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-        Sa_ptem(i) = PF::calculate_theta_from_T(T_mid(i, last_entry), p_mid(i, last_entry));
-      });
-
-      // Set view data ptr
-      info.data = Sa_ptem.data();
-
-    } else if (fname == "Sa_u" || fname == "Sa_v") {
-
-      auto horiz_winds = m_field_mgr->get_field("horiz_winds").get_reshaped_view<Real***>();
-      const auto policy = KokkosTypes<device_type>::RangePolicy(0, m_num_cols);
-
-      if (fname == "Sa_u") {
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-          Sa_u(i) = horiz_winds(i, 0, last_entry);
-        });
-
-        // Set view data ptr
-        info.data = Sa_u.data();
-      } else if (fname == "Sa_v") {
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-          Sa_v(i) = horiz_winds(i, 1, last_entry);
-        });
-
-        // Set view data ptr
-        info.data = Sa_v.data();
-      }
-
-    } else if (fname == "Sa_dens") {
-
-      const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_reshaped_view<const Real**>();
-      const auto T_mid          = m_field_mgr->get_field("T_mid").get_reshaped_view<const Real**>();
-      const auto p_mid          = m_field_mgr->get_field("p_mid").get_reshaped_view<const Real**>();
-      const auto qv             = m_field_mgr->get_field("qv").get_reshaped_view<const Real**>();
-      const auto policy = KokkosTypes<device_type>::RangePolicy(0, m_num_cols);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-        const auto dz = PF::calculate_dz(pseudo_density(i, last_entry), p_mid(i, last_entry), T_mid(i, last_entry), qv(i, last_entry));
-        Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
-      });
-
-      // Set view data ptr
-      info.data = Sa_dens.data();
-
-    }
-    else {
-      EKAT_ERROR_MSG("Error! Unrecognized export field name: " + fname + ".");
-    }
+    // Set view data ptr
+    if (fname == "set_zero")     info.data = zero_view.data();
+    else if (fname == "Sa_ptem") info.data = Sa_ptem.data();
+    else if (fname == "Sa_u")    info.data = Sa_u.data();
+    else if (fname == "Sa_v")    info.data = Sa_v.data();
+    else if (fname == "Sa_dens") info.data = Sa_dens.data();
+    else                         EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
 
     // Get column offset and stride
     get_col_info (dummy_field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
 
     // Store the identifier of this field, for debug purposes
     m_exports_fids.insert(dummy_field.get_header().get_identifier());
-
   }
 
   // Set cpl index
@@ -275,9 +208,9 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
   // Check that we registered all the imports/exports we said we would
   // TODO: this is not really needed for correctness. It only means we over-allocated.
   //       Should we allow it?
-  EKAT_REQUIRE_MSG (m_num_imports==m_scream_imports_host.extent_int(0),
+  EKAT_REQUIRE_MSG (m_num_scream_imports==m_scream_imports_host.extent_int(0),
                       "Error! You registered less imports than you said you would.\n"
-                      "       Imports registered: " + std::to_string(m_num_imports) + "\n"
+                      "       Imports registered: " + std::to_string(m_num_scream_imports) + "\n"
                       "       Imports declared:   " + std::to_string(m_scream_imports_host.extent_int(0)) + "\n");
   EKAT_REQUIRE_MSG (m_num_exports==m_scream_exports_host.extent_int(0),
                       "Error! You registered less exports than you said you would.\n"
@@ -286,7 +219,7 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
 
   // Loop over import/exports; make sure both data and field are set,
   // and that cpl indices form a range [0,N]
-  for (int i=0; i<m_num_imports; ++i) {
+  for (int i=0; i<m_num_scream_imports; ++i) {
     EKAT_REQUIRE_MSG (m_scream_imports_host(i).data!=nullptr,
                         "Error! No field set for import index " + std::to_string(i) + ".\n");
   }
@@ -299,12 +232,12 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
   Kokkos::deep_copy(m_scream_imports_dev, m_scream_imports_host);
   Kokkos::deep_copy(m_scream_exports_dev, m_scream_exports_host);
 
-  if (m_num_imports>0) {
+  if (m_num_scream_imports>0) {
     // Check input pointer
     EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
 
     // Setup the host and device 2d views
-    m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_total_imports);
+    m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_cpl_imports);
     m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
   }
 
@@ -323,7 +256,7 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
 
 void SurfaceCoupling::do_import ()
 {
-  if (m_num_imports==0) {
+  if (m_num_scream_imports==0) {
     return;
   }
 
@@ -338,7 +271,7 @@ void SurfaceCoupling::do_import ()
   Kokkos::deep_copy(m_cpl_imports_view_d,m_cpl_imports_view_h);
 
   // Unpack the fields
-  auto unpack_policy = policy_type(0,m_num_imports*num_cols);
+  auto unpack_policy = policy_type(0,m_num_scream_imports*num_cols);
   Kokkos::parallel_for(unpack_policy, KOKKOS_LAMBDA(const int& i) {
     const int ifield = i / num_cols;
     const int icol   = i % num_cols;
@@ -357,6 +290,34 @@ void SurfaceCoupling::do_export ()
   }
 
   using policy_type = KokkosTypes<device_type>::RangePolicy;
+  using PF = PhysicsFunctions<device_type>;
+
+  // For each export fields that is not trivially exist in the field
+  // manager (see Case 2 in register_export()), calculate correct data
+  // values.
+  const bool scream_ad_run =
+      (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") && m_field_mgr->has_field("p_mid") &&
+       m_field_mgr->has_field("horiz_winds") && m_field_mgr->has_field("pseudo_density"));
+  if (scream_ad_run) {
+    const int last_entry = m_num_levs-1;
+    const auto qv             = m_field_mgr->get_field("qv").get_reshaped_view<const Real**>();
+    const auto T_mid          = m_field_mgr->get_field("T_mid").get_reshaped_view<const Real**>();
+    const auto p_mid          = m_field_mgr->get_field("p_mid").get_reshaped_view<const Real**>();
+    const auto horiz_winds    = m_field_mgr->get_field("horiz_winds").get_reshaped_view<Real***>();
+    const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_reshaped_view<const Real**>();
+
+    const auto policy = policy_type (0, m_num_cols);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
+      const auto dz = PF::calculate_dz(pseudo_density(i, last_entry), p_mid(i, last_entry),
+                                       T_mid(i, last_entry), qv(i, last_entry));
+
+      Sa_ptem(i) = PF::calculate_theta_from_T(T_mid(i, last_entry), p_mid(i, last_entry));
+      Sa_u(i)    = horiz_winds(i, 0, last_entry);
+      Sa_v(i)    = horiz_winds(i, 1, last_entry);
+      Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
+    });
+    Kokkos::deep_copy(zero_view, 0.0);
+  }
 
   // Local copies, to deal with CUDA's handling of *this.
   const auto scream_exports = m_scream_exports_dev;
@@ -370,7 +331,7 @@ void SurfaceCoupling::do_export ()
     const int icol   = i % num_cols;
     const auto& info = scream_exports(ifield);
 
-    auto offset = icol*info.col_stride + info.col_offset;
+    const auto offset = icol*info.col_stride + info.col_offset;
     cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
   });
 
@@ -403,8 +364,9 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
   const auto& dims = layout.dims();
 
   auto lt = get_layout_type(layout.tags());
-  const bool scalar = lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D;
-  const bool vector = lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
+  const bool scalar   = lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D;
+  const bool vector   = lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
+  const bool layout3d = lt==LayoutType::Scalar3D || lt==LayoutType::Vector3D;
   EKAT_REQUIRE_MSG(scalar || vector,
       "Error! Support for tensor fields not yet implemented in surface coupling.\n");
   EKAT_REQUIRE_MSG( (vecComp<0) == scalar,
@@ -412,34 +374,47 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
 
   vecComp = std::max(0,vecComp);
 
-  // Product of dimensions of field, without counting space dims, that is,
-  // the product of dimensions of the "analytical" field.
-  int dims_prod = 1;
-
-  // Compute initial offset based on this field rank and requested component
+  // Compute initial offset. We use get_last_extent() as it
+  // accounts for padding (if any).
   col_offset = vecComp;
-  if (vector) {
-    dims_prod = dims[1];
+  if (layout3d) {
+    if (lt==LayoutType::Vector3D) {
+      col_offset *= fh->get_alloc_properties().get_last_extent();;
+    }
+    col_offset += m_num_levs-1;
   }
 
   // If rank>1, there always is some stride
   col_stride = 1;
   if (layout.rank()>1) {
-    // Note: use alloc prop's last extent, cause it includes padding (if any);
-    col_stride = fh->get_alloc_properties().get_last_extent();
+    col_stride = fh->get_alloc_properties().get_last_extent();;
     if (layout.rank()>2) {
       col_stride *= dims[1];
     }
   }
+
 
   // Recursively go through parent field, adding offset depending
   // on the location of the slice.
   // Note: as of now, I don't expect there to be "a grandparent" for this field,
   //       so we could avoid the while loop. However, the logic is so simple, that
   //       I may as well add it, and be safe down the road if it happens.
+
+  // Product of dimensions of field, without counting space dims, that is,
+  // the product of dimensions of the "analytical" field.
+  int dims_prod = 1;
+    if (vector) {
+      dims_prod = dims[1];
+    }
+
   std::shared_ptr<const FieldHeader> me = fh;
   std::shared_ptr<const FieldHeader> p  = me->get_parent().lock();
   while (p!=nullptr) {
+
+    // TODO: Currently this is not used as we require fields to not have parents in
+    //       register_import/export() functions. It is possible, but the logic here
+    //       would need to be tested. We will end up erroring out before making it here.
+
     const auto& idx = me->get_alloc_properties().get_subview_idx();
 
     // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
@@ -459,11 +434,6 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
     me = p;
     p = me->get_parent().lock();
   }
-
-  // Surface corresponds to k=nlevs-1
-  // Hacky, but need to ask Luca about vector3d
-  if (lt==LayoutType::Scalar3D)
-    col_offset+= m_num_levs-1;
 }
 
 } // namespace control
