@@ -95,11 +95,6 @@ register_import(const std::string& fname,
 
     auto& info = m_scream_imports_host(m_num_scream_imports);
 
-    EKAT_ASSERT_MSG (field.get_header().get_parent().lock() == nullptr,
-                     "Error! The field " + fname + " has a parent. Currently SurfaceCoupling does not support "
-                     "importing or exporting fields which have parents since get_view().data() is unsafe. "
-                     "Instead call register_import(parent_field, cpl_indx, field_cmp_indx).");
-
     // Set view data ptr
     info.data = field.get_view().data();
 
@@ -159,11 +154,6 @@ register_export (const std::string& fname,
     export_field_type field = m_field_mgr->get_field(fname);
 
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
-
-    EKAT_ASSERT_MSG (field.get_header().get_parent().lock() == nullptr,
-                     "Error! The field " + fname + " has a parent. Currently SurfaceCoupling does not support "
-                     "importing or exporting fields which have parents since get_view().data() is unsafe. "
-                     "Instead call register_export(parent_field, cpl_indx, field_cmp_indx).");
 
     // Set view data ptr
     info.data = field.get_view().data();
@@ -379,7 +369,7 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
   col_offset = vecComp;
   if (layout3d) {
     if (lt==LayoutType::Vector3D) {
-      col_offset *= fh->get_alloc_properties().get_last_extent();;
+      col_offset *= fh->get_alloc_properties().get_last_extent();
     }
     col_offset += dims.back()-1;
   }
@@ -387,51 +377,41 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
   // If rank>1, there always is some stride
   col_stride = 1;
   if (layout.rank()>1) {
-    col_stride = fh->get_alloc_properties().get_last_extent();;
+    col_stride = fh->get_alloc_properties().get_last_extent();
     if (layout.rank()>2) {
       col_stride *= dims[1];
     }
   }
 
-  // Recursively go through parent field, adding offset depending
-  // on the location of the slice.
-  // Note: as of now, I don't expect there to be "a grandparent" for this field,
-  //       so we could avoid the while loop. However, the logic is so simple, that
-  //       I may as well add it, and be safe down the road if it happens.
+  // If this field has a parent, then the underlying data includes all entires
+  // in the larger field. We then must treat the child field as having col_stride
+  // and col_offset of a vector field with component as its subview_idx.
+  std::shared_ptr<const FieldHeader> parent = fh->get_parent().lock();
+  if (parent != nullptr) {
 
-  // Product of dimensions of field, without counting space dims, that is,
-  // the product of dimensions of the "analytical" field.
-  int dims_prod = 1;
-    if (vector) {
-      dims_prod = dims[1];
-    }
+    EKAT_REQUIRE_MSG(parent->get_parent().lock() == nullptr,
+                     "Error! Currently support isn't added for fields with grandparents.\n");
 
-  std::shared_ptr<const FieldHeader> me = fh;
-  std::shared_ptr<const FieldHeader> p  = me->get_parent().lock();
-  while (p!=nullptr) {
+    const auto parent_lt = get_layout_type(parent->get_identifier().get_layout().tags());
 
-    // TODO: Currently this is not used as we require fields to not have parents in
-    //       register_import/export() functions. It is possible, but the logic here
-    //       would need to be tested. We will end up erroring out before making it here.
+    // If the field has a parent field, it should be the case that the
+    // parent field is a vectored field. Currently we conly expect
+    EKAT_REQUIRE_MSG(parent_lt==LayoutType::Vector3D,
+                     "Error! SurfaceCoupling expects all subfields to have parents"
+                     " with LayoutType::Vector3D.\n");
 
-    const auto& idx = me->get_alloc_properties().get_subview_idx();
+    const auto& idx = fh->get_alloc_properties().get_subview_idx();
 
     // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
     // Field class only allows idim=0,1. But we should never be in the case of idim=0, here.
     // If we have idim=0, it means that the parent field did not have CL has tag[0]...
     EKAT_REQUIRE_MSG(idx.first==1, "Error! Bizarre scenario discovered. Contact developers.\n");
 
-    // Update the offset
-    col_offset += idx.second*dims_prod;
+    // Additional col_offset
+    col_offset += idx.second*parent->get_alloc_properties().get_last_extent();
 
-    // Update stride.
-    col_stride *= p->get_identifier().get_layout().dim(1);
-
-    // Update trail_dims, in case there's another parent.
-    dims_prod *= p->get_identifier().get_layout().dim(1);
-
-    me = p;
-    p = me->get_parent().lock();
+    // Additional product for col_stride
+    col_stride *= parent->get_identifier().get_layout().dim(1);
   }
 }
 

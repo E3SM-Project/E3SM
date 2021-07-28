@@ -21,6 +21,8 @@ TEST_CASE ("surface_coupling")
   using namespace ekat::units;
   using FL = FieldLayout;
   using FID = FieldIdentifier;
+  using FR = FieldRequest;
+  using GR = GroupRequest;
   using RPDF = std::uniform_real_distribution<Real>;
   using rngAlg = std::mt19937_64;
 
@@ -52,12 +54,19 @@ TEST_CASE ("surface_coupling")
   FID v2d_id("v2d",FL{{COL,CMP},{ncols,2}},m/s,grid->name());
   FID v3d_id("v3d",FL{{COL,CMP,LEV},{ncols,2,nlevs}},m/s,grid->name());
 
+  FID sub_s2d1_id("sub_s2d1",FL{{COL},{ncols}},Pa,grid->name());
+  FID sub_s2d2_id("sub_s2d2",FL{{COL},{ncols}},Pa,grid->name());
+  FID sub_s3d1_id("sub_s3d1",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
+  FID sub_s3d2_id("sub_s3d2",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
+
+
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_s2d = 1;
   const int num_s3d = 1;
   const int num_v2d = 1;
   const int num_v3d = 1;
-  const int num_fields = num_s2d+num_s3d+2*(num_v2d+num_v3d);
+  const int num_sub_s3d = 2;
+  const int num_fields = num_s2d+num_s3d+2*(num_v2d+num_v3d)+num_sub_s3d;
 
   // Keep two separate fms, so we can compare original and final fields.
   auto fm_in = std::make_shared<FieldManager<Real>> (grid);
@@ -67,12 +76,19 @@ TEST_CASE ("surface_coupling")
   fm_in->register_field(s3d_id);
   fm_in->register_field(v2d_id);
   fm_in->register_field(v3d_id);
+  fm_in->register_field(FR{sub_s3d1_id,"group3d"});
+  fm_in->register_field(FR{sub_s3d2_id,"group3d"});
+  fm_in->register_group(GR("group3d",grid->name(),Bundling::Required));
   fm_in->registration_ends();
+
   fm_out->registration_begins();
   fm_out->register_field(s2d_id);
   fm_out->register_field(s3d_id);
   fm_out->register_field(v2d_id);
   fm_out->register_field(v3d_id);
+  fm_out->register_field(FR{sub_s3d1_id,"group3d"});
+  fm_out->register_field(FR{sub_s3d2_id,"group3d"});
+  fm_out->register_group(GR("group3d",grid->name(),Bundling::Required));
   fm_out->registration_ends();
 
   // Create two SC objects, to import and export
@@ -93,12 +109,17 @@ TEST_CASE ("surface_coupling")
   importer.register_import("v2d",3,1);
   importer.register_import("v3d",4,0);
   importer.register_import("v3d",5,1);
+  importer.register_import("sub_s3d1",6);
+  importer.register_import("sub_s3d2",7);
+
   exporter.register_export("s2d",0);
   exporter.register_export("s3d",1);
   exporter.register_export("v2d",2,0);
   exporter.register_export("v2d",3,1);
   exporter.register_export("v3d",4,0);
   exporter.register_export("v3d",5,1);
+  exporter.register_export("sub_s3d1",6);
+  exporter.register_export("sub_s3d2",7);
 
   // Create a raw array big enough to contain all the 2d data for import/export
   double* raw_data = new double[ncols*num_fields];
@@ -112,28 +133,45 @@ TEST_CASE ("surface_coupling")
   auto s3d_exp = fm_out->get_field(s3d_id);
   auto v2d_exp = fm_out->get_field(v2d_id);
   auto v3d_exp = fm_out->get_field(v3d_id);
+  auto sub_s3d1_exp = fm_out->get_field(sub_s3d1_id);
+  auto sub_s3d2_exp = fm_out->get_field(sub_s3d2_id);
+  auto G3d_exp = fm_out->get_field(fm_out->get_field_group("group3d").m_bundle->get_header().get_identifier().name());
+
   auto s2d_imp = fm_in->get_field(s2d_id);
   auto s3d_imp = fm_in->get_field(s3d_id);
   auto v2d_imp = fm_in->get_field(v2d_id);
   auto v3d_imp = fm_in->get_field(v3d_id);
+  auto sub_s3d1_imp = fm_in->get_field(sub_s3d1_id);
+  auto sub_s3d2_imp = fm_in->get_field(sub_s3d2_id);
+  auto G3d_imp = fm_in->get_field(fm_in->get_field_group("group3d").m_bundle->get_header().get_identifier().name());
 
   auto s2d_exp_d = s2d_exp.get_reshaped_view<Real*>();
   auto s3d_exp_d = s3d_exp.get_reshaped_view<Real**>();
   auto v2d_exp_d = v2d_exp.get_reshaped_view<Real**>();
   auto v3d_exp_d = v3d_exp.get_reshaped_view<Real***>();
+  auto sub_s3d1_exp_d = sub_s3d1_exp.get_reshaped_view<Real**>();
+  auto sub_s3d2_exp_d = sub_s3d2_exp.get_reshaped_view<Real**>();
+
   auto s2d_imp_d = s2d_imp.get_reshaped_view<Real*>();
   auto s3d_imp_d = s3d_imp.get_reshaped_view<Real**>();
   auto v2d_imp_d = v2d_imp.get_reshaped_view<Real**>();
   auto v3d_imp_d = v3d_imp.get_reshaped_view<Real***>();
+  auto sub_s3d1_imp_d = sub_s3d1_imp.get_reshaped_view<Real**>();
+  auto sub_s3d2_imp_d = sub_s3d2_imp.get_reshaped_view<Real**>();
 
   auto s2d_exp_h = s2d_exp.get_reshaped_view<Real*,Host>();
   auto s3d_exp_h = s3d_exp.get_reshaped_view<Real**,Host>();
   auto v2d_exp_h = v2d_exp.get_reshaped_view<Real**,Host>();
   auto v3d_exp_h = v3d_exp.get_reshaped_view<Real***,Host>();
+  auto sub_s3d1_exp_h = sub_s3d1_exp.get_reshaped_view<Real**,Host>();
+  auto sub_s3d2_exp_h = sub_s3d2_exp.get_reshaped_view<Real**,Host>();
+
   auto s2d_imp_h = s2d_imp.get_reshaped_view<Real*,Host>();
   auto s3d_imp_h = s3d_imp.get_reshaped_view<Real**,Host>();
   auto v2d_imp_h = v2d_imp.get_reshaped_view<Real**,Host>();
   auto v3d_imp_h = v3d_imp.get_reshaped_view<Real***,Host>();
+  auto sub_s3d1_imp_h = sub_s3d1_imp.get_reshaped_view<Real**,Host>();
+  auto sub_s3d2_imp_h = sub_s3d2_imp.get_reshaped_view<Real**,Host>();
 
   for (int i=0; i<nruns; ++i) {
     // Fill export fields
@@ -141,6 +179,7 @@ TEST_CASE ("surface_coupling")
     ekat::genRandArray(s3d_exp_d,engine,pdf);
     ekat::genRandArray(v2d_exp_d,engine,pdf);
     ekat::genRandArray(v3d_exp_d,engine,pdf);
+    ekat::genRandArray(G3d_exp.get_view(),engine,pdf);
 
     // Set all raw_data to -1 (might be helpful for debugging)
     std::fill_n(raw_data,4*ncols,-1);
@@ -156,10 +195,14 @@ TEST_CASE ("surface_coupling")
     s3d_exp.sync_to_host();
     v2d_exp.sync_to_host();
     v3d_exp.sync_to_host();
+    sub_s3d1_exp.sync_to_host();
+    sub_s3d2_exp.sync_to_host();
     s2d_imp.sync_to_host();
     s3d_imp.sync_to_host();
     v2d_imp.sync_to_host();
     v3d_imp.sync_to_host();
+    sub_s3d1_imp.sync_to_host();
+    sub_s3d2_imp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (s2d_exp_h(icol)==s2d_imp_h(icol));
       REQUIRE (s3d_exp_h(icol,nlevs-1)==s3d_imp_h(icol,nlevs-1));
@@ -167,6 +210,8 @@ TEST_CASE ("surface_coupling")
       REQUIRE (v2d_exp_h(icol,1)==v2d_imp_h(icol,1));
       REQUIRE (v3d_exp_h(icol,0,nlevs-1)==v3d_imp_h(icol,0,nlevs-1));
       REQUIRE (v3d_exp_h(icol,1,nlevs-1)==v3d_imp_h(icol,1,nlevs-1));
+      REQUIRE (sub_s3d1_exp_h(icol,nlevs-1)==sub_s3d1_imp_h(icol,nlevs-1));
+      REQUIRE (sub_s3d2_exp_h(icol,nlevs-1)==sub_s3d2_imp_h(icol,nlevs-1));
     }
   }
 
@@ -337,7 +382,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("Sa_v",             4);
   coupler.register_export("p_mid",            5);
   coupler.register_export("Sa_dens",          6);
-  coupler.register_export("tracers",          7, 0);
+  coupler.register_export("qv",               7);
   coupler.register_export("set_zero",         8);
   coupler.register_export("precip_liq_surf",  9);
   coupler.register_export("set_zero",         10);
@@ -406,13 +451,13 @@ TEST_CASE ("recreate_mct_coupling")
       // Exports
 
       // These exports are direct values from a scream field
-      REQUIRE (export_raw_data[0  + icol*num_exports] == T_mid_h          (icol,    nlevs-1)); // 1st export
-      REQUIRE (export_raw_data[2  + icol*num_exports] == z_mid_h          (icol,    nlevs-1)); // 3rd export
-      REQUIRE (export_raw_data[3  + icol*num_exports] == horiz_winds_h    (icol, 0, nlevs-1)); // 4th export
-      REQUIRE (export_raw_data[4  + icol*num_exports] == horiz_winds_h    (icol, 1, nlevs-1)); // 5th export
-      REQUIRE (export_raw_data[5  + icol*num_exports] == p_mid_h          (icol,    nlevs-1)); // 6th export
-      REQUIRE (export_raw_data[7  + icol*num_exports] == qv_h             (icol,    nlevs-1)); // 8th export
-      REQUIRE (export_raw_data[9  + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
+      REQUIRE (export_raw_data[0 + icol*num_exports] == T_mid_h          (icol,    nlevs-1)); // 1st export
+      REQUIRE (export_raw_data[2 + icol*num_exports] == z_mid_h          (icol,    nlevs-1)); // 3rd export
+      REQUIRE (export_raw_data[3 + icol*num_exports] == horiz_winds_h    (icol, 0, nlevs-1)); // 4th export
+      REQUIRE (export_raw_data[4 + icol*num_exports] == horiz_winds_h    (icol, 1, nlevs-1)); // 5th export
+      REQUIRE (export_raw_data[5 + icol*num_exports] == p_mid_h          (icol,    nlevs-1)); // 6th export
+      REQUIRE (export_raw_data[7 + icol*num_exports] == qv_h             (icol,    nlevs-1)); // 8th export
+      REQUIRE (export_raw_data[9 + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
 
       // These exports should be set to 0
       const auto eps = std::numeric_limits<Real>::epsilon();
