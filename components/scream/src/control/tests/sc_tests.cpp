@@ -390,8 +390,8 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("set_zero",         12);
 
   // Complete setup of importer/exporter, providing raw_data
-  double* import_raw_data = new Real[ncols*num_total_imports];
-  double* export_raw_data = new Real[ncols*num_exports];
+  double* import_raw_data = new double[ncols*num_total_imports];
+  double* export_raw_data = new double[ncols*num_exports];
   coupler.registration_ends(import_raw_data, export_raw_data);
 
   for (int i=0; i<nruns; ++i) {

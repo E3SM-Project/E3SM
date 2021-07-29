@@ -23,7 +23,7 @@ SurfaceCoupling (const field_mgr_ptr& field_mgr)
   const auto nondim = Units::nondimensional();
   auto grid_name = grid->name();
   FieldIdentifier id ("dummy_field", layout, nondim, grid_name);
-  dummy_field = Field<const double>(id);
+  dummy_field = Field<const Real>(id);
 
   EKAT_REQUIRE_MSG(grid->type()==GridType::Point,
       "Error! Surface coupling only implemented for 'Point' grids.\n"

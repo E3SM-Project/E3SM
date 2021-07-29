@@ -127,11 +127,11 @@ protected:
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
   // Views for storing export values for various fields that need to be computed
-  view_1d<device_type,double> Sa_ptem;
-  view_1d<device_type,double> Sa_u;
-  view_1d<device_type,double> Sa_v;
-  view_1d<device_type,double> Sa_dens;
-  view_1d<device_type,double> zero_view;
+  view_1d<device_type,Real> Sa_ptem;
+  view_1d<device_type,Real> Sa_u;
+  view_1d<device_type,Real> Sa_v;
+  view_1d<device_type,Real> Sa_dens;
+  view_1d<device_type,Real> zero_view;
 
   // Dummy field to allow for the storage of the FieldIdentifier for debugging (not currently used)
   // and the FieldHeader needed to set up column info for export fields which must be computed.
