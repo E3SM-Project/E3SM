@@ -14,12 +14,10 @@ SET (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp rrtmgp ${NETCDF_C} scream_cont
 # Add source files
 set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 
-# Test atmosphere processes. Temporarily disabled for AT because it has FPEs. Also
-# disabled if valgrind is ON because it takes too long.
-if (NOT SCREAM_AUTOTESTER)
-  CreateUnitTest(shoc_cld_p3_rrtmgp "${SRC}" "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
-  set_target_properties(shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-  target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
+# Test atmosphere processes.
+CreateUnitTest(shoc_cld_p3_rrtmgp "${SRC}" "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
+set_target_properties(shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
@@ -29,7 +27,6 @@ if (NOT SCREAM_AUTOTESTER)
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
 )
-endif()
 
 ## Copy yaml input file to run directory
 FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
