@@ -2140,27 +2140,6 @@ contains
        call metadata_set(attname, longname, stdname, units)
     endif
 
-    ! Currently only the CESM land and runoff models treat irrigation as a separate
-    ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
-    ! E3SM may want to update its land and runoff models to map irrigation specially, as
-    ! CESM does.
-    !
-    ! (Once E3SM is using this irrigation field, all that needs to be done is to remove
-    ! this conditional: Code in other places in the coupler is written to trigger off of
-    ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
-    ! conditional is removed.)
-    if (trim(cime_model) == 'cesm') then
-       ! Irrigation flux (land/rof only)
-       call seq_flds_add(l2x_fluxes,"Flrl_irrig")
-       call seq_flds_add(x2r_fluxes,"Flrl_irrig")
-       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_irrig')
-       longname = 'Irrigation flux (withdrawal from rivers)'
-       stdname  = 'irrigation'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrl_irrig'
-       call metadata_set(attname, longname, stdname, units)
-    end if
-
     !-----------------------------
     ! rof->ocn (runoff) and rof->lnd (flooding)
     !-----------------------------
@@ -2221,25 +2200,22 @@ contains
     attname  = 'Flrr_volrmch'
     call metadata_set(attname, longname, stdname, units)
 
-    if (trim(cime_model) == 'e3sm') then
-       call seq_flds_add(r2x_fluxes,'Flrr_supply')
-       call seq_flds_add(x2l_fluxes,'Flrr_supply')
-       longname = 'River model supply for land use'
-       stdname  = 'rtm_supply'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrr_supply'
-       call metadata_set(attname, longname, stdname, units)
-    endif
+    call seq_flds_add(r2x_fluxes,'Flrr_supply')
+    call seq_flds_add(x2l_fluxes,'Flrr_supply')
+    longname = 'River model supply for land use'
+    stdname  = 'rtm_supply'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrr_supply'
+    call metadata_set(attname, longname, stdname, units)
     
-	if (trim(cime_model) == 'e3sm') then   
-       call seq_flds_add(r2x_fluxes,'Flrr_deficit')
-       call seq_flds_add(x2l_fluxes,'Flrr_deficit')
-       longname = 'River model supply deficit'
-       stdname  = 'rtm_deficit'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrr_deficit'
-       call metadata_set(attname, longname, stdname, units)
-    endif
+    call seq_flds_add(r2x_fluxes,'Flrr_deficit')
+    call seq_flds_add(x2l_fluxes,'Flrr_deficit')
+    longname = 'River model supply deficit'
+    stdname  = 'rtm_deficit'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrr_deficit'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------
