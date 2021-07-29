@@ -955,7 +955,7 @@ contains
           index_x2l_Faxa_snowc  = mct_aVect_indexRA(x2l_l,'Faxa_snowc')
           index_x2l_Faxa_snowl  = mct_aVect_indexRA(x2l_l,'Faxa_snowl')
           index_x2l_Flrr_flood  = mct_aVect_indexRA(x2l_l,'Flrr_flood')
-          index_x2l_Flrr_supply = mct_aVect_indexRA(x2l_l,'Flrr_supply', perrWith='quiet')
+          index_x2l_Flrr_supply = mct_aVect_indexRA(x2l_l,'Flrr_supply')
 
           if ( flds_wiso_lnd )then
              index_x2l_Faxa_rainc_16O = mct_aVect_indexRA(x2l_l,'Faxa_rainc_16O')
@@ -987,10 +987,7 @@ contains
           nf = f_wsnow; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Faxa_snowc,n) &
                + ca_l*x2l_l%rAttr(index_x2l_Faxa_snowl,n)
           nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*x2l_l%rAttr(index_x2l_Flrr_flood,n)
-
-          if (index_x2l_Flrr_supply /= 0) then
-             nf = f_wirrig ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Flrr_supply,n)
-          end if
+          nf = f_wirrig ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*x2l_l%rAttr(index_x2l_Flrr_supply,n)
 
           if ( flds_wiso_lnd )then
              nf = f_wrain_16O;
@@ -1149,7 +1146,7 @@ contains
        index_r2x_Forr_rofi   = mct_aVect_indexRA(r2x_r,'Forr_rofi')
        index_r2x_Firr_rofi   = mct_aVect_indexRA(r2x_r,'Firr_rofi')
        index_r2x_Flrr_flood  = mct_aVect_indexRA(r2x_r,'Flrr_flood')
-       index_r2x_Flrr_supply = mct_aVect_indexRA(r2x_r,'Flrr_supply', perrWith='quiet')
+       index_r2x_Flrr_supply = mct_aVect_indexRA(r2x_r,'Flrr_supply')
 
        if ( flds_wiso_rof )then
           index_r2x_Forr_rofl_16O   = mct_aVect_indexRA(r2x_r,'Forr_rofl_16O')
@@ -1174,10 +1171,7 @@ contains
             + ca_r*r2x_r%rAttr(index_r2x_Flrr_flood,n)
        nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_r*r2x_r%rAttr(index_r2x_Forr_rofi,n) &
             - ca_r*r2x_r%rAttr(index_r2x_Firr_rofi,n)
-
-       if (index_r2x_Flrr_supply /= 0) then
-          nf = f_wirrig ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_r*r2x_r%rAttr(index_r2x_Flrr_supply,n)
-       end if
+       nf = f_wirrig ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_r*r2x_r%rAttr(index_r2x_Flrr_supply,n)
 
        if ( flds_wiso_rof )then
           nf = f_wroff_16O;
