@@ -128,8 +128,6 @@ protected:
 
   // Views for storing export values for various fields that need to be computed
   view_1d<device_type,Real> Sa_ptem;
-  view_1d<device_type,Real> Sa_u;
-  view_1d<device_type,Real> Sa_v;
   view_1d<device_type,Real> Sa_dens;
   view_1d<device_type,Real> zero_view;
 

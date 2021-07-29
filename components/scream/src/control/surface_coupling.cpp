@@ -44,8 +44,6 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports, const i
 
   // These fields contain computation needed for some export fields
   Sa_ptem      = decltype(Sa_ptem)     ("", m_num_cols);
-  Sa_u         = decltype(Sa_u)        ("", m_num_cols);
-  Sa_v         = decltype(Sa_v)        ("", m_num_cols);
   Sa_dens      = decltype(Sa_dens)     ("", m_num_cols);
   zero_view    = decltype(zero_view)   ("", m_num_cols);
   Kokkos::deep_copy(zero_view, 0.0);
@@ -54,6 +52,9 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports, const i
   // At registration end, they should match the length of the corresponding view above.
   m_num_scream_imports = 0;
   m_num_exports        = 0;
+
+  // We keep up with the total number of imports for indexing input data
+  m_num_cpl_imports = num_cpl_imports;
 
   // We keep up with the total number of imports for indexing input data
   m_num_cpl_imports = num_cpl_imports;
@@ -169,8 +170,6 @@ register_export (const std::string& fname,
     // Set view data ptr
     if (fname == "set_zero")     info.data = zero_view.data();
     else if (fname == "Sa_ptem") info.data = Sa_ptem.data();
-    else if (fname == "Sa_u")    info.data = Sa_u.data();
-    else if (fname == "Sa_v")    info.data = Sa_v.data();
     else if (fname == "Sa_dens") info.data = Sa_dens.data();
     else                         EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
 
@@ -287,14 +286,13 @@ void SurfaceCoupling::do_export ()
   // manager (see Case 2 in register_export()), calculate correct data
   // values.
   const bool scream_ad_run =
-      (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") && m_field_mgr->has_field("p_mid") &&
-       m_field_mgr->has_field("horiz_winds") && m_field_mgr->has_field("pseudo_density"));
+      (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") &&
+       m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density"));
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
     const auto qv             = m_field_mgr->get_field("qv").get_reshaped_view<const Real**>();
     const auto T_mid          = m_field_mgr->get_field("T_mid").get_reshaped_view<const Real**>();
     const auto p_mid          = m_field_mgr->get_field("p_mid").get_reshaped_view<const Real**>();
-    const auto horiz_winds    = m_field_mgr->get_field("horiz_winds").get_reshaped_view<Real***>();
     const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_reshaped_view<const Real**>();
 
     const auto policy = policy_type (0, m_num_cols);
@@ -303,8 +301,6 @@ void SurfaceCoupling::do_export ()
                                        T_mid(i, last_entry), qv(i, last_entry));
 
       Sa_ptem(i) = PF::calculate_theta_from_T(T_mid(i, last_entry), p_mid(i, last_entry));
-      Sa_u(i)    = horiz_winds(i, 0, last_entry);
-      Sa_v(i)    = horiz_winds(i, 1, last_entry);
       Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
     });
   }
@@ -392,19 +388,18 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
     EKAT_REQUIRE_MSG(parent->get_parent().lock() == nullptr,
                      "Error! Currently support isn't added for fields with grandparents.\n");
 
+
     const auto parent_lt = get_layout_type(parent->get_identifier().get_layout().tags());
 
-    // If the field has a parent field, it should be the case that the
-    // parent field is a vectored field. Currently we conly expect
     EKAT_REQUIRE_MSG(parent_lt==LayoutType::Vector3D,
-                     "Error! SurfaceCoupling expects all subfields to have parents"
-                     " with LayoutType::Vector3D.\n");
+                     "Error! SurfaceCoupling expects all subfields to have parents "
+                     "with LayoutType::Vector3D.\n");
 
     const auto& idx = fh->get_alloc_properties().get_subview_idx();
 
     // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
     // Field class only allows idim=0,1. But we should never be in the case of idim=0, here.
-    // If we have idim=0, it means that the parent field did not have CL has tag[0]...
+    // If we have idim=0, it means that the parent field did not have COL as tag[0].
     EKAT_REQUIRE_MSG(idx.first==1, "Error! Bizarre scenario discovered. Contact developers.\n");
 
     // Additional col_offset

@@ -59,7 +59,6 @@ TEST_CASE ("surface_coupling")
   FID sub_s3d1_id("sub_s3d1",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
   FID sub_s3d2_id("sub_s3d2",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
 
-
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_s2d = 1;
   const int num_s3d = 1;
@@ -378,8 +377,8 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("T_mid",            0);
   coupler.register_export("Sa_ptem",          1);
   coupler.register_export("z_mid",            2);
-  coupler.register_export("Sa_u",             3);
-  coupler.register_export("Sa_v",             4);
+  coupler.register_export("horiz_winds",      3, 0);
+  coupler.register_export("horiz_winds",      4, 1);
   coupler.register_export("p_mid",            5);
   coupler.register_export("Sa_dens",          6);
   coupler.register_export("qv",               7);
