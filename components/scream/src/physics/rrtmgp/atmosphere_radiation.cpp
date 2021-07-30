@@ -52,8 +52,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
-  // Use VAR field tag for gases for now; consider adding a tag?
-  FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
@@ -61,8 +59,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
   add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name(), ps);
-  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name(), ps);
-  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
+  add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
+  add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
+  add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
   add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
   add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
@@ -107,6 +107,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   // 1d array
   m_buffer.mu0 = decltype(m_buffer.mu0)("mu0", mem, m_ncol);
   mem += m_buffer.mu0.totElems();
+  m_buffer.sfc_alb_dir_vis = decltype(m_buffer.sfc_alb_dir_vis)("sfc_alb_dir_vis", mem, m_ncol);
+  mem += m_buffer.sfc_alb_dir_vis.totElems();
+  m_buffer.sfc_alb_dir_nir = decltype(m_buffer.sfc_alb_dir_nir)("sfc_alb_dir_nir", mem, m_ncol);
+  mem += m_buffer.sfc_alb_dir_nir.totElems();
+  m_buffer.sfc_alb_dif_vis = decltype(m_buffer.sfc_alb_dif_vis)("sfc_alb_dif_vis", mem, m_ncol);
+  mem += m_buffer.sfc_alb_dif_vis.totElems();
+  m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_ncol);
+  mem += m_buffer.sfc_alb_dif_nir.totElems();
 
   // 2d arrays
   m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_ncol, m_nlay);
@@ -153,9 +161,9 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.lw_flux_dn = decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_ncol, m_nlay+1);
   mem += m_buffer.lw_flux_dn.totElems();
 
-  m_buffer.sfc_alb_dir = decltype(m_buffer.sfc_alb_dir)("surf_alb_direct", mem, m_ncol, m_nswbands);
+  m_buffer.sfc_alb_dir = decltype(m_buffer.sfc_alb_dir)("sfc_alb_dir", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dir.totElems();
-  m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("surf_alb_diffuse", mem, m_ncol, m_nswbands);
+  m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("sfc_alb_dif", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dif.totElems();
 
   int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -188,8 +196,10 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
   auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("t_int").get_reshaped_view<const Real**>();
-  auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
-  auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
+  auto d_sfc_alb_dir_vis = m_rrtmgp_fields_in.at("sfc_alb_dir_vis").get_reshaped_view<const Real*>();
+  auto d_sfc_alb_dir_nir = m_rrtmgp_fields_in.at("sfc_alb_dir_nir").get_reshaped_view<const Real*>();
+  auto d_sfc_alb_dif_vis = m_rrtmgp_fields_in.at("sfc_alb_dif_vis").get_reshaped_view<const Real*>();
+  auto d_sfc_alb_dif_nir = m_rrtmgp_fields_in.at("sfc_alb_dif_nir").get_reshaped_view<const Real*>();
   auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
   auto d_qv = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
   auto d_qc = m_rrtmgp_fields_in.at("qc").get_reshaped_view<const Real**>();
@@ -206,24 +216,28 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
-  auto p_lay          = m_buffer.p_lay;
-  auto t_lay          = m_buffer.t_lay;
-  auto p_lev          = m_buffer.p_lev;
-  auto p_del          = m_buffer.p_del;
-  auto t_lev          = m_buffer.t_lev;
-  auto sfc_alb_dir    = m_buffer.sfc_alb_dir;
-  auto sfc_alb_dif    = m_buffer.sfc_alb_dif;
-  auto mu0            = m_buffer.mu0;
-  auto qc             = m_buffer.qc;
-  auto qi             = m_buffer.qi;
-  auto cldfrac_tot    = m_buffer.cldfrac_tot;
-  auto rel            = m_buffer.eff_radius_qc;
-  auto rei            = m_buffer.eff_radius_qi;
-  auto sw_flux_up     = m_buffer.sw_flux_up;
-  auto sw_flux_dn     = m_buffer.sw_flux_dn;
-  auto sw_flux_dn_dir = m_buffer.sw_flux_dn_dir;
-  auto lw_flux_up     = m_buffer.lw_flux_up;
-  auto lw_flux_dn     = m_buffer.lw_flux_dn;
+  auto p_lay           = m_buffer.p_lay;
+  auto t_lay           = m_buffer.t_lay;
+  auto p_lev           = m_buffer.p_lev;
+  auto p_del           = m_buffer.p_del;
+  auto t_lev           = m_buffer.t_lev;
+  auto mu0             = m_buffer.mu0;
+  auto sfc_alb_dir     = m_buffer.sfc_alb_dir;
+  auto sfc_alb_dif     = m_buffer.sfc_alb_dif;
+  auto sfc_alb_dir_vis = m_buffer.sfc_alb_dir_vis;
+  auto sfc_alb_dir_nir = m_buffer.sfc_alb_dir_nir;
+  auto sfc_alb_dif_vis = m_buffer.sfc_alb_dif_vis;
+  auto sfc_alb_dif_nir = m_buffer.sfc_alb_dif_nir;
+  auto qc              = m_buffer.qc;
+  auto qi              = m_buffer.qi;
+  auto cldfrac_tot     = m_buffer.cldfrac_tot;
+  auto rel             = m_buffer.eff_radius_qc;
+  auto rei             = m_buffer.eff_radius_qi;
+  auto sw_flux_up      = m_buffer.sw_flux_up;
+  auto sw_flux_dn      = m_buffer.sw_flux_dn;
+  auto sw_flux_dn_dir  = m_buffer.sw_flux_dn_dir;
+  auto lw_flux_up      = m_buffer.lw_flux_up;
+  auto lw_flux_dn      = m_buffer.lw_flux_dn;
 
   // Copy data from the FieldManager to the YAKL arrays
   {
@@ -232,6 +246,11 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       const int i = team.league_rank();
 
       mu0(i+1) = d_mu0(i);
+      sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);
+      sfc_alb_dir_nir(i+1) = d_sfc_alb_dir_nir(i);
+      sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(i);
+      sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(i);
+
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
         p_lay(i+1,k+1)       = d_pmid(i,k);
         t_lay(i+1,k+1)       = d_tmid(i,k);
@@ -247,11 +266,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
       p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
       t_lev(i+1,m_nlay+1) = d_tint(i,m_nlay);
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nswbands), [&] (const int& k) {
-        sfc_alb_dir(i+1,k+1) = d_sfc_alb_dir(i,k);
-        sfc_alb_dif(i+1,k+1) = d_sfc_alb_dif(i,k);
-      });
     });
   }
   Kokkos::fence();
@@ -292,6 +306,14 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   });
   }
   Kokkos::fence();
+
+  // Compute band-by-band surface_albedos. This is needed since
+  // the AD passes broadband albedos, but rrtmgp require band-by-band.
+  rrtmgp::compute_band_by_band_surface_albedos(
+    m_ncol, m_nswbands,
+    sfc_alb_dir_vis, sfc_alb_dir_nir,
+    sfc_alb_dif_vis, sfc_alb_dif_nir,
+    sfc_alb_dir, sfc_alb_dif);
 
   // Run RRTMGP driver
   rrtmgp::rrtmgp_main(

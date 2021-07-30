@@ -69,9 +69,10 @@ int main(int argc, char** argv) {
 
     // Setup our dummy atmosphere based on the input data we read in
     std::cout << "Setup dummy atmos...\n";
-    auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
-    real2d sfc_alb_dir("sfc_alb_dir", nswbands, ncol);
-    real2d sfc_alb_dif("sfc_alb_dif", nswbands, ncol);
+    real1d sfc_alb_dir_vis("sfc_alb_dir_vis", ncol);
+    real1d sfc_alb_dir_nir("sfc_alb_dir_nir", ncol);
+    real1d sfc_alb_dif_vis("sfc_alb_dif_vis", ncol);
+    real1d sfc_alb_dif_nir("sfc_alb_dif_nir", ncol);
     real1d mu0("mu0", ncol);
     real2d lwp("lwp", ncol, nlay);
     real2d iwp("iwp", ncol, nlay);
@@ -80,7 +81,9 @@ int main(int argc, char** argv) {
     real2d cld("cld", ncol, nlay);
     rrtmgpTest::dummy_atmos(
             inputfile, ncol, p_lay, t_lay,
-            sfc_alb_dir, sfc_alb_dif, mu0,
+            sfc_alb_dir_vis, sfc_alb_dir_nir,
+            sfc_alb_dif_vis, sfc_alb_dif_nir,
+            mu0,
             lwp, iwp, rel, rei, cld
         );
 
@@ -94,6 +97,16 @@ int main(int argc, char** argv) {
     real2d sw_flux_dir("sw_flux_dir",ncol,nlay+1);
     real2d lw_flux_up ("lw_flux_up" ,ncol,nlay+1);
     real2d lw_flux_dn ("lw_flux_dn" ,ncol,nlay+1);
+
+    // Compute band-by-band surface_albedos.
+    const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
+    real2d sfc_alb_dir("sfc_alb_dir", ncol, nswbands);
+    real2d sfc_alb_dif("sfc_alb_dif", ncol, nswbands);
+    rrtmgp::compute_band_by_band_surface_albedos(
+      ncol, nswbands,
+      sfc_alb_dir_vis, sfc_alb_dir_nir,
+      sfc_alb_dif_vis, sfc_alb_dif_nir,
+      sfc_alb_dir, sfc_alb_dif);
 
     // Run RRTMGP code on dummy atmosphere
     std::cout << "Run RRTMGP...\n";

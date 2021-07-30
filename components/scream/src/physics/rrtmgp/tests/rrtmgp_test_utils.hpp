@@ -11,7 +11,9 @@ namespace rrtmgpTest {
     void dummy_atmos(
             std::string inputfile,
             int ncol, real2d &p_lay, real2d &t_lay,
-            real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
+            real1d &sfc_alb_dir_vis, real1d &sfc_alb_dir_nir,
+            real1d &sfc_alb_dif_vis, real1d &sfc_alb_dif_nir,
+            real1d &mu0,
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld
         );
     void read_fluxes(

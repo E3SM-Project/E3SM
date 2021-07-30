@@ -112,8 +112,10 @@ namespace scream {
         auto p_del = real2d("p_del", ncol, nlay);
         auto p_lev = real2d("p_lev", ncol, nlay+1);
         auto t_lev = real2d("t_lev", ncol, nlay+1);
-        auto sfc_alb_dir = real2d("sfc_alb_dir", ncol, nswbands);
-        auto sfc_alb_dif = real2d("sfc_alb_dif", ncol, nswbands);
+        auto sfc_alb_dir_vis = real1d("sfc_alb_dir_vis", ncol);
+        auto sfc_alb_dir_nir = real1d("sfc_alb_dir_nir", ncol);
+        auto sfc_alb_dif_vis = real1d("sfc_alb_dif_vis", ncol);
+        auto sfc_alb_dif_nir = real1d("sfc_alb_dif_nir", ncol);
         auto lwp = real2d("lwp", ncol, nlay);
         auto iwp = real2d("iwp", ncol, nlay);
         auto rel = real2d("rel", ncol, nlay);
@@ -135,7 +137,9 @@ namespace scream {
         // Setup dummy problem
         rrtmgpTest::dummy_atmos(
             inputfile, ncol, p_lay, t_lay,
-            sfc_alb_dir, sfc_alb_dif, mu0,
+            sfc_alb_dir_vis, sfc_alb_dir_nir,
+            sfc_alb_dif_vis, sfc_alb_dif_nir,
+            mu0,
             lwp, iwp, rel, rei, cld
         );
         //
@@ -173,8 +177,10 @@ namespace scream {
         auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
         auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
         auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_reshaped_view<Real*>();
+        auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_reshaped_view<Real*>();
+        auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_reshaped_view<Real*>();
+        auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_reshaped_view<Real*>();
         auto d_qc = field_mgr.get_field("qc").get_reshaped_view<Real**>();
         auto d_qi = field_mgr.get_field("qi").get_reshaped_view<Real**>();
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
@@ -207,6 +213,10 @@ namespace scream {
             const int i = team.league_rank();
 
             d_mu0(i) = mu0(i+1);
+            d_sfc_alb_dir_vis(i) = sfc_alb_dir_vis(i+1);
+            d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);
+            d_sfc_alb_dif_vis(i) = sfc_alb_dif_vis(i+1);
+            d_sfc_alb_dif_nir(i) = sfc_alb_dif_nir(i+1);
             Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
               d_pmid(i,k) = p_lay(i+1,k+1);
               d_tmid(i,k) = t_lay(i+1,k+1);
@@ -233,11 +243,6 @@ namespace scream {
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);
             d_tint(i,nlay) = t_lev(i+1,nlay+1);
-
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands), [&] (const int& k) {
-              d_sfc_alb_dir(i,k) = sfc_alb_dir(i+1,k+1);
-              d_sfc_alb_dif(i,k) = sfc_alb_dif(i+1,k+1);
-            });
           });
         }
         Kokkos::fence();
@@ -292,8 +297,10 @@ namespace scream {
         p_del.deallocate();
         p_lev.deallocate();
         t_lev.deallocate();
-        sfc_alb_dir.deallocate();
-        sfc_alb_dif.deallocate();
+        sfc_alb_dir_vis.deallocate();
+        sfc_alb_dir_nir.deallocate();
+        sfc_alb_dif_vis.deallocate();
+        sfc_alb_dif_nir.deallocate();
         lwp.deallocate();
         iwp.deallocate();
         rel.deallocate();
