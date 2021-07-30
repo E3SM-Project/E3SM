@@ -1,6 +1,7 @@
 #include "share/io/scorpio_output.hpp"
 
 #include <numeric>
+#include "ekat/util/ekat_string_utils.hpp"
 
 namespace scream
 {
@@ -9,13 +10,9 @@ namespace scream
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::init()
 {
-  using namespace scream;
-  using namespace scream::scorpio;
-
   // Parse the parameters that controls this output instance.
   // See the comments at the top for more details.
   m_casename        = m_params.get<std::string>("FILENAME");
-  m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
   m_grid_name       = m_params.get<std::string>("GRID","Physics");  // optional, default to Physics.
   auto& freq_params = m_params.sublist("FREQUENCY");
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
@@ -24,6 +21,13 @@ void AtmosphereOutput::init()
   m_restart_hist_n  = m_params.get<Int>("restart_hist_N",0);  // optional, default to 0 for no output
   m_restart_hist_option = m_params.get<std::string>("restart_hist_OPTION","NONE"); // optional, default to NONE
   m_is_restart = m_params.get<bool>("RESTART FILE",false);  // optional, default to false
+
+  m_avg_type = m_params.get<std::string>("AVERAGING TYPE");
+  auto avg_type_ci = ekat::upper_case(m_avg_type);
+  EKAT_REQUIRE_MSG (
+      avg_type_ci=="INSTANT" || avg_type_ci=="AVERAGE" || avg_type_ci=="MAX" || avg_type_ci=="MIN",
+      "Error! Unsupported averaging type (" + m_avg_type + ").\n"
+      "       Possible choices: Instant, Average, Max, Min.\n");
 
   // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
   EKAT_REQUIRE_MSG(m_grid_name=="Physics" || m_grid_name=="Physics GLL","Error with output grid! scorpio_output.hpp class only supports output on a Physics or Physics GLL grid for now.\n");
@@ -88,7 +92,7 @@ void AtmosphereOutput::init()
     for (auto name : m_fields)
     {
       auto l_view = rhist_in.pull_input(name);
-      m_view_local.at(name) = l_view;
+      m_host_views_1d.at(name) = l_view;
     }
     auto avg_count = rhist_in.pull_input("avg_count");
     m_status["Avg Count"] = avg_count(0);
@@ -124,7 +128,6 @@ void AtmosphereOutput::run(const Real time)
 /*-----*/
 void AtmosphereOutput::run_impl(const Real time, const std::string& time_str) 
 {
-  using namespace scream;
   using namespace scream::scorpio;
 
   m_status["Run"] += 1;
@@ -192,47 +195,84 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   }
 
   // Take care of updating and possibly writing fields.
+  using view_2d_host = typename KokkosTypes<HostDevice>::view_2d<Real>;
+  using view_3d_host = typename KokkosTypes<HostDevice>::view_3d<Real>;
   for (auto const& name : m_fields)
   {
     // Get all the info for this field.
-    auto field = m_field_mgr->get_field(name);
-    auto view_d = field.get_view();
-    auto g_view = Kokkos::create_mirror_view( view_d );
-    Kokkos::deep_copy(g_view, view_d);
+    const auto  field = m_field_mgr->get_field(name);
+    const auto& fap = field.get_header().get_alloc_properties();
+    const auto& layout = field.get_header().get_identifier().get_layout();
+    const auto rank = layout.rank();
+    const auto num_reals = fap.get_alloc_size() / sizeof(Real);
+    const auto last_dim = fap.get_last_extent();
+
+    // Make sure host data is up to date
+    field.sync_to_host();
+
+    // This tmp view may contain garbage entries, if the field has padding
+    view_1d_host hview_1d("",num_reals);
+    switch (rank) {
+      case 1:
+      {
+        auto view_1d = field.get_reshaped_view<const Real*,Host>();
+        Kokkos::deep_copy(hview_1d,view_1d);
+        break;
+      }
+      case 2:
+      {
+        auto view_2d = field.get_reshaped_view<const Real**,Host>();
+        Kokkos::deep_copy(view_2d_host(hview_1d.data(),layout.dim(0),last_dim),view_2d);
+        break;
+      }
+      case 3:
+      {
+        auto view_3d = field.get_reshaped_view<const Real***,Host>();
+        Kokkos::deep_copy(view_3d_host(hview_1d.data(),layout.dim(0),layout.dim(1),last_dim),view_3d);
+        break;
+      }
+      default:
+        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
+    }
+
     Int  f_len  = field.get_header().get_identifier().get_layout().size();
-    auto l_view = m_view_local.at(name);
-    // It is not necessary to do any operations between local and global views if the frequency of output is instantaneous,
-    // or if the Average Counter is 1 (meaning the beginning of a new record).
+    auto l_view = m_host_views_1d.at(name);
+    // It is not necessary to do any operations between local and global views if the frequency of output
+    // is instantaneous, or if the Average Counter is 1 (meaning the beginning of a new record).
     // TODO: Question to address - This current approach will *not* include the initial conditions in the calculation of any of the
     // output metrics.  Do we want this to be the case? 
-    if (m_avg_type == "Instant" || m_status["Avg Count"] == 1)
-    {
+    if (m_avg_type == "Instant" || m_status["Avg Count"] == 1) {
       // Make sure that the global view is in fact valid before copying to local view.
-      EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(), "Error in output, field " + name + " has not been initialized yet");
-      Kokkos::deep_copy(l_view, g_view);
-    }
-    else // output type uses multiple steps.
-    {
+      EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
+          "Error in output, field " + name + " has not been initialized yet\n.");
+      Kokkos::deep_copy(l_view, hview_1d);
+    } else {
+      // output type uses multiple snapshots.
+
       // Update local view given the averaging type.  TODO make this a switch statement?
-      if (m_avg_type == "Average")
-      {
-        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = (l_view(ii)*(m_status["Avg Count"]-1) + g_view(ii))/(m_status["Avg Count"]);}
-      } else if (m_avg_type == "Max")
-      {
-        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = std::max(l_view(ii),g_view(ii));}
-      } else if (m_avg_type == "Min")
-      {
-        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = std::min(l_view(ii),g_view(ii));}
-      } else {
-        EKAT_REQUIRE_MSG(true, "Error! IO Class, updating local views, averaging type of " + m_avg_type + " is not supported.");
+      if (m_avg_type == "Average") {
+        for (int ii=0; ii<f_len; ++ii) {
+          l_view(ii) = (l_view(ii)*(m_status["Avg Count"]-1) + hview_1d(ii))/(m_status["Avg Count"]);
+        }
+      } else if (m_avg_type == "Max") {
+        for (int ii=0; ii<f_len; ++ii) {
+          l_view(ii) = std::max(l_view(ii),hview_1d(ii));
+        }
+      } else if (m_avg_type == "Min") {
+        for (int ii=0; ii<f_len; ++ii) {
+          l_view(ii) = std::min(l_view(ii),hview_1d(ii));
+        }
       }
     } // m_avg_type != "Instant"
+
     if (is_write) {
       auto l_dims = field.get_header().get_identifier().get_layout().dims();
       Int padding = field.get_header().get_alloc_properties().get_padding();
       grid_write_data_array(filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
       if (is_typical) { 
-        for (int ii=0; ii<f_len; ++ii) { l_view(ii) = g_view(ii); }  // Reset local view after writing.  Only for typical output.
+        for (int ii=0; ii<f_len; ++ii) {
+          l_view(ii) = hview_1d(ii);
+        }  // Reset local view after writing.  Only for typical output.
       }
     }
   }
@@ -265,9 +305,6 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::finalize() 
 {
-  using namespace scream;
-  using namespace scream::scorpio;
-
   // Nothing to do at the moment, but keep just in case future development needs a finalization step
 
   m_status["Finalize"] += 1;
@@ -282,20 +319,18 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
   using namespace scorpio;
+
   auto fid = m_field_mgr->get_field(name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
-  for (int ii=0; ii<fid.get_layout().rank(); ++ii)
-  {
+  for (int ii=0; ii<fid.get_layout().rank(); ++ii) {
     // check tag against m_dims map.  If not in there, then add it.
     const auto& tags = fid.get_layout().tags();
     const auto& dims = fid.get_layout().dims();
     const auto tag_name = get_nc_tag_name(tags[ii],dims[ii]);
     auto tag_loc = m_dims.find(tag_name);
-    if (tag_loc == m_dims.end()) 
-    { 
+    if (tag_loc == m_dims.end()) {
       Int tag_len = 0;
-      if(e2str(tags[ii]) == "COL")
-      {
+      if(e2str(tags[ii]) == "COL") {
         tag_len = m_total_dofs;  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
       } else {
         tag_len = fid.get_layout().dim(ii);
@@ -310,19 +345,17 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::register_views()
 {
-  using namespace scream;
-  using namespace scream::scorpio;
-
   // Cycle through all fields and register.
-  for (auto const& name : m_fields)
-  {
+  for (auto const& name : m_fields) {
     auto field = m_field_mgr->get_field(name);
-    // If the "averaging type" is instant then just need a ptr to the view.
-    EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot deal with subfield, for now.");
-    auto view_d = field.get_view();
-    // Create a local copy of view to be stored by output stream.
-    view_type_host view_copy("",view_d.extent(0));
-    m_view_local.emplace(name,view_copy);
+
+    // These local views are really only needed if the averaging time is not 'Instant',
+    // to store running tallies for the average operation. However, we create them
+    // also for Instant avg_type, for simplicity later on.
+
+    // Create a local host view.
+    const auto num_reals = field.get_header().get_alloc_properties().get_alloc_size() / sizeof(Real);
+    m_host_views_1d.emplace(name,view_1d_host("",num_reals));
   }
 }
 /* ---------------------------------------------------------- */
@@ -331,8 +364,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   using namespace scorpio;
 
   // Cycle through all fields and register.
-  for (auto const& name : m_fields)
-  {
+  for (auto const& name : m_fields) {
     auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -344,14 +376,26 @@ void AtmosphereOutput::register_variables(const std::string& filename)
       io_decomp_tag += "-" + tag_name; // Concatenate the dimension string to the io-decomp string
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
-    io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
-    std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
+    // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger? 
+    // Should we register dimension variables (such as ncol and lat/lon) elsewhere
+    // in the dimension registration?  These won't have time. 
+    io_decomp_tag += "-time";
+    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
+    // may need to delete this line when switching to fully C++/C implementation.
+    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
     vec_of_dims.push_back("time");  //TODO: See the above comment on time.
-    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_manager only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
+
+     // TODO  Need to change dtype to allow for other variables.
+    // Currently the field_manager only stores Real variables so it is not an issue,
+    // but in the future if non-Real variables are added we will want to accomodate that.
+    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
   }
-  // Finish by registering time as a variable.  TODO: Should this really be something registered during the reg. dimensions step? 
+  // Finish by registering time as a variable.
+  // TODO: Should this really be something registered during the reg. dimensions step? 
   register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
-  if (m_is_restart_hist) { register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_REAL, "cnt"); }
+  if (m_is_restart_hist) {
+    register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_REAL, "cnt");
+  }
 } // register_variables
 /* ---------------------------------------------------------- */
 std::vector<Int> AtmosphereOutput::get_var_dof_offsets(const int dof_len, const bool has_cols)
@@ -390,8 +434,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   using namespace ShortFieldTagsNames;
 
   // Cycle through all fields and set dof.
-  for (auto const& name : m_fields)
-  {
+  for (auto const& name : m_fields) {
     auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global output indices" for this
@@ -414,7 +457,6 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::new_file(const std::string& filename)
 {
-  using namespace scream;
   using namespace scream::scorpio;
 
   // Register new netCDF file for output.
@@ -422,8 +464,7 @@ void AtmosphereOutput::new_file(const std::string& filename)
   m_filename = filename;
 
   // Register dimensions with netCDF file.
-  for (auto it : m_dims)
-  {
+  for (auto it : m_dims) {
     register_dimension(filename,it.first,it.first,it.second);
   }
   register_dimension(filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
@@ -433,8 +474,7 @@ void AtmosphereOutput::new_file(const std::string& filename)
   set_degrees_of_freedom(filename);
 
   // Finish the definition phase for this file.
-  eam_pio_enddef  (filename); 
-
+  eam_pio_enddef (filename); 
 }
-/* ---------------------------------------------------------- */
+
 } // namespace scream
