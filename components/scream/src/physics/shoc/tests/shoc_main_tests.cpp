@@ -317,61 +317,37 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
   static void run_bfb()
   {
-#if 0
     auto engine = setup_random_test();
 
     ShocMainData f90_data[] = {
       //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
       ShocMainData(12,      72,    73,            5,   300,   15,        72, 0),
-      ShocMainData(8,       12,    13,            3,     6,   10,         8, 3),
-      ShocMainData(7,       16,    17,            3,     1,    1,        12, 0),
-      ShocMainData(2,       7,      8,            2,     1,    5,         7, 4)
+      ShocMainData(8,       12,    13,            3,   300,   10,         8, 3),
+      ShocMainData(7,       16,    17,            3,   300,    1,        12, 0),
+      ShocMainData(2,       7,      8,            2,   300,    5,         7, 4)
     };
 
     // Generate random input data
-    int count = 0;
     for (auto& d : f90_data) {
       d.randomize(engine,
                   {
                     {d.presi, {700e2,1000e2}},
                     {d.tkh, {0,0}},
+                    {d.tke, {0,0}},
                     {d.zi_grid, {0, 3000}},
                     {d.wthl_sfc, {0,1e-4}},
                     {d.wqw_sfc, {0,1e-6}},
                     {d.uw_sfc, {0,1e-2}},
                     {d.vw_sfc, {0,1e-4}},
-                    {d.thetal, {900, 1000}},
                     {d.host_dx, {3000, 3000}},
                     {d.host_dy, {3000, 3000}},
                     {d.phis, {0, 0}}, // 500
                     {d.wthv_sec, {0, 0}}, //{-0.02, 0.03}},
+                    {d.qw, {1e-4, 5e-2}},
+                    {d.u_wind, {-10, 0}},
+                    {d.v_wind, {-10, 0}},
+                    {d.shoc_ql, {0, 1e-3}},
                   });
-
-      // 3 types of pref_mid ranges:
-      std::pair<Real,Real> pref_mid_range;
-      if (count == 0) {
-        // all(pref_mid) >= pblmaxp
-        pref_mid_range.first  = 1e5;
-        pref_mid_range.second = 8e5;
-      }
-      else if (count == 1) {
-        // all(pref_mid) < pblmaxp
-        pref_mid_range.first  = 1e3;
-        pref_mid_range.second = 8e3;
-      }
-      else {
-        // both pref_mid >= pblmaxp and pref_mid < pblmaxp values
-        pref_mid_range.first  = 1e4;
-        pref_mid_range.second = 8e4;
-      }
-      ++count;
-
-      // pref_mid must be monotonically increasing
-      Real upper = pref_mid_range.first;
-      Real lower = pref_mid_range.second;
-      for (Int k=0; k<d.nlev; ++k) {
-        d.pref_mid[k] = upper - k*(upper-lower)/(d.nlev-1);
-      }
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -481,7 +457,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
       }
     }
-#endif
 #endif
   } // run_bfb
 };

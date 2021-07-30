@@ -862,11 +862,10 @@ struct ShocMainData : public ShocTestGridDataBase {
     // Don't want true randomness in the pressure data, need interleaved
     interleaved_sort(engine, shcol, nlev, nlevi, pres, presi);
 
-    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
-      std::sort(thetal + nlev*i, thetal + nlev*(i+1), std::greater<Real>());
-      std::sort(qw + nlev*i, qw + nlev*(i+1));
-      std::sort(qw + nlev*i, qw + nlev*(i+1));
+    const Real pot_temp = 300; // keep pot_temp fixed for now
+    const Real p0 = 1000e2; // base pressure
 
+    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
       const auto nlev_offset = i * nlev;
       const auto nlevi_offset = i * nlevi;
       for (auto k = decltype(nlev){0}; k < nlev; ++k) {
@@ -874,7 +873,39 @@ struct ShocMainData : public ShocTestGridDataBase {
         exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
         host_dse[nlev_offset + k] = consts::Cpair * exner[nlev_offset + k] * thv[nlev_offset + k] +
           consts::gravit * zt_grid[nlev_offset + k];
+
+        const Real qv = qw[nlev_offset+k] - shoc_ql[nlev_offset+k];
+        thetal[nlev_offset+k] = pot_temp - (consts::LatVap/consts::Cpair)*shoc_ql[nlev_offset+k];
+        thv[nlev_offset+k] = pot_temp * (1 + 0.61*qv - shoc_ql[nlev_offset+k]);
+        exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/p0,consts::Rair/consts::Cpair);
       }
+    }
+
+    // 3 types of pref_mid ranges, pick one randomly
+    std::uniform_int_distribution<Int> int_dist(0, 2);
+    const auto pref_type = int_dist(engine);
+    std::pair<Real,Real> pref_mid_range;
+    if (pref_type == 0) {
+      // all(pref_mid) >= pblmaxp
+      pref_mid_range.first  = 1e5;
+      pref_mid_range.second = 8e5;
+    }
+    else if (pref_type == 1) {
+      // all(pref_mid) < pblmaxp
+      pref_mid_range.first  = 1e3;
+      pref_mid_range.second = 8e3;
+    }
+    else {
+      // both pref_mid >= pblmaxp and pref_mid < pblmaxp values
+      pref_mid_range.first  = 1e4;
+      pref_mid_range.second = 8e4;
+    }
+
+    // pref_mid must be monotonically increasing
+    Real upper = pref_mid_range.first;
+    Real lower = pref_mid_range.second;
+    for (Int k=0; k<nlev; ++k) {
+      pref_mid[k] = upper - k*(upper-lower)/(nlev-1);
     }
 
     // TKH and TK get the same values on purpose
