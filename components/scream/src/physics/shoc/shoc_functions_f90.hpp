@@ -845,6 +845,56 @@ struct ShocMainData : public ShocTestGridDataBase {
 
   PTD_STD_DEF(ShocMainData, 8, shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc);
 
+  template <size_t N>
+  Real interpolate_data(const std::array<Real, N>& ref_elevations,
+                        const std::array<Real, N>& ref_data,
+                        Real z)
+  {
+    auto pos = std::lower_bound(ref_elevations.begin(), ref_elevations.end(), z);
+    Int index = pos - ref_elevations.begin();
+    if (index == 0)
+      return ref_data[0];
+    else if (index < (Int)N) {
+      const Real a = (z - ref_elevations[index-1]) /
+        (ref_elevations[index] - ref_elevations[index-1]);
+      return (1.0 - a) * ref_data[index-1] + a * ref_data[index];
+    }
+    else {
+      // Don't extrapolate off the end of the table.
+      return ref_data[N-1];
+    }
+  }
+
+  void compute_column_pressure(Int shcol, Int nlev, const Real* z,
+                               Real* pres) {
+    using consts = scream::physics::Constants<Real>;
+    const Real k = consts::Rair / consts::Cpair;
+    const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
+    const Real p_s = 1015e2;
+
+    const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
+    const std::array<Real, 5> theta_ref = {299.7, 298.7, 302.4, 308.2, 312.85};
+
+    // Move up the column, computing the pressures at each elevation.
+    for (Int i = 0; i < shcol; ++i) {
+      const Int offset = nlev*i;
+      for (Int j = 0; j < nlev; ++j) {
+        Real z0 = (j == 0) ? 0.0 : z[offset + j-1];
+        Real z1 = z[offset+ j];
+        Real th0 = interpolate_data(z_ref, theta_ref, z0);
+        Real th1 = interpolate_data(z_ref, theta_ref, z1);
+        Real p0 = (j == 0) ? p_s : pres[offset + j-1];
+        if (std::abs(th0 - th1) < 1e-14 * th0) {
+          pres[offset + j] = pow(pow(p0, k) + k*c*(z1 - z0)/th0, 1.0/k);
+        }
+        else {
+          Real ra = (z1 - z0)/(th1 - th0);
+          pres[offset + j] = pow(pow(p0, k) + k*c*ra*log(th1/th0), 1.0/k);
+        }
+      }
+    }
+  }
+
   template <typename Engine>
   void randomize(Engine& engine, const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {})
   {
@@ -859,11 +909,10 @@ struct ShocMainData : public ShocTestGridDataBase {
     EKAT_REQUIRE_MSG(shcol == dim(zi_grid, 0), "Mismatched shcol dim for zt_grid and zi_grid");
     EKAT_REQUIRE_MSG(nlev == nlevi-1, "Mismatched lev dim for zt_grid and zi_grid");
 
-    // Don't want true randomness in the pressure data, need interleaved
-    interleaved_sort(engine, shcol, nlev, nlevi, pres, presi);
+    compute_column_pressure(shcol, nlev, zt_grid, pres);
+    compute_column_pressure(shcol, nlevi, zi_grid, presi);
 
     const Real pot_temp = 300; // keep pot_temp fixed for now
-    const Real p0 = 1000e2; // base pressure
 
     for (auto i = decltype(shcol){0}; i < shcol; ++i) {
       const auto nlev_offset = i * nlev;
@@ -877,7 +926,7 @@ struct ShocMainData : public ShocTestGridDataBase {
         const Real qv = qw[nlev_offset+k] - shoc_ql[nlev_offset+k];
         thetal[nlev_offset+k] = pot_temp - (consts::LatVap/consts::Cpair)*shoc_ql[nlev_offset+k];
         thv[nlev_offset+k] = pot_temp * (1 + 0.61*qv - shoc_ql[nlev_offset+k]);
-        exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/p0,consts::Rair/consts::Cpair);
+        exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0,consts::Rair/consts::Cpair);
       }
     }
 

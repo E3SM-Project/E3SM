@@ -26,6 +26,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
     static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
     static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
+    static constexpr Real p0 = scream::physics::Constants<Real>::P0;
 
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
@@ -97,9 +98,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real wind_bounds = 10; // [m/s]
 
     // Compute some inputs based on the above
-
-    // base pressure [Pa]
-    static constexpr Real p0 = 1000e2;
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_qtracers];
@@ -332,8 +330,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       d.randomize(engine,
                   {
                     {d.presi, {700e2,1000e2}},
-                    {d.tkh, {0,0}},
-                    {d.tke, {0,0}},
+                    {d.tkh, {3,50}},
+                    {d.tke, {0.1,0.3}},
                     {d.zi_grid, {0, 3000}},
                     {d.wthl_sfc, {0,1e-4}},
                     {d.wqw_sfc, {0,1e-6}},
@@ -341,8 +339,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
                     {d.vw_sfc, {0,1e-4}},
                     {d.host_dx, {3000, 3000}},
                     {d.host_dy, {3000, 3000}},
-                    {d.phis, {0, 0}}, // 500
-                    {d.wthv_sec, {0, 0}}, //{-0.02, 0.03}},
+                    {d.phis, {0, 500}}, // 500
+                    {d.wthv_sec, {-0.02, 0.03}},
                     {d.qw, {1e-4, 5e-2}},
                     {d.u_wind, {-10, 0}},
                     {d.v_wind, {-10, 0}},
