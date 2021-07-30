@@ -39,13 +39,17 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     // Liquid water potential temperature [K]
     static constexpr Real thlm[nlev] = {350, 325, 315, 310, 300};
     // Inverse of the Exner function [-]
-    static constexpr Real inv_exner[nlev] = {0.1, 0.3, 0.5, 0.7, 1.0};
+    static constexpr Real inv_exner[nlev] = {1.22, 1.15, 1.10, 1.05, 1.0};
     // Cloud condensate [kg/kg]
     static constexpr Real shoc_ql[nlev] = {5e-6, 8e-5, 4e-4, 3e-4, 1e-6};
     // Mid-point heights [m]
     static constexpr Real zt_grid[nlev] = {9000, 6000, 4000, 2000, 1000};
     // Surface geopotential
     static constexpr Real phis = 100;
+
+    // Set lower/upper bounds to check output DSE
+    static constexpr Real dse_upper = 5e5; // [J/kg]
+    static constexpr Real dse_lower = 1e5; // [J/kg]
 
     // Initialize data structure for bridging to F90
     UpdateHostDseData SDS(shcol, nlev);
@@ -93,10 +97,11 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
           REQUIRE(SDS.shoc_ql[offsets] > SDS.shoc_ql[offset]);
         }
 
-        // Check that heights and thlm increase upward
+        // Check that heights, thlm, and inverse of exner increase upward
         if (n < nlev-1){
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
           REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0);
+          REQUIRE(SDS.inv_exner[offset + 1] - SDS.inv_exner[offset] < 0);
         }
 
       }
@@ -116,6 +121,10 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
         if (n < nlev-1){
           REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
         }
+
+        // Verify that DSE falls within some reasonable bounds
+        REQUIRE(SDS.host_dse[offset] > dse_lower);
+        REQUIRE(SDS.host_dse[offset] < dse_upper);
 
         // Verify that dse is greater in points with condensate loading
         if (s == 0){

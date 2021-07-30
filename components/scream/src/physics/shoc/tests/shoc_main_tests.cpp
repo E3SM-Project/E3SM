@@ -94,6 +94,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real tke_lbound = 0; // [m2/s2]
     static constexpr Real tke_ubound = 5; // [m2/s2]
     static constexpr Real wind_bounds = 10; // [m/s]
+    static constexpr Real dse_upper = 5e5; // [J/kg]
+    static constexpr Real dse_lower = 1e5; // [J/kg]
 
     // Compute some inputs based on the above
 
@@ -229,6 +231,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         const auto offset = n + s * nlev;
         // Check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        // Check that inverse of exner increases upward
+        REQUIRE(SDS.exner[offset + 1] - SDS.exner[offset] < 0);
       }
 
       // Check that zi increases upward
@@ -286,6 +290,15 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         else if (SDS.shoc_cldfrac[offset] == 0){
           REQUIRE(SDS.shoc_ql[offset] == 0);
         }
+
+        // Verify that dse increases with height upward
+        if (n < nlev-1){
+          REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
+        }
+
+        // Verify that DSE falls within some reasonable bounds
+        REQUIRE(SDS.host_dse[offset] > dse_lower);
+        REQUIRE(SDS.host_dse[offset] < dse_upper);
 
         // Verify that w2 is less than tke
         REQUIRE(std::abs(SDS.w_sec[offset] < SDS.tke[offset]));
