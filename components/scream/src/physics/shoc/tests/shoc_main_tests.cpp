@@ -136,7 +136,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       // Compute the inverse of the exner function
       const Real exner = std::pow(pres[n]/p0,Rair/Cpair);
       REQUIRE(exner > 0);
-      inv_exner[n] = 1.0/exner;
+      inv_exner[n] = 1/exner;
     }
 
     // Load up tracer input array with random data

@@ -110,7 +110,7 @@ public:
         const Spack exner_ik = PF::exner_function(p_mid_ik);
         const Smask nonzero = (exner_ik != 0);
         EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).any());
-        inv_exner(i,k).set(nonzero, 1.0/exner_ik);
+        inv_exner(i,k).set(nonzero, 1/exner_ik);
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 

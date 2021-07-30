@@ -202,7 +202,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     // Compute pressure differences and host_dse / exner.
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
-      d.inv_exner(i, k) = 1.0/pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
+      d.inv_exner(i, k) = 1/pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
       d.host_dse(i, k) = consts::Cpair * d.thv(i, k)/d.inv_exner(i, k) +
                          consts::gravit * d.zt_grid(i, k);
     }
