@@ -16,7 +16,7 @@ extern "C" {
                    Real* zi_grid, Real* pres, Real* presi, Real* pdel,
                    Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
                    Real* wtracer_sfc, int num_qtracers, Real* w_field,
-                   Real* exner, Real* phis, Real* host_dse, Real* tke,
+                   Real* inv_exner, Real* phis, Real* host_dse, Real* tke,
                    Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
                    Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk,
                    Real* shoc_ql, Real* shoc_cldfrac, Real* pblh,
@@ -51,7 +51,7 @@ FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
   uw_sfc = Array1("Surface momentum flux (u direction) [m2/s2]", shcol);
   vw_sfc = Array1("Surface momentum flux (v direction) [m2/s2]", shcol);
   wtracer_sfc = Array2("Surface tracer flux [various]", shcol, num_qtracers);
-  exner = Array2("Exner function [-]", shcol, nlev);
+  inv_exner = Array2("Inverse of the Exner function [-]", shcol, nlev);
   phis = Array1("Host model surface geopotential height [m?]", shcol);
 
   // In/out variables
@@ -103,7 +103,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(zt_grid); fdipb(zi_grid); fdipb(pres); fdipb(presi); fdipb(pdel);
   fdipb(thv); fdipb(w_field);
   fdipb(wthl_sfc); fdipb(wqw_sfc); fdipb(uw_sfc); fdipb(vw_sfc);
-  fdipb(wtracer_sfc); fdipb(exner);
+  fdipb(wtracer_sfc); fdipb(inv_exner);
   fdipb(phis);
 
   fdipb(host_dse); fdipb(tke); fdipb(thetal); fdipb(qw);
@@ -149,7 +149,7 @@ Int shoc_main(FortranData& d, bool use_fortran) {
                 d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(),
                 d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
                 d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers,
-                d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
+                d.w_field.data(), d.inv_exner.data(), d.phis.data(), d.host_dse.data(),
                 d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
                 d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(),
                 d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
@@ -167,7 +167,7 @@ Int shoc_main(FortranData& d, bool use_fortran) {
                        d.presi.data(), d.pdel.data(), d.wthl_sfc.data(),
                        d.wqw_sfc.data(), d.uw_sfc.data(), d.vw_sfc.data(),
                        d.wtracer_sfc.data(), (int)d.num_qtracers,
-                       d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
+                       d.w_field.data(), d.inv_exner.data(), d.phis.data(), d.host_dse.data(),
                        d.tke.data(), d.thetal.data(), d.qw.data(),
                        d.u_wind.data(), d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(),
                        d.tkh.data(), d.tk.data(), d.shoc_ql.data(),
@@ -301,7 +301,7 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
       "                  'qw', 'u_wind', 'v_wind', 'w_field', 'tke', 'tkh',\n"
       "                  'shoc_mix', 'isotropy', 'wtke_sec', 'uw_sec', 'vw_sec', 'wthl_sec',\n"
       "                  'wqw_sec', 'w_sec', 'thl_sec', 'qw_sec',\n"
-      "                  'w3', 'wqls_sec', 'brunt', 'qtracers', 'host_dse', 'exner','shoc_ql2']\n"
+      "                  'w3', 'wqls_sec', 'brunt', 'qtracers', 'host_dse', 'inv_exner','shoc_ql2']\n"
       "        for i in range(len(plotno)):\n"
       "            if i == 0 or plotno[i] != plotno[i-1]:\n"
       "                if first: axs.append(pl.subplot(5, 5, plotno[i]))\n"
@@ -359,7 +359,7 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
       WRITE_FIELD(brunt);
       WRITE_FIELD(qtracers);
       WRITE_FIELD(host_dse);
-      WRITE_FIELD(exner);
+      WRITE_FIELD(inv_exner);
       WRITE_FIELD(shoc_ql2);
       fprintf(fp, "    },\n");
 #undef WRITE_FIELD

@@ -27,7 +27,7 @@ struct FortranData {
   Array1 host_dx, host_dy;
   Array2 zt_grid, zi_grid, pres, presi, pdel, thv, w_field;
   Array1 wthl_sfc, wqw_sfc, uw_sfc, vw_sfc;
-  Array2 wtracer_sfc, exner;
+  Array2 wtracer_sfc, inv_exner;
   Array1 phis;
 
   // In-out

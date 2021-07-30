@@ -54,7 +54,7 @@ void flip_vertically(FortranData& d)
   flip_vertically(d.presi);
   flip_vertically(d.pdel);
   flip_vertically(d.w_field);
-  flip_vertically(d.exner);
+  flip_vertically(d.inv_exner);
   flip_vertically(d.host_dse);
   flip_vertically(d.tke);
   flip_vertically(d.thetal);
@@ -202,8 +202,8 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     // Compute pressure differences and host_dse / exner.
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k) = std::abs(d.presi(i, k+1) - d.presi(i, k));
-      d.exner(i, k) = pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
-      d.host_dse(i, k) = consts::Cpair * d.exner(i, k) * d.thv(i, k) +
+      d.inv_exner(i, k) = 1.0/pow(d.pres(i, k)/consts::P0, consts::Rair/consts::Cpair);
+      d.host_dse(i, k) = consts::Cpair * d.thv(i, k)/d.inv_exner(i, k) +
                          consts::gravit * d.zt_grid(i, k);
     }
 

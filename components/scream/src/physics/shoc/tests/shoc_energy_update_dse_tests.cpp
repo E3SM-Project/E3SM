@@ -38,8 +38,8 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
     // Liquid water potential temperature [K]
     static constexpr Real thlm[nlev] = {350, 325, 315, 310, 300};
-    // Exner function [-]
-    static constexpr Real exner[nlev] = {0.1, 0.3, 0.5, 0.7, 1.0};
+    // Inverse of the Exner function [-]
+    static constexpr Real inv_exner[nlev] = {0.1, 0.3, 0.5, 0.7, 1.0};
     // Cloud condensate [kg/kg]
     static constexpr Real shoc_ql[nlev] = {5e-6, 8e-5, 4e-4, 3e-4, 1e-6};
     // Mid-point heights [m]
@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
         SDS.thlm[offset] = thlm[n];
         SDS.zt_grid[offset] = zt_grid[n];
-        SDS.exner[offset] = exner[n];
+        SDS.inv_exner[offset] = inv_exner[n];
 
         // Force the first column of cloud liquid
         //   to be zero!
@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
         REQUIRE(SDS.thlm[offset] > 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
-        REQUIRE(SDS.exner[offset] > 0);
+        REQUIRE(SDS.inv_exner[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] >= 0);
 
         // make sure the two columns are different and
@@ -162,7 +162,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.exner,d.zt_grid,
+      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.inv_exner,d.zt_grid,
                          d.phis,d.host_dse);
       d.transpose<ekat::TransposeDirection::f2c>();
     }

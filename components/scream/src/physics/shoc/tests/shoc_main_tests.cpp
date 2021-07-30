@@ -116,7 +116,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
     // Compute variables related to temperature
     Real host_dse[shcol][nlev];
-    Real thetal[nlev], thv[nlev], exner[nlev];
+    Real thetal[nlev], thv[nlev], inv_exner[nlev];
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
         // Compute the dry static energy
@@ -133,8 +133,10 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       thetal[n] = pot_temp - (LatVap/Cpair)*shoc_ql[n];
       // Virtual potential temperature
       thv[n] = pot_temp * (1 + 0.61*qv - shoc_ql[n]);
-      // Compute exner function
-      exner[n] = std::pow(pres[n]/p0,Rair/Cpair);
+      // Compute the inverse of the exner function
+      const Real exner = std::pow(pres[n]/p0,Rair/Cpair);
+      REQUIRE(exner > 0);
+      inv_exner[n] = 1.0/exner;
     }
 
     // Load up tracer input array with random data
@@ -188,7 +190,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         SDS.pdel[offset] = pdel[n];
         SDS.thv[offset] = thv[n];
         SDS.w_field[offset] = w_field[n];
-        SDS.exner[offset] = exner[n];
+        SDS.inv_exner[offset] = inv_exner[n];
         SDS.shoc_ql[offset] = shoc_ql[n];
         SDS.shoc_cldfrac[offset] = shoc_cldfrac[n];
         SDS.qw[offset] = qw[n];
@@ -402,7 +404,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       shoc_main_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy,
                   d.thv, d.zt_grid, d.zi_grid, d.pres, d.presi, d.pdel, d.wthl_sfc,
                   d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
-                  d.w_field, d.exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
+                  d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
                   d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql,
                   d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec,
                   d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec,

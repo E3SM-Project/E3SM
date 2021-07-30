@@ -102,9 +102,15 @@ public:
       const auto sub_z_int = ekat::subview(z_int, i);
       const auto s_z_int = ekat::scalarize(sub_z_int);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        // Exner
+        const auto range = ekat::range<IntSmallPack>(k*Spack::n);
+        const Smask in_nlev_range = (range < nlev);
+
+        // Inverse of Exner. Assert that exner != 0 when in range before computing.
         const Spack p_mid_ik(p_mid(i,k));
-        exner(i,k)  = PF::exner_function(p_mid_ik);
+        const Spack exner_ik = PF::exner_function(p_mid_ik);
+        const Smask nonzero = (exner_ik != 0);
+        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).any());
+        inv_exner(i,k).set(nonzero, 1.0/exner_ik);
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -206,7 +212,7 @@ public:
     view_1d              vpwp_sfc;
     view_2d              wtracer_sfc;
     view_2d              wm_zt;
-    view_2d              exner;
+    view_2d              inv_exner;
     view_2d              thlm;
     view_2d              qw;
     view_2d              cloud_frac;
@@ -224,7 +230,7 @@ public:
                        const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
-                       const view_2d& wm_zt_,const view_2d& exner_,const view_2d& thlm_,const view_2d& qw_)
+                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -263,7 +269,7 @@ public:
       vpwp_sfc = vpwp_sfc_;
       wtracer_sfc = wtracer_sfc_;
       wm_zt = wm_zt_;
-      exner = exner_;
+      inv_exner = inv_exner_;
       thlm = thlm_;
       qw = qw_;
     } // set_variables
@@ -361,7 +367,7 @@ public:
     uview_2d<Spack> zi_grid;
     uview_2d<Spack> wtracer_sfc;
     uview_2d<Spack> wm_zt;
-    uview_2d<Spack> exner;
+    uview_2d<Spack> inv_exner;
     uview_2d<Spack> thlm;
     uview_2d<Spack> qw;
     uview_2d<Spack> s;
