@@ -232,7 +232,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         // Check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
         // Check that inverse of exner increases upward
-        REQUIRE(SDS.exner[offset + 1] - SDS.exner[offset] < 0);
+        REQUIRE(SDS.inv_exner[offset + 1] - SDS.inv_exner[offset] < 0);
       }
 
       // Check that zi increases upward
