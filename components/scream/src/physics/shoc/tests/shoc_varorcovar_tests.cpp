@@ -124,7 +124,7 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
         const auto offset = n + s * nlevi;
 
         // validate that the boundary points have NOT been modified
-        if (n == 0 || n == nlevi){
+        if (n == 0 || n == nlevi-1){
           REQUIRE(SDS.varorcovar[offset] == 100);
         }
         else{
@@ -182,7 +182,7 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
 
         // validate that the boundary points
         //   have NOT been modified
-        if (n == 0 || n == nlevi){
+        if (n == 0 || n == nlevi-1){
           REQUIRE(SDS.varorcovar[offset] == 100);
         }
         else{
