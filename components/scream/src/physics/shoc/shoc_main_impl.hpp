@@ -86,7 +86,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                uw_sfc,
   const Scalar&                vw_sfc,
   const uview_1d<const Spack>& wtracer_sfc,
-  const uview_1d<const Spack>& exner,
+  const uview_1d<const Spack>& inv_exner,
   const Scalar&                phis,
   // Workspace/Local Variables
   const Workspace&             workspace,
@@ -241,7 +241,7 @@ void Functions<S,D>::shoc_main_internal(
   // Use SHOC outputs to update the host model
   // temperature
   update_host_dse(team,nlev,thetal,shoc_ql, // Input
-                  exner,zt_grid,phis,       // Input
+                  inv_exner,zt_grid,phis,   // Input
                   host_dse);                // Output
 
   team.team_barrier();
@@ -332,7 +332,7 @@ Int Functions<S,D>::shoc_main(
     const auto thv_s          = ekat::subview(shoc_input.thv, i);
     const auto w_field_s      = ekat::subview(shoc_input.w_field, i);
     const auto wtracer_sfc_s  = ekat::subview(shoc_input.wtracer_sfc, i);
-    const auto exner_s        = ekat::subview(shoc_input.exner, i);
+    const auto inv_exner_s    = ekat::subview(shoc_input.inv_exner, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
@@ -365,7 +365,7 @@ Int Functions<S,D>::shoc_main(
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
-                       wtracer_sfc_s, exner_s, phis_s,                        // Input
+                       wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
