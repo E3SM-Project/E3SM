@@ -46,7 +46,7 @@ public:
   // imports and SCREAM imports for book keeping.
   void set_num_fields (const int num_cpl_imports, const int num_scream_imports, const int num_exports);
 
-  // Version of the above function when num_total_imports = num_scream_imports
+  // Version of the above function when num_cpl_imports = num_scream_imports
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
 
@@ -156,7 +156,6 @@ protected:
   int           m_num_scream_imports;
   int           m_num_cpl_imports;
   int           m_num_exports;
-  int           m_num_custom_exports;
 
   int           m_num_cols;
   int           m_num_levs;
