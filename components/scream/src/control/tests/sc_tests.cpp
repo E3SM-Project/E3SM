@@ -265,14 +265,18 @@ TEST_CASE ("recreate_mct_coupling")
   FL vector3d_layout{ {COL, CMP, LEV}, {ncols, 2, nlevs} };
 
   // Create import fields
-  FID surf_latent_flux_id ("surf_latent_flux", scalar2d_layout, W/(m*m), grid_name);
-  FID surf_sens_flux_id   ("surf_sens_flux",   scalar2d_layout, W/(m*m), grid_name);
-  FID surf_u_mom_flux_id  ("surf_u_mom_flux",  scalar2d_layout, W/(m*m), grid_name);
-  FID surf_v_mom_flux_id  ("surf_v_mom_flux",  scalar2d_layout, W/(m*m), grid_name);
+  const auto nondim = Units::nondimensional();
+  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, W/(m*m), grid_name);
+  FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m), grid_name);
+  FID surf_u_mom_flux_id  ("surf_u_mom_flux",    scalar2d_layout, W/(m*m), grid_name);
+  FID surf_v_mom_flux_id  ("surf_v_mom_flux",    scalar2d_layout, W/(m*m), grid_name);
+  FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,  grid_name);
+  FID sfc_alb_dir_nir_id  ("sfc_alb_dir_nir",    scalar2d_layout, nondim,  grid_name);
+  FID sfc_alb_dif_vis_id  ("sfc_alb_dif_vis",    scalar2d_layout, nondim,  grid_name);
+  FID sfc_alb_dif_nir_id  ("sfc_alb_dif_nir",    scalar2d_layout, nondim,  grid_name);
 
   // Create necessary fields for export. Tracers qc and qr are unnecessary, but
   // are included to verify that subviewed fields (qv) are correctly handled
-  const auto nondim = Units::nondimensional();
   FID T_mid_id           ("T_mid",           scalar3d_layout, K,      grid_name);
   FID p_mid_id           ("p_mid",           scalar3d_layout, Pa,     grid_name);
   FID z_mid_id           ("z_mid",           scalar3d_layout, m,      grid_name);
@@ -282,8 +286,8 @@ TEST_CASE ("recreate_mct_coupling")
   FID precip_liq_surf_id ("precip_liq_surf", scalar2d_layout, m/s,    grid_name);
 
   // NOTE: if you add fields above, you will have to modify these counters too.
-  const int num_total_imports  = 21;
-  const int num_scream_imports = 4;
+  const int num_cpl_imports    = 21;
+  const int num_scream_imports = 8;
   const int num_exports        = 13;
 
   // Register fields and tracer group in a FieldManager
@@ -293,6 +297,10 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{surf_sens_flux_id});
   fm->register_field(FR{surf_u_mom_flux_id});
   fm->register_field(FR{surf_v_mom_flux_id});
+  fm->register_field(FR{sfc_alb_dir_vis_id});
+  fm->register_field(FR{sfc_alb_dir_nir_id});
+  fm->register_field(FR{sfc_alb_dif_vis_id});
+  fm->register_field(FR{sfc_alb_dif_nir_id});
   fm->register_field(FR{T_mid_id});
   fm->register_field(FR{p_mid_id});
   fm->register_field(FR{z_mid_id});
@@ -309,6 +317,10 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_sens_flux_f   = fm->get_field(surf_sens_flux_id);
   auto surf_u_mom_flux_f  = fm->get_field(surf_u_mom_flux_id);
   auto surf_v_mom_flux_f  = fm->get_field(surf_v_mom_flux_id);
+  auto sfc_alb_dir_vis_f  = fm->get_field(sfc_alb_dir_vis_id);
+  auto sfc_alb_dir_nir_f  = fm->get_field(sfc_alb_dir_nir_id);
+  auto sfc_alb_dif_vis_f  = fm->get_field(sfc_alb_dif_vis_id);
+  auto sfc_alb_dif_nir_f  = fm->get_field(sfc_alb_dif_nir_id);
   auto T_mid_f            = fm->get_field(T_mid_id);
   auto p_mid_f            = fm->get_field(p_mid_id);
   auto z_mid_f            = fm->get_field(z_mid_id);
@@ -325,6 +337,10 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_sens_flux_d   = surf_sens_flux_f.get_reshaped_view<Real*>();
   auto surf_u_mom_flux_d  = surf_u_mom_flux_f.get_reshaped_view<Real*>();
   auto surf_v_mom_flux_d  = surf_v_mom_flux_f.get_reshaped_view<Real*>();
+  auto sfc_alb_dir_vis_d  = sfc_alb_dir_vis_f.get_reshaped_view<Real*>();
+  auto sfc_alb_dir_nir_d  = sfc_alb_dir_nir_f.get_reshaped_view<Real*>();
+  auto sfc_alb_dif_vis_d  = sfc_alb_dif_vis_f.get_reshaped_view<Real*>();
+  auto sfc_alb_dif_nir_d  = sfc_alb_dif_nir_f.get_reshaped_view<Real*>();
   auto T_mid_d            = T_mid_f.get_reshaped_view<Real**>();
   auto p_mid_d            = p_mid_f.get_reshaped_view<Real**>();
   auto z_mid_d            = z_mid_f.get_reshaped_view<Real**>();
@@ -337,6 +353,10 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_sens_flux_h   = surf_sens_flux_f.get_reshaped_view<Real*,Host>();
   auto surf_u_mom_flux_h  = surf_u_mom_flux_f.get_reshaped_view<Real*,Host>();
   auto surf_v_mom_flux_h  = surf_v_mom_flux_f.get_reshaped_view<Real*,Host>();
+  auto sfc_alb_dir_vis_h  = sfc_alb_dir_vis_f.get_reshaped_view<Real*,Host>();
+  auto sfc_alb_dir_nir_h  = sfc_alb_dir_nir_f.get_reshaped_view<Real*,Host>();
+  auto sfc_alb_dif_vis_h  = sfc_alb_dif_vis_f.get_reshaped_view<Real*,Host>();
+  auto sfc_alb_dif_nir_h  = sfc_alb_dif_nir_f.get_reshaped_view<Real*,Host>();
   auto T_mid_h            = T_mid_f.get_reshaped_view<Real**,Host>();
   auto p_mid_h            = p_mid_f.get_reshaped_view<Real**,Host>();
   auto z_mid_h            = z_mid_f.get_reshaped_view<Real**,Host>();
@@ -347,7 +367,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Create SC object and set number of import/export fields
   control::SurfaceCoupling coupler(fm);
-  coupler.set_num_fields(num_total_imports, num_scream_imports, num_exports);
+  coupler.set_num_fields(num_cpl_imports, num_scream_imports, num_exports);
 
   // Register fields in the coupler. These match the scr_names_x2a/a2x from
   // scream_cpl_indices.F90. When radiation is fully implemented, RRTMGP
@@ -357,20 +377,20 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("unused",           2);
   coupler.register_import("surf_u_mom_flux",  3);
   coupler.register_import("surf_v_mom_flux",  4);
-  coupler.register_import("RRTMGP",           5);
-  coupler.register_import("RRTMGP",           6);
-  coupler.register_import("RRTMGP",           7);
-  coupler.register_import("RRTMGP",           8);
-  coupler.register_import("RRTMGP",           9);
+  coupler.register_import("unused",           5);
+  coupler.register_import("sfc_alb_dir_vis",  6);
+  coupler.register_import("sfc_alb_dir_nir",  7);
+  coupler.register_import("sfc_alb_dif_vis",  8);
+  coupler.register_import("sfc_alb_dif_nir",  9);
   coupler.register_import("unused",           10);
   coupler.register_import("unused",           11);
   coupler.register_import("unused",           12);
   coupler.register_import("unused",           13);
   coupler.register_import("unused",           14);
   coupler.register_import("unused",           15);
-  coupler.register_import("RRTMGP",           16);
+  coupler.register_import("unused",           16);
   coupler.register_import("unused",           17);
-  coupler.register_import("RRTMGP",           18);
+  coupler.register_import("unused",           18);
   coupler.register_import("unused",           19);
   coupler.register_import("unused",           20);
 
@@ -389,7 +409,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("set_zero",         12);
 
   // Complete setup of importer/exporter, providing raw_data
-  double* import_raw_data = new double[ncols*num_total_imports];
+  double* import_raw_data = new double[ncols*num_cpl_imports];
   double* export_raw_data = new double[ncols*num_exports];
   coupler.registration_ends(import_raw_data, export_raw_data);
 
@@ -400,6 +420,10 @@ TEST_CASE ("recreate_mct_coupling")
     surf_sens_flux_f.deep_copy(0.0);
     surf_u_mom_flux_f.deep_copy(0.0);
     surf_v_mom_flux_f.deep_copy(0.0);
+    sfc_alb_dir_vis_f.deep_copy(0.0);
+    sfc_alb_dir_nir_f.deep_copy(0.0);
+    sfc_alb_dif_vis_f.deep_copy(0.0);
+    sfc_alb_dif_nir_f.deep_copy(0.0);
 
     // Fill views needed in the export with random values
     ekat::genRandArray(T_mid_d,engine,pdf);
@@ -411,7 +435,7 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(Q.get_view(),engine,pdf);
 
     // Fill import_raw_data with random values
-    for (int i=0; i<ncols*num_total_imports; ++i) {
+    for (int i=0; i<ncols*num_cpl_imports; ++i) {
       import_raw_data[i] = pdf(engine);
     }
 
@@ -429,6 +453,10 @@ TEST_CASE ("recreate_mct_coupling")
     surf_sens_flux_f.sync_to_host();
     surf_u_mom_flux_f.sync_to_host();
     surf_v_mom_flux_f.sync_to_host();
+    sfc_alb_dir_vis_f.sync_to_host();
+    sfc_alb_dir_nir_f.sync_to_host();
+    sfc_alb_dif_vis_f.sync_to_host();
+    sfc_alb_dif_nir_f.sync_to_host();
     T_mid_f.sync_to_host();
     p_mid_f.sync_to_host();
     z_mid_f.sync_to_host();
@@ -442,10 +470,14 @@ TEST_CASE ("recreate_mct_coupling")
 
       // Imports
 
-      REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_total_imports]); // 1st scream import
-      REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_total_imports]); // 2nd scream import
-      REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_total_imports]); // 3rd scream import (4th total import)
-      REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_total_imports]); // 4th scream import (5th total import)
+      REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_cpl_imports]); // 1st scream import
+      REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_cpl_imports]); // 2nd scream import
+      REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_cpl_imports]); // 3rd scream import (4th cpl import)
+      REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_cpl_imports]); // 4th scream import (5th cpl import)
+      REQUIRE (sfc_alb_dir_vis_h (icol) == import_raw_data[6 + icol*num_cpl_imports]); // 5th scream import (7th cpl import)
+      REQUIRE (sfc_alb_dir_nir_h (icol) == import_raw_data[7 + icol*num_cpl_imports]); // 6th scream import (8th cpl import)
+      REQUIRE (sfc_alb_dif_vis_h (icol) == import_raw_data[8 + icol*num_cpl_imports]); // 7th scream import (9th cpl import)
+      REQUIRE (sfc_alb_dif_nir_h (icol) == import_raw_data[9 + icol*num_cpl_imports]); // 8th scream import (10th cpl import)
 
       // Exports
 
