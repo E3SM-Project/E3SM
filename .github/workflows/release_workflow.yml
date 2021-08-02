@@ -50,9 +50,9 @@ jobs:
           # gh-pages branch must already exist
           git clone https://github.com/E3SM-Project/e3sm_diags.git --branch gh-pages --single-branch gh-pages
 
-          # Only copy the current tag release docs (using --no-clobber)
+          # Only copy the current tag release docs
           cd gh-pages
-          cp -r --no-clobber ../docs/_build/html _build/html
+          cp -r -n ../docs/_build/html _build/
 
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
