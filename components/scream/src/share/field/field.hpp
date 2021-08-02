@@ -22,9 +22,6 @@ enum HostOrDevice {
   Host
 };
 
-template<typename FieldType>
-struct is_scream_field : public std::false_type {};
-
 // ======================== FIELD ======================== //
 
 // A field is composed of metadata info (the header) and a pointer to a view.
@@ -273,9 +270,6 @@ protected:
   // List of property checks for this field.
   std::shared_ptr<property_check_list>    m_prop_checks;
 };
-
-template<typename RealType>
-struct is_scream_field<Field<RealType> > : public std::true_type {};
 
 template<typename RealType>
 bool operator< (const Field<RealType>& f1, const Field<RealType>& f2) {
