@@ -68,7 +68,7 @@ TEST_CASE("restart","io")
     for (const auto& fname : out_fields->m_fields_names) {
       auto f = field_manager->get_field(fname);
       f.sync_to_host();
-      auto f_host = f.get_view<Host>();
+      auto f_host = f.get_flattened_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
@@ -102,10 +102,10 @@ TEST_CASE("restart","io")
   auto field2 = field_manager->get_field("field_2");
   auto field3 = field_manager->get_field("field_3");
   auto field4 = field_manager->get_field("field_4");
-  auto field1_hst = field1.get_view<Host>();
-  auto field2_hst = field2.get_view<Host>();
-  auto field3_hst = field3.get_reshaped_view<Real**,Host>();
-  auto field4_hst = field4.get_reshaped_view<Real***,Host>();
+  auto field1_hst = field1.get_flattened_view<Host>();
+  auto field2_hst = field2.get_flattened_view<Host>();
+  auto field3_hst = field3.get_view<Real**,Host>();
+  auto field4_hst = field4.get_view<Real***,Host>();
   field1.sync_to_host();
   field2.sync_to_host();
   field3.sync_to_host();
@@ -127,7 +127,7 @@ TEST_CASE("restart","io")
     for (const auto& fname : out_fields->m_fields_names) {
       auto f = field_manager->get_field(fname);
       f.sync_to_host();
-      auto f_host = f.get_view<Host>();
+      auto f_host = f.get_flattened_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
@@ -223,10 +223,10 @@ void Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols,
   const auto& f2 = fm.get_field("field_2");
   const auto& f3 = fm.get_field("field_3");
   const auto& f4 = fm.get_field("field_4");
-  auto f1_hst = f1.get_reshaped_view<Real*, Host>();
-  auto f2_hst = f2.get_reshaped_view<Real*, Host>();
-  auto f3_hst = f3.get_reshaped_view<Real**,Host>();
-  auto f4_hst = f4.get_reshaped_view<Real***,Host>();
+  auto f1_hst = f1.get_view<Real*, Host>();
+  auto f2_hst = f2.get_view<Real*, Host>();
+  auto f3_hst = f3.get_view<Real**,Host>();
+  auto f4_hst = f4.get_view<Real***,Host>();
   for (int ii=0;ii<num_lcols;++ii) {
     f1_hst(ii) = ii;
     for (int jj=0;jj<num_levs;++jj) {

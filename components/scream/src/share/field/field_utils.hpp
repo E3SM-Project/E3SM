@@ -26,8 +26,8 @@ bool views_are_equal(const Field<RT1>& f1, const Field<RT2>& f2) {
   const int ext2 = p2.get_last_extent();
 
   // Get views
-  const auto v1 = f1.get_view();
-  const auto v2 = f2.get_view();
+  const auto v1 = f1.get_flattened_view();
+  const auto v2 = f2.get_flattened_view();
 
   // Simple range policy for a 1d view
   using exec_space = typename decltype(v1)::execution_space;

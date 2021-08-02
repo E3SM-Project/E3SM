@@ -67,7 +67,7 @@ TEST_CASE("input_output_basic","io")
     time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
       auto f  = field_manager->get_field(fname);
-      auto f_host = f.get_view<Host>();
+      auto f_host = f.get_flattened_view<Host>();
       f.sync_to_host();
       for (size_t jj=0;jj<f_host.size();++jj) {
         f_host(jj) += dt;
@@ -81,7 +81,7 @@ TEST_CASE("input_output_basic","io")
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
   for (const auto& fname : out_fields->m_fields_names)
   {
-    auto f_dev  = field_manager->get_field(fname).get_view();
+    auto f_dev  = field_manager->get_field(fname).get_flattened_view();
     Kokkos::deep_copy(f_dev,std::nan(""));
   }
 
@@ -102,10 +102,10 @@ TEST_CASE("input_output_basic","io")
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
   auto f4 = field_manager->get_field("field_packed");
-  auto f1_host = f1.get_view<Host>();
-  auto f2_host = f2.get_view<Host>();
-  auto f3_host = f3.get_reshaped_view<Real**,Host>();
-  auto f4_host = f4.get_reshaped_view<Real**,Host>();
+  auto f1_host = f1.get_flattened_view<Host>();
+  auto f2_host = f2.get_flattened_view<Host>();
+  auto f3_host = f3.get_view<Real**,Host>();
+  auto f4_host = f4.get_view<Real**,Host>();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -252,10 +252,10 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   auto f2 = fm->get_field(fid2);
   auto f3 = fm->get_field(fid3);
   auto f4 = fm->get_field(fid4);
-  auto f1_host = f1.get_view<Host>(); 
-  auto f2_host = f2.get_view<Host>(); 
-  auto f3_host = f3.get_reshaped_view<Real**,Host>();
-  auto f4_host = f4.get_reshaped_view<Pack**,Host>(); 
+  auto f1_host = f1.get_flattened_view<Host>(); 
+  auto f2_host = f2.get_flattened_view<Host>(); 
+  auto f3_host = f3.get_view<Real**,Host>();
+  auto f4_host = f4.get_view<Pack**,Host>(); 
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();

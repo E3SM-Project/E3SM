@@ -105,10 +105,6 @@ public:
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
-  template<HostOrDevice HD = Device>
-  const get_view_type<view_type<RT*>,HD>&
-  get_view () const { return  get_view_impl<HD>();   }
-
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
 
@@ -132,7 +128,27 @@ public:
   // be reshaped to the desired layout before being used.
   template<typename DT, HostOrDevice HD = Device>
   get_view_type<uview_type<DT>,HD>
-  get_reshaped_view () const;
+  get_view () const;
+
+  // Allows to get the underlying 1d view. This can be dangerous, since
+  // this field may be a subfield of another one. In that case, the stored
+  // view would be that of the parent field, which would need to be read
+  // in a strided fashion. Furthermore, if the field has been allocated
+  // in a way that allows packing, there might be padding. However, the
+  // padding is inserted in the last physical dimension of the field,
+  // so when one sees the 1d view, the padding is interleaved in the array.
+  // For these reasons, this must be regarded as a *dangerous* power-user
+  // method. Do not use unless you know what you are doing.
+  // WARNING: this method throws if this field is a subfield. It does *NOT*
+  //          throw if there is padding, so careful how you access/use the view.
+  template<HostOrDevice HD = Device>
+  get_view_type<uview_type<RT*>,HD>
+  get_flattened_view () const {
+    EKAT_REQUIRE_MSG (m_header->get_parent().expired(),
+        "Error! This field is the subfield of another field.\n"
+        "       We cannot provide the flattened view of a subfield.\n");
+    return get_view_impl<HD>();
+  }
 
   // If someone needs the host view, some sync routines might be needed.
   // Note: this class takes no responsibility in keeping track of whether
@@ -152,15 +168,15 @@ public:
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
-  //     to get the N-1 dimensional view, call get_reshaped_view<DT>(), using
+  //     to get the N-1 dimensional view, call get_view<DT>(), using
   //     the correct N-1 dimensional data type DT.
-  //   - when calling get_reshaped_view<DT>() on the N-1 dimensional subfield,
+  //   - when calling get_view<DT>() on the N-1 dimensional subfield,
   //     we first get an N-dimensional view, then subview it at index k along
   //     dimension idim.
   //   - idim must be either 0 or 1. This is b/c we cannot subview an N-dim
   //     view along idim=2+ while keeping LayoutRight. Kokkos would force the
   //     resulting view to have layout stride, which would conflict with the
-  //     return type of get_reshaped_view<DT>().
+  //     return type of get_view<DT>().
   //   - If the field rank is 2, then idim cannot be 1. This is b/c Kokkos
   //     specializes view's traits for LayoutRight of rank 1, not allowing
   //     to store a stride for the slowest dimension.
@@ -209,7 +225,7 @@ protected:
 
   template<HostOrDevice HD>
   const if_t<HD==Device,view_type<RT*>>&
-  get_view_impl   () const {
+  get_view_impl () const {
     EKAT_REQUIRE_MSG (is_allocated (),
         "Error! View was not yet allocated.\n");
     return  m_view_d;
@@ -217,7 +233,7 @@ protected:
 
   template<HostOrDevice HD>
   const if_t<HD==Host,HM<view_type<RT*>>>&
-  get_view_impl   () const {
+  get_view_impl () const {
     ensure_host_view ();
     return  *m_view_h;
   }
@@ -270,11 +286,6 @@ protected:
   // List of property checks for this field.
   std::shared_ptr<property_check_list>    m_prop_checks;
 };
-
-template<typename RealType>
-bool operator< (const Field<RealType>& f1, const Field<RealType>& f2) {
-  return f1.get_header().get_identifier() < f2.get_header().get_identifier();
-}
 
 // ================================= IMPLEMENTATION ================================== //
 
@@ -380,7 +391,7 @@ operator= (const Field<SrcRealType>& src) {
 
 template<typename RealType>
 template<typename DT, HostOrDevice HD>
-auto Field<RealType>::get_reshaped_view () const
+auto Field<RealType>::get_view () const
  -> get_view_type<uview_type<DT>,HD>
 {
   // The destination view type on correct mem space
@@ -394,8 +405,7 @@ auto Field<RealType>::get_reshaped_view () const
   const auto& alloc_prop = m_header->get_alloc_properties();
   const auto& field_layout = m_header->get_identifier().get_layout();
 
-  // We only allow to reshape to another 1d view (possibly to change the value type
-  // to something like a pack), or to a view of the correct rank
+  // We only allow to reshape to a view of the correct rank
   constexpr int DstRank = DstView::rank;
 
   EKAT_REQUIRE_MSG(DstRank==field_layout.rank(),
@@ -472,41 +482,41 @@ deep_copy (const field_type& field_src) {
        "ERROR: Unable to copy field " + field_src.get_header().get_identifier().name() + 
           " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
   const auto  rank = layout.rank();
-  // Note: we can't just do a deep copy on get_view<HD>(), since this
+  // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. We need the reshaped view.
   switch (rank) {
     case 1:
       {
-        auto v     = get_reshaped_view<RT*,HD>();
-        auto v_src = field_src.get_reshaped_view<RT*,HD>();
+        auto v     = get_view<RT*,HD>();
+        auto v_src = field_src.get_view<RT*,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 2:
       {
-        auto v     = get_reshaped_view<RT**,HD>();
-        auto v_src = field_src.get_reshaped_view<RT**,HD>();
+        auto v     = get_view<RT**,HD>();
+        auto v_src = field_src.get_view<RT**,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 3:
       {
-        auto v     = get_reshaped_view<RT***,HD>();
-        auto v_src = field_src.get_reshaped_view<RT***,HD>();
+        auto v     = get_view<RT***,HD>();
+        auto v_src = field_src.get_view<RT***,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 4:
       {
-        auto v     = get_reshaped_view<RT****,HD>();
-        auto v_src = field_src.get_reshaped_view<RT****,HD>();
+        auto v     = get_view<RT****,HD>();
+        auto v_src = field_src.get_view<RT****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 5:
       {
-        auto v     = get_reshaped_view<RT*****,HD>();
-        auto v_src = field_src.get_reshaped_view<RT*****,HD>();
+        auto v     = get_view<RT*****,HD>();
+        auto v_src = field_src.get_view<RT*****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
@@ -519,53 +529,46 @@ template<typename RealType>
 template<HostOrDevice HD>
 void Field<RealType>::
 deep_copy (const RT value) {
-  // Note: we can't just do a deep copy on get_view<HD>(), since this
-  //       field might be a subfield of another. So check the header
-  //       first, to see if we have a parent. If not, deep copy is fine.
-  //       If we do, we need to get the reshaped view first.
-  const auto parent = get_header().get_parent();
-  if (parent.lock()==nullptr) {
-    // No parent. Deep copying to get_view<HD>() is safe.
-    Kokkos::deep_copy (get_view<HD>(),value);
-  } else {
-    // We have a parent. We only want to set *this* field to value,
-    // not the rest of the parent field. We need the reshaped view
-    const auto& layout = get_header().get_identifier().get_layout();
-    const auto  rank   = layout.rank();
-    switch (rank) {
-      case 1:
-        {
-          auto v = get_reshaped_view<RT*,HD>();
-          Kokkos::deep_copy(v,value);
-        }
-        break;
-      case 2:
-        {
-          auto v = get_reshaped_view<RT**,HD>();
-          Kokkos::deep_copy(v,value);
-        }
-        break;
-      case 3:
-        {
-          auto v = get_reshaped_view<RT***,HD>();
-          Kokkos::deep_copy(v,value);
-        }
-        break;
-      case 4:
-        {
-          auto v = get_reshaped_view<RT****,HD>();
-          Kokkos::deep_copy(v,value);
-        }
-        break;
-      case 5:
-        {
-          auto v = get_reshaped_view<RT*****,HD>();
-          Kokkos::deep_copy(v,value);
-        }
-        break;
-      default:
-        EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
-    }
+
+  // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
+  //       field might be a subfield of another. Instead, get the
+  //       reshaped view first, based on the field rank.
+
+  const auto& layout = get_header().get_identifier().get_layout();
+  const auto  rank   = layout.rank();
+  switch (rank) {
+    case 1:
+      {
+        auto v = get_view<RT*,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    case 2:
+      {
+        auto v = get_view<RT**,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    case 3:
+      {
+        auto v = get_view<RT***,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    case 4:
+      {
+        auto v = get_view<RT****,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    case 5:
+      {
+        auto v = get_view<RT*****,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
   }
 }
 
@@ -731,7 +734,7 @@ auto Field<RealType>::get_ND_view () const ->
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view<HD>().data());
+  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
   using ret_type = get_view_type<view_ND_type<T,N>,HD>;
   return ret_type (ptr,kl);
@@ -759,7 +762,7 @@ auto Field<RealType>::get_ND_view () const ->
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view<HD>().data());
+  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
   using ret_type = get_view_type<view_ND_type<T,N>,HD>;
   return ret_type (ptr,kl);

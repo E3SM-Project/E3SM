@@ -26,7 +26,7 @@ public:
   std::string name () const override { return "NaN Field Check"; }
 
   bool check(const Field<const_RT>& field) const override {
-    auto view = field.get_view();
+    auto view = field.get_flattened_view();
     Int num_nans = 0; 
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, Int& m) {
       if (isnan(view(i))) {

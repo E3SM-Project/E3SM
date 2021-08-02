@@ -110,9 +110,9 @@ public:
     const int nlevs = m_grid->get_num_vertical_levels();
     auto policy = KokkosTypes<exec_space>::RangePolicy(0,ncols*nlevs);
     if (m_name=="A to BC") {
-      const auto view_A = m_inputs["A"].get_reshaped_view<const Real**>();
-      const auto view_B = m_outputs["B"].get_reshaped_view<Real**>();
-      const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
+      const auto view_A = m_inputs["A"].get_view<const Real**>();
+      const auto view_B = m_outputs["B"].get_view<Real**>();
+      const auto view_C = m_outputs["C"].get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -123,8 +123,8 @@ public:
       });
     } else if (m_name=="Group to Group") {
       const auto& fB = m_outputs["B"];
-      const auto view_B = fB.get_reshaped_view<Real**>();
-      const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
+      const auto view_B = fB.get_view<Real**>();
+      const auto view_C = m_outputs["C"].get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -134,9 +134,9 @@ public:
         view_C(icol,ilev) = view_C(icol,ilev) / 2;
       });
     } else {
-      const auto view_B = m_inputs["B"].get_reshaped_view<const Real**>();
-      const auto view_C = m_inputs["C"].get_reshaped_view<const Real**>();
-      const auto view_A = m_outputs["A"].get_reshaped_view<Real**>();
+      const auto view_B = m_inputs["B"].get_view<const Real**>();
+      const auto view_C = m_inputs["C"].get_view<const Real**>();
+      const auto view_A = m_outputs["A"].get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;

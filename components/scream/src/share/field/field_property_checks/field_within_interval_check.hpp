@@ -40,7 +40,7 @@ public:
   std::string name () const override { return "Within Interval Field Check"; }
 
   bool check(const Field<const_RT>& field) const override {
-    auto view = field.get_view();
+    auto view = field.get_flattened_view();
     typename Kokkos::MinMax<non_const_RT>::value_type minmax;
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i,
         typename Kokkos::MinMax<RealType>::value_type& mm) {
@@ -60,7 +60,7 @@ public:
 
   void repair(Field<non_const_RT>& field) const override {
     if (m_can_repair) {
-      auto view = field.get_view();
+      auto view = field.get_flattened_view();
       RealType lower_bound = m_lower_bound;
       RealType upper_bound = m_upper_bound;
       Kokkos::parallel_for(view.extent(0), KOKKOS_LAMBDA(Int i) {

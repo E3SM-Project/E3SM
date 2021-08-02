@@ -34,7 +34,7 @@ public:
   std::string name () const override { return "Positivity Field Check"; }
 
   bool check(const Field<const_RT>& field) const override {
-    auto view = field.get_view();
+    auto view = field.get_flattened_view();
     RealType min_val = std::numeric_limits<RealType>::max();
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, RealType& m) {
       m = ekat::impl::min(m, view(i));
@@ -48,7 +48,7 @@ public:
 
   void repair(Field<non_const_RT>& field) const override {
     if (can_repair()) {
-      auto view = field.get_view();
+      auto view = field.get_flattened_view();
       RealType lower_bound = m_lower_bound;
       Kokkos::parallel_for(view.extent(0), KOKKOS_LAMBDA(Int i) {
         view(i) = ekat::impl::max(lower_bound, view(i));

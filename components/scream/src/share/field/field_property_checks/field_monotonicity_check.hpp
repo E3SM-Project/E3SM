@@ -26,7 +26,7 @@ public:
   std::string name () const override { return "Monotonicity Field Check"; }
 
   bool check(const Field<const_RT>& field) const override {
-    auto view = field.get_view();
+    auto view = field.get_flattened_view();
     non_const_RT sign;
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, non_const_RT& s) {
       if ((i > 0) && (i < view.extent_int(0)-1)) {

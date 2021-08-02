@@ -94,7 +94,7 @@ register_import(const std::string& fname,
     auto& info = m_scream_imports_host(m_num_scream_imports);
 
     // Set view data ptr
-    info.data = field.get_view().data();
+    info.data = field.get_flattened_view().data();
 
     // Set cpl index
     info.cpl_idx = cpl_idx;
@@ -148,13 +148,13 @@ register_export (const std::string& fname,
   if (m_field_mgr->has_field(fname)) {
 
     // If fname is a field in the the field manager, then set the data and column info based on this field.
-    // Note that the field must not have a parent as get_view() would be unsafe.
+    // Note that the field must not have a parent as get_flattened_view() would be unsafe.
     export_field_type field = m_field_mgr->get_field(fname);
 
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
 
     // Set view data ptr
-    info.data = field.get_view().data();
+    info.data = field.get_flattened_view().data();
 
     // Get column offset and stride
     get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
@@ -287,10 +287,10 @@ void SurfaceCoupling::do_export ()
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density"));
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
-    const auto qv             = m_field_mgr->get_field("qv").get_reshaped_view<const Real**>();
-    const auto T_mid          = m_field_mgr->get_field("T_mid").get_reshaped_view<const Real**>();
-    const auto p_mid          = m_field_mgr->get_field("p_mid").get_reshaped_view<const Real**>();
-    const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_reshaped_view<const Real**>();
+    const auto qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
+    const auto T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
+    const auto p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
 
     const auto policy = policy_type (0, m_num_cols);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {

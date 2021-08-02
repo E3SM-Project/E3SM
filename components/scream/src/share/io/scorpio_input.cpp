@@ -61,7 +61,7 @@ AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& n
     return l_view;
   } else {
     auto field = m_field_mgr->get_field(name);
-    view_type_host l_view("",field.get_view().extent(0));
+    view_type_host l_view("",field.get_flattened_view().extent(0));
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
   }
@@ -84,10 +84,9 @@ void AtmosphereInput::pull_input()
     // Get all the info for this field.
     auto l_dims = fl.dims();
     const auto padding = fap.get_padding();
-    const auto num_reals = fap.get_alloc_size() / sizeof(Real);
 
     if (auto p = fh.get_parent().lock()) {
-      // The hard case: we cannot call 'get_view', and even the reshaped view
+      // The hard case: we cannot call 'get_flattened_view', and even the reshaped view
       // is likely strided. So we just create a temp contiguous view, use it
       // for reading from file, then deep_copy to dev.
       using field_type = decltype(field);
@@ -97,7 +96,7 @@ void AtmosphereInput::pull_input()
       using host_view_1d_type = typename field_type::HM<dev_view_1d_type>;
 
       // Use a 1d view of correct size for scorpio reading
-      host_view_1d_type temp_view("",num_reals);
+      host_view_1d_type temp_view("",fap.get_alloc_size());
       grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
                            padding,temp_view.data());
 
@@ -107,14 +106,14 @@ void AtmosphereInput::pull_input()
       switch (rank) {
         case 1:
           // Easy: can deep copy from the 1d view directly
-          Kokkos::deep_copy(field.get_reshaped_view<RT*>(),
+          Kokkos::deep_copy(field.get_view<RT*>(),
                             host_view_1d_type(temp_view.data(),fl.dim(0)+padding));
           break;
         case 2:
           {
             using dev_view_2d_type = typename field_type::view_type<RT**>;
             using host_view_2d_type = typename field_type::HM<dev_view_2d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT**,Host>(),
+            Kokkos::deep_copy(field.get_view<RT**,Host>(),
                               host_view_2d_type(temp_view.data(),fl.dim(0),fl.dim(1)+padding));
             field.sync_to_dev();
             break;
@@ -123,7 +122,7 @@ void AtmosphereInput::pull_input()
           {
             using dev_view_3d_type = typename field_type::view_type<RT***>;
             using host_view_3d_type = typename field_type::HM<dev_view_3d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT***,Host>(),
+            Kokkos::deep_copy(field.get_view<RT***,Host>(),
                               host_view_3d_type(temp_view.data(),fl.dim(0),fl.dim(1),fl.dim(2)+padding));
             field.sync_to_dev();
             break;
@@ -135,7 +134,7 @@ void AtmosphereInput::pull_input()
     } else {
       // The easy case: we're good to grab the stored 1d view
       grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
-                           padding,field.get_view<Host>().data());
+                           padding,field.get_flattened_view<Host>().data());
     }
 
     // Sync to device
