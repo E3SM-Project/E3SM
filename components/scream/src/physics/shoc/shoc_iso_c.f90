@@ -75,7 +75,7 @@ contains
 
   subroutine shoc_main_c(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy, thv,  &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
-     wtracer_sfc, num_qtracers, w_field, exner,phis, host_dse, tke, thetal,  &
+     wtracer_sfc, num_qtracers, w_field, inv_exner, phis, host_dse, tke, thetal,  &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
      pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec,  &
      wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2, elapsed_s) bind(C)
@@ -91,7 +91,7 @@ contains
     real(kind=c_real), intent(in), dimension(shcol, nlev) :: pdel, thv, w_field
     real(kind=c_real), intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc
     real(kind=c_real), intent(in), dimension(shcol, num_qtracers) :: wtracer_sfc
-    real(kind=c_real), intent(in), dimension(shcol, nlev) :: exner
+    real(kind=c_real), intent(in), dimension(shcol, nlev) :: inv_exner
     real(kind=c_real), intent(in), dimension(shcol) :: phis
 
     real(kind=c_real), intent(inout), dimension(shcol, nlev) :: host_dse, tke, &
@@ -111,7 +111,7 @@ contains
 
     call shoc_main(shcol, nlev, nlevi, dtime, nadv, host_dx, host_dy, thv,   &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
-     wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, &
+     wtracer_sfc, num_qtracers, w_field, inv_exner, phis, host_dse, tke, thetal, &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
      pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec,  &
      wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt,shoc_ql2,elapsed_s)
@@ -414,7 +414,7 @@ contains
 
   end subroutine eddy_diffusivities_c
 
-  subroutine update_host_dse_c(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
+  subroutine update_host_dse_c(shcol, nlev, thlm, shoc_ql, inv_exner, zt_grid, &
                                phis, host_dse) bind (C)
     use shoc, only: update_host_dse
 
@@ -422,13 +422,13 @@ contains
     integer(kind=c_int), intent(in), value :: nlev
     real(kind=c_real), intent(in) :: thlm(shcol,nlev)
     real(kind=c_real), intent(in) :: shoc_ql(shcol,nlev)
-    real(kind=c_real), intent(in) :: exner(shcol,nlev)
+    real(kind=c_real), intent(in) :: inv_exner(shcol,nlev)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: phis(shcol)
 
     real(kind=c_real), intent(out) :: host_dse(shcol,nlev)
 
-    call update_host_dse(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
+    call update_host_dse(shcol, nlev, thlm, shoc_ql, inv_exner, zt_grid, &
                            phis, host_dse)
 
   end subroutine update_host_dse_c

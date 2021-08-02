@@ -1967,6 +1967,13 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <CXXFLAGS>
+    <append> -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh </append>
+  </CXXFLAGS>
+  <LDFLAGS>
+    <append> -L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/ </append>
+  </LDFLAGS>
+  <KOKKOS_OPTIONS> --with-serial --cxxflags='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh' --ldflags='-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
@@ -1990,6 +1997,13 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
+  <CXXFLAGS>
+    <append> -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh </append>
+  </CXXFLAGS>
+  <LDFLAGS>
+    <append> -L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/ </append>
+  </LDFLAGS>
+  <KOKKOS_OPTIONS> --with-serial --cxxflags='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh' --ldflags='-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>

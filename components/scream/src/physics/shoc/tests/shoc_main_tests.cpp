@@ -96,6 +96,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real tke_lbound = 0; // [m2/s2]
     static constexpr Real tke_ubound = 5; // [m2/s2]
     static constexpr Real wind_bounds = 10; // [m/s]
+    static constexpr Real dse_upper = 5e5; // [J/kg]
+    static constexpr Real dse_lower = 1e5; // [J/kg]
 
     // Compute some inputs based on the above
 
@@ -115,7 +117,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
     // Compute variables related to temperature
     Real host_dse[shcol][nlev];
-    Real thetal[nlev], thv[nlev], exner[nlev];
+    Real thetal[nlev], thv[nlev], inv_exner[nlev];
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
         // Compute the dry static energy
@@ -132,8 +134,10 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       thetal[n] = pot_temp - (LatVap/Cpair)*shoc_ql[n];
       // Virtual potential temperature
       thv[n] = pot_temp * (1 + 0.61*qv - shoc_ql[n]);
-      // Compute exner function
-      exner[n] = std::pow(pres[n]/p0,Rair/Cpair);
+      // Compute the inverse of the exner function
+      const Real exner = std::pow(pres[n]/p0,Rair/Cpair);
+      REQUIRE(exner > 0);
+      inv_exner[n] = 1/exner;
     }
 
     // Load up tracer input array with random data
@@ -187,7 +191,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         SDS.pdel[offset] = pdel[n];
         SDS.thv[offset] = thv[n];
         SDS.w_field[offset] = w_field[n];
-        SDS.exner[offset] = exner[n];
+        SDS.inv_exner[offset] = inv_exner[n];
         SDS.shoc_ql[offset] = shoc_ql[n];
         SDS.shoc_cldfrac[offset] = shoc_cldfrac[n];
         SDS.qw[offset] = qw[n];
@@ -226,6 +230,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         const auto offset = n + s * nlev;
         // Check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        // Check that inverse of exner increases upward
+        REQUIRE(SDS.inv_exner[offset + 1] - SDS.inv_exner[offset] < 0);
       }
 
       // Check that zi increases upward
@@ -283,6 +289,15 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         else if (SDS.shoc_cldfrac[offset] == 0){
           REQUIRE(SDS.shoc_ql[offset] == 0);
         }
+
+        // Verify that dse increases with height upward
+        if (n < nlev-1){
+          REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
+        }
+
+        // Verify that DSE falls within some reasonable bounds
+        REQUIRE(SDS.host_dse[offset] > dse_lower);
+        REQUIRE(SDS.host_dse[offset] < dse_upper);
 
         // Verify that w2 is less than tke
         REQUIRE(std::abs(SDS.w_sec[offset] < SDS.tke[offset]));
@@ -373,7 +388,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       shoc_main_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy,
                   d.thv, d.zt_grid, d.zi_grid, d.pres, d.presi, d.pdel, d.wthl_sfc,
                   d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
-                  d.w_field, d.exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
+                  d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
                   d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql,
                   d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec,
                   d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec,

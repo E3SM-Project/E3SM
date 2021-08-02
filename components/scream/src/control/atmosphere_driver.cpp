@@ -309,10 +309,10 @@ initialize_fields (const util::TimeStamp& t0)
   bool skip_init_lat = true;
   bool skip_init_lon = true;
   if (ic_pl.isParameter("skip_init_lat")) {
-    bool skip_init_lat     = ic_pl.get<bool>("skip_init_lat");
+    skip_init_lat     = ic_pl.get<bool>("skip_init_lat");
   }
   if (ic_pl.isParameter("skip_init_lon")) {
-    bool skip_init_lon     = ic_pl.get<bool>("skip_init_lon");
+    skip_init_lon     = ic_pl.get<bool>("skip_init_lon");
   }
 
   if (ifield>0 || (!skip_init_lon or !skip_init_lat)) {

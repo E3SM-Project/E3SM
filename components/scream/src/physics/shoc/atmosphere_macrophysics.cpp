@@ -182,8 +182,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.wtracer_sfc.size();
   m_buffer.wm_zt = decltype(m_buffer.wm_zt)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.wm_zt.size();
-  m_buffer.exner = decltype(m_buffer.exner)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.exner.size();
+  m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.inv_exner.size();
   m_buffer.thlm = decltype(m_buffer.thlm)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.thlm.size();
   m_buffer.qw = decltype(m_buffer.qw)(s_mem, m_num_cols, nlev_packs);
@@ -282,7 +282,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   auto zi_grid     = m_buffer.zi_grid;
   auto wtracer_sfc = m_buffer.wtracer_sfc;
   auto wm_zt       = m_buffer.wm_zt;
-  auto exner       = m_buffer.exner;
+  auto inv_exner   = m_buffer.inv_exner;
   auto thlm        = m_buffer.thlm;
   auto qw          = m_buffer.qw;
   auto s           = m_buffer.s;
@@ -295,7 +295,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
                                 T_mid,z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,cell_length,
                                 s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,exner,thlm,qw);
+                                wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 
   // Input Variables:
   input.dx          = shoc_preprocess.cell_length;
@@ -312,7 +312,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input.uw_sfc      = shoc_preprocess.upwp_sfc;
   input.vw_sfc      = shoc_preprocess.vpwp_sfc;
   input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
-  input.exner       = shoc_preprocess.exner;
+  input.inv_exner   = shoc_preprocess.inv_exner;
   input.phis        = phis;
 
   // Input/Output Variables

@@ -84,6 +84,7 @@ void AtmosphereInput::pull_input()
     // Get all the info for this field.
     auto l_dims = fl.dims();
     const auto padding = fap.get_padding();
+    const auto num_reals = fap.get_alloc_size() / sizeof(Real);
 
     if (auto p = fh.get_parent().lock()) {
       // The hard case: we cannot call 'get_view', and even the reshaped view
@@ -96,7 +97,7 @@ void AtmosphereInput::pull_input()
       using host_view_1d_type = typename field_type::HM<dev_view_1d_type>;
 
       // Use a 1d view of correct size for scorpio reading
-      host_view_1d_type temp_view("",fap.get_alloc_size());
+      host_view_1d_type temp_view("",num_reals);
       grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
                            padding,temp_view.data());
 

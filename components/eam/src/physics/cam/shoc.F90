@@ -294,7 +294,7 @@ subroutine shoc_main ( &
   real(rtype), intent(in) :: vw_sfc(shcol)
   ! Surface flux for tracers [varies]
   real(rtype), intent(in) :: wtracer_sfc(shcol,num_qtracers)
-  ! Exner function [-]
+  ! Inverse of the exner function [-]
   real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! Host model surface geopotential height
   real(rtype), intent(in) :: phis(shcol)
@@ -3749,7 +3749,7 @@ end subroutine shoc_energy_integrals
 
 subroutine update_host_dse(&
          shcol,nlev,thlm,&                 ! Input
-         shoc_ql,inv_exner,zt_grid,phis,&      ! Input
+         shoc_ql,inv_exner,zt_grid,phis,&  ! Input
          host_dse)                         ! Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
