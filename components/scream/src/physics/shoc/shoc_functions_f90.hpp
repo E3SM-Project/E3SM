@@ -10,6 +10,7 @@
 #include <vector>
 #include <array>
 #include <utility>
+#include <limits>
 
 //
 // Bridge functions to call fortran version of shoc functions from C++
@@ -17,19 +18,6 @@
 
 namespace scream {
 namespace shoc {
-
-template <typename Engine, typename Compare=std::less<Real> >
-void interleaved_sort(Engine& engine, const Int shcol, const Int nlev, const int nlevi, Real* nlev_data, Real* nlevi_data)
-{
-  // sort the nlevi data
-  for (auto i = decltype(shcol){0}; i < shcol; ++i) {
-    std::sort(nlevi_data + nlevi*i, nlevi_data + nlevi*(i+1), Compare());
-    for (auto k = decltype(nlev){0}; k < nlev; ++k) {
-      std::uniform_real_distribution<Real> x2_dist(nlevi_data[nlevi*i + k], nlevi_data[nlevi*i + k+1]);
-      nlev_data[nlev*i + k] = x2_dist(engine);
-    }
-  }
-}
 
 struct ShocTestGridDataBase : public PhysicsTestData
 {
@@ -55,8 +43,27 @@ struct ShocTestGridDataBase : public PhysicsTestData
     EKAT_REQUIRE_MSG(shcol == dim(zi_grid, 0), "Mismatched shcol dim for zt_grid and zi_grid");
     EKAT_REQUIRE_MSG(nlev == nlevi-1, "Mismatched lev dim for zt_grid and zi_grid");
 
-    // Don't want true randomness in the grid data, need interleaved grid points
-    interleaved_sort<Engine, std::greater<Real> >(engine, shcol, nlev, nlevi, zt_grid, zi_grid);
+    // Don't want true randomness in the grid data, need interleaved grid points with some minimum separation
+    for (auto i = decltype(shcol){0}; i < shcol; ++i) {
+      Real* this_col_zi = zi_grid + nlevi*i;
+      std::sort(this_col_zi, this_col_zi + nlevi);
+      const auto min = this_col_zi[0];
+      const auto max = this_col_zi[nlevi-1];
+
+      const auto avg_jump = (max-min) / (nlevi-1);
+      const auto avg_jump_d = avg_jump / 2.5;
+
+      for (auto k = decltype(nlevi){1}; k < (nlevi-1); ++k) {
+        std::uniform_real_distribution<Real> x2_dist(min + k*avg_jump - avg_jump_d, min + k*avg_jump + avg_jump_d);
+        this_col_zi[k] = x2_dist(engine);
+      }
+
+      std::sort(this_col_zi, this_col_zi + nlevi, std::greater<Real>());
+      for (auto k = decltype(nlev){0}; k < nlev; ++k) {
+        std::uniform_real_distribution<Real> x2_dist(zi_grid[nlevi*i + k], zi_grid[nlevi*i + k+1]);
+        zt_grid[nlev*i + k] = x2_dist(engine);
+      }
+    }
   }
 };
 
