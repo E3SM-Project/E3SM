@@ -31,7 +31,7 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const { return "Positivity Field Check"; }
+  std::string name () const override { return "Positivity Field Check"; }
 
   bool check(const Field<const_RT>& field) const override {
     auto view = field.get_view();
