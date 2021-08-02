@@ -21,7 +21,6 @@
 # sys.path.insert(0, os.path.abspath('.'))
 import sphinx_rtd_theme
 
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -166,5 +165,5 @@ texinfo_documents = [
 
 # -- Options sphinx-multiversion -------------------------------------------
 smv_tag_whitelist = r"^v\d+\.\d+.\d+$"  # Include tags like "tags/v2.5.0"
-smv_branch_whitelist = r'^.*$'                # Include all branches
+smv_branch_whitelist = "master"
 smv_remote_whitelist = r"^(origin|upstream)$"  # Use branches from origin

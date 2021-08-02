@@ -133,14 +133,10 @@ jobs:
           # gh-pages branch must already exist
           git clone https://github.com/E3SM-Project/e3sm_diags.git --branch gh-pages --single-branch gh-pages
 
+          # Only replace master docs with latest changes. Docs for tags should be untouched.
           cd gh-pages
-          rm -r *
-
-          touch .nojekyll
-          # Add index.html to point to `master` branch automatically
-          printf '<meta http-equiv="refresh" content="0; url=./_build/html/master/index.html" />' >> index.html
-
-          cp -r ../docs/_build .
+          rm -r _build/html/master
+          cp -r ../docs/_build/html/master _build/html/master
 
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
