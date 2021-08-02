@@ -459,11 +459,10 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[9 + icol*num_exports] == precip_liq_surf_h(icol            )); // 10th export
 
       // These exports should be set to 0
-      const auto eps = std::numeric_limits<Real>::epsilon();
-      REQUIRE (abs(export_raw_data[8  + icol*num_exports]) < eps); // 9th export
-      REQUIRE (abs(export_raw_data[10 + icol*num_exports]) < eps); // 11th export
-      REQUIRE (abs(export_raw_data[11 + icol*num_exports]) < eps); // 12th export
-      REQUIRE (abs(export_raw_data[12 + icol*num_exports]) < eps); // 13th export
+      REQUIRE (export_raw_data[8  + icol*num_exports] == 0); // 9th export
+      REQUIRE (export_raw_data[10 + icol*num_exports] == 0); // 11th export
+      REQUIRE (export_raw_data[11 + icol*num_exports] == 0); // 12th export
+      REQUIRE (export_raw_data[12 + icol*num_exports] == 0); // 13th export
     }
   }
 

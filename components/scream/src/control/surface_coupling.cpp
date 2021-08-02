@@ -56,9 +56,6 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports, const i
   // We keep up with the total number of imports for indexing input data
   m_num_cpl_imports = num_cpl_imports;
 
-  // We keep up with the total number of imports for indexing input data
-  m_num_cpl_imports = num_cpl_imports;
-
   m_state = RepoState::Open;
 }
 
@@ -387,7 +384,6 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
 
     EKAT_REQUIRE_MSG(parent->get_parent().lock() == nullptr,
                      "Error! Currently support isn't added for fields with grandparents.\n");
-
 
     const auto parent_lt = get_layout_type(parent->get_identifier().get_layout().tags());
 
