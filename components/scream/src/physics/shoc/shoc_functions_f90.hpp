@@ -925,14 +925,14 @@ struct ShocMainData : public ShocTestGridDataBase {
       const auto nlevi_offset = i * nlevi;
       for (auto k = decltype(nlev){0}; k < nlev; ++k) {
         pdel[nlev_offset + k] = std::abs(presi[nlevi_offset + k] - presi[nlevi_offset + k+1]);
-        exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
-        host_dse[nlev_offset + k] = consts::Cpair * exner[nlev_offset + k] * thv[nlev_offset + k] +
+        inv_exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
+        host_dse[nlev_offset + k] = consts::Cpair * inv_exner[nlev_offset + k] * thv[nlev_offset + k] +
           consts::gravit * zt_grid[nlev_offset + k];
 
         const Real qv = qw[nlev_offset+k] - shoc_ql[nlev_offset+k];
         thetal[nlev_offset+k] = pot_temp - (consts::LatVap/consts::Cpair)*shoc_ql[nlev_offset+k];
         thv[nlev_offset+k] = pot_temp * (1 + 0.61*qv - shoc_ql[nlev_offset+k]);
-        exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0,consts::Rair/consts::Cpair);
+        inv_exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0,consts::Rair/consts::Cpair);
       }
     }
 
