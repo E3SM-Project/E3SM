@@ -20,10 +20,10 @@ SHELL ["/bin/bash", "-c"]
 # We just update the base environment.
 
 RUN conda env update -n base --file conda/e3sm_diags_env_dev.yml && \
-        conda clean --all -y && \
-        source activate base && \
-        pip install --user . && \
-        rm -r build/
+    conda clean --all -y && \
+    source activate base && \
+    pip install --user . && \
+    rm -r build/
 
 # Needs to be a list, otherwise arguments aren't
 # passed correctly when you run the container.

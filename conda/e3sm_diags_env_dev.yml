@@ -42,4 +42,5 @@ dependencies:
   - pandoc=2.14
   - pip:
       - sphinx-multiversion==0.2.4
+      - tbump==6.3.2
 prefix: /opt/miniconda3/envs/e3sm_diags_env_dev
