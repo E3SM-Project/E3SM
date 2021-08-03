@@ -487,18 +487,8 @@
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-     </directives>
-     <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
-     </directives>
-     <directives compiler="ibmgpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="pgigpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="gnugpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
+       <!-- <directive>-alloc_flags smt$SHELL{echo $SMT_MODE}</directive> -->
+       <directive>-alloc_flags smt1</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>

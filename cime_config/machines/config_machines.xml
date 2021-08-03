@@ -2749,7 +2749,7 @@
         <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
-        <arg name="bind">--bind packed:smt:$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</arg>
+        <arg name="bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
       </arguments>
@@ -2825,6 +2825,7 @@
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+      <env name="SMT_MODE">1</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
@@ -2838,7 +2839,7 @@
       <env name="CPU_PER_RS">21</env>
       <env name="GPU_PER_RS">0</env>
       <env name="LTC_PRT">cpu-cpu</env>
-      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value MAX_TASKS_PER_NODE` - 1)/`./xmlquery --value MAX_TASKS_PER_NODE`)"|bc}</env>
     </environment_variables>
     <environment_variables compiler="ibmgpu">
       <env name="RS_PER_NODE">6</env>
@@ -2859,7 +2860,7 @@
       <env name="CPU_PER_RS">7</env>
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
-      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value MAX_MPITASKS_PER_NODE` - 1)/`./xmlquery --value MAX_MPITASKS_PER_NODE`)"|bc}</env>
     </environment_variables>
   </machine>
 
