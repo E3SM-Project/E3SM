@@ -41,8 +41,14 @@ public:
   // The input grid is the one where import/export happens
   explicit SurfaceCoupling (const field_mgr_ptr& field_mgr);
 
-  // This allocates some service views
-  void set_num_fields (const int num_imports, const int num_exports);
+  // This allocates some service views. Since not all imported
+  // data is used by SCREAM, we distinguish between cpl
+  // imports and SCREAM imports for book keeping.
+  void set_num_fields (const int num_cpl_imports, const int num_scream_imports, const int num_exports);
+
+  // Version of the above function when num_cpl_imports = num_scream_imports
+  void set_num_fields (const int num_imports, const int num_exports)
+  { set_num_fields(num_imports, num_imports, num_exports); }
 
   // Register import/export scream fields
   void register_import (const std::string& fname,
@@ -120,6 +126,15 @@ protected:
   decltype(m_scream_imports_dev)::HostMirror    m_scream_imports_host;
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
+  // Views for storing export values for various fields that need to be computed
+  view_1d<device_type,Real> Sa_ptem;
+  view_1d<device_type,Real> Sa_dens;
+  view_1d<device_type,Real> zero_view;
+
+  // Dummy field to allow for the storage of the FieldIdentifier for debugging (not currently used)
+  // and the FieldHeader needed to set up column info for export fields which must be computed.
+  Field<const Real> dummy_field;
+
   // The type for device and host view storing a 2d array with dims (num_cols,num_fields).
   // The field idx strides faster, since that's what mct does (so we can "view" the
   // pointer to the whole x2a and a2x arrays from Fortran)
@@ -138,10 +153,12 @@ protected:
 
   field_mgr_ptr m_field_mgr;
 
-  int           m_num_imports;
+  int           m_num_scream_imports;
+  int           m_num_cpl_imports;
   int           m_num_exports;
 
   int           m_num_cols;
+  int           m_num_levs;
 
   RepoState     m_state;
 };
