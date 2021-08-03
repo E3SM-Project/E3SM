@@ -21,6 +21,7 @@ module NitrogenStateUpdate1Mod
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
+  use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use elm_varctl             , only : forest_fert_exp
   use elm_varctl             , only : nu_com
@@ -257,6 +258,7 @@ contains
       endif  !end if is_active_betr_bgc 
 
       ! forest fertilization
+      call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
