@@ -105,7 +105,7 @@ void Functions<S,D>
             }
           }
 
-          const auto Co_max_local = max(qc_gt_small, -1,
+          const auto Co_max_local = max(qc_gt_small, 0,
                                         V_qc(pk) * dt_left * inv_dz(pk));
           if (Co_max_local > lmax)
             lmax = Co_max_local;

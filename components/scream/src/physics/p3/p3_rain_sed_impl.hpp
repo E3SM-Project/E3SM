@@ -119,7 +119,7 @@ void Functions<S,D>
 	  nr(pk).set(qr_gt_small, nr_incld(pk)*cld_frac_r(pk));
 
         }
-        const auto Co_max_local = max(qr_gt_small, -1,
+        const auto Co_max_local = max(qr_gt_small, 0,
                                       V_qr(pk) * dt_left * inv_dz(pk));
         if (Co_max_local > lmax) lmax = Co_max_local;
       }, Kokkos::Max<Scalar>(Co_max));
