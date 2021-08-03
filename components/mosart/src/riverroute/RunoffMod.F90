@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval, heatflag
+  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -77,6 +77,17 @@ module RunoffMod
      real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
      real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
      real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit)
+     real(r8), pointer :: nutrDIN(:)       ! Nutrient flux for DIN
+     real(r8), pointer :: nutrDIP(:)       ! Nutrient flux for DIP
+     real(r8), pointer :: nutrDON(:)       ! Nutrient flux for DON
+     real(r8), pointer :: nutrDOP(:)       ! Nutrient flux for DOP
+     real(r8), pointer :: nutrDOC(:)       ! Nutrient flux for DOC
+     real(r8), pointer :: nutrPP(:)        ! Nutrient flux for PP
+     real(r8), pointer :: nutrDSi(:)       ! Nutrient flux for DSi
+     real(r8), pointer :: nutrPOC(:)       ! Nutrient flux for POC
+     real(r8), pointer :: nutrPN(:)        ! Nutrient flux for PN
+     real(r8), pointer :: nutrDIC(:)       ! Nutrient flux for DIC
+     real(r8), pointer :: nutrFe(:)        ! Nutrient flux for Fe
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
@@ -570,6 +581,25 @@ contains
        call shr_sys_abort
     end if
 
+    if (data_bgc_fluxes_to_ocean_flag) then
+      allocate(rtmCTL%nutrDIN(begr:endr),           &
+               rtmCTL%nutrDIP(begr:endr),           &
+               rtmCTL%nutrDON(begr:endr),           &
+               rtmCTL%nutrDOP(begr:endr),           &
+               rtmCTL%nutrDOC(begr:endr),           &
+               rtmCTL%nutrPP(begr:endr),            &
+               rtmCTL%nutrDSi(begr:endr),           &
+               rtmCTL%nutrPOC(begr:endr),           &
+               rtmCTL%nutrPN(begr:endr),            &
+               rtmCTL%nutrDIC(begr:endr),           &
+               rtmCTL%nutrFe(begr:endr),            &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of BGC local arrays'
+         call shr_sys_abort
+      end if
+    end if
+
     rtmCTL%iDown(:) = 0
     rtmCTL%iUp(:,:) = 0
     rtmCTL%nUp(:) = 0
@@ -594,6 +624,19 @@ contains
     rtmCTL%qgwl(:,:)       = 0._r8
     rtmCTL%qdto(:,:)       = 0._r8
     rtmCTL%qdem(:,:)       = 0._r8
+    if (data_bgc_fluxes_to_ocean_flag) then
+      rtmCTL%nutrDIN(:)      = 0._r8
+      rtmCTL%nutrDIP(:)      = 0._r8
+      rtmCTL%nutrDON(:)      = 0._r8
+      rtmCTL%nutrDOP(:)      = 0._r8
+      rtmCTL%nutrDOC(:)      = 0._r8
+      rtmCTL%nutrPP(:)       = 0._r8
+      rtmCTL%nutrDSi(:)      = 0._r8
+      rtmCTL%nutrPOC(:)      = 0._r8
+      rtmCTL%nutrPN(:)       = 0._r8
+      rtmCTL%nutrDIC(:)      = 0._r8
+      rtmCTL%nutrFe(:)       = 0._r8
+    end if
     
     if (heatflag) then
       allocate(rtmCTL%Tqsur(begr:endr),                 &

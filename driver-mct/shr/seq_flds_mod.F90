@@ -2240,6 +2240,128 @@ contains
        attname  = 'Flrr_deficit'
        call metadata_set(attname, longname, stdname, units)
     endif
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDIN')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDIN')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDIN')
+    longname = 'DIN flux due to runoff'
+    stdname  = 'DIN_flux_into_sea_water'
+    units    = 'kg N per kg water'
+    attname  = 'Forr_rofDIN'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDIN'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDIP')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDIP')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDIP')
+    longname = 'DIP flux due to runoff'
+    stdname  = 'DIP_flux_into_sea_water'
+    units    = 'kg P per kg water'
+    attname  = 'Forr_rofDIP'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDIP'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDON')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDON')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDON')
+    longname = 'DON flux due to runoff'
+    stdname  = 'DON_flux_into_sea_water'
+    units    = 'kg N per kg water'
+    attname  = 'Forr_rofDON'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDON'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDOP')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDOP')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDOP')
+    longname = 'DOP flux due to runoff'
+    stdname  = 'DOP_flux_into_sea_water'
+    units    = 'kg P per kg water'
+    attname  = 'Forr_rofDOP'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDOP'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDOC')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDOC')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDOC')
+    longname = 'DOC flux due to runoff'
+    stdname  = 'DOC_flux_into_sea_water'
+    units    = 'kg C per kg water'
+    attname  = 'Forr_rofDOC'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDOC'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofPP')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofPP')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofPP')
+    longname = 'PP flux due to runoff'
+    stdname  = 'PP_flux_into_sea_water'
+    units    = 'kg P per kg water'
+    attname  = 'Forr_rofPP'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofPP'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDSi')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDSi')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDSi')
+    longname = 'DSi flux due to runoff'
+    stdname  = 'DSi_flux_into_sea_water'
+    units    = 'kg Si per kg water'
+    attname  = 'Forr_rofDSi'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDSi'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofPOC')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofPOC')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofPOC')
+    longname = 'POC flux due to runoff'
+    stdname  = 'POC_flux_into_sea_water'
+    units    = 'kg C per kg water'
+    attname  = 'Forr_rofPOC'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofPOC'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofPN')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofPN')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofPN')
+    longname = 'PN flux due to runoff'
+    stdname  = 'PN_flux_into_sea_water'
+    units    = 'kg N per kg water'
+    attname  = 'Forr_rofPN'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofPN'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofDIC')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofDIC')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofDIC')
+    longname = 'DIC flux due to runoff'
+    stdname  = 'DIC_flux_into_sea_water'
+    units    = 'kg C per kg water'
+    attname  = 'Forr_rofDIC'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofDIC'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes,'Forr_rofFe')
+    call seq_flds_add(x2o_fluxes,'Foxx_rofFe')
+    call seq_flds_add(r2o_liq_fluxes,'Forr_rofFe')
+    longname = 'Fe flux due to runoff'
+    stdname  = 'Fe_flux_into_sea_water'
+    units    = 'kg Fe per kg water'
+    attname  = 'Forr_rofFe'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'Foxx_rofFe'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------
