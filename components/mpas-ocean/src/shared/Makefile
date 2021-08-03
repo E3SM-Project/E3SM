@@ -68,7 +68,8 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_time_varying_forcing.o \
 	   mpas_ocn_wetting_drying.o \
 	   mpas_ocn_vel_tidal_potential.o \
-	   mpas_ocn_vel_forcing_topographic_wave_drag.o
+	   mpas_ocn_vel_forcing_topographic_wave_drag.o \
+	   mpas_ocn_transport_tests.o
 
 all: $(OBJS)
 
@@ -162,7 +163,9 @@ mpas_ocn_equation_of_state_wright.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_test.o:  mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_constants.o mpas_ocn_config.o:
+mpas_ocn_constants.o: mpas_ocn_config.o
+
+mpas_ocn_config.o: ../inc/config_declare.inc ../inc/config_get.inc
 
 mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing_restoring.o mpas_ocn_diagnostics_variables.o
 
@@ -173,6 +176,8 @@ mpas_ocn_surface_land_ice_fluxes.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_
 mpas_ocn_frazil_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equation_of_state.o
 
 mpas_ocn_tidal_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equation_of_state.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_transport_tests.o: mpas_ocn_config.o
 
 mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o mpas_ocn_config.o
 

@@ -61,6 +61,7 @@ module ocn_init_mode
    use ocn_init_hurricane
    use ocn_init_tidal_boundary
    use ocn_init_mixed_layer_eddy
+   use ocn_init_transport_tests
 
    implicit none
    private
@@ -294,6 +295,7 @@ module ocn_init_mode
       call ocn_init_setup_tidal_boundary(domain, ierr)
       call ocn_init_setup_cosine_bell(domain, ierr)
       call ocn_init_setup_mixed_layer_eddy(domain, ierr)
+      call ocn_init_setup_transport_tests(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
@@ -406,6 +408,8 @@ module ocn_init_mode
       call ocn_init_validate_cosine_bell(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_mixed_layer_eddy(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_transport_tests(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)

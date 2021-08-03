@@ -43,6 +43,7 @@ module ocn_time_integration_split
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
+   use ocn_transport_tests
 
    implicit none
    private
@@ -140,7 +141,8 @@ module ocn_time_integration_split
          tracersTendPool,   &! structure holding tracer tendencies
          forcingPool,       &! structure holding forcing variables
          scratchPool,       &! structure holding temporary variables
-         swForcingPool       ! structure holding short-wave forcing vars
+         swForcingPool,     &! structure holding short-wave forcing vars
+         diagnosticsPool     ! structure holding diagnostic (not tendency) variables
 
       logical :: &
          activeTracersOnly   ! only compute tendencies for active tracers
@@ -211,6 +213,8 @@ module ocn_time_integration_split
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
+
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
 
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
@@ -299,6 +303,7 @@ module ocn_time_integration_split
                                              tracersPool)
       call mpas_pool_get_subpool(tendPool,  'tracersTend', &
                                              tracersTendPool)
+      call mpas_pool_get_subpool(block%structs, 'diagnosticsPool', diagnosticsPool)
 
       !*** Retrieve state variables at two time levels
 
@@ -353,6 +358,11 @@ module ocn_time_integration_split
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
+      call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
+
+      ! If this is a transport test, write advection velocity from prescribed
+      ! flow field.  Otherwise, do nothing.
+      call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, 0.5*dt, normalVelocityCur)
 
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.

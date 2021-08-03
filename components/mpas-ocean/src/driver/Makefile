@@ -10,11 +10,11 @@ OBJS = mpas_ocn_core.o \
 
 all: core_ocean
 
-core_ocean: $(OBJS) 
+core_ocean: $(OBJS)
 
 mpas_ocn_core.o:
 
-mpas_ocn_core_interface.o: mpas_ocn_core.o
+mpas_ocn_core_interface.o: mpas_ocn_core.o ../inc/structs_and_variables.inc
 
 clean:
 	$(RM) *.o *.mod *.f90
