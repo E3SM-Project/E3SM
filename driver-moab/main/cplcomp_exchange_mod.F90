@@ -1097,6 +1097,7 @@ contains
       !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
       if (mhid .ge. 0) then  ! we are on component atm pes
+         context_id = id_join
          if (atm_pg_active) then! we send mesh from mhpgid app
            ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
          else
@@ -1224,6 +1225,7 @@ contains
 #endif
       endif
       if (mpoid .ge. 0) then  ! we are on component ocn pes
+         context_id = id_join
          ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in freeing buffers '
@@ -1314,6 +1316,7 @@ contains
 #endif
       endif
       if (mlnid .ge. 0) then  ! we are on component land pes
+         context_id = id_join
          ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in freeing buffers'
@@ -1397,6 +1400,7 @@ contains
 #endif
       endif
       if (MPSIID .ge. 0) then  ! we are on component sea ice pes
+         context_id = id_join
          ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in freeing buffers '

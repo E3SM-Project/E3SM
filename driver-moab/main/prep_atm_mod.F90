@@ -376,12 +376,12 @@ contains
     ! it happens over joint communicator
 
     if (atm_pg_active ) then ! use mhpgid mesh
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, atm_id, id_join, context_id);
       if (iamroot_CPLID) then
         write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
       end if
     else
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, atm_id, id_join, context_id);
       if (iamroot_CPLID) then
         write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
       end if
@@ -517,9 +517,9 @@ contains
     context_id = lnd(1)%cplcompid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     if (atm_pg_active ) then ! use mhpgid mesh
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, atm_id, id_join, context_id);
     else
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, atm_id, id_join, context_id);
     endif
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing coverage graph atm/lnd '

@@ -571,7 +571,7 @@ contains
     logical                          :: lnd_present    ! .true.  => lnd is present
     integer                  :: id_join
     integer                  :: mpicom_join
-    integer                  :: atmid
+    integer                  :: lndid1
     integer                  :: context_id
     character*32             :: dm1, dm2
     character*50             :: tagName
@@ -590,7 +590,7 @@ contains
        !  (not processed for coverage)
   ! how to get mpicomm for joint ocn + coupler
     id_join = lnd(1)%cplcompid
-    lndid   = lnd(1)%compid
+    lndid1   = lnd(1)%compid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
@@ -599,17 +599,20 @@ contains
     if (mblxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
-      ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
+       context_id = lndid1
+       ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
 
     endif
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       ! receive on land pes, a tag that was computed on coupler pes
+       context_id = id_join
        ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
     ! we can now free the sender buffers
     if (mblxid .ge. 0) then
+       context_id = lndid1
        ierr = iMOAB_FreeSenderBuffers(mblxid, context_id)
        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
     endif
