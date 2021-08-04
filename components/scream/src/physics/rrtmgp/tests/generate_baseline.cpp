@@ -89,7 +89,7 @@ int main (int argc, char** argv) {
     real2d lw_flux_dn ("lw_flux_dn" ,ncol,nlay+1);
 
     // Compute band-by-band surface_albedos.
-    const auto nswbands = 16;
+    const auto nswbands = 14;
     real2d sfc_alb_dir("sfc_alb_dir", ncol, nswbands);
     real2d sfc_alb_dif("sfc_alb_dif", ncol, nswbands);
     rrtmgp::compute_band_by_band_surface_albedos(
@@ -126,6 +126,10 @@ int main (int argc, char** argv) {
     t_lay.deallocate();
     p_lev.deallocate();
     t_lev.deallocate();
+    sfc_alb_dir_vis.deallocate();
+    sfc_alb_dir_nir.deallocate();
+    sfc_alb_dif_vis.deallocate();
+    sfc_alb_dif_nir.deallocate();
     sfc_alb_dir.deallocate();
     sfc_alb_dif.deallocate();
     mu0.deallocate();

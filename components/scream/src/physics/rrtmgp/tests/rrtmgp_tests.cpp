@@ -149,6 +149,10 @@ int main(int argc, char** argv) {
     p_lev.deallocate();
     t_lev.deallocate();
     gas_concs.reset();
+    sfc_alb_dir_vis.deallocate();
+    sfc_alb_dir_nir.deallocate();
+    sfc_alb_dif_vis.deallocate();
+    sfc_alb_dif_nir.deallocate();
     sfc_alb_dir.deallocate();
     sfc_alb_dif.deallocate();
     mu0.deallocate();
