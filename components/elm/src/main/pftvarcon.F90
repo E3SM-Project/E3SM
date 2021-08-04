@@ -207,7 +207,7 @@ module pftvarcon
   real(r8), allocatable :: root_dmx(:)     !maximum root depth
 
   integer, parameter :: pftname_len = 40    ! max length of pftname       
-  character(len=pftname_len) :: pftname(0:mxpft) !PFT description
+  character(len=:), allocatable :: pftname(:) !PFT description
 
   real(r8), parameter :: reinickerp = 1.6_r8 !parameter in allometric equation
   real(r8), parameter :: dwood  = 2.5e5_r8   !cn wood density (gC/m3); lpj:2.0e5
@@ -515,6 +515,12 @@ contains
     allocate( convfact      (0:mxpft) )
     allocate( fyield        (0:mxpft) )  
     allocate( root_dmx      (0:mxpft) )
+
+    if (use_crop) then
+       allocate(character(pftname_len) :: pftname(0:mxpft))
+    else
+       allocate(character(pftname_len) :: pftname(0:mxpft_nc))
+    end if
 
     allocate( VMAX_PLANT_NH4(0:mxpft) )
     allocate( VMAX_PLANT_NO3(0:mxpft) )
