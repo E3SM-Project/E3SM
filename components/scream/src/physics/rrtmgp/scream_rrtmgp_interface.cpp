@@ -86,11 +86,61 @@ namespace scream {
             cloud_optics_lw.finalize(); //~CloudOptics();
         }
 
+        void compute_band_by_band_surface_albedos(
+                const int ncol, const int nswbands,
+                real1d &sfc_alb_dir_vis, real1d &sfc_alb_dir_nir,
+                real1d &sfc_alb_dif_vis, real1d &sfc_alb_dif_nir,
+                real2d &sfc_alb_dir,     real2d &sfc_alb_dif) {
+
+            EKAT_ASSERT_MSG(initialized, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
+            auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
+
+            EKAT_ASSERT_MSG(size(wavenumber_limits, 1) == 2,
+                            "Error! 1st dimension for wavenumber_limits should be 2.");
+            EKAT_ASSERT_MSG(size(wavenumber_limits, 2) == nswbands,
+                            "Error! 2nd dimension for wavenumber_limits should be " + std::to_string(nswbands) + " (nswbands).");
+
+            // Loop over bands, and determine for each band whether it is broadly in the
+            // visible or infrared part of the spectrum (visible or "not visible")
+            parallel_for(Bounds<2>(nswbands, ncol), YAKL_LAMBDA(const int ibnd, const int icol) {
+
+             // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
+             const real visible_wavenumber_threshold = 14286;
+
+             // Wavenumber is in the visible if it is above the visible wavenumber
+             // threshold, and in the infrared if it is below the threshold
+             const bool is_visible_wave1 = (wavenumber_limits(1, ibnd) > visible_wavenumber_threshold ? true : false);
+             const bool is_visible_wave2 = (wavenumber_limits(2, ibnd) > visible_wavenumber_threshold ? true : false);
+
+              if (is_visible_wave1 && is_visible_wave2) {
+
+                // Entire band is in the visible
+                sfc_alb_dir(icol,ibnd) = sfc_alb_dir_vis(icol);
+                sfc_alb_dif(icol,ibnd) = sfc_alb_dif_vis(icol);
+
+              } else if (!is_visible_wave1 && !is_visible_wave2) {
+
+                // Entire band is in the longwave (near-infrared)
+                sfc_alb_dir(icol,ibnd) = sfc_alb_dir_nir(icol);
+                sfc_alb_dif(icol,ibnd) = sfc_alb_dif_nir(icol);
+
+              } else {
+
+                // Band straddles the visible to near-infrared transition, so we take
+                // the albedo to be the average of the visible and near-infrared
+                // broadband albedos
+                sfc_alb_dir(icol,ibnd) = 0.5*(sfc_alb_dir_vis(icol) + sfc_alb_dir_nir(icol));
+                sfc_alb_dif(icol,ibnd) = 0.5*(sfc_alb_dif_vis(icol) + sfc_alb_dif_nir(icol));
+
+              }
+            });
+        }
+
         void rrtmgp_main(
                 const int ncol, const int nlay,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 
                 GasConcs &gas_concs,
-                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
+                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn) {
@@ -108,7 +158,7 @@ namespace scream {
 
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, p_lay, t_lay, lwp, iwp, rel, rei);
-            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, p_lay, t_lay, lwp, iwp, rel, rei);
+            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, p_lay, t_lay, lwp, iwp, rel, rei);        
 
             // Do shortwave
             rrtmgp_sw(

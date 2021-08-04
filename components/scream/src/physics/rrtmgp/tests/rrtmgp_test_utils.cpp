@@ -40,15 +40,20 @@ namespace rrtmgpTest {
     void dummy_atmos(
             std::string inputfile, 
             int ncol, real2d &p_lay, real2d &t_lay,
-            real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
+            real1d &sfc_alb_dir_vis, real1d &sfc_alb_dir_nir,
+            real1d &sfc_alb_dif_vis, real1d &sfc_alb_dif_nir,
+            real1d &mu0,
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld) {
 
         // Setup boundary conditions, solar zenith angle, etc
         // NOTE: this stuff would come from the model in a real run
 
         // Ocean-ish values for surface albedos, just for example
-        memset(sfc_alb_dir , 0.06_wp );
-        memset(sfc_alb_dif , 0.06_wp );
+        memset(sfc_alb_dir_vis , 0.06_wp );
+        memset(sfc_alb_dir_nir , 0.06_wp );
+        memset(sfc_alb_dif_vis , 0.06_wp );
+        memset(sfc_alb_dif_nir , 0.06_wp );
+
 
         // Pick a solar zenith angle; this should come from the model
         memset(mu0, 0.86_wp );
