@@ -13,7 +13,7 @@
   theta_advect_form = 1
   vert_remap_q_alg  = 10
   moisture          = 'moist'
-  ne_x              = 4                       ! number of elements in x-dir
+  ne_x              = 6                       ! number of elements in x-dir
   ne_y              = 4                       ! number of elements in y-dir
   qsize             = 3                         ! num tracer fields
   nmax              = 1000                     ! total number of steps: 600s / tstep
