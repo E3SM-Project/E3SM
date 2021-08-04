@@ -1942,7 +1942,6 @@ contains
     use pftvarcon        , only : gddmin, hybgdd
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
-    use elm_varctl       , only : iulog
     !
     ! !ARGUMENTS:
     integer              , intent(in)    :: num_ppercropp       ! number of prog perennial crop patches in filter
@@ -2012,6 +2011,7 @@ contains
          )
 
       ! get time info
+      dt = dtime_mod
       dayspyr = get_days_per_year()
       jday    = get_curr_calday()
 
