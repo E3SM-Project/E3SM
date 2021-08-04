@@ -1386,8 +1386,8 @@ contains
     call component_init_cx(ice, infodata)
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
-    ! KVC: Temporary change to make progress
-    !call component_init_cx(iac, infodata)
+    call component_init_cx(iac, infodata)
+
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
 
