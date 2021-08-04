@@ -96,12 +96,11 @@ contains
     !---------------------------------------------------------------
     call seq_infodata_getData(infodata, &
          lnd_present=lnd_present,       &
+         iac_present=iac_present,       &
          lnd_gnam=lnd_gnam,             &
          iac_gnam=iac_gnam)
 
     allocate(mapper_Sl2z)
-    ! KVC: iac_present needs to be set before this point. Temporarily setting here
-    iac_present = .true.
     if (iac_present .and. lnd_present) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
