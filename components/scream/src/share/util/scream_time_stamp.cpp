@@ -116,11 +116,19 @@ double TimeStamp::get_julian_day () const {
 
 double TimeStamp::get_julian_day (const int yy, const int mm, const int dd, const double ss) const {
   // Initialize Julian Day
-  double julianday = (dd+1) + ss;
+  double julianday = dd + ss;
   for (int m=0;m<mm;m++) {
     julianday += dpm(yy,m);
   }
   return julianday;
+}
+
+int TimeStamp::get_dpm () const {
+  return dpm(m_yy,m_mm);
+}
+
+int TimeStamp::get_dpm (const int yy, const int mm) const {
+  return dpm(yy,mm);
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {

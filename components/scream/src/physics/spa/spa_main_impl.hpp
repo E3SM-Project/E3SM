@@ -17,7 +17,7 @@ void SPAFunctions<S,D>
   const Int nlevs,
   const view_1d<const Spack>& hya,
   const view_1d<const Spack>& hyb,
-  const view_1d<const Spack>& PS,
+  const view_1d<const Real>&  PS,
   const view_2d<Spack>&       pres)
 {
   using C = scream::physics::Constants<Real>;

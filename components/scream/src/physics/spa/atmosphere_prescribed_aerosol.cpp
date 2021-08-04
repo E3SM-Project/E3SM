@@ -43,9 +43,12 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
   add_field<Required>("PS"         , scalar2d_layout,     Pa,     grid_name, ps);
+  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps);
+  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps);
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps);
   add_field<Updated>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO:  This and p_mid should actually be "required"
+  add_field<Updated>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO:  This and p_mid should actually be "required"
   add_field<Updated>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
 
   // Set of fields used strictly as output
@@ -70,7 +73,7 @@ int SPA::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 2, policy);
+  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 3, policy);
 
   return interface_request + wsm_request;
 }
@@ -83,8 +86,8 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-//  m_buffer.p_int_src = decltype(m_buffer.p_int_src)(mem, m_num_levs+1);
-//  mem += m_buffer.p_int_src.size();
+  m_buffer.ps_src = decltype(m_buffer.ps_src)(mem, m_num_cols);
+  mem += m_buffer.ps_src.size();
 
   // 2d scalar views
 //  m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -98,8 +101,8 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 
   m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.p_mid_src.size();
-  m_buffer.ccn_src = decltype(m_buffer.ccn_src)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.ccn_src.size();
+  m_buffer.ccn3_src = decltype(m_buffer.ccn3_src)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.ccn3_src.size();
 
   // WSM data
   m_buffer.wsm_data = s_mem;
@@ -107,7 +110,7 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   // Compute workspace manager size to check used memory
   // vs. requested memory
   const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 2, policy)/sizeof(Spack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 3, policy)/sizeof(Spack);
   s_mem += wsm_size;
 
   int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -126,28 +129,65 @@ void SPA::run_impl (const Real dt)
   // and the ice mass mixing ratio. 
   const auto& hyam         = m_spa_fields_in["hyam"].get_reshaped_view<const Pack*>();
   const auto& hybm         = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
-  const auto& PS           = m_spa_fields_in["PS"].get_reshaped_view<const Pack*>();
+  const auto& PS           = m_spa_fields_in["PS"].get_reshaped_view<const Real*>();
+  const auto& ps_beg       = m_spa_fields_in["PS_beg"].get_reshaped_view<const Real*>();
+  const auto& ps_end       = m_spa_fields_in["PS_end"].get_reshaped_view<const Real*>();
   const auto& p_mid        = m_spa_fields_out["p_mid"].get_reshaped_view<Pack**>(); // TODO this and ccn need to be const when the EKAT API is fixed
-  const auto& ccn_src      = m_spa_fields_out["CCN3_beg"].get_reshaped_view<Pack**>();  // TODO: when time interp is put in build ccn_src from two timesteps of data.
+  const auto& ccn3_beg     = m_spa_fields_out["CCN3_beg"].get_reshaped_view<Pack**>();  // TODO: when time interp is put in build ccn_src from two timesteps of data.
+  const auto& ccn3_end     = m_spa_fields_out["CCN3_end"].get_reshaped_view<Pack**>();  // TODO: when time interp is put in build ccn_src from two timesteps of data.
   const auto& nc_activated = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
   auto p_mid_src    = m_buffer.p_mid_src;
-//  auto ccn_src   = m_buffer.ccn_src;  
+  auto ps_src       = m_buffer.ps_src;
+  auto ccn3_src     = m_buffer.ccn3_src;
 
   // First Step: Horizontal Interpolation if needed - Skip for Now
 
-  // Second Step: Temporal Interpolation - Skip for Now
+  // Second Step: Temporal Interpolation
+  /* Gather time information for interpolation */
+  auto ts = timestamp();
+  Real t_now = ts.get_julian_day();
+  Real t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
+  Real days_this_month = ts.get_dpm();
+  
+  /* First determine PS for the source data at this time */
+  {
+  using ExeSpace = typename KT::ExeSpace;
+  Kokkos::parallel_for("time-interp-PS",
+    m_num_cols,
+    KOKKOS_LAMBDA(const int& i) {
+      ps_src(i) = ps_beg(i) + (t_now - t_beg_month) * ( ps_end(i) - ps_beg(i) )/ days_this_month;
+    });
+  }
+  /* Next, interpolate all of the ccn data */
+  {
+  using ExeSpace = typename KT::ExeSpace;
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  Kokkos::parallel_for(
+    "time-interp-aero",
+    policy,
+    KOKKOS_LAMBDA(const KT::MemberType& team) {
+
+      const Int i = team.league_rank();
+      const auto& ccn3_src_sub = ekat::subview(ccn3_src,i);
+      const auto& ccn3_beg_sub = ekat::subview(ccn3_beg,i);
+      const auto& ccn3_end_sub = ekat::subview(ccn3_end,i);
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+          ccn3_src_sub(k) = ccn3_beg_sub(k) + (t_now - t_beg_month) * ( ccn3_end_sub(k) - ccn3_beg_sub(k) )/ days_this_month;
+      });
+    });
+  }
 
   // Final Step: Vertical Interpolation of aerosol data at all columns
   /* First construct the source pressure interface levels */
-  SPAFunc::reconstruct_pressure_profile(m_num_cols,m_num_levs,hyam,hybm,PS,p_mid_src);
+  SPAFunc::reconstruct_pressure_profile(m_num_cols,m_num_levs,hyam,hybm,ps_src,p_mid_src);
   /* Next, use EKAT interpolation to remap CCN data onto current set of pressure levels */
-  SPAFunc::aero_vertical_remap(m_num_cols,m_num_levs,m_num_levs,p_mid_src,p_mid,ccn_src,nc_activated);
+  SPAFunc::aero_vertical_remap(m_num_cols,m_num_levs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);  // switch to ccn3_src when ready.
  
   // TODO, when all three interpolations are finished in run_impl, create a "SPA_main" routine that calls all three in order and simplify run_impl. 
 
-  // Get a copy of the current timestamp (at the beginning of the step) and
-  // advance it,
-  auto ts = timestamp();
+  // Advance current timestamp.
   ts += dt;
   for (auto& f : m_spa_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);

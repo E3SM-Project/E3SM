@@ -44,7 +44,7 @@ struct SPAFunctions
     const Int nlevs,
     const view_1d<const Spack>& hya,
     const view_1d<const Spack>& hyb,
-    const view_1d<const Spack>& PS,
+    const view_1d<const Real>&  PS,
     const view_2d<Spack>&       pres);
 
   KOKKOS_FUNCTION

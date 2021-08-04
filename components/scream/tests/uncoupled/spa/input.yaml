@@ -20,6 +20,8 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Initial Conditions File: spa_init_ne2np4.nc
-  cldfrac_liq: 0.0
-  qi: 0.0
+
+# The name of the output control file for this test.
+Output Manager:
+ Output YAML Files: ["spa_output.yaml"] 
 ...

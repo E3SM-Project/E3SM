@@ -17,7 +17,8 @@ TEST_CASE("spa-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 1;
+  constexpr int num_iters = 4;
+  constexpr Real dt = 864000;
 
   // Load ad parameter list
   std::string fname = "input.yaml";
@@ -46,78 +47,9 @@ TEST_CASE("spa-stand-alone", "") {
 
   ad.initialize(atm_comm,ad_params,time);
 
-  // Because this is a relatively simple test based on two variables, we initialize them here
-  // rather than use the netCDF input structure.
-  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
-  
-  int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  const auto& qi_field           = field_mgr.get_field("qi");
-  const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
-  const auto& qi           = qi_field.get_reshaped_view<Real**,Host>();
-  const auto& liq_cld_frac = liq_cld_frac_field.get_reshaped_view<Real**,Host>();
-
-  for (int icol=0;icol<num_cols;++icol)
-  {
-    for (int jlev=0;jlev<num_levs;++jlev)
-    {
-      Real phase = icol*3.14/2.0/num_cols;
-      Real xval  = jlev*3.14/2.0/num_levs;
-      // Assign a simple functional value to qi based on the column index and level
-      qi(icol,jlev) = (1.0+std::sin(xval-phase))/2.0;
-      // Do something similar for liq_cloud_fraction
-      liq_cld_frac(icol,jlev) = (1.0+std::sin(xval+phase))/2.0;
-    }
-  }
-  // Sync the fields back to device
-  qi_field.sync_to_dev();
-  liq_cld_frac_field.sync_to_dev();
-
   // Run the code
   for (int i=0; i<num_iters; ++i) {
-    ad.run(300.0);
-  }
-
-  // Check ice and total cloud fraction values
-  // Sync the values on device back to the host view.
-  const auto& ice_cld_frac_field = field_mgr.get_field("cldfrac_ice");  //TODO: This FM name will probably change soon.
-  const auto& tot_cld_frac_field = field_mgr.get_field("cldfrac_tot");   //TODO: This FM name will probably change soon.
-  ice_cld_frac_field.sync_to_host();
-  tot_cld_frac_field.sync_to_host();
-  const auto& ice_cld_frac = ice_cld_frac_field.get_reshaped_view<Real**,Host>();
-  const auto& tot_cld_frac = tot_cld_frac_field.get_reshaped_view<Real**,Host>();
-  
-  for (int icol=0;icol<num_cols;++icol)
-  {
-    for (int jlev=0;jlev<num_levs;++jlev)
-    {
-      // Make sure there are no cloud fractions greater than 1.0 or less than 0.0
-      REQUIRE((!(liq_cld_frac(icol,jlev)>1.0) or !(ice_cld_frac(icol,jlev)>1.0) or !(tot_cld_frac(icol,jlev)>1.0)));
-      REQUIRE((!(liq_cld_frac(icol,jlev)<0.0) or !(ice_cld_frac(icol,jlev)<0.0) or !(tot_cld_frac(icol,jlev)<0.0)));
-      // make sure that the cloud fraction calculation didn't accidentally change qi or liq_spa
-      Real phase = icol*3.14/2.0/num_cols;
-      Real xval  = jlev*3.14/2.0/num_levs;
-      Real y_cmp = (std::sin(xval-phase)+1.0)/2.0;
-      REQUIRE(qi(icol,jlev)==y_cmp);
-      y_cmp = (std::sin(xval+phase)+1.0)/2.0;
-      REQUIRE(liq_cld_frac(icol,jlev)==y_cmp);
-      // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
-      if (qi(icol,jlev)>1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
-      {
-        REQUIRE(ice_cld_frac(icol,jlev)==1.0);
-      } else {
-        REQUIRE(ice_cld_frac(icol,jlev)==0.0);
-      }
-      // Test that the total cloud fraction is correctly calculated
-      if (liq_cld_frac(icol,jlev) >= ice_cld_frac(icol,jlev))
-      {
-        REQUIRE(tot_cld_frac(icol,jlev)==liq_cld_frac(icol,jlev));
-      } else {
-        REQUIRE(tot_cld_frac(icol,jlev)==ice_cld_frac(icol,jlev));
-      }
-    }
+    ad.run(dt);
   }
 
   // Finalize 

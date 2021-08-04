@@ -33,7 +33,11 @@ public:
 
   using view_1d         = typename SPAFunc::view_1d<Spack>;
   using view_2d         = typename SPAFunc::view_2d<Spack>;
-  using uview_2d        = Unmanaged<view_2d>;
+
+  template<typename ScalarT>
+  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  template<typename ScalarT>
+  using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructors
   SPA (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -60,13 +64,14 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 0;
+    static constexpr int num_1d_scalar = 1;
     // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 2;
     static constexpr int num_2dp1_vector = 0;
 
-    uview_2d p_mid_src;
-    uview_2d ccn_src;
+    uview_1d<Real>  ps_src;
+    uview_2d<Spack> p_mid_src;
+    uview_2d<Spack> ccn3_src;
 
     Spack* wsm_data;
   };

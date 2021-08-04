@@ -27,6 +27,8 @@ public:
   std::string to_string () const;
   double get_julian_day () const;
   double get_julian_day (const int yy, const int mm, const int dd, const double ss) const;
+  int    get_dpm () const;
+  int    get_dpm (const int yy, const int mm) const;
 
   // === Update method(s) === //
 
