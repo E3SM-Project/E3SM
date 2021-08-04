@@ -2137,10 +2137,10 @@ contains
        ! Only hr and npp matter, for now
        call seq_flds_add(l2x_states,'Sl_hr_pft' // pftstr)
        call seq_flds_add(x2z_states,'Sl_hr_pft' // pftstr)
-       longname = 'Total heterotrophic respiration'
-       stdname  = 'lnd_total_heterotrophic_respiration'
+       longname = 'Total heterotrophic respiration' // pftstr
+       stdname  = 'lnd_total_heterotrophic_respiration' // pftstr
        units    = 'gC/m^2/s'
-       attname  = 'Sl_hr'
+       attname  = 'Sl_hr_pft' // pftstr
        call metadata_set(attname, longname, stdname, units)
        
        call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
@@ -2165,12 +2165,14 @@ contains
        ! This is currently the only thing we send back from gcam, but I
        ! wonder if landuse and landfrac should go as well - just to
        ! verify that we are all using the same values.
-       call seq_flds_add(z2x_states,'Sz_pct_pft' //pftstr)
-       call seq_flds_add(x2l_states,'Sz_pct_pft' //pftstr)
+       call seq_flds_add(z2x_states,trim('Sz_pct_pft' //pftstr))
+       call seq_flds_add(x2l_states,trim('Sz_pct_pft' //pftstr))
        longname = 'Percent pft of vegetated land unit for pft ' //pftstr
        stdname  = 'iac_pct_pft' //pftstr
+       stdname  = trim(stdname)
        units    = 'percent'
        attname  = 'Sz_pct_pft' //pftstr
+       attname  = trim(attname)
        call metadata_set(attname, longname, stdname, units)
     end do 
 
