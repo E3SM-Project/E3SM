@@ -624,10 +624,10 @@ contains
        call t_start_lnd(event)
        call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf, dt)
        if ( use_c13 ) then
-          call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf, dt)
+          call CarbonStateUpdate0(num_soilp, filter_soilp,c13_veg_cs,c13_veg_cf, dt)
        end if
        if ( use_c14 ) then
-          call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf ,dt)
+          call CarbonStateUpdate0(num_soilp, filter_soilp,c14_veg_cs,c14_veg_cf ,dt)
        end if
        call t_stop_lnd(event)
 
