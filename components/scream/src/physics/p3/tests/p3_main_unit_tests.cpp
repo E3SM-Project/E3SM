@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -50,6 +51,8 @@ static void run_phys()
 
 static void run_bfb_p3_main_part1()
 {
+  auto engine = setup_random_test();
+
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
@@ -67,7 +70,7 @@ static void run_bfb_p3_main_part1()
 
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2); //PMC this range seems inappropriately small
-    d.randomize({
+    d.randomize(engine, {
         {d.T_atm, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
@@ -139,6 +142,8 @@ static void run_bfb_p3_main_part1()
 
 static void run_bfb_p3_main_part2()
 {
+  auto engine = setup_random_test();
+
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
@@ -156,7 +161,7 @@ static void run_bfb_p3_main_part2()
 
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
-    d.randomize({
+    d.randomize(engine, {
         {d.T_atm,  {T_zerodegc - 10, T_zerodegc + 10}},
         {d.t_prev, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
@@ -251,6 +256,8 @@ static void run_bfb_p3_main_part2()
 
 static void run_bfb_p3_main_part3()
 {
+  auto engine = setup_random_test();
+
   constexpr Scalar qsmall     = C::QSMALL;
 
   P3MainPart3Data isds_fortran[] = {
@@ -265,7 +272,7 @@ static void run_bfb_p3_main_part3()
 
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
-    d.randomize({ {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+    d.randomize(engine, { {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -333,6 +340,8 @@ static void run_bfb_p3_main_part3()
 
 static void run_bfb_p3_main()
 {
+  auto engine = setup_random_test();
+
   P3MainData isds_fortran[] = {
     //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN
     P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true),
@@ -342,7 +351,7 @@ static void run_bfb_p3_main()
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainData);
 
   for (auto& d : isds_fortran) {
-    d.randomize( {
+    d.randomize(engine, {
         {d.pres           , {1.00000000E+02 , 9.87111111E+04}},
         {d.dz             , {1.22776609E+02 , 3.49039167E+04}},
         {d.nc_nuceat_tend , {0              , 0}},

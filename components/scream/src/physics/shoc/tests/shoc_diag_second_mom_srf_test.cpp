@@ -6,6 +6,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -84,6 +85,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
   static void run_bfb()
   {
   #if 0
+    auto engine = setup_random_test();
+
     SHOCSecondMomentSrfData mom_srf_data_f90[] = {
       //                      shcol
       SHOCSecondMomentSrfData(36),
@@ -93,7 +96,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
     };
 
     for (auto& d : mom_srf_data_f90) {
-      d.randomize({ {d.wthl, {-1, 1}} });
+      d.randomize(engine, { {d.wthl, {-1, 1}} });
     }
 
     SHOCSecondMomentSrfData mom_srf_data_cxx[] = {

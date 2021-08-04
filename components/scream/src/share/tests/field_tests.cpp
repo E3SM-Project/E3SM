@@ -9,6 +9,7 @@
 #include "share/field/field_property_checks/field_monotonicity_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
@@ -480,12 +481,7 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE ((idx_v!=idx_c && idx_v!=idx_r && idx_c!=idx_r));
 
   // Now fill Q with random values
-  std::random_device rd;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  rngAlg engine(seed);
+  auto engine = setup_random_test(&comm);
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.0,1.0);
 

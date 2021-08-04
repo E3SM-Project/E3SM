@@ -6,6 +6,7 @@
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -124,6 +125,8 @@ static void run_bfb_rain_vel()
 
 static void run_bfb_rain_sed()
 {
+  auto engine = setup_random_test();
+
   RainSedData rsds_fortran[] = {
     //        kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_liq_surf
     RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,            0.0),
@@ -136,7 +139,7 @@ static void run_bfb_rain_sed()
 
   // Set up random input data
   for (auto& d : rsds_fortran) {
-    d.randomize({ {d.qr_incld, {C::QSMALL/2, C::QSMALL*2}} });
+    d.randomize(engine, { {d.qr_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that

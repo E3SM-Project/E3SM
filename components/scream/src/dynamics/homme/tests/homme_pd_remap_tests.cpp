@@ -5,6 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 
@@ -41,13 +42,7 @@ TEST_CASE("remap", "") {
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  if (comm.am_i_root()) {
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  }
-  std::mt19937_64 engine(seed);
+  auto engine = setup_random_test(&comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -317,12 +312,12 @@ TEST_CASE("remap", "") {
         s_2d_field_dyn.sync_to_host();
         auto phys = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
         auto dyn  = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        
+
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
@@ -350,9 +345,9 @@ TEST_CASE("remap", "") {
         auto dyn  = v_2d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
@@ -384,9 +379,9 @@ TEST_CASE("remap", "") {
         auto dyn  = s_3d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int ilev=0; ilev<NVL; ++ilev) {
               if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
@@ -418,9 +413,9 @@ TEST_CASE("remap", "") {
         auto dyn  = v_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -493,9 +488,9 @@ TEST_CASE("remap", "") {
         auto dyn  = vs_3d_field_dyn.get_reshaped_view<Homme::Real******,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -531,9 +526,9 @@ TEST_CASE("remap", "") {
         auto dyn  = tr_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int iq=0; iq<2; ++iq) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -588,13 +583,7 @@ TEST_CASE("combo_remap", "") {
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  if (comm.am_i_root()) {
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  }
-  std::mt19937_64 engine(seed);
+  auto engine = setup_random_test(&comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -889,7 +878,7 @@ TEST_CASE("combo_remap", "") {
         s_2d_field_dyn.sync_to_host();
         auto phys = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
         auto dyn  = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        
+
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             if (phys(idof)!=h_p_dofs(idof)) {
@@ -901,9 +890,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
@@ -933,9 +922,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
@@ -967,9 +956,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int ilev=0; ilev<NVL; ++ilev) {
               if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
@@ -1003,9 +992,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -1076,9 +1065,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -1114,9 +1103,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int iq=0; iq<2; ++iq) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {

@@ -5,6 +5,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -395,6 +396,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocAssumedPdfData SDS_f90[] = {
       //              shcol, nlev, nlevi
       ShocAssumedPdfData(10, 71, 72),
@@ -405,25 +408,10 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize({ {d.thetal, {500, 700}} });
-
-      // Generate grid as decreasing set of points.
-      // Allows interpolated values to stay withing
-      // reasonable range, avoiding errors in
-      // shoc_assumed_pdf.
-      const Real upper = 10;
-      const Real lower = 0;
-      for (Int s = 0; s < d.shcol; ++s) {
-        for (Int k=0; k<d.nlevi; ++k) {
-          const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
-          d.zi_grid[k+s*d.nlevi] = zi_k;
-
-          if (k!=d.nlevi-1) {
-            const auto zi_kp1 = upper - (k+1)*(upper-lower)/(d.nlevi-1);
-            d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
-          }
-        }
-      }
+      d.randomize(engine, {
+          {d.thetal, {500, 700}},
+          {d.zi_grid, {0, 100}},
+            });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

@@ -161,7 +161,7 @@ void Functions<S,D>
           V_qit(pk).set(qi_gt_small, table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
           V_nit(pk).set(qi_gt_small, table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
         }
-        const auto Co_max_local = max(qi_gt_small, -1,
+        const auto Co_max_local = max(qi_gt_small, 0,
                                       V_qit(pk) * dt_left * inv_dz(pk));
         if (Co_max_local > lmax) lmax = Co_max_local;
       }, Kokkos::Max<Scalar>(Co_max));
@@ -179,9 +179,9 @@ void Functions<S,D>
 	  bm_incld(pk)=bm(pk)/cld_frac_i(pk);
 	});
 
-      
+
     } //end CFL substep loop
-    
+
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
         precip_ice_surf += prt_accum * C::INV_RHO_H2O * inv_dt;

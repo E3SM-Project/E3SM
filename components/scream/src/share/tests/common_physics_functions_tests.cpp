@@ -2,6 +2,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -404,18 +405,9 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   constexpr int num_runs = 5;
 
-  std::random_device rdev;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
-  // Print seed to screen to trace tests that fail.
-  std::cout << " -> Random number generator seed:: " << seed << "\n";
-  if (catchRngSeed==0) {
-    std::cout << "    Note: catch rng seed was 0 (default). We interpret that as a request to pick a random seed.\n"
-                 "    To reproduce a previous run, use --rng-seed N to provide the rng seed.\n\n";
-  }
-  std::cout << " -> Nnumber of randomized runs: " << num_runs << "\n\n";
-  rngAlg engine(seed);
+  auto engine = scream::setup_random_test();
+
+  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {

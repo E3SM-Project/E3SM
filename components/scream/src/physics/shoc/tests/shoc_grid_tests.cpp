@@ -7,6 +7,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -128,6 +129,8 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocGridData f90_data[] = {
       ShocGridData(10, 71, 72),
       ShocGridData(10, 12, 13),
@@ -138,7 +141,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

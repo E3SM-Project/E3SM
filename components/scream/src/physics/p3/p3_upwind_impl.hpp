@@ -105,8 +105,9 @@ void Functions<S,D>
   const view_1d_ptr_array<Spack, nfield>& rs)
 {
   // compute dt_sub
+  EKAT_KERNEL_ASSERT(Co_max >= 0);
   const Int tmpint1 = static_cast<int>(Co_max + 1);
-  const Scalar dt_sub = ekat::impl::min(dt_left, dt_left/tmpint1);
+  const Scalar dt_sub = dt_left/tmpint1;
 
   // Move bottom cell down by 1 if not at ground already
   const Int k_temp = (k_qxbot == kbot) ? k_qxbot : k_qxbot - kdir;

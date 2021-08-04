@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -25,6 +26,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
     static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
     static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
+    static constexpr Real p0 = scream::physics::Constants<Real>::P0;
 
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
@@ -98,9 +100,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real dse_lower = 1e5; // [J/kg]
 
     // Compute some inputs based on the above
-
-    // base pressure [Pa]
-    static constexpr Real p0 = 1000e2;
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_qtracers];
@@ -331,65 +330,37 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     ShocMainData f90_data[] = {
-      // shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
-      ShocMainData(12, 72, 73,  5, 5, 15, 72, 0),
-      ShocMainData(8,  12, 13,  3, 6, 10, 8, 3),
-      ShocMainData(7,  16, 17,  3, 1,  1, 12, 0),
-      ShocMainData(2,   7,  8,  2, 1,  5, 7, 4)
+      //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
+      ShocMainData(12,      72,    73,            5,   300,   15,        72, 0),
+      ShocMainData(8,       12,    13,            3,   300,   10,         8, 3),
+      ShocMainData(7,       16,    17,            3,   300,    1,        12, 0),
+      ShocMainData(2,       7,      8,            2,   300,    5,         7, 4)
     };
 
     // Generate random input data
-    int count = 0;
     for (auto& d : f90_data) {
-      d.randomize({{d.presi, {700e2,1000e2}},
-                   {d.tkh, {3,20}},
-                   {d.wthl_sfc, {-1,1}},
-                   {d.thetal, {900, 1000}}});
-
-      // Generate grid as decreasing set of points.
-      // Allows interpolated values to stay withing
-      // reasonable range, avoiding errors in
-      // shoc_assumed_pdf.
-      Real upper = 10;
-      Real lower = 0;
-      for (Int s = 0; s < d.shcol; ++s) {
-        for (Int k=0; k<d.nlevi; ++k) {
-          const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
-          d.zi_grid[k+s*d.nlevi] = zi_k;
-
-          if (k!=d.nlevi-1) {
-            const auto zi_kp1 = upper - (k+1)*(upper-lower)/(d.nlevi-1);
-            d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
-          }
-        }
-      }
-
-      // 3 types of pref_mid ranges:
-      std::pair<Real,Real> pref_mid_range;
-      if (count == 0) {
-        // all(pref_mid) >= pblmaxp
-        pref_mid_range.first  = 1e5;
-        pref_mid_range.second = 8e5;
-      }
-      else if (count == 1) {
-        // all(pref_mid) < pblmaxp
-        pref_mid_range.first  = 1e3;
-        pref_mid_range.second = 8e3;
-      }
-      else {
-        // both pref_mid >= pblmaxp and pref_mid < pblmaxp values
-        pref_mid_range.first  = 1e4;
-        pref_mid_range.second = 8e4;
-      }
-      ++count;
-
-      // pref_mid must be monotonically increasing
-      upper = pref_mid_range.first;
-      lower = pref_mid_range.second;
-      for (Int k=0; k<d.nlev; ++k) {
-        d.pref_mid[k] = upper - k*(upper-lower)/(d.nlev-1);
-      }
+      d.randomize(engine,
+                  {
+                    {d.presi, {700e2,1000e2}},
+                    {d.tkh, {3,50}},
+                    {d.tke, {0.1,0.3}},
+                    {d.zi_grid, {0, 3000}},
+                    {d.wthl_sfc, {0,1e-4}},
+                    {d.wqw_sfc, {0,1e-6}},
+                    {d.uw_sfc, {0,1e-2}},
+                    {d.vw_sfc, {0,1e-4}},
+                    {d.host_dx, {3000, 3000}},
+                    {d.host_dy, {3000, 3000}},
+                    {d.phis, {0, 500}}, // 500
+                    {d.wthv_sec, {-0.02, 0.03}},
+                    {d.qw, {1e-4, 5e-2}},
+                    {d.u_wind, {-10, 0}},
+                    {d.v_wind, {-10, 0}},
+                    {d.shoc_ql, {0, 1e-3}},
+                  });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
