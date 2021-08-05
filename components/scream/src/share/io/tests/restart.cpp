@@ -82,14 +82,26 @@ TEST_CASE("restart","io")
           {
             auto v = f.get_view<Real**,Host>();
             for (int i=0; i<fl.dim(0); ++i) {
-              for (int j=0; j<fl.dim(0); ++j) {
+              for (int j=0; j<fl.dim(1); ++j) {
                 v(i,j) += dt;
               }
             }
           }
           break;
+        case 3:
+          {
+            auto v = f.get_view<Real***,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              for (int j=0; j<fl.dim(1); ++j) {
+                for (int k=0; k<fl.dim(2); ++k) {
+                  v(i,j,k) += dt;
+                }
+              }
+            }
+          }
+          break;
         default:
-          EKAT_ERROR_MSG ("Error! Unexpected field rank.\n");
+          EKAT_ERROR_MSG ("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
       }
       f.sync_to_dev();
     }
@@ -145,10 +157,40 @@ TEST_CASE("restart","io")
     for (const auto& fname : out_fields->m_fields_names) {
       auto f = field_manager->get_field(fname);
       f.sync_to_host();
-      auto f_host = f.get_view<Real*,Host>();
-      for (size_t jj=0;jj<f_host.size();++jj)
-      {
-        f_host(jj) += dt;
+      auto fl = f.get_header().get_identifier().get_layout();
+      switch (fl.rank()) {
+        case 1:
+          {
+            auto v = f.get_view<Real*,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              v(i) += dt;
+            }
+          }
+          break;
+        case 2:
+          {
+            auto v = f.get_view<Real**,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              for (int j=0; j<fl.dim(1); ++j) {
+                v(i,j) += dt;
+              }
+            }
+          }
+          break;
+        case 3:
+          {
+            auto v = f.get_view<Real***,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              for (int j=0; j<fl.dim(1); ++j) {
+                for (int k=0; k<fl.dim(2); ++k) {
+                  v(i,j,k) += dt;
+                }
+              }
+            }
+          }
+          break;
+        default:
+          EKAT_ERROR_MSG ("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
       }
       f.sync_to_dev();
     }
