@@ -14,6 +14,6 @@ SET(NUM_CPUS 4)
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/thetanh-moist-bubble.nl)
 
 # compare all of these files against baselines:
-SET(NC_OUTPUT_FILES planar_nh_moist_bubble.nc)
+SET(NC_OUTPUT_FILES planar_rising_bubble1.nc)
 
 
