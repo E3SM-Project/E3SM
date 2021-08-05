@@ -230,7 +230,6 @@ TEST_CASE ("recreate_mct_coupling")
   using FR     = FieldRequest;
   using GR     = GroupRequest;
   using RPDF   = std::uniform_real_distribution<Real>;
-  using rngAlg = std::mt19937_64;
 
   // Some constants
   constexpr int ncols = 4;
