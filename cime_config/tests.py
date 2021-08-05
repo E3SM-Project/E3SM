@@ -147,16 +147,6 @@ _TESTS = {
             )
         },
 
-    "mmf_tmp" : {
-        "time"    : "0:45:00",
-        "tests"   : (
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            )
-        },
-
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
