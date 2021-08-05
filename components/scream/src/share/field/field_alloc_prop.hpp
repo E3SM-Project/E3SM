@@ -98,6 +98,9 @@ public:
   // Get the overall allocation size (in Bytes)
   int  get_alloc_size () const;
 
+  // Get number of m_scalar_type_size-sized scalars in the allocation.
+  int  get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
+
   // Wether this allocation is contiguous
   bool contiguous () const { return m_contiguous; }
 
