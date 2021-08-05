@@ -42,14 +42,13 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("PS"         , scalar2d_layout,     Pa,     grid_name, ps);
   add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps);
   add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps);
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps);
-  add_field<Updated>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO:  This and p_mid should actually be "required"
-  add_field<Updated>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO:  This and p_mid should actually be "required"
-  add_field<Updated>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated", scalar3d_layout_mid, 1/kg,   grid_name,ps);
@@ -120,42 +119,50 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 {
+  // Initialize Time Data
+  auto ts = timestamp();
+  SPATimeState.current_month = ts.get_months();
+  SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
+  SPATimeState.days_this_month = (Real)ts.get_dpm();
+
+  // Initialize SPA input data
+  SPAPressureState.hyam          = m_spa_fields_in["hyam"].get_reshaped_view<const Pack*>();
+  SPAPressureState.hybm          = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
+  SPAPressureState.ps_this_month = m_spa_fields_in["PS_beg"].get_reshaped_view<const Real*>();
+  SPAPressureState.ps_next_month = m_spa_fields_in["PS_end"].get_reshaped_view<const Real*>();
+  SPAData_start.CCN3             = m_spa_fields_in["CCN3_beg"].get_reshaped_view<const Pack**>();
+  SPAData_end.CCN3               = m_spa_fields_in["CCN3_end"].get_reshaped_view<const Pack**>();
 }
 
 // =========================================================================================
 void SPA::run_impl (const Real dt)
 {
-  // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
-  // and the ice mass mixing ratio. 
-  const auto& hyam         = m_spa_fields_in["hyam"].get_reshaped_view<const Pack*>();
-  const auto& hybm         = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
-  const auto& PS           = m_spa_fields_in["PS"].get_reshaped_view<const Real*>();
-  const auto& ps_beg       = m_spa_fields_in["PS_beg"].get_reshaped_view<const Real*>();
-  const auto& ps_end       = m_spa_fields_in["PS_end"].get_reshaped_view<const Real*>();
-  const auto& p_mid        = m_spa_fields_out["p_mid"].get_reshaped_view<Pack**>(); // TODO this and ccn need to be const when the EKAT API is fixed
-  const auto& ccn3_beg     = m_spa_fields_out["CCN3_beg"].get_reshaped_view<Pack**>();  // TODO: when time interp is put in build ccn_src from two timesteps of data.
-  const auto& ccn3_end     = m_spa_fields_out["CCN3_end"].get_reshaped_view<Pack**>();  // TODO: when time interp is put in build ccn_src from two timesteps of data.
+  auto ts = timestamp();
+  const auto& p_mid        = m_spa_fields_in["p_mid"].get_reshaped_view<const Pack**>();
   const auto& nc_activated = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
-  auto p_mid_src    = m_buffer.p_mid_src;
-  auto ps_src       = m_buffer.ps_src;
-  auto ccn3_src     = m_buffer.ccn3_src;
+
+  const auto& p_mid_src    = m_buffer.p_mid_src;
+  const auto& ps_src       = m_buffer.ps_src;
+  const auto& ccn3_src     = m_buffer.ccn3_src;
 
   // First Step: Horizontal Interpolation if needed - Skip for Now
+  /* Update time data if the month has changed */
+  if (ts.get_months() != SPATimeState.current_month) {
+    SPATimeState.current_month = ts.get_months();
+    SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
+    SPATimeState.days_this_month = (Real)ts.get_dpm();
+  }
 
   // Second Step: Temporal Interpolation
   /* Gather time information for interpolation */
-  auto ts = timestamp();
   Real t_now = ts.get_julian_day();
-  Real t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
-  Real days_this_month = ts.get_dpm();
-  
   /* First determine PS for the source data at this time */
   {
   using ExeSpace = typename KT::ExeSpace;
   Kokkos::parallel_for("time-interp-PS",
     m_num_cols,
     KOKKOS_LAMBDA(const int& i) {
-      ps_src(i) = ps_beg(i) + (t_now - t_beg_month) * ( ps_end(i) - ps_beg(i) )/ days_this_month;
+      ps_src(i) = SPAPressureState.ps_this_month(i) + (t_now - SPATimeState.t_beg_month) * ( SPAPressureState.ps_next_month(i) - SPAPressureState.ps_this_month(i) )/ SPATimeState.days_this_month;
     });
   }
   /* Next, interpolate all of the ccn data */
@@ -170,20 +177,20 @@ void SPA::run_impl (const Real dt)
 
       const Int i = team.league_rank();
       const auto& ccn3_src_sub = ekat::subview(ccn3_src,i);
-      const auto& ccn3_beg_sub = ekat::subview(ccn3_beg,i);
-      const auto& ccn3_end_sub = ekat::subview(ccn3_end,i);
+      const auto& ccn3_beg_sub = ekat::subview(SPAData_start.CCN3,i);
+      const auto& ccn3_end_sub = ekat::subview(SPAData_end.CCN3,i);
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
-          ccn3_src_sub(k) = ccn3_beg_sub(k) + (t_now - t_beg_month) * ( ccn3_end_sub(k) - ccn3_beg_sub(k) )/ days_this_month;
+          ccn3_src_sub(k) = ccn3_beg_sub(k) + (t_now - SPATimeState.t_beg_month) * ( ccn3_end_sub(k) - ccn3_beg_sub(k) )/ SPATimeState.days_this_month;
       });
     });
   }
 
   // Final Step: Vertical Interpolation of aerosol data at all columns
   /* First construct the source pressure interface levels */
-  SPAFunc::reconstruct_pressure_profile(m_num_cols,m_num_levs,hyam,hybm,ps_src,p_mid_src);
+  SPAFunc::reconstruct_pressure_profile(m_num_cols,m_num_levs,SPAPressureState.hyam,SPAPressureState.hybm,ps_src,p_mid_src);
   /* Next, use EKAT interpolation to remap CCN data onto current set of pressure levels */
-  SPAFunc::aero_vertical_remap(m_num_cols,m_num_levs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);  // switch to ccn3_src when ready.
+  SPAFunc::aero_vertical_remap(m_num_cols,m_num_levs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
  
   // TODO, when all three interpolations are finished in run_impl, create a "SPA_main" routine that calls all three in order and simplify run_impl. 
 

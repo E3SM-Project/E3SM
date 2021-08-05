@@ -38,6 +38,35 @@ struct SPAFunctions
   template <typename S>
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
+  /* ------------------------------------------------------------------------------------------- */
+  // SPA structures to help manage all of the variables:
+  struct SPATimeState {
+    SPATimeState() = default;
+    // The current month
+    Int current_month;
+    // Julian Date for the beginning of the month
+    Real t_beg_month;
+    // Number of days in the current month, cast as a Real
+    Real days_this_month;
+  }; // SPATimeState
+
+  struct SPAPressureState {
+    SPAPressureState() = default;
+    // Surface pressure for data at the beginning of the month
+    view_1d<const Real> ps_this_month;
+    // Surface pressure for data at the beginning of next month
+    view_1d<const Real> ps_next_month;
+    // Hybrid coordinate values
+    view_1d<const Spack> hyam, hybm;
+  }; // SPAPressureState
+
+  struct SPAData {
+    SPAData() = default;
+    // CCN3
+    view_2d<const Spack> CCN3;
+  }; // SPAPrescribedAerosolData
+  /* ------------------------------------------------------------------------------------------- */
+  // SPA routines
   KOKKOS_FUNCTION
   static void reconstruct_pressure_profile(
     const Int ncols,
@@ -52,10 +81,10 @@ struct SPAFunctions
     const Int ncols,
     const Int nlevs_src,
     const Int nlevs_tgt,
-    const view_2d<Spack>& pres_src,
-    const view_2d<Spack>& pres_tgt,
-    const view_2d<Spack>& aero_src,
-    const view_2d<Spack>& aero_tgt);  //TODO, fix const for these when API in EKAT is fixed.
+    const view_2d<const Spack>& pres_src,
+    const view_2d<const Spack>& pres_tgt,
+    const view_2d<const Spack>& aero_src,
+    const view_2d<Spack>& aero_tgt); 
 
 }; // struct Functions
 

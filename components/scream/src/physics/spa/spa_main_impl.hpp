@@ -46,10 +46,10 @@ void SPAFunctions<S,D>
     const Int ncols,
     const Int nlevs_src,
     const Int nlevs_tgt,
-    const view_2d<Spack>& pres_src,
-    const view_2d<Spack>& pres_tgt,
-    const view_2d<Spack>& aero_src,
-    const view_2d<Spack>& aero_tgt)  // TODO: match const fix in spa_functions.hpp when API for EKAT is fixed.
+    const view_2d<const Spack>& pres_src,
+    const view_2d<const Spack>& pres_tgt,
+    const view_2d<const Spack>& aero_src,
+    const view_2d<Spack>& aero_tgt) 
 {
   using LIV = ekat::LinInterp<Real,Spack::n>;
   Real minthreshold = 0.0;  // Hard-code a minimum value for CCN to zero.

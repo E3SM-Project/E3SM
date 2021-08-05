@@ -107,6 +107,12 @@ protected:
   // Struct which contains local variables
   Buffer m_buffer;
 
+  // Structures to store the data used for interpolation
+  SPAFunc::SPATimeState     SPATimeState;
+  SPAFunc::SPAPressureState SPAPressureState;
+  SPAFunc::SPAData          SPAData_start;
+  SPAFunc::SPAData          SPAData_end;
+
 }; // class SPA 
 
 } // namespace scream
