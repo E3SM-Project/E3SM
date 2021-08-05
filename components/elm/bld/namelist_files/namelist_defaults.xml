@@ -170,8 +170,9 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICLM45BC.ne30_ne30.d0241119c.clm2.r.nc
 </finidat>
 
-<fsurdat hgrid="ne30np4.pg2"   sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</fsurdat>
+<finidat hgrid="ne30np4.pg2" maxpft="17" mask="EC30to60E2r2" use_cn=".false." ic_ymd="19500101" more_vertlayers=".false." 
+sim_year="1950" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/20210802.ICRUELM-1950.ne30pg2_EC30to60E2r2.elm.r.0051-01-01-00000.nc
+</finidat>
 
 <!-- HOMME grid ne120 resolution -->
 
@@ -344,6 +345,13 @@ lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
+
+<fsurdat hgrid="ne30np4.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</fsurdat>
+
+<fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1950_c210729.nc</fsurdat>
+
 <fsurdat hgrid="ne16np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne16np4_simyr1850_c160108.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="1850" >
