@@ -36,6 +36,8 @@ struct SPAFunctions
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
   template <typename S>
+  using view_3d = typename KT::template view_3d<S>;
+  template <typename S>
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
   /* ------------------------------------------------------------------------------------------- */
@@ -66,6 +68,14 @@ struct SPAFunctions
     SPAData() = default;
     // CCN3
     view_2d<const Spack> CCN3;
+    // AER_G_SW - 14 bands
+    view_3d<const Spack> AER_G_SW;
+    // AER_SSA_SW - 14 bands
+    view_3d<const Spack> AER_SSA_SW;
+    // AER_TAU_LW - 16 bands
+    view_3d<const Spack> AER_TAU_LW;
+    // AER_TAU_SW - 14 bands
+    view_3d<const Spack> AER_TAU_SW;
   }; // SPAPrescribedAerosolData
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines

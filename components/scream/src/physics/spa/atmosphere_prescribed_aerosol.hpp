@@ -33,6 +33,7 @@ public:
 
   using view_1d         = typename SPAFunc::view_1d<Spack>;
   using view_2d         = typename SPAFunc::view_2d<Spack>;
+  using view_3d         = typename SPAFunc::view_3d<Spack>;
 
   template<typename ScalarT>
   using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
@@ -103,6 +104,8 @@ protected:
   Int m_num_cols; 
   Int m_num_levs;
   Int m_nk_pack;
+  Int m_nswbands = 14;
+  Int m_nlwbands = 16;
 
   // Struct which contains local variables
   Buffer m_buffer;

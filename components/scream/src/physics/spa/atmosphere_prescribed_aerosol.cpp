@@ -36,9 +36,12 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
   FieldLayout scalar2d_layout     { {COL},     {m_num_cols} };
   FieldLayout scalar1d_layout_mid { {LEV},     {m_num_levs} };
+  // Use VAR field tag for gases for now; consider adding a tag?
+  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {m_num_cols, m_nswbands, m_num_levs} }; 
+  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {m_num_cols, m_nlwbands, m_num_levs} }; 
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
@@ -51,7 +54,11 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
 
   // Set of fields used strictly as output
-  add_field<Computed>("nc_activated", scalar3d_layout_mid, 1/kg,   grid_name,ps);
+  add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
+  add_field<Computed>("aero_g_sw",      scalar3d_swband_layout, 1/kg,   grid_name,ps);
+  add_field<Computed>("aero_ssa_sw",    scalar3d_swband_layout, 1/kg,   grid_name,ps);
+  add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, 1/kg,   grid_name,ps);
+  add_field<Computed>("aero_tau_lw",    scalar3d_lwband_layout, 1/kg,   grid_name,ps);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
