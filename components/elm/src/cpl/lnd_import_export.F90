@@ -1113,6 +1113,13 @@ contains
        
        !set the topounit-level atmospheric state and flux forcings
        if (use_atm_downscaling_to_topunit) then
+          if(atm_gustiness) then
+             call endrun("Error: atm_gustiness not yet supported with multiple topounits")
+          end if
+         do topo = grc_pp%topi(g) , grc_pp%topf(g)
+            top_as%ugust(topo) = 0._r8
+         end do
+
          call downscale_atm_forcing_to_topounit(g, i, x2l, lnd2atm_vars)
        else
          do topo = grc_pp%topi(g), grc_pp%topf(g)
