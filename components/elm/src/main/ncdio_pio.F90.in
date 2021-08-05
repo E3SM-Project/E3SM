@@ -238,7 +238,7 @@ contains
     logical :: l_avoid_pnetcdf  ! local version of avoid_pnetcdf
     integer :: my_io_type
     integer :: ierr
-    integer :: mode
+    integer :: mode             ! IO mode according to netcdf format used
     !-----------------------------------------------------------------------
 
     l_avoid_pnetcdf = .false.
