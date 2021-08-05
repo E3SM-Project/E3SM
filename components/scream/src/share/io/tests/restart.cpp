@@ -66,12 +66,30 @@ TEST_CASE("restart","io")
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_manager->get_field(fname);
+      auto f  = field_manager->get_field(fname);
       f.sync_to_host();
-      auto f_host = f.get_flattened_view<Host>();
-      for (size_t jj=0;jj<f_host.size();++jj)
-      {
-        f_host(jj) += dt;
+      auto fl = f.get_header().get_identifier().get_layout();
+      switch (fl.rank()) {
+        case 1:
+          {
+            auto v = f.get_view<Real*,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              v(i) += dt;
+            }
+          }
+          break;
+        case 2:
+          {
+            auto v = f.get_view<Real**,Host>();
+            for (int i=0; i<fl.dim(0); ++i) {
+              for (int j=0; j<fl.dim(0); ++j) {
+                v(i,j) += dt;
+              }
+            }
+          }
+          break;
+        default:
+          EKAT_ERROR_MSG ("Error! Unexpected field rank.\n");
       }
       f.sync_to_dev();
     }
@@ -102,8 +120,8 @@ TEST_CASE("restart","io")
   auto field2 = field_manager->get_field("field_2");
   auto field3 = field_manager->get_field("field_3");
   auto field4 = field_manager->get_field("field_4");
-  auto field1_hst = field1.get_flattened_view<Host>();
-  auto field2_hst = field2.get_flattened_view<Host>();
+  auto field1_hst = field1.get_view<Real*,Host>();
+  auto field2_hst = field2.get_view<Real*,Host>();
   auto field3_hst = field3.get_view<Real**,Host>();
   auto field4_hst = field4.get_view<Real***,Host>();
   field1.sync_to_host();
@@ -127,7 +145,7 @@ TEST_CASE("restart","io")
     for (const auto& fname : out_fields->m_fields_names) {
       auto f = field_manager->get_field(fname);
       f.sync_to_host();
-      auto f_host = f.get_flattened_view<Host>();
+      auto f_host = f.get_view<Real*,Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;

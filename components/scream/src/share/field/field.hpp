@@ -121,6 +121,9 @@ public:
   property_check_iterator property_check_end() const {
     return m_prop_checks->end();
   }
+  const property_check_list& get_property_checks () const {
+    return *m_prop_checks;
+  }
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -130,24 +133,22 @@ public:
   get_view_type<uview_type<DT>,HD>
   get_view () const;
 
-  // Allows to get the underlying 1d view. This can be dangerous, since
-  // this field may be a subfield of another one. In that case, the stored
-  // view would be that of the parent field, which would need to be read
-  // in a strided fashion. Furthermore, if the field has been allocated
-  // in a way that allows packing, there might be padding. However, the
-  // padding is inserted in the last physical dimension of the field,
-  // so when one sees the 1d view, the padding is interleaved in the array.
-  // For these reasons, this must be regarded as a *dangerous* power-user
-  // method. Do not use unless you know what you are doing.
-  // WARNING: this method throws if this field is a subfield. It does *NOT*
-  //          throw if there is padding, so careful how you access/use the view.
+  // WARNING: this is a power-user method. Its implementation, including assumptions
+  //          on pre/post conditions, may change in the future. Use at your own risk!
+  //          Read carefully the instructions below.
+  // Allows to get a raw pointer (host or device) from the view stored in the field.
+  // Notice that the view stored may contain more data than just the
+  // data of the current field. This can happen in two cases (possibly simultaneously).
+  //   - The field was allocated in a way that allows packing. In this case,
+  //     there may be padding along the last *physical* dimension of the field.
+  //     In the stored 1d view, the padding may appear interleaved with actual
+  //     data (due to the view layout being LayoutRight).
+  //   - The field is a subfield of another field. In this case, this class
+  //     actually stores the "parent" field view. So when calling this method,
+  //     you will actually get the raw pointer of the parent field view.
   template<HostOrDevice HD = Device>
-  get_view_type<uview_type<RT*>,HD>
-  get_flattened_view () const {
-    EKAT_REQUIRE_MSG (m_header->get_parent().expired(),
-        "Error! This field is the subfield of another field.\n"
-        "       We cannot provide the flattened view of a subfield.\n");
-    return get_view_impl<HD>();
+  RT* get_internal_view_data () const {
+    return get_view_impl<HD>().data();
   }
 
   // If someone needs the host view, some sync routines might be needed.

@@ -448,8 +448,8 @@ initialize_device_variables()
     }
 
     // Store view pointers
-    h_phys_ptrs(i).ptr = phys.get_flattened_view().data();
-    h_dyn_ptrs(i).ptr  = dyn.get_flattened_view().data();
+    h_phys_ptrs(i).ptr = phys.get_internal_view_data();
+    h_dyn_ptrs(i).ptr  = dyn.get_internal_view_data();
 
     // Store phys layout
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());

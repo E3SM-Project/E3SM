@@ -172,7 +172,8 @@ TEST_CASE ("surface_coupling")
     ekat::genRandArray(s3d_exp_d,engine,pdf);
     ekat::genRandArray(v2d_exp_d,engine,pdf);
     ekat::genRandArray(v3d_exp_d,engine,pdf);
-    ekat::genRandArray(G3d_exp.get_flattened_view(),engine,pdf);
+    auto G3d_size = G3d_exp.get_header().get_alloc_properties().get_num_scalars();
+    ekat::genRandArray(G3d_exp.get_internal_view_data(),G3d_size,engine,pdf);
 
     // Set all raw_data to -1 (might be helpful for debugging)
     std::fill_n(raw_data,4*ncols,-1);
@@ -420,7 +421,8 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(horiz_winds_d,engine,pdf);
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
-    ekat::genRandArray(Q.get_flattened_view(),engine,pdf);
+    auto Q_size = Q.get_header().get_alloc_properties().get_num_scalars();
+    ekat::genRandArray(Q.get_internal_view_data(),Q_size,engine,pdf);
 
     // Fill import_raw_data with random values
     for (int i=0; i<ncols*num_cpl_imports; ++i) {
