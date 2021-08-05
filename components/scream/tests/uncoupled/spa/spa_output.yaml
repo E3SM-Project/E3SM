@@ -6,11 +6,11 @@ GRID: Physics
 FREQUENCY:
   OUT_N: 1
   OUT_OPTION: Steps
-  OUT_MAX_STEPS: 1
+  OUT_MAX_STEPS: 10
 FIELDS:
   Number of Fields: 6
   field 1: CCN3_beg
-  field 2: PS
+  field 2: PS_beg
   field 3: hyam
   field 4: hybm
   field 5: nc_activated

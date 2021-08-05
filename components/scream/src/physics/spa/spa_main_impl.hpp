@@ -73,6 +73,20 @@ void SPAFunctions<S,D>
 
 } // aero_vertical_remap
 /*-----------------------------------------------------------------*/
+template <typename S, typename D>
+void SPAFunctions<S,D>
+::aero_time_interp(
+    const Real& t0,
+    const Real& ts,
+    const Real& tlen,
+    const Real& y0,
+    const Real& y1,
+          Real& y_out)
+{
+ // Simple linear interpolation: y_out = b + m*x, b = y0, m = (y1-y0)/tlen
+ y_out = y0 + (ts-t0) * (y1-y0)/tlen;
+}
+/*-----------------------------------------------------------------*/
 
 } // namespace spa
 } // namespace scream

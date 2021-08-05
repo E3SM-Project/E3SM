@@ -42,12 +42,12 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps);
-  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps);
-  add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps);
-  add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps);
-  add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps);
-  add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
 
   // Set of fields used strictly as output
@@ -88,10 +88,6 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.ps_src = decltype(m_buffer.ps_src)(mem, m_num_cols);
   mem += m_buffer.ps_src.size();
 
-  // 2d scalar views
-//  m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
-//  mem += m_buffer.col_location.size();
-
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
   // 2d packed views
@@ -126,6 +122,7 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
   SPATimeState.days_this_month = (Real)ts.get_dpm();
 
   // Initialize SPA input data
+  SPAPressureState.nlevs         = m_num_levs;
   SPAPressureState.hyam          = m_spa_fields_in["hyam"].get_reshaped_view<const Pack*>();
   SPAPressureState.hybm          = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
   SPAPressureState.ps_this_month = m_spa_fields_in["PS_beg"].get_reshaped_view<const Real*>();
@@ -162,13 +159,13 @@ void SPA::run_impl (const Real dt)
   Kokkos::parallel_for("time-interp-PS",
     m_num_cols,
     KOKKOS_LAMBDA(const int& i) {
-      ps_src(i) = SPAPressureState.ps_this_month(i) + (t_now - SPATimeState.t_beg_month) * ( SPAPressureState.ps_next_month(i) - SPAPressureState.ps_this_month(i) )/ SPATimeState.days_this_month;
+      SPAFunc::aero_time_interp(SPATimeState.t_beg_month, t_now, SPATimeState.days_this_month, SPAPressureState.ps_this_month(i), SPAPressureState.ps_next_month(i),ps_src(i));
     });
   }
   /* Next, interpolate all of the ccn data */
   {
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack = ekat::npack<Spack>(SPAPressureState.nlevs);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   Kokkos::parallel_for(
     "time-interp-aero",
@@ -181,6 +178,7 @@ void SPA::run_impl (const Real dt)
       const auto& ccn3_end_sub = ekat::subview(SPAData_end.CCN3,i);
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+          //TODO: once the time interp can handle packed views use that function here.
           ccn3_src_sub(k) = ccn3_beg_sub(k) + (t_now - SPATimeState.t_beg_month) * ( ccn3_end_sub(k) - ccn3_beg_sub(k) )/ SPATimeState.days_this_month;
       });
     });
@@ -188,9 +186,9 @@ void SPA::run_impl (const Real dt)
 
   // Final Step: Vertical Interpolation of aerosol data at all columns
   /* First construct the source pressure interface levels */
-  SPAFunc::reconstruct_pressure_profile(m_num_cols,m_num_levs,SPAPressureState.hyam,SPAPressureState.hybm,ps_src,p_mid_src);
+  SPAFunc::reconstruct_pressure_profile(m_num_cols,SPAPressureState.nlevs,SPAPressureState.hyam,SPAPressureState.hybm,ps_src,p_mid_src);
   /* Next, use EKAT interpolation to remap CCN data onto current set of pressure levels */
-  SPAFunc::aero_vertical_remap(m_num_cols,m_num_levs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
+  SPAFunc::aero_vertical_remap(m_num_cols,SPAPressureState.nlevs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
  
   // TODO, when all three interpolations are finished in run_impl, create a "SPA_main" routine that calls all three in order and simplify run_impl. 
 

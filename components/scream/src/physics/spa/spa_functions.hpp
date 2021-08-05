@@ -52,6 +52,8 @@ struct SPAFunctions
 
   struct SPAPressureState {
     SPAPressureState() = default;
+    // Number of vertical levels for the data
+    Int nlevs;
     // Surface pressure for data at the beginning of the month
     view_1d<const Real> ps_this_month;
     // Surface pressure for data at the beginning of next month
@@ -85,6 +87,16 @@ struct SPAFunctions
     const view_2d<const Spack>& pres_tgt,
     const view_2d<const Spack>& aero_src,
     const view_2d<Spack>& aero_tgt); 
+
+  // TODO: This function should really be templated to work with Scalars and Packed views
+  KOKKOS_FUNCTION
+  static void aero_time_interp(
+    const Real& t0,
+    const Real& ts,
+    const Real& tlen,
+    const Real& y0,
+    const Real& y1,
+          Real& y_out);
 
 }; // struct Functions
 
