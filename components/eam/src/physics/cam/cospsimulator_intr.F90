@@ -1182,9 +1182,6 @@ CONTAINS
     
     ! Local vars related to calculations to go from CAM input to COSP input
     ! cosp convective value includes both deep and shallow convection
-    real(r8) :: lat_cosp(pcols)                          ! lat for cosp (degrees_north)
-    real(r8) :: lon_cosp(pcols)                          ! lon for cosp (degrees_east)
-    real(r8) :: landmask(pcols)                          ! landmask (0 or 1)
     real(r8) :: mr_lsliq(pcols,pver)                     ! mixing_ratio_large_scale_cloud_liquid (kg/kg)
     real(r8) :: mr_lsice(pcols,pver)                     ! mixing_ratio_large_scale_cloud_ice (kg/kg)
     real(r8) :: mr_ccliq(pcols,pver)                     ! mixing_ratio_convective_cloud_liquid (kg/kg)
@@ -1208,7 +1205,6 @@ CONTAINS
     real(r8) :: dem_c(pcols,pver)                        ! dem_c - Longwave emis of convective cloud at 10.5 um
     real(r8) :: dem_s_snow(pcols,pver)                   ! dem_s_snow - Grid-box mean Optical depth of stratiform snow at 10.5 um
     integer  :: cam_sunlit(pcols)                        ! cam_sunlit - Sunlit flag(1-sunlit/0-dark).
-    integer  :: nSunLit,nNoSunLit                        ! Number of sunlit (not sunlit) scenes.
     
     ! ######################################################################################
     ! Simulator output info
@@ -1401,7 +1397,6 @@ CONTAINS
     ! 2) cam_in variables (see camsrfexch.F90)
     ! I can reference these as is, e.g., cam_in%ts.  
     !cam_in%ts                   ! skt - Skin temperature (K)
-    !cam_in%landfrac             ! land fraction, used to define a landmask (0 or 1) for COSP input
     
     ! 3) radiative constituent interface variables:
     ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
@@ -1452,13 +1447,6 @@ CONTAINS
     !    CAM state%pint from top to surface, COSP wants surface to top.
     
    
-    ! 1) lat/lon - convert from radians to cosp input type
-    ! Initalize
-    lat_cosp(1:ncol)=0._r8
-    lon_cosp(1:ncol)=0._r8
-    ! convert from radians to degrees_north and degrees_east 
-    lat_cosp=state%lat*180._r8/(pi)  ! needs to go from -90 to +90 degrees north
-    lon_cosp=state%lon*180._r8/(pi)  ! needs to go from 0 to 360 degrees east
     
     ! 2) rh - relative_humidity_liquid_water (%)
     ! calculate from CAM q and t using CAM built-in functions
@@ -1473,14 +1461,6 @@ CONTAINS
        do i=1,ncol
           rh(i,k)=(q(i,k)/qs(i,k))*100
        end do
-    end do
-    
-    ! 3) landmask - calculate from cam_in%landfrac
-    ! initalize landmask
-    landmask(1:ncol)=0._r8
-    ! calculate landmask
-    do i=1,ncol
-       if (cam_in%landfrac(i).gt.0.01_r8) landmask(i)= 1
     end do
     
     ! 4) calculate necessary input cloud/precip variables
@@ -1640,17 +1620,10 @@ CONTAINS
     cam_sunlit(:) = 0
     if (cosp_runall) then
        cam_sunlit(:) = 1
-       nSunLit   = ncol
-       nNoSunLit = 0
     else
-       nSunLit   = 0
-       nNoSunLit = 0
        do i=1,ncol
           if ((coszrs(i) > 0.0_r8) .and. (run_cosp(i,lchnk))) then
              cam_sunlit(i) = 1
-             nSunLit   = nSunLit+1
-          else
-             nNoSunLit = nNoSunlit+1
           endif
        enddo
     endif
@@ -1670,14 +1643,22 @@ CONTAINS
     ! Model state inputs
     call t_startf('cosp_construct_cospstateIN')
     call construct_cospstateIN(ncol,pver,0,cospstateIN)      
-    cospstateIN%lat                            = lat_cosp(1:ncol)
-    cospstateIN%lon                            = lon_cosp(1:ncol) 
+    do i = 1,ncol
+       cospstateIN%lat(i)                      = state%lat(i)*180._r8/ pi
+       cospstateIN%lon(i)                      = state%lon(i)*180._r8 / pi
+    end do
     cospstateIN%at                             = state%t(1:ncol,1:pver) 
     cospstateIN%qv                             = q(1:ncol,1:pver)
     cospstateIN%o3                             = o3(1:ncol,1:pver)  
     cospstateIN%sunlit                         = cam_sunlit(1:ncol)
     cospstateIN%skt                            = cam_in%ts(1:ncol)
-    cospstateIN%land                           = landmask(1:ncol)
+    do i = 1,ncol
+       if (cam_in%landfrac(i) > 0.01_r8) then
+          cospstateIN%land(i) = 1
+       else
+          cospstateIN%land(i) = 0
+       end if
+    end do
     cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
     cospstateIN%phalf(1:ncol,1)                = 0._r8
     cospstateIN%phalf(1:ncol,2:pver+1)         = state%pint(1:ncol,2:pver+1)
