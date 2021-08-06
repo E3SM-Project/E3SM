@@ -3517,8 +3517,8 @@
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" rof_grid="r0125">
-      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_arcticx4v1pg2_to_r0125_mono.20210517.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_arcticx4v1pg2_to_r0125_mono.20210517.nc</map>
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/arcticx4v1pg2/map_arcticx4v1pg2_to_r0125_mono.20210517.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/arcticx4v1pg2/map_arcticx4v1pg2_to_r0125_mono.20210517.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" rof_grid="r05">
