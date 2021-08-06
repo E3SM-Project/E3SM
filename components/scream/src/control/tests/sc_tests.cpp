@@ -138,33 +138,33 @@ TEST_CASE ("surface_coupling")
   auto sub_s3d2_imp = fm_in->get_field(sub_s3d2_id);
   auto G3d_imp = fm_in->get_field(fm_in->get_field_group("group3d").m_bundle->get_header().get_identifier().name());
 
-  auto s2d_exp_d = s2d_exp.get_reshaped_view<Real*>();
-  auto s3d_exp_d = s3d_exp.get_reshaped_view<Real**>();
-  auto v2d_exp_d = v2d_exp.get_reshaped_view<Real**>();
-  auto v3d_exp_d = v3d_exp.get_reshaped_view<Real***>();
-  auto sub_s3d1_exp_d = sub_s3d1_exp.get_reshaped_view<Real**>();
-  auto sub_s3d2_exp_d = sub_s3d2_exp.get_reshaped_view<Real**>();
+  auto s2d_exp_d = s2d_exp.get_view<Real*>();
+  auto s3d_exp_d = s3d_exp.get_view<Real**>();
+  auto v2d_exp_d = v2d_exp.get_view<Real**>();
+  auto v3d_exp_d = v3d_exp.get_view<Real***>();
+  auto sub_s3d1_exp_d = sub_s3d1_exp.get_view<Real**>();
+  auto sub_s3d2_exp_d = sub_s3d2_exp.get_view<Real**>();
 
-  auto s2d_imp_d = s2d_imp.get_reshaped_view<Real*>();
-  auto s3d_imp_d = s3d_imp.get_reshaped_view<Real**>();
-  auto v2d_imp_d = v2d_imp.get_reshaped_view<Real**>();
-  auto v3d_imp_d = v3d_imp.get_reshaped_view<Real***>();
-  auto sub_s3d1_imp_d = sub_s3d1_imp.get_reshaped_view<Real**>();
-  auto sub_s3d2_imp_d = sub_s3d2_imp.get_reshaped_view<Real**>();
+  auto s2d_imp_d = s2d_imp.get_view<Real*>();
+  auto s3d_imp_d = s3d_imp.get_view<Real**>();
+  auto v2d_imp_d = v2d_imp.get_view<Real**>();
+  auto v3d_imp_d = v3d_imp.get_view<Real***>();
+  auto sub_s3d1_imp_d = sub_s3d1_imp.get_view<Real**>();
+  auto sub_s3d2_imp_d = sub_s3d2_imp.get_view<Real**>();
 
-  auto s2d_exp_h = s2d_exp.get_reshaped_view<Real*,Host>();
-  auto s3d_exp_h = s3d_exp.get_reshaped_view<Real**,Host>();
-  auto v2d_exp_h = v2d_exp.get_reshaped_view<Real**,Host>();
-  auto v3d_exp_h = v3d_exp.get_reshaped_view<Real***,Host>();
-  auto sub_s3d1_exp_h = sub_s3d1_exp.get_reshaped_view<Real**,Host>();
-  auto sub_s3d2_exp_h = sub_s3d2_exp.get_reshaped_view<Real**,Host>();
+  auto s2d_exp_h = s2d_exp.get_view<Real*,Host>();
+  auto s3d_exp_h = s3d_exp.get_view<Real**,Host>();
+  auto v2d_exp_h = v2d_exp.get_view<Real**,Host>();
+  auto v3d_exp_h = v3d_exp.get_view<Real***,Host>();
+  auto sub_s3d1_exp_h = sub_s3d1_exp.get_view<Real**,Host>();
+  auto sub_s3d2_exp_h = sub_s3d2_exp.get_view<Real**,Host>();
 
-  auto s2d_imp_h = s2d_imp.get_reshaped_view<Real*,Host>();
-  auto s3d_imp_h = s3d_imp.get_reshaped_view<Real**,Host>();
-  auto v2d_imp_h = v2d_imp.get_reshaped_view<Real**,Host>();
-  auto v3d_imp_h = v3d_imp.get_reshaped_view<Real***,Host>();
-  auto sub_s3d1_imp_h = sub_s3d1_imp.get_reshaped_view<Real**,Host>();
-  auto sub_s3d2_imp_h = sub_s3d2_imp.get_reshaped_view<Real**,Host>();
+  auto s2d_imp_h = s2d_imp.get_view<Real*,Host>();
+  auto s3d_imp_h = s3d_imp.get_view<Real**,Host>();
+  auto v2d_imp_h = v2d_imp.get_view<Real**,Host>();
+  auto v3d_imp_h = v3d_imp.get_view<Real***,Host>();
+  auto sub_s3d1_imp_h = sub_s3d1_imp.get_view<Real**,Host>();
+  auto sub_s3d2_imp_h = sub_s3d2_imp.get_view<Real**,Host>();
 
   for (int i=0; i<nruns; ++i) {
     // Fill export fields
@@ -172,7 +172,8 @@ TEST_CASE ("surface_coupling")
     ekat::genRandArray(s3d_exp_d,engine,pdf);
     ekat::genRandArray(v2d_exp_d,engine,pdf);
     ekat::genRandArray(v3d_exp_d,engine,pdf);
-    ekat::genRandArray(G3d_exp.get_view(),engine,pdf);
+    auto G3d_size = G3d_exp.get_header().get_alloc_properties().get_num_scalars();
+    ekat::genRandArray(G3d_exp.get_internal_view_data<Host>(),G3d_size,engine,pdf);
 
     // Set all raw_data to -1 (might be helpful for debugging)
     std::fill_n(raw_data,4*ncols,-1);
@@ -229,7 +230,6 @@ TEST_CASE ("recreate_mct_coupling")
   using FR     = FieldRequest;
   using GR     = GroupRequest;
   using RPDF   = std::uniform_real_distribution<Real>;
-  using rngAlg = std::mt19937_64;
 
   // Some constants
   constexpr int ncols = 4;
@@ -321,37 +321,37 @@ TEST_CASE ("recreate_mct_coupling")
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
   auto Q = fm->get_field(Q_name);
 
-  auto surf_latent_flux_d = surf_latent_flux_f.get_reshaped_view<Real*>();
-  auto surf_sens_flux_d   = surf_sens_flux_f.get_reshaped_view<Real*>();
-  auto surf_u_mom_flux_d  = surf_u_mom_flux_f.get_reshaped_view<Real*>();
-  auto surf_v_mom_flux_d  = surf_v_mom_flux_f.get_reshaped_view<Real*>();
-  auto sfc_alb_dir_vis_d  = sfc_alb_dir_vis_f.get_reshaped_view<Real*>();
-  auto sfc_alb_dir_nir_d  = sfc_alb_dir_nir_f.get_reshaped_view<Real*>();
-  auto sfc_alb_dif_vis_d  = sfc_alb_dif_vis_f.get_reshaped_view<Real*>();
-  auto sfc_alb_dif_nir_d  = sfc_alb_dif_nir_f.get_reshaped_view<Real*>();
-  auto T_mid_d            = T_mid_f.get_reshaped_view<Real**>();
-  auto p_mid_d            = p_mid_f.get_reshaped_view<Real**>();
-  auto z_mid_d            = z_mid_f.get_reshaped_view<Real**>();
-  auto horiz_winds_d      = horiz_winds_f.get_reshaped_view<Real***>();
-  auto pseudo_density_d   = pseudo_density_f.get_reshaped_view<Real**>();
-  auto qv_d               = qv_f.get_reshaped_view<Real**>();
-  auto precip_liq_surf_d  = precip_liq_surf_f.get_reshaped_view<Real*>();
+  auto surf_latent_flux_d = surf_latent_flux_f.get_view<Real*>();
+  auto surf_sens_flux_d   = surf_sens_flux_f.get_view<Real*>();
+  auto surf_u_mom_flux_d  = surf_u_mom_flux_f.get_view<Real*>();
+  auto surf_v_mom_flux_d  = surf_v_mom_flux_f.get_view<Real*>();
+  auto sfc_alb_dir_vis_d  = sfc_alb_dir_vis_f.get_view<Real*>();
+  auto sfc_alb_dir_nir_d  = sfc_alb_dir_nir_f.get_view<Real*>();
+  auto sfc_alb_dif_vis_d  = sfc_alb_dif_vis_f.get_view<Real*>();
+  auto sfc_alb_dif_nir_d  = sfc_alb_dif_nir_f.get_view<Real*>();
+  auto T_mid_d            = T_mid_f.get_view<Real**>();
+  auto p_mid_d            = p_mid_f.get_view<Real**>();
+  auto z_mid_d            = z_mid_f.get_view<Real**>();
+  auto horiz_winds_d      = horiz_winds_f.get_view<Real***>();
+  auto pseudo_density_d   = pseudo_density_f.get_view<Real**>();
+  auto qv_d               = qv_f.get_view<Real**>();
+  auto precip_liq_surf_d  = precip_liq_surf_f.get_view<Real*>();
 
-  auto surf_latent_flux_h = surf_latent_flux_f.get_reshaped_view<Real*,Host>();
-  auto surf_sens_flux_h   = surf_sens_flux_f.get_reshaped_view<Real*,Host>();
-  auto surf_u_mom_flux_h  = surf_u_mom_flux_f.get_reshaped_view<Real*,Host>();
-  auto surf_v_mom_flux_h  = surf_v_mom_flux_f.get_reshaped_view<Real*,Host>();
-  auto sfc_alb_dir_vis_h  = sfc_alb_dir_vis_f.get_reshaped_view<Real*,Host>();
-  auto sfc_alb_dir_nir_h  = sfc_alb_dir_nir_f.get_reshaped_view<Real*,Host>();
-  auto sfc_alb_dif_vis_h  = sfc_alb_dif_vis_f.get_reshaped_view<Real*,Host>();
-  auto sfc_alb_dif_nir_h  = sfc_alb_dif_nir_f.get_reshaped_view<Real*,Host>();
-  auto T_mid_h            = T_mid_f.get_reshaped_view<Real**,Host>();
-  auto p_mid_h            = p_mid_f.get_reshaped_view<Real**,Host>();
-  auto z_mid_h            = z_mid_f.get_reshaped_view<Real**,Host>();
-  auto pseudo_density_h   = pseudo_density_f.get_reshaped_view<Real**,Host>();
-  auto horiz_winds_h      = horiz_winds_f.get_reshaped_view<Real***,Host>();
-  auto qv_h               = qv_f.get_reshaped_view<Real**,Host>();
-  auto precip_liq_surf_h  = precip_liq_surf_f.get_reshaped_view<Real*,Host>();
+  auto surf_latent_flux_h = surf_latent_flux_f.get_view<Real*,Host>();
+  auto surf_sens_flux_h   = surf_sens_flux_f.get_view<Real*,Host>();
+  auto surf_u_mom_flux_h  = surf_u_mom_flux_f.get_view<Real*,Host>();
+  auto surf_v_mom_flux_h  = surf_v_mom_flux_f.get_view<Real*,Host>();
+  auto sfc_alb_dir_vis_h  = sfc_alb_dir_vis_f.get_view<Real*,Host>();
+  auto sfc_alb_dir_nir_h  = sfc_alb_dir_nir_f.get_view<Real*,Host>();
+  auto sfc_alb_dif_vis_h  = sfc_alb_dif_vis_f.get_view<Real*,Host>();
+  auto sfc_alb_dif_nir_h  = sfc_alb_dif_nir_f.get_view<Real*,Host>();
+  auto T_mid_h            = T_mid_f.get_view<Real**,Host>();
+  auto p_mid_h            = p_mid_f.get_view<Real**,Host>();
+  auto z_mid_h            = z_mid_f.get_view<Real**,Host>();
+  auto pseudo_density_h   = pseudo_density_f.get_view<Real**,Host>();
+  auto horiz_winds_h      = horiz_winds_f.get_view<Real***,Host>();
+  auto qv_h               = qv_f.get_view<Real**,Host>();
+  auto precip_liq_surf_h  = precip_liq_surf_f.get_view<Real*,Host>();
 
   // Create SC object and set number of import/export fields
   control::SurfaceCoupling coupler(fm);
@@ -420,7 +420,8 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(horiz_winds_d,engine,pdf);
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
-    ekat::genRandArray(Q.get_view(),engine,pdf);
+    auto Q_size = Q.get_header().get_alloc_properties().get_num_scalars();
+    ekat::genRandArray(Q.get_internal_view_data<Host>(),Q_size,engine,pdf);
 
     // Fill import_raw_data with random values
     for (int i=0; i<ncols*num_cpl_imports; ++i) {

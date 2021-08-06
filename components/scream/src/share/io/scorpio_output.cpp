@@ -215,19 +215,19 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     switch (rank) {
       case 1:
       {
-        auto view_1d = field.get_reshaped_view<const Real*,Host>();
+        auto view_1d = field.get_view<const Real*,Host>();
         Kokkos::deep_copy(hview_1d,view_1d);
         break;
       }
       case 2:
       {
-        auto view_2d = field.get_reshaped_view<const Real**,Host>();
+        auto view_2d = field.get_view<const Real**,Host>();
         Kokkos::deep_copy(view_2d_host(hview_1d.data(),layout.dim(0),last_dim),view_2d);
         break;
       }
       case 3:
       {
-        auto view_3d = field.get_reshaped_view<const Real***,Host>();
+        auto view_3d = field.get_view<const Real***,Host>();
         Kokkos::deep_copy(view_3d_host(hview_1d.data(),layout.dim(0),layout.dim(1),last_dim),view_3d);
         break;
       }

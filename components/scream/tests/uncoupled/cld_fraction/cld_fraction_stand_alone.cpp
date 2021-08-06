@@ -56,8 +56,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   const auto& qi_field           = field_mgr.get_field("qi");
   const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
-  const auto& qi           = qi_field.get_reshaped_view<Real**,Host>();
-  const auto& liq_cld_frac = liq_cld_frac_field.get_reshaped_view<Real**,Host>();
+  const auto& qi           = qi_field.get_view<Real**,Host>();
+  const auto& liq_cld_frac = liq_cld_frac_field.get_view<Real**,Host>();
 
   for (int icol=0;icol<num_cols;++icol)
   {
@@ -86,8 +86,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   const auto& tot_cld_frac_field = field_mgr.get_field("cldfrac_tot");   //TODO: This FM name will probably change soon.
   ice_cld_frac_field.sync_to_host();
   tot_cld_frac_field.sync_to_host();
-  const auto& ice_cld_frac = ice_cld_frac_field.get_reshaped_view<Real**,Host>();
-  const auto& tot_cld_frac = tot_cld_frac_field.get_reshaped_view<Real**,Host>();
+  const auto& ice_cld_frac = ice_cld_frac_field.get_view<Real**,Host>();
+  const auto& tot_cld_frac = tot_cld_frac_field.get_view<Real**,Host>();
   
   for (int icol=0;icol<num_cols;++icol)
   {

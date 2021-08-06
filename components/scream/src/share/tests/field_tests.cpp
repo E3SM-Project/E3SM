@@ -1,12 +1,13 @@
 #include <catch2/catch.hpp>
+#include <numeric>
 
+#include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_property_checks/field_positivity_check.hpp"
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
-#include "share/field/field_property_checks/field_monotonicity_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
@@ -87,6 +88,15 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
+  std::random_device rd;
+  using rngAlg = std::mt19937_64;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.01,0.99);
+
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
 
@@ -97,30 +107,30 @@ TEST_CASE("field", "") {
     Field<Real> f1 (fid);
 
     // Should not be able to reshape before allocating
-    REQUIRE_THROWS(f1.get_reshaped_view<Real*>());
+    REQUIRE_THROWS(f1.get_view<Real*>());
 
     f1.allocate_view();
 
     // Reshape should work with both dynamic and static dims
-    auto v1 = f1.get_reshaped_view<Real[3][24]>();
-    auto v2 = f1.get_reshaped_view<Real**>();
+    auto v1 = f1.get_view<Real[3][24]>();
+    auto v2 = f1.get_view<Real**>();
 
     REQUIRE(v1.size()==v2.size());
 
     // But if wrong static length is used, we should throw
-    REQUIRE_THROWS(f1.get_reshaped_view<Real[3][16]>());
+    REQUIRE_THROWS(f1.get_view<Real[3][16]>());
 
     // Should not be able to reshape to this data type...
-    REQUIRE_THROWS(f1.get_reshaped_view<P16**>());
+    REQUIRE_THROWS(f1.get_view<P16**>());
     // But this should work
-    REQUIRE_NOTHROW(f1.get_reshaped_view<P8**>());
+    REQUIRE_NOTHROW(f1.get_view<P8**>());
 
     // Using packs (of allowable size) of different pack sizes
     // should lead to views with different extents.
     // Since there's no padding, their extent on last dimension
     // should be the phys dim divided by pack size.
-    auto v3 = f1.get_reshaped_view<P8**>();
-    auto v4 = f1.get_reshaped_view<P4**>();
+    auto v3 = f1.get_view<P8**>();
+    auto v4 = f1.get_view<P4**>();
     REQUIRE (v4.size() == 2*v3.size());
     REQUIRE (v4.extent_int(0) == fid.get_layout().dim(0));
     REQUIRE (v3.extent_int(0) == fid.get_layout().dim(0));
@@ -131,7 +141,7 @@ TEST_CASE("field", "") {
     REQUIRE (v3.impl_map().memory_span()==v4.impl_map().memory_span());
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
-    REQUIRE_THROWS (f1.get_reshaped_view<P16***>());
+    REQUIRE_THROWS (f1.get_view<P16***>());
   }
 
   SECTION ("compare") {
@@ -141,8 +151,8 @@ TEST_CASE("field", "") {
     f1.allocate_view();
     f2.allocate_view();
 
-    auto v1 = f1.get_reshaped_view<Real**>();
-    auto v2 = f2.get_reshaped_view<P8**>();
+    auto v1 = f1.get_view<Real**>();
+    auto v2 = f2.get_view<P8**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
     Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
@@ -174,11 +184,11 @@ TEST_CASE("field", "") {
     Field<Real> f1 (fid);
 
     f1.allocate_view();
-    Kokkos::deep_copy(f1.get_view(),3.0);
+    f1.deep_copy(3.0);
 
     Field<const Real> f2 = f1;
     REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
-    REQUIRE(f2.get_view()==f1.get_view());
+    REQUIRE(f2.get_internal_view_data()==f1.get_internal_view_data());
     REQUIRE(f2.is_allocated());
     REQUIRE(views_are_equal(f1,f2));
   }
@@ -193,9 +203,9 @@ TEST_CASE("field", "") {
     f1.allocate_view();
     f1.deep_copy(1.0);
     f1.sync_to_host();
-    auto v = f1.get_view<Host>();
+    auto v = f1.get_internal_view_data<Host>();
     for (int i=0; i<fid1.get_layout().size(); ++i) {
-      REQUIRE (v(i)==1.0);
+      REQUIRE (v[i]==1.0);
     }
   }
 
@@ -208,26 +218,20 @@ TEST_CASE("field", "") {
 
     Field<Real> f1(fid1);
     f1.allocate_view();
-    auto v = f1.get_view();
-    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
-                         KOKKOS_LAMBDA(const int i) {
-      v(i) = i;
-    });
-    auto vh = Kokkos::create_mirror_view(v);
-    Kokkos::deep_copy(vh,v);
+    randomize(f1,engine,pdf);
 
     const int idim = 1;
     const int ivar = 2;
 
     auto f2 = f1.subfield(idim,ivar);
-    auto v4d = f1.get_reshaped_view<Real****>();
-    auto v3d = f2.get_reshaped_view<Real***>();
+    auto v4d = f1.get_view<Real****>();
+    auto v3d = f2.get_view<Real***>();
 
     // Wrong rank for the subfield f2
-    REQUIRE_THROWS(f2.get_reshaped_view<Real****>());
+    REQUIRE_THROWS(f2.get_view<Real****>());
 
-    auto v4d_h = f1.get_reshaped_view<Real****,Host>();
-    auto v3d_h = f2.get_reshaped_view<Real***,Host>();
+    auto v4d_h = f1.get_view<Real****,Host>();
+    auto v3d_h = f2.get_view<Real***,Host>();
     for (int i=0; i<d1[0]; ++i)
       for (int j=0; j<d1[2]; ++j)
         for (int k=0; k<d1[3]; ++k) {
@@ -258,7 +262,7 @@ TEST_CASE("field", "") {
 
     f_vec.sync_to_host();
 
-    auto v = f_vec.get_reshaped_view<Real***,Host>();
+    auto v = f_vec.get_view<Real***,Host>();
     for (int col=0; col<3; ++col) {
       for (int lev=0; lev<24; ++lev) {
         REQUIRE (v(col,0,lev)==1.0);
@@ -272,27 +276,21 @@ TEST_CASE("field", "") {
     Field<Real> f(fid);
 
     // Views not yet allocated
-    REQUIRE_THROWS(f.get_view());
-    REQUIRE_THROWS(f.get_view<Host>());
+    REQUIRE_THROWS(f.get_internal_view_data());
+    REQUIRE_THROWS(f.get_internal_view_data<Host>());
     REQUIRE_THROWS(f.sync_to_host());
     REQUIRE_THROWS(f.sync_to_dev());
 
     f.allocate_view();
-
-    auto v = f.get_view();
-    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
-                         KOKKOS_LAMBDA(int i) {
-      v(i) = i;
-    });
-    f.sync_to_host();
+    randomize(f,engine,pdf);
 
     // Get reshaped view on device, and manually create Host mirror
-    auto v2d = f.get_reshaped_view<Real**>();
+    auto v2d = f.get_view<Real**>();
     auto v2d_hm = Kokkos::create_mirror_view(v2d);
     Kokkos::deep_copy(v2d_hm,v2d);
 
     // Get reshaped view straight on Host
-    auto v2dh = f.get_reshaped_view<Real**,Host>();
+    auto v2dh = f.get_view<Real**,Host>();
 
     // The two should match
     for (int i=0; i<dims[0]; ++i) {
@@ -485,14 +483,14 @@ TEST_CASE("tracers_bundle", "") {
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.0,1.0);
 
-  ekat::genRandArray(Q.get_view(),engine,pdf);
+  randomize(Q,engine,pdf);
 
   // Check that the same values are in all q's
   Q.sync_to_host();
-  auto Qh = Q.get_reshaped_view<Real***,Host>();
-  auto qvh = qv.get_reshaped_view<Real**,Host>();
-  auto qch = qc.get_reshaped_view<Real**,Host>();
-  auto qrh = qr.get_reshaped_view<Real**,Host>();
+  auto Qh = Q.get_view<Real***,Host>();
+  auto qvh = qv.get_view<Real**,Host>();
+  auto qch = qc.get_view<Real**,Host>();
+  auto qrh = qr.get_view<Real**,Host>();
 
   for (int icol=0; icol<ncols; ++icol) {
     for (int ilev=0; ilev<nlevs; ++ilev) {
@@ -628,6 +626,17 @@ TEST_CASE("field_property_check", "") {
 
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
 
+  std::random_device rd;
+  using rngAlg = std::mt19937_64;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pos_pdf(0.01,0.99);
+  RPDF neg_pdf(-0.99, -0.01);
+
+
   // Check positivity.
   SECTION ("field_positivity_check") {
     Field<Real> f1(fid);
@@ -635,26 +644,22 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(not positivity_check->can_repair());
     f1.add_property_check(positivity_check);
     f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
     // Assign positive values to the field and make sure it passes our test for
     // positivity.
-    auto f1_view = f1.get_view();
-    auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = i+1;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(iter->check(f1));
+    auto f1_data = f1.get_internal_view_data<Host>();
+    ekat::genRandArray(f1_data,num_reals,engine,pos_pdf);
+    f1.sync_to_dev();
+    for (const auto& p : f1.get_property_checks()) {
+      REQUIRE(p.check(f1));
     }
 
     // Assign non-positive values to the field and make sure it fails the check.
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = -i;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(not iter->check(f1));
+    ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
+    f1.sync_to_dev();
+    for (const auto& p : f1.get_property_checks()) {
+      REQUIRE(not p.check(f1));
     }
   }
 
@@ -665,19 +670,17 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(positivity_check->can_repair());
     f1.add_property_check(positivity_check);
     f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
     // Assign non-positive values to the field, make sure it fails the check,
     // and then repair the field so it passes.
-    auto f1_view = f1.get_view();
-    auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = -i;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(not iter->check(f1));
-      iter->repair(f1);
-      REQUIRE(iter->check(f1));
+    auto f1_data = f1.get_internal_view_data<Host>();
+    ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
+    f1.sync_to_dev();
+    for (auto& p : f1.get_property_checks()) {
+      REQUIRE(not p.check(f1));
+      p.repair(f1);
+      REQUIRE(p.check(f1));
     }
   }
 
@@ -687,98 +690,52 @@ TEST_CASE("field_property_check", "") {
     auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
     f1.add_property_check(nan_check);
     f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
-    // Assign  values to the field and make sure it passes our test for
-    // NaNs.
-    auto f1_view = f1.get_view();
-    auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = i;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(iter->check(f1));
+    // Assign  values to the field and make sure it passes our test for NaNs.
+    auto f1_data = f1.get_internal_view_data<Host>();
+    ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
+    f1.sync_to_dev();
+    for (auto& p : f1.get_property_checks()) {
+      REQUIRE(p.check(f1));
     }
 
     // Assign a NaN value to the field, make sure it fails the check,
-    Int midpt = host_view.extent(0)/2;
-    host_view(midpt) = std::numeric_limits<Real>::quiet_NaN();
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(not iter->check(f1));
+    Int midpt = num_reals / 2;
+    f1_data[midpt] = std::numeric_limits<Real>::quiet_NaN();
+    f1.sync_to_dev();
+    for (auto& p : f1.get_property_checks()) {
+      REQUIRE(not p.check(f1));
     }
   }
 
   // Check that the values of a field lie within an interval.
   SECTION ("field_within_interval_check") {
     Field<Real> f1(fid);
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 100);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
     REQUIRE(interval_check->can_repair());
     f1.add_property_check(interval_check);
     f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
-    // Assign positive values to the field and make sure it passes our test for
-    // positivity.
-    auto f1_view = f1.get_view();
-    auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = i;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(iter->check(f1));
+    // Assign in-bound values to the field and make sure it passes the within-interval check
+    auto f1_data = f1.get_internal_view_data<Host>();
+    ekat::genRandArray(f1_data,num_reals,engine,pos_pdf);
+    f1.sync_to_dev();
+    for (auto& p : f1.get_property_checks()) {
+      REQUIRE(p.check(f1));
     }
 
-    // Assign non-positive values to the field, make sure it fails the check,
+    // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = -i;
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] *= -1;
     }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(not iter->check(f1));
-      iter->repair(f1);
-      REQUIRE(iter->check(f1));
-    }
-  }
-
-  // Check monotonicity.
-  SECTION ("field_monotonicity_check") {
-    Field<Real> f1(fid);
-    auto mono_check = std::make_shared<FieldMonotonicityCheck<Real> >();
-    REQUIRE(not mono_check->can_repair());
-    f1.add_property_check(mono_check);
-    f1.allocate_view();
-
-    // Assign monotonically-increasing values to the field and make sure it
-    // passes our test for positivity.
-    auto f1_view = f1.get_view();
-    auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = i+1;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(iter->check(f1));
-    }
-
-    // Assign monotonically-decreasing values to the field and make sure it
-    // also passes the check.
-    for (int i = 0; i < host_view.extent_int(0); ++i) {
-      host_view(i) = -i;
-    }
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(iter->check(f1));
-    }
-
-    // Write a positive value to the middle of the array that causes the
-    // monotonicity check to fail.
-    host_view(host_view.extent(0)/2) = 1;
-    Kokkos::deep_copy(f1_view, host_view);
-    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
-      REQUIRE(not iter->check(f1));
-      REQUIRE_THROWS(iter->repair(f1)); // we can't repair it, either
+    f1.sync_to_dev();
+    for (auto& p : f1.get_property_checks()) {
+      REQUIRE(not p.check(f1));
+      p.repair(f1);
+      REQUIRE(p.check(f1));
     }
   }
 }

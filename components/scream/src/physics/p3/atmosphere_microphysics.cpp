@@ -188,12 +188,12 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  const  auto& pmid           = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
-  const  auto& pseudo_density = m_p3_fields_in["pseudo_density"].get_reshaped_view<const Pack**>();
-  const  auto& T_atm          = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
-  const  auto& cld_frac_t     = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
-  const  auto& zi             = m_p3_fields_in["z_int"].get_reshaped_view<const Pack**>();
-  const  auto& qv             = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
+  const  auto& pmid           = m_p3_fields_in["p_mid"].get_view<const Pack**>();
+  const  auto& pseudo_density = m_p3_fields_in["pseudo_density"].get_view<const Pack**>();
+  const  auto& T_atm          = m_p3_fields_out["T_mid"].get_view<Pack**>();
+  const  auto& cld_frac_t     = m_p3_fields_in["cldfrac_tot"].get_view<const Pack**>();
+  const  auto& zi             = m_p3_fields_in["z_int"].get_view<const Pack**>();
+  const  auto& qv             = m_p3_fields_out["qv"].get_view<Pack**>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
@@ -207,26 +207,26 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
-  prog_state.qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
-  prog_state.nc     = m_p3_fields_out["nc"].get_reshaped_view<Pack**>();
-  prog_state.qr     = m_p3_fields_out["qr"].get_reshaped_view<Pack**>();
-  prog_state.nr     = m_p3_fields_out["nr"].get_reshaped_view<Pack**>();
-  prog_state.qi     = m_p3_fields_out["qi"].get_reshaped_view<Pack**>();
-  prog_state.qm     = m_p3_fields_out["qm"].get_reshaped_view<Pack**>();
-  prog_state.ni     = m_p3_fields_out["ni"].get_reshaped_view<Pack**>();
-  prog_state.bm     = m_p3_fields_out["bm"].get_reshaped_view<Pack**>();
+  prog_state.qc     = m_p3_fields_out["qc"].get_view<Pack**>();
+  prog_state.nc     = m_p3_fields_out["nc"].get_view<Pack**>();
+  prog_state.qr     = m_p3_fields_out["qr"].get_view<Pack**>();
+  prog_state.nr     = m_p3_fields_out["nr"].get_view<Pack**>();
+  prog_state.qi     = m_p3_fields_out["qi"].get_view<Pack**>();
+  prog_state.qm     = m_p3_fields_out["qm"].get_view<Pack**>();
+  prog_state.ni     = m_p3_fields_out["ni"].get_view<Pack**>();
+  prog_state.bm     = m_p3_fields_out["bm"].get_view<Pack**>();
   prog_state.th     = p3_preproc.th_atm;
   prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
-  diag_inputs.nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
-  diag_inputs.nccn            = m_p3_fields_in["nc_activated"].get_reshaped_view<const Pack**>();
-  diag_inputs.ni_activated    = m_p3_fields_in["ni_activated"].get_reshaped_view<const Pack**>();
-  diag_inputs.inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_reshaped_view<const Pack**>();
-  diag_inputs.pres            = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
+  diag_inputs.nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_view<const Pack**>();
+  diag_inputs.nccn            = m_p3_fields_in["nc_activated"].get_view<const Pack**>();
+  diag_inputs.ni_activated    = m_p3_fields_in["ni_activated"].get_view<const Pack**>();
+  diag_inputs.inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_view<const Pack**>();
+  diag_inputs.pres            = m_p3_fields_in["p_mid"].get_view<const Pack**>();
   diag_inputs.dpres           = p3_preproc.pseudo_density;
-  auto qv_prev                = m_p3_fields_out["qv_prev_micro_step"].get_reshaped_view<Pack**>();
+  auto qv_prev                = m_p3_fields_out["qv_prev_micro_step"].get_view<Pack**>();
   diag_inputs.qv_prev         = qv_prev;
-  auto t_prev                 = m_p3_fields_out["T_prev_micro_step"].get_reshaped_view<Pack**>();
+  auto t_prev                 = m_p3_fields_out["T_prev_micro_step"].get_view<Pack**>();
   diag_inputs.t_prev          = t_prev;
   diag_inputs.cld_frac_l      = p3_preproc.cld_frac_l;
   diag_inputs.cld_frac_i      = p3_preproc.cld_frac_i;
@@ -234,10 +234,10 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_inputs.dz              = p3_preproc.dz;
   diag_inputs.inv_exner       = p3_preproc.inv_exner;
   // --Diagnostic Outputs
-  diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
-  diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
+  diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_view<Pack**>();
 
-  diag_outputs.precip_liq_surf  = m_p3_fields_out["precip_liq_surf"].get_reshaped_view<Real*>();
+  diag_outputs.precip_liq_surf  = m_p3_fields_out["precip_liq_surf"].get_view<Real*>();
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf;
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
@@ -254,9 +254,9 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   infrastructure.prescribedCCN = true; // Hard-coded for now, TODO: make this a runtime option
   infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
-  history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
-  history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
-  history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
+  history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_view<Pack**>();
+  history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_view<Pack**>();
+  history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
@@ -330,8 +330,6 @@ void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
 
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_in.emplace(name,f);
-  m_p3_host_views_in[name] = f.get_view<Host>();
-  m_raw_ptrs_in[name] = m_p3_host_views_in[name].data();
 
   // Add myself as customer to the field
   add_me_as_customer(f);
@@ -341,8 +339,6 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
 
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_out.emplace(name,f);
-  m_p3_host_views_out[name] = f.get_view<Host>();
-  m_raw_ptrs_out[name] = m_p3_host_views_out[name].data();
 
   // Add myself as provider for the field
   add_me_as_provider(f);

@@ -1,6 +1,7 @@
 #include "share/io/scorpio_input.hpp"
 
 #include <numeric>
+#include <string>
 
 namespace scream
 {
@@ -46,7 +47,7 @@ pull_input(const std::string& filename, const std::string& var_name,
 }
 
 /* ---------------------------------------------------------- */
-AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& name)
+AtmosphereInput::view_1d_host AtmosphereInput::pull_input(const std::string& name)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  
  *  Overloaded case to deal with just one output and to not put output into field manager.
@@ -56,13 +57,33 @@ AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& n
  */
   using namespace scream::scorpio;
   if (name=="avg_count") {
-    view_type_host l_view("",1);
+    view_1d_host l_view("",1);
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
   } else {
+    // Read into the host view of the field
+    read_input(name);
+
+    // Create a 1d  view of the host view in the field
     auto field = m_field_mgr->get_field(name);
-    view_type_host l_view("",field.get_view().extent(0));
-    grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
+    const auto& fl  = field.get_header().get_identifier().get_layout();
+    const auto& fap = field.get_header().get_alloc_properties();
+    const int last_dim = fap.get_last_extent();
+    view_1d_host l_view("",fap.get_num_scalars());
+    switch (fl.rank()) {
+      case 1:
+        Kokkos::deep_copy(l_view,field.get_view<Real*,Host>());
+        break;
+      case 2:
+        Kokkos::deep_copy(view_ND_host<2>(l_view.data(),fl.dim(0),last_dim),field.get_view<Real**,Host>());
+        break;
+      case 3:
+        Kokkos::deep_copy(view_ND_host<3>(l_view.data(),fl.dim(0),fl.dim(1),last_dim),field.get_view<Real***,Host>());
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+    }
+
     return l_view;
   }
 } 
@@ -76,70 +97,8 @@ void AtmosphereInput::pull_input()
   init();
 
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
-    const auto& fh  = field.get_header();
-    const auto& fl  = fh.get_identifier().get_layout();
-    const auto& fap = fh.get_alloc_properties();
-
-    // Get all the info for this field.
-    auto l_dims = fl.dims();
-    const auto padding = fap.get_padding();
-    const auto num_reals = fap.get_alloc_size() / sizeof(Real);
-
-    if (auto p = fh.get_parent().lock()) {
-      // The hard case: we cannot call 'get_view', and even the reshaped view
-      // is likely strided. So we just create a temp contiguous view, use it
-      // for reading from file, then deep_copy to dev.
-      using field_type = decltype(field);
-      using RT         = typename field_type::RT;
-
-      using dev_view_1d_type  = typename field_type::view_type<RT*>;
-      using host_view_1d_type = typename field_type::HM<dev_view_1d_type>;
-
-      // Use a 1d view of correct size for scorpio reading
-      host_view_1d_type temp_view("",num_reals);
-      grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
-                           padding,temp_view.data());
-
-      // Get the host view of the field properly reshaped, and deep copy
-      // from temp_view (properly reshaped as well)
-      auto rank   = fl.rank();
-      switch (rank) {
-        case 1:
-          // Easy: can deep copy from the 1d view directly
-          Kokkos::deep_copy(field.get_reshaped_view<RT*>(),
-                            host_view_1d_type(temp_view.data(),fl.dim(0)+padding));
-          break;
-        case 2:
-          {
-            using dev_view_2d_type = typename field_type::view_type<RT**>;
-            using host_view_2d_type = typename field_type::HM<dev_view_2d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT**,Host>(),
-                              host_view_2d_type(temp_view.data(),fl.dim(0),fl.dim(1)+padding));
-            field.sync_to_dev();
-            break;
-          }
-        case 3:
-          {
-            using dev_view_3d_type = typename field_type::view_type<RT***>;
-            using host_view_3d_type = typename field_type::HM<dev_view_3d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT***,Host>(),
-                              host_view_3d_type(temp_view.data(),fl.dim(0),fl.dim(1),fl.dim(2)+padding));
-            field.sync_to_dev();
-            break;
-          }
-        default:
-          EKAT_ERROR_MSG (
-              "Error! Rank-" + std::to_string(rank) + " field not yet supported in AtmosphereInput.\n");
-      }
-    } else {
-      // The easy case: we're good to grab the stored 1d view
-      grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
-                           padding,field.get_view<Host>().data());
-    }
-
-    // Sync to device
-    field.sync_to_dev();
+    // Read from file, into the host copy of the field
+    read_input(name);
   }
   finalize();
 } 
@@ -233,6 +192,63 @@ void AtmosphereInput::register_variables()
     get_variable(m_filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt");
   }
 } // register_variables
+/* ---------------------------------------------------------- */
+void AtmosphereInput::
+read_input(const std::string& name)
+{
+  using namespace scorpio;
+
+  auto field = m_field_mgr->get_field(name);
+  const auto& fh  = field.get_header();
+  const auto& fl  = fh.get_identifier().get_layout();
+  const auto& fap = fh.get_alloc_properties();
+
+  // Get all the info for this field.
+  auto l_dims = fl.dims();
+  const auto padding = fap.get_padding();
+
+  // Strategy: create a temp contiguous view (except possibly for paddin),
+  // and use it for reading from file. Then, deep copy back to the input view.
+  using field_type = decltype(field);
+  using RT         = typename field_type::RT;
+
+  // Use a 1d view of correct size for scorpio reading
+  view_1d_host temp_view("",fap.get_num_scalars());
+  grid_read_data_array(m_filename,name,l_dims,m_dofs_sizes.at(name),
+                       padding,temp_view.data());
+
+  // Get the host view of the field properly reshaped, and deep copy
+  // from temp_view (properly reshaped as well)
+  auto rank   = fl.rank();
+  switch (rank) {
+    case 1:
+      {
+        // Easy: can deep copy from the 1d view directly
+        Kokkos::deep_copy(field.get_view<RT*,Host>(),temp_view);
+        break;
+      }
+    case 2:
+      {
+        // Reshape temp_view to a 2d view, then copy
+        Kokkos::deep_copy(field.get_view<RT**,Host>(),
+                          view_ND_host<2>(temp_view.data(),fl.dim(0),fl.dim(1)+padding));
+        break;
+      }
+    case 3:
+      {
+        // Reshape temp_view to a 3d view, then copy
+        Kokkos::deep_copy(field.get_view<RT***,Host>(),
+                          view_ND_host<3>(temp_view.data(),fl.dim(0),fl.dim(1),fl.dim(2)+padding));
+        break;
+      }
+    default:
+      EKAT_ERROR_MSG (
+          "Error! Rank-" + std::to_string(rank) + " field not yet supported in AtmosphereInput.\n");
+  }
+
+  // Sync to device
+  field.sync_to_dev();
+}
 
 /* ---------------------------------------------------------- */
 std::vector<std::string>

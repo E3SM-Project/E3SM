@@ -192,27 +192,27 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 void RRTMGPRadiation::run_impl (const Real dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   // Get data from the FieldManager
-  auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
-  auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
-  auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
-  auto d_tint = m_rrtmgp_fields_in.at("t_int").get_reshaped_view<const Real**>();
-  auto d_sfc_alb_dir_vis = m_rrtmgp_fields_in.at("sfc_alb_dir_vis").get_reshaped_view<const Real*>();
-  auto d_sfc_alb_dir_nir = m_rrtmgp_fields_in.at("sfc_alb_dir_nir").get_reshaped_view<const Real*>();
-  auto d_sfc_alb_dif_vis = m_rrtmgp_fields_in.at("sfc_alb_dif_vis").get_reshaped_view<const Real*>();
-  auto d_sfc_alb_dif_nir = m_rrtmgp_fields_in.at("sfc_alb_dif_nir").get_reshaped_view<const Real*>();
-  auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
-  auto d_qv = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
-  auto d_qc = m_rrtmgp_fields_in.at("qc").get_reshaped_view<const Real**>();
-  auto d_qi = m_rrtmgp_fields_in.at("qi").get_reshaped_view<const Real**>();
-  auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_reshaped_view<const Real**>();
-  auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_reshaped_view<const Real**>();
-  auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_reshaped_view<const Real**>();
-  auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_reshaped_view<Real**>();
-  auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_reshaped_view<Real**>();
-  auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_reshaped_view<Real**>();
-  auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
-  auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_reshaped_view<Real**>();
-  auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_reshaped_view<Real**>();
+  auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_view<const Real**>();
+  auto d_pint = m_rrtmgp_fields_in.at("p_int").get_view<const Real**>();
+  auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_view<const Real**>();
+  auto d_tint = m_rrtmgp_fields_in.at("t_int").get_view<const Real**>();
+  auto d_sfc_alb_dir_vis = m_rrtmgp_fields_in.at("sfc_alb_dir_vis").get_view<const Real*>();
+  auto d_sfc_alb_dir_nir = m_rrtmgp_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
+  auto d_sfc_alb_dif_vis = m_rrtmgp_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
+  auto d_sfc_alb_dif_nir = m_rrtmgp_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
+  auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_view<const Real*>();
+  auto d_qv = m_rrtmgp_fields_in.at("qv").get_view<const Real**>();
+  auto d_qc = m_rrtmgp_fields_in.at("qc").get_view<const Real**>();
+  auto d_qi = m_rrtmgp_fields_in.at("qi").get_view<const Real**>();
+  auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_view<const Real**>();
+  auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_view<const Real**>();
+  auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_view<const Real**>();
+  auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_view<Real**>();
+  auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_view<Real**>();
+  auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_view<Real**>();
+  auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_view<Real**>();
+  auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_view<Real**>();
+  auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_view<Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -275,7 +275,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
-    auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
+    auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
@@ -376,8 +376,6 @@ void RRTMGPRadiation::finalize_impl  () {
 void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
   const auto& name = f.get_header().get_identifier().name();
   m_rrtmgp_fields_in.emplace(name,f);
-  m_rrtmgp_host_views_in[name] = Kokkos::create_mirror_view(f.get_view());
-  m_raw_ptrs_in[name] = m_rrtmgp_host_views_in[name].data();
 
   // Add myself as customer to the field
   add_me_as_customer(f);
@@ -386,8 +384,6 @@ void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
 void RRTMGPRadiation::set_computed_field_impl(const Field<      Real>& f) {
   const auto& name = f.get_header().get_identifier().name();
   m_rrtmgp_fields_out.emplace(name,f);
-  m_rrtmgp_host_views_out[name] = Kokkos::create_mirror_view(f.get_view());
-  m_raw_ptrs_out[name] = m_rrtmgp_host_views_out[name].data();
 
   // Add myself as provider for the field
   add_me_as_provider(f);

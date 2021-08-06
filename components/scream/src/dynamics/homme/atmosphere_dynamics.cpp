@@ -302,61 +302,61 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
     // Velocity
     auto& v = state.m_v;
-    auto v_in = m_dyn_grid_fields.at("v").get_reshaped_view<Homme::Scalar*[NTL][2][NP][NP][NVL]>();
+    auto v_in = m_dyn_grid_fields.at("v").get_view<Homme::Scalar*[NTL][2][NP][NP][NVL]>();
     using v_type = std::remove_reference<decltype(v)>::type;
     v = v_type (v_in.data(),num_elems);
 
     // Virtual potential temperature
     auto& vtheta = state.m_vtheta_dp;
-    auto vtheta_in = m_dyn_grid_fields.at("vtheta_dp").get_reshaped_view<Homme::Scalar*[NTL][NP][NP][NVL]>();
+    auto vtheta_in = m_dyn_grid_fields.at("vtheta_dp").get_view<Homme::Scalar*[NTL][NP][NP][NVL]>();
     using vtheta_type = std::remove_reference<decltype(vtheta)>::type;
     vtheta = vtheta_type(vtheta_in.data(),num_elems);
 
     // Geopotential
     auto& phi = state.m_phinh_i;
-    auto phi_in = m_dyn_grid_fields.at("phinh_i").get_reshaped_view<Homme::Scalar*[NTL][NP][NP][NVLI]>();
+    auto phi_in = m_dyn_grid_fields.at("phinh_i").get_view<Homme::Scalar*[NTL][NP][NP][NVLI]>();
     using phi_type = std::remove_reference<decltype(phi)>::type;
     phi = phi_type(phi_in.data(),num_elems);
 
     // Vertical velocity
     auto& w = state.m_w_i;
-    auto w_in = m_dyn_grid_fields.at("w_i").get_reshaped_view<Homme::Scalar*[NTL][NP][NP][NVLI]>();
+    auto w_in = m_dyn_grid_fields.at("w_i").get_view<Homme::Scalar*[NTL][NP][NP][NVLI]>();
     using w_type = std::remove_reference<decltype(w)>::type;
     w = w_type(w_in.data(),num_elems);
 
     // Pseudo-density
     auto& dp3d = state.m_dp3d;
-    auto dp3d_in = m_dyn_grid_fields.at("dp3d").template get_reshaped_view<Homme::Scalar*[NTL][NP][NP][NVL]>();
+    auto dp3d_in = m_dyn_grid_fields.at("dp3d").template get_view<Homme::Scalar*[NTL][NP][NP][NVL]>();
     using dp3d_type = std::remove_reference<decltype(dp3d)>::type;
     dp3d = dp3d_type(dp3d_in.data(),num_elems);
 
     // Surface pressure
     auto& ps = state.m_ps_v;
-    auto ps_in = m_dyn_grid_fields.at("ps").template get_reshaped_view<Real*[NTL][NP][NP]>();
+    auto ps_in = m_dyn_grid_fields.at("ps").template get_view<Real*[NTL][NP][NP]>();
     using ps_type = std::remove_reference<decltype(ps)>::type;
     ps = ps_type(ps_in.data(),num_elems);
 
     // Tracers
     auto& q = tracers.Q;
-    auto q_in = m_dyn_grid_fields.at("Q").template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+    auto q_in = m_dyn_grid_fields.at("Q").template get_view<Homme::Scalar**[NP][NP][NVL]>();
     using q_type = std::remove_reference<decltype(q)>::type;
     q = q_type(q_in.data(),num_elems,num_tracers);
 
     // Tracers forcing
     auto& fq = tracers.fq;
-    auto fq_in = m_dyn_grid_fields.at("FQ").template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+    auto fq_in = m_dyn_grid_fields.at("FQ").template get_view<Homme::Scalar**[NP][NP][NVL]>();
     using fq_type = std::remove_reference<decltype(fq)>::type;
     fq = fq_type(fq_in.data(),num_elems,num_tracers);
 
     // Temperature forcing
     auto& ft = forcing.m_ft;
-    auto ft_in = m_dyn_grid_fields.at("FT").template get_reshaped_view<Homme::Scalar*[NP][NP][NVL]>();
+    auto ft_in = m_dyn_grid_fields.at("FT").template get_view<Homme::Scalar*[NP][NP][NVL]>();
     using ft_type = std::remove_reference<decltype(ft)>::type;
     ft = ft_type(ft_in.data(),num_elems);
 
     // Momentum forcing
     auto& fm = forcing.m_fm;
-    auto fm_in = m_dyn_grid_fields.at("FM").template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+    auto fm_in = m_dyn_grid_fields.at("FM").template get_view<Homme::Scalar**[NP][NP][NVL]>();
     using fm_type = std::remove_reference<decltype(fm)>::type;
     fm = fm_type(fm_in.data(),num_elems);
   }
@@ -401,13 +401,13 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  const auto ps   = m_dyn_grid_fields.at("ps").get_reshaped_view<Real****>();
-  const auto dp3d = m_dyn_grid_fields.at("dp3d").get_reshaped_view<Pack*****>();
-  const auto v    = m_dyn_grid_fields.at("v").get_reshaped_view<Pack******>();
-  const auto w_i    = m_dyn_grid_fields.at("w_i").get_reshaped_view<Pack*****>();
-  const auto phinh_i    = m_dyn_grid_fields.at("phinh_i").get_reshaped_view<Pack*****>();
-  const auto vtheta_dp = m_dyn_grid_fields.at("vtheta_dp").get_reshaped_view<Pack*****>();
-  const auto Q = m_dyn_grid_fields.at("Q").get_reshaped_view<Pack*****>();
+  const auto ps   = m_dyn_grid_fields.at("ps").get_view<Real****>();
+  const auto dp3d = m_dyn_grid_fields.at("dp3d").get_view<Pack*****>();
+  const auto v    = m_dyn_grid_fields.at("v").get_view<Pack******>();
+  const auto w_i    = m_dyn_grid_fields.at("w_i").get_view<Pack*****>();
+  const auto phinh_i    = m_dyn_grid_fields.at("phinh_i").get_view<Pack*****>();
+  const auto vtheta_dp = m_dyn_grid_fields.at("vtheta_dp").get_view<Pack*****>();
+  const auto Q = m_dyn_grid_fields.at("Q").get_view<Pack*****>();
 
   const auto num_elems = dp3d.extent_int(0);
   const auto nlevs  = m_dyn_grid->get_num_vertical_levels();
@@ -581,11 +581,11 @@ void HommeDynamics::homme_pre_process (const Real dt) {
   const int nlevs = m_ref_grid->get_num_vertical_levels();
   const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
 
-  auto T  = m_ref_grid_fields.at("T_mid").get_reshaped_view<Pack**>();
-  auto FT = m_ref_grid_fields.at("T_mid_prev").get_reshaped_view<Pack**>();
-  auto v  = m_ref_grid_fields.at("horiz_winds").get_reshaped_view<Pack***>();
-  auto w  = m_ref_grid_fields.at("w_int").get_reshaped_view<Pack**>();
-  auto FM = m_ref_grid_fields.at("horiz_winds_prev").get_reshaped_view<Pack***>();
+  auto T  = m_ref_grid_fields.at("T_mid").get_view<Pack**>();
+  auto FT = m_ref_grid_fields.at("T_mid_prev").get_view<Pack**>();
+  auto v  = m_ref_grid_fields.at("horiz_winds").get_view<Pack***>();
+  auto w  = m_ref_grid_fields.at("w_int").get_view<Pack**>();
+  auto FM = m_ref_grid_fields.at("horiz_winds_prev").get_view<Pack***>();
 
   // If there are other atm procs updating the vertical velocity,
   // then we need to compute forcing for w as well
@@ -716,18 +716,18 @@ void HommeDynamics::homme_post_process () {
 
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
-  const auto ps_view = m_ref_grid_fields.at("ps").get_reshaped_view<Real*>();
-  const auto dp_view = m_ref_grid_fields.at("pseudo_density").get_reshaped_view<Pack**>();
-  const auto p_mid_view = m_ref_grid_fields.at("p_mid").get_reshaped_view<Pack**>();
-  const auto p_int_view = m_ref_grid_fields.at("p_int").get_reshaped_view<Pack**>();
-  const auto Q_view  = m_ref_grid_fields.at("Q").get_reshaped_view<Pack***>();
+  const auto ps_view = m_ref_grid_fields.at("ps").get_view<Real*>();
+  const auto dp_view = m_ref_grid_fields.at("pseudo_density").get_view<Pack**>();
+  const auto p_mid_view = m_ref_grid_fields.at("p_mid").get_view<Pack**>();
+  const auto p_int_view = m_ref_grid_fields.at("p_int").get_view<Pack**>();
+  const auto Q_view  = m_ref_grid_fields.at("Q").get_view<Pack***>();
 
-  const auto T_view  = m_ref_grid_fields.at("T_mid").get_reshaped_view<Pack**>();
-  const auto v_view  = m_ref_grid_fields.at("horiz_winds").get_reshaped_view<Pack***>();
-  const auto w_view  = m_ref_grid_fields.at("w_int").get_reshaped_view<Pack**>();
-  const auto T_prev_view = m_ref_grid_fields.at("T_mid_prev").get_reshaped_view<Pack**>();
-  const auto v_prev_view = m_ref_grid_fields.at("horiz_winds_prev").get_reshaped_view<Pack***>();
-  const auto w_prev_view = m_ref_grid_fields.at("w_int_prev").get_reshaped_view<Pack**>();
+  const auto T_view  = m_ref_grid_fields.at("T_mid").get_view<Pack**>();
+  const auto v_view  = m_ref_grid_fields.at("horiz_winds").get_view<Pack***>();
+  const auto w_view  = m_ref_grid_fields.at("w_int").get_view<Pack**>();
+  const auto T_prev_view = m_ref_grid_fields.at("T_mid_prev").get_view<Pack**>();
+  const auto v_prev_view = m_ref_grid_fields.at("horiz_winds_prev").get_view<Pack***>();
+  const auto w_prev_view = m_ref_grid_fields.at("w_int_prev").get_view<Pack**>();
 
   const auto ncols = m_ref_grid->get_num_local_dofs();
   const auto nlevs = m_ref_grid->get_num_vertical_levels();

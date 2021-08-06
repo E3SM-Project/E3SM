@@ -172,34 +172,33 @@ namespace scream {
         // copies is necessary since the yakl::Array take in data arranged with ncol
         // as the fastest index, but the field manager expects the 2nd dimension as
         // the fastest index.
-        auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
-        auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
-        auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
-        auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
-        auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_reshaped_view<Real*>();
-        auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_reshaped_view<Real*>();
-        auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_reshaped_view<Real*>();
-        auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_reshaped_view<Real*>();
-        auto d_qc = field_mgr.get_field("qc").get_reshaped_view<Real**>();
-        auto d_qi = field_mgr.get_field("qi").get_reshaped_view<Real**>();
-        auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
-        auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
-        auto d_cld = field_mgr.get_field("cldfrac_tot").get_reshaped_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
+        auto d_pmid = field_mgr.get_field("p_mid").get_view<Real**>();
+        auto d_tmid = field_mgr.get_field("T_mid").get_view<Real**>();
+        auto d_pint = field_mgr.get_field("p_int").get_view<Real**>();
+        auto d_pdel = field_mgr.get_field("pseudo_density").get_view<Real**>();
+        auto d_tint = field_mgr.get_field("t_int").get_view<Real**>();
+        auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_view<Real*>();
+        auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
+        auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
+        auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
+        auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
+        auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
+        auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
+        auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
+        auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
+        auto d_mu0 = field_mgr.get_field("cos_zenith").get_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
 
-        auto d_qv  = field_mgr.get_field("qv").get_reshaped_view<Real**>();
-        auto d_co2 = field_mgr.get_field("co2").get_reshaped_view<Real**>();
-        auto d_o3  = field_mgr.get_field("o3").get_reshaped_view<Real**>();
-        auto d_n2o = field_mgr.get_field("n2o").get_reshaped_view<Real**>();
-        auto d_co  = field_mgr.get_field("co").get_reshaped_view<Real**>();
-        auto d_ch4 = field_mgr.get_field("ch4").get_reshaped_view<Real**>();
-        auto d_o2  = field_mgr.get_field("o2").get_reshaped_view<Real**>();
-        auto d_n2  = field_mgr.get_field("n2").get_reshaped_view<Real**>();
+        auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
+        auto d_co2 = field_mgr.get_field("co2").get_view<Real**>();
+        auto d_o3  = field_mgr.get_field("o3").get_view<Real**>();
+        auto d_n2o = field_mgr.get_field("n2o").get_view<Real**>();
+        auto d_co  = field_mgr.get_field("co").get_view<Real**>();
+        auto d_ch4 = field_mgr.get_field("ch4").get_view<Real**>();
+        auto d_o2  = field_mgr.get_field("o2").get_view<Real**>();
+        auto d_n2  = field_mgr.get_field("n2").get_view<Real**>();
 
         // Gather molecular weights of all the active gases in the test for conversion
         // to mass-mixing-ratio.
-        auto h2o_mol = PC::get_gas_mol_weight("h2o");
         auto co2_mol = PC::get_gas_mol_weight("co2");
         auto o3_mol  = PC::get_gas_mol_weight("o3");
         auto n2o_mol = PC::get_gas_mol_weight("n2o");
@@ -252,11 +251,11 @@ namespace scream {
 
         // Check values; The correct values have been stored in the field manager, we need to
         // copy back to YAKL::Array.
-        auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_reshaped_view<Real**>();
-        auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_reshaped_view<Real**>();
-        auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_reshaped_view<Real**>();
+        auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**>();
+        auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_view<Real**>();
+        auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_view<Real**>();
+        auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_view<Real**>();
+        auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_view<Real**>();
         auto sw_flux_up_test = real2d("sw_flux_up_test", ncol, nlay+1);
         auto sw_flux_dn_test = real2d("sw_flux_dn_test", ncol, nlay+1);
         auto sw_flux_dn_dir_test = real2d("sw_flux_dn_dir_test",  ncol, nlay+1);
