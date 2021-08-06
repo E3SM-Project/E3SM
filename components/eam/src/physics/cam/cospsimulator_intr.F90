@@ -1182,11 +1182,6 @@ CONTAINS
     
     ! Local vars related to calculations to go from CAM input to COSP input
     ! cosp convective value includes both deep and shallow convection
-    real(r8) :: ptop(pcols,pver)                         ! top interface pressure (Pa)
-    real(r8) :: ztop(pcols,pver)                         ! top interface height asl (m)
-    real(r8) :: pbot(pcols,pver)                         ! bottom interface pressure (Pa)
-    real(r8) :: zbot(pcols,pver)                         ! bottom interface height asl (m)
-    real(r8) :: zmid(pcols,pver)                         ! middle interface height asl (m)
     real(r8) :: lat_cosp(pcols)                          ! lat for cosp (degrees_north)
     real(r8) :: lon_cosp(pcols)                          ! lon for cosp (degrees_east)
     real(r8) :: landmask(pcols)                          ! landmask (0 or 1)
@@ -1456,32 +1451,7 @@ CONTAINS
     !    also reverse CAM height/pressure values for input into CSOP
     !    CAM state%pint from top to surface, COSP wants surface to top.
     
-    ! Initalize
-    ptop(1:ncol,1:pver)=0._r8
-    pbot(1:ncol,1:pver)=0._r8
-    ztop(1:ncol,1:pver)=0._r8
-    zbot(1:ncol,1:pver)=0._r8
-    zmid(1:ncol,1:pver)=0._r8
-    
-    ! assign values from top   
-    do k=1,pverp-1
-       ! assign values from top
-       ptop(1:ncol,k)=state%pint(1:ncol,pverp-k)
-       ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-       ! assign values from bottom           
-       pbot(1:ncol,k)=state%pint(1:ncol,pverp-k+1)
-       zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
-    end do
-    
-    ! add surface height (surface geopotential/gravity) to convert CAM heights based on geopotential above surface into height above sea level
-    do k=1,pver
-       do i=1,ncol
-          ztop(i,k)=ztop(i,k)+state%phis(i)/gravit  
-          zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
-          zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
-       end do
-    end do
-    
+   
     ! 1) lat/lon - convert from radians to cosp input type
     ! Initalize
     lat_cosp(1:ncol)=0._r8
@@ -1710,11 +1680,16 @@ CONTAINS
     cospstateIN%land                           = landmask(1:ncol)
     cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
     cospstateIN%phalf(1:ncol,1)                = 0._r8
-    cospstateIN%phalf(1:ncol,2:pver+1)         = pbot(1:ncol,pver:1:-1)  
-    cospstateIN%hgt_matrix                     = zmid(1:ncol,1:pver) 
-    cospstateIN%hgt_matrix_half(1:ncol,pver+1) = 0._r8
-    cospstateIN%hgt_matrix_half(1:ncol,1:pver) = zbot(1:ncol,pver:1:-1) 
-    cospstateIN%surfelev(1:ncol)               = zbot(1:ncol,1)
+    cospstateIN%phalf(1:ncol,2:pver+1)         = state%pint(1:ncol,2:pver+1)
+    ! add surface height (surface geopotential/gravity) to convert CAM heights
+    ! based on geopotential above surface into height above sea level
+    do k = 1,pver
+       do i = 1,ncol
+          cospstateIN%hgt_matrix(i,k)          = state%zm(i,k) + state%phis(i) / gravit
+          cospstateIN%hgt_matrix_half(i,k)     = state%zi(i,k+1) + state%phis(i) / gravit
+       end do
+    end do
+    cospstateIN%surfelev(1:ncol)               = state%zi(1:ncol,pver+1) + state%phis(1:ncol) / gravit
     call t_stopf('cosp_construct_cospstateIN')
 
     ! Optical inputs
