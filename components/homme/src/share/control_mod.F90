@@ -274,6 +274,8 @@ module control_mod
   integer,               public :: bubble_prec_type = 0    !0 kessler, 1 rj
   logical,               protected :: case_planar_bubble = .FALSE.
 
+  real,                  public :: planar_hs_tinit = 300.0 
+
   public :: set_planar_defaults
 
 contains

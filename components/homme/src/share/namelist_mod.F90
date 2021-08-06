@@ -559,9 +559,11 @@ endif
            test_case      == "planar_nonhydro_mtn_wave"           .or. &
            test_case      == "planar_schar_mtn_wave"            .or. &
            test_case      == "planar_rising_bubble"             .or. &
+           test_case      == "planar_held_suarez"             .or. &
            test_case      == "planar_density_current"             .or. &
            test_case      == "planar_baroclinic_instab"             .or. &
            test_case      == "planar_moist_rising_bubble"            .or. &
+           test_case      == "planar_held_suares"            .or. &
            test_case      == "planar_moist_density_current"            .or. &
            test_case      == "planar_moist_baroclinic_instab"            .or. &
            test_case      == "planar_tropical_cyclone"             .or. &

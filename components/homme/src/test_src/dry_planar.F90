@@ -396,23 +396,29 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 end subroutine bubble_init
 
 
-! planar rising bubble
-subroutine planar_held_suarez(elem,hybrid,hvcoord,nets,nete)
+subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
   use control_mod, only: planar_hs_tinit
   use physical_constants, only: Lx, Ly, Sx, Sy
-  use element_ops, only: set_elem_state
+  use element_ops, only: set_elem_state, set_thermostate
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
+  integer  :: i,j,k,ie,ii, tind1, tind2
+  real(rl) :: x,y
+  real(rl) :: temperature(np,np,nlev), Tinit
 
-  integer :: i,j,k,ie,ii
-  real(rl):: x,y,offset
+  real(rl), parameter ::    &                                           ! parameters needed to get eta from z
+    T0      = 300.d0,       &   ! temperature (k)
+    ztop    = 10000.d0,     & ! model top (m)
+    N       = 0.01d0,       & ! Brunt-Vaisala frequency
+    bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal
+
+!!!!!!!!!! not all used
   real(rl):: pi(nlevp), pm(nlev), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
              qi_s(nlevp), qm_s(nlev), Ti(nlevp), Tm(nlev), qi(nlevp)
-
   real(rl):: zero_mid_init(np,np,nlev),zero_int_init(np,np,nlevp), &
              dp_init(np,np,nlev),ps_init(np,np), &
              phis_init(np,np,nlevp),t_init(np,np,nlev),p_init(np,np,nlev), &
@@ -429,10 +435,58 @@ subroutine planar_held_suarez(elem,hybrid,hvcoord,nets,nete)
       write(iulog,*) 'initializing planar Held-Suarez with'
       print *, 'Lx, Ly =', Lx, Ly
       print *, 'Sx, Sy =', Sx, Sy
-      print *, 'planar_hs_tinit', tinit
+      print *, 'planar_hs_tinit = ', planar_hs_tinit
     endif
 
     tind1=1; tind2=3;
+    Tinit = planar_hs_tinit
+
+!  integer :: i,j,k,ie                                                   ! loop indices
+!  real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
+!  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+
+
+#if 0
+  call get_evenly_spaced_z(zi,zm,0.0_rl,ztop)
+  !for the background state
+  do k=1,nlevp
+    Ti(k) = T0 - zi(k)*g/cp
+    pi(k) = p0*( Ti(k)/T0  )**(1.0/kappa)
+  enddo
+  do k=1,nlev
+    Tm(k) = T0 - zm(k)*g/cp
+    pm(k) = p0*( Tm(k)/T0  )**(1.0/kappa)
+    dpm(k)=(pi(k+1)-pi(k))
+  enddo
+
+#if 0
+#else
+  !old version, hybrid
+  ai(:) = 0.0; bi(:) = 0.0
+  ai(1) = pi(1)/p0;  bi(nlevp) = 1.0
+
+  do k=2,nlev
+    bi(k) = 1.0 - zi(k)/zi(1)
+    !restore ai frop given pressure
+    ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
+  enddo
+#endif
+
+  hvcoord%hyai = ai; hvcoord%hybi = bi
+
+  !set : hyam hybm 
+  hvcoord%hyam = 0.5 *(ai(2:nlev+1) + ai(1:nlev))
+  hvcoord%hybm = 0.5 *(bi(2:nlev+1) + bi(1:nlev))
+
+  !call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
+  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+#else
+  ! set analytic vertical coordinates
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                   ! get evenly spaced z levels
+  hvcoord%etai  = ( (bigG/T0)*(exp(-zi*N*N/g) -1 )+1 ) **(1.0/kappa)    ! set eta levels from z
+  call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
+  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+#endif
 
     do ie=nets,nete
 
@@ -456,9 +510,9 @@ subroutine planar_held_suarez(elem,hybrid,hvcoord,nets,nete)
        x  = elem(ie)%spherep(i,j)%lon; y  = elem(ie)%spherep(i,j)%lat
        if ( abs(x) < Lx/2.0) then
            if (x < 0.0) then
-              elem(ie)%state%phis(:,:) = (x + Lx/4.0) 
+              elem(ie)%state%phis(:,:) = 0.0*(x + Lx/4.0) 
            else
-              elem(ie)%state%phis(:,:) = -(x - Lx/4.0)
+              elem(ie)%state%phis(:,:) = -0.0*(x - Lx/4.0)
            endif
        else
            elem(ie)%state%phis(:,:) = 0.0
@@ -467,14 +521,20 @@ subroutine planar_held_suarez(elem,hybrid,hvcoord,nets,nete)
 
        ! initialize surface pressure to be 'consistent' with topo
        !from const Tinit and hydro assumption
-       elem(ie)%state%ps_v(:,:,tind1:tind2) = elem(ie)%state%ps_v(:,:,tind1:tind2)*&
+       do ii=tind1, tind2
+       elem(ie)%state%ps_v(:,:,ii) = elem(ie)%state%ps_v(:,:,ii)*&
             exp(-elem(ie)%state%phis(:,:) / (Rgas*Tinit))
+       enddo
+print *, elem(ie)%state%ps_v(:,:,1)
+!!!! use set_state instead
+
 
        if (qsize>=1) then
        elem(ie)%state%Q(:,:,:,1:qsize) =0  ! moist HS tracer IC=0
        endif
-       ps=elem(ie)%state%ps_v(:,:,n0)
-       call set_thermostate(elem(ie),ps,temperature,hvcoord)
+       elem(ie)%fcor(:,:) = 0.0
+
+       call set_thermostate(elem(ie),elem(ie)%state%ps_v(:,:,tind1),temperature,hvcoord)
     end do
 
 

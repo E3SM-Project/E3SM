@@ -245,7 +245,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('planar_held_suarez');
        !!!!?????????????????
        do ie=nets,nete
-          call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
+          !call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
        enddo
     case('held_suarez0');
        do ie=nets,nete
