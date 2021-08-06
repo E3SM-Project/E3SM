@@ -322,7 +322,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
         rr=(x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
            (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius 
 
-        if (planar_slice .eqv. .true.) then
+        if (planar_slice) then
           !no y dependence
           rr=sqrt(rr)
         else
@@ -394,6 +394,92 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   enddo
 
 end subroutine bubble_init
+
+
+! planar rising bubble
+subroutine planar_held_suarez(elem,hybrid,hvcoord,nets,nete)
+  use control_mod, only: planar_hs_tinit
+  use physical_constants, only: Lx, Ly, Sx, Sy
+  use element_ops, only: set_elem_state
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+
+
+  integer :: i,j,k,ie,ii
+  real(rl):: x,y,offset
+  real(rl):: pi(nlevp), pm(nlev), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
+             qi_s(nlevp), qm_s(nlev), Ti(nlevp), Tm(nlev), qi(nlevp)
+
+  real(rl):: zero_mid_init(np,np,nlev),zero_int_init(np,np,nlevp), &
+             dp_init(np,np,nlev),ps_init(np,np), &
+             phis_init(np,np,nlevp),t_init(np,np,nlev),p_init(np,np,nlev), &
+             zi_init(np,np,nlevp), zm_init(np,np,nlev)
+
+!!!!
+    planar_hs_tinit=300.0
+
+    if (.not.planar_slice) then
+      call abortmp('planar Held-Suarez needs planar_slice=.true.')
+    endif
+
+    if (hybrid%masterthread) then
+      write(iulog,*) 'initializing planar Held-Suarez with'
+      print *, 'Lx, Ly =', Lx, Ly
+      print *, 'Sx, Sy =', Sx, Sy
+      print *, 'planar_hs_tinit', tinit
+    endif
+
+    tind1=1; tind2=3;
+
+    do ie=nets,nete
+
+       elem(ie)%state%ps_v(:,:,tind1:tind2) =hvcoord%ps0
+       elem(ie)%state%v(:,:,:,:,tind1:tind2)=0.0
+
+       temperature(:,:,:)=Tinit
+
+       ! if topo file was given in the namelist, PHIS was initilized in prim_main
+       ! otherwise assume 0
+!#ifndef HOMME_WITHOUT_PIOLIBRARY
+!       if (infilenames(1)=='') then
+!          elem(ie)%state%phis(:,:)=0.0D0
+!       endif
+!#endif
+
+
+       !or simple mountain in X direction
+       !assume for now that Sx = Lx/2,so the x=0 point is in the middle
+       ! get horizontal coordinates at column i,j
+       x  = elem(ie)%spherep(i,j)%lon; y  = elem(ie)%spherep(i,j)%lat
+       if ( abs(x) < Lx/2.0) then
+           if (x < 0.0) then
+              elem(ie)%state%phis(:,:) = (x + Lx/4.0) 
+           else
+              elem(ie)%state%phis(:,:) = -(x - Lx/4.0)
+           endif
+       else
+           elem(ie)%state%phis(:,:) = 0.0
+       endif
+
+
+       ! initialize surface pressure to be 'consistent' with topo
+       !from const Tinit and hydro assumption
+       elem(ie)%state%ps_v(:,:,tind1:tind2) = elem(ie)%state%ps_v(:,:,tind1:tind2)*&
+            exp(-elem(ie)%state%phis(:,:) / (Rgas*Tinit))
+
+       if (qsize>=1) then
+       elem(ie)%state%Q(:,:,:,1:qsize) =0  ! moist HS tracer IC=0
+       endif
+       ps=elem(ie)%state%ps_v(:,:,n0)
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
+    end do
+
+
+end subroutine planar_held_suarez_init
+
 
 
 

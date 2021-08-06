@@ -30,6 +30,7 @@ use held_suarez_mod,      only: hs0_init_state
 use dry_planar_tests,     only: planar_hydro_gravity_wave_init, planar_nonhydro_gravity_wave_init
 use dry_planar_tests,     only: planar_hydro_mountain_wave_init, planar_nonhydro_mountain_wave_init, planar_schar_mountain_wave_init
 use dry_planar_tests,     only: planar_rising_bubble_init, planar_density_current_init, planar_baroclinic_instab_init
+use dry_planar_tests,     only: planar_held_suarez_init
 use moist_planar_tests,   only: planar_moist_rising_bubble_init, planar_moist_density_current_init, planar_moist_baroclinic_instab_init
 use moist_planar_tests,   only: planar_tropical_cyclone_init, planar_supercell_init
 
@@ -89,6 +90,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_schar_mtn_wave');
     case('planar_rising_bubble');
            if (bubble_moist) call dcmip2016_init();
+    case('planar_held_suarez');
     case('planar_density_current');
     case('planar_baroclinic_instab');
     case('planar_moist_rising_bubble');
@@ -139,6 +141,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
       case('planar_nonhydro_mtn_wave');             call planar_nonhydro_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_schar_mtn_wave');                call planar_schar_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_rising_bubble');                 call planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_held_suarez');                   call planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_density_current');               call planar_density_current_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_baroclinic_instab');             call planar_baroclinic_instab_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_moist_rising_bubble');           call planar_moist_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
@@ -239,6 +242,11 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('planar_rising_bubble');  
             if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
+    case('planar_held_suarez');
+       !!!!?????????????????
+       do ie=nets,nete
+          call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
+       enddo
     case('held_suarez0');
        do ie=nets,nete
           call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
