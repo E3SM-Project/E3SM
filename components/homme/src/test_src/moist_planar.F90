@@ -34,7 +34,7 @@ module moist_planar_tests
     type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
     integer,            intent(in)            :: nets,nete                ! start, end element index
 
-    call abortmp('planar moist rising bubble not yet implemented')
+    call abortmp('call planar_rising_bubble with moist options instead')
 
   end subroutine planar_moist_rising_bubble_init
 
