@@ -4011,6 +4011,11 @@
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1pg2_mono.20200401.nc</map>
     </gridmap>
 
+    <gridmap lnd_grid="ne0np4_arcticx4v1.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/arcticx4v1pg2/map_arcticx4v1pg2_to_r0125_mono.20210517.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_arcticx4v1pg2_mono.20210517.nc</map>
+    </gridmap>
+
     <gridmap lnd_grid="ne60np4" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne60np4/map_ne60np4_nomask_to_0.5x0.5_nomask_aave_da_c110922.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne60np4/map_0.5x0.5_nomask_to_ne60np4_nomask_aave_da_c110922.nc</map>
