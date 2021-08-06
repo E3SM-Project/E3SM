@@ -26,8 +26,11 @@ module LakeBGCType
   ! sediment C pool identifier
   integer, parameter, public :: pasC = 1
   integer, parameter, public :: actC = 2
+  ! lake type identifier
+  integer, parameter, public :: yedoma_lake = 1
+  integer, parameter, public :: thaw_lake = 2
   ! sub-cycle time step
-  integer, parameter, public :: nsubstep = 1
+  integer, parameter, public :: nsubstep = 10
   !
   ! !PUBLIC TYPES:
   type, public :: lakebgc_type
@@ -36,6 +39,7 @@ module LakeBGCType
      real(r8), pointer :: tp_col(:)                   ! col epilimnion average total phosphorus  (gP/m3)
      real(r8), pointer :: ph_col(:)                   ! col water average pH
      real(r8), pointer :: sdep_col(:)                 ! col sediment deposition rate (g/m2/yr)
+     integer,  pointer :: ltype_col(:)                ! col lake type (regular lake = 0) 
 
      ! Lake BGC state variables
      real(r8), pointer :: conc_wat_col(:,:,:)         ! col water-column depth-resolved dissolved gas conc (mol/m3)
@@ -111,6 +115,7 @@ contains
     allocate( this%tp_col              (begc:endc))                                  ; this%tp_col             (:)     = nan
     allocate( this%ph_col              (begc:endc))                                  ; this%ph_col             (:)     = nan
     allocate( this%sdep_col            (begc:endc))                                  ; this%sdep_col           (:)     = nan
+    allocate( this%ltype_col           (begc:endc))                                  ; this%ltype_col          (:)     = 0
 
     allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_wat_col       (:,:,:) = nan
     allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:ngaslak))             ; this%conc_sed_col       (:,:,:) = nan
@@ -285,8 +290,10 @@ contains
     use ncdio_pio      , only : ncd_inqdlen
     !
     ! !ARGUMENTS:
-    class(lakebgc_type)         :: this
+    class(lakebgc_type) :: this
     type(bounds_type) , intent(in) :: bounds
+    ! !CONSTANTS
+    real(r8), parameter :: carb0 = 8.9386e3_r8  ! gC/m2
     !
     ! !LOCAL VARIABLES:
     integer            :: c, g, l
@@ -301,13 +308,14 @@ contains
     real(r8) ,pointer  :: tp2d       (:)      ! read in - TP 
     real(r8) ,pointer  :: ph2d       (:)      ! read in - pH
     real(r8) ,pointer  :: sdep2d     (:)      ! read in - sediment deposition
-    real(r8) ,pointer  :: soilc3d    (:,:)    ! read in - sediment OC
+    real(r8) ,pointer  :: type2d     (:)      ! read in - lake type 
+    real(r8) :: carbon
     !-----------------------------------------------------------------------
 
     allocate(tp2d(bounds%begg:bounds%endg))
     allocate(ph2d(bounds%begg:bounds%endg))
     allocate(sdep2d(bounds%begg:bounds%endg))
-    allocate(soilc3d(bounds%begg:bounds%endg,nlevsoifl))
+    allocate(type2d(bounds%begg:bounds%endg))
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
@@ -328,8 +336,8 @@ contains
     if (.not. readvar) ph2d(:) = 7._r8
     call ncd_io(ncid=ncid, varname='LAKE_SDEP', flag='read', data=sdep2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) sdep2d(:) = 0._r8
-    call ncd_io(ncid=ncid, varname='LAKE_SOILC', flag='read', data=soilc3d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) soilc3d(:,:) = 0._r8
+    call ncd_io(ncid=ncid, varname='LAKE_TYPE', flag='read', data=type2d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) type2d(:) = 0
  
     call ncd_pio_closefile(ncid)
 
@@ -337,22 +345,24 @@ contains
     ! get original soil depths to be used in interpolation of sediment C 
     ! --------------------------------------------------------------------
 
-    allocate(zsoifl(1:nlevsoifl), zisoifl(0:nlevsoifl), dzsoifl(1:nlevsoifl))
+    allocate(zsoifl(1:nlevsoifl), zisoifl(1:nlevsoifl+1), dzsoifl(1:nlevsoifl))
     do j = 1, nlevsoifl
        zsoifl(j) = 0.025*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
     enddo
 
-    dzsoifl(1) = 0.5_r8*(zsoifl(1)+zsoifl(2))             !thickness b/n two interfaces
+    dzsoifl(1) = 0.5_r8*(zsoifl(1)+zsoifl(2))              !thickness b/n two interfaces
     do j = 2,nlevsoifl-1
        dzsoifl(j)= 0.5_r8*(zsoifl(j+1)-zsoifl(j-1))
     enddo
     dzsoifl(nlevsoifl) = zsoifl(nlevsoifl)-zsoifl(nlevsoifl-1)
 
-    zisoifl(0) = 0._r8
-    do j = 1, nlevsoifl-1
-       zisoifl(j) = 0.5_r8*(zsoifl(j)+zsoifl(j+1))         !interface depths
+    zisoifl(1) = 0._r8
+    do j = 2, nlevsoifl
+       zisoifl(j) = 0.5_r8*(zsoifl(j-1)+zsoifl(j))         !interface depths
     enddo
-    zisoifl(nlevsoifl) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
+    zisoifl(nlevsoifl+1) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
+
+    carbon = carb0 / zisoifl(nlevsoi+1) / 0.6321_r8
 
     do c = bounds%begc, bounds%endc
 
@@ -384,6 +394,7 @@ contains
           this%tp_col(c)                              = spval
           this%ph_col(c)                              = spval          
           this%sdep_col(c)                            = spval
+          this%ltype_col(c)                           = 0
           this%ch4_sed_diff_col(c)                    = spval
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
@@ -408,6 +419,7 @@ contains
           this%tp_col(c)                              = tp2d(g)
           this%ph_col(c)                              = ph2d(g)
           this%sdep_col(c)                            = sdep2d(g)
+          this%ltype_col(c)                           = type2d(g)
           this%conc_wat_col(c,:,gn2lak)               = 0.347_r8
           this%conc_wat_col(c,:,go2lak)               = 0.425_r8 
           this%conc_wat_col(c,:,gco2lak)              = 0.032_r8
@@ -419,37 +431,20 @@ contains
           this%conc_sed_col(c,:,go2lak)               = 0._r8
           this%conc_sed_col(c,:,gco2lak)              = 0.013_r8
           this%conc_sed_col(c,:,gch4lak)              = 0.617e-6_r8
+          
           do j = 1, nlevgrnd
-             if (more_vertlayers) then
-                if (j==1) then
-                   this%soilc_col(c,j,pasC)           = 0.95e3 * soilc3d(g,1)
-                   this%soilc_col(c,j,actC)           = 0.05e3 * soilc3d(g,1)
-                else if (j<=nlevsoi) then
-                   do lev = 1, nlevsoifl-1
-                      if (zisoi(j) >= zisoifl(lev) .and. zisoi(j) < zisoifl(lev+1)) then
-                         this%soilc_col(c,j,pasC)     = 0.95e3 * soilc3d(g,lev+1)
-                         this%soilc_col(c,j,actC)     = 0.05e3 * soilc3d(g,lev+1)
-                      end if
-                   end do
-                else
-                   this%soilc_col(c,j,pasC)           = 0._r8
-                   this%soilc_col(c,j,actC)           = 0._r8
-                end if
+             if (j<=nlevsoi) then
+                this%soilc_col(c,j,pasC)              = 0.95e3 * carbon * exp(-zisoifl(j)) 
+                this%soilc_col(c,j,actC)              = 0.05e3 * carbon * exp(-zisoifl(j))
              else
-                if (j<=nlevsoi) then
-                   this%soilc_col(c,j,pasC)           = 0.95e3 * soilc3d(g,j) 
-                   this%soilc_col(c,j,actC)           = 0.05e3 * soilc3d(g,j)
-                else
-                   this%soilc_col(c,j,pasC)           = 0._r8
-                   this%soilc_col(c,j,actC)           = 0._r8
-                end if
+                this%soilc_col(c,j,pasC)              = 0._r8
+                this%soilc_col(c,j,actC)              = 0._r8
              end if
           end do
        end if
     end do
 
-    deallocate(tp2d, ph2d, sdep2d)
-    deallocate(soilc3d)
+    deallocate(tp2d, ph2d, sdep2d, type2d)
 
   end subroutine InitCold
 

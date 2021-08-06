@@ -47,18 +47,11 @@ module LakeBGCDynMod
       ! half-saturation for phosphorus limitation (mol/m3)
       real(r8) :: Ktps
       real(r8) :: Ktpl
-      ! surface phytoplankton C:Chla ratio (gC (g chl)-1)
-      real(r8) :: C2Chl0s
-      real(r8) :: C2Chl0l
       ! metabolic loss rate (d-1)
       real(r8) :: Klrs
       real(r8) :: Klrl
       ! phytoplankton resuspension fraction
       real(r8) :: frcResusp
-      ! temperature multiplier for heterotrophic respiration
-      real(r8) :: ThetaCM
-      ! biological oxygen demand per unit of TP (mol O2/m3/s (gP/m3)-1)
-      real(r8) :: BOD
       ! ebullition rate (s-1) 
       real(r8) :: Re 
       ! ice bubble flux and dissolution rate (s-1)
@@ -510,8 +503,8 @@ contains
                            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                            write(iulog,*)'This typically occurs when there is a larger than normal '// &
                                  ' diffusive flux.'
-                           write(iulog,*)'If this occurs frequently, consider reducing lake model (or '// &
-                                 ' methane model) timestep, or reducing the max. sink per timestep in the methane model.'
+                           write(iulog,*)'If this occurs frequently, consider reducing lake bgc model '// &
+                                 'timestep, or reducing the max. sink per timestep.'
                         end if
                         write(iulog,*) 'Negative conc. in LakeBGCDynamics g,c,j,deficit (mol):',g,c,j,deficit
                      end if
@@ -583,7 +576,7 @@ contains
                  c,errch4(c)
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-            call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
+            call endrun(msg=' ERROR: CH4 Conservation Error in LakeBGCDynamics during diffusion'//&
                  errMsg(__FILE__, __LINE__))
          end if
       end do
@@ -654,16 +647,16 @@ contains
                ! correct negative biomas
                if (biomas_new(c,j,k)<0._r8) then
                   deficit = -biomas_new(c,j,k) * dzx(c,j)  ! gC/m2
-                  if (deficit > 1.e-3_r8) then
-                     if (deficit > 1.e-2_r8) then
+                  if (deficit > 1.e-2_r8) then
+                     if (deficit > 1.e-1_r8) then
                         write(iulog,*)'Note: sink > source in LakeBGCDynamics, sources are changing '// &
                               ' quickly relative to deposition timestep, and/or deposition is rapid.'
                         g = col_pp%gridcell(c)
                         write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                         write(iulog,*)'This typically occurs when there is a larger than normal '// &
                               ' phytoplankton deposition.'
-                        write(iulog,*)'If this occurs frequently, consider reducing lake model (or '// &
-                              ' methane model) timestep, or reducing the max. sink per timestep in the methane model.'
+                        write(iulog,*)'If this occurs frequently, consider reducing lake bgc model '// &
+                              'timestep, or reducing the max. deposition per timestep.'
                      end if
                      write(iulog,*) 'Negative biomas. in LakeBGCDynamics c,j,deficit (mol):',c,j,deficit
                   end if
@@ -1352,15 +1345,16 @@ contains
       real(r8), parameter :: at(nphytolak) = (/29.27777_r8, 21.67022_r8/)
       real(r8), parameter :: bt(nphytolak) = (/0.28991_r8, 0.21632_r8/)
       real(r8), parameter :: Kco2 = 6.163e-2_r8  ! CO2 half-saturation constant (mol/m3) 
-      real(r8), parameter :: Vm0(nphytolak) = (/0.4_r8, 1.0_r8/)  ! maximum growth rate of phytoplankton at 0 celcius (d-1)
       real(r8), parameter :: C2Chlmin(nphytolak) = (/1.44e2_r8, 1.44e2_r8/)   ! minimum carbon to chlorophill ratio (gC g chl-1)
       real(r8), parameter :: C2Chlmax(nphytolak) = (/4.8e2_r8, 3.6e2_r8/)     ! maximum carbon to chlorophill ratio (gC g chl-1)
+      real(r8), parameter :: mu0(nphytolak) = (/0.4_r8, 1.0_r8/)  ! the maximum growth rate of phytoplankton at 0 celcius (d-1)
+      real(r8), parameter :: Kpc2chl(nphytolak) = (/95_r8, 70_r8/)   ! The slope of C:Chl ratio vs. growth rate (gC g chl-1 d)
       !
       ! !LOCAL VARIABLES:
-      real(r8) :: tw, c2chl, chla, ipar0
+      real(r8) :: tw, c2chl, chla, ipar0, ipar
       real(r8) :: fpar, ftemp, fco2, ftp
       real(r8) :: Vch, phAlpha, phBeta, Ktp
-      real(r8) :: C2Chl0
+      real(r8) :: C2Chl0, Vm0
       real(r8) :: gpp_phyto
       integer  :: j, k
       !-------------------------------------------------------------------- 
@@ -1384,20 +1378,22 @@ contains
             lake_chla   => lakebgc_vars%chla_col               & ! Output: [real(r8) (:,:)] chlorophyll-a conc (g/m3)
             )
 
-      ipar0 = fsds_vis(c,1)   ! surface incident vis radiation
+      ipar0 = 1e-6 * 4.6 * fsds_vis(c,1)   ! surface incident vis radiation (mol/m2/s) 
 
       lake_gpp(c) = 0._r8
       do j = 1, nlevlak
 
-         lake_chla(c,j) = 0._r8
-         gpp_vr(j,:)  = 0._r8
-
-         tw = t_lake(c,j) - tfrz
-
          ! no radiation
          if (ipar0<1e-8_r8) then
+            lake_chla(c,j) = sum( biomas_phyto(c,j,:)/C2Chlmax )
+            gpp_vr(j,:)  = 0._r8
             cycle
          end if
+
+         lake_chla(c,j) = 0._r8
+
+         tw = t_lake(c,j) - tfrz
+         ipar = 1e-6 * 4.6 * fsds_vis(c,j)
 
          do k = 1, nphytolak
             if (k==small_phyto) then
@@ -1405,34 +1401,13 @@ contains
                phAlpha = LakeBGCParamsInst%phAlphas
                phBeta = LakeBGCParamsInst%phBetas
                Ktp = LakeBGCParamsInst%Ktps
-               C2Chl0 = LakeBGCParamsInst%C2Chl0s
             else if (k==large_phyto) then
                Vch = LakeBGCParamsInst%Vchl
                phAlpha = LakeBGCParamsInst%phAlphal
                phBeta = LakeBGCParamsInst%phBetal
                Ktp = LakeBGCParamsInst%Ktpl
-               C2Chl0 = LakeBGCParamsInst%C2Chl0l
             end if
 
-            if (ipar0<1e-8_r8) then
-               if (icefrac(c,j)<1e-8_r8 .and. fsds_vis(c,j)>0.01*ipar0) then
-                  c2chl = C2Chl0 - (C2Chl0 - C2Chlmin(k)) * &
-                     log(ipar0/fsds_vis(c,j)) / 4.605_r8 
-                  c2chl = min(max(c2chl, C2Chlmin(k)), C2Chlmax(k))
-               else
-                  c2chl = C2Chlmax(k)
-               end if
-            else
-               c2chl = C2Chlmax(k)
-            end if
-
-            chla = biomas_phyto(c,j,k) / c2chl 
-            lake_chla(c,j) = lake_chla(c,j) + chla
-
-            ! radiation factor
-            fpar = (1.0 - exp(-phAlpha*fsds_vis(c,j)/Vm0(k))) * &
-               exp(-phBeta*fsds_vis(c,j)/Vm0(k))
-            
             ! temperature factor
             ftemp = max( 0._r8, ThetaG**(tw-20._r8) - &
                ThetaG**(kt(k)*(tw-at(k))) + bt(k) )
@@ -1443,10 +1418,26 @@ contains
             ! nutrient factor
             ftp = lake_tp(c) / (Ktp + lake_tp(c))
 
+            ! C:Chla ratio
+            C2Chl0 = C2Chlmax(k) - Kpc2chl(k) * mu0(k) * ftemp * ftp
+            if (icefrac(c,j)<1._r8 .and. ipar>0.01*ipar0) then
+               c2chl = C2Chl0 - (C2Chl0 - C2Chlmin(k)) * log(ipar0/ipar) / 4.605_r8
+               c2chl = min(max(c2chl, C2Chlmin(k)), C2Chlmax(k))
+            else
+               c2chl = C2Chlmax(k)
+            end if
+
+            chla = biomas_phyto(c,j,k) * (1._r8 - icefrac(c,j)) / c2chl
+            lake_chla(c,j) = lake_chla(c,j) + chla
+
+            ! radiation factor
+            Vm0 = Vch / c2chl
+            fpar = (1.0 - exp(-phAlpha*ipar/Vm0)) * exp(-phBeta*ipar/Vm0)
+
             gpp_phyto = Vch/8.64e4_r8 * fpar * ftemp * fco2 * ftp * chla
 
             gpp_vr(j,k)  = catomw * gpp_phyto
-            lake_gpp(c)    = lake_gpp(c) + catomw * gpp_phyto * dz_lake(c,j) 
+            lake_gpp(c)  = lake_gpp(c) + catomw * gpp_phyto * dz_lake(c,j) 
 
             gsrc(j,go2lak)    = gsrc(j,go2lak)  + gpp_phyto
             gsnk(j,gco2lak)   = gsnk(j,gco2lak) + gpp_phyto
@@ -1500,7 +1491,7 @@ contains
             icefrac        => lakestate_vars%lake_icefrac_col  , & ! Input: [real(r8) (:,:)] mass fraction of lake layer that is frozen
 
             lake_gpp       => lakebgc_vars%gpp_col             , & ! Input: [real(r8) (:)] depth-integrated gross primary production (gC/m2/s)
-            biomas_phyto  => lakebgc_vars%biomas_phyto_col    , & ! Input: [real(r8) (:,:,:)] phytoplankton biomass (gC/m3)
+            biomas_phyto   => lakebgc_vars%biomas_phyto_col    , & ! Input: [real(r8) (:,:,:)] phytoplankton biomass (gC/m3)
 
             lake_npp       => lakebgc_vars%npp_col             & ! Output: [real(r8) (:)] depth-integrated net primary production (gC/m2/s)
             )
@@ -1521,12 +1512,9 @@ contains
                Klr = LakeBGCParamsInst%Klrl
             end if
             
-            if (icefrac(c,j)<1e-8_r8) then
-               phyto_ar = Klr/8.64e4_r8 * (ThetaML**(tw-20)) * &
-                  biomas_phyto(c,j,k) / catomw * frres(k)
-            else
-               phyto_ar = 0._r8
-            end if
+            phyto_ar = Klr/8.64e4_r8 * (ThetaML**(tw-20)) * frres(k) * &
+               biomas_phyto(c,j,k) * (1._r8 - icefrac(c,j)) / catomw
+            
             gsnk(j,go2lak)    = gsnk(j,go2lak)  + phyto_ar
             gsrc(j,gco2lak)   = gsrc(j,gco2lak) + phyto_ar
 
@@ -1562,12 +1550,12 @@ contains
       real(r8)               , intent(inout) :: gsnk(1:nlevlak+nlevsoi,1:ngaslak)   ! mol/m3/s
       !
       ! !CONSTANTS
-      real(r8), parameter :: Ko2CM = 4.6875e-2  ! O2 half-saturation constant for HR (mol/m3)
+      real(r8), parameter :: Ko2CM = 4.6875e-2_r8  ! O2 half-saturation constant for HR (mol/m3)
+      real(r8), parameter :: ThetaCM = 1.073_r8    ! temperature multiplier for heterotrophic respiration
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts, c_o2
-      real(r8) :: ThetaCM, BOD, Rca 
-      real(r8) :: pco2_soilc, pco2_BOD
+      real(r8) :: Rca, pco2_soilc, pco2_BOD
       integer  :: j, k
       !-------------------------------------------------------------------- 
 
@@ -1584,13 +1572,10 @@ contains
             icethick       => lakestate_vars%lake_icethick_col , & ! Input: [real(r8) (:)] ice thickness (m) (integrated if lakepuddling)
             icefrac        => lakestate_vars%lake_icefrac_col  , & ! Input: [real(r8) (:,:)] mass fraction of lake layer that is frozen
 
-            lake_tp        => lakebgc_vars%tp_col              , & ! Input: [real(r8) (:)] lake column mean total phosphorus [gP/m3]
             conc_gas_wat   => lakebgc_vars%conc_wat_col        , & ! Input: [real(r8) (:,:,:)] lake dissolved gas [mol/m3]
             conc_gas_sed   => lakebgc_vars%conc_sed_col        , & ! Input: [real(r8) (:,:,:)] sediment dissolved gas [mol/m3] 
             lake_soilc     => lakebgc_vars%soilc_col           & ! Input: [real(r8) (:,:,:)] lake sediment carbon pools (gC/m3)
             )
-
-      ThetaCM = LakeBGCParamsInst%ThetaCM
 
       ! for water column
       do j = 1, nlevlak
@@ -1598,13 +1583,10 @@ contains
          tw = t_lake(c,j) - tfrz
          c_o2 = conc_gas_wat(c,j,go2lak)
 
-         BOD = LakeBGCParamsInst%BOD   ! biological oxygen demand 
-         if (icefrac(c,j)<1e-8_r8) then
-            pco2_BOD = BOD * lake_tp(c) * (ThetaCM**(tw-20._r8)) * &
-               (c_o2/(Ko2CM+c_o2)) 
-            gsrc(j,gco2lak)   = gsrc(j,gco2lak) + pco2_BOD
-            gsnk(j,go2lak)    = gsnk(j,go2lak)  + pco2_BOD
-         end if
+         pco2_BOD = 3.62e-9_r8 * (ThetaCM**(tw-20._r8)) * &
+            (c_o2/(Ko2CM+c_o2)) * (1._r8 - icefrac(c,j)) 
+         gsrc(j,gco2lak)   = gsrc(j,gco2lak) + pco2_BOD 
+         gsnk(j,go2lak)    = gsnk(j,go2lak)  + pco2_BOD
       end do
 
       ! for sediment
@@ -1644,6 +1626,7 @@ contains
       use elm_varpar         , only : ngaslak, nsoilclak
       use LakeBGCType        , only : go2lak, gco2lak, gch4lak
       use LakeBGCType        , only : pasC, actC 
+      use LakeBGCType        , only : yedoma_lake, thaw_lake 
       ! !ARGUMENTS:
       implicit none
       integer                , intent(in)    :: c
@@ -1658,12 +1641,13 @@ contains
       real(r8), parameter :: Tpr(nsoilclak) = (/276.65_r8,273.15_r8/)   ! CH4 production reference temperature (K)
       real(r8), parameter :: pHmin = 2.2_r8  ! minimum allowable pH for CH4 production
       real(r8), parameter :: pHmax = 9.0_r8  ! maximum allowable pH for CH4 production
+      real(r8), parameter :: oldcarb0 = 29.3e3_r8  ! yedoma permafrost C (gC/m3)
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts
       real(r8) :: Rc, PQ10
       real(r8) :: c_o2, fo2, ftemp, fph
-      real(r8) :: pch4_soilc
+      real(r8) :: pch4_soilc, pch4_soilc_yedoma
       integer  :: j, k
       !-------------------------------------------------------------------- 
 
@@ -1682,6 +1666,7 @@ contains
 
             lake_tp        => lakebgc_vars%tp_col              , & ! Input: [real(r8) (:)] lake column mean total phosphorus [gP/m3]
             lake_ph        => lakebgc_vars%ph_col              , & ! Input: [real(r8) (:)] lake column mean water pH
+            lake_type      => lakebgc_vars%ltype_col           , & ! Input: [integer  (:)] lake type identifier 
             conc_gas_sed   => lakebgc_vars%conc_sed_col        , & ! Input: [real(r8) (:,:,:)] sediment dissolved gas [mol/m3] 
             lake_soilc     => lakebgc_vars%soilc_col           , & ! Input: [real(r8) (:,:,:)] lake sediment carbon pools (gC/m3) 
 
@@ -1690,19 +1675,19 @@ contains
             )
 
       ! CH4 production in oxic water of oligotrophic and mesotrophic lakes
-      if (lake_tp(c)<0.024) then
-         do j = 1, nlevlak
-            gsrc(j,gch4lak) = gsrc(j,gch4lak) + LakeBGCParamsInst%Rcoxic*gsrc(j,go2lak) 
-            ch4_prod_wat(c,j) = LakeBGCParamsInst%Rcoxic*gsrc(j,go2lak)
-         end do
-      else
+      !if (lake_tp(c)<0.024) then
+      !   do j = 1, nlevlak
+      !      gsrc(j,gch4lak) = gsrc(j,gch4lak) + LakeBGCParamsInst%Rcoxic*gsrc(j,go2lak) 
+      !      ch4_prod_wat(c,j) = LakeBGCParamsInst%Rcoxic*gsrc(j,go2lak)
+      !   end do
+      !else
          gsrc(1:nlevlak,gch4lak) = 0._r8
          ch4_prod_wat(c,:) = 0._r8
-      end if
+      !end if
 
       ! pH factor (borrowed from wetland CH4 model)
       if (lake_ph(c)>pHmin .and. lake_ph(c)<pHmax) then
-         fph = 10._r8**(-0.2235_r8*lake_ph(c)*lake_ph(c) + 2.7727_r8*lake_ph(c) - 8.6_r8)
+         fph = 10._r8**(-0.2235_r8*lake_ph(c)**2_r8 + 2.7727_r8*lake_ph(c) - 8.6_r8)
          fph = min(1._r8, max(0._r8, fph))
       else
          fph = 0._r8
@@ -1724,7 +1709,9 @@ contains
                Rc = LakeBGCParamsInst%Rcpas 
                PQ10 = LakeBGCParamsInst%PQ10pas
                ftemp = PQ10**(0.1_r8*(ts-Tpr(k)))
+               
                pch4_soilc = 0.25_r8 * Rc * ftemp * fo2 * fph * lake_soilc(c,j,k) / catomw
+               pch4_soilc_yedoma = 0._r8
 
                gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc
                gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + 3._r8*pch4_soilc
@@ -1735,15 +1722,21 @@ contains
                Rc = LakeBGCParamsInst%Rcact
                PQ10 = LakeBGCParamsInst%PQ10act
                ftemp = PQ10**(0.1_r8*(ts-Tpr(k)))
-               pch4_soilc = 0.5_r8 * Rc * ftemp * fo2 * fph * lake_soilc(c,j,k) / catomw     
+               
+               pch4_soilc = 0.5_r8 * Rc * ftemp * fo2 * fph * lake_soilc(c,j,k) / catomw
+               if (lake_type(c)==yedoma_lake .and. j==nlevsoi) then
+                  pch4_soilc_yedoma = 0.5_r8 * Rc * ftemp * fo2 * fph * (oldcarb0/3.0) / catomw
+               else
+                  pch4_soilc_yedoma = 0._r8 
+               end if
 
-               gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc
-               gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + pch4_soilc
+               gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc + pch4_soilc_yedoma
+               gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + pch4_soilc + pch4_soilc_yedoma
 
                soilc_loss(j,k) = soilc_loss(j,k) + 2._r8*catomw*pch4_soilc
             end if
 
-            ch4_prod_sed(c,j) = ch4_prod_sed(c,j) + pch4_soilc
+            ch4_prod_sed(c,j) = ch4_prod_sed(c,j) + pch4_soilc + pch4_soilc_yedoma
          end do
          
       end do
@@ -1824,26 +1817,8 @@ contains
          ch4_oxid_wat(c,j) = och4_oxic
       end do      
 
-      ! CH4 oxidation in sediment
-      do j = 1, nlevsoi
-
-         ts = t_soisno(c,j)
-         c_ch4 = conc_gas_sed(c,j,gch4lak)
-         c_o2  = conc_gas_sed(c,j,go2lak)
-
-         Qch4 = LakeBGCParamsInst%Qch4
-         OQ10 = LakeBGCParamsInst%OQ10
-         Kch4 = LakeBGCParamsInst%Kch4
-         Ko2  = LakeBGCParamsInst%Ko2
-         
-         och4_oxic = Qch4 * (OQ10**(0.1_r8*(tw-Tor))) * &
-            (c_ch4/(Kch4+c_ch4)) * (c_o2/(Ko2+c_o2))
-         
-         gsnk(j+nlevlak,gch4lak) = gsnk(j+nlevlak,gch4lak) + och4_oxic
-         gsnk(j+nlevlak,go2lak)  = gsnk(j+nlevlak,go2lak)  + 2._r8*och4_oxic
-         gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + och4_oxic
-         ch4_oxid_sed(c,j) = och4_oxic
-      end do 
+      ! no CH4 oxidation in sediment
+      ch4_oxid_sed(c,:) = 0._r8
 
       end associate
    end subroutine Methanotrophy
@@ -1907,16 +1882,6 @@ contains
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%Ktpl = tempr
 
-      tString='C2Chl0s'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%C2Chl0s = tempr
-
-      tString='C2Chl0l'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%C2Chl0l = tempr
-
       tString='Klrs'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -1931,16 +1896,6 @@ contains
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%frcResusp = tempr
-
-      tString='ThetaCM'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%ThetaCM = tempr
-
-      tString='BOD'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%BOD = tempr
 
       tString='Re'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
