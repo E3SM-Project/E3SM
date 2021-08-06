@@ -38,7 +38,7 @@ class TestAllSets(unittest.TestCase):
             raise RuntimeError("Invalid backend: {}".format(backend))
         # *_data_path needs to be added b/c the tests runs the diags from a different location
         cmd = (
-            "acme_diags_driver.py -d {}{} --reference_data_path {} --test_data_path {}"
+            "e3sm_diags_driver.py -d {}{} --reference_data_path {} --test_data_path {}"
         )
         cmd = cmd.format(cfg_pth, backend_option, test_pth, test_pth)
         # This raises a CalledProcessError if cmd has a non-zero return code.

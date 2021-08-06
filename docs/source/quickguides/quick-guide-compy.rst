@@ -58,8 +58,8 @@ Adjust any options as you like.
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.run import runner
 
         param = CoreParameter()
 
@@ -214,9 +214,9 @@ A ``run_e3sm_diags.py`` example for running area mean time series alone:
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+        from e3sm_diags.run import runner
         
         param = CoreParameter()
         
@@ -249,9 +249,9 @@ The following is an example to run all sets:
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+        from e3sm_diags.run import runner
         
         param = CoreParameter()
         
@@ -296,7 +296,7 @@ Create ``mydiags.cfg`` file as below.
 Check :doc:`Available Parameters <../available-parameters>` for all available parameters.
 
 For a larger configuration file example, look
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
 for the cfg file that was used to create all of the latitude-longitude sets.
 
 

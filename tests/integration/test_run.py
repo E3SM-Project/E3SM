@@ -1,14 +1,14 @@
 import collections
 import unittest
 
-from acme_diags.parameter.area_mean_time_series_parameter import (
+from e3sm_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.streamflow_parameter import StreamflowParameter
-from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
-from acme_diags.run import Run
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from e3sm_diags.parameter.streamflow_parameter import StreamflowParameter
+from e3sm_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+from e3sm_diags.run import Run
 
 
 class TestRun(unittest.TestCase):

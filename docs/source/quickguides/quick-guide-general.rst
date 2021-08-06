@@ -78,9 +78,9 @@ Cori
 ^^^^
 <activation_path>: ``source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh``
 
-<obs_path>: ``/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/``
+<obs_path>: ``/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/``
 
-<test_data_path>: ``/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/``
+<test_data_path>: ``/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/``
 
 <html_path>: ``/global/cfs/cdirs/e3sm/www/<username>``
 
@@ -91,9 +91,9 @@ Rhea
 ^^^^
 <activation_path>: ``source /ccs/proj/cli900/sw/rhea/e3sm-unified/load_latest_e3sm_unified.sh``
 
-<obs_path>:``/ccs/proj/cli115/acme_diags_data/obs_for_e3sm_diags/``
+<obs_path>:``/ccs/proj/cli115/e3sm_diags_data/obs_for_e3sm_diags/``
 
-<test_data_path>:``/ccs/proj/cli115/acme_diags_data/test_model_data_for_acme_diags/``
+<test_data_path>:``/ccs/proj/cli115/e3sm_diags_data/test_model_data_for_acme_diags/``
 
 2. Config and run
 --------------------------------------------------------

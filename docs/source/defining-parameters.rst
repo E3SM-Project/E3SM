@@ -28,8 +28,8 @@ Say that we have the following files:
 .. code:: python
 
     import os
-    from acme_diags.parameter.core_parameter import CoreParameter
-    from acme_diags.run import runner
+    from e3sm_diags.parameter.core_parameter import CoreParameter
+    from e3sm_diags.run import runner
 
     param = CoreParameter()
 
@@ -154,7 +154,7 @@ Selecting certain parameters
 
 When you run ``e3sm_diags`` with a file passed in via ``-p``,
 the parameters in that file are inserted into each diagnostics from default diagnostic files like
-`this <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_,
+`this <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_,
 overwriting any duplicates in the process.
 A single diagnostics starts with ``[#]``.
 If you provide your own cfg file with ``-d``, the same happens.
@@ -163,8 +163,8 @@ For example, say we have the following parameters in a Python file:
 
 .. code:: python
 
-    reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/'
-    test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/'
+    reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_acme_diags/'
+    test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/'
 
     test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -173,14 +173,14 @@ For example, say we have the following parameters in a Python file:
 
 Since we're running the ``lat_lon`` plotset, and since it defaults to ``model_vs_obs``,
 it will open 
-`this file <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_.
+`this file <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_.
 Each of the parameters in the Python file will be inserted into each of the diagnostics runs.
 
 
 So each of the 100+ ``lat_lon`` diagnostics will be done with ``variables = ['PRECT']``.
 However, this is nonsensical.
 **What we want to do is to "select" the diagnostics**
-`from here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_
+`from here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/>`_
 **that use PRECT.**
 
 .. _selector-ex:
@@ -191,7 +191,7 @@ Using the selectors parameter
 In the above Python file, we can designate the ``variables`` parameter to be a "selector".
 
 First, find the default ``selectors`` used
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/parameter/core_parameter.py>`__
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/parameter/core_parameter.py>`__
 and copy what current parameters are used as selectors. This is the value of ``self.selectors``.
 
 In **your Python file**, paste these along with any parameters you want as selectors.
@@ -199,8 +199,8 @@ It should look something like this:
 
 .. code:: python
 
-    reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/'
-    test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/'
+    reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_acme_diags/'
+    test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/'
 
     test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -222,8 +222,8 @@ We can do the following:
 
 .. code:: python
 
-    reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/'
-    test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/'
+    reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_acme_diags/'
+    test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/'
 
     test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 

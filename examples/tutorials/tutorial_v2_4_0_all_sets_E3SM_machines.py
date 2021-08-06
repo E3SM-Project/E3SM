@@ -1,15 +1,15 @@
 import os
 
-from acme_diags.parameter.area_mean_time_series_parameter import (
+from e3sm_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
-from acme_diags.parameter.arm_diags_parameter import ARMDiagsParameter
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
-from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.qbo_parameter import QboParameter
-from acme_diags.parameter.streamflow_parameter import StreamflowParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.arm_diags_parameter import ARMDiagsParameter
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
+from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from e3sm_diags.parameter.qbo_parameter import QboParameter
+from e3sm_diags.parameter.streamflow_parameter import StreamflowParameter
+from e3sm_diags.run import runner
 
 
 def run_compy(html_prefix):
@@ -87,9 +87,9 @@ def run_nersc(html_prefix):
     # Run the following first:
     # salloc --nodes=1 --partition=regular --time=01:00:00 -C haswell
     # source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
-    ref_data_prefix = "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags"
+    ref_data_prefix = "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags"
     test_data_prefix = (
-        "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags"
+        "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags"
     )
 
     test_data_prefix2 = "/global/cfs/cdirs/e3sm/zhang40/postprocessing_for_e3sm_diags"

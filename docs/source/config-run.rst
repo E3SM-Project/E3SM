@@ -30,8 +30,8 @@ An example ``run_e3sm_diags.py`` script is shown below.
 .. code:: python
 
     import os
-    from acme_diags.parameter.core_parameter import CoreParameter
-    from acme_diags.run import runner
+    from e3sm_diags.parameter.core_parameter import CoreParameter
+    from e3sm_diags.run import runner
 
     param = CoreParameter()
 

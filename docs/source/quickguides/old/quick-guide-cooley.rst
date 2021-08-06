@@ -46,7 +46,7 @@ Images are stored in the ``SINGULARITY_PULLFOLDER`` directory.
 
     ::
 
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
 
 
 
@@ -128,7 +128,7 @@ don't seem to not have Internet access.
     .. code:: bash
     
         mkdir ~/e3sm_diags_output
-        wget -P ~/e3sm_diags_output https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        wget -P ~/e3sm_diags_output https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
 
 
 Also, make sure your ``myparams.py`` is also in the directory you've made.
@@ -239,7 +239,7 @@ Check :doc:`Available Parameters <../../available-parameters>`
 for all available parameters.
 
 For more examples of these types of files, look
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
 for the ``cfg`` file that was used to create all of the latitude-longitude sets.
 
 

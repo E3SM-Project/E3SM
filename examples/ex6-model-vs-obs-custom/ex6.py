@@ -1,16 +1,16 @@
 import os
 
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+from e3sm_diags.run import runner
 
 param = CoreParameter()
 
 param.reference_data_path = (
-    "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/"
+    "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/"
 )
 param.test_data_path = (
-    "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/"
+    "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/"
 )
 param.test_name = "20161118.beta0.FC5COSP.ne30_ne30.edison"
 param.seasons = ["ANN"]

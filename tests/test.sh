@@ -3,7 +3,7 @@
 set -e # Fail if any line fails
 
 # 1. Run unit tests
-python -m unittest tests/acme_diags/*/test_*.py
+python -m unittest tests/e3sm_diags/*/test_*.py
 
 # 2. Enter tests directory
 cd tests

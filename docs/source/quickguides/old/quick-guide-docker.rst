@@ -56,10 +56,10 @@ please go to the "Running more diagnostics" section below.
 
     ::
 
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
 
         # Or use this:
-        curl -O https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        curl -O https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
 
 6. Run your diagnostics and examine the sample output.
 
@@ -92,10 +92,10 @@ For more information on the format of the input data, please see the
 Below are the paths to the **observational data**:
 
     * Climatology data (6GB):
-        * NERSC: ``/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/``
+        * NERSC: ``/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/climatology/``
         * ALCF: ``/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/obs_for_e3sm_diags/climatology/``
     * Time-series data (145GB):
-        * NERSC: ``/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/time-series/``
+        * NERSC: ``/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/time-series/``
         * ALCF: ``/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/obs_for_e3sm_diags/time-series/``
 
 We also have **sample model data** as well. You can use your own model data as well,
@@ -105,11 +105,11 @@ Again, if you want to use your own data, please see the
 
     * Climatology data (42GB):
         * We have data from three models in these directories, from about 11.5GB to 19GB.
-        * NERSC: ``/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/climatology/``
+        * NERSC: ``/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/climatology/``
         * ALCF: ``/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/test_model_data_for_e3sm_diags/climatology/``
     * Time-series data (107GB):
         * We have E3SM v1 data (94GB) and CESM1-CAM5 CMIP data (14GB).
-        * NERSC: ``/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/time-series/``
+        * NERSC: ``/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/time-series/``
         * ALCF: ``/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/test_model_data_for_e3sm_diags/time-series/``
 
 Once the data is downloaded you can follow one of the

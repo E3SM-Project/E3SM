@@ -70,8 +70,8 @@ for each panel can be specified using the following parameters
 Colormaps can be specified by either using a standard Matplotlib map name
 or an external rgb ascii file.
 All colormaps from the `colorcet <https://github.com/bokeh/colorcet>`_ collection have been
-imported as rgb files by Charles Doutriaux (available under `acme_diags/plot/colormaps 
-<https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/plot/colormaps>`_).
+imported as rgb files by Charles Doutriaux (available under `e3sm_diags/plot/colormaps
+<https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/plot/colormaps>`_).
 
 You can also import your very own colormap by creating and specifying the path to 
 an ascii rgb file containing a list of colors in RGB space. If you think you have something

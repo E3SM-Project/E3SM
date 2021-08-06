@@ -65,7 +65,7 @@ functionality of the diagnostics.
 -  **plevs**: A list of pressure levels to use. Ex: ``plevs=[850.0, 200.0]``.
 -  **regions**: A list of regions. Default is ``['global']``.
    See `default_regions.py
-   <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/derivations/default_regions.py>`__
+   <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/derivations/default_regions.py>`__
    for a list of possible regions. Ex: ``regions=["global", "TROPICS"]``.
 -  **regrid_method**: What regird method of the regrid tool to use.
    Possible values are ``'linear'`` or ``'conservative'``. Default is ``'conservative'``.
@@ -119,8 +119,8 @@ The parameters below are for each of the three plots (``test``,
 -  **test_colormap**: If not defined in the parameters, the default
    value is ``'cet_rainbow.rgb'``. It's ``'WhiteBlueGreenYellowRed.rgb'``
    in the image above. Matplotlib colormaps are supported.
-   Users can even use colormaps located in `acme_diags/plot/colormaps 
-   <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/plot/colormaps>`_, 
+   Users can even use colormaps located in `e3sm_diags/plot/colormaps
+   <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/plot/colormaps>`_,
    by referencing them by the filename
    (ex: ``'cet_rainbow.rgb'``). Also, setting path to a custom ``.rgb`` file is
    supported.
@@ -141,7 +141,7 @@ Reference:
    value is ``'cet_rainbow.rgb'``. It's ``'WhiteBlueGreenYellowRed.rgb'``
    in the image above. Matplotlib colormaps
    are supported. Users can even use colormaps located in
-   ``acme_diags/plot/colormaps/``, by referencing them by the filename
+   ``e3sm_diags/plot/colormaps/``, by referencing them by the filename
    (ex: ``'cet_rainbow.rgb'``). Also, setting paths to a custom ``.rgb`` file is
    supported.
 -  **reference_name**: Optional text to be specified by the users to be printed upper left above the ref figure.
@@ -157,7 +157,7 @@ Diff:
 
 -  **diff_colormap**: Is ``'BrBG'`` in the image above and
    ``'diverging_bwr.rgb'`` by default. Matplotlib colormaps are supported. Users can
-   even use colormaps located in ``acme_diags/plot/colormaps/``, by
+   even use colormaps located in ``e3sm_diags/plot/colormaps/``, by
    referencing them by the filename (ex: ``'cet_rainbow.rgb'``). Also,
    paths to a custom ``.rgb`` file is supported.
 -  **diff_name**: Optional text to be specified by the users to be printed upper left above the diff figure.

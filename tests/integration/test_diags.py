@@ -10,7 +10,7 @@ from PIL import Image, ImageChops, ImageDraw
 # cd tests/system
 # module load python/2.7-anaconda-4.4
 # source activate e3sm_diags_env_dev
-# If code in acme_diags has been changed:
+# If code in e3sm_diags has been changed:
 # pip install /global/homes/f/<username>/e3sm_diags/
 # python test_diags.py
 

@@ -41,7 +41,7 @@ Below, we are getting the image with the latest tag.
 
     ::
 
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
 
 
 
@@ -57,8 +57,8 @@ Running the entire annual latitude-longitude contour set
 
     .. code:: python
 
-        reference_data_path = '/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/'
-        test_data_path = '/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/climatology/'
+        reference_data_path = '/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        test_data_path = '/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/climatology/'
 
         test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -137,7 +137,7 @@ Please remember to change what directory you're in to one accessible to you.
 
         # Please change the directory below.
         cd /global/cscratch1/sd/golaz/tmp
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/acme_diags/container/e3sm_diags_container.py
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/e3sm_diags/container/e3sm_diags_container.py
         python e3sm_diags_container.py --shifter -p myparams.py
 
 And then submit it
@@ -183,8 +183,8 @@ favorite text editor:
 
     .. code:: python
 
-        reference_data_path = '/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/'
-        test_data_path = '/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/climatology/'
+        reference_data_path = '/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        test_data_path = '/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/climatology/'
 
         test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -240,7 +240,7 @@ Check :doc:`Available Parameters <../available-parameters>`
 for all available parameters.
 
 For more examples of these types of files, look
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
 for the cfg file that was used to create all of the latitude-longitude sets.
 
 

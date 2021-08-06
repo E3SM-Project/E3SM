@@ -61,11 +61,11 @@ Adding In The Parameters
 All of diagnostics sets in ``e3sm_diags`` share a set of core parameters,
 which can be changed during runtime. The **default values** for these
 parameters are defined in the
-`acme_diags/parameter/core_parameter.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/parameter/core_parameter.py>`_
+`e3sm_diags/parameter/core_parameter.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/parameter/core_parameter.py>`_
 folder.
 :doc:`On the documentation website, there is more information explaining what each one does <../available-parameters>`.
 
-First, open ``acme_diags/parameter/core_parameter.py`` and edit ``self.sets`` to include ``'diff_diags'``.
+First, open ``e3sm_diags/parameter/core_parameter.py`` and edit ``self.sets`` to include ``'diff_diags'``.
 
     .. code:: python
 
@@ -86,7 +86,7 @@ called ``projection`` and ``central_lon``.
   For more information regarding these projections, `see here <https://scitools.org.uk/cartopy/docs/latest/crs/projections.html>`_.
 * ``central_lon`` changes the central point of the plot. It's ``180`` be default.
 
-In the ``acme_diags/parameter`` directory, create a file called ``diff_diags_parameter.py``.
+In the ``e3sm_diags/parameter`` directory, create a file called ``diff_diags_parameter.py``.
 Below is the code for it.
 
 **When you create your own plotset, please change the name of the class.**
@@ -130,7 +130,7 @@ which contains the core parameters that all plotsets use. This means that
 Letting The Parameter Class Be Used
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Open ``acme_diags/parameter/__init__.py`` and edit it like so.
+Open ``e3sm_diags/parameter/__init__.py`` and edit it like so.
 Please read the comments.
 
     .. code:: python
@@ -156,7 +156,7 @@ Please read the comments.
 Adding In The Parser
 ^^^^^^^^^^^^^^^^^^^^
 
-Notice that in the `acme_diags/parameter <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/parameter>`_
+Notice that in the `e3sm_diags/parameter <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/parameter>`_
 folder, we have the following:
 
 * ``core_parameter.py``, where ``CoreParameter`` is located.
@@ -174,7 +174,7 @@ via the command line. For example, this is done for the provenance, which
 is the command shown in the bottom for each webpage with a plot.
 One can reproduce or fine tune a single diagnostic by using the provenance command line.
 
-In the ``acme_diags/parser`` directory, create a file called ``diff_diags_parser.py``.
+In the ``e3sm_diags/parser`` directory, create a file called ``diff_diags_parser.py``.
 Below is the code for it. Some points:
 
 * Like how the ``DiffDiagsParameter`` inherits from ``CoreParameter``, our parser
@@ -186,7 +186,7 @@ Below is the code for it. Some points:
 
         from .core_parser import CoreParser
         # We need to import the corresponding Parameter object.
-        from acme_diags.parameter.diff_diags_parameter import DiffDiagsParameter
+        from e3sm_diags.parameter.diff_diags_parameter import DiffDiagsParameter
 
 
         class DiffDiagsParser(CoreParser):
@@ -225,7 +225,7 @@ Below is the code for it. Some points:
 Letting The Parser Class Be Used
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Open ``acme_diags/parser/__init__.py`` and edit it like so.
+Open ``e3sm_diags/parser/__init__.py`` and edit it like so.
 Please read the comments.
 
     .. code:: python
@@ -255,7 +255,7 @@ Adding In The Driver
 
 The driver is the main code which takes in a single Parameter object and does the diagnostics.
 For each plotset, its corresponding driver is located in the
-`acme_diags/driver <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/driver>`_
+`e3sm_diags/driver <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/driver>`_
 folder. Please refer to these existing drivers, and if you need help creating
 your driver, create a Github issue.
 
@@ -268,7 +268,7 @@ However, to get a variable based on the user's parameters (``reference_data_path
 using the ``Dataset`` class is **highly recommended**.
 
 * The ``diff_diags_driver.py`` below uses it.
-* It's located in `acme_diags/driver/utils/dataset.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/utils/dataset.py>`_.
+* It's located in `e3sm_diags/driver/utils/dataset.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/utils/dataset.py>`_.
 * With only two lines of code, here's how you get the variable PRECT from the test data with ANN climatology ran on it.
 
     .. code:: python
@@ -282,16 +282,16 @@ using the ``Dataset`` class is **highly recommended**.
         test_data = utils.dataset.Dataset(parameter, test=True)
         prect_time_series = test_data.get_timeseries_variable('PRECT')
 
-In ``acme_diags/driver``, create a file called ``diff_diags_driver.py``.
+In ``e3sm_diags/driver``, create a file called ``diff_diags_driver.py``.
 **Each Driver must have a** ``run_diags()`` **function which takes in a single Parameters object.**
 **It also must return that Parameters object as well at the end of all of the for-loops.**
 
     .. code:: python
 
-        from acme_diags.driver import utils
-        from acme_diags.metrics import min_cdms, max_cdms, mean
+        from e3sm_diags.driver import utils
+        from e3sm_diags.metrics import min_cdms, max_cdms, mean
         # The below will be defined in a future section.
-        from acme_diags.plot.cartopy import diff_diags_plot
+        from e3sm_diags.plot.cartopy import diff_diags_plot
 
         def run_diag(parameter):
             variables = parameter.variables
@@ -338,7 +338,7 @@ Adding In The Config File For The Default Diagnostics
 When the user selects a certain number of plotsets to run, their
 parameters are combined with default parameters for that plot set.
 These are defined in
-`acme_diags/driver/default_diags/ <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/driver/default_diags>`_.
+`e3sm_diags/driver/default_diags/ <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/driver/default_diags>`_.
 For the each plotset, we have two default files, one for ``model_vs_model`` runs and one for ``model_vs_obs`` runs.
 The type of file used is determined by the ``run_type`` parameter in ``CoreParameter``, which is ``'model_vs_obs'`` by default.
 
@@ -383,13 +383,13 @@ Adding In Derived Variables
 This part only needs to be done if new variables are added for you new plotset.
 
 A set of variables are defined in e3sm_diags in
-`acme_diags/derivations/acme.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/derivations/acme.py>`_.
+`e3sm_diags/derivations/acme.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/derivations/acme.py>`_.
 Notice that in the above file, we had a variable ``NEW_PRECT``.
 It's a new and derived variable, composed of two or more variables.
 In this case, ``NEW_PRECT`` is composed of ``PRECT`` and ``PRECL``.
 :doc:`Read more about derived variables here <../add-new-diagnostics>`.
 
-Open `acme_diags/derivations/acme.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/derivations/acme.py>`_
+Open `e3sm_diags/derivations/acme.py <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/derivations/acme.py>`_
 and add the function below. It handles what to do when we have ``NEW_PRECT`` as a variable.
 
     .. code:: python
@@ -404,7 +404,7 @@ and add the function below. It handles what to do when we have ``NEW_PRECT`` as 
             return var
 
 We need to make sure that this function is actually called.
-In the ``derived_variables`` dictionary in ``acme_diags/derivations/acme.py``, add the following entry.
+In the ``derived_variables`` dictionary in ``e3sm_diags/derivations/acme.py``, add the following entry.
 It's basically the same as ``PRECT``, but with the ``new_prect()`` function being called.
 
     .. code:: python
@@ -433,7 +433,7 @@ Open ``setup.py`` in the root of this directory and add the following, somewhere
 
     ::
 
-        diff_diags_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'diff_diags*')
+        diff_diags_files = get_all_files_in_dir('e3sm_diags/driver/default_diags', 'diff_diags*')
 
 Now modify ``data_files`` like below.
 
@@ -448,7 +448,7 @@ Now modify ``data_files`` like below.
         ),
         # The above was added in.
         (INSTALL_PATH,
-        ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
+        ['e3sm_diags/driver/acme_ne30_ocean_land_mask.nc',
         'misc/e3sm_logo.png'
         ])
 
@@ -464,7 +464,7 @@ Data created in the driver needs to be carried over and needs to be plotted
 using the plotting script. In our case, we only want to plot the ``diff`` data.
 Other plotsets, like ``lat_lon``, plot more data.
 
-In ``acme_diags/plot/cartopy/``, create a file called ``diff_diags_plot.py``.
+In ``e3sm_diags/plot/cartopy/``, create a file called ``diff_diags_plot.py``.
 
 The ``plot()`` function is what the driver, ``diff_diags_driver.py`` will call.
 **Again, the code for this varies greatly based on the actual plot set.**
@@ -482,8 +482,8 @@ In this script, we're using the ``projection`` and ``central_lon`` parameters.
         import matplotlib.colors as colors
         import cartopy.crs as ccrs
         from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-        from acme_diags.plot import get_colormap
-        from acme_diags.driver.utils.general import get_output_dir
+        from e3sm_diags.plot import get_colormap
+        from e3sm_diags.driver.utils.general import get_output_dir
 
 
         def add_cyclic(var):
@@ -610,7 +610,7 @@ Each plotset needs to have webpages generated for it that allow users to look at
 In ``e3sm_diags``, each of the plotset is **mapped to a function that takes in all of the Parameter objects**
 **for that plotset, then creates the webpages and returns a** ``(display_name, url)`` **tuple of strings**.
 
-First in `acme_diags/viewer/ <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/viewer>`_
+First in `e3sm_diags/viewer/ <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/viewer>`_
 create a file ``diff_diags_viewer.py`` paste in the below code.
 
     .. code:: python
@@ -662,7 +662,7 @@ create a file ``diff_diags_viewer.py`` paste in the below code.
 
 
 Now make sure that this ``create_viewer()`` function is actually called.
-Open ``acme_diags/viewer/main.py`` and edit ``SET_TO_VIEWER``.
+Open ``e3sm_diags/viewer/main.py`` and edit ``SET_TO_VIEWER``.
 
     .. code:: python
 
@@ -721,13 +721,13 @@ Call this script ``run_diff_diags_demo.py``.
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.run import runner
 
         param = CoreParameter()
 
-        param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/'
-        param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.seasons = ["ANN"]
         prefix = '/global/cfs/cdirs/e3sm/www/shaheen2/runs_with_api'
@@ -751,14 +751,14 @@ Call this script ``run_diff_diags_demo_specific.py``.
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.parameter.diff_diags_parameter import DiffDiagsParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.parameter.diff_diags_parameter import DiffDiagsParameter
+        from e3sm_diags.run import runner
 
         param = CoreParameter()
 
-        param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/'
-        param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.seasons = ["ANN"]
         prefix = '/global/cfs/cdirs/e3sm/www/shaheen2/runs_with_api'

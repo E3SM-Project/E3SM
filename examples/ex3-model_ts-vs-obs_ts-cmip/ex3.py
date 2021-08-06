@@ -1,14 +1,14 @@
 import os
 
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.run import runner
 
 param = CoreParameter()
 
 # Location of the data.
-param.test_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/time-series/CESM1-CAM5_cmip/"
+param.test_data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/CESM1-CAM5_cmip/"
 param.reference_data_path = (
-    "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/time-series/"
+    "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/time-series/"
 )
 
 # Set this parameter to True.

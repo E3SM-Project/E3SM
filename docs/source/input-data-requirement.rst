@@ -56,7 +56,7 @@ The output is a collection of per-variable timeseries such as ``FSNT_YYYYMM_YYYY
 If you are using time series from CMIP style files, the model data file names must follow the naming conventions as follows, where you have
 ``<variable>_<start_yr>01_<end_yr>12.nc``. Ex: renaming ``tas_Amon_CESM1-CAM5_historical_r1i2p1_196001-201112.nc`` to ``tas_196001_201112.nc``.
 
-All of the variables should be in the same directory. Please refer to the test data format available on NERSC (/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/time-series/) for examples.
+All of the variables should be in the same directory. Please refer to the test data format available on NERSC (/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/) for examples.
 
 
 Preprocessing Steps

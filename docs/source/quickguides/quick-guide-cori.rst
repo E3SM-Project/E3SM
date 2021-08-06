@@ -25,9 +25,9 @@ at their corresponding web addresses (<web_address>).
 
 <activation_command>: ``source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh``
 
-<obs_path>: ``/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/``
+<obs_path>: ``/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/``
 
-<test_data_path>: ``/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/``
+<test_data_path>: ``/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/``
 
 <html_path>: ``/global/cfs/cdirs/e3sm/www/<username>/``
 
@@ -58,13 +58,13 @@ Adjust any options as you like.
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.run import runner
 
         param = CoreParameter()
 
-        param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/'
-        param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.seasons = ["ANN"]   #all seasons ["ANN","DJF", "MAM", "JJA", "SON"] will run,if comment out"
 
@@ -93,8 +93,8 @@ using the code below for ``lat_lon_params.py``:
 
     .. code:: python
 
-        reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/'
-        test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/'
+        reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
 
         test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -221,14 +221,14 @@ A ``run_e3sm_diags.py`` example for running area mean time series alone:
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+        from e3sm_diags.run import runner
         
         param = CoreParameter()
         
-        param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/time-series/'
-        param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/time-series/E3SM_v1/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/time-series/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/E3SM_v1/'
         param.test_name = 'e3sm_v1'
         
         prefix = '/global/cfs/cdirs/e3sm/www/<username>/doc_examples/'
@@ -256,14 +256,14 @@ The following is an example to run all sets:
     .. code:: python
 
         import os
-        from acme_diags.parameter.core_parameter import CoreParameter
-        from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
-        from acme_diags.run import runner
+        from e3sm_diags.parameter.core_parameter import CoreParameter
+        from e3sm_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+        from e3sm_diags.run import runner
         
         param = CoreParameter()
         
-        param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/'
-        param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.multiprocessing = True
         param.num_workers = 40
@@ -273,8 +273,8 @@ The following is an example to run all sets:
         #
         ##Set specific parameters for new sets
         ts_param = AreaMeanTimeSeriesParameter()
-        ts_param.reference_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/time-series/'
-        ts_param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/time-series/E3SM_v1/'
+        ts_param.reference_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/time-series/'
+        ts_param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/time-series/E3SM_v1/'
         ts_param.test_name = 'e3sm_v1'
         ts_param.start_yr = '2002'
         ts_param.end_yr = '2008'
@@ -303,7 +303,7 @@ Create ``mydiags.cfg`` file as below.
 Check :doc:`Available Parameters <../available-parameters>` for all available parameters.
 
 For a larger configuration file example, look
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
 for the cfg file that was used to create all of the latitude-longitude sets.
 
 

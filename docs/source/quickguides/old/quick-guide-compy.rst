@@ -25,7 +25,7 @@ obs at: ``/compyfs/e3sm_diags_data/obs_for_e3sm_diags/climatology/``
 
      source /global/project/projectdirs/acme/software/anaconda_envs/load_latest_e3sm_unified_py2.7.sh
     
-obs at: ``/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/``
+obs at: ``/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/climatology/``
 
 
 **Anvil/blues**
@@ -57,7 +57,7 @@ obs at:``/p/cscratch/acme/data/obs_for_e3sm_diags/climatology/``
 
      source /ccs/proj/cli900/sw/rhea/e3sm-unified/load_latest_e3sm_unified_py2.7.sh
  
-obs at:``/ccs/proj/cli115/acme_diags_data/obs_for_acme_diags/climatology/``
+obs at:``/ccs/proj/cli115/e3sm_diags_data/obs_for_acme_diags/climatology/``
 
 
 Change ``.sh`` to ``.csh`` for csh shells.
@@ -220,7 +220,7 @@ Check :doc:`Available Parameters <../../available-parameters>`
 for all available parameters.
 
 For more examples of these types of files, look
-`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
+`here <https://github.com/E3SM-Project/e3sm_diags/blob/master/e3sm_diags/driver/default_diags/lat_lon_model_vs_obs.cfg>`_
 for the cfg file that was used to create all of the latitude-longitude sets.
 
 

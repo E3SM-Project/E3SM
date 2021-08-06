@@ -51,8 +51,8 @@ favorite text editor. Adjust any options as you like.
 
 .. code:: python
 
-    reference_data_path = '/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/'
-    test_data_path = '/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/climatology/'
+    reference_data_path = '/global/project/projectdirs/acme/e3sm_diags/obs_for_e3sm_diags/climatology/'
+    test_data_path = '/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/climatology/'
 
     test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -89,8 +89,8 @@ favorite text editor:
 
 .. code:: python
 
-  reference_data_path = '/global/project/projectdirs/acme/acme_diags/obs_for_acme_diags/'
-  test_data_path = '/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/'
+  reference_data_path = '/global/project/projectdirs/acme/e3sm_diags/obs_for_acme_diags/'
+  test_data_path = '/global/project/projectdirs/acme/e3sm_diags/test_model_data_for_acme_diags/'
 
   test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 

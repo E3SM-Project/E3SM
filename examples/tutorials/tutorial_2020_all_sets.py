@@ -1,19 +1,19 @@
 import os
 
-from acme_diags.parameter.area_mean_time_series_parameter import (
+from e3sm_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.qbo_parameter import QboParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from e3sm_diags.parameter.qbo_parameter import QboParameter
+from e3sm_diags.run import runner
 
 # See https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-general.html
 # Compy
 # data_prefix = '/compyfs/e3sm_diags_data'
 # html_prefix = '/compyfs/www/<username>'  # Change <username>
 # Cori
-data_prefix = "/global/cfs/cdirs/e3sm/acme_diags"
+data_prefix = "/global/cfs/cdirs/e3sm/e3sm_diags"
 html_prefix = "/global/cfs/cdirs/e3sm/www/<username>"  # Change <username>
 
 param = CoreParameter()

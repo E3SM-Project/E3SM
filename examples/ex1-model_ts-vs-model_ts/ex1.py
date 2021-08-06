@@ -1,12 +1,12 @@
 import os
 
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.run import runner
 
 param = CoreParameter()
 # Location of the data.
-param.test_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/time-series/E3SM_v1"
-param.reference_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/time-series/E3SM_v1"
+param.test_data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/E3SM_v1"
+param.reference_data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/E3SM_v1"
 
 # Set this parameter to True.
 # By default, e3sm_diags expects the test data to be climo data.

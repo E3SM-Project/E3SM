@@ -9,62 +9,62 @@ def get_all_files_in_dir(directory, pattern):
 
 
 zonal_mean_xy_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "zonal_mean_xy*"
+    "e3sm_diags/driver/default_diags", "zonal_mean_xy*"
 )
 zonal_mean_xy_files += get_all_files_in_dir(
-    "acme_diags/driver/default_diags/legacy_diags", "zonal_mean_xy*"
+    "e3sm_diags/driver/default_diags/legacy_diags", "zonal_mean_xy*"
 )
 
 zonal_mean_2d_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "zonal_mean_2d*"
+    "e3sm_diags/driver/default_diags", "zonal_mean_2d*"
 )
 zonal_mean_2d_files += get_all_files_in_dir(
-    "acme_diags/driver/default_diags/legacy_diags", "zonal_mean_2d*"
+    "e3sm_diags/driver/default_diags/legacy_diags", "zonal_mean_2d*"
 )
 
 meridional_mean_2d_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "meridional_mean_2d*"
+    "e3sm_diags/driver/default_diags", "meridional_mean_2d*"
 )
 
-lat_lon_files = get_all_files_in_dir("acme_diags/driver/default_diags", "lat_lon*")
+lat_lon_files = get_all_files_in_dir("e3sm_diags/driver/default_diags", "lat_lon*")
 lat_lon_files += get_all_files_in_dir(
-    "acme_diags/driver/default_diags/legacy_diags", "lat_lon*"
+    "e3sm_diags/driver/default_diags/legacy_diags", "lat_lon*"
 )
 
 lat_lon_vector_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "lat_lon_vector*"
+    "e3sm_diags/driver/default_diags", "lat_lon_vector*"
 )
 
-polar_files = get_all_files_in_dir("acme_diags/driver/default_diags", "polar*")
+polar_files = get_all_files_in_dir("e3sm_diags/driver/default_diags", "polar*")
 polar_files += get_all_files_in_dir(
-    "acme_diags/driver/default_diags/legacy_diags", "polar*"
+    "e3sm_diags/driver/default_diags/legacy_diags", "polar*"
 )
 
 cosp_histogram_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "cosp_histogram*"
+    "e3sm_diags/driver/default_diags", "cosp_histogram*"
 )
 cosp_histogram_files += get_all_files_in_dir(
-    "acme_diags/driver/default_diags/legacy_diags", "cosp_histogram*"
+    "e3sm_diags/driver/default_diags/legacy_diags", "cosp_histogram*"
 )
 
 area_mean_time_series = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "area_mean_time_series*"
+    "e3sm_diags/driver/default_diags", "area_mean_time_series*"
 )
-qbo = get_all_files_in_dir("acme_diags/driver/default_diags", "qbo*")
-streamflow = get_all_files_in_dir("acme_diags/driver/default_diags", "streamflow*")
-enso_diags_files = get_all_files_in_dir("acme_diags/driver/default_diags", "enso_*")
+qbo = get_all_files_in_dir("e3sm_diags/driver/default_diags", "qbo*")
+streamflow = get_all_files_in_dir("e3sm_diags/driver/default_diags", "streamflow*")
+enso_diags_files = get_all_files_in_dir("e3sm_diags/driver/default_diags", "enso_*")
 diurnal_cycle_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "diurnal_cycle_*"
+    "e3sm_diags/driver/default_diags", "diurnal_cycle_*"
 )
-arm_diags_files = get_all_files_in_dir("acme_diags/driver/default_diags", "arm_diags_*")
+arm_diags_files = get_all_files_in_dir("e3sm_diags/driver/default_diags", "arm_diags_*")
 tc_analysis_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "tc_analysis_*"
+    "e3sm_diags/driver/default_diags", "tc_analysis_*"
 )
 annual_cycle_zonal_mean_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "annual_cycle_zonal_mean_*"
+    "e3sm_diags/driver/default_diags", "annual_cycle_zonal_mean_*"
 )
-rgb_files = get_all_files_in_dir("acme_diags/plot/colormaps", "*.rgb")
-control_runs_files = get_all_files_in_dir("acme_diags/driver/control_runs", "*.csv")
+rgb_files = get_all_files_in_dir("e3sm_diags/plot/colormaps", "*.rgb")
+control_runs_files = get_all_files_in_dir("e3sm_diags/driver/control_runs", "*.csv")
 
 INSTALL_PATH = "share/e3sm_diags/"
 
@@ -96,7 +96,7 @@ data_files = [
     (
         INSTALL_PATH,
         [
-            "acme_diags/driver/acme_ne30_ocean_land_mask.nc",
+            "e3sm_diags/driver/acme_ne30_ocean_land_mask.nc",
             "misc/e3sm_logo.png",
         ],
     ),
@@ -104,7 +104,7 @@ data_files = [
     (os.path.join(INSTALL_PATH, "control_runs"), control_runs_files),
     (
         os.path.join(INSTALL_PATH, "viewer"),
-        ["acme_diags/viewer/index_template.html"],
+        ["e3sm_diags/viewer/index_template.html"],
     ),
 ]
 
@@ -114,14 +114,13 @@ setup(
     author="Chengzhu (Jill) Zhang, Tom Vo, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",
-    scripts=["acme_diags/acme_diags_driver.py"],
-    packages=find_packages(include=["acme_diags", "acme_diags.*"]),
+    scripts=["e3sm_diags/e3sm_diags_driver.py"],
+    packages=find_packages(include=["e3sm_diags", "e3sm_diags.*"]),
     data_files=data_files,
     entry_points={
         "console_scripts": [
-            "e3sm_diags=acme_diags.acme_diags_driver:main",
-            "acme_diags=acme_diags.acme_diags_driver:main",
-            "e3sm_diags_vars=acme_diags.acme_diags_vars:main",
+            "e3sm_diags=e3sm_diags.e3sm_diags_driver:main",
+            "e3sm_diags_vars=e3sm_diags.e3sm_diags_vars:main",
         ]
     },
 )

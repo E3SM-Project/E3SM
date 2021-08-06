@@ -142,7 +142,7 @@ Note: For Ex.7, you shouldn't run the software
 with just ``python ex7.py`` (i.e., without a ``.cfg`` file).
 The reason is that ``e3sm_diags`` doesn't support the obs vs obs comparison with all of the
 default variables. For each of the plot sets, the user needs to make a ``*_obs_vs_obs.cfg`` file in
-`this directory <https://github.com/E3SM-Project/e3sm_diags/tree/master/acme_diags/driver/default_diags>`__.
+`this directory <https://github.com/E3SM-Project/e3sm_diags/tree/master/e3sm_diags/driver/default_diags>`__.
 
 Viewing the Results
 -------------------

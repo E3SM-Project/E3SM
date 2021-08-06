@@ -3,9 +3,9 @@ import unittest
 
 import cdms2
 
-from acme_diags.derivations import acme as acme_derivations
-from acme_diags.driver.utils.dataset import Dataset
-from acme_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.derivations import acme as acme_derivations
+from e3sm_diags.driver.utils.dataset import Dataset
+from e3sm_diags.parameter.core_parameter import CoreParameter
 
 
 def get_abs_file_path(relative_path):

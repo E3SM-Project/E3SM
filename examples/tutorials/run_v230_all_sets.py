@@ -1,19 +1,19 @@
 import os
 
-from acme_diags.parameter.area_mean_time_series_parameter import (
+from e3sm_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
-from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.qbo_parameter import QboParameter
-from acme_diags.parameter.streamflow_parameter import StreamflowParameter
-from acme_diags.run import runner
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
+from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from e3sm_diags.parameter.qbo_parameter import QboParameter
+from e3sm_diags.parameter.streamflow_parameter import StreamflowParameter
+from e3sm_diags.run import runner
 
 # Define data paths for obs
-input_prefix = "/global/cfs/cdirs/e3sm/acme_diags"
-obs_climo = "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology"
-obs_ts = "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/time-series"
+input_prefix = "/global/cfs/cdirs/e3sm/e3sm_diags"
+obs_climo = "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/climatology"
+obs_ts = "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/time-series"
 
 # Define data paths for test model
 test_prefix = "/global/cfs/cdirs/e3sm/zhang40/postprocessing_for_e3sm_diags"

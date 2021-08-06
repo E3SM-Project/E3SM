@@ -1,13 +1,13 @@
 # Running the software with the API:
 #    python all_sets.py -d all_sets.py
-from acme_diags.parameter.area_mean_time_series_parameter import (
+from e3sm_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.meridional_mean_2d_parameter import MeridionalMean2dParameter
-from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
-from acme_diags.run import Run
+from e3sm_diags.parameter.core_parameter import CoreParameter
+from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from e3sm_diags.parameter.meridional_mean_2d_parameter import MeridionalMean2dParameter
+from e3sm_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+from e3sm_diags.run import Run
 
 run_object = Run()
 param = CoreParameter()
