@@ -492,6 +492,7 @@ subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
 
        elem(ie)%state%ps_v(:,:,tind1:tind2) =hvcoord%ps0
        elem(ie)%state%v(:,:,:,:,tind1:tind2)=0.0
+       elem(ie)%state%w_i(:,:,:,tind1:tind2)=0.0
 
        temperature(:,:,:)=Tinit
 
@@ -507,16 +508,23 @@ subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
        !or simple mountain in X direction
        !assume for now that Sx = Lx/2,so the x=0 point is in the middle
        ! get horizontal coordinates at column i,j
+
+       do j=1,np; do i=1,np
        x  = elem(ie)%spherep(i,j)%lon; y  = elem(ie)%spherep(i,j)%lat
-       if ( abs(x) < Lx/2.0) then
+
+!print *, 'x, Lx/2', x, Lx/2.0
+
+       if ( abs(x) < Lx/4.0) then
            if (x < 0.0) then
-              elem(ie)%state%phis(:,:) = 0.0*(x + Lx/4.0) 
+              elem(ie)%state%phis(i,j) = 0.01*(x + Lx/4.0) 
            else
-              elem(ie)%state%phis(:,:) = -0.0*(x - Lx/4.0)
+              elem(ie)%state%phis(i,j) = -0.01*(x - Lx/4.0)
            endif
        else
-           elem(ie)%state%phis(:,:) = 0.0
+           elem(ie)%state%phis(i,j) = 0.0
        endif
+       enddo; enddo
+!print *, 'max/min iz', maxval(elem(ie)%state%phis(:,:)), minval(elem(ie)%state%phis(:,:))
 
 
        ! initialize surface pressure to be 'consistent' with topo
@@ -525,14 +533,14 @@ subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
        elem(ie)%state%ps_v(:,:,ii) = elem(ie)%state%ps_v(:,:,ii)*&
             exp(-elem(ie)%state%phis(:,:) / (Rgas*Tinit))
        enddo
-print *, elem(ie)%state%ps_v(:,:,1)
+!print *, elem(ie)%state%ps_v(:,:,1)
 !!!! use set_state instead
 
 
        if (qsize>=1) then
        elem(ie)%state%Q(:,:,:,1:qsize) =0  ! moist HS tracer IC=0
        endif
-       elem(ie)%fcor(:,:) = 0.0
+       elem(ie)%fcor(:,:) = 7.292e-5
 
        call set_thermostate(elem(ie),elem(ie)%state%ps_v(:,:,tind1),temperature,hvcoord)
     end do

@@ -240,6 +240,8 @@ contains
     n0 = 2
     np1= 3
 
+!og is w not set here?
+
     do ie=nets,nete
 
        elem(ie)%state%ps_v(:,:,n0) =hvcoord%ps0
