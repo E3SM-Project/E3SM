@@ -8467,15 +8467,15 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M80">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 80 nodes pure-MPI, ~30 sypd </comment>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="ML">
+        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 71 nodes pure-MPI, ~31.5 sypd </comment>
         <ntasks>
-          <ntasks_atm>4096</ntasks_atm>
+          <ntasks_atm>3648</ntasks_atm>
           <ntasks_lnd>192</ntasks_lnd>
           <ntasks_rof>192</ntasks_rof>
-          <ntasks_ice>3904</ntasks_ice>
-          <ntasks_ocn>1024</ntasks_ocn>
-          <ntasks_cpl>4096</ntasks_cpl>
+          <ntasks_ice>3456</ntasks_ice>
+          <ntasks_ocn>896</ntasks_ocn>
+          <ntasks_cpl>3648</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -8487,10 +8487,10 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>3904</rootpe_lnd>
-          <rootpe_rof>3904</rootpe_rof>
+          <rootpe_lnd>3456</rootpe_lnd>
+          <rootpe_rof>3456</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>4096</rootpe_ocn>
+          <rootpe_ocn>3648</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
