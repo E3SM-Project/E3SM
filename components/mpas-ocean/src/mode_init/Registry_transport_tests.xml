@@ -1,4 +1,4 @@
-<nml_record name="transport_tests" mode="init" configuration="transport_tests">
+<nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
   <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3" units="unitless"
     description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
     possible_values="Any positive integer number greater than 0."
