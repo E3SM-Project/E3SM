@@ -516,9 +516,9 @@ subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
 
        if ( abs(x) < Lx/4.0) then
            if (x < 0.0) then
-              elem(ie)%state%phis(i,j) = 0.01*(x + Lx/4.0) 
+              elem(ie)%state%phis(i,j) = 0.05*(x + Lx/4.0) 
            else
-              elem(ie)%state%phis(i,j) = -0.01*(x - Lx/4.0)
+              elem(ie)%state%phis(i,j) = -0.05*(x - Lx/4.0)
            endif
        else
            elem(ie)%state%phis(i,j) = 0.0

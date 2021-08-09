@@ -179,7 +179,8 @@ contains
 
     do j=1,npts
        do i=1,npts
-         snlat        = SIN(sphere(i,j)%lat)
+       !change for equatorial force only, for planar
+         snlat        = 0.0  !SIN(sphere(i,j)%lat)
          snlatsq(i,j) = snlat*snlat
          cslatsq(i,j) = 1.0D0 - snlatsq(i,j)
        end do
