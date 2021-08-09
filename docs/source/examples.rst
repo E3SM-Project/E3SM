@@ -5,7 +5,7 @@ Examples
 Introduction
 ============
 
-The model and observation data are located at NERSC, so you can run the examples on Cori or Edison.
+The model and observation data are located at NERSC, so you can run the examples on Cori.
 
 Make sure you're using version 2.0.0 or greater of e3sm_diags.
 
@@ -48,47 +48,48 @@ The following tables visualize which comparison each of the following examples d
 Examples
 ========
 
+
 1. Model Time-series vs Model Time-series: Historical H1 (2011-2013) vs Historical H1 (1850-1852)
 -------------------------------------------------------------------------------------------------
-This example covers how to compare different time slices between two models.
+`This example <https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex1-model_ts-vs-model_ts>`__ covers how to compare different time slices between two models.
 In this case, we're comparing two different three-year time slices from the same model.
 The raw model output was run through NCO, which created the time-series files.
 
 2. Model Time-series vs Model Time-series with CMIP data
 --------------------------------------------------------
-This example covers how to compare different time slices between two models with CMIP5 conventions.
+`This example <https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex2-model_ts-vs-model_ts-cmip>`__ covers how to compare different time slices between two models with CMIP5 conventions.
 In this case, we're comparing two different three-year time slices from the same model.
 The raw model output was run through NCO, which created the time-series files.
 
 3. Model Time-series vs Observation Time-series with CMIP data
 --------------------------------------------------------------
-This example covers how to compare different time slices between observational data and a model with CMIP5 conventions.
+`This example <https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex3-model_ts-vs-obs_ts-cmip>`__ covers how to compare different time slices between observational data and a model with CMIP5 conventions.
 In this case, we're comparing two different three-year time slices.
 The raw model output was run through NCO, which created the time-series files.
 
 4. Model Climatology vs Model Climatology
 -----------------------------------------
 
-This example covers how to compare the climatology between two different model outputs.
+`This example <https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex4-model-vs-model>`__ covers how to compare the climatology between two different model outputs.
 The raw model output was run through NCO, which computed the climatology.
 We are comparing two simulations: F1850COSP and FC5COSP.
 
 5. Model Climatology vs Observation Climatology
 -----------------------------------------------
 
-This example covers how to compare the climatology between model output data and observational data.
+`This example <https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex5-model-vs-obs>`__ covers how to compare the climatology between model output data and observational data.
 The raw model output was run through NCO, which computed the climatology.
 We are comparing model and reanalysis data for surface air temperature for two areas: over land and globally.
 
 6. Model Climatology vs Observation Climatology -- Zonal Mean 2D and Lat/Lon
 ----------------------------------------------------------------------------
 
-This example covers how to compare the climatology between model output data and observational data
+`This example <https://github.com/E3SM-Project/e3sm_diags/tree/master/examples/ex6-model-vs-obs-custom>`__ covers how to compare the climatology between model output data and observational data
 on two different sets: ``zonal_mean_2d`` an ``lat_lon``.
 
 7. Observation Climatology vs Observation Climatology
 -----------------------------------------------------
-This example covers how to compare observational data with itself,
+`This example <https://github.com/E3SM-Project/e3sm_diags/tree/master/examples/ex7-obs-vs-obs>`__ covers how to compare observational data with itself,
 so you can compare different version of the data, or the same variable from different datasets.
 We are comparing CERES EBAF TOA version 2.8 and 4.0.
 
@@ -132,7 +133,7 @@ Use the code below to run the diagnostics.
         # Allocate a node to run an interactive session on. You can also use a batch job.
         salloc --nodes=1 --partition=regular --time=01:00:00 -C haswell
         # Enter the E3SM Unified environment. For Cori, the command to do this is:
-        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
         # Running Ex.1. For examples 4,5,7 append ``-d diags.cfg``.
         python ex1.py --multiprocessing --num_workers=32
         # You may need to change permissions on your web directory to see the example output.

@@ -21,19 +21,18 @@
 ## Documentation <a name="doc"></a>
 
 - [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
-- [Sample Output, Historical H1 (2011-2013) vs Historical H1 (1850-1852)](https://e3sm-project.github.io/e3sm_diags/sample_output/modTS_vs_modTS_3years/viewer/index.html)
+- [Sample Output, Model vs Observations](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/all_sets_v250_20210608_1878984/viewer/)
 - Quick Start Guides:
-  - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-cori.html)
-  - [Quick Start Guide for NERSC Edison](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-edison-shifter.html)
-  - [Quick Start Guide for AIMS4/ACME1](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-aims4.html)
-  - [Quick Start Guide for OLCF Rhea](https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-rhea.html)
-- Examples:
-  - [Model Time-series vs Model Time-series](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-model_ts.html)
-  - [Model Time-series vs Model Time-series with CMIP data](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-model_ts-CMIP.html)
-  - [Model Time-series vs Observation Time-series with CMIP data](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_ts-vs-obs_ts-CMIP.html)
-  - [Model Climo vs Model Climo Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_climo-vs-model_climo.html)
-  - [Model Climo vs Observation Climo Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/model_climo-vs-obs_climo.html)
-  - [Observation vs Observation Comparison](https://e3sm-project.github.io/e3sm_diags/docs/html/examples/obs_climo-vs-obs_climo.html)
+  - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-cori.html)
+  - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-compy.html)
+  - [Quick Start Guide for LCRC (Chrysalis and Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-lcrc.html)
+- Example run scripts:
+  - [Model Climo vs Observation Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex5-model-vs-obs)
+  - [Model Climo vs Model Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex4-model-vs-model)
+  - [Model Time-series vs Model Time-series](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex1-model_ts-vs-model_ts)
+  - [Model Time-series vs Model Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex2-model_ts-vs-model_ts-cmip)
+  - [Model Time-series vs Observation Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex3-model_ts-vs-obs_ts-cmip)
+  - [Observation vs Observation Comparison](https://github.com/E3SM-Project/e3sm_diags/tree/master/examples/ex7-obs-vs-obs)
 
 ## Overview<a name="overview"></a>
 
