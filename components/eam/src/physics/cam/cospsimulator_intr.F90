@@ -682,10 +682,8 @@ CONTAINS
        call addfld('CFAD_SR532_CAL',(/'cosp_sr','cosp_ht'/),'A','1',                                    &
             'Calipso Scattering Ratio CFAD (532 nm)',                                                    &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! beta_mol532 (time,height_mlev,profile)
        call addfld ('MOL532_CAL',(/'lev'/),'A','m-1sr-1','Calipso Molecular Backscatter (532 nm) ',              &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! atb532 (time,height_mlev,column,profile)
        call addfld ('ATB532_CAL',(/'cosp_scol','lev      '/),'I','no_unit_log10(x)',                           &
             'Calipso Attenuated Total Backscatter (532 nm) in each Subcolumn',                        &
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1773,32 +1771,7 @@ CONTAINS
       real(r8) :: cfad_dbze94(pcols,CLOUDSAT_DBZE_BINS,nht_cosp)   ! cfad_dbze94 (time,height,dbze,profile)
       real(r8) :: cfad_lidarsr532(pcols,nsr_cosp,nht_cosp) ! cfad_lidarsr532 (time,height,scat_ratio,profile)
       real(r8) :: dbze94(pcols,nscol_cosp,nhtml_cosp)      ! dbze94 (time,height_mlev,column,profile)
-      real(r8) :: atb532(pcols,nscol_cosp,nhtml_cosp)      ! atb532 (time,height_mlev,column,profile)
       real(r8) :: clMISR(pcols,ntau_cosp,nhtmisr_cosp)     ! clMISR (time,tau,CTH_height_bin,profile)
-      real(r8) :: cldlow_cal(pcols)                        ! CAM cllcalipso (time,profile)
-      real(r8) :: cldmed_cal(pcols)                        ! CAM clmcalipso (time,profile)
-      real(r8) :: cldhgh_cal(pcols)                        ! CAM clhcalipso (time,profile)
-      real(r8) :: cldtot_cal(pcols)                        ! CAM cltcalipso (time,profile)
-      real(r8) :: cldtot_cal_ice(pcols)                    ! CAM (time,profile) !!+cosp1.4
-      real(r8) :: cldtot_cal_liq(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldtot_cal_un(pcols)                     ! CAM (time,profile)
-      real(r8) :: cldhgh_cal_ice(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldhgh_cal_liq(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldhgh_cal_un(pcols)                     ! CAM (time,profile)
-      real(r8) :: cldmed_cal_ice(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldmed_cal_liq(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldmed_cal_un(pcols)                     ! CAM (time,profile)
-      real(r8) :: cldlow_cal_ice(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldlow_cal_liq(pcols)                    ! CAM (time,profile)
-      real(r8) :: cldlow_cal_un(pcols)                     ! CAM (time,profile) !+cosp1.4
-      real(r8) :: cld_cal(pcols,nht_cosp)                  ! CAM clcalipso (time,height,profile)
-      real(r8) :: cld_cal_liq(pcols,nht_cosp)              ! CAM (time,height,profile) !+cosp1.4
-      real(r8) :: cld_cal_ice(pcols,nht_cosp)              ! CAM (time,height,profile)
-      real(r8) :: cld_cal_un(pcols,nht_cosp)               ! CAM (time,height,profile)
-      real(r8) :: cld_cal_tmp(pcols,nht_cosp)              ! CAM (time,height,profile)
-      real(r8) :: cld_cal_tmpliq(pcols,nht_cosp)           ! CAM (time,height,profile)
-      real(r8) :: cld_cal_tmpice(pcols,nht_cosp)           ! CAM (time,height,profile)
-      real(r8) :: cld_cal_tmpun(pcols,nht_cosp)            ! CAM (time,height,profile) !+cosp1.4
       real(r8) :: cldtot_calcs(pcols)                      ! CAM cltlidarradar (time,profile)
       real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
       real(r8) :: cldtot_cs2(pcols)                        ! CAM cltradar2 (time,profile)
@@ -1813,9 +1786,6 @@ CONTAINS
       real(r8) :: ptcloudsatflag8(pcols)
       real(r8) :: ptcloudsatflag9(pcols)
       real(r8) :: cloudsatpia(pcols)
-      real(r8) :: cld_cal_notcs(pcols,nht_cosp)            ! CAM clcalipso2 (time,height,profile)
-      real(r8) :: mol532_cal(pcols,nhtml_cosp)             ! CAM beta_mol532 (time,height_mlev,profile)
-      real(r8) :: refl_parasol(pcols,nsza_cosp)            ! CAM parasol_refl (time,sza,profile)
       real(r8) :: cltmodis(pcols)
       real(r8) :: clwmodis(pcols)
       real(r8) :: climodis(pcols)
@@ -1853,34 +1823,9 @@ CONTAINS
       cfad_dbze94(1:pcols,1:CLOUDSAT_DBZE_BINS,1:nht_cosp)  = R_UNDEF
       cfad_lidarsr532(1:pcols,1:nsr_cosp,1:nht_cosp)= R_UNDEF
       dbze94(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
-      atb532(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
       clMISR(1:pcols,ntau_cosp,1:nhtmisr_cosp)      = R_UNDEF
       
       ! (all CAM output variables. including collapsed variables)
-      cldlow_cal(1:pcols)                              = R_UNDEF
-      cldmed_cal(1:pcols)                              = R_UNDEF
-      cldhgh_cal(1:pcols)                              = R_UNDEF
-      cldtot_cal(1:pcols)                              = R_UNDEF
-      cldtot_cal_ice(1:pcols)                          = R_UNDEF !+cosp1.4
-      cldtot_cal_liq(1:pcols)                          = R_UNDEF
-      cldtot_cal_un(1:pcols)                           = R_UNDEF
-      cldhgh_cal_ice(1:pcols)                          = R_UNDEF
-      cldhgh_cal_liq(1:pcols)                          = R_UNDEF
-      cldhgh_cal_un(1:pcols)                           = R_UNDEF
-      cldmed_cal_ice(1:pcols)                          = R_UNDEF
-      cldmed_cal_liq(1:pcols)                          = R_UNDEF
-      cldmed_cal_un(1:pcols)                           = R_UNDEF
-      cldlow_cal_liq(1:pcols)                          = R_UNDEF
-      cldlow_cal_ice(1:pcols)                          = R_UNDEF
-      cldlow_cal_un(1:pcols)                           = R_UNDEF !+cosp1.4
-      cld_cal(1:pcols,1:nht_cosp)                      = R_UNDEF
-      cld_cal_liq(1:pcols,1:nht_cosp)                  = R_UNDEF !+cosp1.4
-      cld_cal_ice(1:pcols,1:nht_cosp)                  = R_UNDEF
-      cld_cal_un(1:pcols,1:nht_cosp)                   = R_UNDEF
-      cld_cal_tmp(1:pcols,1:nht_cosp)                  = R_UNDEF
-      cld_cal_tmpliq(1:pcols,1:nht_cosp)               = R_UNDEF
-      cld_cal_tmpice(1:pcols,1:nht_cosp)               = R_UNDEF
-      cld_cal_tmpun(1:pcols,1:nht_cosp)                = R_UNDEF
       ptcloudsatflag0(1:pcols)                         = R_UNDEF 
       ptcloudsatflag1(1:pcols)                         = R_UNDEF 
       ptcloudsatflag2(1:pcols)                         = R_UNDEF 
@@ -1895,9 +1840,6 @@ CONTAINS
       cldtot_calcs(1:pcols)                            = R_UNDEF
       cldtot_cs(1:pcols)                               = R_UNDEF
       cldtot_cs2(1:pcols)                              = R_UNDEF
-      cld_cal_notcs(1:pcols,1:nht_cosp)                = R_UNDEF
-      mol532_cal(1:pcols,1:nhtml_cosp)                 = R_UNDEF
-      refl_parasol(1:pcols,1:nsza_cosp)                = R_UNDEF
       cltmodis(1:pcols)                                = R_UNDEF
       clwmodis(1:pcols)                                = R_UNDEF
       climodis(1:pcols)                                = R_UNDEF
@@ -1938,7 +1880,6 @@ CONTAINS
          ! *NOTE* These two fields are joint-simulator products, but in CAM they are controlled
          !        by the radar simulator control.
          cldtot_calcs(1:ncol) = cospOUT%radar_lidar_tcc                                             ! CAM version of cltlidarradar (time,profile)
-         cld_cal_notcs(1:ncol,1:nht_cosp) = cospOUT%lidar_only_freq_cloud                           ! CAM version of clcalipso2 (time,height,profile)
   
          ! Cloudsat near-surface precipitation diagnostics
          ptcloudsatflag0(1:ncol) = cospOUT%cloudsat_precip_cover(:,1)
@@ -1962,41 +1903,7 @@ CONTAINS
   
       endif
       
-      ! CALIPSO
-      if (llidar_sim) then
-         cldlow_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,1)                          ! CAM version of cllcalipso (time,profile)      
-         cldmed_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,2)                          ! CAM version of clmcalipso (time,profile)
-         cldhgh_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,3)                          ! CAM version of clhcalipso (time,profile)
-         cldtot_cal(1:ncol)                = cospOUT%calipso_cldlayer(:,4)                          ! CAM version of cltcalipso (time,profile)
-         cldlow_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,1)              ! CAM version of cllcalipsoice !+cosp1.4
-         cldmed_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,1)              ! CAM version of clmcalipsoice
-         cldhgh_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,1)                 ! CAM version of clhcalipsoice
-         cldtot_cal_ice(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,1)              ! CAM version of cltcalipsoice
-         cldlow_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,1,2)              ! CAM version of cllcalipsoliq
-         cldmed_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,2,2)              ! CAM version of clmcalipsoliq
-         cldhgh_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,3,2)              ! CAM version of clhcalipsoliq
-         cldtot_cal_liq(1:ncol)            = cospOUT%calipso_cldlayerphase(:,4,2)              ! CAM version of cltcalipsoliq
-         cldlow_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,1,3)              ! CAM version of cllcalipsoun
-         cldmed_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,2,3)              ! CAM version of clmcalipsoun
-         cldhgh_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,3,3)              ! CAM version of clhcalipsoun
-         cldtot_cal_un(1:ncol)             = cospOUT%calipso_cldlayerphase(:,4,3)                   ! CAM version of cltcalipsoun, !+cosp1.4
-         cld_cal_ice(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,1)      ! CAM version of clcalipsoice !+cosp1.4
-         cld_cal_liq(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldphase(:,:,2)       ! CAM version of clcalipsoliq
-         cld_cal_un(1:ncol,1:nht_cosp)     = cospOUT%calipso_lidarcldphase(:,:,3)      ! CAM version of clcalipsoun
-         cld_cal_tmp(1:ncol,1:nht_cosp)    = cospOUT%calipso_lidarcldtmp(:,:,1)                 ! CAM version of clcalipsotmp
-         cld_cal_tmpliq(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,2)                     ! CAM version of clcalipsotmpice
-         cld_cal_tmpice(1:ncol,1:nht_cosp) = cospOUT%calipso_lidarcldtmp(:,:,3)                     ! CAM version of clcalipsotmpliq
-         cld_cal_tmpun(1:ncol,1:nht_cosp)  = cospOUT%calipso_lidarcldtmp(:,:,4)                     ! CAM version of clcalipsotmpun, !+cosp1.4
-         cld_cal(1:ncol,1:nht_cosp)                    = cospOUT%calipso_lidarcld(:,1:nht_cosp)  ! CAM version of clcalipso (time,height,profile)
-         mol532_cal(1:ncol,1:nhtml_cosp)               = cospOUT%calipso_beta_mol                   ! CAM version of beta_mol532 (time,height_mlev,profile)
-         atb532(1:ncol,1:nscol_cosp,1:nhtml_cosp)      = cospOUT%calipso_beta_tot                   ! atb532 (time,height_mlev,column,profile)
-         cfad_lidarsr532(1:ncol,1:nsr_cosp,1:nht_cosp) = cospOUT%calipso_cfad_sr(:,:,:) ! cfad_lidarsr532 (time,height,scat_ratio,profile)     
-         ! PARASOL. In COSP2, the Parasol simulator is independent of the calipso simulator.
-         refl_parasol(1:ncol,1:nsza_cosp) = cospOUT%parasolGrid_refl                                ! CAM version of parasolrefl (time,sza,profile)
-      endif
-      
-      
-      ! MISR
+               ! MISR
       if (lmisr_sim) then
          clMISR(1:ncol,1:ntau_cosp,1:nhtmisr_cosp) = cospOUT%misr_fq               ! CAM version of clMISR (time,tau,CTH_height_bin,profile)
       endif
@@ -2051,84 +1958,53 @@ CONTAINS
       
       ! CALIPSO SIMULATOR OUTPUTS
       if (llidar_sim) then
-         call outfld('CLDLOW_CAL',    cldlow_cal,     pcols,lchnk)
-         call outfld('CLDMED_CAL',    cldmed_cal,     pcols,lchnk)
-         call outfld('CLDHGH_CAL',    cldhgh_cal,     pcols,lchnk)
-         call outfld('CLDTOT_CAL',    cldtot_cal,     pcols,lchnk)
-         call outfld('CLDTOT_CAL_ICE',cldtot_cal_ice, pcols,lchnk) !+1.4
-         call outfld('CLDTOT_CAL_LIQ',cldtot_cal_liq, pcols,lchnk)
-         call outfld('CLDTOT_CAL_UN', cldtot_cal_un,  pcols,lchnk)
-         call outfld('CLDHGH_CAL_ICE',cldhgh_cal_ice, pcols,lchnk)
-         call outfld('CLDHGH_CAL_LIQ',cldhgh_cal_liq, pcols,lchnk)
-         call outfld('CLDHGH_CAL_UN', cldhgh_cal_un,  pcols,lchnk)
-         call outfld('CLDMED_CAL_ICE',cldmed_cal_ice, pcols,lchnk)
-         call outfld('CLDMED_CAL_LIQ',cldmed_cal_liq, pcols,lchnk)
-         call outfld('CLDMED_CAL_UN', cldmed_cal_un,  pcols,lchnk)
-         call outfld('CLDLOW_CAL_ICE',cldlow_cal_ice, pcols,lchnk)
-         call outfld('CLDLOW_CAL_LIQ',cldlow_cal_liq, pcols,lchnk)
-         call outfld('CLDLOW_CAL_UN', cldlow_cal_un,  pcols,lchnk) !+1.4
-         where (cld_cal(:ncol,:nht_cosp) .eq. R_UNDEF)
+         call outfld('CLDLOW_CAL'    , cospOUT%calipso_cldlayer(1:ncol,1)       , ncol, lchnk)
+         call outfld('CLDMED_CAL'    , cospOUT%calipso_cldlayer(1:ncol,2)       , ncol, lchnk)
+         call outfld('CLDHGH_CAL'    , cospOUT%calipso_cldlayer(1:ncol,3)       , ncol, lchnk)
+         call outfld('CLDTOT_CAL'    , cospOUT%calipso_cldlayer(1:ncol,4)       , ncol, lchnk)
+         call outfld('CLDTOT_CAL_ICE', cospOUT%calipso_cldlayerphase(1:ncol,4,1), ncol, lchnk)
+         call outfld('CLDTOT_CAL_LIQ', cospOUT%calipso_cldlayerphase(1:ncol,4,2), ncol, lchnk)
+         call outfld('CLDTOT_CAL_UN' , cospOUT%calipso_cldlayerphase(1:ncol,4,3), ncol, lchnk)
+         call outfld('CLDHGH_CAL_ICE', cospOUT%calipso_cldlayerphase(1:ncol,3,1), ncol, lchnk)
+         call outfld('CLDHGH_CAL_LIQ', cospOUT%calipso_cldlayerphase(1:ncol,3,2), ncol, lchnk)
+         call outfld('CLDHGH_CAL_UN' , cospOUT%calipso_cldlayerphase(1:ncol,3,3), ncol, lchnk)
+         call outfld('CLDMED_CAL_ICE', cospOUT%calipso_cldlayerphase(1:ncol,2,1), ncol, lchnk)
+         call outfld('CLDMED_CAL_LIQ', cospOUT%calipso_cldlayerphase(1:ncol,2,2), ncol, lchnk)
+         call outfld('CLDMED_CAL_UN' , cospOUT%calipso_cldlayerphase(1:ncol,2,3), ncol, lchnk)
+         call outfld('CLDLOW_CAL_ICE', cospOUT%calipso_cldlayerphase(1:ncol,1,1), ncol, lchnk)
+         call outfld('CLDLOW_CAL_LIQ', cospOUT%calipso_cldlayerphase(1:ncol,1,2), ncol, lchnk)
+         call outfld('CLDLOW_CAL_UN' , cospOUT%calipso_cldlayerphase(1:ncol,1,3), ncol, lchnk)
+
+         where (cospOUT%calipso_lidarcld(:ncol,:nht_cosp) .eq. R_UNDEF)
             !! setting missing values to 0 (clear air).  
             !! I'm not sure why COSP produces a mix of R_UNDEF and realvalue in the nht_cosp dimension.
-            cld_cal(:ncol,:nht_cosp) = 0.0_r8
+            cospOUT%calipso_lidarcld(:ncol,:nht_cosp) = 0.0_r8
          end where
-         call outfld('CLD_CAL',        cld_cal,       pcols,lchnk)  !! fails check_accum if 'A'
-         call outfld('MOL532_CAL',     mol532_cal,    pcols,lchnk)
+         call outfld('CLD_CAL',    cospOUT%calipso_lidarcld(1:ncol,1:nht_cosp), ncol,lchnk)  !! fails check_accum if 'A'
+         call outfld('MOL532_CAL', cospOUT%calipso_beta_mol(1:ncol,1:nhtml_cosp), ncol, lchnk)
          
-         where (cfad_lidarsr532(:ncol,:,:) .eq. R_UNDEF)
-            !! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue
-            cfad_lidarsr532(:ncol,:,:) = 0.0_r8
+         ! setting missing values to 0 (clear air), likely below sea level
+         where (cospOUT%calipso_cfad_sr(1:ncol,:,:) .eq. R_UNDEF)
+            cospOUT%calipso_cfad_sr(1:ncol,:,:) = 0.0_r8
          end where
-         call outfld('CFAD_SR532_CAL',cfad_lidarsr532,pcols,lchnk)
-         
-         where (refl_parasol(:ncol,:nsza_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air).  
-            refl_parasol(:ncol,:nsza_cosp) = 0
+         call outfld('CFAD_SR532_CAL',cospOUT%calipso_cfad_sr(1:ncol,1:nsr_cosp,1:nht_cosp),ncol,lchnk)
+         where (cospOUT%parasolGrid_refl(:ncol,:nsza_cosp) .eq. R_UNDEF)
+            cospOUT%parasolGrid_refl(:ncol,:nsza_cosp) = 0
          end where
-         call outfld('RFL_PARASOL',refl_parasol   ,pcols,lchnk) !!
-         
-         where (cld_cal_liq(:ncol,:nht_cosp) .eq. R_UNDEF) !+cosp1.4
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_liq(:ncol,:nht_cosp) = 0.0_r8
+         call outfld('RFL_PARASOL',cospOUT%parasolGrid_refl(1:ncol,1:nsza_cosp), ncol, lchnk)
+
+         ! Set missing values to 0 (clear air) to avoid issues with check_acccum (likely levels below sea level)
+         where (cospOUT%calipso_lidarcldphase(:ncol,:nht_cosp,:) .eq. R_UNDEF)
+            cospOUT%calipso_lidarcldphase(:ncol,:nht_cosp,:) = 0.0_r8
          end where
-         call outfld('CLD_CAL_LIQ',cld_cal_liq    ,pcols,lchnk)  !!
-         
-         where (cld_cal_ice(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_ice(:ncol,:nht_cosp) = 0.0_r8
+         where (cospOUT%calipso_lidarcldtmp(:ncol,:nht_cosp,:) .eq. R_UNDEF)
+            cospOUT%calipso_lidarcldtmp(:ncol,:nht_cosp,:) = 0.0_r8
          end where
-         call outfld('CLD_CAL_ICE',cld_cal_ice    ,pcols,lchnk)  !!
-         
-         where (cld_cal_un(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_un(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_UN',cld_cal_un    ,pcols,lchnk)  !!
-         
-         where (cld_cal_tmp(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_tmp(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_TMP',cld_cal_tmp    ,pcols,lchnk)  !!
-         
-         where (cld_cal_tmpliq(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_tmpliq(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_TMPLIQ',cld_cal_tmpliq    ,pcols,lchnk)  !!
-         
-         where (cld_cal_tmpice(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_tmpice(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_TMPICE',cld_cal_tmpice    ,pcols,lchnk)  !!
-         
-         where (cld_cal_tmpun(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air), likely below sea level
-            cld_cal_tmpun(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_TMPUN',cld_cal_tmpun    ,pcols,lchnk)  !!  !+cosp1.4 
-  
+         call outfld('CLD_CAL_ICE'  , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,1),ncol,lchnk)
+         call outfld('CLD_CAL_LIQ'  , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,2),ncol,lchnk)
+         call outfld('CLD_CAL_UN'   , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,3),ncol,lchnk)
+         call outfld('CLD_CAL_TMP'  , cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,1),ncol,lchnk)
+         call outfld('CLD_CAL_TMPUN', cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,4)    ,ncol,lchnk)
       end if
       
       ! RADAR SIMULATOR OUTPUTS
@@ -2141,7 +2017,7 @@ CONTAINS
          call outfld('CLDTOT_CALCS',  cldtot_calcs,     pcols, lchnk)
          call outfld('CLDTOT_CS',     cldtot_cs,        pcols, lchnk)
          call outfld('CLDTOT_CS2',    cldtot_cs2,       pcols, lchnk)
-         call outfld('CLD_CAL_NOTCS', cld_cal_notcs,    pcols, lchnk)
+         call outfld('CLD_CAL_NOTCS', cospOUT%lidar_only_freq_cloud(1:ncol,1:nht_cosp), ncol, lchnk)
          call outfld('CS_NOPRECIP',   ptcloudsatflag0,  pcols, lchnk)
          call outfld('CS_RAINPOSS',   ptcloudsatflag1,  pcols, lchnk)
          call outfld('CS_RAINPROB',   ptcloudsatflag2,  pcols, lchnk)
@@ -2272,7 +2148,7 @@ CONTAINS
             call outfld('CLDPTOP_ISCCP', cospOUT%isccp_boxptop(1:ncol,1:nscol_cosp), ncol, lchnk) !! fails check_accum if 'A'
          end if
          if (llidar_sim) then
-            call outfld('ATB532_CAL',atb532,pcols,lchnk) !! fails check_accum if 'A'
+            call outfld('ATB532_CAL',cospOUT%calipso_beta_tot(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk) !! fails check_accum if 'A'
          end if
          if (lradar_sim) then
             call outfld('DBZE_CS',dbze94,pcols,lchnk) !! fails check_accum if 'A'
@@ -2280,6 +2156,7 @@ CONTAINS
       end if
    end subroutine cosp_write_outputs
 #endif
+
 
 #ifdef USE_COSP
    subroutine cosp_histfile_aux_out(state, cospstateIN, cospIN)
