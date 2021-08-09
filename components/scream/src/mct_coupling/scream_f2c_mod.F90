@@ -41,15 +41,17 @@ interface
   ! This subroutine initializes the C++ structures in the AD that are
   ! responsible to handle import/export operation from/into the component
   ! coupler surface fluxes/state structures
-  subroutine scream_setup_surface_coupling (x2a_names, x2a_indices, x2a_ptr, num_imports, num_scream_imports,&
-                                            a2x_names, a2x_indices, a2x_ptr, num_exports) bind(c)
+  subroutine scream_setup_surface_coupling (x2a_names, x2a_indices, x2a_ptr, vec_comp_x2a, &
+                                            num_cpl_imports, num_scream_imports, &
+                                            a2x_names, a2x_indices, a2x_ptr, vec_comp_a2x, &
+                                            num_exports) bind(c)
     use iso_c_binding, only: c_ptr, c_int
     !
     ! Input(s)
     !
-    type(c_ptr),         intent(in) :: x2a_indices, x2a_names, x2a_ptr 
-    type(c_ptr),         intent(in) :: a2x_indices, a2x_names, a2x_ptr
-    integer(kind=c_int), intent(in) :: num_imports, num_scream_imports, num_exports
+    type(c_ptr),         intent(in) :: x2a_indices, x2a_names, x2a_ptr, vec_comp_x2a
+    type(c_ptr),         intent(in) :: a2x_indices, a2x_names, a2x_ptr, vec_comp_a2x
+    integer(kind=c_int), intent(in) :: num_cpl_imports, num_scream_imports, num_exports
   end subroutine scream_setup_surface_coupling
 
   ! This subroutine performs completes the initialization of the atm instance.

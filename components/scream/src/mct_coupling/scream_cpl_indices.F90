@@ -6,13 +6,13 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_required_imports = 21
-  integer, parameter, public :: num_scream_imports   = 4
-  integer, parameter, public :: num_required_exports = 12
-  integer, parameter, public :: num_optional_imports = 0
-  integer, parameter, public :: num_optional_exports = 1
-  integer, parameter, public :: num_imports = num_required_imports + num_optional_imports
-  integer, parameter, public :: num_exports = num_required_exports + num_optional_exports
+  integer, parameter, public :: num_required_cpl_imports = 21
+  integer, parameter, public :: num_scream_imports       = 8
+  integer, parameter, public :: num_required_exports     = 12
+  integer, parameter, public :: num_optional_cpl_imports = 0
+  integer, parameter, public :: num_optional_exports     = 1
+  integer, parameter, public :: num_cpl_imports = num_required_cpl_imports + num_optional_cpl_imports
+  integer, parameter, public :: num_exports     = num_required_exports + num_optional_exports
 
   integer(kind=c_int), public, allocatable, target :: index_x2a(:)
   integer(kind=c_int), public, allocatable, target :: index_a2x(:)
@@ -24,6 +24,12 @@ module scream_cpl_indices
   ! Names used by scream for import/export fields
   character(len=32,kind=c_char), public, allocatable, target :: scr_names_a2x(:)
   character(len=32,kind=c_char), public, allocatable, target :: scr_names_x2a(:)
+
+  ! Vector component of import/export fields. If not a vector field, set to -1.
+  integer(kind=c_int), public, allocatable, target :: vec_comp_a2x(:)
+  integer(kind=c_int), public, allocatable, target :: vec_comp_x2a(:)
+
+
 
   public :: scream_set_cpl_indices
 
@@ -41,14 +47,17 @@ contains
     !
     integer :: i,idx
 
-    allocate (index_x2a(num_imports))
+    allocate (index_x2a(num_cpl_imports))
     allocate (index_a2x(num_exports))
 
-    allocate (cpl_names_x2a(num_imports))
+    allocate (cpl_names_x2a(num_cpl_imports))
     allocate (cpl_names_a2x(num_exports))
 
-    allocate (scr_names_x2a(num_imports))
+    allocate (scr_names_x2a(num_cpl_imports))
     allocate (scr_names_a2x(num_exports))
+
+    allocate (vec_comp_x2a(num_cpl_imports))
+    allocate (vec_comp_a2x(num_exports))
 
     ! Determine attribute vector indices
 
@@ -92,9 +101,8 @@ contains
     cpl_names_x2a(20) = 'So_ustar'  ! Friction/shear velocity     [m/s]      (cam_in%ustar) [***UNUSED***]
     cpl_names_x2a(21) = 'So_re'     ! ???? (cam_in%re) [***UNUSED***]
 
-    ! Names used by scream for the input fields above. Some are unused
-    ! and others will be used by radiation (RRTMGP), but currently aren't
-    ! ready in that code.
+    ! Names used by scream for the input fields above.
+    ! Unused fields are marked and skipped during surface coupling.
     scr_names_x2a(1)  = 'surf_latent_flux'
     scr_names_x2a(2)  = 'surf_sens_flux'
     scr_names_x2a(3)  = 'unused'
@@ -116,6 +124,11 @@ contains
     scr_names_x2a(19) = 'unused'
     scr_names_x2a(20) = 'unused'
     scr_names_x2a(21) = 'unused'
+
+    ! No scream imports currently require vector component info. Set to -1.
+    do i=1,num_required_cpl_imports
+      vec_comp_x2a(i) = -1
+    enddo
 
     ! List of cpl names of outputs that scream needs to pass back to cpl
 
@@ -169,8 +182,8 @@ contains
     scr_names_a2x(1)  = 'T_mid'
     scr_names_a2x(2)  = 'Sa_ptem'
     scr_names_a2x(3)  = 'z_mid'
-    scr_names_a2x(4)  = 'Sa_u'
-    scr_names_a2x(5)  = 'Sa_v'
+    scr_names_a2x(4)  = 'horiz_winds'
+    scr_names_a2x(5)  = 'horiz_winds'
     scr_names_a2x(6)  = 'p_mid'
     scr_names_a2x(7)  = 'Sa_dens'
     scr_names_a2x(8)  = 'qv'
@@ -180,11 +193,18 @@ contains
     scr_names_a2x(12) = 'set_zero'
     scr_names_a2x(13) = 'set_zero'
 
-    do i=1,num_required_imports
+    ! Default export vector components to -1. Set horiz_winds components.
+    do i=1,num_required_cpl_imports
+      vec_comp_a2x(i) = -1
+    enddo
+    vec_comp_a2x(4) = 0
+    vec_comp_a2x(5) = 1
+
+    do i=1,num_required_cpl_imports
       index_x2a(i) = mct_avect_indexra(x2a,TRIM(cpl_names_x2a(i)))
       scr_names_x2a(i) = TRIM(scr_names_x2a(i)) // C_NULL_CHAR
     enddo
-    do i=num_required_imports+1,num_imports
+    do i=num_required_cpl_imports+1,num_cpl_imports
       index_x2a(i) = mct_avect_indexra(x2a,TRIM(cpl_names_x2a(i)),perrWith='quiet')
       scr_names_x2a(i) = TRIM(scr_names_x2a(i)) // C_NULL_CHAR
     enddo

@@ -37,6 +37,8 @@ set (SCREAM_LIBS
      ${dynLibName}
      p3
      shoc
+     scream_rrtmgp
+     cld_fraction
 )
 
 include (tpls/Mct)

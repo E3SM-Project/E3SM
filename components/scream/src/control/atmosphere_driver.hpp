@@ -68,7 +68,7 @@ public:
   void create_fields ();
 
   // Sets a pre-built SurfaceCoupling object in the driver (for CIME runs only)
-  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc);
+  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
 
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& t0);
