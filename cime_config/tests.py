@@ -170,7 +170,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP.eam-mmf_fixed_subcycle",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             )
         },
