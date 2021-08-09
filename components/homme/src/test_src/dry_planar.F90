@@ -490,6 +490,14 @@ subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
 
     do ie=nets,nete
 
+       do j=1,np; do i=1,np
+       elem(ie)%state%am(i,j,:) = hvcoord%hyam(:) 
+       elem(ie)%state%bm(i,j,:) = hvcoord%hybm(:) 
+       elem(ie)%state%ai(i,j,:) = hvcoord%hyai(:) 
+       elem(ie)%state%bi(i,j,:) = hvcoord%hybi(:) 
+       enddo; enddo
+
+
        elem(ie)%state%ps_v(:,:,tind1:tind2) =hvcoord%ps0
        elem(ie)%state%v(:,:,:,:,tind1:tind2)=0.0
        elem(ie)%state%w_i(:,:,:,tind1:tind2)=0.0

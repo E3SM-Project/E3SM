@@ -52,6 +52,7 @@ contains
   real (kind=real_kind), dimension(np,np,nlevp) :: phi_ref
   real (kind=real_kind), dimension(np,np,nlev,5)  :: ttmp
 
+
   call t_startf('vertical_remap')
 
   ! reference levels:
@@ -73,13 +74,29 @@ contains
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) )
   !
+
+
    do ie=nets,nete
      ! update final ps_v
-     elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
-          sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+
+     !elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+     !     sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+     do j=1,np; do i=1,np
+     elem(ie)%state%ps_v(i,j,np1) = elem(ie)%state%ai(i,j,1)*hvcoord%ps0 + &
+         sum(elem(ie)%state%dp3d(i,j,:,np1))
+     enddo; enddo
+
      do k=1,nlev
-        dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+
+        !dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+        !            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        do j=1,np
+        do i=1,np
+        dp(i,j,k) = ( elem(ie)%state%ai(i,j,k+1) - elem(ie)%state%ai(i,j,k) )*hvcoord%ps0 + &
+               ( elem(ie)%state%bi(i,j,k+1) - elem(ie)%state%bi(i,j,k) )*elem(ie)%state%ps_v(i,j,np1)
+        enddo
+        enddo
+
         if (rsplit==0) then
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k))
@@ -87,6 +104,7 @@ contains
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         endif
      enddo
+
      if (minval(dp_star)<0) then
         do k=1,nlev
         do i=1,np
