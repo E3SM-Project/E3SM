@@ -897,7 +897,6 @@ CONTAINS
     
     ! MISR SIMULATOR OUTPUTS
     if (lmisr_sim) then
-       ! clMISR (time,tau,CTH_height_bin,profile)
        call addfld ('CLD_MISR',(/'cosp_tau   ','cosp_htmisr'/),'A','percent','Cloud Fraction from MISR Simulator',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
        !! add all misr outputs to the history file specified by the CAM namelist variable cosp_histfile_num
@@ -1771,7 +1770,6 @@ CONTAINS
       real(r8) :: cfad_dbze94(pcols,CLOUDSAT_DBZE_BINS,nht_cosp)   ! cfad_dbze94 (time,height,dbze,profile)
       real(r8) :: cfad_lidarsr532(pcols,nsr_cosp,nht_cosp) ! cfad_lidarsr532 (time,height,scat_ratio,profile)
       real(r8) :: dbze94(pcols,nscol_cosp,nhtml_cosp)      ! dbze94 (time,height_mlev,column,profile)
-      real(r8) :: clMISR(pcols,ntau_cosp,nhtmisr_cosp)     ! clMISR (time,tau,CTH_height_bin,profile)
       real(r8) :: cldtot_calcs(pcols)                      ! CAM cltlidarradar (time,profile)
       real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
       real(r8) :: cldtot_cs2(pcols)                        ! CAM cltradar2 (time,profile)
@@ -1823,7 +1821,6 @@ CONTAINS
       cfad_dbze94(1:pcols,1:CLOUDSAT_DBZE_BINS,1:nht_cosp)  = R_UNDEF
       cfad_lidarsr532(1:pcols,1:nsr_cosp,1:nht_cosp)= R_UNDEF
       dbze94(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
-      clMISR(1:pcols,ntau_cosp,1:nhtmisr_cosp)      = R_UNDEF
       
       ! (all CAM output variables. including collapsed variables)
       ptcloudsatflag0(1:pcols)                         = R_UNDEF 
@@ -1901,11 +1898,6 @@ CONTAINS
          !        are entirely dependent on the host models microphysics, not the retrieval.
   
   
-      endif
-      
-               ! MISR
-      if (lmisr_sim) then
-         clMISR(1:ncol,1:ntau_cosp,1:nhtmisr_cosp) = cospOUT%misr_fq               ! CAM version of clMISR (time,tau,CTH_height_bin,profile)
       endif
       
       ! MODIS
@@ -2033,7 +2025,7 @@ CONTAINS
       
       ! MISR SIMULATOR OUTPUTS
       if (lmisr_sim) then
-         call outfld('CLD_MISR',clMISR,pcols,lchnk)
+         call outfld('CLD_MISR', cospOUT%misr_fq(1:ncol,1:ntau_cosp,1:nhtmisr_cosp), ncol, lchnk)
       end if
       
       ! MODIS SIMULATOR OUTPUTS
