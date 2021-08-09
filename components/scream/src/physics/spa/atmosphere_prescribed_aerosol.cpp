@@ -45,13 +45,14 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+
+  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
@@ -129,6 +130,7 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
   SPATimeState.days_this_month = (Real)ts.get_dpm();
 
   // Initialize SPA input data
+  SPAPressureState.ncols         = m_num_cols;
   SPAPressureState.nlevs         = m_num_levs;
   SPAPressureState.hyam          = m_spa_fields_in["hyam"].get_reshaped_view<const Pack*>();
   SPAPressureState.hybm          = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
@@ -141,7 +143,6 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 // =========================================================================================
 void SPA::run_impl (const Real dt)
 {
-  auto ts = timestamp();
   const auto& p_mid        = m_spa_fields_in["p_mid"].get_reshaped_view<const Pack**>();
   const auto& nc_activated = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
 
@@ -149,53 +150,35 @@ void SPA::run_impl (const Real dt)
   const auto& ps_src       = m_buffer.ps_src;
   const auto& ccn3_src     = m_buffer.ccn3_src;
 
-  // First Step: Horizontal Interpolation if needed - Skip for Now
+  /* Gather time and state information for interpolation */
+  auto ts = timestamp();
   /* Update time data if the month has changed */
   if (ts.get_months() != SPATimeState.current_month) {
     SPATimeState.current_month = ts.get_months();
     SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
     SPATimeState.days_this_month = (Real)ts.get_dpm();
   }
+  const Real t_now = ts.get_julian_day();
+  const Real t_beg = SPATimeState.t_beg_month;
+  const Real t_len = SPATimeState.days_this_month;
+  const Int  ncols = SPAPressureState.ncols;
+  const Int  nlevs = SPAPressureState.nlevs;
+  const auto hyam  = SPAPressureState.hyam;
+  const auto hybm  = SPAPressureState.hybm;
+
+  // First Step: Horizontal Interpolation if needed - Skip for Now
 
   // Second Step: Temporal Interpolation
-  /* Gather time information for interpolation */
-  Real t_now = ts.get_julian_day();
   /* First determine PS for the source data at this time */
-  {
-  using ExeSpace = typename KT::ExeSpace;
-  Kokkos::parallel_for("time-interp-PS",
-    m_num_cols,
-    KOKKOS_LAMBDA(const int& i) {
-      SPAFunc::aero_time_interp(SPATimeState.t_beg_month, t_now, SPATimeState.days_this_month, SPAPressureState.ps_this_month(i), SPAPressureState.ps_next_month(i),ps_src(i));
-    });
-  }
+  SPAFunc::calculate_current_data_ps(ncols,t_beg, t_now, t_len, SPAPressureState.ps_this_month, SPAPressureState.ps_next_month,ps_src);
   /* Next, interpolate all of the ccn data */
-  {
-  using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(SPAPressureState.nlevs);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  Kokkos::parallel_for(
-    "time-interp-aero",
-    policy,
-    KOKKOS_LAMBDA(const KT::MemberType& team) {
-
-      const Int i = team.league_rank();
-      const auto& ccn3_src_sub = ekat::subview(ccn3_src,i);
-      const auto& ccn3_beg_sub = ekat::subview(SPAData_start.CCN3,i);
-      const auto& ccn3_end_sub = ekat::subview(SPAData_end.CCN3,i);
-      Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
-          //TODO: once the time interp can handle packed views use that function here.
-          ccn3_src_sub(k) = ccn3_beg_sub(k) + (t_now - SPATimeState.t_beg_month) * ( ccn3_end_sub(k) - ccn3_beg_sub(k) )/ SPATimeState.days_this_month;
-      });
-    });
-  }
+  SPAFunc::calculate_current_data_concentrations(ncols,nlevs,t_beg, t_now, t_len,SPAData_start.CCN3,SPAData_end.CCN3,ccn3_src);
 
   // Final Step: Vertical Interpolation of aerosol data at all columns
   /* First construct the source pressure interface levels */
-  SPAFunc::reconstruct_pressure_profile(m_num_cols,SPAPressureState.nlevs,SPAPressureState.hyam,SPAPressureState.hybm,ps_src,p_mid_src);
+  SPAFunc::reconstruct_pressure_profile(ncols,nlevs,hyam,hybm,ps_src,p_mid_src);
   /* Next, use EKAT interpolation to remap CCN data onto current set of pressure levels */
-  SPAFunc::aero_vertical_remap(m_num_cols,SPAPressureState.nlevs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
+  SPAFunc::aero_vertical_remap(ncols,nlevs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
  
   // TODO, when all three interpolations are finished in run_impl, create a "SPA_main" routine that calls all three in order and simplify run_impl. 
 

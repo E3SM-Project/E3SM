@@ -55,6 +55,7 @@ struct SPAFunctions
   struct SPAPressureState {
     SPAPressureState() = default;
     // Number of vertical levels for the data
+    Int ncols;
     Int nlevs;
     // Surface pressure for data at the beginning of the month
     view_1d<const Real> ps_this_month;
@@ -79,7 +80,7 @@ struct SPAFunctions
   }; // SPAPrescribedAerosolData
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   static void reconstruct_pressure_profile(
     const Int ncols,
     const Int nlevs,
@@ -88,7 +89,7 @@ struct SPAFunctions
     const view_1d<const Real>&  PS,
     const view_2d<Spack>&       pres);
 
-  KOKKOS_FUNCTION
+  KOKKOS_INLINE_FUNCTION
   static void aero_vertical_remap(
     const Int ncols,
     const Int nlevs_src,
@@ -98,15 +99,45 @@ struct SPAFunctions
     const view_2d<const Spack>& aero_src,
     const view_2d<Spack>& aero_tgt); 
 
-  // TODO: This function should really be templated to work with Scalars and Packed views
-  KOKKOS_FUNCTION
-  static void aero_time_interp(
+  template<typename ScalarY>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarY aero_time_interp(
     const Real& t0,
     const Real& ts,
     const Real& tlen,
-    const Real& y0,
-    const Real& y1,
-          Real& y_out);
+    const ScalarY& y0,
+    const ScalarY& y1);
+
+  KOKKOS_INLINE_FUNCTION
+  static void aero_time_interp(
+    const MemberType& team,
+    const Real& t0,
+    const Real& ts,
+    const Real& tlen,
+    const uview_1d<const Spack>& y0,
+    const uview_1d<const Spack>& y1,
+    const uview_1d<Spack>&       y_out);
+
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_current_data_ps(
+    const Int&  ncols,
+    const Real& t0,
+    const Real& ts,
+    const Real& tlen,
+    const view_1d<const Real>& ps_0,
+    const view_1d<const Real>& ps_1,
+    const view_1d<Real>&       ps_out);
+
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_current_data_concentrations(
+    const Int& ncols,
+    const Int& nlevs,
+    const Real& t0,
+    const Real& ts,
+    const Real& tlen,
+    const view_2d<const Spack>& y0,
+    const view_2d<const Spack>& y1,
+    const view_2d<Spack>&       yout);
 
 }; // struct Functions
 
@@ -114,3 +145,9 @@ struct SPAFunctions
 } // namespace scream
 
 #endif // SPA_FUNCTIONS_HPP
+
+// We don't do ETI, since we don't know some of the concrete types.
+// E.g., we don't know InputProvider, or ScalarT (although we could
+// ETI the "common" cases, where the provider is a view_1d, and
+// Scalar=Real or Scalar=Pack<Real,SCREAM_PACK_SIZE>).
+# include "spa_functions_impl.hpp"

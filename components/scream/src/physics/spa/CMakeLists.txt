@@ -1,12 +1,11 @@
 set(CLDFRAC_SRCS
   atmosphere_prescribed_aerosol.cpp
-  spa_main.cpp 
 )
 
 set(CLDFRAC_HEADERS
   atmosphere_prescribed_aerosol.hpp
   spa_functions.hpp
-  spa_main_impl.hpp
+  spa_functions_impl.hpp
 )
 
 add_library(spa ${CLDFRAC_SRCS})
