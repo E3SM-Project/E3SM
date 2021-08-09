@@ -246,20 +246,9 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
 
         pip install .
 
-8. Run a quick test which generates one of each plot type.
+8. Check that tests pass: ``./tests/test.sh``. This takes about 4 minutes.
 
-    ::
-
-        cd tests/system
-        python all_sets.py -d all_sets.cfg
-
-9. Remember to view the generated html located here: ``all_sets/viewer/index.html``. These plots can be moved to the web
-   for viewing by moving the generated directory ``all_sets`` to the ``html_path``. Each machine has a different
-   ``html_path`` -- see :doc:`quick guide <quickguides/quick-guide-general>`. Files at the ``html_path`` can be viewed
-   at ``web_address``. If you're not seeing the files there, you may need to change the permissions with ``chmod -R``
-   (e.g., on NERSC, ``chmod -R 755 /global/cfs/cdirs/e3sm/www/<username>/all_sets``).
-
-10. Commit changes and make sure ``pre-commit`` checks pass
+9. Commit changes and make sure ``pre-commit`` checks pass
     ::
 
         git commit -m "..."
