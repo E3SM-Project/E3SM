@@ -1121,7 +1121,6 @@ CONTAINS
     use camsrfexch,           only: cam_in_t
     use constituents,         only: cnst_get_ind
     use rad_constituents,     only: rad_cnst_get_gas
-    use wv_saturation,        only: qsat_water
     use interpolate_data,     only: lininterp_init,lininterp,lininterp_finish,interp_type
     use physconst,            only: pi, gravit
     use cam_history,          only: hist_fld_col_active 
@@ -1194,17 +1193,12 @@ CONTAINS
     real(r8) :: rain_ls_interp(pcols,pver)               ! midpoint ls rain flux (kg m^-2 s^-1)
     real(r8) :: snow_ls_interp(pcols,pver)               ! midpoint ls snow flux
     real(r8) :: reff_cosp(pcols,pver,nhydro)             ! effective radius for cosp input
-    real(r8) :: rh(pcols,pver)                           ! relative_humidity_liquid_water (%)
-    real(r8) :: es(pcols,pver)                           ! saturation vapor pressure
-    real(r8) :: qs(pcols,pver)                           ! saturation mixing ratio (kg/kg), saturation specific humidity
-    real(r8) :: cld_swtau(pcols,pver)                    ! incloud sw tau for input to COSP
     real(r8) :: dtau_s(pcols,pver)                       ! dtau_s - Optical depth of stratiform cloud at 0.67 um
     real(r8) :: dtau_c(pcols,pver)                       ! dtau_c - Optical depth of convective cloud at 0.67 um
     real(r8) :: dtau_s_snow(pcols,pver)                  ! dtau_s_snow - Grid-box mean Optical depth of stratiform snow at 0.67 um
     real(r8) :: dem_s(pcols,pver)                        ! dem_s - Longwave emis of stratiform cloud at 10.5 um
     real(r8) :: dem_c(pcols,pver)                        ! dem_c - Longwave emis of convective cloud at 10.5 um
     real(r8) :: dem_s_snow(pcols,pver)                   ! dem_s_snow - Grid-box mean Optical depth of stratiform snow at 10.5 um
-    integer  :: cam_sunlit(pcols)                        ! cam_sunlit - Sunlit flag(1-sunlit/0-dark).
     
     ! ######################################################################################
     ! Simulator output info
@@ -1446,22 +1440,6 @@ CONTAINS
     !    also reverse CAM height/pressure values for input into CSOP
     !    CAM state%pint from top to surface, COSP wants surface to top.
     
-   
-    
-    ! 2) rh - relative_humidity_liquid_water (%)
-    ! calculate from CAM q and t using CAM built-in functions
-    call qsat_water(state%t(1:ncol,1:pver), state%pmid(1:ncol,1:pver), &
-         es(1:ncol,1:pver), qs(1:ncol,1:pver))
-    
-    ! initialize rh
-    rh(1:ncol,1:pver)=0._r8
-    
-    ! calculate rh
-    do k=1,pver
-       do i=1,ncol
-          rh(i,k)=(q(i,k)/qs(i,k))*100
-       end do
-    end do
     
     ! 4) calculate necessary input cloud/precip variables
     ! CAM4 note: don't take the cloud water from the hack shallow convection scheme or the deep convection.  
@@ -1589,44 +1567,6 @@ CONTAINS
        end do
     end do
     
-    ! 5) assign optical depths and emissivities needed for isccp simulator
-    cld_swtau(1:ncol,1:pver) = cld_swtau_in(1:ncol,1:pver)
-    
-    ! initialize cosp inputs
-    dtau_s(1:ncol,1:pver)      = 0._r8
-    dtau_c(1:ncol,1:pver)      = 0._r8
-    dtau_s_snow(1:ncol,1:pver) = 0._r8
-    dem_s(1:ncol,1:pver)       = 0._r8 
-    dem_c(1:ncol,1:pver)       = 0._r8
-    dem_s_snow(1:ncol,1:pver)  = 0._r8 
-    
-    ! assign values
-    ! NOTES:
-    ! 1) CAM4 assumes same radiative properties for stratiform and convective clouds, 
-    ! (see ISCCP_CLOUD_TYPES subroutine call in cloudsimulator.F90)
-    ! I presume CAM5 is doing the same thing based on the ISCCP simulator calls within RRTM's radiation.F90
-    ! 2) COSP wants in-cloud values.  CAM5 values cld_swtau are in-cloud.
-    ! 3) snow_tau_in and snow_emis_in are passed without modification to COSP
-    dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)        ! mean 0.67 micron optical depth of stratiform (in-cloud)
-    dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)        ! mean 0.67 micron optical depth of convective (in-cloud)
-    dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)             ! 10.5 micron longwave emissivity of stratiform (in-cloud)
-    dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)             ! 10.5 micron longwave emissivity of convective (in-cloud)
-    dem_s_snow(1:ncol,1:pver)  = snow_emis_in(1:ncol,1:pver)     ! 10.5 micron grid-box mean optical depth of stratiform snow
-    dtau_s_snow(1:ncol,1:pver) = snow_tau_in(1:ncol,1:pver)      ! 0.67 micron grid-box mean optical depth of stratiform snow
-
-    ! ######################################################################################
-    ! Compute sunlit flag. If cosp_runall=.true., then run on all points.
-    ! ######################################################################################
-    cam_sunlit(:) = 0
-    if (cosp_runall) then
-       cam_sunlit(:) = 1
-    else
-       do i=1,ncol
-          if ((coszrs(i) > 0.0_r8) .and. (run_cosp(i,lchnk))) then
-             cam_sunlit(i) = 1
-          endif
-       enddo
-    endif
     call t_stopf('cosp_translate_variables')
 
     ! ######################################################################################
@@ -1650,7 +1590,18 @@ CONTAINS
     cospstateIN%at                             = state%t(1:ncol,1:pver) 
     cospstateIN%qv                             = q(1:ncol,1:pver)
     cospstateIN%o3                             = o3(1:ncol,1:pver)  
-    cospstateIN%sunlit                         = cam_sunlit(1:ncol)
+    ! Compute sunlit flag. If cosp_runall=.true., then run on all points.
+    if (cosp_runall) then
+       cospstateIN%sunlit = 1
+    else
+       do i = 1,ncol
+          if ((coszrs(i) > 0.0_r8) .and. (run_cosp(i,lchnk))) then
+             cospstateIN%sunlit(i) = 1
+          else
+             cospstateIN%sunlit(i) = 0
+          end if
+       end do
+    end if
     cospstateIN%skt                            = cam_in%ts(1:ncol)
     do i = 1,ncol
        if (cam_in%landfrac(i) > 0.01_r8) then
@@ -1682,6 +1633,19 @@ CONTAINS
        sd_wk = sd_cs(lchnk)
     end if
     call t_stopf('cosp_construct_cospIN')
+
+    ! NOTES:
+    ! 1) CAM4 assumes same radiative properties for stratiform and convective clouds, 
+    ! (see ISCCP_CLOUD_TYPES subroutine call in cloudsimulator.F90)
+    ! I presume CAM5 is doing the same thing based on the ISCCP simulator calls within RRTM's radiation.F90
+    ! 2) COSP wants in-cloud values.  CAM5 values cld_swtau are in-cloud.
+    ! 3) snow_tau_in and snow_emis_in are passed without modification to COSP
+    dtau_s(1:ncol,1:pver)      = cld_swtau_in(1:ncol,1:pver)  ! mean 0.67 micron optical depth of stratiform (in-cloud)
+    dtau_c(1:ncol,1:pver)      = cld_swtau_in(1:ncol,1:pver)  ! mean 0.67 micron optical depth of convective (in-cloud)
+    dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
+    dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
+    dem_s_snow(1:ncol,1:pver)  = snow_emis_in(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
+    dtau_s_snow(1:ncol,1:pver) = snow_tau_in(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
 
     ! *NOTE* Fields passed into subsample_and_optics are ordered from TOA-2-SFC.
     call t_startf('cosp_subsample_and_optics')
