@@ -1251,9 +1251,6 @@ CONTAINS
     ! CAM pointers to get variables from radiation interface (get from rad_cnst_get_gas)
     real(r8), pointer, dimension(:,:) :: q               ! specific humidity (kg/kg)
     real(r8), pointer, dimension(:,:) :: o3              ! Mass mixing ratio 03
-    real(r8), pointer, dimension(:,:) :: co2             ! Mass mixing ratio C02
-    real(r8), pointer, dimension(:,:) :: ch4             ! Mass mixing ratio CH4
-    real(r8), pointer, dimension(:,:) :: n2o             ! Mass mixing ratio N20
     
     ! CAM pointers to get variables from the physics buffer
     real(r8), pointer, dimension(:,:) :: cld             ! cloud fraction, tca - total_cloud_amount (0-1)
@@ -1388,18 +1385,11 @@ CONTAINS
     Npoints = ncol        ! default is running all columns in the chunk, not pcols = maximum number
     Nlevels = pver
     
-    ! 2) cam_in variables (see camsrfexch.F90)
-    ! I can reference these as is, e.g., cam_in%ts.  
-    !cam_in%ts                   ! skt - Skin temperature (K)
-    
     ! 3) radiative constituent interface variables:
     ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
     ! Note: these all have dims (pcol,pver) but the values don't change much for the well-mixed gases.
     call rad_cnst_get_gas(0,'H2O', state, pbuf,  q)                     
     call rad_cnst_get_gas(0,'O3',  state, pbuf,  o3)
-    call rad_cnst_get_gas(0,'CH4', state, pbuf,  ch4)
-    call rad_cnst_get_gas(0,'CO2', state, pbuf,  co2)
-    call rad_cnst_get_gas(0,'N2O', state, pbuf,  n2o)
     
     ! 4) get variables from physics buffer
     itim_old = pbuf_old_tim_idx()
@@ -1436,32 +1426,9 @@ CONTAINS
     ! CALCULATE COSP INPUT VARIABLES FROM CAM VARIABLES, done for all columns within chunk
     !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    ! 0) Create ptop/ztop for gbx%pf and gbx%zlev are for the the interface, 
-    !    also reverse CAM height/pressure values for input into CSOP
-    !    CAM state%pint from top to surface, COSP wants surface to top.
-    
-    
-    ! 4) calculate necessary input cloud/precip variables
     ! CAM4 note: don't take the cloud water from the hack shallow convection scheme or the deep convection.  
     ! cloud water values for convection are the same as the stratiform value. (Sungsu)
-    ! all precip fluxes are mid points, all values are grid-box mean ("gbm") (Yuying)
-    
-    ! initialize local variables
-    mr_ccliq(1:ncol,1:pver)           = 0._r8
-    mr_ccice(1:ncol,1:pver)           = 0._r8
-    mr_lsliq(1:ncol,1:pver)           = 0._r8
-    mr_lsice(1:ncol,1:pver)           = 0._r8
-    grpl_ls_interp(1:ncol,1:pver)     = 0._r8
-    rain_ls_interp(1:ncol,1:pver)     = 0._r8 
-    snow_ls_interp(1:ncol,1:pver)     = 0._r8
-    rain_cv(1:ncol,1:pverp)           = 0._r8
-    snow_cv(1:ncol,1:pverp)           = 0._r8
-    rain_cv_interp(1:ncol,1:pver)     = 0._r8
-    snow_cv_interp(1:ncol,1:pver)     = 0._r8
-    reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
-    ! note: reff_cosp dimensions should be same as cosp (reff_cosp has 9 hydrometeor dimension)
-    ! Reff(Npoints,Nlevels,N_HYDRO)
-    
+
     use_precipitation_fluxes = .true.      !!! consistent with cam4 implementation.
     
     ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
@@ -1469,8 +1436,12 @@ CONTAINS
          (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
     snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
     
-    ! interpolate interface precip fluxes to mid points
-    do i=1,ncol
+    ! All precip fluxes in COSP should be mid points, all values are grid-box mean ("gbm") (Yuying)
+    ! Interpolate interface precip fluxes to mid points
+    grpl_ls_interp(1:ncol,1:pver) = 0._r8  ! NOTE: graupel remains zero
+    rain_ls_interp(1:ncol,1:pver) = 0._r8 
+    snow_ls_interp(1:ncol,1:pver) = 0._r8
+    do i = 1,ncol
        ! find weights (pressure weighting?)
        call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
        ! interpolate  lininterp1d(arrin, nin, arrout, nout, interp_wgts)
@@ -1487,14 +1458,18 @@ CONTAINS
     !! CAM5 cloud mixing ratio calculations
     !! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
     !! Convective cloud water is NOT part of radiation calculations.
+    mr_ccliq(1:ncol,1:pver)           = 0._r8
+    mr_ccice(1:ncol,1:pver)           = 0._r8
+    mr_lsliq(1:ncol,1:pver)           = 0._r8
+    mr_lsice(1:ncol,1:pver)           = 0._r8
     do k=1,pver
        do i=1,ncol
           if (cld(i,k) .gt. 0._r8) then
              !! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
              mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
              mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
-             mr_lsliq(i,k)=state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
-             mr_lsice(i,k)=state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
+             mr_lsliq(i,k) = state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
+             mr_lsice(i,k) = state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
           else
              mr_ccliq(i,k) = 0._r8
              mr_ccice(i,k) = 0._r8
@@ -1506,10 +1481,12 @@ CONTAINS
     
     !! Previously, I had set use_reff=.false.
     !! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
-    
+
     !! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
     !! All of the values that I have assembled in the code are in microns... convert to meters here since that is what COSP wants.
     use_reff = .true.
+    reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
+    ! note: reff_cosp dimensions should be same as cosp (reff_cosp has 9 hydrometeor dimension)
     reff_cosp(1:ncol,1:pver,1) = rel(1:ncol,1:pver)*1.e-6_r8          !! LSCLIQ  (same as effc and effliq in stratiform.F90)
     reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8          !! LSCICE  (same as effi and effice in stratiform.F90)
     reff_cosp(1:ncol,1:pver,3) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! LSRAIN  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
@@ -1540,7 +1517,6 @@ CONTAINS
           end if
        end do
     end do
-    
     call t_stopf('cosp_translate_variables')
 
     ! ######################################################################################
@@ -1577,6 +1553,7 @@ CONTAINS
        end do
     end if
     cospstateIN%skt                            = cam_in%ts(1:ncol)
+    ! Compute land mask
     do i = 1,ncol
        if (cam_in%landfrac(i) > 0.01_r8) then
           cospstateIN%land(i) = 1
