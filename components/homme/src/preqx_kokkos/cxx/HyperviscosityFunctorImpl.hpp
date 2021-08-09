@@ -296,9 +296,16 @@ private:
   SphereOperators       m_sphere_ops;
 
   // Policies
+#ifndef NDEBUG
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
+#else
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Tag>;
+#endif
   Kokkos::RangePolicy<ExecSpace,TagUpdateStates>    m_policy_update_states;
-  Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
-  Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
+  TeamPolicyType<TagFirstLaplaceHV>                 m_policy_first_laplace;
+  TeamPolicyType<TagHyperPreExchange>               m_policy_pre_exchange;
 
   std::shared_ptr<BoundaryExchange> m_be;
 
