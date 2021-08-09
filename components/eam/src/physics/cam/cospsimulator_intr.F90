@@ -621,7 +621,6 @@ CONTAINS
     ! ISCCP OUTPUTS
     if (lisccp_sim) then
        !! addfld calls for all
-       !*cfMon,cfDa* clisccp2 (time,tau,plev,profile), CFMIP wants 7 p bins, 7 tau bins
        call addfld('FISCCP1_COSP',(/'cosp_tau','cosp_prs'/),'A','percent', &
             'Grid-box fraction covered by each ISCCP D level cloud type',&
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1766,21 +1765,16 @@ CONTAINS
 
       type(physics_state), intent(in) :: state
       type(cosp_optical_inputs), intent(in) :: cospIN
-      type(cosp_outputs), intent(in) :: cospOUT
+      type(cosp_outputs), intent(inout) :: cospOUT  ! inout so we can fix before writing
       integer :: ncol, lchnk
       integer :: i,k,ip,it,ipt,ih,id,ihd,is,ihs,isc,ihsc,ihm,ihmt,ihml,itim_old,ifld 
       ! Local copies of output variables
       ! TODO: these should not be necessary; remove.
-      real(r8) :: clisccp2(pcols,ntau_cosp,nprs_cosp)      ! clisccp2 (time,tau,plev,profile)
       real(r8) :: cfad_dbze94(pcols,CLOUDSAT_DBZE_BINS,nht_cosp)   ! cfad_dbze94 (time,height,dbze,profile)
       real(r8) :: cfad_lidarsr532(pcols,nsr_cosp,nht_cosp) ! cfad_lidarsr532 (time,height,scat_ratio,profile)
       real(r8) :: dbze94(pcols,nscol_cosp,nhtml_cosp)      ! dbze94 (time,height_mlev,column,profile)
       real(r8) :: atb532(pcols,nscol_cosp,nhtml_cosp)      ! atb532 (time,height_mlev,column,profile)
       real(r8) :: clMISR(pcols,ntau_cosp,nhtmisr_cosp)     ! clMISR (time,tau,CTH_height_bin,profile)
-      real(r8) :: frac_out(pcols,nscol_cosp,nhtml_cosp)    ! frac_out (time,height_mlev,column,profile)
-      real(r8) :: cldtot_isccp(pcols)                      ! CAM tclisccp (time,profile)
-      real(r8) :: meancldalb_isccp(pcols)                  ! CAM albisccp (time,profile)
-      real(r8) :: meanptop_isccp(pcols)                    ! CAM ctpisccp (time,profile)
       real(r8) :: cldlow_cal(pcols)                        ! CAM cllcalipso (time,profile)
       real(r8) :: cldmed_cal(pcols)                        ! CAM clmcalipso (time,profile)
       real(r8) :: cldhgh_cal(pcols)                        ! CAM clhcalipso (time,profile)
@@ -1805,11 +1799,6 @@ CONTAINS
       real(r8) :: cld_cal_tmpliq(pcols,nht_cosp)           ! CAM (time,height,profile)
       real(r8) :: cld_cal_tmpice(pcols,nht_cosp)           ! CAM (time,height,profile)
       real(r8) :: cld_cal_tmpun(pcols,nht_cosp)            ! CAM (time,height,profile) !+cosp1.4
-      real(r8) :: tau_isccp(pcols,nscol_cosp)              ! CAM boxtauisccp (time,column,profile)
-      real(r8) :: cldptop_isccp(pcols,nscol_cosp)          ! CAM boxptopisccp (time,column,profile)
-      real(r8) :: meantau_isccp(pcols)                     ! CAM tauisccp (time,profile)
-      real(r8) :: meantb_isccp(pcols)                      ! CAM meantbisccp (time,profile)
-      real(r8) :: meantbclr_isccp(pcols)                   ! CAM meantbclrisccp (time,profile)     
       real(r8) :: cldtot_calcs(pcols)                      ! CAM cltlidarradar (time,profile)
       real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
       real(r8) :: cldtot_cs2(pcols)                        ! CAM cltradar2 (time,profile)
@@ -1861,18 +1850,13 @@ CONTAINS
       ! Initialize CAM variables as R_UNDEF, important for history files because it will exclude these from averages
       ! (multi-dimensional output that will be collapsed)
       ! initialize over all pcols, not just ncol.  missing values needed in chunks where ncol<pcols
-      clisccp2(1:pcols,1:ntau_cosp,1:nprs_cosp)     = R_UNDEF
       cfad_dbze94(1:pcols,1:CLOUDSAT_DBZE_BINS,1:nht_cosp)  = R_UNDEF
       cfad_lidarsr532(1:pcols,1:nsr_cosp,1:nht_cosp)= R_UNDEF
       dbze94(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
       atb532(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
       clMISR(1:pcols,ntau_cosp,1:nhtmisr_cosp)      = R_UNDEF
-      frac_out(1:pcols,1:nscol_cosp,1:nhtml_cosp)   = R_UNDEF
       
       ! (all CAM output variables. including collapsed variables)
-      cldtot_isccp(1:pcols)                            = R_UNDEF
-      meancldalb_isccp(1:pcols)                        = R_UNDEF
-      meanptop_isccp(1:pcols)                          = R_UNDEF
       cldlow_cal(1:pcols)                              = R_UNDEF
       cldmed_cal(1:pcols)                              = R_UNDEF
       cldhgh_cal(1:pcols)                              = R_UNDEF
@@ -1897,11 +1881,6 @@ CONTAINS
       cld_cal_tmpliq(1:pcols,1:nht_cosp)               = R_UNDEF
       cld_cal_tmpice(1:pcols,1:nht_cosp)               = R_UNDEF
       cld_cal_tmpun(1:pcols,1:nht_cosp)                = R_UNDEF
-      tau_isccp(1:pcols,1:nscol_cosp)                  = R_UNDEF
-      cldptop_isccp(1:pcols,1:nscol_cosp)              = R_UNDEF
-      meantau_isccp(1:pcols)                           = R_UNDEF
-      meantb_isccp(1:pcols)                            = R_UNDEF
-      meantbclr_isccp(1:pcols)                         = R_UNDEF     
       ptcloudsatflag0(1:pcols)                         = R_UNDEF 
       ptcloudsatflag1(1:pcols)                         = R_UNDEF 
       ptcloudsatflag2(1:pcols)                         = R_UNDEF 
@@ -1949,8 +1928,6 @@ CONTAINS
       ! ######################################################################################
       ! Copy COSP outputs to CAM fields.
       ! ######################################################################################
-      if (allocated(cospIN%frac_out)) &
-           frac_out(1:ncol,1:nscol_cosp,1:nhtml_cosp) = cospIN%frac_out                             ! frac_out (time,height_mlev,column,profile)
       
       ! Cloudsat
       if (lradar_sim) then 
@@ -2018,18 +1995,6 @@ CONTAINS
          refl_parasol(1:ncol,1:nsza_cosp) = cospOUT%parasolGrid_refl                                ! CAM version of parasolrefl (time,sza,profile)
       endif
       
-      ! ISCCP
-      if (lisccp_sim) then
-         clisccp2(1:ncol,1:ntau_cosp,1:nprs_cosp) = cospOUT%isccp_fq               ! CAM version of clisccp2       (time,tau,plev,profile)
-         tau_isccp(1:ncol,1:nscol_cosp)           = cospOUT%isccp_boxtau           ! CAM version of boxtauisccp    (time,column,profile)
-         cldptop_isccp(1:ncol,1:nscol_cosp)       = cospOUT%isccp_boxptop          ! CAM version of boxptopisccp   (time,column,profile)
-         cldtot_isccp(1:ncol)                     = cospOUT%isccp_totalcldarea     ! CAM version of tclisccp       (time,       profile)
-         meanptop_isccp(1:ncol)                   = cospOUT%isccp_meanptop         ! CAM version of ctpisccp       (time,       profile)
-         meantau_isccp(1:ncol)                    = cospOUT%isccp_meantaucld       ! CAM version of meantbisccp    (time,       profile)
-         meancldalb_isccp(1:ncol)                 = cospOUT%isccp_meanalbedocld    ! CAM version of albisccp       (time,       profile)
-         meantb_isccp(1:ncol)                     = cospOUT%isccp_meantb           ! CAM version of meantbisccp    (time,       profile)
-         meantbclr_isccp(1:ncol)                  = cospOUT%isccp_meantbclr        ! CAM version of meantbclrisccp (time,       profile)
-      endif
       
       ! MISR
       if (lmisr_sim) then
@@ -2065,28 +2030,23 @@ CONTAINS
       ! ######################################################################################
       ! ISCCP OUTPUTS
       if (lisccp_sim) then
-         call outfld('FISCCP1_COSP',clisccp2,     pcols,lchnk)
-         call outfld('CLDTOT_ISCCP',cldtot_isccp, pcols,lchnk)
-         !! weight meancldalb_isccp by the cloud fraction
-         !! where there is no isccp cloud fraction, set meancldalb_isccp = R_UNDEF
-         !! weight meanptop_isccp  by the cloud fraction
-         !! where there is no isccp cloud fraction, set meanptop_isccp = R_UNDEF
-         !! weight meantau_isccp by the cloud fraction
-         !! where there is no isccp cloud fraction, set meantau_isccp = R_UNDEF
-         where (cldtot_isccp(:ncol) .eq. R_UNDEF)
-            meancldalb_isccp(:ncol) = R_UNDEF
-            meanptop_isccp(:ncol)   = R_UNDEF
-            meantau_isccp(:ncol)    = R_UNDEF
+         call outfld('FISCCP1_COSP', cospOUT%isccp_fq(1:ncol,1:ntau_cosp,1:nprs_cosp), ncol, lchnk)
+         call outfld('CLDTOT_ISCCP', cospOUT%isccp_totalcldarea(1:ncol), ncol, lchnk)
+         ! Weight outputs by cloud fraction
+         where (cospOUT%isccp_totalcldarea(:ncol) .eq. R_UNDEF)
+            cospOUT%isccp_meanalbedocld(:ncol) = R_UNDEF
+            cospOUT%isccp_meanptop(:ncol)      = R_UNDEF
+            cospOUT%isccp_meantaucld(:ncol)    = R_UNDEF
          elsewhere
-            meancldalb_isccp(:ncol) = meancldalb_isccp(:ncol)*cldtot_isccp(:ncol)
-            meanptop_isccp(:ncol)   = meanptop_isccp(:ncol)*cldtot_isccp(:ncol)
-            meantau_isccp(:ncol)    = meantau_isccp(:ncol)*cldtot_isccp(:ncol)
+            cospOUT%isccp_meanalbedocld(:ncol) = cospOUT%isccp_meanalbedocld(:ncol)*cospOUT%isccp_totalcldarea(:ncol)
+            cospOUT%isccp_meanptop(:ncol)      = cospOUT%isccp_meanptop(:ncol)*cospOUT%isccp_totalcldarea(:ncol)
+            cospOUT%isccp_meantaucld(:ncol)    = cospOUT%isccp_meantaucld(:ncol)*cospOUT%isccp_totalcldarea(:ncol)
          end where
-         call outfld('MEANCLDALB_ISCCP',meancldalb_isccp,pcols,lchnk)
-         call outfld('MEANPTOP_ISCCP',  meanptop_isccp,  pcols,lchnk)
-         call outfld('MEANTAU_ISCCP',   meantau_isccp,   pcols,lchnk)
-         call outfld('MEANTB_ISCCP',    meantb_isccp,    pcols,lchnk)
-         call outfld('MEANTBCLR_ISCCP', meantbclr_isccp, pcols,lchnk)
+         call outfld('MEANCLDALB_ISCCP', cospOUT%isccp_meanalbedocld(1:ncol), ncol, lchnk)
+         call outfld('MEANPTOP_ISCCP'  , cospOUT%isccp_meanptop(1:ncol)     , ncol, lchnk)
+         call outfld('MEANTAU_ISCCP'   , cospOUT%isccp_meantaucld(1:ncol)   , ncol, lchnk)
+         call outfld('MEANTB_ISCCP'    , cospOUT%isccp_meantb(1:ncol)       , ncol, lchnk)
+         call outfld('MEANTBCLR_ISCCP' , cospOUT%isccp_meantbclr(1:ncol)    , ncol, lchnk)
       end if
       
       ! CALIPSO SIMULATOR OUTPUTS
@@ -2306,10 +2266,10 @@ CONTAINS
       
       ! SUB-COLUMN OUTPUT
       if (lfrac_out) then
-         call outfld('SCOPS_OUT',frac_out,pcols,lchnk)!!!-1.00000E+30 !! fails check_accum if 'A'
+         call outfld('SCOPS_OUT',cospIN%frac_out(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk)!!!-1.00000E+30 !! fails check_accum if 'A'
          if (lisccp_sim) then
-            call outfld('TAU_ISCCP',    tau_isccp,    pcols,lchnk) !! fails check_accum if 'A'
-            call outfld('CLDPTOP_ISCCP',cldptop_isccp,pcols,lchnk) !! fails check_accum if 'A'
+            call outfld('TAU_ISCCP', cospOUT%isccp_boxtau(1:ncol,1:nscol_cosp), ncol, lchnk) !! fails check_accum if 'A'
+            call outfld('CLDPTOP_ISCCP', cospOUT%isccp_boxptop(1:ncol,1:nscol_cosp), ncol, lchnk) !! fails check_accum if 'A'
          end if
          if (llidar_sim) then
             call outfld('ATB532_CAL',atb532,pcols,lchnk) !! fails check_accum if 'A'
