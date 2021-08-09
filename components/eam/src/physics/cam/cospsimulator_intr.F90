@@ -1520,34 +1520,8 @@ CONTAINS
     reff_cosp(1:ncol,1:pver,8) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! CVSNOW (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,9) = 0._r8                                !! LSGRPL (using radar default reff)
  
-    !! Need code below for when effective radius is fillvalue, and you multiply it by 1.e-6 to convert units, and value becomes no longer fillvalue.  
-    !! Here, we set it back to zero. 
-    where (rel(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,1) = 0._r8
-    end where
-    where (rei(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,2) = 0._r8
-    end where
-    where (ls_reffrain(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,3) = 0._r8
-    end where
-    where (ls_reffsnow(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,4) = 0._r8
-    end where
-    where (cv_reffliq(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,5) = 0._r8
-    end where
-    where (cv_reffice(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,6) = 0._r8
-    end where
-    where (ls_reffrain(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,7) = 0._r8
-    end where
-    where (ls_reffsnow(1:ncol,1:pver) .eq. R_UNDEF)
-       reff_cosp(1:ncol,1:pver,8) = 0._r8
-    end where
-    
-    !! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small negative values to zero.
+    !! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small 
+    !! negative values to zero.
     !! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
     !! So I set negative values to zero here... 
     do k=1,pver
