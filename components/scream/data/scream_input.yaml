@@ -81,7 +81,7 @@ SCREAM:
     solar_data_ymd : 20000101
     solar_data_forcing : constant
 
-    micro_p3_tableversion : 4
+    micro_p3_tableversion : 4.1.1
 
   Output Files:
     # This should be a bracketed list of all the output control yaml files

@@ -879,7 +879,7 @@
 
 <!-- P3 specific namelist variables -->
 <micro_p3_lookup_dir	    > atm/cam/physprops </micro_p3_lookup_dir>
-<micro_p3_tableversion		      > 4 	</micro_p3_tableversion>
+<micro_p3_tableversion		      > 4.1.1  </micro_p3_tableversion>
 <micro_aerosolactivation              > .true.  </micro_aerosolactivation>
 <micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
 <micro_tend_output       	      > .true.  </micro_tend_output>

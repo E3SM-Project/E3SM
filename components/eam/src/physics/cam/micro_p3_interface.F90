@@ -190,6 +190,10 @@ subroutine micro_p3_readnl(nlfile)
   select case (trim(micro_p3_tableversion))
     case ('4')
        ! Version 4 is valid
+    case ('4.1')
+      ! Version 4.1 is valid
+    case ('4.1.1')
+      ! Version 4.1.1 is valid  
     case default
        print *, micro_p3_tableversion
        call bad_version_endrun()
