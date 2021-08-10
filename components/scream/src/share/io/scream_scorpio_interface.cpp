@@ -1,4 +1,5 @@
 #include "scream_scorpio_interface.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 #include "scream_config.h"
 
 #include "ekat/ekat_assert.hpp"
@@ -164,11 +165,9 @@ void grid_read_data_array(const std::string &filename, const std::string &varnam
   } else {
     std::vector<Real> hbuf_new(dim_length);
     grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
-    // Copy the read in values back to the packed array
-    int slow_dim_len = dim_length / dims.back();
-    add_remove_padding(slow_dim_len,dims.back(),padding,hbuf_new.data(),hbuf,false);
+    // Copy the read in values back to the packed array, add padding
+    add_remove_padding(dims,padding,hbuf_new.data(),hbuf,true);
   }
-
 };
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, Real *hbuf) {
@@ -186,8 +185,7 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   } else {
     std::vector<Real> hbuf_new(dim_length);
     // Packed along final dimension
-    int slow_dim_len = dim_length / dims.back();
-    add_remove_padding(slow_dim_len,dims.back(),padding,hbuf,hbuf_new.data(),true);
+    add_remove_padding(dims,padding,hbuf,hbuf_new.data(),false);
     grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
   }
 }
@@ -198,28 +196,33 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
 
 };
 /* ----------------------------------------------------------------- */
-void add_remove_padding(const int slow_dim_len, const int pad_dim_len, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding)
+void add_remove_padding(const std::vector<int>& dims, const int padding,
+                        const Real* data_in, Real* data_out, const bool add_padding)
 {
-  int loc  = 0; // running tally of what index in the packed array we are at.
-  int dloc = 0; // running tally of what index in the read in contiguous array we are at.
-  int *ind_in, *ind_out;
-  // Keep track of which index is used for input and output, based on if we are adding or removing padding for hbuf_out.
-  if (add_padding)
-  {
-    ind_out = &dloc;
-    ind_in  = &loc;
-  } else {
-    ind_out = &loc;
-    ind_in  = &dloc;
+  using KT = KokkosTypes<HostDevice>;
+
+  // Split dims in [dim_1,...,dim_{N-1}] and dim_N, compute product P of first N-1 dims,
+  // and reshape pointers as 2d views of dims (P,dim_N) and (P,dim_N+padding)
+  int fast_dim = dims.back();
+  int size = 1;
+  for (auto d : dims) {
+    size *= d;
   }
-//  int ind_in,ind_out;
-  for (int ii=0;ii<slow_dim_len;ii++)
-  {
-    for (int jj=0;jj<pad_dim_len;jj++,loc++,dloc++)
-    {
-      hbuf_out[*ind_out] = hbuf_in[*ind_in];
+  int lumped_slow_dims = size / fast_dim;
+
+  const int dim2_in  = add_padding ? fast_dim : fast_dim + padding;
+  const int dim2_out = add_padding ? fast_dim + padding : fast_dim;
+  ekat::Unmanaged<KT::view_2d<const Real>> from(data_in, lumped_slow_dims,dim2_in);
+  ekat::Unmanaged<KT::view_2d<Real>>       to  (data_out,lumped_slow_dims,dim2_out);
+  for (int i=0; i<lumped_slow_dims; ++i) {
+    for (int j=0; j<fast_dim; ++j) {
+      to(i,j) = from(i,j);
     }
-    loc += padding;
+    if (add_padding) {
+      for (int j=fast_dim; j<dim2_out; ++j) {
+        to(i,j) = ekat::ScalarTraits<Real>::invalid();
+      }
+    }
   }
 }
 /* ----------------------------------------------------------------- */

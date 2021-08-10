@@ -59,7 +59,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf);
 
   /* Helper functions */
-  void add_remove_padding(const int slow_dim_len, const int pad_dim_len, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding);
+  void add_remove_padding(const std::vector<int>& dims, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding);
   void count_pio_atm_file();
 
 extern "C" {
