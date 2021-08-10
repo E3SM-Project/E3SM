@@ -71,6 +71,7 @@ module ocn_transport_tests
   end type flow_type
 
   type(flow_type), save :: ft
+  logical, save :: flow_state_set = .false.
 
 #ifdef MPAS_DEBUG
   logical, parameter :: flush_log = .true.
@@ -116,7 +117,8 @@ module ocn_transport_tests
                         index_temperature, &
                         index_salinity,&
                         index_tracer1
-    integer, dimension(:), pointer :: maxLevelCell
+    integer, dimension(:), pointer :: minLevelCell, &
+                                      maxLevelCell
     real (kind=RKIND), pointer :: sphere_radius
     real (kind=RKIND), dimension(:), pointer :: refBottomDepth,&
                                                 refZMid, &
@@ -178,6 +180,7 @@ module ocn_transport_tests
        call mpas_pool_get_dimension(tracersPool, 'index_salinity',index_salinity)
        call mpas_pool_get_dimension(tracersPool, 'index_tracer1',index_tracer1)
 
+       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
        call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
        call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -237,6 +240,7 @@ module ocn_transport_tests
 
           fCell(iCell) = 0.0_RKIND ! 0 Coriolis
           bottomDepth(iCell) = 100.0_RKIND
+          minLevelCell(iCell) = 1
           maxLevelCell(iCell) = nVertLevels
        end do
 
@@ -360,11 +364,22 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
 
 
   subroutine flow_run()
-    if ( trim(config_ocean_run_mode) == 'forward') then
-      if (trim(config_init_configuration) == trim('transport_tests')) then
-        ft%state = 2
-        ft%flow = config_transport_tests_flow_id
+    if ( .not. flow_state_set ) then
+      if ( trim(config_ocean_run_mode) == 'forward') then
+#ifdef MPAS_DEBUG
+        call mpas_log_write("forward mode entered subroutine flow_run", MPAS_LOG_OUT, &
+         flushNow=flush_log)
+#endif
+        !if (trim(config_init_configuration) == trim('transport_tests')) then
+        if (config_transport_tests_flow_id > 0) then
+          ft%state = 2
+          ft%flow = config_transport_tests_flow_id
+#ifdef MPAS_DEBUG
+           call mpas_log_write("forward mode found transport test: "//trim(flow_id_name(ft%flow)), MPAS_LOG_OUT, flushNow=flush_log)
+#endif
+        endif
       endif
+      flow_state_set = .true.
     endif
   end subroutine
 
