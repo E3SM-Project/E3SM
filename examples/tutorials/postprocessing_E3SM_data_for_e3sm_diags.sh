@@ -3,8 +3,7 @@
 #A Bash script to post-process (regriding, climatology generation and time-series extraction) to prepare E3SM model output to to be used in e3sm_diags.
 #Note: For processing E3SM v2 output add '-P eam' or '-m eam' when calling ncclimo, also change 'cam' to 'eam' in this script
 
-#source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh
-source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
 
 # Low-res Cori simulations
 

@@ -15,7 +15,7 @@ from e3sm_diags.run import runner
 def run_compy(html_prefix):
     # Run the following first:
     # srun --pty --nodes=1 --time=01:00:00 /bin/bash
-    # source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh
+    # source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
     ref_data_prefix = "/compyfs/e3sm_diags_data/obs_for_e3sm_diags"
     test_data_prefix = "/compyfs/e3sm_diags_data/test_model_data_for_acme_diags"
 
@@ -48,7 +48,8 @@ def run_compy(html_prefix):
 def run_lcrc(html_prefix):
     # Run the following first:
     # srun --pty --nodes=1 --time=01:00:00 /bin/bash
-    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh
+    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+    # Or: source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
     ref_data_prefix = "/lcrc/group/e3sm/public_html/diagnostics/observations/Atm"
     test_data_prefix = "/lcrc/group/e3sm/public_html/e3sm_diags_test_data"
 
@@ -86,7 +87,7 @@ def run_lcrc(html_prefix):
 def run_nersc(html_prefix):
     # Run the following first:
     # salloc --nodes=1 --partition=regular --time=01:00:00 -C haswell
-    # source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+    # source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
     ref_data_prefix = "/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags"
     test_data_prefix = (
         "/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags"

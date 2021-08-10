@@ -1,4 +1,4 @@
-LCRC quick guide for running e3sm_diags v2
+Anvil quick guide for running e3sm_diags v2
 =========================================================================
 
 1. Installation
@@ -10,7 +10,7 @@ please instead refer to :ref:`Latest stable release <install_latest>`.
 
 Most of the E3SM analysis software is maintained with an Anaconda metapackage
 (E3SM unified environment).
-If you have an account on LCRC,
+If you have an account on Anvil,
 then to get all of the tools in the metapackage in your path,
 use the activation command below.
 (Change ``.sh`` to ``.csh`` for csh shells.)
@@ -23,7 +23,7 @@ Both <obs_path> and <test_data_path> have two subdirectories:
 Also listed below are paths where the HTML files (<html_path>) must be located to be displayed
 at their corresponding web addresses (<web_address>).
 
-<activation_command>: ``source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh``
+<activation_command>: ``source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh``
 
 <obs_path>: ``/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/``
 
@@ -38,7 +38,7 @@ at their corresponding web addresses (<web_address>).
 2. Config and run
 --------------------------------------------------------
 
-.. _LCRC_lat_lon:
+.. _Anvil_lat_lon:
 
 Running the annual mean latitude-longitude contour set
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ Adjust any options as you like.
 
    **Tip:** Some of E3SM's analysis machines (**Acme1, Anvil, Compy, Cori**)
    have web servers setup to host html results.
-   On LCRC,
+   On Anvil,
    create the directory ``/lcrc/group/e3sm/public_html/diagnostic_output/<username>/`` using your username.
    Set ``results_dir`` to ``/lcrc/group/e3sm/public_html/diagnostic_output/<username>/doc_examples/lat_lon_demo``
    in ``run_e3sm_diags.py`` below. Then, you can view results via a web browser here:
@@ -114,11 +114,6 @@ preparing ``e3sm_diags`` to accomodate more diagnostics sets with set-specific p
 To enable multiprocessing rather than running in serial, the program will need to be run in an
 **interactive session** on compute nodes, or as a **batch job**.
 
-Here are some hardware details for `Chrysalis`:
-   * 64 cores/node
-   * 256 GB DRAM/node
-   * 32768 total cores
-
 
 Interactive session on compute nodes
 '''''''''''''''''''''''''''''''''''''
@@ -136,7 +131,7 @@ Once the session is available, launch E3SM Diagnostics, to activate ``e3sm_unifi
 
     ::
 
-        source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh
+        source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 
@@ -158,7 +153,7 @@ Copy and paste the code below into a file named ``diags.bash``.
         #SBATCH --nodes=1
         #SBATCH --time=01:00:00
 
-        source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh
+        source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 And then submit it:
@@ -314,7 +309,7 @@ for the cfg file that was used to create all of the latitude-longitude sets.
 
 
 Run E3SM diagnostics with the ``-d`` parameter.
-Use the :ref:`above run script <LCRC_lat_lon>`. And run as following:
+Use the :ref:`above run script <Anvil_lat_lon>`. And run as following:
 
     ::
 

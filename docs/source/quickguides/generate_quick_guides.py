@@ -10,8 +10,16 @@ EXPANSIONS = {
         'html_path': '/var/www/acme/acme-diags/<username>/',
         'web_address': 'https://acme-viewer.llnl.gov/<username>/',
     },
-    'lcrc': {
-        'machine_name': 'LCRC',
+    'anvil': {
+        'machine_name': 'Anvil',
+        'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh',
+        'obs_path': '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/',
+        'test_data_path': '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/',
+        'html_path': '/lcrc/group/e3sm/public_html/diagnostic_output/<username>/',
+        'web_address': 'https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/<username>/',
+    },
+    'chrysalis': {
+        'machine_name': 'Chrysalis',
         'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh',
         'obs_path': '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/',
         'test_data_path': '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/',
@@ -26,8 +34,8 @@ EXPANSIONS = {
         'html_path': '/compyfs/www/<username>/',
         'web_address': 'https://compy-dtn.pnl.gov/<username>/',
     },
-    'cori': {
-        'machine_name': 'Cori',
+    'cori-haswell': {
+        'machine_name': 'Cori-Haswell',
         'activation_path': '/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh',
         'obs_path': '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/',
         'test_data_path': '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/',

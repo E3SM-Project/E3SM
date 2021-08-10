@@ -84,7 +84,7 @@ for postprocessing E3SM data (i.e., preprocessing for E3SM Diags).
 
         #!/bin/bash
 
-        source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh
+        source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
 
         # Low-res Compy simulations
         drc_in=/compyfs/zhen797/E3SM_simulations/20201027.alpha5_v1p-1.amip.ne30pg2_r05_oECv3.compy/archive/atm/hist

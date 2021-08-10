@@ -1,5 +1,5 @@
 #!/bin/bash
-source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified.sh
+source /usr/local/e3sm_unified/envs/load_latest_e3sm_unified_acme1.sh
 
 # Low-res Cori simulations
 #drc_in=/p/user_pub/PCMDIobs/PCMDIobs2/atmos/3hr/pr/TRMM-3B43v-7/gn/v20200707

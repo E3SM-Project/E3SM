@@ -39,5 +39,6 @@ class TestCompleteRun(unittest.TestCase):
 if __name__ == "__main__":
     # Run the following first:
     # srun --pty --nodes=1 --time=01:00:00 /bin/bash
-    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified.sh
+    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+    # Or: source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh
     unittest.main()

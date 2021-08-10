@@ -1,4 +1,4 @@
-Cori quick guide for running e3sm_diags v2
+Cori-Haswell quick guide for running e3sm_diags v2
 =========================================================================
 
 1. Installation
@@ -10,7 +10,7 @@ please instead refer to :ref:`Latest stable release <install_latest>`.
 
 Most of the E3SM analysis software is maintained with an Anaconda metapackage
 (E3SM unified environment).
-If you have an account on Cori,
+If you have an account on Cori-Haswell,
 then to get all of the tools in the metapackage in your path,
 use the activation command below.
 (Change ``.sh`` to ``.csh`` for csh shells.)
@@ -38,7 +38,7 @@ at their corresponding web addresses (<web_address>).
 2. Config and run
 --------------------------------------------------------
 
-.. _Cori_lat_lon:
+.. _Cori-Haswell_lat_lon:
 
 Running the annual mean latitude-longitude contour set
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ Adjust any options as you like.
 
    **Tip:** Some of E3SM's analysis machines (**Acme1, Anvil, Compy, Cori**)
    have web servers setup to host html results.
-   On Cori,
+   On Cori-Haswell,
    create the directory ``/global/cfs/cdirs/e3sm/www/<username>/`` using your username.
    Set ``results_dir`` to ``/global/cfs/cdirs/e3sm/www/<username>/doc_examples/lat_lon_demo``
    in ``run_e3sm_diags.py`` below. Then, you can view results via a web browser here:
@@ -119,9 +119,8 @@ Interactive session on compute nodes
 '''''''''''''''''''''''''''''''''''''
 
 First, request an interactive session with a single node
-(32 cores with Cori Haswell, 68 cores with Cori KNL). 
+(32 cores with Cori Haswell, 68 cores with Cori KNL)
 for one hour (running this example should take much less than this).
-[Note: there is known issue with running e3sm_diags on KNL, running on Haswell is recommended.]
 If obtaining a session takes too long, try to use the ``debug`` partition.
 Note that the maximum time allowed for that partition is ``00:30:00``.
 
@@ -134,7 +133,7 @@ Once the session is available, launch E3SM Diagnostics, to activate ``e3sm_unifi
 
     ::
 
-        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 
@@ -158,7 +157,7 @@ Copy and paste the code below into a file named ``diags.bash``.
         #SBATCH --time=01:00:00
         #SBATCH -C haswell
 
-        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 And then submit it:
@@ -325,7 +324,7 @@ for the cfg file that was used to create all of the latitude-longitude sets.
 
 
 Run E3SM diagnostics with the ``-d`` parameter.
-Use the :ref:`above run script <Cori_lat_lon>`. And run as following:
+Use the :ref:`above run script <Cori-Haswell_lat_lon>`. And run as following:
 
     ::
 
