@@ -167,11 +167,11 @@ _TESTS = {
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
+            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             )
         },
 
@@ -207,12 +207,12 @@ _TESTS = {
         "time" : "02:00:00",
         "tests" : (
             # MMF tests
-            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
-            "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-AQP1",
-            "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
-            "SMS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-ECPP",
+            "SMS_D_Ln3.ne4pg2_ne4pg2.F-MMF1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-AQP1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
+            "SMS_Ln9.ne4pg2_ne4pg2.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.eam-rrtmgp",
             )
