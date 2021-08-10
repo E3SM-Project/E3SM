@@ -1,4 +1,5 @@
 #include "share/io/scorpio_output.hpp"
+#include "share/io/scorpio_input.hpp"
 
 #include <numeric>
 #include "ekat/util/ekat_string_utils.hpp"
@@ -6,7 +7,21 @@
 namespace scream
 {
 
-// ====================== IMPLEMENTATION ===================== //
+AtmosphereOutput::
+AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
+                  const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                  const std::shared_ptr<const GridsManager>& grid_mgr,
+                  const bool read_restart_hist)
+ : m_comm      (comm)
+ , m_params    (params)
+ , m_field_mgr (field_mgr)
+ , m_grid_mgr  (grid_mgr)
+ , m_read_restart_hist (read_restart_hist)
+{
+  EKAT_REQUIRE_MSG (m_field_mgr, "Error! Invalid field manager pointer.\n");
+  EKAT_REQUIRE_MSG (m_grid_mgr,  "Error! Invalid grid manager pointer.\n");
+}
+
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::init()
 {
@@ -14,31 +29,34 @@ void AtmosphereOutput::init()
   // See the comments at the top for more details.
   m_casename        = m_params.get<std::string>("FILENAME");
   m_grid_name       = m_params.get<std::string>("GRID","Physics");  // optional, default to Physics.
-  auto& freq_params = m_params.sublist("FREQUENCY");
+
+  const auto& freq_params = m_params.sublist("FREQUENCY");
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
   m_out_frequency   = freq_params.get<Int>("OUT_N");
   m_out_units       = freq_params.get<std::string>("OUT_OPTION");
+
   m_restart_hist_n  = m_params.get<Int>("restart_hist_N",0);  // optional, default to 0 for no output
   m_restart_hist_option = m_params.get<std::string>("restart_hist_OPTION","NONE"); // optional, default to NONE
   m_is_restart = m_params.get<bool>("RESTART FILE",false);  // optional, default to false
 
   m_avg_type = m_params.get<std::string>("AVERAGING TYPE");
   auto avg_type_ci = ekat::upper_case(m_avg_type);
+
   EKAT_REQUIRE_MSG (
       avg_type_ci=="INSTANT" || avg_type_ci=="AVERAGE" || avg_type_ci=="MAX" || avg_type_ci=="MIN",
       "Error! Unsupported averaging type (" + m_avg_type + ").\n"
       "       Possible choices: Instant, Average, Max, Min.\n");
 
   // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics" || m_grid_name=="Physics GLL","Error with output grid! scorpio_output.hpp class only supports output on a Physics or Physics GLL grid for now.\n");
-  auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
-  m_gids_host = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(m_gids_host,gids_dev); 
+  EKAT_REQUIRE_MSG(m_grid_name=="Physics" || m_grid_name=="Physics GLL",
+      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   // int total_dofs;
-  m_local_dofs = m_gids_host.size();
-  MPI_Allreduce(&m_local_dofs, &m_total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
-  EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
+  m_total_dofs = m_grid_mgr->get_grid(m_grid_name)->get_num_global_dofs();
+  EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,
+      "Error! PIO interface requires the size of the IO MPI group to be no greater\n"
+      "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
 
   // Create map of fields in this output with the field_identifier in the field manager.
   auto& var_params = m_params.sublist("FIELDS");
@@ -87,6 +105,7 @@ void AtmosphereOutput::init()
       f_list.set<std::string>("field "+std::to_string(fcnt),name);
       fcnt+=1;
     }
+    using input_type     = AtmosphereInput;
     input_type rhist_in(m_comm,res_params,m_field_mgr,m_grid_mgr);
     rhist_in.init();
     for (auto name : m_fields)
@@ -408,7 +427,7 @@ std::vector<Int> AtmosphereOutput::get_var_dof_offsets(const int dof_len, const 
   // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
   // correspond to the 3rd,4th,5th, and 6th dofs globally.
   if (has_cols) {
-    const int num_cols = m_gids_host.size();
+    const int num_cols = m_grid_mgr->get_grid(m_grid_name)->get_num_local_dofs();
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.

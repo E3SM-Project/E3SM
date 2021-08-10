@@ -12,14 +12,6 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
-
-#include "share/field/field_manager.hpp"
-#include "share/field/field_header.hpp"
-#include "share/field/field.hpp"
-#include "share/field/field_identifier.hpp"
-
-#include "share/grid/grids_manager.hpp"
 
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager, see output_manager.hpp
@@ -81,38 +73,26 @@
 namespace scream
 {
 
+// Forward declarations
+template<typename T>
+class FieldManager;
+
+class GridsManager;
+namespace util { class TimeStamp; }
+
 class AtmosphereOutput 
 {
 public:
-  using dofs_list_type = AbstractGrid::dofs_list_type;
+
   using view_1d_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
-  using input_type     = AtmosphereInput;
 
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
                    const std::shared_ptr<const FieldManager<Real>>& field_mgr,
-                   const std::shared_ptr<const GridsManager>& grid_mgr)
-  {
-    m_comm      = comm;
-    m_params    = params;
-    m_field_mgr = field_mgr;
-    m_grid_mgr  = grid_mgr;
-    m_read_restart_hist = false;
-  }
-  // Constructor
-  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
                    const std::shared_ptr<const GridsManager>& grid_mgr,
-                   const bool read_restart_hist)
-  {
-    m_comm      = comm;
-    m_params    = params;
-    m_field_mgr = field_mgr;
-    m_grid_mgr  = grid_mgr;
-    m_read_restart_hist = read_restart_hist;
-  }
+                   const bool read_restart_hist = false);
 
   // Main Functions
   void init();
@@ -136,8 +116,8 @@ protected:
   void run_impl(const Real time, const std::string& time_str);  // Actual run routine called by outward facing "run"
   void set_restart_hist_read( const bool bval ) { m_read_restart_hist = bval; }
   // Internal variables
-  ekat::ParameterList                         m_params;
   ekat::Comm                                  m_comm;
+  ekat::ParameterList                         m_params;
   std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
   std::shared_ptr<const GridsManager>         m_grid_mgr;
   
@@ -152,7 +132,6 @@ protected:
   std::string m_out_units;
   // How individual columns are distributed across MPI Ranks
   Int m_total_dofs;
-  Int m_local_dofs;
   // Restart history control
   Int m_restart_hist_n;
   std::string m_restart_hist_option;
@@ -160,7 +139,6 @@ protected:
   std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  typename dofs_list_type::HostMirror    m_gids_host;
   // Local views of each field to be used for "averaging" output and writing to file.
 
   std::map<std::string,view_1d_host>   m_host_views_1d;
