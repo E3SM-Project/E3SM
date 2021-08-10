@@ -263,16 +263,15 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   // If a developer wants a field to be stored in the restart file than they must add the "restart" group tag
   // to that field when registering the field with the field manager.
   auto restart_fields = m_device_field_manager->get_field_group("restart");
-  auto& field_params = params.sublist("FIELDS");
-  field_params.set<Int>("Number of Fields",restart_fields.m_fields.size());
-  Int it_cnt = 0;
-  for (auto it : restart_fields.m_info->m_fields_names)
-  {
-    ++it_cnt;
-    std::string f_it = "field ";
-    f_it+=std::to_string(it_cnt);
-    field_params.set<std::string>(f_it,it);
+  // WARNING: the vector restart_fields.m_info->m_fields_names contains CaseInsensitiveString's.
+  //          This can be a problem, since virtually all places will try to extract a
+  //          std::vector<std::string> from the parameter list, causing a any_cast error.
+  //          To fix this, create a std::vector<std::string> on the fly
+  std::vector<std::string> fields_names;
+  for (const auto& fn : restart_fields.m_info->m_fields_names) {
+    fields_names.push_back(fn);
   }
+  params.set("FIELDS",fields_names);
 }
 /*===============================================================================================*/
 } // namespace scream

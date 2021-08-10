@@ -140,12 +140,7 @@ void AtmosphereInput::init()
   EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
   // Create map of fields in this input with the field_identifier in the field manager.
-  auto& var_params = m_params.sublist("FIELDS");
-  for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i) {
-    /* Determine the variable name */
-    std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
-    m_fields_names.push_back(var_name);
-  }
+  m_fields_names = m_params.get<std::vector<std::string>>("FIELDS");
 
   // Register new netCDF file for input.
   register_infile(m_filename);

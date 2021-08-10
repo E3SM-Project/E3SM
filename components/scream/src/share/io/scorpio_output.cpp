@@ -59,12 +59,8 @@ void AtmosphereOutput::init()
       "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
 
   // Create map of fields in this output with the field_identifier in the field manager.
-  auto& var_params = m_params.sublist("FIELDS");
-  for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i)
-  {
-    // Determine the variable name 
-    std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
-    m_fields.push_back(var_name);
+  m_fields = m_params.get<std::vector<std::string>>("FIELDS");
+  for (const auto& var_name : m_fields) {
     /* Check that all dimensions for this variable are set to be registered */
     register_dimensions(var_name);
   }
@@ -97,14 +93,8 @@ void AtmosphereOutput::init()
     res_params.set<std::string>("FILENAME",filename);
     res_params.set<std::string>("GRID","Physics");
     res_params.set<bool>("RHIST",true);
-    auto& f_list = res_params.sublist("FIELDS");
-    Int fcnt = 1;
-    f_list.set<Int>("Number of Fields",m_fields.size());
-    for (auto name : m_fields)
-    {
-      f_list.set<std::string>("field "+std::to_string(fcnt),name);
-      fcnt+=1;
-    }
+    res_params.set("FIELDS",m_fields);
+
     using input_type     = AtmosphereInput;
     input_type rhist_in(m_comm,res_params,m_field_mgr,m_grid_mgr);
     rhist_in.init();

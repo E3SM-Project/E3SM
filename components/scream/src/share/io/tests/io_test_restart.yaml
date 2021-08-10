@@ -7,10 +7,5 @@ FREQUENCY:
   OUT_N: 10
   OUT_OPTION: Steps
   OUT_MAX_STEPS: 1
-FIELDS:
-  Number of Fields: 4
-  field 1: field_1
-  field 2: field_2
-  field 3: field_3
-  field 4: field_4
+FIELDS: [field_1, field_2, field_3, field_4]
 ...

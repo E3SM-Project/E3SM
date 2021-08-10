@@ -269,7 +269,7 @@ initialize_fields (const util::TimeStamp& t0)
   // Create parameter list for AtmosphereInput
   ekat::ParameterList ic_reader_params;
   ic_reader_params.set("GRID",ref_grid_name);
-  auto& ic_fields = ic_reader_params.sublist("FIELDS");
+  std::vector<std::string> ic_fields_names;
   int ifield=0;
   std::vector<FieldIdentifier> ic_fields_to_copy;
   for (const auto& req : fields_in) {
@@ -296,12 +296,13 @@ initialize_fields (const util::TimeStamp& t0)
           "       Ref grid name:    " + ref_grid_name + "\n"
           "       Input field grid: " + req.fid.get_grid_name() + "\n");
 
-      ic_fields.set(ekat::strint("field",ifield+1),name); 
+      ic_fields_names.push_back(name);
       ++ifield;
 
     }
     f.get_header().get_tracking().update_time_stamp(t0);
   }
+  ic_reader_params.set("FIELDS",ic_fields_names);
 
   // Check the status of lat and lon values on reference grid:
   // This option allows the user to set lat or lon in their own
@@ -318,7 +319,6 @@ initialize_fields (const util::TimeStamp& t0)
   if (ifield>0 || (!skip_init_lon or !skip_init_lat)) {
     // There are fields to read from the nc file. We must have a valid nc file then.
     ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
-    ic_fields.set("Number of Fields",ifield);
 
     MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
     if (!scorpio::is_eam_pio_subsystem_inited()) {

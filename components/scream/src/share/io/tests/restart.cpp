@@ -365,19 +365,12 @@ ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& com
     }
     EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
   
-    auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",3);
-    f_list.set<std::string>("field 1","field_1");
-    f_list.set<std::string>("field 2","field_2");
-    f_list.set<std::string>("field 3","field_4");
+    std::vector<std::string> fnames = {"field_1", "field_2", "field_4"};
+    in_params.set("FIELDS",fnames);
   } else if (type=="Final") {
     filename = "io_output_restart_np" + std::to_string(comm.size()) + ".Average.Steps_x10.0000-01-01.000020.nc";
-    auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",4);
-    f_list.set<std::string>("field 1","field_1");
-    f_list.set<std::string>("field 2","field_2");
-    f_list.set<std::string>("field 3","field_3");
-    f_list.set<std::string>("field 4","field_4");
+    std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_4"};
+    in_params.set("FIELDS",fnames);
   }
   in_params.set<std::string>("FILENAME",filename);
   in_params.set<std::string>("GRID","Physics");

@@ -348,12 +348,8 @@ ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm
   ekat::ParameterList in_params("Input Parameters");
   in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
-  auto& f_list = in_params.sublist("FIELDS");
-  f_list.set<Int>("Number of Fields",4);
-  for (int ii=1;ii<=3+1;++ii) {
-    f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-  }
-  f_list.set<std::string>("field 4","field_packed");
+  std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_packed"};
+  in_params.set("FIELDS",fnames);
   return in_params;
 }
 /*===================================================================================================================*/
