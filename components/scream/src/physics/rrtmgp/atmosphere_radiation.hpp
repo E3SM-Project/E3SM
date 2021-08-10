@@ -5,6 +5,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include <string>
 
 namespace scream {
@@ -18,6 +19,7 @@ public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
+  using ci_string        = ekat::CaseInsensitiveString;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -56,21 +58,6 @@ public:
   std::map<std::string,const_field_type> m_rrtmgp_fields_in;
   std::map<std::string,field_type>       m_rrtmgp_fields_out;
 
-  template<typename T>
-  using view_type = field_type::view_type<T*>;
-
-  template<typename T>
-  using host_view_type = field_type::get_view_type<view_type<T>,Host>;
-
-  using host_view_in_type   = host_view_type<const_field_type::RT>;
-  using host_view_out_type  = host_view_type<      field_type::RT>;
-  std::map<std::string,host_view_in_type>   m_rrtmgp_host_views_in;
-  std::map<std::string,host_view_out_type>  m_rrtmgp_host_views_out;
-
-
-  std::map<std::string,const Real*>  m_raw_ptrs_in;
-  std::map<std::string,Real*>        m_raw_ptrs_out;
-
   util::TimeStamp m_current_ts;
   ekat::Comm            m_rrtmgp_comm;
   ekat::ParameterList   m_rrtmgp_params;
@@ -78,6 +65,8 @@ public:
   // Keep track of number of columns and levels
   int m_ncol;
   int m_nlay;
+  view_1d_real m_lat;
+  view_1d_real m_lon;
 
   // Need to hard-code some dimension sizes for now. 
   // TODO: find a better way of configuring this
@@ -86,21 +75,23 @@ public:
 
   // These are the gases that we keep track of
   int m_ngas;
-  std::vector<std::string> m_gas_names;
+  std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
   GasConcs gas_concs;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 1;
-    static constexpr int num_1d_string_ngas = 1;
+    static constexpr int num_1d_ncol        = 5;
     static constexpr int num_2d_nlay        = 14;
     static constexpr int num_2d_nlay_p1     = 7;
     static constexpr int num_2d_nswbands    = 2;
-    static constexpr int num_3d_ngas        = 1;
 
     // 1d size (ncol)
     real1d mu0;
+    real1d sfc_alb_dir_vis;
+    real1d sfc_alb_dir_nir;
+    real1d sfc_alb_dif_vis;
+    real1d sfc_alb_dif_nir;
 
     // 2d size (ncol, nlay)
     real2d p_lay;
@@ -130,9 +121,6 @@ public:
     // 2d size (ncol, nswbands)
     real2d sfc_alb_dir;
     real2d sfc_alb_dif;
-
-    // 3d size (ncol, nlay, ngas)
-    real3d gas_vmr;
   };
 
 protected:

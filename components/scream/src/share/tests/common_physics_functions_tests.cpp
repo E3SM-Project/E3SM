@@ -2,6 +2,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -16,12 +17,12 @@ template<typename ScalarT, int NumLevels>
 struct ChecksHelpers {
 
   static bool is_non_negative (const ScalarT& s, const int k) {
-    return not ( k<NumLevels && (s<0 || isnan(s)) );
+    return not ( k<NumLevels && (s<0 || std::isnan(s)) );
   }
   static bool equal (const ScalarT& lhs, const ScalarT& rhs) {
     return lhs==rhs;
   }
-  static bool approx_equal (const ScalarT lhs, const ScalarT rhs, 
+  static bool approx_equal (const ScalarT lhs, const ScalarT rhs,
                             const int k, const ScalarT tol) {
     using std::abs;
     return not ( k<NumLevels && abs(lhs-rhs)>=tol );
@@ -101,7 +102,8 @@ void run(std::mt19937_64& engine)
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
           dz_for_testing("dz_for_testing",num_mid_packs),
-          mmr_for_testing("mass_mixing_ratio_for_testing",num_mid_packs);
+          mmr_for_testing("mass_mixing_ratio_for_testing",num_mid_packs),
+          wetmmr_for_testing("wet_mass_mixing_ratio_for_testing",num_mid_packs);
   // Output views
   view_1d exner("exner",num_mid_packs),
           theta("theta",num_mid_packs),
@@ -112,7 +114,10 @@ void run(std::mt19937_64& engine)
           dz("dz",num_mid_packs),
           z_int("z_int",num_int_packs),
           vmr("volume_mixing_ratio",num_mid_packs),
-          mmr("volume_mixing_ratio",num_mid_packs);
+          mmr("mass_mixing_ratio",num_mid_packs),
+          wetmmr("wet_mass_mixing_ratio",num_mid_packs),
+          drymmr("dry_mass_mixing_ratio",num_mid_packs),
+          density("density",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -128,8 +133,13 @@ void run(std::mt19937_64& engine)
        pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_height(0.0,1e5),
+       pdf_dz(1.0,1e5),
        pdf_surface(100.0,400.0),
        pdf_mmr(0,0.99);
+
+  //contruct random integers
+  using IPDF = std::uniform_int_distribution<int>;
+  IPDF pdf_rand_int(1,100);
 
   ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
   ekat::genRandArray(dview_as_real(height),          engine,pdf_height);
@@ -137,6 +147,7 @@ void run(std::mt19937_64& engine)
   ekat::genRandArray(dview_as_real(pressure),        engine,pdf_pres);
   ekat::genRandArray(dview_as_real(pseudo_density),  engine,pdf_dp);
   ekat::genRandArray(dview_as_real(mmr_for_testing), engine,pdf_mmr);
+  ekat::genRandArray(dview_as_real(wetmmr_for_testing), engine,pdf_mmr);
 
   // Construct a simple set of `dz` values for testing the z_int function
   auto dz_for_testing_host = Kokkos::create_mirror_view(dz_for_testing);
@@ -152,8 +163,24 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0;
   RealType surf_height;
+
+  // calculate density property tests:
+  //  - calculate_density(pseudo_density=zero) should return 0.0
+  //  - density using ideal gas law should match the calculated density.
+  dz0  = pdf_dz(engine);
+  p    = pdf_pres(engine);
+  dp0  = pdf_dp(engine);
+  T0   = pdf_temp(engine);
+  qv0  = pdf_qv(engine);
+  Tv0  = PF::calculate_virtual_temperature(T0,qv0);
+  dz0  = PF::calculate_dz(dp0,p,T0,qv0);
+  rho0 = p / Tv0 / Rd;  // Ideal gas law
+  rand_int0 = pdf_rand_int(engine);//random integers
+
+  REQUIRE( Check::equal(PF::calculate_density(zero,dz0),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_density(dp0,dz0),rho0,test_tol) );
 
   // Exner property tests:
   //  - exner_function(p0) should return 1.0
@@ -212,6 +239,37 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
 
+  // WETMMR to DRYMMR (and vice versa) property tests
+  wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
+  qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
+  // mmr_test1: For zero drymmr, wetmmr should be zero
+  // mmr_test2: For zero wetmmr, drymmr should be zero
+  // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
+  //            equal to wetmmr0
+
+  // mmr_test4: [to test mathematical properties of the function]
+  //            Compute drymmr from wetmmr0 and then use the result to
+  //            compute wetmmr. "qv" should be in the form of 2^k+1 (1 is added as we have [1-qv] in the numerator or
+  //            denominator of this function), so that the results of wet->dry->wet are exactly
+  //            the same as the initial input mmr(wetmmr0). This is a mathematical property test, so unphysical invalid qv
+  //            values are also acceptable
+  //
+  //            *WARNING* This test might fail if a check is added to this function to accept only valid values for qv0
+
+  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
+  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
+
+  //mmr_test3
+  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
+  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0);//convert it back to wetmmr0
+  REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
+
+  //mmr_test4
+  ScalarT qv0_2k_m1 = pow(2,rand_int0)+1; // 2^rand_int+1
+  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0_2k_m1);//get drymmr from wetmmr0
+  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0_2k_m1);//convert it back to wetmmr0
+  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be exactly equal to tmp
+
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
   //  - calculate_dz(T=0) = 0
@@ -251,6 +309,9 @@ void run(std::mt19937_64& engine)
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
 
+    // Compute density(dp,dz)
+    PF::calculate_density(team,pseudo_density,dz_for_testing,density);
+
     // Compute exner(p)
     PF::exner_function(team,pressure,exner);
 
@@ -274,6 +335,13 @@ void run(std::mt19937_64& engine)
     // Compute vmr from mmr and vice versa
     PF::calculate_vmr_from_mmr(team,h2o_mol,qv,mmr_for_testing,vmr);
     PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
+
+    // Compute drymmr from wetmmr
+    PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,qv,drymmr);
+
+    // Convert drymmr computed above to wetmmr
+    PF::calculate_wetmmr_from_drymmr(team,drymmr,qv,wetmmr);
+
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
 
@@ -283,6 +351,7 @@ void run(std::mt19937_64& engine)
   auto pressure_host        = cmvdc(pressure);
   auto qv_host              = cmvdc(qv);
 
+  auto density_host         = cmvdc(density);
   auto exner_host           = cmvdc(exner);
   auto T_from_Theta_host    = cmvdc(T_from_Theta);
   auto Tv_host              = cmvdc(Tv);
@@ -293,10 +362,14 @@ void run(std::mt19937_64& engine)
   auto vmr_host             = cmvdc(vmr);
   auto mmr_host             = cmvdc(mmr);
   auto mmr_for_testing_host = cmvdc(mmr_for_testing);
+  auto wetmmr_host          = cmvdc(wetmmr);
+  auto drymmr_host          = cmvdc(drymmr);
+  auto wetmmr_for_testing_host = cmvdc(wetmmr_for_testing);
 
   for (int k=0; k<num_mid_packs; ++k) {
 
     // Make sure all results don't contain invalid numbers
+    REQUIRE( Check::is_non_negative(density_host(k),k) );
     REQUIRE( Check::is_non_negative(exner_host(k),k) );
     REQUIRE( Check::is_non_negative(theta_host(k),k) );
     REQUIRE( Check::is_non_negative(T_from_Theta_host(k),k) );
@@ -308,6 +381,8 @@ void run(std::mt19937_64& engine)
     REQUIRE( Check::is_non_negative(dse_host(k),k) );
     REQUIRE( Check::is_non_negative(vmr_host(k),k) );
     REQUIRE( Check::is_non_negative(mmr_host(k),k) );
+    REQUIRE( Check::is_non_negative(wetmmr_host(k),k) );
+    REQUIRE( Check::is_non_negative(drymmr_host(k),k) );
 
     // Check T(Theta(T))==T (up to roundoff tolerance)
     REQUIRE ( Check::approx_equal(T_from_Theta_host(k),temperature_host(k),k,test_tol) );
@@ -317,6 +392,9 @@ void run(std::mt19937_64& engine)
 
     // Check vmr(mmr(vmr))==mmr (up to roundoff tolerance)
     REQUIRE ( Check::approx_equal(mmr_host(k),mmr_for_testing_host(k),test_tol) );
+
+    // Check wetmmr(drymmr(wetmmr))==wetmmr (up to roundoff tolerance)
+    REQUIRE ( Check::approx_equal(wetmmr_host(k),wetmmr_for_testing_host(k),test_tol) );
   }
 } // run()
 
@@ -327,18 +405,9 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   constexpr int num_runs = 5;
 
-  std::random_device rdev;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
-  // Print seed to screen to trace tests that fail.
-  std::cout << " -> Random number generator seed:: " << seed << "\n";
-  if (catchRngSeed==0) {
-    std::cout << "    Note: catch rng seed was 0 (default). We interpret that as a request to pick a random seed.\n"
-                 "    To reproduce a previous run, use --rng-seed N to provide the rng seed.\n\n";
-  }
-  std::cout << " -> Nnumber of randomized runs: " << num_runs << "\n\n";
-  rngAlg engine(seed);
+  auto engine = scream::setup_random_test();
+
+  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {

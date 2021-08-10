@@ -118,7 +118,7 @@ public:
   // These methods set fields in the atm process. Fields live on the default
   // device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
-  // template function 'get_reshaped_view' (see field.hpp for details).
+  // template function 'get_view' (see field.hpp for details).
   // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the view in the Field f is allocated by now.
   // Note: it would be tempting to add this process as provider/customer right here.
@@ -212,7 +212,7 @@ public:
     return false;
   }
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }
 
   // Set local variables using memory provided by

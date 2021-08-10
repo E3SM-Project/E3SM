@@ -33,8 +33,8 @@ TEST_CASE ("group_requirements","[!throws]")
   ad.initialize(atm_comm,ad_params,init_time);
   // Verify that after initialization field "E" matches field "A"
   auto field_mgr = ad.get_ref_grid_field_mgr();
-  const auto& view_A = field_mgr->get_field("A").get_reshaped_view<const Real**, Host>();
-  const auto& view_E = field_mgr->get_field("E").get_reshaped_view<const Real**, Host>();
+  const auto& view_A = field_mgr->get_field("A").get_view<const Real**, Host>();
+  const auto& view_E = field_mgr->get_field("E").get_view<const Real**, Host>();
   for (int icol=0;icol<num_cols;++icol) {
     for (int jlev=0;jlev<num_vl;++jlev) {
       REQUIRE(view_E(icol,jlev)==view_A(icol,jlev));

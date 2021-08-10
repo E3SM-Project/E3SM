@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -27,6 +28,8 @@ static void run_phys()
 
 static void run_bfb()
 {
+  auto engine = setup_random_test();
+
   CloudSedData csds_fortran[] = {
     //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,
     CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0),
@@ -40,7 +43,7 @@ static void run_bfb()
 
   // Set up random input data
   for (auto& d : csds_fortran) {
-    d.randomize({ {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
+    d.randomize(engine, { {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that

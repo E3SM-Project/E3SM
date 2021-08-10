@@ -1,6 +1,5 @@
 module crm_output_module
-   use params_kind,       only: crm_rknd
-   use crmdims,      only: crm_nx, crm_ny, crm_nz
+   use params_kind,  only: crm_rknd
    use openacc_utils
    implicit none
    public crm_output_type
@@ -55,7 +54,7 @@ module crm_output_module
       real(crm_rknd), allocatable :: qs_mean(:,:)  ! mean snow
       real(crm_rknd), allocatable :: qg_mean(:,:)  ! mean graupel
       real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
-#ifdef m2005
+
       real(crm_rknd), allocatable :: nc_mean(:,:)  ! mean cloud water  (#/kg)
       real(crm_rknd), allocatable :: ni_mean(:,:)  ! mean cloud ice    (#/kg)
       real(crm_rknd), allocatable :: ns_mean(:,:)  ! mean snow         (#/kg)
@@ -71,7 +70,6 @@ module crm_output_module
       real(crm_rknd), allocatable :: sub_a (:,:)  ! ice, snow, graupel sublimation (1/s)
       real(crm_rknd), allocatable :: dep_a (:,:)  ! ice, snow, graupel deposition (1/s)
       real(crm_rknd), allocatable :: con_a (:,:)  ! cloud water condensation(1/s)
-#endif /* m2005 */
 
 #if defined( MMF_MOMENTUM_FEEDBACK )
       real(crm_rknd), allocatable :: ultend(:,:)            ! tendency of ul
@@ -142,86 +140,84 @@ module crm_output_module
 contains
 
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_initialize(output, ncol, nlev)
+   subroutine crm_output_initialize(output, ncol, nlev, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
-      integer, intent(in), optional :: ncol, nlev
+      integer,               intent(in   ) :: ncol, nlev, crm_nx, crm_ny, crm_nz
+      character(len=*),      intent(in   ) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
-      ! Allocate arrays if dimensions are passed as input
-      if (present(ncol)) then
+      ! Allocate instantaneous outputs
+      if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%qci)) allocate(output%qci(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%qpl)) allocate(output%qpl(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%qpi)) allocate(output%qpi(ncol,crm_nx,crm_ny,crm_nz))
 
-         ! Allocate instantaneous outputs
-         if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%qci)) allocate(output%qci(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%qpl)) allocate(output%qpl(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%qpi)) allocate(output%qpi(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%tk )) allocate(output%tk (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%tkh)) allocate(output%tkh(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%prec_crm)) allocate(output%prec_crm(ncol,crm_nx,crm_ny))
 
-         if (.not. allocated(output%tk )) allocate(output%tk (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%tkh)) allocate(output%tkh(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%prec_crm)) allocate(output%prec_crm(ncol,crm_nx,crm_ny))
-
-         if (.not. allocated(output%wvar)) allocate(output%wvar(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%aut))  allocate(output%aut (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%acc))  allocate(output%acc (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%evpc)) allocate(output%evpc(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%evpr)) allocate(output%evpr(ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%mlt))  allocate(output%mlt (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%sub))  allocate(output%sub (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%dep))  allocate(output%dep (ncol,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(output%con))  allocate(output%con (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%wvar)) allocate(output%wvar(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%aut))  allocate(output%aut (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%acc))  allocate(output%acc (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%evpc)) allocate(output%evpc(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%evpr)) allocate(output%evpr(ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%mlt))  allocate(output%mlt (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%sub))  allocate(output%sub (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%dep))  allocate(output%dep (ncol,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(output%con))  allocate(output%con (ncol,crm_nx,crm_ny,crm_nz))
 
 
-         ! Allocate domain and time-averaged fields
-         if (.not. allocated(output%cltot)) allocate(output%cltot(ncol))
-         if (.not. allocated(output%cllow)) allocate(output%cllow(ncol))
-         if (.not. allocated(output%clmed)) allocate(output%clmed(ncol))
-         if (.not. allocated(output%clhgh)) allocate(output%clhgh(ncol))
+      ! Allocate domain and time-averaged fields
+      if (.not. allocated(output%cltot)) allocate(output%cltot(ncol))
+      if (.not. allocated(output%cllow)) allocate(output%cllow(ncol))
+      if (.not. allocated(output%clmed)) allocate(output%clmed(ncol))
+      if (.not. allocated(output%clhgh)) allocate(output%clhgh(ncol))
 
-         if (.not. allocated(output%precc))  allocate(output%precc(ncol))
-         if (.not. allocated(output%precl))  allocate(output%precl(ncol))
-         if (.not. allocated(output%precsc)) allocate(output%precsc(ncol))
-         if (.not. allocated(output%precsl)) allocate(output%precsl(ncol))
+      if (.not. allocated(output%precc))  allocate(output%precc(ncol))
+      if (.not. allocated(output%precl))  allocate(output%precl(ncol))
+      if (.not. allocated(output%precsc)) allocate(output%precsc(ncol))
+      if (.not. allocated(output%precsl)) allocate(output%precsl(ncol))
 
-         ! NOTE: this output had a bug in the previous implementation
-         if (.not. allocated(output%cldtop)) allocate(output%cldtop(ncol,nlev))
+      ! NOTE: this output had a bug in the previous implementation
+      if (.not. allocated(output%cldtop)) allocate(output%cldtop(ncol,nlev))
 
-         if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
-         if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
-         if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
-         if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
-         if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
+      if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
+      if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
+      if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
+      if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
+      if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
 
-         call prefetch(output%qcl)
-         call prefetch(output%qci)
-         call prefetch(output%qpl)
-         call prefetch(output%qpi)
-         call prefetch(output%tk )
-         call prefetch(output%tkh)
-         call prefetch(output%prec_crm)
-         call prefetch(output%wvar)
-         call prefetch(output%aut )
-         call prefetch(output%acc )
-         call prefetch(output%evpc)
-         call prefetch(output%evpr)
-         call prefetch(output%mlt )
-         call prefetch(output%sub )
-         call prefetch(output%dep )
-         call prefetch(output%con )
-         call prefetch(output%cltot)
-         call prefetch(output%cllow)
-         call prefetch(output%clmed)
-         call prefetch(output%clhgh)
-         call prefetch(output%precc)
-         call prefetch(output%precl)
-         call prefetch(output%precsc)
-         call prefetch(output%precsl)
-         call prefetch(output%cldtop)
-         call prefetch(output%qc_mean)
-         call prefetch(output%qi_mean)
-         call prefetch(output%qs_mean)
-         call prefetch(output%qg_mean)
-         call prefetch(output%qr_mean)
+      call prefetch(output%qcl)
+      call prefetch(output%qci)
+      call prefetch(output%qpl)
+      call prefetch(output%qpi)
+      call prefetch(output%tk )
+      call prefetch(output%tkh)
+      call prefetch(output%prec_crm)
+      call prefetch(output%wvar)
+      call prefetch(output%aut )
+      call prefetch(output%acc )
+      call prefetch(output%evpc)
+      call prefetch(output%evpr)
+      call prefetch(output%mlt )
+      call prefetch(output%sub )
+      call prefetch(output%dep )
+      call prefetch(output%con )
+      call prefetch(output%cltot)
+      call prefetch(output%cllow)
+      call prefetch(output%clmed)
+      call prefetch(output%clhgh)
+      call prefetch(output%precc)
+      call prefetch(output%precl)
+      call prefetch(output%precsc)
+      call prefetch(output%precsl)
+      call prefetch(output%cldtop)
+      call prefetch(output%qc_mean)
+      call prefetch(output%qi_mean)
+      call prefetch(output%qs_mean)
+      call prefetch(output%qg_mean)
+      call prefetch(output%qr_mean)
 
-#ifdef m2005
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
          if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
          if (.not. allocated(output%ns_mean)) allocate(output%ns_mean(ncol,nlev))
@@ -236,119 +232,117 @@ contains
          if (.not. allocated(output%sub_a )) allocate(output%sub_a (ncol,nlev))
          if (.not. allocated(output%dep_a )) allocate(output%dep_a (ncol,nlev))
          if (.not. allocated(output%con_a )) allocate(output%con_a (ncol,nlev))
-#endif /* m2005 */
+      end if
 
 #if defined( MMF_MOMENTUM_FEEDBACK )
-         if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
-         if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
+      if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
+      if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
 #endif
 
 #if defined( MMF_ESMT )
-         if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
-         if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
+      if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
+      if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
 #endif
-         
-         if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
-         if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
-         if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
-         if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
+      
+      if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
+      if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
+      if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
+      if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
 
-         if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
-         if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
-         if (.not. allocated(output%t_vt_ls  ))  allocate(output%t_vt_ls  (ncol,nlev))
-         if (.not. allocated(output%q_vt_ls  ))  allocate(output%q_vt_ls  (ncol,nlev))
+      if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
+      if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
+      if (.not. allocated(output%t_vt_ls  ))  allocate(output%t_vt_ls  (ncol,nlev))
+      if (.not. allocated(output%q_vt_ls  ))  allocate(output%q_vt_ls  (ncol,nlev))
 
-         if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
-         if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
-         if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
-         if (.not. allocated(output%mctot )) allocate(output%mctot (ncol,nlev))  ! cloud mass flux
-         if (.not. allocated(output%mcup  )) allocate(output%mcup  (ncol,nlev))  ! updraft cloud mass flux
-         if (.not. allocated(output%mcdn  )) allocate(output%mcdn  (ncol,nlev))  ! downdraft cloud mass flux
-         if (.not. allocated(output%mcuup )) allocate(output%mcuup (ncol,nlev))  ! unsat updraft cloud mass flux
-         if (.not. allocated(output%mcudn )) allocate(output%mcudn (ncol,nlev))  ! unsat downdraft cloud mass flux
+      if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
+      if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
+      if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
+      if (.not. allocated(output%mctot )) allocate(output%mctot (ncol,nlev))  ! cloud mass flux
+      if (.not. allocated(output%mcup  )) allocate(output%mcup  (ncol,nlev))  ! updraft cloud mass flux
+      if (.not. allocated(output%mcdn  )) allocate(output%mcdn  (ncol,nlev))  ! downdraft cloud mass flux
+      if (.not. allocated(output%mcuup )) allocate(output%mcuup (ncol,nlev))  ! unsat updraft cloud mass flux
+      if (.not. allocated(output%mcudn )) allocate(output%mcudn (ncol,nlev))  ! unsat downdraft cloud mass flux
 
-         if (.not. allocated(output%mu_crm)) allocate(output%mu_crm(ncol,nlev))  ! mass flux up
-         if (.not. allocated(output%md_crm)) allocate(output%md_crm(ncol,nlev))  ! mass flux down
-         if (.not. allocated(output%du_crm)) allocate(output%du_crm(ncol,nlev))  ! mass detrainment from updraft
-         if (.not. allocated(output%eu_crm)) allocate(output%eu_crm(ncol,nlev))  ! mass entrainment from updraft
-         if (.not. allocated(output%ed_crm)) allocate(output%ed_crm(ncol,nlev))  ! mass detrainment from downdraft
-         if (.not. allocated(output%jt_crm)) allocate(output%jt_crm(ncol))       ! index of cloud (convection) top
-         if (.not. allocated(output%mx_crm)) allocate(output%mx_crm(ncol))       ! index of cloud (convection) bottom
+      if (.not. allocated(output%mu_crm)) allocate(output%mu_crm(ncol,nlev))  ! mass flux up
+      if (.not. allocated(output%md_crm)) allocate(output%md_crm(ncol,nlev))  ! mass flux down
+      if (.not. allocated(output%du_crm)) allocate(output%du_crm(ncol,nlev))  ! mass detrainment from updraft
+      if (.not. allocated(output%eu_crm)) allocate(output%eu_crm(ncol,nlev))  ! mass entrainment from updraft
+      if (.not. allocated(output%ed_crm)) allocate(output%ed_crm(ncol,nlev))  ! mass detrainment from downdraft
+      if (.not. allocated(output%jt_crm)) allocate(output%jt_crm(ncol))       ! index of cloud (convection) top
+      if (.not. allocated(output%mx_crm)) allocate(output%mx_crm(ncol))       ! index of cloud (convection) bottom
 
-         if (.not. allocated(output%flux_qt      )) allocate(output%flux_qt      (ncol,nlev))
-         if (.not. allocated(output%fluxsgs_qt   )) allocate(output%fluxsgs_qt   (ncol,nlev))
-         if (.not. allocated(output%tkez         )) allocate(output%tkez         (ncol,nlev))
-         if (.not. allocated(output%tkew         )) allocate(output%tkew         (ncol,nlev))
-         if (.not. allocated(output%tkesgsz      )) allocate(output%tkesgsz      (ncol,nlev))
-         if (.not. allocated(output%tkz          )) allocate(output%tkz          (ncol,nlev))
-         if (.not. allocated(output%flux_u       )) allocate(output%flux_u       (ncol,nlev))
-         if (.not. allocated(output%flux_v       )) allocate(output%flux_v       (ncol,nlev))
-         if (.not. allocated(output%flux_qp      )) allocate(output%flux_qp      (ncol,nlev))
-         if (.not. allocated(output%precflux     )) allocate(output%precflux     (ncol,nlev))
-         if (.not. allocated(output%qt_ls        )) allocate(output%qt_ls        (ncol,nlev))
-         if (.not. allocated(output%qt_trans     )) allocate(output%qt_trans     (ncol,nlev))
-         if (.not. allocated(output%qp_trans     )) allocate(output%qp_trans     (ncol,nlev))
-         if (.not. allocated(output%qp_fall      )) allocate(output%qp_fall      (ncol,nlev))
-         if (.not. allocated(output%qp_src       )) allocate(output%qp_src       (ncol,nlev))
-         if (.not. allocated(output%qp_evp       )) allocate(output%qp_evp       (ncol,nlev))
-         if (.not. allocated(output%t_ls         )) allocate(output%t_ls         (ncol,nlev))
-         if (.not. allocated(output%prectend     )) allocate(output%prectend     (ncol))
-         if (.not. allocated(output%precstend    )) allocate(output%precstend    (ncol))
-         if (.not. allocated(output%taux         )) allocate(output%taux         (ncol))
-         if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
-         if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
-         if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
+      if (.not. allocated(output%flux_qt      )) allocate(output%flux_qt      (ncol,nlev))
+      if (.not. allocated(output%fluxsgs_qt   )) allocate(output%fluxsgs_qt   (ncol,nlev))
+      if (.not. allocated(output%tkez         )) allocate(output%tkez         (ncol,nlev))
+      if (.not. allocated(output%tkew         )) allocate(output%tkew         (ncol,nlev))
+      if (.not. allocated(output%tkesgsz      )) allocate(output%tkesgsz      (ncol,nlev))
+      if (.not. allocated(output%tkz          )) allocate(output%tkz          (ncol,nlev))
+      if (.not. allocated(output%flux_u       )) allocate(output%flux_u       (ncol,nlev))
+      if (.not. allocated(output%flux_v       )) allocate(output%flux_v       (ncol,nlev))
+      if (.not. allocated(output%flux_qp      )) allocate(output%flux_qp      (ncol,nlev))
+      if (.not. allocated(output%precflux     )) allocate(output%precflux     (ncol,nlev))
+      if (.not. allocated(output%qt_ls        )) allocate(output%qt_ls        (ncol,nlev))
+      if (.not. allocated(output%qt_trans     )) allocate(output%qt_trans     (ncol,nlev))
+      if (.not. allocated(output%qp_trans     )) allocate(output%qp_trans     (ncol,nlev))
+      if (.not. allocated(output%qp_fall      )) allocate(output%qp_fall      (ncol,nlev))
+      if (.not. allocated(output%qp_src       )) allocate(output%qp_src       (ncol,nlev))
+      if (.not. allocated(output%qp_evp       )) allocate(output%qp_evp       (ncol,nlev))
+      if (.not. allocated(output%t_ls         )) allocate(output%t_ls         (ncol,nlev))
+      if (.not. allocated(output%prectend     )) allocate(output%prectend     (ncol))
+      if (.not. allocated(output%precstend    )) allocate(output%precstend    (ncol))
+      if (.not. allocated(output%taux         )) allocate(output%taux         (ncol))
+      if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
+      if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
+      if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
-         call prefetch(output%sltend  )
-         call prefetch(output%qltend  )
-         call prefetch(output%qcltend )
-         call prefetch(output%qiltend )
+      call prefetch(output%sltend  )
+      call prefetch(output%qltend  )
+      call prefetch(output%qcltend )
+      call prefetch(output%qiltend )
 
-         call prefetch(output%t_vt_tend )
-         call prefetch(output%q_vt_tend )
-         call prefetch(output%t_vt_ls   )
-         call prefetch(output%q_vt_ls   )
+      call prefetch(output%t_vt_tend )
+      call prefetch(output%q_vt_tend )
+      call prefetch(output%t_vt_ls   )
+      call prefetch(output%q_vt_ls   )
 
-         call prefetch(output%cld    )
-         call prefetch(output%gicewp )
-         call prefetch(output%gliqwp )
-         call prefetch(output%mctot  )
-         call prefetch(output%mcup   )
-         call prefetch(output%mcdn   )
-         call prefetch(output%mcuup  )
-         call prefetch(output%mcudn  )
-         call prefetch(output%mu_crm )
-         call prefetch(output%md_crm )
-         call prefetch(output%du_crm )
-         call prefetch(output%eu_crm )
-         call prefetch(output%ed_crm )
-         call prefetch(output%jt_crm )
-         call prefetch(output%mx_crm )
-         call prefetch(output%flux_qt       )
-         call prefetch(output%fluxsgs_qt    )
-         call prefetch(output%tkez          )
-         call prefetch(output%tkew          )
-         call prefetch(output%tkesgsz       )
-         call prefetch(output%tkz           )
-         call prefetch(output%flux_u        )
-         call prefetch(output%flux_v        )
-         call prefetch(output%flux_qp       )
-         call prefetch(output%precflux      )
-         call prefetch(output%qt_ls         )
-         call prefetch(output%qt_trans      )
-         call prefetch(output%qp_trans      )
-         call prefetch(output%qp_fall       )
-         call prefetch(output%qp_src        )
-         call prefetch(output%qp_evp        )
-         call prefetch(output%t_ls          )
-         call prefetch(output%prectend      )
-         call prefetch(output%precstend     )
-         call prefetch(output%taux          )
-         call prefetch(output%tauy          )
-         call prefetch(output%z0m           )
-         call prefetch(output%subcycle_factor )
-
-      end if ! present(ncol)
+      call prefetch(output%cld    )
+      call prefetch(output%gicewp )
+      call prefetch(output%gliqwp )
+      call prefetch(output%mctot  )
+      call prefetch(output%mcup   )
+      call prefetch(output%mcdn   )
+      call prefetch(output%mcuup  )
+      call prefetch(output%mcudn  )
+      call prefetch(output%mu_crm )
+      call prefetch(output%md_crm )
+      call prefetch(output%du_crm )
+      call prefetch(output%eu_crm )
+      call prefetch(output%ed_crm )
+      call prefetch(output%jt_crm )
+      call prefetch(output%mx_crm )
+      call prefetch(output%flux_qt       )
+      call prefetch(output%fluxsgs_qt    )
+      call prefetch(output%tkez          )
+      call prefetch(output%tkew          )
+      call prefetch(output%tkesgsz       )
+      call prefetch(output%tkz           )
+      call prefetch(output%flux_u        )
+      call prefetch(output%flux_v        )
+      call prefetch(output%flux_qp       )
+      call prefetch(output%precflux      )
+      call prefetch(output%qt_ls         )
+      call prefetch(output%qt_trans      )
+      call prefetch(output%qp_trans      )
+      call prefetch(output%qp_fall       )
+      call prefetch(output%qp_src        )
+      call prefetch(output%qp_evp        )
+      call prefetch(output%t_ls          )
+      call prefetch(output%prectend      )
+      call prefetch(output%precstend     )
+      call prefetch(output%taux          )
+      call prefetch(output%tauy          )
+      call prefetch(output%z0m           )
+      call prefetch(output%subcycle_factor )
 
       ! Initialize 
       output%qcl = 0
@@ -387,22 +381,23 @@ contains
       output%qs_mean = 0
       output%qg_mean = 0
       output%qr_mean = 0
-#ifdef m2005
-      output%nc_mean = 0
-      output%ni_mean = 0
-      output%ns_mean = 0
-      output%ng_mean = 0
-      output%nr_mean = 0
 
-      output%aut_a = 0
-      output%acc_a = 0
-      output%evpc_a = 0
-      output%evpr_a = 0
-      output%mlt_a = 0
-      output%sub_a = 0
-      output%dep_a = 0
-      output%con_a = 0
-#endif
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
+         output%nc_mean = 0
+         output%ni_mean = 0
+         output%ns_mean = 0
+         output%ng_mean = 0
+         output%nr_mean = 0
+
+         output%aut_a = 0
+         output%acc_a = 0
+         output%evpc_a = 0
+         output%evpr_a = 0
+         output%mlt_a = 0
+         output%sub_a = 0
+         output%dep_a = 0
+         output%con_a = 0
+      end if
 
 #if defined( MMF_MOMENTUM_FEEDBACK )
       output%ultend = 0
@@ -469,8 +464,10 @@ contains
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_finalize(output)
+   subroutine crm_output_finalize(output, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
       if (allocated(output%qcl)) deallocate(output%qcl)
       if (allocated(output%qci)) deallocate(output%qci)
       if (allocated(output%qpl)) deallocate(output%qpl)
@@ -504,23 +501,24 @@ contains
       if (allocated(output%qs_mean)) deallocate(output%qs_mean)
       if (allocated(output%qg_mean)) deallocate(output%qg_mean)
       if (allocated(output%qr_mean)) deallocate(output%qr_mean)
-#ifdef m2005
-      if (allocated(output%nc_mean)) deallocate(output%nc_mean)
-      if (allocated(output%ni_mean)) deallocate(output%ni_mean)
-      if (allocated(output%ns_mean)) deallocate(output%ns_mean)
-      if (allocated(output%ng_mean)) deallocate(output%ng_mean)
-      if (allocated(output%nr_mean)) deallocate(output%nr_mean)
+      
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
+         if (allocated(output%nc_mean)) deallocate(output%nc_mean)
+         if (allocated(output%ni_mean)) deallocate(output%ni_mean)
+         if (allocated(output%ns_mean)) deallocate(output%ns_mean)
+         if (allocated(output%ng_mean)) deallocate(output%ng_mean)
+         if (allocated(output%nr_mean)) deallocate(output%nr_mean)
 
-      ! Time and domain-averaged process rates
-      if (allocated(output%aut_a)) deallocate(output%aut_a)
-      if (allocated(output%acc_a)) deallocate(output%acc_a)
-      if (allocated(output%evpc_a)) deallocate(output%evpc_a)
-      if (allocated(output%evpr_a)) deallocate(output%evpr_a)
-      if (allocated(output%mlt_a)) deallocate(output%mlt_a)
-      if (allocated(output%sub_a)) deallocate(output%sub_a)
-      if (allocated(output%dep_a)) deallocate(output%dep_a)
-      if (allocated(output%con_a)) deallocate(output%con_a)
-#endif
+         ! Time and domain-averaged process rates
+         if (allocated(output%aut_a)) deallocate(output%aut_a)
+         if (allocated(output%acc_a)) deallocate(output%acc_a)
+         if (allocated(output%evpc_a)) deallocate(output%evpc_a)
+         if (allocated(output%evpr_a)) deallocate(output%evpr_a)
+         if (allocated(output%mlt_a)) deallocate(output%mlt_a)
+         if (allocated(output%sub_a)) deallocate(output%sub_a)
+         if (allocated(output%dep_a)) deallocate(output%dep_a)
+         if (allocated(output%con_a)) deallocate(output%con_a)
+      end if
 
 #if defined( MMF_MOMENTUM_FEEDBACK )
       if (allocated(output%ultend)) deallocate(output%ultend)

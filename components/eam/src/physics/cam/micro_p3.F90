@@ -343,7 +343,7 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
-       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, &
+       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner,inv_cld_frac_l, inv_cld_frac_i, &
        inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion,  &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, &
        qc, nc, qr, nr, &
@@ -410,6 +410,7 @@ contains
       !    prescribe that value
 
           if (do_prescribed_CCN) then
+             !nccn_prescribed is an in-cloud value so make it grid average in this assignment
              nc(k) = max(nc(k),nccn_prescribed(k)*1.0e6*inv_rho(k))
           else if (do_predict_nc) then
              nc(k) = max(nc(k) + nc_nuceat_tend(k) * dt,0.0_rtype)
@@ -454,6 +455,7 @@ contains
        call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
             inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
             qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
+
 
     enddo k_loop_1
 
@@ -944,6 +946,7 @@ contains
       call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
            inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
            qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
+
 
 555   continue
 

@@ -6,6 +6,8 @@
 #include "physics/p3/p3_functions_f90.hpp"
 
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -201,6 +203,8 @@ static void run_phys()
 
 static void run_bfb()
 {
+  auto engine = setup_random_test();
+
   CalcUpwindData cuds_fortran[] = {
                 // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
     CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03),
@@ -216,7 +220,7 @@ static void run_bfb()
 
   // Set up random input data
   for (auto& d : cuds_fortran) {
-    d.randomize();
+    d.randomize(engine);
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -279,6 +283,8 @@ static void run_phys()
 
 static void run_bfb()
 {
+  auto engine = setup_random_test();
+
   GenSedData gsds_fortran[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
     GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2),
@@ -291,7 +297,7 @@ static void run_bfb()
 
   // Set up random input data
   for (auto& d : gsds_fortran) {
-    d.randomize();
+    d.randomize(engine);
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that

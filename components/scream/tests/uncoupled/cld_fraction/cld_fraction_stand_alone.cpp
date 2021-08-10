@@ -27,7 +27,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
-  // Need to register products in the factory *before* we create any atm process or grids manager.,
+  // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
@@ -41,7 +41,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init and run (do not finalize, or you'll clear the field repo!)
+  // Init and run
   util::TimeStamp time (0,0,0,0);
 
   ad.initialize(atm_comm,ad_params,time);
@@ -56,8 +56,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   const auto& qi_field           = field_mgr.get_field("qi");
   const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
-  const auto& qi           = qi_field.get_reshaped_view<Real**,Host>();
-  const auto& liq_cld_frac = liq_cld_frac_field.get_reshaped_view<Real**,Host>();
+  const auto& qi           = qi_field.get_view<Real**,Host>();
+  const auto& liq_cld_frac = liq_cld_frac_field.get_view<Real**,Host>();
 
   for (int icol=0;icol<num_cols;++icol)
   {
@@ -86,8 +86,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   const auto& tot_cld_frac_field = field_mgr.get_field("cldfrac_tot");   //TODO: This FM name will probably change soon.
   ice_cld_frac_field.sync_to_host();
   tot_cld_frac_field.sync_to_host();
-  const auto& ice_cld_frac = ice_cld_frac_field.get_reshaped_view<Real**,Host>();
-  const auto& tot_cld_frac = tot_cld_frac_field.get_reshaped_view<Real**,Host>();
+  const auto& ice_cld_frac = ice_cld_frac_field.get_view<Real**,Host>();
+  const auto& tot_cld_frac = tot_cld_frac_field.get_view<Real**,Host>();
   
   for (int icol=0;icol<num_cols;++icol)
   {

@@ -144,7 +144,7 @@ struct BackToCellAverageData
        qc2qi_berg_tend;
 
   // This populates all fields with test data within [0,1].
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -597,7 +597,7 @@ struct CalcLiqRelaxationData
   Real epsr, epsc;
 
   // This populates all input fields with test data within [0,1].
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 struct IceNucleationData
@@ -784,7 +784,7 @@ struct IceSupersatConservationData {
   // Inputs/Outputs
   Real qidep, qinuc;
 
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 struct NcConservationData {
@@ -794,7 +794,7 @@ struct NcConservationData {
   // Inputs/Outputs
   Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
 
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 struct NrConservationData {
@@ -804,7 +804,7 @@ struct NrConservationData {
   // Inputs/Outputs
   Real nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend;
 
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 struct NiConservationData {
@@ -814,7 +814,7 @@ struct NiConservationData {
   // Inputs/Outputs
   Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
 
-  void randomize();
+  void randomize(std::mt19937_64& engine);
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
@@ -1095,7 +1095,7 @@ Int p3_main_f(
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
-  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 
 void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);

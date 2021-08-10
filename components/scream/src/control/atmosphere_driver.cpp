@@ -144,13 +144,21 @@ void AtmosphereDriver::create_fields()
   //            E.g., there could be a GroupRequest gr1 that requires to be an
   //            alias of gr2, with gr2 defined on ref grid. Most obvious case:
   //            dyn needs a copy of group "tracers" on dyn grid. But nobody
-  //            register tracers on dyn grid, so the request has to be an alias
-  //            of "tracers" from ref grid.
-  //            To fix this, we check all the group requests. If we find a request
+  //            register tracers on dyn grid, so at first sight, it would appear
+  //            that the tracers group on dyn grid is empty.
+  //            To overcome this issue, dyn can register the tracers group on the
+  //            dyn grid as an "alias" of the tracers group on the ref grid,
+  //            and the AD must take care of ensuring that the two contain the
+  //            same fields (effectively "adding" fields on the dyn grid).
+  //            To do this, we loop over the requests, and if we find a request
   //            gr1 that has a 'relative' request gr2 (see field_request.hpp for a
   //            definition of 'relative'), and if gr2 is on a different grid, we
-  //            make sure all the fields of the relative request are registered
-  //            on gr1.grid.
+  //            make sure that:
+  //              a) if the relative group is a 'child' or 'alias' (see field_request.hpp
+  //                 for an explanation of these terms), we ensure the relative
+  //                 group is also registered in this grid, with fields in the same order.
+  //              b) all the fields of the relative request are registered
+  //            in the FM on gr1's grid.
 
   // Helper lambda to reduce code duplication
   auto import_relative_group = [&](const GroupRequest& greq) {
@@ -173,6 +181,10 @@ void AtmosphereDriver::create_fields()
       FieldRequest freq(fid,rel.name,rel.pack_size);
       fm->register_field(freq);
     }
+
+    // Register also the relative group on this grid
+    GroupRequest rel_on_my_grid(rel.name,greq.grid,greq.pack_size,greq.bundling);
+    fm->register_group(rel_on_my_grid);
   };
 
   for (const auto& req : m_atm_process_group->get_required_groups()) {
@@ -291,7 +303,19 @@ initialize_fields (const util::TimeStamp& t0)
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 
-  if (ifield>0) {
+  // Check the status of lat and lon values on reference grid:
+  // This option allows the user to set lat or lon in their own
+  // test or run setup code rather than by file.
+  bool skip_init_lat = true;
+  bool skip_init_lon = true;
+  if (ic_pl.isParameter("skip_init_lat")) {
+    skip_init_lat     = ic_pl.get<bool>("skip_init_lat");
+  }
+  if (ic_pl.isParameter("skip_init_lon")) {
+    skip_init_lon     = ic_pl.get<bool>("skip_init_lon");
+  }
+
+  if (ifield>0 || (!skip_init_lon or !skip_init_lat)) {
     // There are fields to read from the nc file. We must have a valid nc file then.
     ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
     ic_fields.set("Number of Fields",ifield);
@@ -306,7 +330,22 @@ initialize_fields (const util::TimeStamp& t0)
 
     AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,get_ref_grid_field_mgr(),m_grids_manager);
 
-    ic_reader.pull_input();
+    // Case where there are fields to load from initial condition file.
+    if (ifield>0) {
+      ic_reader.pull_input();
+    }
+
+    // Case where lat and/or lon pulled from initial condition file
+    auto ref_grid = m_grids_manager->get_reference_grid();
+    int ncol  = ref_grid->get_num_local_dofs();
+    if (!skip_init_lat) {
+      auto& lat = ref_grid->get_geometry_data("lat");
+      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lat",{"ncol"},true,{ncol},lat.data());
+    }
+    if (!skip_init_lon) {
+      auto& lon = ref_grid->get_geometry_data("lon");
+      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lon",{"ncol"},true,{ncol},lon.data());
+    }
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.

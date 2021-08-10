@@ -5,6 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 
@@ -41,13 +42,7 @@ TEST_CASE("remap", "") {
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  if (comm.am_i_root()) {
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  }
-  std::mt19937_64 engine(seed);
+  auto engine = setup_random_test(&comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -229,13 +224,13 @@ TEST_CASE("remap", "") {
       //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
 
       if (fwd) {
-        auto h_s_2d_view = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
-        auto h_v_2d_view = v_2d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_s_3d_view = s_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_v_3d_view = v_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto h_ss_3d_view = ss_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_vs_3d_view = vs_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto h_tr_3d_view = tr_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
+        auto h_s_2d_view = s_2d_field_phys.get_view<Homme::Real*,Host>();
+        auto h_v_2d_view = v_2d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_s_3d_view = s_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_v_3d_view = v_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto h_ss_3d_view = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_vs_3d_view = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto h_tr_3d_view = tr_3d_field_phys.get_view<Homme::Real***,Host>();
 
         for (int idof=0; idof<num_local_cols; ++idof) {
           auto gid = h_p_dofs(idof);
@@ -264,13 +259,13 @@ TEST_CASE("remap", "") {
         vs_3d_field_phys.sync_to_dev();
         tr_3d_field_phys.sync_to_dev();
       } else {
-        auto h_s_2d_view = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        auto h_v_2d_view = v_2d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
-        auto h_s_3d_view = s_3d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
-        auto h_v_3d_view = v_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
-        auto h_ss_3d_view = ss_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
-        auto h_vs_3d_view = vs_3d_field_dyn.get_reshaped_view<Homme::Real******,Host>();
-        auto h_tr_3d_view = tr_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto h_s_2d_view = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+        auto h_v_2d_view = v_2d_field_dyn.get_view<Homme::Real****,Host>();
+        auto h_s_3d_view = s_3d_field_dyn.get_view<Homme::Real****,Host>();
+        auto h_v_3d_view = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
+        auto h_ss_3d_view = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
+        auto h_vs_3d_view = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
+        auto h_tr_3d_view = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
 
         for (int ie=0; ie<num_local_elems; ++ie) {
           for (int ip=0; ip<NP; ++ip) {
@@ -315,14 +310,14 @@ TEST_CASE("remap", "") {
         // 2d scalar
         s_2d_field_phys.sync_to_host();
         s_2d_field_dyn.sync_to_host();
-        auto phys = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
-        auto dyn  = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        
+        auto phys = s_2d_field_phys.get_view<Homme::Real*,Host>();
+        auto dyn  = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
@@ -346,13 +341,13 @@ TEST_CASE("remap", "") {
         // 2d vector
         v_2d_field_phys.sync_to_host();
         v_2d_field_dyn.sync_to_host();
-        auto phys = v_2d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = v_2d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
+        auto phys = v_2d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = v_2d_field_dyn.get_view<Homme::Real****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
@@ -380,13 +375,13 @@ TEST_CASE("remap", "") {
         // 3d scalar
         s_3d_field_phys.sync_to_host();
         s_3d_field_dyn.sync_to_host();
-        auto phys = s_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = s_3d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
+        auto phys = s_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = s_3d_field_dyn.get_view<Homme::Real****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int ilev=0; ilev<NVL; ++ilev) {
               if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
@@ -414,13 +409,13 @@ TEST_CASE("remap", "") {
         // 3d vector
         v_3d_field_phys.sync_to_host();
         v_3d_field_dyn.sync_to_host();
-        auto phys = v_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = v_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = v_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -453,8 +448,8 @@ TEST_CASE("remap", "") {
         const int n0 = tl.n0;
         ss_3d_field_phys.sync_to_host();
         ss_3d_field_dyn.sync_to_host();
-        auto phys = ss_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = ss_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (fwd) {
           for (int ilev=0; ilev<NVL; ++ilev) {
             for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
@@ -489,13 +484,13 @@ TEST_CASE("remap", "") {
         const int n0 = tl.n0;
         vs_3d_field_phys.sync_to_host();
         vs_3d_field_dyn.sync_to_host();
-        auto phys = vs_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = vs_3d_field_dyn.get_reshaped_view<Homme::Real******,Host>();
+        auto phys = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -527,13 +522,13 @@ TEST_CASE("remap", "") {
         // 3d tracers
         tr_3d_field_phys.sync_to_host();
         tr_3d_field_dyn.sync_to_host();
-        auto phys = tr_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = tr_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = tr_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (fwd) {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int iq=0; iq<2; ++iq) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -588,13 +583,7 @@ TEST_CASE("combo_remap", "") {
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  if (comm.am_i_root()) {
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  }
-  std::mt19937_64 engine(seed);
+  auto engine = setup_random_test(&comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -777,13 +766,13 @@ TEST_CASE("combo_remap", "") {
       //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
 
       if (pdp) {
-        auto h_s_2d_view = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
-        auto h_v_2d_view = v_2d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_s_3d_view = s_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_v_3d_view = v_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto h_ss_3d_view = ss_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto h_vs_3d_view = vs_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto h_tr_3d_view = tr_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
+        auto h_s_2d_view = s_2d_field_phys.get_view<Homme::Real*,Host>();
+        auto h_v_2d_view = v_2d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_s_3d_view = s_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_v_3d_view = v_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto h_ss_3d_view = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto h_vs_3d_view = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto h_tr_3d_view = tr_3d_field_phys.get_view<Homme::Real***,Host>();
 
         for (int idof=0; idof<num_local_cols; ++idof) {
           auto gid = h_p_dofs(idof);
@@ -812,13 +801,13 @@ TEST_CASE("combo_remap", "") {
         vs_3d_field_phys.sync_to_dev();
         tr_3d_field_phys.sync_to_dev();
       } else {
-        auto h_s_2d_view = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        auto h_v_2d_view = v_2d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
-        auto h_s_3d_view = s_3d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
-        auto h_v_3d_view = v_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
-        auto h_ss_3d_view = ss_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
-        auto h_vs_3d_view = vs_3d_field_dyn.get_reshaped_view<Homme::Real******,Host>();
-        auto h_tr_3d_view = tr_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto h_s_2d_view = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+        auto h_v_2d_view = v_2d_field_dyn.get_view<Homme::Real****,Host>();
+        auto h_s_3d_view = s_3d_field_dyn.get_view<Homme::Real****,Host>();
+        auto h_v_3d_view = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
+        auto h_ss_3d_view = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
+        auto h_vs_3d_view = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
+        auto h_tr_3d_view = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
 
         for (int ie=0; ie<num_local_elems; ++ie) {
           for (int ip=0; ip<NP; ++ip) {
@@ -860,8 +849,8 @@ TEST_CASE("combo_remap", "") {
         remapper->remap(true);
         // For states, p->d remaps into tl.n0 and d->p remaps out of tl.np1.
         // Hence, copy n0 slice into np1 slice in the states
-        auto ss_3d = ss_3d_field_dyn.get_reshaped_view<Real*****>();
-        auto vs_3d = vs_3d_field_dyn.get_reshaped_view<Real******>();
+        auto ss_3d = ss_3d_field_dyn.get_view<Real*****>();
+        auto vs_3d = vs_3d_field_dyn.get_view<Real******>();
         const int size = nle*np*np*NVL;
         using ExeSpace = typename decltype(ss_3d)::traits::execution_space;
         Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,size),
@@ -887,9 +876,9 @@ TEST_CASE("combo_remap", "") {
         // 2d scalar
         s_2d_field_phys.sync_to_host();
         s_2d_field_dyn.sync_to_host();
-        auto phys = s_2d_field_phys.get_reshaped_view<Homme::Real*,Host>();
-        auto dyn  = s_2d_field_dyn.get_reshaped_view<Homme::Real***,Host>();
-        
+        auto phys = s_2d_field_phys.get_view<Homme::Real*,Host>();
+        auto dyn  = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             if (phys(idof)!=h_p_dofs(idof)) {
@@ -901,9 +890,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
@@ -918,8 +907,8 @@ TEST_CASE("combo_remap", "") {
         // 2d vector
         v_2d_field_phys.sync_to_host();
         v_2d_field_dyn.sync_to_host();
-        auto phys = v_2d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = v_2d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
+        auto phys = v_2d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = v_2d_field_dyn.get_view<Homme::Real****,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int icomp=0; icomp<2; ++icomp) {
@@ -933,9 +922,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
@@ -952,8 +941,8 @@ TEST_CASE("combo_remap", "") {
         // 3d scalar
         s_3d_field_phys.sync_to_host();
         s_3d_field_dyn.sync_to_host();
-        auto phys = s_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = s_3d_field_dyn.get_reshaped_view<Homme::Real****,Host>();
+        auto phys = s_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = s_3d_field_dyn.get_view<Homme::Real****,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int ilev=0; ilev<NVL; ++ilev) {
@@ -967,9 +956,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int ilev=0; ilev<NVL; ++ilev) {
               if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
@@ -986,8 +975,8 @@ TEST_CASE("combo_remap", "") {
         // 3d vector
         v_3d_field_phys.sync_to_host();
         v_3d_field_dyn.sync_to_host();
-        auto phys = v_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = v_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = v_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int icomp=0; icomp<2; ++icomp) {
@@ -1003,9 +992,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -1024,8 +1013,8 @@ TEST_CASE("combo_remap", "") {
         // 3d scalar state
         ss_3d_field_phys.sync_to_host();
         ss_3d_field_dyn.sync_to_host();
-        auto phys = ss_3d_field_phys.get_reshaped_view<Homme::Real**,Host>();
-        auto dyn  = ss_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+        auto dyn  = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int ilev=0; ilev<NVL; ++ilev) {
@@ -1059,8 +1048,8 @@ TEST_CASE("combo_remap", "") {
         // 3d vector state
         vs_3d_field_phys.sync_to_host();
         vs_3d_field_dyn.sync_to_host();
-        auto phys = vs_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = vs_3d_field_dyn.get_reshaped_view<Homme::Real******,Host>();
+        auto phys = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int icomp=0; icomp<2; ++icomp) {
@@ -1076,9 +1065,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int icomp=0; icomp<2; ++icomp) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
@@ -1097,8 +1086,8 @@ TEST_CASE("combo_remap", "") {
         // 3d tracers
         tr_3d_field_phys.sync_to_host();
         tr_3d_field_dyn.sync_to_host();
-        auto phys = tr_3d_field_phys.get_reshaped_view<Homme::Real***,Host>();
-        auto dyn  = tr_3d_field_dyn.get_reshaped_view<Homme::Real*****,Host>();
+        auto phys = tr_3d_field_phys.get_view<Homme::Real***,Host>();
+        auto dyn  = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
         if (pdp) {
           for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
             for (int iq=0; iq<2; ++iq) {
@@ -1114,9 +1103,9 @@ TEST_CASE("combo_remap", "") {
           }
         } else {
           for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);    
-            int ip = h_d_lid2idx(idof,1);    
-            int jp = h_d_lid2idx(idof,2);    
+            int ie = h_d_lid2idx(idof,0);
+            int ip = h_d_lid2idx(idof,1);
+            int jp = h_d_lid2idx(idof,2);
             for (int iq=0; iq<2; ++iq) {
               for (int ilev=0; ilev<NVL; ++ilev) {
                 if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {

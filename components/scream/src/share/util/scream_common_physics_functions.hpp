@@ -25,6 +25,18 @@ struct PhysicsFunctions
   // ---------------------------------------------------------------- //
 
   //-----------------------------------------------------------------------------------------------//
+  // Determines the density given the definition of pseudo_density passed by the dycore
+  //   rho = pseudo_density/dz/g
+  // where,
+  //   pseudo_density is the pressure level thickness given a shallow atmosphere, [Pa]
+  //   dz             is the geopotential thickness of the layer, [m]
+  //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_density(const ScalarT& pseudo_density, const ScalarT& dz);
+
+  //-----------------------------------------------------------------------------------------------//
   // Applies Exners Function which follows:
   //   Exner = (P/P0)^(Rd/Cp),
   // where,
@@ -107,6 +119,30 @@ struct PhysicsFunctions
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
+  //   drymmr = wetmmr / (1 - qv)
+  // where
+  //   drymmr         is the dry mass mixing ratio of a species
+  //   wetmmr         is the wet mass mixing ratio of a species
+  //   qv             is specific humidity of water vapor
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the wet mass mixing ratio given the dry mass mixing ratio:
+  //   wetmmr = drymmr * (1 - qv)
+  // where
+  //   wetmmr         is the wet mass mixing ratio of a species
+  //   drymmr         is the dry mass mixing ratio of a species
+  //   qv             is specific humidity of water vapor
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -192,12 +228,18 @@ struct PhysicsFunctions
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
 
+  template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_density (const MemberType& team,
+                                 const InputProviderP& pseudo_density,
+                                 const InputProviderZ& dz,
+                                 const view_1d<ScalarT>& density);
+
   template<typename ScalarT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void exner_function (const MemberType& team,
                               const InputProviderP& pressure,
                               const view_1d<ScalarT>& exner);
-
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
@@ -235,6 +277,20 @@ struct PhysicsFunctions
                              const InputProviderZ& z,
                              const Real surf_geopotential,
                              const view_1d<ScalarT>& dse);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_wetmmr_from_drymmr (const MemberType& team,
+                             const InputProviderX& drymmr,
+                             const InputProviderQ& qv,
+                             const view_1d<ScalarT>& wetmmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_drymmr_from_wetmmr (const MemberType& team,
+                             const InputProviderX& wetmmr,
+                             const InputProviderQ& qv,
+                             const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
@@ -289,6 +345,6 @@ struct PhysicsFunctions
 
 // We don't do ETI, since we don't know some of the concrete types.
 // E.g., we don't know InputProvider, or ScalarT (although we could
-// ETI the "common" cases, where the provider is a view_1d, and 
+// ETI the "common" cases, where the provider is a view_1d, and
 // Scalar=Real or Scalar=Pack<Real,SCREAM_PACK_SIZE>).
 # include "scream_common_physics_functions_impl.hpp"

@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -17,12 +18,15 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     IceSupersatConservationData f90_data[max_pack_size];
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
+      d.dt = f90_data[0].dt; // hold this fixed, it is not packed data
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -55,7 +59,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
         qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
       }
 
-      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(0).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
+      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

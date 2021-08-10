@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -17,7 +18,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
 
   static void run_property()
   {
-    const auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
+    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static constexpr Int shcol = 5;
     static constexpr Int nlev = 4;
     static constexpr Int nlevi = nlev+1;
@@ -79,6 +80,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     PblintdCheckPblhData f90_data[] = {
       PblintdCheckPblhData(36,  72, 73),
       PblintdCheckPblhData(72,  72, 73),
@@ -89,7 +92,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize({ {d.check, {1, 1}} });
+      d.randomize(engine, { {d.check, {1, 1}} });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

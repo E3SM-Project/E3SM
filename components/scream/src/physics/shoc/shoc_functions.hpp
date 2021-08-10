@@ -101,8 +101,8 @@ struct Functions
     view_1d<const Scalar> vw_sfc;
     // Surface flux for tracers [varies]
     view_2d<const Spack>  wtracer_sfc;
-    // Exner function [-]
-    view_2d<const Spack>  exner;
+    // Inverse of the exner function [-]
+    view_2d<const Spack>  inv_exner;
     // Host model surface geopotential height
     view_1d<const Scalar> phis;
   };
@@ -219,7 +219,7 @@ struct Functions
     const Int& nlev,
     const uview_1d<const Spack>& thlm,
     const uview_1d<const Spack>& shoc_ql,
-    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& zt_grid,
     const Scalar& phis,
     const uview_1d<Spack>& host_dse);
@@ -577,7 +577,7 @@ struct Functions
     const Scalar&                uw_sfc,
     const Scalar&                vw_sfc,
     const uview_1d<const Spack>& wtracer_sfc,
-    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& inv_exner,
     const Scalar&                phis,
     // Local Workspace
     const Workspace&             workspace,

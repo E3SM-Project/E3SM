@@ -2694,9 +2694,6 @@
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
 			description="meridional gradient of the coriolis parameter"
 		/>
-		<var name="c_Visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
-			description="baroclinic wave speed from Visbeck parameterization"
-		/>
 		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
 			description="eddy length scale in Visbeck 1997 closure"
 		/>

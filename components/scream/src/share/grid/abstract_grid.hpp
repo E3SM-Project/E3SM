@@ -39,7 +39,7 @@ public:
   using gid_type          = int;           // TODO: use int64_t? int? template class on gid_type?
   using device_type       = DefaultDevice; // TODO: template class on device type
   using kokkos_types      = KokkosTypes<device_type>;
-  using geo_view_type     = kokkos_types::view_1d<double>;
+  using geo_view_type     = kokkos_types::view_1d<Real>;
   using geo_view_map_type = std::map<std::string,geo_view_type>;
 
   // The list of all dofs' gids

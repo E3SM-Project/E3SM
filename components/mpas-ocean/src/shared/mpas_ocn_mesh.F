@@ -125,6 +125,9 @@ module ocn_mesh
       meshDensity, &! density of mesh
       angleEdge        ! angle the edge normal makes with local east
 
+   real(kind=RKIND), public, dimension(:), allocatable :: &
+      invAreaCell   ! inverse of area of each cell
+
    ! Multiplicative masks and vectors for various conditions
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
       edgeMask, &! mask to denote active edges    with depth
@@ -498,7 +501,8 @@ contains
             boundaryVertex(nVertLevels, nVerticesAll+1), &
             edgeSignOnCell(maxEdges, nCellsAll+1), &
             edgeSignOnVertex(maxEdges, nVerticesAll+1), &
-            highOrderAdvectionMask(nVertLevels, nEdgesAll+1))
+            highOrderAdvectionMask(nVertLevels, nEdgesAll+1), &
+            invAreaCell(nCellsAll+1))
 
       !-----------------------------------------------------------------
       ! Now that all pointers are set and mesh variables allocated
@@ -560,6 +564,12 @@ contains
       ! Compute area weighting for some interpolation
       call ocn_meshAreaWeights()
       areaCell(nCellsAll+1) = -1.0e34_RKIND
+
+      ! Compute the inverse of areaCell
+      do n = 1, nCellsAll
+         invAreaCell(n) = 1.0_RKIND / areaCell(n)
+      end do
+      invAreaCell(nCellsAll+1) = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! Copy mesh data to accelerator if needed.
@@ -628,6 +638,7 @@ contains
          !$acc                   dcEdge,                   &
          !$acc                   dvEdge,                   &
          !$acc                   areaCell,                 &
+         !$acc                   invAreaCell,              &
          !$acc                   areaTriangle,             &
          !$acc                   bottomDepth,              &
          !$acc                   refBottomDepth,           &
@@ -762,6 +773,7 @@ contains
       !$acc                  dcEdge,            &
       !$acc                  dvEdge,            &
       !$acc                  areaCell,          &
+      !$acc                  invAreaCell,       &
       !$acc                  areaTriangle,      &
       !$acc                  bottomDepth,       &
       !$acc                  refBottomDepth,    &
@@ -889,7 +901,8 @@ contains
                   edgeSignOnCell, &
                   edgeSignOnVertex, &
                   highOrderAdvectionMask, &
-                  edgeAreaFractionOfCell)
+                  edgeAreaFractionOfCell, &
+                  invAreaCell)
 
 !-------------------------------------------------------------------------------
 
@@ -1210,6 +1223,7 @@ contains
       !$acc               dcEdge,                   &
       !$acc               dvEdge,                   &
       !$acc               areaCell,                 &
+      !$acc               invAreaCell,              &
       !$acc               areaTriangle,             &
       !$acc               bottomDepth,              &
       !$acc               refBottomDepth,           &

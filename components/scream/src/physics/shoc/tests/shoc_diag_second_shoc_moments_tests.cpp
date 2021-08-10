@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -263,6 +264,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     DiagSecondShocMomentsData f90_data[] = {
       DiagSecondShocMomentsData(36,  72, 73),
       DiagSecondShocMomentsData(72,  72, 73),
@@ -272,7 +275,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
 
     // Generate random input data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

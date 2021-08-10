@@ -6,6 +6,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -94,6 +95,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     PblintdCldcheckData cldcheck_data_f90[] = {
       //                      shcol, nlev, nlevi
       PblintdCldcheckData(36,  128, 129),
@@ -103,7 +106,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
     };
 
     for (auto& d : cldcheck_data_f90) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     PblintdCldcheckData cldcheck_data_cxx[] = {

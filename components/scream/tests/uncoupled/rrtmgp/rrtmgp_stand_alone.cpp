@@ -2,21 +2,26 @@
 #include <cmath>
 #include <catch2/catch.hpp>
 
+// Boiler plate, needed for all runs
 #include "control/atmosphere_driver.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat.hpp"
+// Boiler plate, needed for when physics is part of the run
+#include "physics/register_physics.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
+// EKAT headers
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+// Other rrtmgp specific code needed specifically for this test
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "Intrinsics.h"
 #include "rrtmgp_test_utils.hpp"
+// Other helper headers needed for the specifics of this test
+#include "physics/share/physics_constants.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 /*
@@ -64,7 +69,7 @@ namespace scream {
         // Create a MPI communicator
         ekat::Comm atm_comm (MPI_COMM_WORLD);
 
-        // Need to register products in the factory *before* we create any atm process or grids manager.,
+        // Need to register products in the factory *before* we create any atm process or grids manager.
         auto& proc_factory = AtmosphereProcessFactory::instance();
         auto& gm_factory = GridsManagerFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
@@ -107,8 +112,10 @@ namespace scream {
         auto p_del = real2d("p_del", ncol, nlay);
         auto p_lev = real2d("p_lev", ncol, nlay+1);
         auto t_lev = real2d("t_lev", ncol, nlay+1);
-        auto sfc_alb_dir = real2d("sfc_alb_dir", ncol, nswbands);
-        auto sfc_alb_dif = real2d("sfc_alb_dif", ncol, nswbands);
+        auto sfc_alb_dir_vis = real1d("sfc_alb_dir_vis", ncol);
+        auto sfc_alb_dir_nir = real1d("sfc_alb_dir_nir", ncol);
+        auto sfc_alb_dif_vis = real1d("sfc_alb_dif_vis", ncol);
+        auto sfc_alb_dif_nir = real1d("sfc_alb_dif_nir", ncol);
         auto lwp = real2d("lwp", ncol, nlay);
         auto iwp = real2d("iwp", ncol, nlay);
         auto rel = real2d("rel", ncol, nlay);
@@ -130,7 +137,9 @@ namespace scream {
         // Setup dummy problem
         rrtmgpTest::dummy_atmos(
             inputfile, ncol, p_lay, t_lay,
-            sfc_alb_dir, sfc_alb_dif, mu0,
+            sfc_alb_dir_vis, sfc_alb_dir_nir,
+            sfc_alb_dif_vis, sfc_alb_dif_nir,
+            mu0,
             lwp, iwp, rel, rei, cld
         );
         //
@@ -163,32 +172,33 @@ namespace scream {
         // copies is necessary since the yakl::Array take in data arranged with ncol
         // as the fastest index, but the field manager expects the 2nd dimension as
         // the fastest index.
-        auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
-        auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
-        auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
-        auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
-        auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
-        auto d_qc = field_mgr.get_field("qc").get_reshaped_view<Real**>();
-        auto d_qi = field_mgr.get_field("qi").get_reshaped_view<Real**>();
-        auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
-        auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
-        auto d_cld = field_mgr.get_field("cldfrac_tot").get_reshaped_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
+        auto d_pmid = field_mgr.get_field("p_mid").get_view<Real**>();
+        auto d_tmid = field_mgr.get_field("T_mid").get_view<Real**>();
+        auto d_pint = field_mgr.get_field("p_int").get_view<Real**>();
+        auto d_pdel = field_mgr.get_field("pseudo_density").get_view<Real**>();
+        auto d_tint = field_mgr.get_field("t_int").get_view<Real**>();
+        auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_view<Real*>();
+        auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
+        auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
+        auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
+        auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
+        auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
+        auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
+        auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
+        auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
+        auto d_mu0 = field_mgr.get_field("cos_zenith").get_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
 
-        auto d_qv  = field_mgr.get_field("qv").get_reshaped_view<Real**>();
-        auto d_co2 = field_mgr.get_field("co2").get_reshaped_view<Real**>();
-        auto d_o3  = field_mgr.get_field("o3").get_reshaped_view<Real**>();
-        auto d_n2o = field_mgr.get_field("n2o").get_reshaped_view<Real**>();
-        auto d_co  = field_mgr.get_field("co").get_reshaped_view<Real**>();
-        auto d_ch4 = field_mgr.get_field("ch4").get_reshaped_view<Real**>();
-        auto d_o2  = field_mgr.get_field("o2").get_reshaped_view<Real**>();
-        auto d_n2  = field_mgr.get_field("n2").get_reshaped_view<Real**>();
+        auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
+        auto d_co2 = field_mgr.get_field("co2").get_view<Real**>();
+        auto d_o3  = field_mgr.get_field("o3").get_view<Real**>();
+        auto d_n2o = field_mgr.get_field("n2o").get_view<Real**>();
+        auto d_co  = field_mgr.get_field("co").get_view<Real**>();
+        auto d_ch4 = field_mgr.get_field("ch4").get_view<Real**>();
+        auto d_o2  = field_mgr.get_field("o2").get_view<Real**>();
+        auto d_n2  = field_mgr.get_field("n2").get_view<Real**>();
 
         // Gather molecular weights of all the active gases in the test for conversion
         // to mass-mixing-ratio.
-        auto h2o_mol = PC::get_gas_mol_weight("h2o");
         auto co2_mol = PC::get_gas_mol_weight("co2");
         auto o3_mol  = PC::get_gas_mol_weight("o3");
         auto n2o_mol = PC::get_gas_mol_weight("n2o");
@@ -202,6 +212,10 @@ namespace scream {
             const int i = team.league_rank();
 
             d_mu0(i) = mu0(i+1);
+            d_sfc_alb_dir_vis(i) = sfc_alb_dir_vis(i+1);
+            d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);
+            d_sfc_alb_dif_vis(i) = sfc_alb_dif_vis(i+1);
+            d_sfc_alb_dif_nir(i) = sfc_alb_dif_nir(i+1);
             Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
               d_pmid(i,k) = p_lay(i+1,k+1);
               d_tmid(i,k) = t_lay(i+1,k+1);
@@ -228,11 +242,6 @@ namespace scream {
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);
             d_tint(i,nlay) = t_lev(i+1,nlay+1);
-
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands), [&] (const int& k) {
-              d_sfc_alb_dir(i,k) = sfc_alb_dir(i+1,k+1);
-              d_sfc_alb_dif(i,k) = sfc_alb_dif(i+1,k+1);
-            });
           });
         }
         Kokkos::fence();
@@ -242,11 +251,11 @@ namespace scream {
 
         // Check values; The correct values have been stored in the field manager, we need to
         // copy back to YAKL::Array.
-        auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_reshaped_view<Real**>();
-        auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_reshaped_view<Real**>();
-        auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_reshaped_view<Real**>();
+        auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**>();
+        auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_view<Real**>();
+        auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_view<Real**>();
+        auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_view<Real**>();
+        auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_view<Real**>();
         auto sw_flux_up_test = real2d("sw_flux_up_test", ncol, nlay+1);
         auto sw_flux_dn_test = real2d("sw_flux_dn_test", ncol, nlay+1);
         auto sw_flux_dn_dir_test = real2d("sw_flux_dn_dir_test",  ncol, nlay+1);
@@ -287,8 +296,10 @@ namespace scream {
         p_del.deallocate();
         p_lev.deallocate();
         t_lev.deallocate();
-        sfc_alb_dir.deallocate();
-        sfc_alb_dif.deallocate();
+        sfc_alb_dir_vis.deallocate();
+        sfc_alb_dir_nir.deallocate();
+        sfc_alb_dif_vis.deallocate();
+        sfc_alb_dif_nir.deallocate();
         lwp.deallocate();
         iwp.deallocate();
         rel.deallocate();
