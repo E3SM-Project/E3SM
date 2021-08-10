@@ -1950,6 +1950,13 @@ CONTAINS
       
       ! CALIPSO SIMULATOR OUTPUTS
       if (llidar_sim) then
+         ! Set missing values to 0 (clear air) to avoid issues with check_acccum (likely levels below sea level)
+         call replace_values2d(cospOUT%calipso_lidarcld     (:ncol,:nht_cosp)  , R_UNDEF, 0._r8)
+         call replace_values3d(cospOUT%calipso_cfad_sr      (:ncol,:,:)        , R_UNDEF, 0._r8)
+         call replace_values2d(cospOUT%parasolGrid_refl     (:ncol,:nsza_cosp) , R_UNDEF, 0._r8)
+         call replace_values3d(cospOUT%calipso_lidarcldphase(:ncol,:nht_cosp,:), R_UNDEF, 0._r8)
+         call replace_values3d(cospOUT%calipso_lidarcldtmp  (:ncol,:nht_cosp,:), R_UNDEF, 0._r8)
+         ! Send outputs to history buffer
          call outfld('CLDLOW_CAL'    , cospOUT%calipso_cldlayer(1:ncol,1)       , ncol, lchnk)
          call outfld('CLDMED_CAL'    , cospOUT%calipso_cldlayer(1:ncol,2)       , ncol, lchnk)
          call outfld('CLDHGH_CAL'    , cospOUT%calipso_cldlayer(1:ncol,3)       , ncol, lchnk)
@@ -1966,45 +1973,21 @@ CONTAINS
          call outfld('CLDLOW_CAL_ICE', cospOUT%calipso_cldlayerphase(1:ncol,1,1), ncol, lchnk)
          call outfld('CLDLOW_CAL_LIQ', cospOUT%calipso_cldlayerphase(1:ncol,1,2), ncol, lchnk)
          call outfld('CLDLOW_CAL_UN' , cospOUT%calipso_cldlayerphase(1:ncol,1,3), ncol, lchnk)
-
-         where (cospOUT%calipso_lidarcld(:ncol,:nht_cosp) .eq. R_UNDEF)
-            !! setting missing values to 0 (clear air).  
-            !! I'm not sure why COSP produces a mix of R_UNDEF and realvalue in the nht_cosp dimension.
-            cospOUT%calipso_lidarcld(:ncol,:nht_cosp) = 0.0_r8
-         end where
-         call outfld('CLD_CAL',    cospOUT%calipso_lidarcld(1:ncol,1:nht_cosp), ncol,lchnk)  !! fails check_accum if 'A'
-         call outfld('MOL532_CAL', cospOUT%calipso_beta_mol(1:ncol,1:nhtml_cosp), ncol, lchnk)
-         
-         ! setting missing values to 0 (clear air), likely below sea level
-         where (cospOUT%calipso_cfad_sr(1:ncol,:,:) .eq. R_UNDEF)
-            cospOUT%calipso_cfad_sr(1:ncol,:,:) = 0.0_r8
-         end where
-         call outfld('CFAD_SR532_CAL',cospOUT%calipso_cfad_sr(1:ncol,1:nsr_cosp,1:nht_cosp),ncol,lchnk)
-         where (cospOUT%parasolGrid_refl(:ncol,:nsza_cosp) .eq. R_UNDEF)
-            cospOUT%parasolGrid_refl(:ncol,:nsza_cosp) = 0
-         end where
-         call outfld('RFL_PARASOL',cospOUT%parasolGrid_refl(1:ncol,1:nsza_cosp), ncol, lchnk)
-
-         ! Set missing values to 0 (clear air) to avoid issues with check_acccum (likely levels below sea level)
-         where (cospOUT%calipso_lidarcldphase(:ncol,:nht_cosp,:) .eq. R_UNDEF)
-            cospOUT%calipso_lidarcldphase(:ncol,:nht_cosp,:) = 0.0_r8
-         end where
-         where (cospOUT%calipso_lidarcldtmp(:ncol,:nht_cosp,:) .eq. R_UNDEF)
-            cospOUT%calipso_lidarcldtmp(:ncol,:nht_cosp,:) = 0.0_r8
-         end where
-         call outfld('CLD_CAL_ICE'  , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,1),ncol,lchnk)
-         call outfld('CLD_CAL_LIQ'  , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,2),ncol,lchnk)
-         call outfld('CLD_CAL_UN'   , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,3),ncol,lchnk)
-         call outfld('CLD_CAL_TMP'  , cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,1),ncol,lchnk)
-         call outfld('CLD_CAL_TMPUN', cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,4)    ,ncol,lchnk)
+         call outfld('CLD_CAL'       , cospOUT%calipso_lidarcld     (1:ncol,1:nht_cosp)  , ncol,lchnk)
+         call outfld('MOL532_CAL'    , cospOUT%calipso_beta_mol     (1:ncol,1:nhtml_cosp), ncol, lchnk)
+         call outfld('CFAD_SR532_CAL', cospOUT%calipso_cfad_sr      (1:ncol,1:nsr_cosp,1:nht_cosp),ncol,lchnk)
+         call outfld('RFL_PARASOL'   , cospOUT%parasolGrid_refl     (1:ncol,1:nsza_cosp) , ncol, lchnk)
+         call outfld('CLD_CAL_ICE'   , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,1), ncol, lchnk)
+         call outfld('CLD_CAL_LIQ'   , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,2), ncol, lchnk)
+         call outfld('CLD_CAL_UN'    , cospOUT%calipso_lidarcldphase(1:ncol,1:nht_cosp,3), ncol, lchnk)
+         call outfld('CLD_CAL_TMP'   , cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,1), ncol, lchnk)
+         call outfld('CLD_CAL_TMPUN' , cospOUT%calipso_lidarcldtmp  (1:ncol,1:nht_cosp,4), ncol, lchnk)
       end if
       
       ! RADAR SIMULATOR OUTPUTS
       if (lradar_sim) then
-         where (cfad_dbze94(:ncol,:,:) .eq. R_UNDEF)
-            !! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue 
-            cfad_dbze94(:ncol,:,:) = 0.0_r8
-         end where
+         ! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue 
+         call replace_values3d(cfad_dbze94(:ncol,:,:), R_UNDEF, 0._r8)
          call outfld('CFAD_DBZE94_CS',cfad_dbze94,   pcols, lchnk)
          call outfld('CLDTOT_CALCS',  cldtot_calcs,     pcols, lchnk)
          call outfld('CLDTOT_CS',     cldtot_cs,        pcols, lchnk)
@@ -2148,6 +2131,23 @@ CONTAINS
       end if
    end subroutine cosp_write_outputs
 #endif
+
+   subroutine replace_values2d(arr, v1, v2)
+      real(r8), intent(inout) :: arr(:,:)
+      real(r8), intent(in) :: v1
+      real(r8), intent(in) :: v2
+      where (arr(:,:) == v1)
+         arr(:,:) = v2
+      end where
+   end subroutine
+   subroutine replace_values3d(arr, v1, v2)
+      real(r8), intent(inout) :: arr(:,:,:)
+      real(r8), intent(in) :: v1
+      real(r8), intent(in) :: v2
+      where (arr(:,:,:) == v1)
+         arr(:,:,:) = v2
+      end where
+   end subroutine
 
 
 #ifdef USE_COSP
