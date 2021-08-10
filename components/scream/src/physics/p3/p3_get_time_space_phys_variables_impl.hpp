@@ -24,7 +24,8 @@ void Functions<S,D>
   constexpr Scalar RV     = C::RV;
   constexpr Scalar INV_CP = C::INV_CP;
   constexpr Scalar tval1  = 253.15;
-  constexpr Scalar tval2  = 268.15;
+  constexpr Scalar tval2  = 273.15;
+  constexpr Scalar dtval  = 20; //this is tval2-tval1, but specifying here as int to be BFB with F90.
 
   const auto dum = 1/(RV*square(T_atm));
   dqsdt.set(context, latent_heat_vapor*qv_sat_l*dum);
@@ -37,9 +38,9 @@ void Functions<S,D>
   const auto t_lt_tval1 = T_atm < tval1;
   const auto t_lt_tval2 = T_atm < tval2;
 
-  eii.set(t_lt_tval1 && context,sp(0.1));
-  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.1)+(T_atm-sp(253.15))/15*sp(0.9));
-  eii.set(!t_lt_tval1 && !t_lt_tval2 && context, 1);
+  eii.set(t_lt_tval1 && context,sp(0.001));
+  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.001)+(T_atm-sp(tval1))*(sp(0.3) - 0.001)/dtval);
+  eii.set(!t_lt_tval1 && !t_lt_tval2 && context, sp(0.3) );
 }
 
 } // namespace p3
