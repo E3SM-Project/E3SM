@@ -123,7 +123,7 @@ TEST_CASE("restart","io")
   // reinit fields
   Initialize_field_manager(*field_manager,num_lcols,num_levs);
   // grab restart data
-  input_type ins_input(io_comm,res_params,field_manager,grid_man);
+  input_type ins_input(io_comm,res_params,field_manager);
   ins_input.pull_input();
   // Note, that only field_1, field_2, and field_4 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
@@ -205,7 +205,7 @@ TEST_CASE("restart","io")
   // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
   // the restart history file, but was re-initialized and run for the last 5 steps.
   auto avg_params = get_in_params("Final",io_comm);
-  input_type avg_input(io_comm,avg_params,field_manager,grid_man);
+  input_type avg_input(io_comm,avg_params,field_manager);
   avg_input.pull_input();
   field1.sync_to_host();
   field2.sync_to_host();

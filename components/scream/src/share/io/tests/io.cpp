@@ -119,7 +119,7 @@ TEST_CASE("input_output_basic","io")
   auto max_params = get_in_params("Max",io_comm);
   Real tol = pow(10,-6);
   // Check instant output
-  input_type ins_input(io_comm,ins_params,field_manager,grid_man);
+  input_type ins_input(io_comm,ins_params,field_manager);
   ins_input.pull_input();
   auto f1 = field_manager->get_field("field_1");
   auto f2 = field_manager->get_field("field_2");
@@ -146,7 +146,7 @@ TEST_CASE("input_output_basic","io")
   }
 
   // Check average output
-  input_type avg_input(io_comm,avg_params,field_manager,grid_man);
+  input_type avg_input(io_comm,avg_params,field_manager);
   avg_input.pull_input();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -167,7 +167,7 @@ TEST_CASE("input_output_basic","io")
 
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-  input_type max_input(io_comm,max_params,field_manager,grid_man);
+  input_type max_input(io_comm,max_params,field_manager);
   max_input.pull_input();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -183,7 +183,7 @@ TEST_CASE("input_output_basic","io")
   }
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
-  input_type min_input(io_comm,min_params,field_manager,grid_man);
+  input_type min_input(io_comm,min_params,field_manager);
   min_input.pull_input();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -208,7 +208,7 @@ TEST_CASE("input_output_basic","io")
   std::vector<std::string> var_dims = {"lev","ncol"};
   bool has_columns = true;
   std::vector<int> dim_lens = {num_lcols,num_levs};
-  input_type loc_input(io_comm,"Physics",grid_man);
+  input_type loc_input(io_comm,grid);
   loc_input.pull_input<Real>(filename, loc_field_3.label(), var_dims, has_columns, dim_lens, loc_field_3.data());
   loc_input.pull_input<Pack>(filename, loc_field_4.label(), var_dims, has_columns, dim_lens, loc_field_4.data());
   for (int ii=0;ii<num_lcols;++ii) {

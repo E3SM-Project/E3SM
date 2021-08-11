@@ -6,6 +6,41 @@
 namespace scream
 {
 
+AtmosphereInput::
+AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
+                 const std::shared_ptr<const FieldManager<Real>>& field_mgr)
+ : m_params    (params)
+ , m_comm      (comm)
+ , m_field_mgr (field_mgr)
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (m_field_mgr, "Error! Invalid field manager pointer.\n");
+
+  m_grid = m_field_mgr->get_grid();
+  EKAT_REQUIRE_MSG(m_grid->name()=="Physics" || m_grid->name()=="Physics GLL",
+      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+
+  EKAT_REQUIRE_MSG(m_comm.size()<=m_grid->get_num_global_dofs(),
+      "Error! PIO interface requires the size of the IO MPI group to be no greater\n"
+      "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
+}
+
+AtmosphereInput::
+AtmosphereInput (const ekat::Comm& comm,
+                 const std::shared_ptr<const AbstractGrid>& grid)
+ : m_comm (comm)
+ , m_grid (grid)
+{
+  EKAT_REQUIRE_MSG (m_grid, "Error! Invalid grid pointer.\n");
+
+  EKAT_REQUIRE_MSG(m_grid->name()=="Physics" || m_grid->name()=="Physics GLL",
+      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+
+  EKAT_REQUIRE_MSG(m_comm.size()<=m_grid->get_num_global_dofs(),
+      "Error! PIO interface requires the size of the IO MPI group to be no greater\n"
+      "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
+}
+
 // ====================== IMPLEMENTATION ===================== //
 /*
  *  pull_input calls the three typical init, run and finalize routines in order
@@ -21,10 +56,6 @@ pull_input(const std::string& filename, const std::string& var_name,
            const int padding, Real* data)
 {
   using namespace scream::scorpio;
-  
-  auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
-  m_gids_host = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(m_gids_host,gids_dev);
 
   // Open the file in PIO
   register_infile(filename);
@@ -117,27 +148,15 @@ void AtmosphereInput::init()
   m_filename = m_params.get<std::string>("FILENAME");
 
   // Parse the parameters that controls this input instance.
-  m_grid_name = m_params.get<std::string>("GRID");
+  if (m_params.isParameter("GRID")) {
+    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==m_grid->name(),
+        "Error! Input grid name in the parameter list does not match the name of the input grid.\n");
+  }
 
   // If this is RHIST type make sure its noted
   if (m_params.isParameter("RHIST")) {
     m_is_rhist = m_params.get<bool>("RHIST");
   }
-
-  // Check setup against information from grid manager:
-  auto grid = m_grid_mgr->get_grid(m_grid_name);
-  EKAT_REQUIRE_MSG(grid->get_2d_scalar_layout().tags().front()==COL,
-      "Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
-
-  auto gids_dev = grid->get_dofs_gids();
-  m_gids_host = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(m_gids_host,gids_dev); 
-
-  // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
-  int total_dofs;
-  int local_dofs = m_gids_host.size();
-  MPI_Allreduce(&local_dofs, &total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
-  EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
   // Create map of fields in this input with the field_identifier in the field manager.
   m_fields_names = m_params.get<std::vector<std::string>>("FIELDS");
@@ -321,7 +340,7 @@ std::vector<Int> AtmosphereInput::get_var_dof_offsets(const int dof_len, const b
   // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
   // correspond to the 3rd,4th,5th, and 6th dofs globally.
   if (has_cols) {
-    const int num_cols = m_gids_host.size();
+    const int num_cols = m_grid->get_num_local_dofs();
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.

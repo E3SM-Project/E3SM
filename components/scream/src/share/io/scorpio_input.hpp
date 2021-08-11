@@ -80,31 +80,15 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using dofs_list_type = AbstractGrid::dofs_list_type;
   template<int N>
   using view_ND_host = typename KokkosTypes<DefaultDevice>::template view_ND<Real,N>::HostMirror;
   using view_1d_host = view_ND_host<1>;
 
   // --- Constructor(s) & Destructor --- //
   AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
-                   const std::shared_ptr<const GridsManager>& grid_mgr)
-    : m_params    (params)
-    , m_comm      (comm)
-    , m_field_mgr (field_mgr)
-    , m_grid_mgr  (grid_mgr)
-  {
-    // Nothing to do here
-  }
-
-  AtmosphereInput (const ekat::Comm& comm, const std:: string grid_name,
-                   const std::shared_ptr<const GridsManager>& grid_mgr)
-    : m_comm      (comm)
-    , m_grid_mgr  (grid_mgr)
-    , m_grid_name (grid_name)
-  {
-    // Nothing to do here
-  }
+                   const std::shared_ptr<const FieldManager<Real>>& field_mgr);
+  AtmosphereInput (const ekat::Comm& comm,
+                   const std::shared_ptr<const AbstractGrid>& grid);
 
   virtual ~AtmosphereInput () = default;
 
@@ -157,15 +141,13 @@ protected:
   ekat::Comm          m_comm;
 
   std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
-  std::shared_ptr<const GridsManager>         m_grid_mgr;
+  std::shared_ptr<const AbstractGrid>         m_grid;
   
   std::string m_filename;
   std::string m_avg_type;
-  std::string m_grid_name;
 
   std::vector<std::string>               m_fields_names;
   std::map<std::string,Int>              m_dofs_sizes;
-  typename dofs_list_type::HostMirror    m_gids_host;
 
   bool m_is_rhist = false;
 

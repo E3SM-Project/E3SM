@@ -126,14 +126,14 @@ protected:
  * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
 inline void OutputManager::new_output(const ekat::ParameterList& params)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_grids_manager,m_runtype_restart);
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_runtype_restart);
   output_instance->init();
   m_output_streams.push_back(output_instance);
 }
 /* --------------------------------------------------------------------- */
 inline void OutputManager::new_output(const ekat::ParameterList& params, const bool runtype_restart)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_grids_manager,runtype_restart);
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,runtype_restart);
   output_instance->init();
   m_output_streams.push_back(output_instance);
 }

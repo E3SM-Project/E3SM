@@ -10,16 +10,26 @@ namespace scream
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
-                  const std::shared_ptr<const GridsManager>& grid_mgr,
                   const bool read_restart_hist)
  : m_comm      (comm)
  , m_params    (params)
  , m_field_mgr (field_mgr)
- , m_grid_mgr  (grid_mgr)
  , m_read_restart_hist (read_restart_hist)
 {
   EKAT_REQUIRE_MSG (m_field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG (m_grid_mgr,  "Error! Invalid grid manager pointer.\n");
+
+  m_grid = m_field_mgr->get_grid();
+  EKAT_REQUIRE_MSG(m_grid->name()=="Physics" || m_grid->name()=="Physics GLL",
+      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+
+  EKAT_REQUIRE_MSG(m_comm.size()<=m_grid->get_num_global_dofs(),
+      "Error! PIO interface requires the size of the IO MPI group to be no greater\n"
+      "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
+
+  if (m_params.isParameter("GRID")) {
+    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==m_grid->name(),
+        "Error! Input grid name in the parameter list does not match the name of the input grid.\n");
+  }
 }
 
 /* ---------------------------------------------------------- */
@@ -28,7 +38,6 @@ void AtmosphereOutput::init()
   // Parse the parameters that controls this output instance.
   // See the comments at the top for more details.
   m_casename        = m_params.get<std::string>("FILENAME");
-  m_grid_name       = m_params.get<std::string>("GRID","Physics");  // optional, default to Physics.
 
   const auto& freq_params = m_params.sublist("FREQUENCY");
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
@@ -47,16 +56,7 @@ void AtmosphereOutput::init()
       "Error! Unsupported averaging type (" + m_avg_type + ").\n"
       "       Possible choices: Instant, Average, Max, Min.\n");
 
-  // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics" || m_grid_name=="Physics GLL",
-      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
 
-  // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
-  // int total_dofs;
-  m_total_dofs = m_grid_mgr->get_grid(m_grid_name)->get_num_global_dofs();
-  EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,
-      "Error! PIO interface requires the size of the IO MPI group to be no greater\n"
-      "       than the global number of columns. Consider decreasing the size of IO MPI group.\n");
 
   // Create map of fields in this output with the field_identifier in the field manager.
   m_fields = m_params.get<std::vector<std::string>>("FIELDS");
@@ -96,7 +96,7 @@ void AtmosphereOutput::init()
     res_params.set("FIELDS",m_fields);
 
     using input_type     = AtmosphereInput;
-    input_type rhist_in(m_comm,res_params,m_field_mgr,m_grid_mgr);
+    input_type rhist_in(m_comm,res_params,m_field_mgr);
     rhist_in.init();
     for (auto name : m_fields)
     {
@@ -340,7 +340,9 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     if (tag_loc == m_dims.end()) {
       Int tag_len = 0;
       if(e2str(tags[ii]) == "COL") {
-        tag_len = m_total_dofs;  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
+        // Note: This is because only cols are decomposed over mpi ranks. 
+        //       In this case, we need the GLOBAL number of cols.
+        tag_len = m_grid->get_num_global_dofs();
       } else {
         tag_len = fid.get_layout().dim(ii);
       }
@@ -417,9 +419,9 @@ std::vector<Int> AtmosphereOutput::get_var_dof_offsets(const int dof_len, const 
   // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
   // correspond to the 3rd,4th,5th, and 6th dofs globally.
   if (has_cols) {
-    const int num_cols = m_grid_mgr->get_grid(m_grid_name)->get_num_local_dofs();
+    const int num_cols = m_grid->get_num_local_dofs();
 
-    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     Int col_size = dof_len/num_cols;
 

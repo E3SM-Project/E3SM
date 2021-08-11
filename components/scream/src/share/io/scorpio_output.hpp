@@ -77,7 +77,7 @@ namespace scream
 template<typename T>
 class FieldManager;
 
-class GridsManager;
+class AbstractGrid;
 namespace util { class TimeStamp; }
 
 class AtmosphereOutput 
@@ -91,7 +91,6 @@ public:
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
                    const std::shared_ptr<const FieldManager<Real>>& field_mgr,
-                   const std::shared_ptr<const GridsManager>& grid_mgr,
                    const bool read_restart_hist = false);
 
   // Main Functions
@@ -119,22 +118,21 @@ protected:
   ekat::Comm                                  m_comm;
   ekat::ParameterList                         m_params;
   std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
-  std::shared_ptr<const GridsManager>         m_grid_mgr;
+  std::shared_ptr<const AbstractGrid>         m_grid;
   
   // Main output control data
   std::string m_casename;
   std::string m_avg_type;
-  std::string m_grid_name;
   std::string m_filename;
   // Frequency of output control
   Int m_out_max_steps;
   Int m_out_frequency;
   std::string m_out_units;
-  // How individual columns are distributed across MPI Ranks
-  Int m_total_dofs;
+
   // Restart history control
   Int m_restart_hist_n;
   std::string m_restart_hist_option;
+
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
