@@ -27,6 +27,25 @@ void FunctorsBuffersManager:: allocate () {
   Errors::runtime_check(!m_allocated, "Error! Cannot call 'allocate' more than once.\n");
 
   m_buffer = ExecViewManaged<Real*>("",m_size);
+
+  generate_random_data();
+
+  m_allocated = true;
+}
+
+void FunctorsBuffersManager:: allocate (Real* data, const int new_size) {
+  Errors::runtime_check(!m_allocated, "Error! Cannot call 'allocate' more than once.\n");
+
+  m_size   = new_size;
+  m_buffer = ExecViewManaged<Real*>(data, m_size);
+
+  generate_random_data();
+
+  m_allocated = true;
+}
+
+void FunctorsBuffersManager::generate_random_data ()
+{
 #ifdef HOMMEXX_BFB_TESTING
   // Here's the catch: when malloc allocates memory, it *may* get a fresh
   // new page from the OS. If that happens, the OS will zero-out the provided
@@ -42,7 +61,6 @@ void FunctorsBuffersManager:: allocate () {
   rngalg engine(rd());
   genRandArray(m_buffer,engine,rpdf(0.1,10.0));
 #endif
-  m_allocated = true;
 }
 
 } // namespace Homme

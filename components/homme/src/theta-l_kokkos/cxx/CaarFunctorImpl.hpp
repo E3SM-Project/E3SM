@@ -83,17 +83,18 @@ struct CaarFunctorImpl {
 
   Scalar                      m_scale2g_last_int_pack;
 
-  const int                   m_rsplit;
-  const bool                  m_theta_hydrostatic_mode;
-  const AdvectionForm         m_theta_advection_form;
+  const int           m_num_elems;
+  const int           m_rsplit;
+  const bool          m_theta_hydrostatic_mode;
+  const AdvectionForm m_theta_advection_form;
 
-  const HybridVCoord          m_hvcoord;
-  const ElementsState         m_state;
-  const ElementsDerivedState  m_derived;
-  const ElementsGeometry      m_geometry;
-  EquationOfState             m_eos;
-  Buffers                     m_buffers;
-  const deriv_type            m_deriv;
+  HybridVCoord          m_hvcoord;
+  ElementsState         m_state;
+  ElementsDerivedState  m_derived;
+  ElementsGeometry      m_geometry;
+  EquationOfState       m_eos;
+  Buffers               m_buffers;
+  deriv_type            m_deriv;
 
   SphereOperators             m_sphere_ops;
 
@@ -122,7 +123,8 @@ struct CaarFunctorImpl {
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
-      : m_rsplit(params.rsplit)
+      : m_num_elems(elements.num_elems())
+      , m_rsplit(params.rsplit)
       , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
       , m_theta_advection_form(params.theta_adv_form)
       , m_hvcoord(hvcoord)
@@ -131,13 +133,44 @@ struct CaarFunctorImpl {
       , m_geometry(elements.m_geometry)
       , m_deriv(ref_FE.get_deriv())
       , m_sphere_ops(sphere_ops)
-      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(elements.num_elems()))
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
-      , m_policy_post (0,elements.num_elems()*NP*NP)
+      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+      , m_policy_post (0,m_num_elems*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {
     // Initialize equation of state
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
+
+    // Make sure the buffers in sph op are large enough for this functor's needs
+    m_sphere_ops.allocate_buffers(m_tu);
+  }
+
+  CaarFunctorImpl(const int num_elems, const SimulationParams& params)
+      : m_num_elems(num_elems)
+      , m_rsplit(params.rsplit)
+      , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+      , m_theta_advection_form(params.theta_adv_form)
+      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+      , m_policy_post (0,num_elems*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
+      , m_tu(m_policy_pre)
+  {}
+
+
+  void setup (const Elements &elements, const Tracers &/*tracers*/,
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+              const SphereOperators &sphere_ops)
+  {
+    assert(m_num_elems == elements.num_elems()); // Sanity check
+    m_hvcoord = hvcoord;
+    m_state = elements.m_state;
+    m_derived = elements.m_derived;
+    m_geometry = elements.m_geometry;
+    m_deriv = ref_FE.get_deriv();
+    m_sphere_ops = sphere_ops;
+
+    // Initialize equation of state
+    m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
 
     // Make sure the buffers in sph op are large enough for this functor's needs
     m_sphere_ops.allocate_buffers(m_tu);
