@@ -1180,7 +1180,6 @@
 <integration> "explicit" </integration>
 
 <se_ftype> 2 </se_ftype>
-<se_ftype scam="1" > 0 </se_ftype>
 
 <se_limiter_option> 9 </se_limiter_option>
 
