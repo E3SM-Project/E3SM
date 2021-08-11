@@ -38,6 +38,8 @@ SET(HOMME_TESTS
   thetanh-nhgw-slice.cmake
   preqx-nhgw-slice.cmake
   sweqx-dbvor.cmake
+  thetanh-moist-bubble.cmake
+  thetanh-dry-bubble.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})

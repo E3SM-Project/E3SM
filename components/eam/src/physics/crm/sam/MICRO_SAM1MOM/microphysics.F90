@@ -507,6 +507,10 @@ CONTAINS
       nprec = 1
     endif
 
+#ifdef MMF_FIXED_SUBCYCLE
+    nprec = 4
+#endif
+
     !  loop over iterations
     do iprec = 1,nprec
       !$acc parallel loop gang vector collapse(4) async(asyncid)

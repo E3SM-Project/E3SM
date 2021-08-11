@@ -110,10 +110,6 @@ def get_grid_size(filename):
 
 def advection_error_convergence():
 
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
-
     resolutions = [2562,10242,40962,163842]
 
     methods = ["IR", "upwind"]
@@ -127,18 +123,19 @@ def advection_error_convergence():
     #markers = ['o','^']
     linestyles = ["-", "--", "-", "--"]
     #linestyles = ["-", "-"]
+    dashes=[(1,0),(5,2.5),(1,0),(5,2.5)]
 
-    xMin = 240
-    xMax = 480
+    xMin = 60
+    xMax = 120
 
     yMin = 3e-2
     yMax = 1
 
-    scaleArea1 = 0.25 / math.pow(xMax,1)
+    scaleArea1 = 0.15 / math.pow(xMax,1)
     scaleMinArea1 = math.pow(xMin,1) * scaleArea1
     scaleMaxArea1 = math.pow(xMax,1) * scaleArea1
 
-    scaleArea2 = 0.25 / math.pow(xMax,2)
+    scaleArea2 = 0.15 / math.pow(xMax,2)
     scaleMinArea2 = math.pow(xMin,2) * scaleArea2
     scaleMaxArea2 = math.pow(xMax,2) * scaleArea2
 
@@ -147,11 +144,27 @@ def advection_error_convergence():
     scaleMinThickness = math.pow(xMin,1) * scaleThickness
     scaleMaxThickness = math.pow(xMax,1) * scaleThickness
 
-    fig, axes = plt.subplots(1, 1)
-    #fig.set_size_inches(3.74016, 3)
+    #plot
+    cm = 1/2.54  # centimeters in inches
+    plt.rcParams["font.family"] = "Times New Roman"
+    #mpl.rc('text', usetex=True)
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 8
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    #mpl.rcParams['axes.linewidth'] = 0.5
 
-    axes.loglog([xMin, xMax], [scaleMinArea1, scaleMaxArea1], linestyle=':', color='k', label="_nolegend_")
-    axes.loglog([xMin, xMax], [scaleMinArea2, scaleMaxArea2], linestyle=':', color='k', label="_nolegend_")
+    fig, axes = plt.subplots(1, 1, figsize=(8*cm,6.5*cm))
+
+
+    axes.loglog([xMin, xMax], [scaleMinArea1, scaleMaxArea1], linestyle=':', color='k', label="_nolegend_", lw=1)
+    axes.loglog([xMin, xMax], [scaleMinArea2, scaleMaxArea2], linestyle=':', color='k', label="_nolegend_", lw=1)
 
     iPlot = 0
     for experiment in experiments:
@@ -176,7 +189,7 @@ def advection_error_convergence():
                 yVolume.append(norm)
 
             print(xArea,yArea)
-            axes.loglog(xArea, yArea, marker=markers[iPlot], linestyle=linestyles[iPlot], color="black", markersize=4.0)
+            axes.loglog(xArea, yArea, marker=markers[iPlot], dashes=dashes[iPlot], color="black", markersize=5.0)
 
             iPlot = iPlot + 1
 
@@ -187,7 +200,7 @@ def advection_error_convergence():
 
     plt.minorticks_off()
 
-    axes.set_title("Ice concentration")
+    #axes.set_title("Ice concentration")
     axes.set_xlabel("Grid resolution (km)")
     axes.set_ylabel(r"$L_2$ error norm")
     axes.set_xticklabels(["60","120","240","480"])
@@ -199,8 +212,9 @@ def advection_error_convergence():
         top='off',         # ticks along the top edge are off
         labelbottom='off')
 
-    plt.tight_layout()
-    plt.savefig("advection_error_convergence.png")
+    plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
+    plt.savefig("advection_error_convergence.png",dpi=300)
+    plt.savefig("advection_error_convergence.eps")
 
 #-------------------------------------------------------------------------------
 

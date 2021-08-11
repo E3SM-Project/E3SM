@@ -208,13 +208,13 @@ module ocn_core_interface
       if ( forwardModeActive ) then
          if (    config_time_integrator == trim('split_explicit') &
             .or. config_time_integrator == trim('unsplit_explicit') &
-            .or. config_time_integrator == trim('semi_implicit') ) then
+            .or. config_time_integrator == trim('split_implicit') ) then
             splitTimeIntegratorActive = .true.
          end if
       endif
       call mpas_pool_get_package(packagePool, 'semiImplicitTimePKGActive', semiImplicitTimePKGActive)
       if ( forwardModeActive ) then
-         if (config_time_integrator == trim('semi_implicit') ) then
+         if (config_time_integrator == trim('split_implicit') ) then
             semiImplicitTimePKGActive = .true.
          end if
       endif
