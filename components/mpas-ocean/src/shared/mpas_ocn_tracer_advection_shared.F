@@ -310,6 +310,10 @@ module ocn_tracer_advection_shared
       if (config_horiz_tracer_adv_order == 2) &
          advMaskHighOrder(:,:) = 0.0_RKIND
 
+      ! Copy module variables to device
+      !$acc enter data copyin(nAdvCellsForEdge, advCellsForEdge, &
+      !$acc                   advCoefs, advCoefs3rd, advMaskHighOrder)
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_advection_shared_init !}}}
