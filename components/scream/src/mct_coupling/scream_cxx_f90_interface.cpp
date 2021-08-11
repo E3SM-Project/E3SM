@@ -2,6 +2,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
+#include "control/surface_coupling.hpp"
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
@@ -80,6 +81,9 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     // First of all, initialize the scream session
     scream::initialize_scream_session();
 
+    // Initialize yakl
+    if(!yakl::isInitialized()) { yakl::init(); }
+
     // Create the context
     auto& c = ScreamContext::singleton();
 
@@ -115,22 +119,24 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
+    ad.set_surface_coupling (std::make_shared<SurfaceCoupling>(ad.get_ref_grid_field_mgr()));
   });
 }
 
 void scream_setup_surface_coupling (
-    const char*& x2a_names, const int*& x2a_indices, double*& cpl_x2a_ptr,
-    const int& num_imports, const int& num_scream_imports,
-    const char*& a2x_names, const int*& a2x_indices, double*& cpl_a2x_ptr, const int& num_exports)
+    const char*& x2a_names, const int*& x2a_indices, double*& cpl_x2a_ptr, const int*& vec_comp_x2a,
+    const int& num_cpl_imports, const int& num_scream_imports,
+    const char*& a2x_names, const int*& a2x_indices, double*& cpl_a2x_ptr, const int*& vec_comp_a2x,
+    const int& num_exports)
 {
   fpe_guard_wrapper([&](){
     // Fortran gives a 1d array of 32char strings. So let's memcpy the input char
     // strings into 2d char arrays. Each string is null-terminated (atm_mct_mod
     // makes sure of that).
     using name_t = char[32];
-    name_t* names_in = new name_t[num_imports];
+    name_t* names_in = new name_t[num_cpl_imports];
     name_t* names_out = new name_t[num_exports];
-    std::memcpy(names_in,x2a_names,num_imports*32*sizeof(char));
+    std::memcpy(names_in,x2a_names,num_cpl_imports*32*sizeof(char));
     std::memcpy(names_out,a2x_names,num_exports*32*sizeof(char));
 
     // Get the SurfaceCoupling from the AD, then register the fields
@@ -138,12 +144,12 @@ void scream_setup_surface_coupling (
     const auto& sc = ad.get_surface_coupling();
 
     // Register import/export fields
-    sc->set_num_fields(num_imports,num_scream_imports,num_exports);
-    for (int i=0; i<num_imports; ++i) {
-      sc->register_import(names_in[i],x2a_indices[i]);
+    sc->set_num_fields(num_cpl_imports,num_scream_imports,num_exports);
+    for (int i=0; i<num_cpl_imports; ++i) {
+      sc->register_import(names_in[i],x2a_indices[i],vec_comp_x2a[i]);
     }
     for (int i=0; i<num_exports; ++i) {
-      sc->register_export(names_out[i],a2x_indices[i]);
+      sc->register_export(names_out[i],a2x_indices[i],vec_comp_a2x[i]);
     }
 
     sc->registration_ends(cpl_x2a_ptr, cpl_a2x_ptr);
@@ -157,14 +163,8 @@ void scream_init_atm (const int& start_ymd,
   using namespace scream::control;
 
   fpe_guard_wrapper([&](){
-    // First of all, initialize the scream session
-    scream::initialize_scream_session();
-
-    // Create the context
-    auto& c = ScreamContext::singleton();
-
     // Get the ad, then complete initialization
-    auto& ad = c.create<AtmosphereDriver>();
+    auto& ad = get_ad_nonconst();
 
     // Recall that e3sm uses the int YYYYMMDD to store a date
     std::cout << "start_ymd: " << start_ymd << "\n";

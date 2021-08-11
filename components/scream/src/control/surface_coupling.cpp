@@ -70,7 +70,7 @@ register_import(const std::string& fname,
                       "       Did you forget to call set_num_fields(..) ?\n");
   EKAT_REQUIRE_MSG (m_state!=RepoState::Closed, "Error! Registration phase has already ended.\n");
 
-  if (fname == "unused" || fname == "RRTMGP")
+  if (fname == "unused")
   {
     // Do nothing
   } else {
