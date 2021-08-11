@@ -886,6 +886,38 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="swing" COMPILER="pgigpu">
+  <CPPDEFS>
+    <append> -DGPU </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+  </CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+  </FFLAGS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -Minline -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,deepcopy,nonvvm -Mcuda -Minfo=accel </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>
     <append compile_threaded="TRUE"> -fopenmp </append>
