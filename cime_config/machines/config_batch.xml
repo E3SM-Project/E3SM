@@ -271,6 +271,15 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="swing" type="slurm">
+      <directives>
+        <directive> --gres=gpu:1</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">gpu</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="anvil" type="slurm" >
       <queues>
 	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
