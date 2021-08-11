@@ -249,6 +249,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Layouts matching those in AD
   FL scalar2d_layout{ {COL          }, {ncols          } };
+  FL vector2d_layout{ {COL, CMP     }, {ncols, 2       } };
   FL scalar3d_layout{ {COL, LEV     }, {ncols,    nlevs} };
   FL vector3d_layout{ {COL, CMP, LEV}, {ncols, 2, nlevs} };
 
@@ -256,8 +257,7 @@ TEST_CASE ("recreate_mct_coupling")
   const auto nondim = Units::nondimensional();
   FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, W/(m*m), grid_name);
   FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m), grid_name);
-  FID surf_u_mom_flux_id  ("surf_u_mom_flux",    scalar2d_layout, W/(m*m), grid_name);
-  FID surf_v_mom_flux_id  ("surf_v_mom_flux",    scalar2d_layout, W/(m*m), grid_name);
+  FID surf_mom_flux_id    ("surf_mom_flux",      vector2d_layout, W/(m*m), grid_name);
   FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,  grid_name);
   FID sfc_alb_dir_nir_id  ("sfc_alb_dir_nir",    scalar2d_layout, nondim,  grid_name);
   FID sfc_alb_dif_vis_id  ("sfc_alb_dif_vis",    scalar2d_layout, nondim,  grid_name);
@@ -283,8 +283,7 @@ TEST_CASE ("recreate_mct_coupling")
   fm->registration_begins();
   fm->register_field(FR{surf_latent_flux_id});
   fm->register_field(FR{surf_sens_flux_id});
-  fm->register_field(FR{surf_u_mom_flux_id});
-  fm->register_field(FR{surf_v_mom_flux_id});
+  fm->register_field(FR{surf_mom_flux_id});
   fm->register_field(FR{sfc_alb_dir_vis_id});
   fm->register_field(FR{sfc_alb_dir_nir_id});
   fm->register_field(FR{sfc_alb_dif_vis_id});
@@ -303,8 +302,7 @@ TEST_CASE ("recreate_mct_coupling")
   // Create alias to field views
   auto surf_latent_flux_f = fm->get_field(surf_latent_flux_id);
   auto surf_sens_flux_f   = fm->get_field(surf_sens_flux_id);
-  auto surf_u_mom_flux_f  = fm->get_field(surf_u_mom_flux_id);
-  auto surf_v_mom_flux_f  = fm->get_field(surf_v_mom_flux_id);
+  auto surf_mom_flux_f    = fm->get_field(surf_mom_flux_id);
   auto sfc_alb_dir_vis_f  = fm->get_field(sfc_alb_dir_vis_id);
   auto sfc_alb_dir_nir_f  = fm->get_field(sfc_alb_dir_nir_id);
   auto sfc_alb_dif_vis_f  = fm->get_field(sfc_alb_dif_vis_id);
@@ -323,8 +321,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   auto surf_latent_flux_d = surf_latent_flux_f.get_view<Real*>();
   auto surf_sens_flux_d   = surf_sens_flux_f.get_view<Real*>();
-  auto surf_u_mom_flux_d  = surf_u_mom_flux_f.get_view<Real*>();
-  auto surf_v_mom_flux_d  = surf_v_mom_flux_f.get_view<Real*>();
+  auto surf_mom_flux_d    = surf_mom_flux_f.get_view<Real**>();
   auto sfc_alb_dir_vis_d  = sfc_alb_dir_vis_f.get_view<Real*>();
   auto sfc_alb_dir_nir_d  = sfc_alb_dir_nir_f.get_view<Real*>();
   auto sfc_alb_dif_vis_d  = sfc_alb_dif_vis_f.get_view<Real*>();
@@ -339,8 +336,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   auto surf_latent_flux_h = surf_latent_flux_f.get_view<Real*,Host>();
   auto surf_sens_flux_h   = surf_sens_flux_f.get_view<Real*,Host>();
-  auto surf_u_mom_flux_h  = surf_u_mom_flux_f.get_view<Real*,Host>();
-  auto surf_v_mom_flux_h  = surf_v_mom_flux_f.get_view<Real*,Host>();
+  auto surf_mom_flux_h    = surf_mom_flux_f.get_view<Real**,Host>();
   auto sfc_alb_dir_vis_h  = sfc_alb_dir_vis_f.get_view<Real*,Host>();
   auto sfc_alb_dir_nir_h  = sfc_alb_dir_nir_f.get_view<Real*,Host>();
   auto sfc_alb_dif_vis_h  = sfc_alb_dif_vis_f.get_view<Real*,Host>();
@@ -363,8 +359,8 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("surf_latent_flux", 0);
   coupler.register_import("surf_sens_flux",   1);
   coupler.register_import("unused",           2);
-  coupler.register_import("surf_u_mom_flux",  3);
-  coupler.register_import("surf_v_mom_flux",  4);
+  coupler.register_import("surf_mom_flux",    3, 0);
+  coupler.register_import("surf_mom_flux",    4, 1);
   coupler.register_import("unused",           5);
   coupler.register_import("sfc_alb_dir_vis",  6);
   coupler.register_import("sfc_alb_dir_nir",  7);
@@ -406,8 +402,7 @@ TEST_CASE ("recreate_mct_coupling")
     // Set import field views to 0
     surf_latent_flux_f.deep_copy(0.0);
     surf_sens_flux_f.deep_copy(0.0);
-    surf_u_mom_flux_f.deep_copy(0.0);
-    surf_v_mom_flux_f.deep_copy(0.0);
+    surf_mom_flux_f.deep_copy(0.0);
     sfc_alb_dir_vis_f.deep_copy(0.0);
     sfc_alb_dir_nir_f.deep_copy(0.0);
     sfc_alb_dif_vis_f.deep_copy(0.0);
@@ -440,8 +435,7 @@ TEST_CASE ("recreate_mct_coupling")
     // Sync host to device
     surf_latent_flux_f.sync_to_host();
     surf_sens_flux_f.sync_to_host();
-    surf_u_mom_flux_f.sync_to_host();
-    surf_v_mom_flux_f.sync_to_host();
+    surf_mom_flux_f.sync_to_host();
     sfc_alb_dir_vis_f.sync_to_host();
     sfc_alb_dir_nir_f.sync_to_host();
     sfc_alb_dif_vis_f.sync_to_host();
@@ -459,14 +453,14 @@ TEST_CASE ("recreate_mct_coupling")
 
       // Imports
 
-      REQUIRE (surf_latent_flux_h(icol) == import_raw_data[0 + icol*num_cpl_imports]); // 1st scream import
-      REQUIRE (surf_sens_flux_h  (icol) == import_raw_data[1 + icol*num_cpl_imports]); // 2nd scream import
-      REQUIRE (surf_u_mom_flux_h (icol) == import_raw_data[3 + icol*num_cpl_imports]); // 3rd scream import (4th cpl import)
-      REQUIRE (surf_v_mom_flux_h (icol) == import_raw_data[4 + icol*num_cpl_imports]); // 4th scream import (5th cpl import)
-      REQUIRE (sfc_alb_dir_vis_h (icol) == import_raw_data[6 + icol*num_cpl_imports]); // 5th scream import (7th cpl import)
-      REQUIRE (sfc_alb_dir_nir_h (icol) == import_raw_data[7 + icol*num_cpl_imports]); // 6th scream import (8th cpl import)
-      REQUIRE (sfc_alb_dif_vis_h (icol) == import_raw_data[8 + icol*num_cpl_imports]); // 7th scream import (9th cpl import)
-      REQUIRE (sfc_alb_dif_nir_h (icol) == import_raw_data[9 + icol*num_cpl_imports]); // 8th scream import (10th cpl import)
+      REQUIRE (surf_latent_flux_h(icol)    == import_raw_data[0 + icol*num_cpl_imports]); // 1st scream import
+      REQUIRE (surf_sens_flux_h  (icol)    == import_raw_data[1 + icol*num_cpl_imports]); // 2nd scream import
+      REQUIRE (surf_mom_flux_h   (icol, 0) == import_raw_data[3 + icol*num_cpl_imports]); // 3rd scream import (4th cpl import)
+      REQUIRE (surf_mom_flux_h   (icol, 1) == import_raw_data[4 + icol*num_cpl_imports]); // 4th scream import (5th cpl import)
+      REQUIRE (sfc_alb_dir_vis_h (icol)    == import_raw_data[6 + icol*num_cpl_imports]); // 5th scream import (7th cpl import)
+      REQUIRE (sfc_alb_dir_nir_h (icol)    == import_raw_data[7 + icol*num_cpl_imports]); // 6th scream import (8th cpl import)
+      REQUIRE (sfc_alb_dif_vis_h (icol)    == import_raw_data[8 + icol*num_cpl_imports]); // 7th scream import (9th cpl import)
+      REQUIRE (sfc_alb_dif_nir_h (icol)    == import_raw_data[9 + icol*num_cpl_imports]); // 8th scream import (10th cpl import)
 
       // Exports
 
