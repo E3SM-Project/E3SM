@@ -227,7 +227,7 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems, params.qsize);
+      tracers.fq = decltype(tracers.fq)("fq", num_elems);
     }
     HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
         elem_derived_FQ, num_elems);
@@ -350,7 +350,8 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
-    //todo-compose
+    auto& ct = c.get<ComposeTransport>();
+    if (ct.setup_needed()) ct.setup();
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);

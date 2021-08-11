@@ -69,12 +69,12 @@ struct ComposeTransportImpl {
     {}
   };
 
-  const HybridVCoord m_hvcoord;
-  const Elements m_elements;
-  const ElementsState m_state;
-  const ElementsDerivedState m_derived;
-  const ElementsGeometry m_geometry;
-  const Tracers m_tracers;
+  HybridVCoord m_hvcoord;
+  Elements m_elements;
+  ElementsState m_state;
+  ElementsDerivedState m_derived;
+  ElementsGeometry m_geometry;
+  Tracers m_tracers;
   SphereOperators m_sphere_ops;
   int nslot;
   Data m_data;
@@ -86,6 +86,9 @@ struct ComposeTransportImpl {
     m_qdp_dss_be[Q_NUM_TIME_LEVELS], m_v_dss_be[2], m_hv_dss_be[2];
 
   ComposeTransportImpl();
+  ComposeTransportImpl(const int num_elems);
+
+  void setup();
 
   KOKKOS_INLINE_FUNCTION
   size_t shmem_size (const int team_size) const {

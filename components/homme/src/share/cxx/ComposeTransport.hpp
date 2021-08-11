@@ -20,10 +20,14 @@ class TimeLevel;
 class ComposeTransport {
 public:
   ComposeTransport();
+  ComposeTransport(const int num_elems);
   ComposeTransport(const ComposeTransport &) = delete;
   ComposeTransport &operator=(const ComposeTransport &) = delete;
 
   ~ComposeTransport();
+
+  bool setup_needed() { return ! is_setup; }
+  void setup();
 
   void reset(const SimulationParams& params);
 
@@ -43,6 +47,7 @@ public:
 
 private:
   std::unique_ptr<ComposeTransportImpl> m_compose_impl;
+  bool is_setup;
 };
 
 } // Namespace Homme

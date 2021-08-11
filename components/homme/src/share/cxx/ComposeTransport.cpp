@@ -15,8 +15,22 @@
 
 namespace Homme {
 
-ComposeTransport::ComposeTransport () {
+ComposeTransport::ComposeTransport ()
+  : is_setup(true)
+{
   m_compose_impl.reset(new ComposeTransportImpl());
+}
+
+ComposeTransport::ComposeTransport (const int num_elems)
+  : is_setup(false)
+{
+  m_compose_impl.reset(new ComposeTransportImpl(num_elems));
+}
+
+void ComposeTransport::setup () {
+  assert( ! is_setup);
+  m_compose_impl->setup();
+  is_setup = true;
 }
 
 void ComposeTransport::reset (const SimulationParams& params) {
@@ -34,19 +48,23 @@ void ComposeTransport::init_buffers (const FunctorsBuffersManager& fbm) {
 }
 
 void ComposeTransport::init_boundary_exchanges () {
+  assert(is_setup);
   m_compose_impl->init_boundary_exchanges();
 }
 
 void ComposeTransport::run (const TimeLevel& tl, const Real dt) {
+  assert(is_setup);
   m_compose_impl->run(tl, dt);
 }
 
 void ComposeTransport::remap_q (const TimeLevel& tl) {
+  assert(is_setup);
   m_compose_impl->remap_q(tl);
 }
 
 std::vector<std::pair<std::string, int> >
 ComposeTransport::run_unit_tests () {
+  assert(is_setup);
   std::vector<std::pair<std::string, int> > fails;
   int nerr;
   nerr = m_compose_impl->run_trajectory_unit_tests();
@@ -56,10 +74,12 @@ ComposeTransport::run_unit_tests () {
 
 ComposeTransport::TestDepView::HostMirror ComposeTransport::
 test_trajectory (Real t0, Real t1, const bool independent_time_steps) {
+  assert(is_setup);
   return m_compose_impl->test_trajectory(t0, t1, independent_time_steps);
 }
 
 void ComposeTransport::test_2d (const bool bfb, const int nstep, std::vector<Real>& eval) {
+  assert(is_setup);
   m_compose_impl->test_2d(bfb, nstep, eval);
 }
 

@@ -20,17 +20,28 @@ static int calc_nslot (const int nelemd) {
 }
 
 ComposeTransportImpl::ComposeTransportImpl ()
-  : m_hvcoord(Context::singleton().get<HybridVCoord>()),
-    m_elements(Context::singleton().get<Elements>()),
-    m_state(m_elements.m_state),
-    m_derived(m_elements.m_derived),
-    m_geometry(Context::singleton().get<ElementsGeometry>()),
-    m_tracers(Context::singleton().get<Tracers>()),
-    m_sphere_ops(Context::singleton().get<SphereOperators>()),
-    m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
+  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
     m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
     m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
 {
+  setup();
+}
+
+ComposeTransportImpl::ComposeTransportImpl (const int num_elems)
+  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
+    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
+    m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
+{}
+
+void ComposeTransportImpl::setup () {
+  m_hvcoord = Context::singleton().get<HybridVCoord>();
+  m_elements = Context::singleton().get<Elements>();
+  m_state = m_elements.m_state;
+  m_derived = m_elements.m_derived;
+  m_geometry = Context::singleton().get<ElementsGeometry>();
+  m_tracers = Context::singleton().get<Tracers>();
+  m_sphere_ops = Context::singleton().get<SphereOperators>();
+  
   set_dp_tol();
   nslot = calc_nslot(m_geometry.num_elems());
 }
@@ -147,8 +158,10 @@ void ComposeTransportImpl::init_boundary_exchanges () {
       auto be = m_hv_dss_be[i];
       be->set_buffers_manager(bm_exchange);
       be->set_num_fields(0, 0, m_data.hv_q);
-      be->register_field(i == 0 ? m_tracers.qtens_biharmonic : m_tracers.Q,
-                         m_data.hv_q, 0);
+      if (i == 0) 
+        be->register_field(m_tracers.qtens_biharmonic, m_data.hv_q, 0);
+      else
+        be->register_field(m_tracers.Q, m_data.hv_q, 0);
       be->registration_completed();
     }
   }
