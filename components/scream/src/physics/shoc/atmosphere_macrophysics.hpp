@@ -37,6 +37,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using view_2d              = typename SHF::view_2d<SHF::Spack>;
   using view_2d_const        = typename SHF::view_2d<const Spack>;
   using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using sview_2d_const       = typename KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using view_3d              = typename SHF::view_3d<Spack>;
   using view_3d_const        = typename SHF::view_3d<const Spack>;
 
@@ -170,8 +171,8 @@ public:
 
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
       wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)   = surf_v_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
+      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlev_v)[nlev_p];
+      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlev_v)[nlev_p];
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;
@@ -190,8 +191,7 @@ public:
     view_1d_const        phis;
     view_1d_const        surf_sens_flux;
     view_1d_const        surf_latent_flux;
-    view_1d_const        surf_u_mom_flux;
-    view_1d_const        surf_v_mom_flux;
+    sview_2d_const       surf_mom_flux;
     view_2d_const        qv;
     view_2d              qv_copy;
     view_1d              cell_length;
@@ -224,7 +224,7 @@ public:
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
-                       const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
+                       const sview_2d_const& surf_mom_flux_,
                        const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_, const view_1d& cell_length_,
                        const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
@@ -246,8 +246,7 @@ public:
       phis = phis_;
       surf_sens_flux = surf_sens_flux_;
       surf_latent_flux = surf_latent_flux_;
-      surf_u_mom_flux = surf_u_mom_flux_;
-      surf_v_mom_flux = surf_v_mom_flux_;
+      surf_mom_flux = surf_mom_flux_;
       qv = qv_;
       qv_copy = qv_copy_;
       // OUT

@@ -106,8 +106,8 @@ contains
     scr_names_x2a(1)  = 'surf_latent_flux'
     scr_names_x2a(2)  = 'surf_sens_flux'
     scr_names_x2a(3)  = 'unused'
-    scr_names_x2a(4)  = 'surf_u_mom_flux'
-    scr_names_x2a(5)  = 'surf_v_mom_flux'
+    scr_names_x2a(4)  = 'surf_mom_flux'
+    scr_names_x2a(5)  = 'surf_mom_flux'
     scr_names_x2a(6)  = 'unused'
     scr_names_x2a(7)  = 'sfc_alb_dir_vis'
     scr_names_x2a(8)  = 'sfc_alb_dir_nir'
@@ -125,10 +125,13 @@ contains
     scr_names_x2a(20) = 'unused'
     scr_names_x2a(21) = 'unused'
 
-    ! No scream imports currently require vector component info. Set to -1.
+    ! Default import vector components to -1. Set surf_mom_flux components.
     do i=1,num_required_cpl_imports
       vec_comp_x2a(i) = -1
     enddo
+    vec_comp_x2a(4) = 0
+    vec_comp_x2a(5) = 1
+
 
     ! List of cpl names of outputs that scream needs to pass back to cpl
 
@@ -194,7 +197,7 @@ contains
     scr_names_a2x(13) = 'set_zero'
 
     ! Default export vector components to -1. Set horiz_winds components.
-    do i=1,num_required_cpl_imports
+    do i=1,num_exports
       vec_comp_a2x(i) = -1
     enddo
     vec_comp_a2x(4) = 0
