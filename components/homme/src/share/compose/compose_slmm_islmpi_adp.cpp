@@ -1,6 +1,7 @@
 #include "compose_slmm_islmpi.hpp"
 #include "compose_slmm_departure_point.hpp"
 
+#if 0
 #ifdef COMPOSE_MIMIC_GPU
 # pragma message "COMPOSE_MIMIC_GPU"
 #endif
@@ -18,6 +19,7 @@
 #endif
 #ifdef COMPOSE_PACK_NOSCAN
 # pragma message "COMPOSE_PACK_NOSCAN"
+#endif
 #endif
 
 namespace slmm {

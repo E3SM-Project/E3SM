@@ -21,7 +21,7 @@
 # define COMPOSE_BOUNDS_CHECK
 #endif
 
-#define COMPOSE_TIMERS
+//#define COMPOSE_TIMERS
 #ifdef COMPOSE_TIMERS
 # include "gptl.h"
 #endif
