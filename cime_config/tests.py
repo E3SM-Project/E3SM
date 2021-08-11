@@ -172,8 +172,6 @@ _TESTS = {
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
-            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-RICO",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-RICO",
             )
