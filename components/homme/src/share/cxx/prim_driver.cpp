@@ -16,8 +16,6 @@
 #include "CamForcing.hpp"
 #include "profiling.hpp"
 
-#include <iostream>
-
 namespace Homme
 {
 
@@ -27,13 +25,17 @@ void vertical_remap (const Real);
 void apply_test_forcing ();
 void update_q (const int np1_qdp, const int np1);
 
-static void init_dp3d_from_ps () {
+extern "C" {
+
+void initialize_dp3d_from_ps_c () {
   // Initialize dp3d from ps
   GPTLstart("tl-sc dp3d-from-ps");
-  const auto& context = Context::singleton();
-  const auto& elements = context.get<Elements>();
-  const auto& hvcoord = context.get<HybridVCoord>();
-  const auto& tl = context.get<TimeLevel>();
+
+  auto& context = Context::singleton();
+  auto& tl = context.get<TimeLevel>();
+
+  Elements& elements = context.get<Elements>();
+  HybridVCoord& hvcoord = context.get<HybridVCoord>();
   const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
   const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
   const auto ps0 = hvcoord.ps0;
@@ -42,21 +44,19 @@ static void init_dp3d_from_ps () {
     const auto dp3d = elements.m_state.m_dp3d;
     const auto tln0 = tl.n0;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
-      KOKKOS_LAMBDA(const int idx) {
-        const int ie   = ((idx / NUM_LEV) / NP) / NP;
-        const int igp  = ((idx / NUM_LEV) / NP) % NP;
-        const int jgp  =  (idx / NUM_LEV) % NP;
-        const int ilev =   idx % NUM_LEV;
+                         KOKKOS_LAMBDA(const int idx) {
+      const int ie   = ((idx / NUM_LEV) / NP) / NP;
+      const int igp  = ((idx / NUM_LEV) / NP) % NP;
+      const int jgp  =  (idx / NUM_LEV) % NP;
+      const int ilev =   idx % NUM_LEV;
 
-        dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
-          + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
-      });
+      dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
+                                 + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
+    });
   }
   ExecSpace::impl_static_fence();
   GPTLstop("tl-sc dp3d-from-ps");
 }
-
-extern "C" {
 
 void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, const int& next_output_step)
 {
@@ -100,8 +100,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     Diagnostics& diags = context.get<Diagnostics>();
     diags.run_diagnostics(true,2);
   }
-
-  init_dp3d_from_ps();
 
   if ( ! independent_time_steps) {
     tl.update_tracers_levels(params.dt_tracer_factor);

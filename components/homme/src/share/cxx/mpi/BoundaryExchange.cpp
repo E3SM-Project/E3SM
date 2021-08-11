@@ -20,6 +20,14 @@ namespace Homme
 
 // ======================== IMPLEMENTATION ======================== //
 
+// Separating these allocations into a small routine works around a Cuda 10/GCC
+// 7/C++14 internal error.
+template <typename A, typename B>
+static void alloc3d (A& a, B& b, int ne, int a2, int b2) {
+  a = ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV]>**>("3d fields", ne, a2);
+  b = ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV_P]>**>("3d interface fields", ne, b2);
+}
+
 BoundaryExchange::BoundaryExchange()
 {
   m_num_1d_fields = 0;
@@ -139,11 +147,9 @@ void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d
   m_2d_fields = decltype(m_2d_fields)("2d fields", m_num_elems, num_2d_fields);
   if (NUM_LEV==NUM_LEV_P) {
     // If NUM_LEV=NUM_LEVP, we can use the same 3d buffers for both midpoints and interface quantities
-    m_3d_fields = decltype(m_3d_fields)("3d fields", m_num_elems, num_3d_fields+num_3d_int_fields);
-    m_3d_int_fields = decltype(m_3d_int_fields)("3d interface fields", m_num_elems, 0);
+    alloc3d(m_3d_fields, m_3d_int_fields, m_num_elems, num_3d_fields+num_3d_int_fields, 0);
   } else {
-    m_3d_fields = decltype(m_3d_fields)("3d fields", m_num_elems, num_3d_fields);
-    m_3d_int_fields = decltype(m_3d_int_fields)("3d interface fields", m_num_elems, num_3d_int_fields);
+    alloc3d(m_3d_fields, m_3d_int_fields, m_num_elems, num_3d_fields, num_3d_int_fields);
   }
 
   // Now we can start register fields
@@ -167,8 +173,7 @@ void BoundaryExchange::clean_up()
   // Clear stored fields
   m_1d_fields = decltype(m_1d_fields)("m_1d_fields", 0, 0);
   m_2d_fields = decltype(m_2d_fields)("m_2d_fields", 0, 0);
-  m_3d_fields = decltype(m_3d_fields)("m_3d_fields", 0, 0);
-  m_3d_int_fields = decltype(m_3d_int_fields)("m_3d_interface_fields", 0, 0);
+  alloc3d(m_3d_fields, m_3d_int_fields, 0, 0, 0);
 
   m_num_1d_fields = 0;
   m_num_2d_fields = 0;

@@ -18,6 +18,8 @@ namespace Remap { class Remapper; }
 struct VerticalRemapManager {
   VerticalRemapManager(const bool remap_tracers=true);
 
+  VerticalRemapManager(const int num_elems, const bool remap_tracers=true);
+
   void run_remap(int np1, int np1_qdp, double dt) const;
 
   int requested_buffer_size () const;
@@ -25,9 +27,16 @@ struct VerticalRemapManager {
 
   std::shared_ptr<Remap::Remapper> get_remapper() const;
 
+  bool setup_needed () { return !is_setup; }
+
+  void setup ();
+
 private:
   struct Impl;
   std::shared_ptr<Impl> p_;
+
+  int m_num_elems;
+  bool is_setup;
 };
 
 }

@@ -49,13 +49,13 @@ void state_forcing(
 }
 
 void tracer_forcing(
-    const ExecViewUnmanaged<const Scalar * [QSIZE_D][NP][NP][NUM_LEV]> &f_q,
+    const ExecViewUnmanaged<const Scalar ** [NP][NP][NUM_LEV]> &f_q,
     const HybridVCoord &hvcoord, const TimeLevel &tl, const int &num_q,
     const MoistDry &moisture, const double &dt,
     const ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]> &ps_v,
     const ExecViewManaged<
         Scalar * [Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> &qdp,
-    const ExecViewManaged<Scalar * [QSIZE_D][NP][NP][NUM_LEV]> &Q) {
+    const ExecViewManaged<Scalar **[NP][NP][NUM_LEV]> &Q) {
 
   const int num_e = ps_v.extent_int(0);
   const int np1 = tl.n0;
@@ -158,7 +158,7 @@ void apply_cam_forcing(const Real &dt) {
   const HybridVCoord &hvcoord = Context::singleton().get<HybridVCoord>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if(tracers.fq.data() == nullptr) {
-    tracers.fq = decltype(tracers.fq)("fq", elems.num_elems());
+    tracers.fq = decltype(tracers.fq)("fq", elems.num_elems(),tracers.num_tracers());
   }
   tracer_forcing(tracers.fq, hvcoord, tl, tracers.num_tracers(),
                  sim_params.moisture, dt, elems.m_state.m_ps_v, tracers.qdp, tracers.Q);

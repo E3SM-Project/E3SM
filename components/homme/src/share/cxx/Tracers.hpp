@@ -36,8 +36,8 @@ struct Tracers {
   ExecViewManaged<Scalar*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> qdp;
   ExecViewManaged<Scalar*[QSIZE_D][NP][NP][NUM_LEV]>                    qtens_biharmonic; // Also doubles as just qtens.
   ExecViewManaged<Scalar*[QSIZE_D][2][NUM_LEV]>                         qlim;
-  ExecViewManaged<Scalar*[QSIZE_D][NP][NP][NUM_LEV]>                    Q;
-  ExecViewManaged<Scalar*[QSIZE_D][NP][NP][NUM_LEV]>                    fq;
+  ExecViewManaged<Scalar**[NP][NP][NUM_LEV]>                    Q;
+  ExecViewManaged<Scalar**[NP][NP][NUM_LEV]>                    fq;
 
 private:
   int nt;

@@ -20,7 +20,6 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 void prim_advec_tracers_remap (const Real);
 void vertical_remap (const Real);
 void apply_test_forcing ();
-void init_dp3d_from_ps ();
 
 static void set_tracer_transport_derived_values (
   const SimulationParams& params, const Elements& elements, const TimeLevel& tl)
