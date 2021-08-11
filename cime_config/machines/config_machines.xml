@@ -1614,7 +1614,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/projects/ccsm/e3sm/libs/perl5</env>
+      <env name="PATH">/projects/ccsm/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
       <env name="MPAS_TOOL_DIR">/projects/ccsm/e3sm/tools/mpas</env>
       <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
       <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
