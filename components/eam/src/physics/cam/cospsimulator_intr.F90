@@ -1738,31 +1738,16 @@ CONTAINS
       use mod_cosp, only: cosp_optical_inputs, cosp_outputs
       use cam_history, only: outfld
 
-      type(physics_state), intent(in) :: state
-      type(cosp_optical_inputs), intent(in) :: cospIN
-      type(cosp_outputs), intent(inout) :: cospOUT  ! inout so we can fix before writing
+      type(physics_state)      , intent(in)    :: state
+      type(cosp_optical_inputs), intent(in)    :: cospIN
+      type(cosp_outputs)       , intent(inout) :: cospOUT  ! inout so we can fix/weight before writing
       integer :: ncol, lchnk
-      integer :: i,k,ip,it,ipt,ih,id,ihd,is,ihs,isc,ihsc,ihm,ihmt,ihml,itim_old,ifld 
-      real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
-      real(r8),dimension(pcols,nhtml_cosp*nscol_cosp) :: &
-           tau067_out,emis11_out,fracliq_out,cal_betatot,cal_betatot_ice, &
-           cal_betatot_liq,cal_tautot,cal_tautot_ice,cal_tautot_liq,cs_gvol_out,cs_krvol_out,cs_zvol_out,&
-           asym34_out,ssa34_out
-  
+      real(r8) :: zeros(pcols)
 
       ! Number of columns and chunk ID
       ncol = state%ncol
       lchnk = state%lchnk
 
-      ! Initialize CAM variables as R_UNDEF, important for history files because it will exclude these from averages
-      ! initialize over all pcols, not just ncol.  missing values needed in chunks where ncol<pcols
-      tau067_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
-      emis11_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
-      asym34_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
-      ssa34_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
-      fracLiq_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
-  
-     
       ! ######################################################################################
       ! OUTPUT
       ! ######################################################################################
@@ -1832,16 +1817,13 @@ CONTAINS
          !        simulator. These fields are not part of the radar simulator standard output, as these fields
          !        are entirely dependent on the host models microphysics, not the retrieval.
 
-
          ! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue 
          call replace_values3d(cospOUT%cloudsat_cfad_ze(:ncol,:,:), R_UNDEF, 0._r8)
          call outfld('CFAD_DBZE94_CS',cospOUT%cloudsat_cfad_ze(:ncol,:,:), ncol, lchnk)
-         ! *NOTE* These two fields are joint-simulator products, but in CAM they are controlled
-         !        by the radar simulator control.
-         call outfld('CLDTOT_CALCS',  cospOUT%radar_lidar_tcc(1:ncol),     ncol, lchnk)
-         cldtot_cs(1:ncol)  = 0._r8
-         call outfld('CLDTOT_CS',     cldtot_cs(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
-         call outfld('CLDTOT_CS2',    cldtot_cs(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
+         call outfld('CLDTOT_CALCS',  cospOUT%radar_lidar_tcc(1:ncol), ncol, lchnk)
+         zeros(1:ncol)  = 0._r8
+         call outfld('CLDTOT_CS',     zeros(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
+         call outfld('CLDTOT_CS2',    zeros(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
          call outfld('CLD_CAL_NOTCS', cospOUT%lidar_only_freq_cloud(1:ncol,1:nht_cosp), ncol, lchnk)
 
          ! Cloudsat near-surface precipitation diagnostics
@@ -1865,7 +1847,6 @@ CONTAINS
       
       ! MODIS SIMULATOR OUTPUTS
       if (lmodis_sim) then
-         
 
          call outfld('CLTMODIS',cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol), ncol, lchnk)
          call outfld('CLWMODIS',cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), ncol, lchnk)
