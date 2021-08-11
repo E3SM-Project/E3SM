@@ -62,9 +62,7 @@ namespace scream {
             }
 
             // Initialize YAKL
-            if (!yakl::isInitialized()) {
-                yakl::init();
-            }
+            if (!yakl::isInitialized()) {  yakl::init(); }
 
             // Load and initialize absorption coefficient data
             load_and_init(k_dist_sw, coefficients_file_sw, gas_concs);
