@@ -837,7 +837,6 @@ CONTAINS
        end do
 
        ! addfld calls
-       !*cfOff,cf3hr* cfad_dbze94 (time,height,dbze,profile), default is 40 vert levs, 15 dBZ bins 
        call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','1',&
             'Radar Reflectivity Factor CFAD (94 GHz)',&
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -851,7 +850,6 @@ CONTAINS
        call addfld ('CLDTOT_CS2',horiz_only,'A','percent', &
             ' Radar total cloud amount without the data for the first kilometer above surface ', &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! dbze94 (time,height_mlev,column,profile),! height_mlevel = height when vgrid_in = .true. (default)
        call addfld ('DBZE_CS',(/'cosp_scol','lev      '/),'I','dBZe',' Radar dBZe (94 GHz) in each Subcolumn',&
             flag_xyfill=.true., fill_value=R_UNDEF)
 
@@ -905,56 +903,36 @@ CONTAINS
 
     ! MODIS OUTPUT
     if (lmodis_sim) then
-       ! float cltmodis ( time, loc )
        call addfld ('CLTMODIS',horiz_only,'A','%','MODIS Total Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clwmodis ( time, loc )
        call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float climodis ( time, loc )
        call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clhmodis ( time, loc )
        call addfld ('CLHMODIS',horiz_only,'A','%','MODIS High Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clmmodis ( time, loc )
        call addfld ('CLMMODIS',horiz_only,'A','%','MODIS Mid Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float cllmodis ( time, loc )
        call addfld ('CLLMODIS',horiz_only,'A','%','MODIS Low Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tautmodis ( time, loc )
        call addfld ('TAUTMODIS',horiz_only,'A','1','MODIS Total Cloud Optical Thickness*CLTMODIS',                  &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tauwmodis ( time, loc )
        call addfld ('TAUWMODIS',horiz_only,'A','1','MODIS Liquid Cloud Optical Thickness*CLWMODIS',                 &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tauimodis ( time, loc )
        call addfld ('TAUIMODIS',horiz_only,'A','1','MODIS Ice Cloud Optical Thickness*CLIMODIS',                    &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tautlogmodis ( time, loc )
        call addfld ('TAUTLOGMODIS',horiz_only,'A','1','MODIS Total Cloud Optical Thickness (Log10 Mean)*CLTMODIS',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tauwlogmodis ( time, loc )
        call addfld ('TAUWLOGMODIS',horiz_only,'A','1','MODIS Liquid Cloud Optical Thickness (Log10 Mean)*CLWMODIS', &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float tauilogmodis ( time, loc )
        call addfld ('TAUILOGMODIS',horiz_only,'A','1','MODIS Ice Cloud Optical Thickness (Log10 Mean)*CLIMODIS',    &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float reffclwmodis ( time, loc )
        call addfld ('REFFCLWMODIS',horiz_only,'A','m','MODIS Liquid Cloud Particle Size*CLWMODIS',                  &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float reffclimodis ( time, loc )
        call addfld ('REFFCLIMODIS',horiz_only,'A','m','MODIS Ice Cloud Particle Size*CLIMODIS',                     &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float pctmodis ( time, loc )
        call addfld ('PCTMODIS',horiz_only,'A','Pa','MODIS Cloud Top Pressure*CLTMODIS',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float lwpmodis ( time, loc )
        call addfld ('LWPMODIS',horiz_only,'A','kg m-2','MODIS Cloud Liquid Water Path*CLWMODIS',                    &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float iwpmodis ( time, loc )
        call addfld ('IWPMODIS',horiz_only,'A','kg m-2','MODIS Cloud Ice Water Path*CLIMODIS',flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clmodis ( time, plev, tau, loc )
        call addfld ('CLMODIS',(/'cosp_tau_modis','cosp_prs      '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clrimodis ( time, plev, tau, loc )
        call addfld ('CLRIMODIS',(/'cosp_tau_modis','cosp_reffice  '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! float clrlmodis ( time, plev, tau, loc )
        call addfld ('CLRLMODIS',(/'cosp_tau_modis','cosp_reffliq  '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
        
@@ -1765,46 +1743,7 @@ CONTAINS
       type(cosp_outputs), intent(inout) :: cospOUT  ! inout so we can fix before writing
       integer :: ncol, lchnk
       integer :: i,k,ip,it,ipt,ih,id,ihd,is,ihs,isc,ihsc,ihm,ihmt,ihml,itim_old,ifld 
-      ! Local copies of output variables
-      ! TODO: these should not be necessary; remove.
-      real(r8) :: cfad_dbze94(pcols,CLOUDSAT_DBZE_BINS,nht_cosp)   ! cfad_dbze94 (time,height,dbze,profile)
-      real(r8) :: cfad_lidarsr532(pcols,nsr_cosp,nht_cosp) ! cfad_lidarsr532 (time,height,scat_ratio,profile)
-      real(r8) :: dbze94(pcols,nscol_cosp,nhtml_cosp)      ! dbze94 (time,height_mlev,column,profile)
-      real(r8) :: cldtot_calcs(pcols)                      ! CAM cltlidarradar (time,profile)
       real(r8) :: cldtot_cs(pcols)                         ! CAM cltradar (time,profile)
-      real(r8) :: cldtot_cs2(pcols)                        ! CAM cltradar2 (time,profile)
-      real(r8) :: ptcloudsatflag0(pcols)
-      real(r8) :: ptcloudsatflag1(pcols)
-      real(r8) :: ptcloudsatflag2(pcols)
-      real(r8) :: ptcloudsatflag3(pcols)
-      real(r8) :: ptcloudsatflag4(pcols)
-      real(r8) :: ptcloudsatflag5(pcols)
-      real(r8) :: ptcloudsatflag6(pcols)
-      real(r8) :: ptcloudsatflag7(pcols)
-      real(r8) :: ptcloudsatflag8(pcols)
-      real(r8) :: ptcloudsatflag9(pcols)
-      real(r8) :: cloudsatpia(pcols)
-      real(r8) :: cltmodis(pcols)
-      real(r8) :: clwmodis(pcols)
-      real(r8) :: climodis(pcols)
-      real(r8) :: clhmodis(pcols)
-      real(r8) :: clmmodis(pcols)
-      real(r8) :: cllmodis(pcols)
-      real(r8) :: tautmodis(pcols)
-      real(r8) :: tauwmodis(pcols)
-      real(r8) :: tauimodis(pcols)
-      real(r8) :: tautlogmodis(pcols)
-      real(r8) :: tauwlogmodis(pcols)
-      real(r8) :: tauilogmodis(pcols)
-      real(r8) :: reffclwmodis(pcols)
-      real(r8) :: reffclimodis(pcols)
-      real(r8) :: pctmodis(pcols)
-      real(r8) :: lwpmodis(pcols)
-      real(r8) :: iwpmodis(pcols)
-      real(r8) :: clmodis(pcols,ntau_cosp_modis,nprs_cosp)
-      real(r8) :: clrimodis(pcols,ntau_cosp,numMODISReffIceBins)
-      real(r8) :: clrlmodis(pcols,ntau_cosp,numMODISReffLiqBins)
-      !real(r8) :: tau067_out(pcols,nhtml_cosp*nscol_cosp),emis11_out(pcols,nhtml_cosp*nscol_cosp)
       real(r8),dimension(pcols,nhtml_cosp*nscol_cosp) :: &
            tau067_out,emis11_out,fracliq_out,cal_betatot,cal_betatot_ice, &
            cal_betatot_liq,cal_tautot,cal_tautot_ice,cal_tautot_liq,cs_gvol_out,cs_krvol_out,cs_zvol_out,&
@@ -1816,114 +1755,14 @@ CONTAINS
       lchnk = state%lchnk
 
       ! Initialize CAM variables as R_UNDEF, important for history files because it will exclude these from averages
-      ! (multi-dimensional output that will be collapsed)
       ! initialize over all pcols, not just ncol.  missing values needed in chunks where ncol<pcols
-      cfad_dbze94(1:pcols,1:CLOUDSAT_DBZE_BINS,1:nht_cosp)  = R_UNDEF
-      cfad_lidarsr532(1:pcols,1:nsr_cosp,1:nht_cosp)= R_UNDEF
-      dbze94(1:pcols,1:nscol_cosp,1:nhtml_cosp)     = R_UNDEF
-      
-      ! (all CAM output variables. including collapsed variables)
-      ptcloudsatflag0(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag1(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag2(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag3(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag4(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag5(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag6(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag7(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag8(1:pcols)                         = R_UNDEF 
-      ptcloudsatflag9(1:pcols)                         = R_UNDEF 
-      cloudsatpia(1:pcols)                             = R_UNDEF 
-      cldtot_calcs(1:pcols)                            = R_UNDEF
-      cldtot_cs(1:pcols)                               = R_UNDEF
-      cldtot_cs2(1:pcols)                              = R_UNDEF
-      cltmodis(1:pcols)                                = R_UNDEF
-      clwmodis(1:pcols)                                = R_UNDEF
-      climodis(1:pcols)                                = R_UNDEF
-      clhmodis(1:pcols)                                = R_UNDEF
-      clmmodis(1:pcols)                                = R_UNDEF
-      cllmodis(1:pcols)                                = R_UNDEF
-      tautmodis(1:pcols)                               = R_UNDEF
-      tauwmodis(1:pcols)                               = R_UNDEF
-      tauimodis(1:pcols)                               = R_UNDEF
-      tautlogmodis(1:pcols)                            = R_UNDEF
-      tauwlogmodis(1:pcols)                            = R_UNDEF
-      tauilogmodis(1:pcols)                            = R_UNDEF
-      reffclwmodis(1:pcols)                            = R_UNDEF
-      reffclimodis(1:pcols)                            = R_UNDEF
-      pctmodis(1:pcols)                                = R_UNDEF
-      lwpmodis(1:pcols)                                = R_UNDEF
-      iwpmodis(1:pcols)                                = R_UNDEF
-      clmodis(1:pcols,1:ntau_cosp_modis,1:nprs_cosp)   = R_UNDEF
-      clrimodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffIceBins)   = R_UNDEF ! +cosp2
-      clrlmodis(1:pcols,1:ntau_cosp_modis,1:numMODISReffLiqBins)   = R_UNDEF ! +cosp2
       tau067_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
       emis11_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
       asym34_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
       ssa34_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
       fracLiq_out(1:pcols,1:nhtml_cosp*nscol_cosp)      = R_UNDEF ! +cosp2
   
-  
-      ! ######################################################################################
-      ! Copy COSP outputs to CAM fields.
-      ! ######################################################################################
-      
-      ! Cloudsat
-      if (lradar_sim) then 
-         cfad_dbze94(1:ncol,1:CLOUDSAT_DBZE_BINS,1:nht_cosp) = cospOUT%cloudsat_cfad_ze  ! cfad_dbze94 (time,height,dbze,profile)
-         dbze94(1:ncol,1:nscol_cosp,1:nhtml_cosp)    = cospOUT%cloudsat_Ze_tot                      ! dbze94 (time,height_mlev,column,profile)
-         cldtot_cs(1:ncol)  = 0._r8!cospOUT%cloudsat_radar_tcc                                      ! CAM version of cltradar (time,profile)  ! NOT COMPUTED IN COSP2
-         cldtot_cs2(1:ncol) = 0._r8!cospOUT%cloudsat_radar_tcc2                                     ! CAM version of cltradar2 (time,profile) ! NOT COMPUTED IN COSP2     
-         ! *NOTE* These two fields are joint-simulator products, but in CAM they are controlled
-         !        by the radar simulator control.
-         cldtot_calcs(1:ncol) = cospOUT%radar_lidar_tcc                                             ! CAM version of cltlidarradar (time,profile)
-  
-         ! Cloudsat near-surface precipitation diagnostics
-         ptcloudsatflag0(1:ncol) = cospOUT%cloudsat_precip_cover(:,1)
-         ptcloudsatflag1(1:ncol) = cospOUT%cloudsat_precip_cover(:,2)
-         ptcloudsatflag2(1:ncol) = cospOUT%cloudsat_precip_cover(:,3)
-         ptcloudsatflag3(1:ncol) = cospOUT%cloudsat_precip_cover(:,4)
-         ptcloudsatflag4(1:ncol) = cospOUT%cloudsat_precip_cover(:,5)
-         ptcloudsatflag5(1:ncol) = cospOUT%cloudsat_precip_cover(:,6)
-         ptcloudsatflag6(1:ncol) = cospOUT%cloudsat_precip_cover(:,7)
-         ptcloudsatflag7(1:ncol) = cospOUT%cloudsat_precip_cover(:,8)
-         ptcloudsatflag8(1:ncol) = cospOUT%cloudsat_precip_cover(:,9)
-         ptcloudsatflag9(1:ncol) = cospOUT%cloudsat_precip_cover(:,10)
-         cloudsatpia(1:ncol)     = cospOUT%cloudsat_pia
-         
-         ! Output the mixing-ratio for all hydrometeor types in Cloudsat near-surface precipitation diagnostics
-         ! *NOTE* These fields are simply the native CAM mixing-ratios for each hydrometeor type used in the 
-         !        CAM6 microphysics scheme, interpolated to the same vertical grid used by the Cloudsat
-         !        simulator. These fields are not part of the radar simulator standard output, as these fields
-         !        are entirely dependent on the host models microphysics, not the retrieval.
-  
-  
-      endif
-      
-      ! MODIS
-      if (lmodis_sim) then
-         cltmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Total_Mean
-         clwmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Water_Mean
-         climodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Ice_Mean
-         clhmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_High_Mean
-         clmmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Mid_Mean
-         cllmodis(1:ncol)     = cospOUT%modis_Cloud_Fraction_Low_Mean
-         tautmodis(1:ncol)    = cospOUT%modis_Optical_Thickness_Total_Mean
-         tauwmodis(1:ncol)    = cospOUT%modis_Optical_Thickness_Water_Mean
-         tauimodis(1:ncol)    = cospOUT%modis_Optical_Thickness_Ice_Mean
-         tautlogmodis(1:ncol) = cospOUT%modis_Optical_Thickness_Total_LogMean
-         tauwlogmodis(1:ncol) = cospOUT%modis_Optical_Thickness_Water_LogMean
-         tauilogmodis(1:ncol) = cospOUT%modis_Optical_Thickness_Ice_LogMean
-         reffclwmodis(1:ncol) = cospOUT%modis_Cloud_Particle_Size_Water_Mean
-         reffclimodis(1:ncol) = cospOUT%modis_Cloud_Particle_Size_Ice_Mean
-         pctmodis(1:ncol)     = cospOUT%modis_Cloud_Top_Pressure_Total_Mean
-         lwpmodis(1:ncol)     = cospOUT%modis_Liquid_Water_Path_Mean
-         iwpmodis(1:ncol)     = cospOUT%modis_Ice_Water_Path_Mean
-         clmodis(1:ncol,1:ntau_cosp_modis,1:nprs_cosp)  = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure 
-         clrimodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffIceBins) = cospOUT%modis_Optical_Thickness_vs_ReffICE
-         clrlmodis(1:ncol,1:ntau_cosp_modis,1:numMODISReffLiqBins) = cospOUT%modis_Optical_Thickness_vs_ReffLIQ
-      endif
-      
+     
       ! ######################################################################################
       ! OUTPUT
       ! ######################################################################################
@@ -1986,24 +1825,37 @@ CONTAINS
       
       ! RADAR SIMULATOR OUTPUTS
       if (lradar_sim) then
+        
+         ! Output the mixing-ratio for all hydrometeor types in Cloudsat near-surface precipitation diagnostics
+         ! *NOTE* These fields are simply the native CAM mixing-ratios for each hydrometeor type used in the 
+         !        CAM6 microphysics scheme, interpolated to the same vertical grid used by the Cloudsat
+         !        simulator. These fields are not part of the radar simulator standard output, as these fields
+         !        are entirely dependent on the host models microphysics, not the retrieval.
+
+
          ! fails check_accum if this is set... with ht_cosp set relative to sea level, mix of R_UNDEF and realvalue 
-         call replace_values3d(cfad_dbze94(:ncol,:,:), R_UNDEF, 0._r8)
-         call outfld('CFAD_DBZE94_CS',cfad_dbze94,   pcols, lchnk)
-         call outfld('CLDTOT_CALCS',  cldtot_calcs,     pcols, lchnk)
-         call outfld('CLDTOT_CS',     cldtot_cs,        pcols, lchnk)
-         call outfld('CLDTOT_CS2',    cldtot_cs2,       pcols, lchnk)
+         call replace_values3d(cospOUT%cloudsat_cfad_ze(:ncol,:,:), R_UNDEF, 0._r8)
+         call outfld('CFAD_DBZE94_CS',cospOUT%cloudsat_cfad_ze(:ncol,:,:), ncol, lchnk)
+         ! *NOTE* These two fields are joint-simulator products, but in CAM they are controlled
+         !        by the radar simulator control.
+         call outfld('CLDTOT_CALCS',  cospOUT%radar_lidar_tcc(1:ncol),     ncol, lchnk)
+         cldtot_cs(1:ncol)  = 0._r8
+         call outfld('CLDTOT_CS',     cldtot_cs(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
+         call outfld('CLDTOT_CS2',    cldtot_cs(1:ncol), ncol, lchnk)  ! No longer in COSP; TODO: remove
          call outfld('CLD_CAL_NOTCS', cospOUT%lidar_only_freq_cloud(1:ncol,1:nht_cosp), ncol, lchnk)
-         call outfld('CS_NOPRECIP',   ptcloudsatflag0,  pcols, lchnk)
-         call outfld('CS_RAINPOSS',   ptcloudsatflag1,  pcols, lchnk)
-         call outfld('CS_RAINPROB',   ptcloudsatflag2,  pcols, lchnk)
-         call outfld('CS_RAINCERT',   ptcloudsatflag3,  pcols, lchnk)
-         call outfld('CS_SNOWPOSS',   ptcloudsatflag4,  pcols, lchnk)
-         call outfld('CS_SNOWCERT',   ptcloudsatflag5,  pcols, lchnk)
-         call outfld('CS_MIXPOSS',    ptcloudsatflag6,  pcols, lchnk)
-         call outfld('CS_MIXCERT',    ptcloudsatflag7,  pcols, lchnk)
-         call outfld('CS_RAINHARD',   ptcloudsatflag8,  pcols, lchnk)
-         call outfld('CS_UN',         ptcloudsatflag9,  pcols, lchnk)
-         call outfld('CS_PIA',        cloudsatpia,      pcols, lchnk)
+
+         ! Cloudsat near-surface precipitation diagnostics
+         call outfld('CS_NOPRECIP', cospOUT%cloudsat_precip_cover(1:ncol,1 ),  ncol, lchnk)
+         call outfld('CS_RAINPOSS', cospOUT%cloudsat_precip_cover(1:ncol,2 ),  ncol, lchnk)
+         call outfld('CS_RAINPROB', cospOUT%cloudsat_precip_cover(1:ncol,3 ),  ncol, lchnk)
+         call outfld('CS_RAINCERT', cospOUT%cloudsat_precip_cover(1:ncol,4 ),  ncol, lchnk)
+         call outfld('CS_SNOWPOSS', cospOUT%cloudsat_precip_cover(1:ncol,5 ),  ncol, lchnk)
+         call outfld('CS_SNOWCERT', cospOUT%cloudsat_precip_cover(1:ncol,6 ),  ncol, lchnk)
+         call outfld('CS_MIXPOSS' , cospOUT%cloudsat_precip_cover(1:ncol,7 ),  ncol, lchnk)
+         call outfld('CS_MIXCERT' , cospOUT%cloudsat_precip_cover(1:ncol,8 ),  ncol, lchnk)
+         call outfld('CS_RAINHARD', cospOUT%cloudsat_precip_cover(1:ncol,9 ),  ncol, lchnk)
+         call outfld('CS_UN'      , cospOUT%cloudsat_precip_cover(1:ncol,10),  ncol, lchnk)
+         call outfld('CS_PIA'     , cospOUT%cloudsat_pia(1:ncol)            ,  ncol, lchnk)
       end if
       
       ! MISR SIMULATOR OUTPUTS
@@ -2013,106 +1865,42 @@ CONTAINS
       
       ! MODIS SIMULATOR OUTPUTS
       if (lmodis_sim) then
-         call outfld('CLTMODIS',cltmodis    ,pcols,lchnk)
-         call outfld('CLWMODIS',clwmodis    ,pcols,lchnk)
-         call outfld('CLIMODIS',climodis    ,pcols,lchnk)
-         call outfld('CLHMODIS',clhmodis    ,pcols,lchnk)
-         call outfld('CLMMODIS',clmmodis    ,pcols,lchnk)
-         call outfld('CLLMODIS',cllmodis    ,pcols,lchnk)
          
-         !! where there is no cloud fraction or no retrieval, set to R_UNDEF, 
-         !! otherwise weight retrieval by cloud fraction
-         where ((cltmodis(:ncol) .eq. R_UNDEF) .or. (tautmodis(:ncol) .eq. R_UNDEF))
-            tautmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction cltmodis
-            tautmodis(:ncol) = tautmodis(:ncol)*cltmodis(:ncol)
-         end where
-         call outfld('TAUTMODIS',tautmodis    ,pcols,lchnk)
+
+         call outfld('CLTMODIS',cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol), ncol, lchnk)
+         call outfld('CLWMODIS',cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), ncol, lchnk)
+         call outfld('CLIMODIS',cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)  , ncol, lchnk)
+         call outfld('CLHMODIS',cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol) , ncol, lchnk)
+         call outfld('CLMMODIS',cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)  , ncol, lchnk)
+         call outfld('CLLMODIS',cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)  , ncol, lchnk)
          
-         where ((tauwmodis(:ncol) .eq. R_UNDEF) .or. (clwmodis(:ncol) .eq. R_UNDEF))
-            tauwmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction clwmodis
-            tauwmodis(:ncol) = tauwmodis(:ncol)*clwmodis(:ncol)
-         end where
-         call outfld('TAUWMODIS',tauwmodis    ,pcols,lchnk)
-         
-         where ((tauimodis(:ncol) .eq. R_UNDEF) .or. (climodis(:ncol) .eq. R_UNDEF))
-            tauimodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction climodis
-            tauimodis(:ncol) = tauimodis(:ncol)*climodis(:ncol)
-         end where
-         call outfld('TAUIMODIS',tauimodis    ,pcols,lchnk)
-         
-         where ((tautlogmodis(:ncol)  .eq. R_UNDEF) .or. (cltmodis(:ncol) .eq. R_UNDEF))
-            tautlogmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction cltmodis
-            tautlogmodis(:ncol) = tautlogmodis(:ncol)*cltmodis(:ncol)
-         end where
-         call outfld('TAUTLOGMODIS',tautlogmodis    ,pcols,lchnk)
-         
-         where ((tauwlogmodis(:ncol)  .eq. R_UNDEF) .or. (clwmodis(:ncol) .eq. R_UNDEF))
-            tauwlogmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction clwmodis
-            tauwlogmodis(:ncol) = tauwlogmodis(:ncol)*clwmodis(:ncol)
-         end where
-         call outfld('TAUWLOGMODIS',tauwlogmodis    ,pcols,lchnk)
-         
-         where ((tauilogmodis(:ncol)  .eq. R_UNDEF) .or. (climodis(:ncol) .eq. R_UNDEF)) 
-            tauilogmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction climodis
-            tauilogmodis(:ncol) = tauilogmodis(:ncol)*climodis(:ncol)
-         end where
-         call outfld('TAUILOGMODIS',tauilogmodis    ,pcols,lchnk)
-         
-         where ((reffclwmodis(:ncol)  .eq. R_UNDEF) .or. (clwmodis(:ncol) .eq. R_UNDEF)) 
-            reffclwmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction clwmodis
-            reffclwmodis(:ncol) = reffclwmodis(:ncol)*clwmodis(:ncol)
-         end where
-         call outfld('REFFCLWMODIS',reffclwmodis    ,pcols,lchnk)
-         
-         where ((reffclimodis(:ncol)  .eq. R_UNDEF) .or. (climodis(:ncol) .eq. R_UNDEF))
-            reffclimodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction climodis
-            reffclimodis(:ncol) = reffclimodis(:ncol)*climodis(:ncol)
-         end where
-         call outfld('REFFCLIMODIS',reffclimodis    ,pcols,lchnk)
-         
-         where ((pctmodis(:ncol)  .eq. R_UNDEF) .or. ( cltmodis(:ncol) .eq. R_UNDEF))
-            pctmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction cltmodis
-            pctmodis(:ncol) = pctmodis(:ncol)*cltmodis(:ncol)
-         end where
-         call outfld('PCTMODIS',pctmodis    ,pcols,lchnk)
-         
-         where ((lwpmodis(:ncol)  .eq. R_UNDEF) .or. (clwmodis(:ncol) .eq. R_UNDEF))
-            lwpmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction clwmodis
-            lwpmodis(:ncol) = lwpmodis(:ncol)*clwmodis(:ncol)
-         end where
-         call outfld('LWPMODIS',lwpmodis    ,pcols,lchnk)
-         
-         where ((iwpmodis(:ncol)  .eq. R_UNDEF) .or. (climodis(:ncol) .eq. R_UNDEF))
-            iwpmodis(:ncol) = R_UNDEF
-         elsewhere
-            !! weight by the cloud fraction climodis
-            iwpmodis(:ncol) = iwpmodis(:ncol)*climodis(:ncol)
-         end where
-         call outfld('IWPMODIS',iwpmodis    ,pcols,lchnk)
-         
-         call outfld('CLMODIS',clmodis,pcols,lchnk) 
-         call outfld('CLRIMODIS',clrimodis,pcols,lchnk) 
-         call outfld('CLRLMODIS',clrlmodis,pcols,lchnk) 
+         ! where there is no cloud fraction or no retrieval, set to R_UNDEF, 
+         ! otherwise weight retrievals by cloud fraction
+         call weight_output(cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol), cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol), cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol), cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Liquid_Water_Path_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol), R_UNDEF)
+         call weight_output(cospOUT%modis_Ice_Water_Path_Mean(1:ncol), cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol), R_UNDEF)
+         call outfld('TAUTMODIS'   , cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)   , ncol, lchnk)
+         call outfld('TAUWMODIS'   , cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)   , ncol, lchnk)
+         call outfld('TAUIMODIS'   , cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)     , ncol, lchnk)
+         call outfld('TAUTLOGMODIS', cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol), ncol, lchnk)
+         call outfld('TAUWLOGMODIS', cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol), ncol, lchnk)
+         call outfld('TAUILOGMODIS', cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)  , ncol, lchnk)
+         call outfld('REFFCLWMODIS', cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol) , ncol, lchnk)
+         call outfld('REFFCLIMODIS', cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)   , ncol, lchnk)
+         call outfld('PCTMODIS'    , cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)  , ncol, lchnk)
+         call outfld('LWPMODIS'    , cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)         , ncol, lchnk)
+         call outfld('IWPMODIS'    , cospOUT%modis_Ice_Water_Path_Mean(1:ncol)            , ncol, lchnk)
+         call outfld('CLMODIS'     , cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,1:ntau_cosp_modis,1:nprs_cosp),ncol,lchnk) 
+         call outfld('CLRIMODIS'   , cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,1:ntau_cosp_modis,1:numMODISReffIceBins), ncol, lchnk) 
+         call outfld('CLRLMODIS'   , cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,1:ntau_cosp_modis,1:numMODISReffLiqBins), ncol, lchnk) 
       end if
       
       ! SUB-COLUMN OUTPUT
@@ -2126,11 +1914,22 @@ CONTAINS
             call outfld('ATB532_CAL',cospOUT%calipso_beta_tot(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk) !! fails check_accum if 'A'
          end if
          if (lradar_sim) then
-            call outfld('DBZE_CS',dbze94,pcols,lchnk) !! fails check_accum if 'A'
+            call outfld('DBZE_CS',cospOUT%cloudsat_Ze_tot(1:ncol,:,:), ncol, lchnk) !! fails check_accum if 'A'
          end if
       end if
    end subroutine cosp_write_outputs
 #endif
+
+   subroutine weight_output(arr, wgt, fillvalue)
+      real(r8), intent(inout) :: arr(:)
+      real(r8), intent(in)    :: wgt(:)
+      real(r8), intent(in)    :: fillvalue
+      where ((arr  .eq. fillvalue) .or. (wgt .eq. fillvalue))
+         arr = fillvalue
+      elsewhere
+         arr = arr * wgt
+      end where
+   end subroutine weight_output
 
    subroutine replace_values2d(arr, v1, v2)
       real(r8), intent(inout) :: arr(:,:)
