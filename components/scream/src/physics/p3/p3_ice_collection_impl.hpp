@@ -129,7 +129,7 @@ void Functions<S,D>
     Eii_fact.set(!qm_incld_positive && context, 1);
 
     ni_selfcollect_tend.set(qi_incld_gt_small,
-              table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld*ni_incld);
+	      table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld*ni_incld );
   }
 }
 

@@ -39,7 +39,7 @@ void Functions<S,D>
   const auto t_lt_tval2 = T_atm < tval2;
 
   eii.set(t_lt_tval1 && context,sp(0.001));
-  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.001)+(T_atm-sp(tval1))*(sp(0.3) - 0.001)/dtval);
+  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.001)+( T_atm-sp(tval1) )*( sp(0.3) - sp(0.001) )/dtval);
   eii.set(!t_lt_tval1 && !t_lt_tval2 && context, sp(0.3) );
 }
 
