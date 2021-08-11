@@ -31,6 +31,9 @@ struct SPAFunctions
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
+  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
+  using Workspace        = typename WorkspaceManager::Workspace;
+
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   template <typename S>
@@ -40,6 +43,9 @@ struct SPAFunctions
   template <typename S>
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
+  template <typename S, int N>
+  using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
+
   /* ------------------------------------------------------------------------------------------- */
   // SPA structures to help manage all of the variables:
   struct SPATimeState {
@@ -48,6 +54,8 @@ struct SPAFunctions
     Int current_month;
     // Julian Date for the beginning of the month
     Real t_beg_month;
+    // Current simulation Julian Date
+    Real t_now;
     // Number of days in the current month, cast as a Real
     Real days_this_month;
   }; // SPATimeState
@@ -63,6 +71,8 @@ struct SPAFunctions
     view_1d<const Real> ps_next_month;
     // Hybrid coordinate values
     view_1d<const Spack> hyam, hybm;
+    // Current simulation pressure levels
+    view_2d<const Spack> pmid;
   }; // SPAPressureState
 
   struct SPAData {
@@ -78,67 +88,30 @@ struct SPAFunctions
     // AER_TAU_SW - 14 bands
     view_3d<const Spack> AER_TAU_SW;
   }; // SPAPrescribedAerosolData
+
+  struct SPAOutput {
+    SPAOutput() = default;
+    // CCN3
+    view_2d<Spack> CCN3;
+    // AER_G_SW - 14 bands
+    view_3d<Spack> AER_G_SW;
+    // AER_SSA_SW - 14 bands
+    view_3d<Spack> AER_SSA_SW;
+    // AER_TAU_LW - 16 bands
+    view_3d<Spack> AER_TAU_LW;
+    // AER_TAU_SW - 14 bands
+    view_3d<Spack> AER_TAU_SW;
+  }; // SPAPrescribedAerosolData
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
-  KOKKOS_INLINE_FUNCTION
-  static void reconstruct_pressure_profile(
-    const Int ncols,
-    const Int nlevs,
-    const view_1d<const Spack>& hya,
-    const view_1d<const Spack>& hyb,
-    const view_1d<const Real>&  PS,
-    const view_2d<Spack>&       pres);
-
-  KOKKOS_INLINE_FUNCTION
-  static void aero_vertical_remap(
-    const Int ncols,
-    const Int nlevs_src,
-    const Int nlevs_tgt,
-    const view_2d<const Spack>& pres_src,
-    const view_2d<const Spack>& pres_tgt,
-    const view_2d<const Spack>& aero_src,
-    const view_2d<Spack>& aero_tgt); 
-
-  template<typename ScalarY>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarY aero_time_interp(
-    const Real& t0,
-    const Real& ts,
-    const Real& tlen,
-    const ScalarY& y0,
-    const ScalarY& y1);
-
-  KOKKOS_INLINE_FUNCTION
-  static void aero_time_interp(
-    const MemberType& team,
-    const Real& t0,
-    const Real& ts,
-    const Real& tlen,
-    const uview_1d<const Spack>& y0,
-    const uview_1d<const Spack>& y1,
-    const uview_1d<Spack>&       y_out);
-
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_current_data_ps(
-    const Int&  ncols,
-    const Real& t0,
-    const Real& ts,
-    const Real& tlen,
-    const view_1d<const Real>& ps_0,
-    const view_1d<const Real>& ps_1,
-    const view_1d<Real>&       ps_out);
-
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_current_data_concentrations(
-    const Int& ncols,
-    const Int& nlevs,
-    const Real& t0,
-    const Real& ts,
-    const Real& tlen,
-    const view_2d<const Spack>& y0,
-    const view_2d<const Spack>& y1,
-    const view_2d<Spack>&       yout);
-
+  static void spa_main(
+    const SPATimeState& time_state,
+    const SPAPressureState& pressure_state,
+    const SPAData&   data_beg,
+    const SPAData&   data_end,
+    const SPAOutput& data_out,
+    Int ncols,
+    Int nlevs);
 }; // struct Functions
 
 } // namespace spa 

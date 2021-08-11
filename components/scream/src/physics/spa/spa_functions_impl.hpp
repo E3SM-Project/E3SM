@@ -10,150 +10,92 @@ namespace spa {
 
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
 void SPAFunctions<S,D>
-:: reconstruct_pressure_profile(
-  const Int ncols,
-  const Int nlevs,
-  const view_1d<const Spack>& hya,
-  const view_1d<const Spack>& hyb,
-  const view_1d<const Real>&  PS,
-  const view_2d<Spack>&       pres)
+::spa_main(
+  const SPATimeState& time_state,
+  const SPAPressureState& pressure_state,
+  const SPAData&   data_beg,
+  const SPAData&   data_end,
+  const SPAOutput& data_out,
+  Int ncols,
+  Int nlevs)
 {
-  using C = scream::physics::Constants<Real>;
-  static constexpr auto P0 = C::P0;
+  // Gather time stamp info
+  auto& t_now = time_state.t_now;
+  auto& t_beg = time_state.t_beg_month;
+  auto& t_len = time_state.days_this_month;
+
+  // For now we require that the Data in and the Data out have the same number of columns.
+  EKAT_REQUIRE(ncols==pressure_state.ncols);
+
+  view_2d<Spack> p_src("p_mid_src",ncols,pressure_state.nlevs), ccn3_src("ccn3_src",ncols,pressure_state.nlevs);
+
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nlevs);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nk_pack);
+  // SPA Main loop
   Kokkos::parallel_for(
-    "reconstruct SPA pressure profile",
-    policy,
-    KOKKOS_LAMBDA(const MemberType& team) {
-
-    const Int i = team.league_rank();
-    const auto pres_sub = ekat::subview(pres, i);
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
-        pres_sub(k) = PS(i) * hyb(k) + P0 * hya(k);
-      });
-    });
-
-} // reconstruct_pressure_profile
-/*-----------------------------------------------------------------*/
-template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
-void SPAFunctions<S,D>
-::aero_vertical_remap(
-    const Int ncols,
-    const Int nlevs_src,
-    const Int nlevs_tgt,
-    const view_2d<const Spack>& pres_src,
-    const view_2d<const Spack>& pres_tgt,
-    const view_2d<const Spack>& aero_src,
-    const view_2d<Spack>& aero_tgt) 
-{
-  using LIV = ekat::LinInterp<Real,Spack::n>;
-  Real minthreshold = 0.0;  // Hard-code a minimum value for CCN to zero.
-  LIV VertInterp(ncols,nlevs_src,nlevs_tgt,minthreshold); 
-  {
-    Kokkos::parallel_for("vertical-interp-spa",
-      VertInterp.m_policy,
-      KOKKOS_LAMBDA(typename LIV::MemberType const& team_member) {
-        const int i = team_member.league_rank();
-        VertInterp.setup(team_member,
-                         ekat::subview(pres_src,i),
-                         ekat::subview(pres_tgt,i));
-        team_member.team_barrier();
-        VertInterp.lin_interp(team_member,
-                              ekat::subview(pres_src,i),
-                              ekat::subview(pres_tgt,i),
-                              ekat::subview(aero_src,i),
-                              ekat::subview(aero_tgt,i));
-      });
-  }
-
-} // aero_vertical_remap
-/*-----------------------------------------------------------------*/
-template <typename S, typename D>
-template <typename ScalarY>
-KOKKOS_INLINE_FUNCTION
-ScalarY SPAFunctions<S,D>::aero_time_interp(
-  const Real& t0,
-  const Real& ts,
-  const Real& tlen,
-  const ScalarY& y0,
-  const ScalarY& y1)
-{
-  // Simple linear interpolation: y_out = b + m*x, b = y0, m = (y1-y0)/tlen
-  return y0 + (ts-t0) * (y1-y0)/tlen;
-} // aero_time_interp
-/*-----------------------------------------------------------------*/
-template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
-void SPAFunctions<S,D>::
-aero_time_interp(
-  const MemberType& team,
-  const Real& t0,
-  const Real& ts,
-  const Real& tlen,
-  const uview_1d<const Spack>& y0,
-  const uview_1d<const Spack>& y1,
-  const uview_1d<Spack>&       y_out)
-{
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,y_out.extent(0)),
-                       [&] (const int k) {
-    y_out(k) = aero_time_interp(t0, ts, tlen, y0(k), y1(k));
-  });
-} // aero_time_interp
-/*-----------------------------------------------------------------*/
-template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
-void SPAFunctions<S,D>::
-calculate_current_data_ps(
-  const Int&  ncols,
-  const Real& t0,
-  const Real& ts,
-  const Real& tlen,
-  const view_1d<const Real>& ps_0,
-  const view_1d<const Real>& ps_1,
-  const view_1d<Real>&       ps_out)
-{
-  using ExeSpace = typename KT::ExeSpace;
-  Kokkos::parallel_for("time-interp-PS",
-    ncols,
-    KOKKOS_LAMBDA(const int& i) {
-      ps_out(i) = aero_time_interp(t0, ts, tlen, ps_0(i), ps_1(i));
-    });
-} // calculate_current_data_ps
-/*-----------------------------------------------------------------*/
-template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION
-void SPAFunctions<S,D>::
-calculate_current_data_concentrations(
-  const Int& ncols,
-  const Int& nlevs,
-  const Real& t0,
-  const Real& ts,
-  const Real& tlen,
-  const view_2d<const Spack>& y0,
-  const view_2d<const Spack>& y1,
-  const view_2d<Spack>&       yout)
-{
-  using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nlevs);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nk_pack);
-  Kokkos::parallel_for(
-    "time-interp-aero",
+    "spa main loop",
     policy,
     KOKKOS_LAMBDA(const MemberType& team) {
 
       const Int i = team.league_rank();
-      const auto& y0_sub   = ekat::subview(y0,i);
-      const auto& y1_sub   = ekat::subview(y1,i);
-      const auto& yout_sub = ekat::subview(yout,i);
-      aero_time_interp(team, t0, ts, tlen, y0_sub, y1_sub, yout_sub);
-    });
-} // calculate_current_data_concentrations
+
+      // Get single-column subviews of all inputs
+      const auto& pmid_sub                   = ekat::subview(pressure_state.pmid, i);
+      const auto& ps_beg_sub                 = pressure_state.ps_this_month(i);
+      const auto& ps_end_sub                 = pressure_state.ps_next_month(i);
+      const auto& ccn3_beg_sub               = ekat::subview(data_beg.CCN3, i);
+      const auto& ccn3_end_sub               = ekat::subview(data_end.CCN3, i);
+      const auto& ccn3_tgt_sub               = ekat::subview(data_out.CCN3, i);
+
+      const auto& p_src_sub    = ekat::subview(p_src, i);
+      const auto& ccn3_src_sub = ekat::subview(ccn3_src, i);
+
+      // First Step: Horizontal Interpolation if needed - Skip for Now
+  
+      // Second Step: Temporal Interpolation
+      auto slope = (t_now-t_beg)/t_len;
+      /* Determine PS for the source data at this time */
+      auto ps_src  =  ps_beg_sub + slope * (ps_end_sub-ps_beg_sub);
+      /* Reconstruct the vertical pressure profile for the data and time interpolation
+       * of the data */
+      {
+      using C = scream::physics::Constants<Real>;
+      static constexpr auto P0 = C::P0;
+      const Int nk_pack = ekat::npack<Spack>(pressure_state.nlevs);
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+          p_src_sub(k) = ps_src * pressure_state.hybm(k) + P0 * pressure_state.hyam(k);
+          ccn3_src_sub(k) = ccn3_beg_sub(k) + slope * (ccn3_end_sub(k) - ccn3_beg_sub(k));
+      });
+      team.team_barrier();
+    }
+  });
+  Kokkos::fence();
+
+  using LIV = ekat::LinInterp<Real,Spack::n>;
+  Real minthreshold = 0.0;  // Hard-code a minimum value for aerosol concentration to zero.
+
+  LIV VertInterp(ncols,pressure_state.nlevs,nlevs,minthreshold);
+  Kokkos::parallel_for("vertical-interp-spa",
+    VertInterp.m_policy,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+      const int i = team.league_rank();
+      VertInterp.setup(team,
+                       ekat::subview(p_src,i),
+                       ekat::subview(pressure_state.pmid,i));
+      team.team_barrier();
+      VertInterp.lin_interp(team,
+                            ekat::subview(p_src,i),
+                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(ccn3_src,i),
+                            ekat::subview(data_out.CCN3,i));
+      team.team_barrier();
+  });
+  Kokkos::fence();
+
+}
 /*-----------------------------------------------------------------*/
 
 } // namespace spa

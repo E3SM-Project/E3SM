@@ -53,6 +53,14 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_G_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_G_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_SSA_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_SSA_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_TAU_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_TAU_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_TAU_LW_beg"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Required>("AER_TAU_LW_end"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
@@ -136,51 +144,28 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
   SPAPressureState.hybm          = m_spa_fields_in["hybm"].get_reshaped_view<const Pack*>();
   SPAPressureState.ps_this_month = m_spa_fields_in["PS_beg"].get_reshaped_view<const Real*>();
   SPAPressureState.ps_next_month = m_spa_fields_in["PS_end"].get_reshaped_view<const Real*>();
+  SPAPressureState.pmid          = m_spa_fields_in["p_mid"].get_reshaped_view<const Pack**>();
+
   SPAData_start.CCN3             = m_spa_fields_in["CCN3_beg"].get_reshaped_view<const Pack**>();
   SPAData_end.CCN3               = m_spa_fields_in["CCN3_end"].get_reshaped_view<const Pack**>();
+
+  SPAData_out.CCN3               = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
 }
 
 // =========================================================================================
 void SPA::run_impl (const Real dt)
 {
-  const auto& p_mid        = m_spa_fields_in["p_mid"].get_reshaped_view<const Pack**>();
-  const auto& nc_activated = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
-
-  const auto& p_mid_src    = m_buffer.p_mid_src;
-  const auto& ps_src       = m_buffer.ps_src;
-  const auto& ccn3_src     = m_buffer.ccn3_src;
-
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
   /* Update time data if the month has changed */
+  SPATimeState.t_now = ts.get_julian_day();
   if (ts.get_months() != SPATimeState.current_month) {
     SPATimeState.current_month = ts.get_months();
     SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
     SPATimeState.days_this_month = (Real)ts.get_dpm();
   }
-  const Real t_now = ts.get_julian_day();
-  const Real t_beg = SPATimeState.t_beg_month;
-  const Real t_len = SPATimeState.days_this_month;
-  const Int  ncols = SPAPressureState.ncols;
-  const Int  nlevs = SPAPressureState.nlevs;
-  const auto hyam  = SPAPressureState.hyam;
-  const auto hybm  = SPAPressureState.hybm;
 
-  // First Step: Horizontal Interpolation if needed - Skip for Now
-
-  // Second Step: Temporal Interpolation
-  /* First determine PS for the source data at this time */
-  SPAFunc::calculate_current_data_ps(ncols,t_beg, t_now, t_len, SPAPressureState.ps_this_month, SPAPressureState.ps_next_month,ps_src);
-  /* Next, interpolate all of the ccn data */
-  SPAFunc::calculate_current_data_concentrations(ncols,nlevs,t_beg, t_now, t_len,SPAData_start.CCN3,SPAData_end.CCN3,ccn3_src);
-
-  // Final Step: Vertical Interpolation of aerosol data at all columns
-  /* First construct the source pressure interface levels */
-  SPAFunc::reconstruct_pressure_profile(ncols,nlevs,hyam,hybm,ps_src,p_mid_src);
-  /* Next, use EKAT interpolation to remap CCN data onto current set of pressure levels */
-  SPAFunc::aero_vertical_remap(ncols,nlevs,m_num_levs,p_mid_src,p_mid,ccn3_src,nc_activated);
- 
-  // TODO, when all three interpolations are finished in run_impl, create a "SPA_main" routine that calls all three in order and simplify run_impl. 
+  SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs);
 
   // Advance current timestamp.
   ts += dt;

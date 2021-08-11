@@ -115,6 +115,7 @@ protected:
   SPAFunc::SPAPressureState SPAPressureState;
   SPAFunc::SPAData          SPAData_start;
   SPAFunc::SPAData          SPAData_end;
+  SPAFunc::SPAOutput        SPAData_out;
 
 }; // class SPA 
 
