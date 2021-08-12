@@ -77,17 +77,17 @@ module RunoffMod
      real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
      real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
      real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit)
-     real(r8), pointer :: nutrDIN(:)       ! Nutrient flux for DIN
-     real(r8), pointer :: nutrDIP(:)       ! Nutrient flux for DIP
-     real(r8), pointer :: nutrDON(:)       ! Nutrient flux for DON
-     real(r8), pointer :: nutrDOP(:)       ! Nutrient flux for DOP
-     real(r8), pointer :: nutrDOC(:)       ! Nutrient flux for DOC
-     real(r8), pointer :: nutrPP(:)        ! Nutrient flux for PP
-     real(r8), pointer :: nutrDSi(:)       ! Nutrient flux for DSi
-     real(r8), pointer :: nutrPOC(:)       ! Nutrient flux for POC
-     real(r8), pointer :: nutrPN(:)        ! Nutrient flux for PN
-     real(r8), pointer :: nutrDIC(:)       ! Nutrient flux for DIC
-     real(r8), pointer :: nutrFe(:)        ! Nutrient flux for Fe
+     real(r8), pointer :: concDIN(:)       ! Concentration of river outflow DIN (kg-N/kg-water)
+     real(r8), pointer :: concDIP(:)       ! Concentration of river outflow DIP (kg-P/kg-water)
+     real(r8), pointer :: concDON(:)       ! Concentration of river outflow DON (kg-N/kg-water)
+     real(r8), pointer :: concDOP(:)       ! Concentration of river outflow DOP (kg-P/kg-water)
+     real(r8), pointer :: concDOC(:)       ! Concentration of river outflow DOC (kg-C/kg-water)
+     real(r8), pointer :: concPP(:)        ! Concentration of river outflow PP (kg-P/kg-water)
+     real(r8), pointer :: concDSi(:)       ! Concentration of river outflow DSi (kg-Si/kg-water)
+     real(r8), pointer :: concPOC(:)       ! Concentration of river outflow POC (kg-C/kg-water)
+     real(r8), pointer :: concPN(:)        ! Concentration of river outflow PN (kg-N/kg-water)
+     real(r8), pointer :: concDIC(:)       ! Concentration of river outflow DIC (kg-C/kg-water)
+     real(r8), pointer :: concFe(:)        ! Concentration of river outflow Fe (kg-Fe/kg-water)
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
@@ -582,17 +582,17 @@ contains
     end if
 
     if (data_bgc_fluxes_to_ocean_flag) then
-      allocate(rtmCTL%nutrDIN(begr:endr),           &
-               rtmCTL%nutrDIP(begr:endr),           &
-               rtmCTL%nutrDON(begr:endr),           &
-               rtmCTL%nutrDOP(begr:endr),           &
-               rtmCTL%nutrDOC(begr:endr),           &
-               rtmCTL%nutrPP(begr:endr),            &
-               rtmCTL%nutrDSi(begr:endr),           &
-               rtmCTL%nutrPOC(begr:endr),           &
-               rtmCTL%nutrPN(begr:endr),            &
-               rtmCTL%nutrDIC(begr:endr),           &
-               rtmCTL%nutrFe(begr:endr),            &
+      allocate(rtmCTL%concDIN(begr:endr),           &
+               rtmCTL%concDIP(begr:endr),           &
+               rtmCTL%concDON(begr:endr),           &
+               rtmCTL%concDOP(begr:endr),           &
+               rtmCTL%concDOC(begr:endr),           &
+               rtmCTL%concPP(begr:endr),            &
+               rtmCTL%concDSi(begr:endr),           &
+               rtmCTL%concPOC(begr:endr),           &
+               rtmCTL%concPN(begr:endr),            &
+               rtmCTL%concDIC(begr:endr),           &
+               rtmCTL%concFe(begr:endr),            &
                stat=ier)
       if (ier /= 0) then
          write(iulog,*)'Rtmini ERROR allocation of BGC local arrays'
@@ -625,17 +625,17 @@ contains
     rtmCTL%qdto(:,:)       = 0._r8
     rtmCTL%qdem(:,:)       = 0._r8
     if (data_bgc_fluxes_to_ocean_flag) then
-      rtmCTL%nutrDIN(:)      = 0._r8
-      rtmCTL%nutrDIP(:)      = 0._r8
-      rtmCTL%nutrDON(:)      = 0._r8
-      rtmCTL%nutrDOP(:)      = 0._r8
-      rtmCTL%nutrDOC(:)      = 0._r8
-      rtmCTL%nutrPP(:)       = 0._r8
-      rtmCTL%nutrDSi(:)      = 0._r8
-      rtmCTL%nutrPOC(:)      = 0._r8
-      rtmCTL%nutrPN(:)       = 0._r8
-      rtmCTL%nutrDIC(:)      = 0._r8
-      rtmCTL%nutrFe(:)       = 0._r8
+      rtmCTL%concDIN(:)      = 0._r8
+      rtmCTL%concDIP(:)      = 0._r8
+      rtmCTL%concDON(:)      = 0._r8
+      rtmCTL%concDOP(:)      = 0._r8
+      rtmCTL%concDOC(:)      = 0._r8
+      rtmCTL%concPP(:)       = 0._r8
+      rtmCTL%concDSi(:)      = 0._r8
+      rtmCTL%concPOC(:)      = 0._r8
+      rtmCTL%concPN(:)       = 0._r8
+      rtmCTL%concDIC(:)      = 0._r8
+      rtmCTL%concFe(:)       = 0._r8
     end if
     
     if (heatflag) then

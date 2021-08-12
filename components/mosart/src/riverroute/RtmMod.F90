@@ -1428,17 +1428,17 @@ contains
        endif
        rtmCTL%nUp_dstrm(nr) = nUp_dstrm_global(n)
        if (data_bgc_fluxes_to_ocean_flag) then
-         rtmCTL%nutrDIN(nr) = DIN_global(n)
-         rtmCTL%nutrDIP(nr) = DIP_global(n)
-         rtmCTL%nutrDON(nr) = DON_global(n)
-         rtmCTL%nutrDOP(nr) = DOP_global(n)
-         rtmCTL%nutrDOC(nr) = DOC_global(n)
-         rtmCTL%nutrPP(nr)  = PP_global(n)
-         rtmCTL%nutrDSi(nr) = DSi_global(n)
-         rtmCTL%nutrPOC(nr) = POC_global(n)
-         rtmCTL%nutrPN(nr)  = PN_global(n)
-         rtmCTL%nutrDIC(nr) = DIC_global(n)
-         rtmCTL%nutrFe(nr)  = Fe_global(n)
+         rtmCTL%concDIN(nr) = DIN_global(n)
+         rtmCTL%concDIP(nr) = DIP_global(n)
+         rtmCTL%concDON(nr) = DON_global(n)
+         rtmCTL%concDOP(nr) = DOP_global(n)
+         rtmCTL%concDOC(nr) = DOC_global(n)
+         rtmCTL%concPP(nr)  = PP_global(n)
+         rtmCTL%concDSi(nr) = DSi_global(n)
+         rtmCTL%concPOC(nr) = POC_global(n)
+         rtmCTL%concPN(nr)  = PN_global(n)
+         rtmCTL%concDIC(nr) = DIC_global(n)
+         rtmCTL%concFe(nr)  = Fe_global(n)
        end if
     enddo
     

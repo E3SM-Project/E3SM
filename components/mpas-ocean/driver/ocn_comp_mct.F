@@ -2044,7 +2044,7 @@ contains
              riverFluxDIC(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIC, n)
              riverFluxFe(i)   = x2o_o % rAttr(index_x2o_Foxx_rofFe , n)
 
-! convert from kgNutrient/(kgWater m2) to mmol/m3 m/s
+! convert from kgNutrient/(m2-s) to mmol/m3 m/s
              riverFactor = 1.e6_RKIND
              riverFluxNO3(i)  = riverFluxNO3(i)*riverFactor/14.007_RKIND
              riverFluxPO4(i)  = riverFluxPO4(i)*riverFactor/30.974_RKIND
