@@ -13,7 +13,7 @@ void CAAS::run_horiz_omp () {
   cedr_assert(user_reducer_ != nullptr);
   reduce_locally_horiz_omp();
   (*user_reducer_)(*p_, send_.data(), recv_.data(),
-                   nlclcells_ / user_reducer_->n_accum_in_place(),
+                   o.nlclcells_ / user_reducer_->n_accum_in_place(),
                    recv_.size(), MPI_SUM);
   finish_locally_horiz_omp();
 }
@@ -30,11 +30,11 @@ void homme_parallel_for (const Int& beg, const Int& end, const Func& f) {
 void CAAS::reduce_locally_horiz_omp () {
   const bool user_reduces = user_reducer_ != nullptr;
   cedr_assert(user_reduces); // assumption in Homme
-  ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
+  ConstExceptGnu Int nt = o.probs_.size(), nlclcells = o.nlclcells_;
 
-  const auto& probs = probs_;
+  const auto& probs = o.probs_;
   const auto& send = send_;
-  const auto& d = d_;
+  const auto& d = o.d_;
   const Int n_accum_in_place = user_reducer_->n_accum_in_place();
   const Int nlclaccum = nlclcells / n_accum_in_place;
   const auto calc_Qm_clip = COMPOSE_LAMBDA (const Int& j) {
@@ -70,9 +70,9 @@ void CAAS::reduce_locally_horiz_omp () {
 }
 
 void CAAS::finish_locally_horiz_omp () {
-  ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
+  ConstExceptGnu Int nt = o.probs_.size(), nlclcells = o.nlclcells_;
   const auto& recv = recv_;
-  const auto& d = d_;
+  const auto& d = o.d_;
   const auto adjust_Qm = COMPOSE_LAMBDA (const Int& k) {
     const auto os = (k+1)*nlclcells;
     const auto Qm_clip_sum = recv(     k);

@@ -11,15 +11,15 @@ namespace cedr {
 namespace caas {
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void CAAS<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx,
-                         const Real& rhom) const {
+void CAAS<ES>::DeviceOp
+::set_rhom (const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const {
   cedr_kernel_assert(lclcellidx >= 0 && lclcellidx < nlclcells_);
   cedr_kernel_assert(rhomidx >= 0 && rhomidx < nrhomidxs_);
   d_(lclcellidx) = rhom;
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void CAAS<ES>
+void CAAS<ES>::DeviceOp
 ::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
           const Real& Qm, const Real& Qm_min, const Real& Qm_max,
           const Real Qm_prev) const {
@@ -34,14 +34,15 @@ void CAAS<ES>
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-Real CAAS<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
+Real CAAS<ES>::DeviceOp::
+get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
   cedr_kernel_assert(lclcellidx >= 0 && lclcellidx < nlclcells_);
   cedr_kernel_assert(tracer_idx >= 0 && tracer_idx < probs_.extent_int(0));
   return d_((1 + tracer_idx)*nlclcells_ + lclcellidx);
 }
 
 template <typename RealList, typename IntList>
-KOKKOS_INLINE_FUNCTION void
+KOKKOS_INLINE_FUNCTION static void
 calc_Qm_scalars (const RealList& d, const IntList& probs,
                  const Int& nt, const Int& nlclcells,
                  const Int& k, const Int& os, const Int& i,

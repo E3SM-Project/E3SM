@@ -55,10 +55,13 @@ template <typename ES>
 const Real* BfbTreeAllReducer<ES>
 ::get_send_host (const ConstRealList& send) const {
   cedr_assert(send.extent_int(0) == nlocal_*nfield_);
-  if ( ! impl::OnGpu<ES>::value) return send.data();
-  RealListHost m(bd_.data() + ns_->nslots * nfield_, nlocal_*nfield_);
-  Kokkos::deep_copy(m, send);
-  return m.data();
+  if (impl::OnGpu<ES>::value) {
+    RealListHost m(bd_.data() + ns_->nslots * nfield_, nlocal_*nfield_);
+    Kokkos::deep_copy(m, send);
+    return m.data();
+  } else {
+    return send.data();
+  }
 }
 
 template <typename ES>

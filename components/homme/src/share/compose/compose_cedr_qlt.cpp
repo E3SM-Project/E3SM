@@ -124,8 +124,8 @@ void QLT<ES>::reconcile_vertical (const Int problem_type, const Int bd_os,
   cedr_assert((problem_type & ProblemType::shapepreserve) &&
               (problem_type & ProblemType::conserve));
 
-  auto& md = this->md_;
-  auto& bd = this->bd_;
+  auto& md = this->o.md_;
+  auto& bd = this->o.bd_;
   const auto& vld = *vld_;
   const Int nlev = vld.lo.extent_int(0);
   const Int nprob = (bie - bis)/nlev;
@@ -196,8 +196,8 @@ void QLT<ES>::run () {
   using cedr::ProblemType;
   using cedr::tree::NodeSets;
   namespace mpi = cedr::mpi;
-  auto& md_ = this->md_;
-  auto& bd_ = this->bd_;
+  auto& md_ = this->o.md_;
+  auto& bd_ = this->o.bd_;
   auto& ns_ = this->ns_;
   auto& p_ = this->p_;
 #if ! defined THREAD_QLT_RUN && defined COMPOSE_HORIZ_OPENMP

@@ -12,17 +12,18 @@ namespace cedr {
 namespace qlt {
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void QLT<ES>::set_rhom (const Int& lclcellidx, const Int& rhomidx,
-                        const Real& rhom) const {
+void QLT<ES>::DeviceOp::
+set_rhom (const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const {
   const Int ndps = md_.a_d.prob2bl2r[md_.nprobtypes];
   bd_.l2r_data(ndps*lclcellidx) = rhom;  
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-void QLT<ES>::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
-                      const Real& Qm,
-                      const Real& Qm_min, const Real& Qm_max,
-                      const Real Qm_prev) const {
+void QLT<ES>::DeviceOp::
+set_Qm (const Int& lclcellidx, const Int& tracer_idx,
+        const Real& Qm,
+        const Real& Qm_min, const Real& Qm_max,
+        const Real Qm_prev) const {
   const Int ndps = md_.a_d.prob2bl2r[md_.nprobtypes];
   Real* bd; {
     const Int bdi = md_.a_d.trcr2bl2r(tracer_idx);
@@ -57,7 +58,8 @@ void QLT<ES>::set_Qm (const Int& lclcellidx, const Int& tracer_idx,
 }
 
 template <typename ES> KOKKOS_INLINE_FUNCTION
-Real QLT<ES>::get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
+Real QLT<ES>::DeviceOp::
+get_Qm (const Int& lclcellidx, const Int& tracer_idx) const {
   const Int ndps = md_.a_d.prob2br2l[md_.nprobtypes];
   const Int bdi = md_.a_d.trcr2br2l(tracer_idx);
   return bd_.r2l_data(ndps*lclcellidx + bdi);

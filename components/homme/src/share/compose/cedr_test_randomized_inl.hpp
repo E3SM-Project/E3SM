@@ -24,7 +24,8 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
     for (const auto& t : tracers_)
       write_pre(t, v);
 
-  CDRT cdr = static_cast<CDRT&>(get_cdr());
+  const typename CDRT::DeviceOp cdr
+    = static_cast<const typename CDRT::DeviceOp&>(get_cdr().get_device_op());
   ValuesDevice<ES> vd(v);
   vd.sync_device();
 

@@ -30,71 +30,17 @@ public:
   typedef QLT<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
   typedef Kokkos::View<Real*, Device> RealList;
-  
-  // Set up QLT topology and communication data structures based on a tree. Both
-  // ncells and tree refer to the global mesh, not just this processor's part.
-  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
-      CDR::Options options = Options());
-
-  void print(std::ostream& os) const override;
-
-  // Number of cells owned by this rank.
-  Int nlclcells() const;
-
-  // Cells owned by this rank, in order of local numbering. Thus,
-  // gci2lci(gcis[i]) == i. Ideally, the caller never actually calls gci2lci(),
-  // and instead uses the information from get_owned_glblcells to determine
-  // local cell indices.
-  void get_owned_glblcells(std::vector<Long>& gcis) const;
-
-  // For global cell index cellidx, i.e., the globally unique ordinal associated
-  // with a cell in the caller's tree, return this rank's local index for
-  // it. This is not an efficient operation.
-  Int gci2lci(const Int& gci) const;
-
-  void declare_tracer(int problem_type, const Int& rhomidx) override;
-
-  void end_tracer_declarations() override;
-
-  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
-
-  void set_buffers(Real* buf1, Real* buf2) override;
-
-  void finish_setup() override;
-
-  int get_problem_type(const Int& tracer_idx) const override;
-
-  Int get_num_tracers() const override;
-
-  // lclcellidx is gci2lci(cellidx).
-  KOKKOS_INLINE_FUNCTION
-  void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const override;
-
-  // lclcellidx is gci2lci(cellidx).
-  KOKKOS_INLINE_FUNCTION
-  void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
-              const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-              const Real Qm_prev = std::numeric_limits<Real>::infinity()) const override;
-
-  void run() override;
-
-  KOKKOS_INLINE_FUNCTION
-  Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
-
-protected:
   typedef Kokkos::View<Int*, Device> IntList;
   typedef cedr::impl::Const<IntList> ConstIntList;
   typedef cedr::impl::ConstUnmanaged<IntList> ConstUnmanagedIntList;
 
-  static void init(const std::string& name, IntList& d,
-                   typename IntList::HostMirror& h, size_t n);
-
+protected:
   struct MetaDataBuilder {
     typedef std::shared_ptr<MetaDataBuilder> Ptr;
     std::vector<int> trcr2prob;
   };
 
-PROTECTED_CUDA:
+public:
   struct MetaData {
     enum : Int { nprobtypes = 6 };
 
@@ -179,8 +125,70 @@ PROTECTED_CUDA:
     bool inited_;
     RealList l2r_data_, r2l_data_;
   };
+  
+  // Set up QLT topology and communication data structures based on a tree. Both
+  // ncells and tree refer to the global mesh, not just this processor's part.
+  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
+      CDR::Options options = Options());
+
+  void print(std::ostream& os) const override;
+
+  // Number of cells owned by this rank.
+  Int nlclcells() const;
+
+  // Cells owned by this rank, in order of local numbering. Thus,
+  // gci2lci(gcis[i]) == i. Ideally, the caller never actually calls gci2lci(),
+  // and instead uses the information from get_owned_glblcells to determine
+  // local cell indices.
+  void get_owned_glblcells(std::vector<Long>& gcis) const;
+
+  // For global cell index cellidx, i.e., the globally unique ordinal associated
+  // with a cell in the caller's tree, return this rank's local index for
+  // it. This is not an efficient operation.
+  Int gci2lci(const Int& gci) const;
+
+  void declare_tracer(int problem_type, const Int& rhomidx) override;
+
+  void end_tracer_declarations() override;
+
+  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
+
+  void set_buffers(Real* buf1, Real* buf2) override;
+
+  void finish_setup() override;
+
+  int get_problem_type(const Int& tracer_idx) const override;
+
+  Int get_num_tracers() const override;
+
+  struct DeviceOp : public CDR::DeviceOp {
+    // lclcellidx is gci2lci(cellidx).
+    KOKKOS_INLINE_FUNCTION
+    void set_rhom(const Int& lclcellidx, const Int& rhomidx, const Real& rhom) const override;
+
+    // lclcellidx is gci2lci(cellidx).
+    KOKKOS_INLINE_FUNCTION
+    void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
+                const Real& Qm, const Real& Qm_min, const Real& Qm_max,
+                const Real Qm_prev = std::numeric_limits<Real>::infinity()) const override;
+
+    KOKKOS_INLINE_FUNCTION
+    Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
+
+    /// View data for host and device computation.
+    // Constructed in end_tracer_declarations().
+    MetaData md_;
+    BulkData bd_;
+  };
+
+  const DeviceOp& get_device_op() override;
+
+  void run() override;
 
 protected:
+  static void init(const std::string& name, IntList& d,
+                   typename IntList::HostMirror& h, size_t n);
+
   void init(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
 
   void init_ordinals();
@@ -198,10 +206,7 @@ protected:
   // Temporary to collect caller's tracer information prior to calling
   // end_tracer_declarations().
   typename MetaDataBuilder::Ptr mdb_;
-  /// View data for host and device computation.
-  // Constructed in end_tracer_declarations().
-  MetaData md_;
-  BulkData bd_;
+  DeviceOp o;
 
 PRIVATE_CUDA:
   void l2r_recv(const tree::NodeSets::Level& lvl, const Int& l2rndps) const;

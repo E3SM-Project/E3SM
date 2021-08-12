@@ -186,7 +186,7 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   const Int nsuplev = cdr.nsuplev;
   const auto cdr_over_super_levels = cdr.cdr_over_super_levels;
   const auto caas_in_suplev = cdr.caas_in_suplev;
-  const auto& cedr_cdr = *cedr_cdr_p;
+  const typename CDRT::DeviceOp& cedr_cdr = cedr_cdr_p->get_device_op();
   const auto& ie2lci = cdr.ie2lci;
   // Loop differently due to performance diff on CPU.
 #ifdef COMPOSE_PORT

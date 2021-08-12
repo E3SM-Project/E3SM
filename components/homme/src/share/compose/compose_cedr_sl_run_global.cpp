@@ -84,7 +84,7 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   const auto& nonnegs = cdr.nonneg;
   const auto& ie2lci = cdr.ie2lci;
   const auto& ie2gci = cdr.ie2gci;
-  const auto& cedr_cdr = *cedr_cdr_p;
+  const typename CDRT::DeviceOp& cedr_cdr = cedr_cdr_p->get_device_op();
   if (cedr::impl::OnGpu<typename MT::DES>::value) {
     const Int n = ta.nelemd*nlev*qsize*np2;
     ko::View<Real*> q_min_1d(q_min.data(), n);

@@ -280,55 +280,55 @@ void QLT<ES>::declare_tracer (int problem_type, const Int& rhomidx) {
   cedr_throw_if(rhomidx > 0, "rhomidx > 0 is not supported yet.");
   // For its exception side effect, and to get canonical problem type, since
   // some possible problem types map to the same canonical one:
-  problem_type = md_.get_problem_type(md_.get_problem_type_idx(problem_type));
+  problem_type = o.md_.get_problem_type(o.md_.get_problem_type_idx(problem_type));
   mdb_->trcr2prob.push_back(problem_type);
 }
 
 template <typename ES>
 void QLT<ES>::end_tracer_declarations () {
-  md_.init(*mdb_);
+  o.md_.init(*mdb_);
   mdb_ = nullptr;
 }
 
 template <typename ES>
 void QLT<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2) {
   const auto nslots = ns_->nslots;
-  buf1 = md_.a_h.prob2bl2r[md_.nprobtypes]*nslots;
-  buf2 = md_.a_h.prob2br2l[md_.nprobtypes]*nslots;
+  buf1 = o.md_.a_h.prob2bl2r[o.md_.nprobtypes]*nslots;
+  buf2 = o.md_.a_h.prob2br2l[o.md_.nprobtypes]*nslots;
 }
 
 template <typename ES>
 void QLT<ES>::set_buffers (Real* buf1, Real* buf2) {
   size_t l2r_sz, r2l_sz;
   get_buffers_sizes(l2r_sz, r2l_sz);
-  bd_.init(buf1, l2r_sz, buf2, r2l_sz);
+  o.bd_.init(buf1, l2r_sz, buf2, r2l_sz);
 }
 
 template <typename ES>
 void QLT<ES>::finish_setup () {
-  if (bd_.inited()) return;
+  if (o.bd_.inited()) return;
   size_t l2r_sz, r2l_sz;
   get_buffers_sizes(l2r_sz, r2l_sz);
-  bd_.init(l2r_sz, r2l_sz);
+  o.bd_.init(l2r_sz, r2l_sz);
 }
 
 template <typename ES>
 int QLT<ES>::get_problem_type (const Int& tracer_idx) const {
-  cedr_throw_if(tracer_idx < 0 || tracer_idx > md_.a_h.trcr2prob.extent_int(0),
+  cedr_throw_if(tracer_idx < 0 || tracer_idx > o.md_.a_h.trcr2prob.extent_int(0),
                 "tracer_idx is out of bounds: " << tracer_idx);
-  return md_.a_h.trcr2prob[tracer_idx];
+  return o.md_.a_h.trcr2prob[tracer_idx];
 }
 
 template <typename ES>
 Int QLT<ES>::get_num_tracers () const {
-  return md_.a_h.trcr2prob.size();
+  return o.md_.a_h.trcr2prob.size();
 }
 
 template <typename ES> void QLT<ES>
 ::l2r_recv (const tree::NodeSets::Level& lvl, const Int& l2rndps) const {
   for (size_t i = 0; i < lvl.kids.size(); ++i) {
     const auto& mmd = lvl.kids[i];
-    mpi::irecv(*p_, bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
+    mpi::irecv(*p_, o.bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
                mmd.rank, tree::NodeSets::mpitag, &lvl.kids_req[i]);
   }
   Timer::start(Timer::waitall);
@@ -340,8 +340,8 @@ template <typename ES> void QLT<ES>
 ::l2r_combine_kid_data (const Int& lvlidx, const Int& l2rndps) const {
   if (cedr::impl::OnGpu<ES>::value) {
     const auto d = *nsdd_;
-    const auto l2r_data = bd_.l2r_data;
-    const auto a = md_.a_d;
+    const auto l2r_data = o.bd_.l2r_data;
+    const auto a = o.md_.a_d;
     const Int ntracer = a.trcr2prob.size();
     const Int nfield = ntracer + 1;
     const Int lvl_os = nshd_->lvlptr(lvlidx);
@@ -397,23 +397,23 @@ template <typename ES> void QLT<ES>
       if ( ! n->nkids) continue;
       cedr_assert(n->nkids == 2);
       // Total density.
-      bd_.l2r_data(n->offset*l2rndps) =
-        (bd_.l2r_data(ns_->node_h(n->kids[0])->offset*l2rndps) +
-         bd_.l2r_data(ns_->node_h(n->kids[1])->offset*l2rndps));
+      o.bd_.l2r_data(n->offset*l2rndps) =
+        (o.bd_.l2r_data(ns_->node_h(n->kids[0])->offset*l2rndps) +
+         o.bd_.l2r_data(ns_->node_h(n->kids[1])->offset*l2rndps));
       // Tracers.
-      for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
-        const Int problem_type = md_.get_problem_type(pti);
+      for (Int pti = 0; pti < o.md_.nprobtypes; ++pti) {
+        const Int problem_type = o.md_.get_problem_type(pti);
         const bool nonnegative = problem_type & ProblemType::nonnegative;
         const bool shapepreserve = problem_type & ProblemType::shapepreserve;
         const bool conserve = problem_type & ProblemType::conserve;
-        const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+        const Int bis = o.md_.a_d.prob2trcrptr[pti], bie = o.md_.a_d.prob2trcrptr[pti+1];
         for (Int bi = bis; bi < bie; ++bi) {
-          const Int bdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
-          Real* const me = &bd_.l2r_data(n->offset*l2rndps + bdi);
+          const Int bdi = o.md_.a_d.trcr2bl2r(o.md_.a_d.bidx2trcr(bi));
+          Real* const me = &o.bd_.l2r_data(n->offset*l2rndps + bdi);
           const auto kid0 = ns_->node_h(n->kids[0]);
           const auto kid1 = ns_->node_h(n->kids[1]);
-          const Real* const k0 = &bd_.l2r_data(kid0->offset*l2rndps + bdi);
-          const Real* const k1 = &bd_.l2r_data(kid1->offset*l2rndps + bdi);
+          const Real* const k0 = &o.bd_.l2r_data(kid0->offset*l2rndps + bdi);
+          const Real* const k1 = &o.bd_.l2r_data(kid1->offset*l2rndps + bdi);
           if (nonnegative) {
             me[0] = k0[0] + k1[0];
             if (conserve) me[1] = k0[1] + k1[1];
@@ -433,7 +433,7 @@ template <typename ES> void QLT<ES>
 ::l2r_send_to_parents (const tree::NodeSets::Level& lvl, const Int& l2rndps) const {
   for (size_t i = 0; i < lvl.me.size(); ++i) {
     const auto& mmd = lvl.me[i];
-    mpi::isend(*p_, bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
+    mpi::isend(*p_, o.bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
                mmd.rank, tree::NodeSets::mpitag);
   }  
 }
@@ -444,9 +444,9 @@ template <typename ES> void QLT<ES>
       ns_->node_h(ns_->levels.back().nodes[0])->parent >= 0)
     return;
   const auto d = *nsdd_;
-  const auto l2r_data = bd_.l2r_data;
-  const auto r2l_data = bd_.r2l_data;
-  const auto a = md_.a_d;
+  const auto l2r_data = o.bd_.l2r_data;
+  const auto r2l_data = o.bd_.r2l_data;
+  const auto a = o.md_.a_d;
   const Int nlev = nshd_->lvlptr.size() - 1;
   const Int node_idx = nshd_->lvl(nshd_->lvlptr(nlev-1));
   const Int ntracer = a.trcr2prob.size();
@@ -459,7 +459,7 @@ template <typename ES> void QLT<ES>
     // If QLT is enforcing global mass conservation, set root's r2l Qm value to
     // the l2r Qm_prev's sum; otherwise, copy the l2r Qm value to the r2l one.
     const Int os = (problem_type & ProblemType::conserve ?
-                    md_.get_problem_type_l2r_bulk_size(problem_type) - 1 :
+                    o.md_.get_problem_type_l2r_bulk_size(problem_type) - 1 :
                     (problem_type & ProblemType::nonnegative ? 0 : 1));
     r2l_data(n.offset*r2lndps + r2lbdi) = l2r_data(n.offset*l2rndps + l2rbdi + os);
     if ((problem_type & ProblemType::consistent) &&
@@ -479,7 +479,7 @@ template <typename ES> void QLT<ES>
 ::r2l_recv (const tree::NodeSets::Level& lvl, const Int& r2lndps) const {
   for (size_t i = 0; i < lvl.me.size(); ++i) {
     const auto& mmd = lvl.me[i];
-    mpi::irecv(*p_, bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
+    mpi::irecv(*p_, o.bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
                mmd.rank, tree::NodeSets::mpitag, &lvl.me_recv_req[i]);
   }
   Timer::start(Timer::waitall);
@@ -529,9 +529,9 @@ template <typename ES> void QLT<ES>
     options_.prefer_numerical_mass_conservation_to_numerical_bounds;
   if (cedr::impl::OnGpu<ES>::value) {
     const auto d = *nsdd_;
-    const auto l2r_data = bd_.l2r_data;
-    const auto r2l_data = bd_.r2l_data;
-    const auto a = md_.a_d;
+    const auto l2r_data = o.bd_.l2r_data;
+    const auto r2l_data = o.bd_.r2l_data;
+    const auto a = o.md_.a_d;
     const Int ntracer = a.trcr2prob.size();
     const Int lvl_os = nshd_->lvlptr(lvlidx);
     const Int N = ntracer*(nshd_->lvlptr(lvlidx+1) - lvl_os);
@@ -574,26 +574,26 @@ template <typename ES> void QLT<ES>
       const auto lvlidx = lvl.nodes[ni];
       const auto n = ns_->node_h(lvlidx);
       if ( ! n->nkids) continue;
-      for (Int pti = 0; pti < md_.nprobtypes; ++pti) {
-        const Int problem_type = md_.get_problem_type(pti);
-        const Int bis = md_.a_d.prob2trcrptr[pti], bie = md_.a_d.prob2trcrptr[pti+1];
+      for (Int pti = 0; pti < o.md_.nprobtypes; ++pti) {
+        const Int problem_type = o.md_.get_problem_type(pti);
+        const Int bis = o.md_.a_d.prob2trcrptr[pti], bie = o.md_.a_d.prob2trcrptr[pti+1];
         for (Int bi = bis; bi < bie; ++bi) {
-          const Int l2rbdi = md_.a_d.trcr2bl2r(md_.a_d.bidx2trcr(bi));
-          const Int r2lbdi = md_.a_d.trcr2br2l(md_.a_d.bidx2trcr(bi));
+          const Int l2rbdi = o.md_.a_d.trcr2bl2r(o.md_.a_d.bidx2trcr(bi));
+          const Int r2lbdi = o.md_.a_d.trcr2br2l(o.md_.a_d.bidx2trcr(bi));
           cedr_assert(n->nkids == 2);
           if ((problem_type & ProblemType::consistent) &&
               ! (problem_type & ProblemType::shapepreserve)) {
-            const Real q_min = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
-            const Real q_max = bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2);
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
-            bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
+            const Real q_min = o.bd_.r2l_data(n->offset*r2lndps + r2lbdi + 1);
+            const Real q_max = o.bd_.r2l_data(n->offset*r2lndps + r2lbdi + 2);
+            o.bd_.l2r_data(n->offset*l2rndps + l2rbdi + 0) = q_min;
+            o.bd_.l2r_data(n->offset*l2rndps + l2rbdi + 2) = q_max;
             for (Int k = 0; k < 2; ++k)
-              r2l_solve_qp_set_q(bd_.l2r_data, bd_.r2l_data,
+              r2l_solve_qp_set_q(o.bd_.l2r_data, o.bd_.r2l_data,
                                  ns_->node_h(n->kids[k])->offset,
                                  l2rndps, r2lndps, l2rbdi, r2lbdi, q_min, q_max);
           }
           r2l_solve_qp_solve_node_problem(
-            bd_.l2r_data, bd_.r2l_data, problem_type, *n, *ns_->node_h(n->kids[0]),
+            o.bd_.l2r_data, o.bd_.r2l_data, problem_type, *n, *ns_->node_h(n->kids[0]),
             *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi,
             prefer_mass_con_to_bounds);
         }
@@ -607,18 +607,21 @@ template <typename ES> void QLT<ES>
 ::r2l_send_to_kids (const tree::NodeSets::Level& lvl, const Int& r2lndps) const {
   for (size_t i = 0; i < lvl.kids.size(); ++i) {
     const auto& mmd = lvl.kids[i];
-    mpi::isend(*p_, bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
+    mpi::isend(*p_, o.bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
                mmd.rank, tree::NodeSets::mpitag);
   }
 }
 
 template <typename ES>
+const QLT<ES>::DeviceOp& QLT<ES>::get_device_op() { return o; }
+
+template <typename ES>
 void QLT<ES>::run () {
-  cedr_assert(bd_.inited());
+  cedr_assert(o.bd_.inited());
   Timer::start(Timer::qltrunl2r);
   // Number of data per slot.
-  const Int l2rndps = md_.a_h.prob2bl2r[md_.nprobtypes];
-  const Int r2lndps = md_.a_h.prob2br2l[md_.nprobtypes];
+  const Int l2rndps = o.md_.a_h.prob2bl2r[o.md_.nprobtypes];
+  const Int r2lndps = o.md_.a_h.prob2br2l[o.md_.nprobtypes];
   for (size_t il = 0; il < ns_->levels.size(); ++il) {
     auto& lvl = ns_->levels[il];
     if (lvl.kids.size()) l2r_recv(lvl, l2rndps);
