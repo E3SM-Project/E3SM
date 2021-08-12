@@ -382,7 +382,7 @@ registration_ends ()
   //     we must be able to allocate C bundled.
   //  5) For each cluster, call the function contiguous_superset from scream_utils.hpp
   //     (see that file for details). If the fcn fails to find an ordering of the cluster's
-  //     field that accommodate all bundler request, it will return an empty list.
+  //     field that accommodate all bundled request, it will return an empty list.
   //     Otherwise it will return the ordering of all fields in the cluster that allows all
   //     groups of the cluster to be a contiguous subset of C.
   //  6) If step 4 fails for a cluster, remove from the cluster the groups whose bundling
@@ -395,10 +395,10 @@ registration_ends ()
   //        of a contiguous ordering.
   //      - it is possible that, say, removing G1 still doesn't yield a "bundle-able"
   //        cluster, but removing G2 does. In general, we should try to remove groups
-  //        one at a time, then two at a time, then three at a time,... untile we
+  //        one at a time, then two at a time, then three at a time,... until we
   //        reach a point where the remaining groups can all be bundled. This is overly
   //        complicated, so if 4 fails, we simply start removing groups with "Preferred"
-  //        bundling until 4 succeeds or we run out of groups with bundling=preferred
+  //        bundling until 4 succeeds or we run out of groups with bundling=Preferred
   //        to remove.
   //
 
