@@ -60,7 +60,7 @@ module cospsimulator_intr
   logical, public :: docosp = .false.  
 
   ! Frequency at which cosp is called, every cosp_nradsteps radiation timestep
-  integer, public :: cosp_nradsteps = 1! CAM namelist variable default, not in COSP namelist
+  integer, public :: cosp_nradsteps = 1 ! CAM namelist variable default, not in COSP namelist
   
 #ifdef USE_COSP
 
@@ -122,7 +122,6 @@ module cospsimulator_intr
   logical :: cosp_lmodis_sim       = .false. ! CAM namelist variable default
   logical :: cosp_histfile_aux     = .false. ! CAM namelist variable default
   logical :: cosp_lfrac_out        = .false. ! CAM namelist variable default
-  logical :: cosp_runall           = .false. ! flag to run all of the cosp simulator package
   integer :: cosp_ncolumns         = 50      ! CAM namelist variable default
   integer :: cosp_histfile_num     =1        ! CAM namelist variable default, not in COSP namelist 
   integer :: cosp_histfile_aux_num =-1       ! CAM namelist variable default, not in COSP namelist
@@ -367,14 +366,14 @@ CONTAINS
     character(len=*), parameter :: subname = 'cospsimulator_intr_readnl'
 
 #ifdef USE_COSP
-!!! this list should include any variable that you might want to include in the namelist
-!!! philosophy is to not include COSP output flags but just important COSP settings and cfmip controls. 
+    ! this list should include any variable that you might want to include in the namelist
+    ! philosophy is to not include COSP output flags but just important COSP settings and cfmip controls. 
     namelist /cospsimulator_nl/ docosp, cosp_active, cosp_amwg, &
          cosp_histfile_num, cosp_histfile_aux, cosp_histfile_aux_num, cosp_isccp, cosp_lfrac_out, &
          cosp_lite, cosp_lradar_sim, cosp_llidar_sim, cosp_lisccp_sim,  cosp_lmisr_sim, cosp_lmodis_sim, cosp_ncolumns, &
-         cosp_nradsteps, cosp_passive, cosp_runall
+         cosp_nradsteps, cosp_passive
     
-    !! read in the namelist
+    ! read in the namelist
     if (masterproc) then
        unitn = getunit()
        open( unitn, file=trim(nlfile), status='old' )  !! presumably opens the namelist file "nlfile"
@@ -398,7 +397,6 @@ CONTAINS
     call mpibcast(cosp_passive,         1,  mpilog, 0, mpicom)
     call mpibcast(cosp_active,          1,  mpilog, 0, mpicom)
     call mpibcast(cosp_isccp,           1,  mpilog, 0, mpicom)
-    call mpibcast(cosp_runall,          1,  mpilog, 0, mpicom)
     call mpibcast(cosp_lfrac_out,       1,  mpilog, 0, mpicom)
     call mpibcast(cosp_lradar_sim,      1,  mpilog, 0, mpicom)
     call mpibcast(cosp_llidar_sim,      1,  mpilog, 0, mpicom)
@@ -468,16 +466,6 @@ CONTAINS
        cosp_nradsteps = 3
     end if
     
-    if (cosp_runall) then
-       lradar_sim = .true.
-       llidar_sim = .true.
-       lparasol_sim = .true.
-       lisccp_sim = .true.
-       lmisr_sim = .true.
-       lmodis_sim = .true.
-       lfrac_out = .true.
-    end if
-    
     !! if no simulators are turned on at all and docosp is, set cosp_amwg = .true.
     if((docosp) .and. (.not.lradar_sim) .and. (.not.llidar_sim) .and. (.not.lisccp_sim) .and. &
          (.not.lmisr_sim) .and. (.not.lmodis_sim)) then
@@ -494,7 +482,7 @@ CONTAINS
        cosp_nradsteps = 3
     end if
     
-    !! reset COSP namelist variables based on input from cam namelist variables
+    ! reset COSP namelist variables based on input from cam namelist variables
     if (cosp_ncolumns .ne. ncolumns) then
        ncolumns = cosp_ncolumns
     end if
@@ -511,7 +499,7 @@ CONTAINS
           write(iulog,*)'  Number of COSP subcolumns                = ', cosp_ncolumns
           write(iulog,*)'  Frequency at which cosp is called        = ', cosp_nradsteps
           write(iulog,*)'  Enable radar simulator                   = ', lradar_sim
-          write(iulog,*)'  Enable calipso simulator                   = ', llidar_sim
+          write(iulog,*)'  Enable calipso simulator                 = ', llidar_sim
           write(iulog,*)'  Enable ISCCP simulator                   = ', lisccp_sim
           write(iulog,*)'  Enable MISR simulator                    = ', lmisr_sim
           write(iulog,*)'  Enable MODIS simulator                   = ', lmodis_sim
@@ -983,8 +971,7 @@ CONTAINS
     
     !! ADDFLD, ADD_DEFAULT, OUTFLD CALLS FOR COSP OUTPUTS IF RUNNING COSP OFF-LINE
     !! Note: A suggestion was to add all of the CAM variables needed to add to make it possible to run COSP off-line
-    !! These fields are available and can be called from the namelist though.  Here, when the cosp_runall mode is invoked
-    !! all of the inputs are saved on the cam history file.  This is good de-bugging functionality we should maintain.
+    !! These fields are available and can be called from the namelist though.
     if (cosp_histfile_aux) then
        call addfld ('PS_COSP',         horiz_only,            'I','Pa',     'PS_COSP',                            &
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1269,7 +1256,7 @@ CONTAINS
     character(len=256),dimension(100) :: cosp_status
     integer :: nerror
 
-    call t_startf('cosp_translate_variables')
+
     ! ######################################################################################
     ! Initialization
     ! ######################################################################################
@@ -1280,11 +1267,10 @@ CONTAINS
     ! ######################################################################################
     ! DECIDE WHICH COLUMNS YOU ARE GOING TO RUN COSP ON....
     ! ######################################################################################
-    
     !! run_cosp is set for each column in each chunk in the first timestep of the run
     !! hist_fld_col_active in cam_history.F90 is used to decide if you need to run cosp.
     if (first_run_cosp(lchnk)) then
-       !! initalize to run logicals as false
+       ! initalize run logicals as false
        run_cosp(1:ncol,lchnk)=.false.
        run_radar(1:nf_radar,1:ncol)=.false.
        run_calipso(1:nf_calipso,1:ncol)=.false.
@@ -1328,28 +1314,7 @@ CONTAINS
        first_run_cosp(lchnk)=.false.
     endif
     
-    ! ######################################################################################
-    ! GET CAM GEOPHYSICAL VARIABLES NEEDED FOR COSP INPUT
-    ! ######################################################################################
-    ! 1) state variables (prognostic variables, see physics_types.F90)
-    ! state vars are passed to this subroutine from radiation.F90.   
-    ! I do not need to define these variables.  I can use them as is, e.g., state%t
-    !state%lat   ! lat (radians) 
-    !state%lon   ! lon (radians) 
-    !state%t     ! temperature (K)
-    !state%u     ! u_wind zonal wind (m/s)
-    !state%v     ! v_wind meridional wind (m/s)
-    !state%ps    ! surface pressure (Pa)
-    !state%pint  ! p - p_in_full_levels (Pa)
-    !state%pmid  ! ph - p_in_half_levels (Pa)
-    !state%zm    ! geopotential height above surface at midpoints (m), pver
-    !state%zi    ! geopotential height above surface at interfaces (m), pverp
-    !state%phis  ! surface geopotential (m2/s2)
-    ! NOTE: The state variables state%q(:,:,ixcldliq)/state%q(:,:,ixcldice) are grid-box
-    ! quantities for the stratiform clouds only.  stratiform water * stratiform cloud fraction
-    !state%q(:,:,ixcldliq) !for CAM4: cldliq= stratiform incld water content * total cloud fraction
-    !state%q(:,:,ixcldice) !for CAM4: cldice = stratiform incld ice content * total cloud fraction
-    
+    call t_startf('cosp_translate_variables')
     ! need query index for cldliq and cldice
     ! use cnst_get_ind subroutine in constituents.F90.
     ! can also get MG microphysics number from state using similar procedure.
@@ -1493,12 +1458,6 @@ CONTAINS
     end do
     call t_stopf('cosp_translate_variables')
 
-    ! ######################################################################################
-    ! ######################################################################################
-    ! END TRANSLATE CAM VARIABLES TO COSP INPUT VARIABLES
-    ! ######################################################################################
-    ! ######################################################################################
-    
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
@@ -1507,6 +1466,9 @@ CONTAINS
     ! Model state inputs
     call t_startf('cosp_construct_cospstateIN')
     call construct_cospstateIN(ncol,pver,0,cospstateIN)      
+    call t_stopf('cosp_construct_cospstateIN')
+    
+    call t_startf('cosp_populate_cospstateIN')
     do i = 1,ncol
        cospstateIN%lat(i)                      = state%lat(i)*180._r8/ pi
        cospstateIN%lon(i)                      = state%lon(i)*180._r8 / pi
@@ -1514,18 +1476,14 @@ CONTAINS
     cospstateIN%at                             = state%t(1:ncol,1:pver) 
     cospstateIN%qv                             = q(1:ncol,1:pver)
     cospstateIN%o3                             = o3(1:ncol,1:pver)  
-    ! Compute sunlit flag. If cosp_runall=.true., then run on all points.
-    if (cosp_runall) then
-       cospstateIN%sunlit = 1
-    else
-       do i = 1,ncol
-          if ((coszrs(i) > 0.0_r8) .and. (run_cosp(i,lchnk))) then
-             cospstateIN%sunlit(i) = 1
-          else
-             cospstateIN%sunlit(i) = 0
-          end if
-       end do
-    end if
+    ! Compute sunlit flag
+    do i = 1,ncol
+       if (coszrs(i) > 0.0_r8) then
+          cospstateIN%sunlit(i) = 1
+       else
+          cospstateIN%sunlit(i) = 0
+       end if
+    end do
     cospstateIN%skt                            = cam_in%ts(1:ncol)
     ! Compute land mask
     do i = 1,ncol
@@ -1547,7 +1505,7 @@ CONTAINS
        end do
     end do
     cospstateIN%surfelev(1:ncol)               = state%zi(1:ncol,pver+1) + state%phis(1:ncol) / gravit
-    call t_stopf('cosp_construct_cospstateIN')
+    call t_stopf('cosp_populate_cospstateIN')
 
     ! Optical inputs
     call t_startf('cosp_construct_cospIN')
@@ -1592,6 +1550,9 @@ CONTAINS
          dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
     if (lradar_sim) sd_cs(lchnk) = sd_wk
     call t_stopf('cosp_subsample_and_optics')
+
+    ! Translate EAM fields to COSP fields
+    !call translate_eam_to_cosp()
     
     ! Call COSP and check status
     call t_startf('cosp_simulator')
@@ -1617,14 +1578,12 @@ CONTAINS
        call t_stopf("cosp_histfile_aux")
     end if
 
-    ! Set dark-scenes to fill value. Only done for passive simulators and when cosp_runall=F
+    ! Set dark-scenes to fill value. Only done for passive simulators
     ! TODO: revisit this! We should NOT have to do this here! The simulators
     ! should be masking night values for us.
-    if (.not. cosp_runall) then
-       call t_startf('cosp_remask_passive')
-       call cosp_remask_passive(cospstateIN, cospOUT)
-       call t_stopf('cosp_remask_passive')
-    end if
+    call t_startf('cosp_remask_passive')
+    call cosp_remask_passive(cospstateIN, cospOUT)
+    call t_stopf('cosp_remask_passive')
 
     ! Write COSP outputs to history files
     call t_startf('cosp_write_outputs')
@@ -1748,9 +1707,6 @@ CONTAINS
       ncol = state%ncol
       lchnk = state%lchnk
 
-      ! ######################################################################################
-      ! OUTPUT
-      ! ######################################################################################
       ! ISCCP OUTPUTS
       if (lisccp_sim) then
          call outfld('FISCCP1_COSP', cospOUT%isccp_fq(1:ncol,1:ntau_cosp,1:nprs_cosp), ncol, lchnk)
@@ -1928,7 +1884,6 @@ CONTAINS
          arr(:,:,:) = v2
       end where
    end subroutine
-
 
 #ifdef USE_COSP
    subroutine cosp_histfile_aux_out(state, cospstateIN, cospIN)
