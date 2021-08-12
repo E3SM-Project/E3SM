@@ -143,6 +143,36 @@ contains
 
   end subroutine get_variable_c2f
 !=====================================================================!
+  function get_int_attribute_c2f(file_name_c, attr_name_c) result(val) bind(c)
+    use scream_scorpio_interface, only : get_int_attribute
+    type(c_ptr), intent(in) :: file_name_c
+    type(c_ptr), intent(in) :: attr_name_c
+    integer(kind=c_int)     :: val
+
+    character(len=256) :: file_name
+    character(len=256) :: attr_name
+
+    call convert_c_string(file_name_c,file_name)
+    call convert_c_string(attr_name_c,attr_name)
+
+    val = get_int_attribute(file_name,attr_name)
+  end function get_int_attribute_c2f
+!=====================================================================!
+  subroutine set_int_attribute_c2f(file_name_c, attr_name_c, val) bind(c)
+    use scream_scorpio_interface, only : set_int_attribute
+    type(c_ptr), intent(in)         :: file_name_c
+    type(c_ptr), intent(in)         :: attr_name_c
+    integer(kind=c_int), intent(in) :: val
+
+    character(len=256) :: file_name
+    character(len=256) :: attr_name
+
+    call convert_c_string(file_name_c,file_name)
+    call convert_c_string(attr_name_c,attr_name)
+
+    call set_int_attribute(file_name,attr_name,val)
+  end subroutine set_int_attribute_c2f
+!=====================================================================!
   subroutine register_variable_c2f(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
     type(c_ptr), intent(in)                :: filename_in

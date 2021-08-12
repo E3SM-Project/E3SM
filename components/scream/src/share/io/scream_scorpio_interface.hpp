@@ -66,6 +66,8 @@ extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   int  eam_pio_subsystem_comm ();
+  int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
+  void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from
