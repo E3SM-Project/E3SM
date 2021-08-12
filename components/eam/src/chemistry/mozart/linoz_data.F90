@@ -29,11 +29,11 @@ module linoz_data
 
   type(trfld), pointer :: fields(:) => null()
   type(trfile) :: file
-  logical :: has_linozv2_data = .false.
-  logical :: has_linozv3_data = .false.
-  logical :: has_linoz_data =   .false.
+  logical :: has_linozv2_data 
+  logical :: has_linozv3_data 
+  logical :: has_linoz_data 
 
-  integer, parameter, public :: N_FLDS = 56
+  integer, parameter, public :: N_FLDS = 57
   integer :: number_flds
 
   character(len=256) :: filename = ''
@@ -49,7 +49,7 @@ module linoz_data
   character(len=16), dimension(N_FLDS), parameter :: fld_names = & ! data field names
        (/'o3_clim         ','n2o_clim        ','noy_clim        ','ch4_clim        ',&!6 clim-terms
          'h2o_clim        ','t_clim          ','o3col_clim      ',&                                    
-         'no3_PmL_clim    ','no3_dPmL_dO3    ','no3_dPml_dN2O   ','no3_dPmL_dNOy  ',&!Taylar expan for o3
+         'no3_PmL_clim    ','no3_dPmL_dO3    ','no3_dPmL_dN2O   ','no3_dPmL_dNOy   ',&!Taylar expan for o3
          'no3_dPmL_dCH4   ','no3_dPmL_dH2O   ','no3_dPmL_dT     ','no3_dPmL_dO3col ',&
          'pn2o_P_clim     ','pn2o_dP_dO3     ','pn2o_dP_dN2O    ','pn2o_dP_dNOy    ',&!for n2o pro
          'pn2o_dP_dCH4    ','pn2o_dP_dH2O    ','pn2o_dP_dT      ','pn2o_dP_dO3col  ',&
@@ -61,15 +61,19 @@ module linoz_data
          'lnoy_dL_dCH4    ','lnoy_dL_dH2O    ','lnoy_dL_dT      ','lnoy_dL_dO3col  ',&
          'nch4_PmL_clim   ','nch4_dPmL_dO3   ','nch4_dPmL_dN2O  ','nch4_dPmL_dNOy  ',&!for ch4
          'nch4_dPmL_dCH4  ','nch4_dPmL_dH2O  ','nch4_dPmL_dT    ','nch4_dPmL_dO3col',&
-         'cariolle_pscs   '/)
+         'cariolle_pscs   ','o3lbs           '/)
+  
+
+!added o3lbs that stores prescribed o3 for CMIP surface layers evolving from 1850-2015 at L=end,and repeating at L=end-1 (237hPa) so the values won't be 
+!significantly changed due to vertical interpolations from Linoz levels to model surface levels  
 
   character(len=16), dimension(N_FLDS), parameter :: fld_units = & ! data field names
        (/'vmr             ','vmr             ','vmr             ','vmr             ',&!clim
          'vmr             ','K               ','Dobson Units    ',                   &
          'vmr/s           ','vmr/vmr/s       ','vmr/vmr/s       ','vmr/vmr/s       ',&!net o3
-         'vmr/vmr/s       ','vmr/vmr/s       ','vmr/K           ','vmr/DU          ',&
+         'vmr/vmr/s       ','vmr/vmr/s       ','vmr/K/s         ','vmr/DU/s        ',&
          'vmr/s           ','vmr/vmr/s       ','vmr/vmr/s       ','vmr/vmr/s       ',&!pn2o
-         'vmr/vmr/s       ','vmr/vmr/s       ','vmr/K           ','vmr/DU          ',&
+         'vmr/vmr/s       ','vmr/vmr/s       ','vmr/K/s         ','vmr/DU/s        ',&
          '1/s             ','1/vmr/s         ','1/vmr/s         ','1/vmr/s         ',&!ln2o Taylor series expanding the frequency below 
          '1/vmr/s         ','1/vmr/s         ','1/K/s           ','1/DU/s          ',&
          '1/s             ','1/vmr/s         ','1/vmr/s         ','1/vmr/s         ',&!pnoy
@@ -78,7 +82,7 @@ module linoz_data
          '1/vmr/s         ','1/vmr/s         ','1/K/s           ','1/DU/s          ',&
          '1/s             ','1/vmr/s         ','1/vmr/s         ','1/vmr/s         ',&!lnoy
          '1/vmr/s         ','1/vmr/s         ','1/K/s           ','1/DU/s          ',&
-         '1/s             '/)
+         '1/s             ','vmr             '/)
 
   integer :: index_map(N_FLDS)
 
@@ -115,7 +119,7 @@ module linoz_data
   integer, public, parameter :: ln2o_dPmL_dCH4_ndx =   28
   integer, public, parameter :: ln2o_dPmL_dH2O_ndx =   29
   integer, public, parameter :: ln2o_dPmL_dT_ndx =     30
-  integer, public, parameter :: ln2o_dPmL_dO3col_ndx =   31
+  integer, public, parameter :: ln2o_dPmL_dO3col_ndx = 31
 
   integer, public, parameter :: pnoy_PmL_clim_ndx  =   32
   integer, public, parameter :: pnoy_dPmL_dO3_ndx  =   33 
@@ -144,7 +148,9 @@ module linoz_data
   integer, public, parameter :: nch4_dPmL_dT_ndx =     54
   integer, public, parameter :: nch4_dPmL_dO3col_ndx = 55
   integer, public, parameter :: cariolle_pscs_ndx =    56
+  integer, public, parameter :: o3lbs_ndx         =    57
 
+  
 contains
 
 !-------------------------------------------------------------------
@@ -248,16 +254,19 @@ contains
      endif
     if ( present(linoz_data_fixed_tod_in) ) then
        fixed_tod = linoz_data_fixed_tod_in
-     endif
-
-    if (len_trim(filename) > 0 )then
-       if (filename(1:5) .eq. 'linv3') has_linozv3_data =.true.
-!      v3 data can be used to do v2 also, so no need to read in the old .nc that starts with linoz file
-!       if (filename(1:5) .eq. 'linoz') has_linozv2_data =.true.
-!       if(has_linozv3_data .or. has_linozv2_data) has_linoz_data=.true.
-       if(has_linozv3_data)has_linoz_data=.true.
-       write(6,*)'has_linoz_data=', has_linoz_data
     endif
+    
+      has_linozv3_data= .false.
+      has_linozv2_data= .false.
+      has_linoz_data =  .false.
+      if (len_trim(filename) > 0 .or. len_trim(filelist) >0 )then
+         if ((filename(1:5) .eq. 'linv3') .or. (filelist(1:5) .eq. 'linv3'))then
+            has_linozv3_data =.true.
+            has_linozv2_data =.true.
+            has_linoz_data=   .true.
+         endif
+      endif
+!       write(iulog,*)'has_linoz_data=', has_linoz_data
 
   endsubroutine linoz_data_setopts
 

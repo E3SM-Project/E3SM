@@ -321,8 +321,8 @@ contains
     integer      ::  latndx(pcols)                         ! chunk lat indicies
     integer      ::  lonndx(pcols)                         ! chunk lon indicies
     real(r8)     ::  invariants(ncol,pver,nfs)
-    real(r8)     ::  col_dens(ncol,pver,max(1,nabscol))    ! column densities (molecules/cm^2)
-    real(r8)     ::  col_delta(ncol,0:pver,max(1,nabscol)) ! layer column densities (molecules/cm^2)
+    real(r8)     ::  col_dens(ncol,pver,   max(1, nabscol+1) )    ! column densities (molecules/cm^2)
+    real(r8)     ::  col_delta(ncol,0:pver,max(1, nabscol+1) )    ! layer column densities (molecules/cm^2)
     real(r8)     ::  extfrc(ncol,pver,max(1,extcnt))
     real(r8)     ::  vmr(ncol,pver,gas_pcnst)         ! xported species (vmr)
     real(r8)     ::  reaction_rates(ncol,pver,max(1,rxntot))      ! reaction rates
@@ -387,10 +387,12 @@ contains
     real(r8) :: sad_strat(ncol,pver,3)         ! surf area density of sulfate, nat, & ice ( cm^2/cm^3 )
     real(r8) :: mmr_tend(pcols,pver,gas_pcnst) ! chemistry species tendencies (kg/kg/s)
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
+    real(r8) :: qvmr(ncol,pver)                ! water vapor vmr
     real(r8) :: delta
      !linoz v3
-    real(r8) :: xsfc(4)                        ! constant surface concentration for o3/o3lnz, n2o, noylnz, and ch4 if called
-    real(r8) :: o3lsfcsink(ncol)               ! linoz o3lnz surface sink from call lin_strat_sfcsink 
+    real(r8) :: xsfc(4, ncol)                  ! constant surface concentration for o3/o3lnz, n2o, noylnz, and ch4 if called
+    real(r8) :: o3lsfcsink(ncol)               ! linoz o3lnz surface sink from call lin_strat_sfcsink
+  !  
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
@@ -904,12 +906,17 @@ contains
     endif
 
 !
-! LINOZ
-!    write(iulog,*)'do_lin_strat_chem=',do_lin_strat_chem,'linoz_v2=',linoz_v2,'linoz_v3=',linoz_v3
-    xsfc=0    
+    ! LINOZ
+    if (masterproc)write(iulog,*)'do_lin_strat_chem=',do_lin_strat_chem,'linoz_v2=',linoz_v2,'linoz_v3=',linoz_v3
+    
+    xsfc(:,:)=0    
     if ( do_lin_strat_chem ) then
-       if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,                col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )                  
-       if(linoz_v3) call linv3_strat_chem_solve( ncol, lchnk, vmr, h2ovmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
+       if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,                col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
+       if(linoz_v3) then
+                    call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
+                    call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )
+       endif
+       
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
 

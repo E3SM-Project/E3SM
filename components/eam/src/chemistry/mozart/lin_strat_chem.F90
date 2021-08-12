@@ -27,7 +27,7 @@ module lin_strat_chem
   public :: do_lin_strat_chem, linoz_v2, linoz_v3
   public :: linoz_readnl   ! read linoz_nl namelist
 
-  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx 
+  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx, h2olnz_ndx
   integer :: o3_ndx, n2o_ndx, ch4_ndx, no_ndx, no2_ndx, hno3_ndx 
   
   logical :: do_lin_strat_chem, linoz_v2, linoz_v3
@@ -142,9 +142,10 @@ end subroutine linoz_readnl
     n2olnz_ndx  =   get_spc_ndx('N2OLNZ')
     noylnz_ndx  =   get_spc_ndx('NOYLNZ')
     ch4lnz_ndx  =   get_spc_ndx('CH4LNZ')
+    h2olnz_ndx   =  get_spc_ndx('H2OLNZ')
 
     if (o3lnz_ndx <=0 ) then
-       write(iulog,*) 'need to have tracer O3LNZ at least '
+       write(iulog,*) 'skip Linoz, need to have tracer O3LNZ at least '
        do_lin_strat_chem = .false.
        return
     end if
@@ -166,8 +167,8 @@ end subroutine linoz_readnl
 
     ! define additional output
 
-    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '1/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '1/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
     call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state ozone in LINOZ'                        )
     call addfld( 'LINOZ_O3COL'  , (/ 'lev' /), 'A', 'DU'     , 'ozone column above'                                 )
     call addfld( 'LINOZ_O3CLIM' , (/ 'lev' /), 'A', 'mol/mol', 'climatology of ozone in LINOZ'                      )
@@ -230,13 +231,13 @@ end subroutine linoz_readnl
                               lnoy_dPmL_dCH4_ndx,lnoy_dPmL_dH2O_ndx, lnoy_dPmL_dT_ndx,  lnoy_dPmL_dO3col_ndx,&
                               nch4_PmL_clim_ndx, nch4_dPmL_dO3_ndx,  nch4_dPmL_dN2O_ndx,nch4_dPmL_dNOy_ndx,  &
                               nch4_dPmL_dCH4_ndx,nch4_dPmL_dH2O_ndx, nch4_dPmL_dT_ndx,  nch4_dPmL_dO3col_ndx,&
-                              cariolle_pscs_ndx
+                              cariolle_pscs_ndx, o3lbs_ndx
     !
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index
     real(r8), intent(inout), dimension(ncol ,pver,gas_pcnst) :: xvmr      ! volume mixing ratio for all
-    real(r8), intent(inout), dimension(ncol ,pver) :: h2ovmr              ! vh2o olume mixing ratio for all
-    real(r8), intent(inout)                        :: xsfc(4)             ! surface ch4 and n2o from linoz table
+    real(r8), intent(in)   , dimension(ncol ,pver) :: h2ovmr              ! h2o vapor volume mixing ratio 
+    real(r8), intent(inout)                        :: xsfc(4,ncol)        ! surface o3,n2o,noy,ch4 from linoz table
     real(r8), intent(in)   , dimension(ncol ,pver) :: o3col               ! ozone column above box (mol/cm^2)
     real(r8), intent(in)   , dimension(pcols,pver) :: temp                ! temperature (K)
     real(r8), intent(in)   , dimension(ncol )      :: sza                 ! local solar zenith angle
@@ -245,13 +246,13 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index    
     !
-    integer  :: i,k,n !,index_lat,index_month
+    integer  :: i,k,n,ll,lt0,lt, n_dl !,index_lat,index_month
     real(r8) :: o3col_du,delta_temp,delta_o3col    
     real(r8) ::o3_old,   n2o_old,  noy_old,  ch4_old,  h2o_old
     real(r8) ::o3_new,   n2o_new,  noy_new,  ch4_new,  h2o_new
     real(r8) ::o3_clim, ss_x
     real(r8) :: dn2op, dn2ol, dnoyp, dnoyl, delo3, delch4, lfreq
-    real(r8) :: max_sza, psc_loss, pw
+    real(r8) :: max_sza, psc_loss, ch4max, pw
     real(r8), dimension(ncol) :: lats
     real(r8), dimension(ncol,pver) :: do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag
     ! local
@@ -276,6 +277,7 @@ end subroutine linoz_readnl
     real(r8), dimension(:,:), pointer :: linoz_dPmL_dT
     real(r8), dimension(:,:), pointer :: linoz_dPmL_dO3col
     real(r8), dimension(:,:), pointer :: linoz_cariolle_psc
+    real(r8), dimension(:,:), pointer :: linoz_o3lbs
     !
     ! parameters
     !
@@ -285,7 +287,7 @@ end subroutine linoz_readnl
     real(r8), parameter :: chlorine_loading_1987    = 2.5977_r8     ! EESC value (ppbv)
     real(r8), parameter :: chlorine_loading_bgnd    = 0.0000_r8     ! EESC value (ppbv) for background conditions
     real(r8), parameter :: small    = 1.e-18_r8     ! prevent dividing by zero
-
+    real(r8), parameter :: pressure_threshold       = 237.1375e+2_r8    ! last vaild linoz pressure layer
     !
     if ( .not. do_lin_strat_chem ) return
     if ( .not. linoz_v3) return
@@ -296,7 +298,7 @@ end subroutine linoz_readnl
        n2o_vmr =  xvmr(:,:,n2olnz_ndx)
        noy_vmr =  xvmr(:,:,noylnz_ndx)
        ch4_vmr =  xvmr(:,:,ch4lnz_ndx)
-       h2o_vmr =  h2ovmr(:,:)
+       h2o_vmr =  xvmr(:,:,h2olnz_ndx)
 
 
     ! associate the field pointers
@@ -310,6 +312,7 @@ end subroutine linoz_readnl
        linoz_h2o_clim     => fields(h2o_clim_ndx)     %data(:,:,lchnk )
        linoz_t_clim       => fields(t_clim_ndx)       %data(:,:,lchnk )
        linoz_o3col_clim   => fields(o3col_clim_ndx)   %data(:,:,lchnk )
+       linoz_o3lbs        => fields(o3lbs_ndx)        %data(:,:,lchnk )
 
        dO3 (:,:)   =  o3_vmr(:,:)  - linoz_o3_clim(:,:)
        dN2O(:,:)  =  n2o_vmr(:,:)  - linoz_n2o_clim(:,:)
@@ -317,27 +320,20 @@ end subroutine linoz_readnl
        dCH4(:,:)  =  ch4_vmr(:,:)  - linoz_ch4_clim(:,:)
        dH2O(:,:)  =  h2o_vmr(:,:)  - linoz_h2o_clim(:,:) 
        dTemp(:,:) =  temp(:,:)     - linoz_t_clim(:,:)
-       dCOL(:,:)  =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:,:)  
+       dCOL(:,:)  =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:,:)
 
 ! potential water 2*ch4 +h2o !it might be better to get maxch4 3-4 years back in time but this will do for now 
-! upated yearly ch4 value is stored at ch4_clim in linoz file at the surface layer
-!output surface constant concentration to control surface sink/source
-       xsfc(1)=       o3_sfc ! ozone surface constant
-       xsfc(2)=       maxval(linoz_n2o_clim(1:ncol,pver)) !n2o
-       xsfc(3)=       o3_sfc*3.e-3_r8             !noylnz
-       xsfc(4)=       maxval(linoz_ch4_clim(1:ncol,pver)) !ch4
-       pw= 2.0_r8 * xsfc(4) + 3.65e-6_r8 
+! upated yearly o3,n2o,noy and ch4 value are stored at xx_clim in linoz file at the bottom padding layer
+! output surface constant concentration to control surface sink/source
+!
+!       write(iulog,*)'pver=',pver
 
-!       write(iulog,*)'xsfc, o3', xsfc(1)
-!       write(iulog,*)'xsfc, n2o',xsfc(2)
-!       do I= 1, ncol
-!          write(iulog,*),'i=',i
-!          do k=1, pver
-!           write(iulog,*)'k=',k, 'n2oval=', linoz_n2o_clim(i,k)
-!          enddo
-!       enddo
-!       write(iulog,*)'xsfc, noy',xsfc(3)
-!       write(iulog,*)'xsfc, ch4',xsfc(4)
+       xsfc(1,:)=   linoz_o3lbs(:,pver) !  ozone surface constant (varying in lat)
+       xsfc(2,:)=   linoz_n2o_clim(:,pver) !  n2o (constant throughout latitude)
+       xsfc(3,:)=   linoz_o3lbs(:,pver)*3.e-3_r8  !noylnz
+       xsfc(4,:)=   linoz_ch4_clim(:,pver) ! ch4 (constant throughout latitude)
+       ch4max =     maxval(linoz_ch4_clim(1:ncol,pver)) 
+       pw= 2.0_r8 * ch4max + 3.65e-6_r8 
  
 ! OZONE P-L terms !unit vmr/sec
        linoz_PmL_clim     => fields(no3_PmL_clim_ndx)     %data(:,:,lchnk )    !unit vmr/sec
@@ -465,8 +461,18 @@ end subroutine linoz_readnl
     ! convert lats from radians to degrees
     !
        lats = rlats * radians_to_degrees
+
        LOOP_COL: do i=1,ncol
-          LOOP_LEV: do k=1,ltrop(i)
+           lt0= ltrop(i)
+           lt=  ltrop(i)
+           n_dl=0
+           do ll= lt0,1,-1
+              if ( pmid(i,ll) > pressure_threshold ) THEN            
+                 lt= ll-1
+              endif
+           enddo
+           n_dl= lt -lt0          
+          LOOP_LEV: do k=1, ltrop(i) + n_dl
           ! current mixing ratio
              o3_old =   o3_vmr(i,k)
              n2o_old=   n2o_vmr(i,k)
@@ -487,7 +493,7 @@ end subroutine linoz_readnl
              do3_linoz(i,k) = (o3_new - o3_old)/delta_t
              o3clim_linoz_diag(i,k) = o3_clim
              ss_o3(i,k) = ss_x     
-             o3col_du_diag(i,k) = o3col_du      
+!             o3col_du_diag(i,k) = o3col_du      
 !n2o  
              dn2op   = max(P_n2o(i,k)* delta_t, 0.0_r8)  !(dp/dt *dt in vmr)
              Lfreq   = max(Lfreq_n2o(i,k), 0.0_r8) ! n2o loss frequency          
@@ -503,7 +509,8 @@ end subroutine linoz_readnl
              delch4  =    ch4_old*(exp(-Lfreq*delta_t) - 1.0_r8)
              ch4_new =    ch4_old + delch4
              h2o_new =    pw - 2._r8 * ch4_new
-          !
+!alternative h2o, -2*delch4 gain as the loss of delch4             
+!             h2o_new  =    h2o_old - 2._r8* del1ch4          !
           ! PSC activation (follows Cariolle et al 1990.)
           ! use only if abs(latitude) > 40.
           !
@@ -542,20 +549,28 @@ end subroutine linoz_readnl
            xvmr(i,k, n2olnz_ndx)   = n2o_new
            xvmr(i,k, noylnz_ndx)   = noy_new
            xvmr(i,k, ch4lnz_ndx)   = ch4_new
+           xvmr(i,k, h2olnz_ndx)   = h2o_new
+           
 !update real o3, ch4, n2o      
            if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   +  xvmr(i,k, o3_ndx )
            if(ch4_ndx > 0) xvmr(i,k, ch4_ndx) =  delch4  +  xvmr(i,k, ch4_ndx)
            if(n2o_ndx > 0) xvmr(i,k, n2o_ndx) =  (dn2op + dn2ol)  +  xvmr(i,k, n2o_ndx)
-!           h2ovmr(i,k) =  pw - 2._r8* xvmr(i, k, ch4lnz_ndx)
-!update h2ovmr (this is tied to H2O_gas and used in strat chem if has_strato_chem)     
-             h2ovmr(i,k) = -2._r8 * delch4 + h2ovmr(i,k) 
            if(no_ndx >0)  xvmr(i,k, no_ndx)   =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no_ndx)
            if(no2_ndx>0)  xvmr(i,k, no2_ndx)  =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no2_ndx)
            if(hno3_ndx>0) xvmr(i,k,hno3_ndx)  =  0.90 *(dnoyp + dnoyl) + xvmr(i,k, hno3_ndx)
 
         end do LOOP_LEV
+
+       !use tropospheric specific humidity
+        LOOP_TROPLEV: do k= ltrop(i)+ n_dl, pver
+          xvmr(i,k, h2olnz_ndx)   = h2ovmr(i,k)
+        end do LOOP_TROPLEV
+
+        
      end do LOOP_COL
-    !
+!    save the passed-in o3col for all layers rather than just the stratosphere
+     o3col_du_diag(:ncol,:pver) = o3col(:ncol,:pver) * convert_to_du
+     
     ! output
     !
      call outfld( 'LINOZ_DO3'    , do3_linoz              , ncol, lchnk )
@@ -604,7 +619,7 @@ end subroutine linoz_readnl
     !
     ! local
     !
-    integer :: i,k,n !,index_lat,index_month
+    integer :: i,k,n, ll, lt0, lt, n_dl !,index_lat,index_month
     real(r8) :: o3col_du,delta_temp,delta_o3col,o3_old,o3_new,delta_o3
     real(r8) :: max_sza, psc_loss
     real(r8) :: o3_clim
@@ -627,7 +642,7 @@ end subroutine linoz_readnl
     real(r8), parameter :: radians_to_degrees = 180._r8/pi
     real(r8), parameter :: chlorine_loading_1987    = 2.5977_r8     ! EESC value (ppbv)
     real(r8), parameter :: chlorine_loading_bgnd    = 0.0000_r8     ! EESC value (ppbv) for background conditions
-    real(r8), parameter :: pressure_threshold       = 210.e+2_r8    ! {PJC} for diagnostics only
+    real(r8), parameter :: pressure_threshold       = 237.1375e+2_r8    ! last vaild linoz pressure layer
 
     !
     ! skip if no ozone field available
@@ -670,7 +685,16 @@ end subroutine linoz_readnl
     lats = rlats * radians_to_degrees
 
     LOOP_COL: do i=1,ncol
-       LOOP_LEV: do k=1,ltrop(i)
+            lt0= ltrop(i)
+            lt = ltrop(i)
+            n_dl=0
+            do ll= lt0,1,-1
+              if ( pmid(i,ll) > pressure_threshold ) THEN            
+                 lt= ll-1
+              endif
+           enddo
+           n_dl = lt - lt0
+       LOOP_LEV: do k=1, ltrop(i)+ n_dl
           !
           ! climatological ozone
           !
@@ -695,7 +719,7 @@ end subroutine linoz_readnl
           ! convert o3col from mol/cm2
           !
           o3col_du = o3col(i,k) * convert_to_du
-          o3col_du_diag(i,k) = o3col_du
+!          o3col_du_diag(i,k) = o3col_du
           !
           ! compute differences from climatology
           !
@@ -795,7 +819,7 @@ end subroutine linoz_readnl
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index
     real(r8), intent(inout), dimension(ncol ,pver, gas_pcnst) :: x_vmr    ! volume mixing ratio of ndx
-    real(r8), intent(in)                           :: x_sfc(4)            ! sfc concentration 
+    real(r8), intent(in)                           :: x_sfc(4,ncol)       ! sfc concentration 
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)    
     real(r8), intent(in)                           :: pdel(ncol,pver)     ! pressure delta about midnpoints (Pa)  
     real(r8), parameter :: mw_noylnz                = 14.0_r8
@@ -805,7 +829,8 @@ end subroutine linoz_readnl
     real(r8) :: area(ncol), mass(ncol,pver)
     real(r8) :: x_old, x_new, efactor, dx, mw_x
     real(r8), dimension(ncol)  :: dx_mass, x_sfcsink
-    real(r8), dimension(4)  :: mw, sfc_const
+    real(r8), dimension(4,ncol)  :: sfc_const
+    real(r8), dimension(4)  :: mw
     integer , dimension(4)  :: nx
     integer i, j, k, n, ms
 
@@ -819,7 +844,8 @@ end subroutine linoz_readnl
        ms=1
        nx(1) =  o3lnz_ndx
        mw(1) =  adv_mass(o3lnz_ndx)
-       sfc_const(1)= o3_sfc
+       sfc_const(1,:)= o3_sfc
+       o3_lbl=4
     endif
 !       
     if(linoz_v3)then
@@ -827,16 +853,13 @@ end subroutine linoz_readnl
        nx(1) = o3lnz_ndx
        nx(2) = n2olnz_ndx
        nx(3) = noylnz_ndx
-       nx(4) = ch4lnz_ndx ! turn off if trop ch4 is on
+       nx(4) = ch4lnz_ndx 
        mw(1) =  adv_mass(o3lnz_ndx)       
        mw(2) =  adv_mass(n2olnz_ndx)  
        mw(3) =  adv_mass(noylnz_ndx)
        mw(4) =  adv_mass(ch4lnz_ndx)   
-       sfc_const(1:4) = x_sfc(1:4)
- !      write(iulog,*) 'sfc species ndx=', nx(1), nx(2), nx(3), nx(4)
- !      write(iulog,*) 'sfc species mw=', mw(1), mw(2), mw(3), mw(4)
- !      write(iulog,*) 'sfc species x_sfc=', x_sfc(1),x_sfc(2), x_sfc(3), x_sfc(4)
- !      write(iulog,*) 'sfc cocentration=', sfc_const(1), sfc_const(2), sfc_const(3), sfc_const(4)
+       sfc_const(1:4,:ncol) = x_sfc(1:4,:ncol)
+       o3_lbl =9
     endif    
 ! 
     do k = 1,pver
@@ -858,7 +881,7 @@ end subroutine linoz_readnl
 !
              j= nx(n)
              x_old = x_vmr(i,k,j)  !vmr
-             dx =  (sfc_const(n) - x_old)* efactor !vmr
+             dx =  (sfc_const(n,i) - x_old)* efactor !vmr
              x_new  = x_old + dx
 ! loss in kg/m2 summed over boundary layers within one time step   
              dx_mass(i) = dx_mass(i) + dx* mass(i,k) * mw(n)/mw_air    
