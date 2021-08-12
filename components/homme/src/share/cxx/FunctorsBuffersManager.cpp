@@ -28,9 +28,7 @@ void FunctorsBuffersManager:: allocate () {
 
   m_buffer = ExecViewManaged<Real*>("",m_size);
 
-#ifdef HOMMEXX_BFB_TESTING
   generate_random_data();
-#endif
 
   m_allocated = true;
 }
@@ -41,14 +39,12 @@ void FunctorsBuffersManager:: allocate (Real* data, const int new_size) {
   m_size   = new_size;
   m_buffer = ExecViewManaged<Real*>(data, m_size);
 
-#ifdef HOMMEXX_BFB_TESTING
   generate_random_data();
-#endif
 
   m_allocated = true;
 }
 
-void generate_random_data ()
+void FunctorsBuffersManager::generate_random_data ()
 {
 #ifdef HOMMEXX_BFB_TESTING
   // Here's the catch: when malloc allocates memory, it *may* get a fresh
