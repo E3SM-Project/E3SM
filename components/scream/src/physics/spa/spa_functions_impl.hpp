@@ -77,7 +77,7 @@ void SPAFunctions<S,D>
       });
       team.team_barrier();
       Kokkos::parallel_for(
-        nswbands, [&] (int n) {
+        Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
         const auto& aer_g_sw_beg_sub           = ekat::subview(data_beg.AER_G_SW, i, n);
         const auto& aer_g_sw_end_sub           = ekat::subview(data_end.AER_G_SW, i, n);
         const auto& aer_g_sw_src_sub           = ekat::subview(aer_g_sw_src, i, n);
@@ -91,7 +91,7 @@ void SPAFunctions<S,D>
         const auto& aer_tau_sw_src_sub         = ekat::subview(aer_tau_sw_src, i, n);
 
         Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+          Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
           aer_g_sw_src_sub(k)   = aer_g_sw_beg_sub(k)   + slope * (aer_g_sw_end_sub(k)   - aer_g_sw_beg_sub(k));
           aer_ssa_sw_src_sub(k) = aer_ssa_sw_beg_sub(k) + slope * (aer_ssa_sw_end_sub(k) - aer_ssa_sw_beg_sub(k));
           aer_tau_sw_src_sub(k) = aer_tau_sw_beg_sub(k) + slope * (aer_tau_sw_end_sub(k) - aer_tau_sw_beg_sub(k));
@@ -99,13 +99,13 @@ void SPAFunctions<S,D>
         team.team_barrier();
       });
       Kokkos::parallel_for(
-        nlwbands, [&] (int n) {
+        Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
         const auto& aer_tau_lw_beg_sub         = ekat::subview(data_beg.AER_TAU_LW, i, n);
         const auto& aer_tau_lw_end_sub         = ekat::subview(data_end.AER_TAU_LW, i, n);
         const auto& aer_tau_lw_src_sub         = ekat::subview(aer_tau_lw_src, i, n);
 
         Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+          Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
           aer_tau_lw_src_sub(k) = aer_tau_lw_beg_sub(k) + slope * (aer_tau_lw_end_sub(k) - aer_tau_lw_beg_sub(k));
         });
         team.team_barrier();
@@ -132,7 +132,7 @@ void SPAFunctions<S,D>
                             ekat::subview(ccn3_src,i),
                             ekat::subview(data_out.CCN3,i));
       Kokkos::parallel_for(
-        nlwbands, [&] (int n) {
+        Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
         VertInterp.lin_interp(team,
                               ekat::subview(p_src,i),
                               ekat::subview(pressure_state.pmid,i),
@@ -140,7 +140,7 @@ void SPAFunctions<S,D>
                               ekat::subview(data_out.AER_TAU_LW,i,n));
       });
       Kokkos::parallel_for(
-        nswbands, [&] (int n) {
+        Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
         VertInterp.lin_interp(team,
                               ekat::subview(p_src,i),
                               ekat::subview(pressure_state.pmid,i),
