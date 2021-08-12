@@ -98,7 +98,6 @@ module cospsimulator_intr
   real(r8) :: htmlmid_cosp(nhtml_cosp)                     ! Model level height midpoints for output
   real(r8),allocatable, target :: htlim_cosp(:,:)          ! height limits for COSP outputs (nht_cosp+1)
   real(r8),allocatable, target :: htmid_cosp(:)            ! height midpoints of COSP radar/lidar output (nht_cosp)
-  real(r8),allocatable         :: htlim_cosp_1d(:)         ! height limits for COSP outputs (nht_cosp+1)
   integer, allocatable, target :: scol_cosp(:)             ! sub-column number (nscol_cosp)
 
   ! ######################################################################################
@@ -196,9 +195,6 @@ module cospsimulator_intr
   ! ######################################################################################
   ! Other variables
   ! ######################################################################################  
-  logical,allocatable :: first_run_cosp(:)      !.true. if run_cosp has been populated (allocatable->begchunk:endchunk)
-  logical,allocatable :: run_cosp(:,:)          !.true. if cosp should be run by column and
-                                                !       chunk (allocatable->1:pcols,begchunk:endchunk)
   ! pbuf indices
   integer :: cld_idx, concld_idx, lsreffrain_idx, lsreffsnow_idx, cvreffliq_idx
   integer :: cvreffice_idx, dpcldliq_idx, dpcldice_idx
@@ -326,13 +322,8 @@ CONTAINS
     !          Above I just assign them accordingly in the USE statement. Other bin bounds needed by CAM 
     !          are calculated here.
     ! Allocate
-    allocate(htlim_cosp(2,nht_cosp),htlim_cosp_1d(nht_cosp+1),htmid_cosp(nht_cosp),scol_cosp(nscol_cosp))
+    allocate(htlim_cosp(2,nht_cosp),htmid_cosp(nht_cosp),scol_cosp(nscol_cosp))
     
-    ! DJS2017: Just pull from cosp_config
-    if (use_vgrid_in) then
-       htlim_cosp_1d(1)            = vgrid_zu(1)
-       htlim_cosp_1d(2:nht_cosp+1) = vgrid_zl
-    endif
     htmid_cosp      = vgrid_z
     htlim_cosp(1,:) = vgrid_zu
     htlim_cosp(2,:) = vgrid_zl
@@ -828,10 +819,8 @@ CONTAINS
        call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','1',&
             'Radar Reflectivity Factor CFAD (94 GHz)',&
             flag_xyfill=.true., fill_value=R_UNDEF)
-       !*cfOff,cf3hr* clcalipso2 (time,height,profile)
        call addfld ('CLD_CAL_NOTCS',(/'cosp_ht'/),'A','percent','Cloud occurrence seen by CALIPSO but not CloudSat ',   &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! cltcalipsoradar (time,profile)
        call addfld ('CLDTOT_CALCS',horiz_only,'A','percent',' Calipso and Radar Total Cloud Fraction ',flag_xyfill=.true., &
             fill_value=R_UNDEF)
        call addfld ('CLDTOT_CS',horiz_only,'A','percent',' Radar total cloud amount ',flag_xyfill=.true., fill_value=R_UNDEF)
@@ -885,7 +874,6 @@ CONTAINS
     if (lmisr_sim) then
        call addfld ('CLD_MISR',(/'cosp_tau   ','cosp_htmisr'/),'A','percent','Cloud Fraction from MISR Simulator',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       !! add all misr outputs to the history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CLD_MISR',cosp_histfile_num,' ')
     end if
 
@@ -924,7 +912,7 @@ CONTAINS
        call addfld ('CLRLMODIS',(/'cosp_tau_modis','cosp_reffliq  '/),'A','%','MODIS Cloud Area Fraction',            &
             flag_xyfill=.true., fill_value=R_UNDEF)
        
-       !! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
+       ! add MODIS output to history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CLTMODIS',cosp_histfile_num,' ')
        call add_default ('CLWMODIS',cosp_histfile_num,' ')
        call add_default ('CLIMODIS',cosp_histfile_num,' ')
@@ -952,7 +940,6 @@ CONTAINS
        ! frac_out (time,height_mlev,column,profile)
        call addfld ('SCOPS_OUT',(/'cosp_scol','lev      '/),'I','0=nocld,1=strcld,2=cnvcld','SCOPS Subcolumn output', &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       !! add scops ouptut to history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('SCOPS_OUT',cosp_histfile_num,' ')
        ! save sub-column outputs from ISCCP if ISCCP is run
        if (lisccp_sim) then
@@ -969,9 +956,9 @@ CONTAINS
        end if
     end if
     
-    !! ADDFLD, ADD_DEFAULT, OUTFLD CALLS FOR COSP OUTPUTS IF RUNNING COSP OFF-LINE
-    !! Note: A suggestion was to add all of the CAM variables needed to add to make it possible to run COSP off-line
-    !! These fields are available and can be called from the namelist though.
+    ! ADDFLD, ADD_DEFAULT, OUTFLD CALLS FOR COSP OUTPUTS IF RUNNING COSP OFF-LINE
+    ! Note: A suggestion was to add all of the CAM variables needed to add to make it possible to run COSP off-line
+    ! These fields are available and can be called from the namelist though.
     if (cosp_histfile_aux) then
        call addfld ('PS_COSP',         horiz_only,            'I','Pa',     'PS_COSP',                            &
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -1065,11 +1052,6 @@ CONTAINS
     lsflxprc_idx   = pbuf_get_index('LS_FLXPRC')
     lsflxsnw_idx   = pbuf_get_index('LS_FLXSNW')
     
-    allocate(first_run_cosp(begchunk:endchunk))
-    first_run_cosp(begchunk:endchunk)=.true.
-    allocate(run_cosp(1:pcols,begchunk:endchunk))
-    run_cosp(1:pcols,begchunk:endchunk)=.false.
-
 #endif    
   end subroutine cospsimulator_intr_init
 
@@ -1114,13 +1096,8 @@ CONTAINS
     integer :: i, k, itim_old
     
     ! Microphysics variables
-    integer, parameter :: ncnstmax=4                      ! number of constituents
-    character(len=8), dimension(ncnstmax), parameter :: & ! constituent names
-         cnst_names = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE'/)
     integer :: ixcldliq                                   ! cloud liquid amount index for state%q
     integer :: ixcldice                                   ! cloud ice amount index
-    integer :: ixnumliq                                   ! cloud liquid number index
-    integer :: ixnumice                                   ! cloud ice water index
     
     ! COSP-related local vars
     type(cosp_outputs)        :: cospOUT                  ! COSP simulator outputs
@@ -1128,17 +1105,10 @@ CONTAINS
     type(cosp_column_inputs)  :: cospstateIN              ! COSP model fields needed by simulators
     
     ! COSP input variables that depend on CAM
-    ! 1) Npoints = number of gridpoints COSP will process (without subsetting, Npoints=ncol)
-    ! 2) Nlevels = number of model levels (Nlevels=pver)
-    real(r8), parameter :: time = 1.0_r8                  ! time ! Time since start of run [days], set to 1 bc running over single CAM timestep
-    real(r8), parameter :: time_bnds(2)=(/0.5_r8,1.5_r8/)        ! time_bnds ! Time boundaries - new in cosp v1.3, set following cosp_test.f90 line 121
-    integer :: Npoints                                    ! Number of gridpoints COSP will process
-    integer :: Nlevels                                    ! Nlevels
-    logical :: use_reff                                   ! True if effective radius to be used by radar simulator 
-    ! (always used by lidar)
-    logical :: use_precipitation_fluxes                   ! True if precipitation fluxes are input to the algorithm 
+    logical :: use_reff = .true.                          ! True if effective radius to be used by radar simulator 
+                                                          ! (always used by lidar)
+    logical :: use_precipitation_fluxes = .true.          ! True if precipitation fluxes are input to the algorithm 
     real(r8), parameter :: emsfc_lw = 0.99_r8             ! longwave emissivity of surface at 10.5 microns 
-    ! set value same as in cloudsimulator.F90
     
     ! Local vars related to calculations to go from CAM input to COSP input
     ! cosp convective value includes both deep and shallow convection
@@ -1154,60 +1124,12 @@ CONTAINS
     real(r8) :: rain_ls_interp(pcols,pver)               ! midpoint ls rain flux (kg m^-2 s^-1)
     real(r8) :: snow_ls_interp(pcols,pver)               ! midpoint ls snow flux
     real(r8) :: reff_cosp(pcols,pver,nhydro)             ! effective radius for cosp input
-    real(r8) :: dtau_s(pcols,pver)                       ! dtau_s - Optical depth of stratiform cloud at 0.67 um
-    real(r8) :: dtau_c(pcols,pver)                       ! dtau_c - Optical depth of convective cloud at 0.67 um
-    real(r8) :: dtau_s_snow(pcols,pver)                  ! dtau_s_snow - Grid-box mean Optical depth of stratiform snow at 0.67 um
-    real(r8) :: dem_s(pcols,pver)                        ! dem_s - Longwave emis of stratiform cloud at 10.5 um
-    real(r8) :: dem_c(pcols,pver)                        ! dem_c - Longwave emis of convective cloud at 10.5 um
-    real(r8) :: dem_s_snow(pcols,pver)                   ! dem_s_snow - Grid-box mean Optical depth of stratiform snow at 10.5 um
-    
-    ! ######################################################################################
-    ! Simulator output info
-    ! ######################################################################################
-    integer, parameter :: nf_radar=17                    ! number of radar outputs
-    integer, parameter :: nf_calipso=28                  ! number of calipso outputs
-    integer, parameter :: nf_isccp=9                     ! number of isccp outputs
-    integer, parameter :: nf_misr=1                      ! number of misr outputs
-    integer, parameter :: nf_modis=20                    ! number of modis outputs
-    
-    ! Cloudsat outputs
-    character(len=max_fieldname_len),dimension(nf_radar),parameter ::          &
-         fname_radar = (/'CFAD_DBZE94_CS', 'CLD_CAL_NOTCS ', 'DBZE_CS       ', &
-                         'CLDTOT_CALCS  ', 'CLDTOT_CS     ', 'CLDTOT_CS2    ', &
-                         'CS_NOPRECIP   ', 'CS_RAINPOSS   ', 'CS_RAINPROB   ', &
-                         'CS_RAINCERT   ', 'CS_SNOWPOSS   ', 'CS_SNOWCERT   ', &
-                         'CS_MIXPOSS    ', 'CS_MIXCERT    ', 'CS_RAINHARD   ', &
-                         'CS_UN         ', 'CS_PIA        '/)
-
-    ! CALIPSO outputs
-    character(len=max_fieldname_len),dimension(nf_calipso),parameter :: &
-         fname_calipso=(/'CLDLOW_CAL     ','CLDMED_CAL     ','CLDHGH_CAL     ','CLDTOT_CAL     ','CLD_CAL        ',&
-                         'RFL_PARASOL    ','CFAD_SR532_CAL ','ATB532_CAL     ','MOL532_CAL     ','CLD_CAL_LIQ    ',&
-                         'CLD_CAL_ICE    ','CLD_CAL_UN     ','CLD_CAL_TMP    ','CLD_CAL_TMPLIQ ','CLD_CAL_TMPICE ',&
-                         'CLD_CAL_TMPUN  ','CLDTOT_CAL_ICE ','CLDTOT_CAL_LIQ ','CLDTOT_CAL_UN  ','CLDHGH_CAL_ICE ',&
-                         'CLDHGH_CAL_LIQ ','CLDHGH_CAL_UN  ','CLDMED_CAL_ICE ','CLDMED_CAL_LIQ ','CLDMED_CAL_UN  ',&
-                         'CLDLOW_CAL_ICE ','CLDLOW_CAL_LIQ ','CLDLOW_CAL_UN  '/)
-    ! ISCCP outputs
-    character(len=max_fieldname_len),dimension(nf_isccp),parameter :: &
-         fname_isccp=(/'FISCCP1_COSP    ','CLDTOT_ISCCP    ','MEANCLDALB_ISCCP',&
-                       'MEANPTOP_ISCCP  ','TAU_ISCCP       ','CLDPTOP_ISCCP   ','MEANTAU_ISCCP   ',&
-                       'MEANTB_ISCCP    ','MEANTBCLR_ISCCP '/)
-    ! MISR outputs 
-    character(len=max_fieldname_len),dimension(nf_misr),parameter :: &
-         fname_misr=(/'CLD_MISR '/)
-    ! MODIS outputs
-    character(len=max_fieldname_len),dimension(nf_modis) :: &
-         fname_modis=(/'CLTMODIS    ','CLWMODIS    ','CLIMODIS    ','CLHMODIS    ','CLMMODIS    ',&
-                       'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
-                       'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
-                       'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
-                       'CLRLMODIS   '/)
-    
-    logical :: run_radar(nf_radar,pcols)                 ! logical telling you if you should run radar simulator
-    logical :: run_calipso(nf_calipso,pcols)                 ! logical telling you if you should run calipso simulator
-    logical :: run_isccp(nf_isccp,pcols)                 ! logical telling you if you should run isccp simulator
-    logical :: run_misr(nf_misr,pcols)                   ! logical telling you if you should run misr simulator
-    logical :: run_modis(nf_modis,pcols)                 ! logical telling you if you should run modis simulator
+    real(r8) :: dtau_s(pcols,pver)                       ! Optical depth of stratiform cloud at 0.67 um
+    real(r8) :: dtau_c(pcols,pver)                       ! Optical depth of convective cloud at 0.67 um
+    real(r8) :: dtau_s_snow(pcols,pver)                  ! Grid-box mean Optical depth of stratiform snow at 0.67 um
+    real(r8) :: dem_s(pcols,pver)                        ! Longwave emis of stratiform cloud at 10.5 um
+    real(r8) :: dem_c(pcols,pver)                        ! Longwave emis of convective cloud at 10.5 um
+    real(r8) :: dem_s_snow(pcols,pver)                   ! Grid-box mean Optical depth of stratiform snow at 10.5 um
     
     ! CAM pointers to get variables from radiation interface (get from rad_cnst_get_gas)
     real(r8), pointer, dimension(:,:) :: q               ! specific humidity (kg/kg)
@@ -1223,7 +1145,7 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: cv_reffliq      ! convective cld liq effective drop radius (microns)
     real(r8), pointer, dimension(:,:) :: cv_reffice      ! convective cld ice effective drop size (microns)
     
-    !! precip flux pointers (use for cam4 or cam5)
+    ! precip flux pointers (use for cam4 or cam5)
     ! Added pointers;  pbuff in zm_conv_intr.F90, calc in zm_conv.F90 
     real(r8), pointer, dimension(:,:) :: dp_flxprc       ! deep interface gbm flux_convective_cloud_rain+snow (kg m^-2 s^-1)
     real(r8), pointer, dimension(:,:) :: dp_flxsnw       ! deep interface gbm flux_convective_cloud_snow (kg m^-2 s^-1) 
@@ -1235,7 +1157,7 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: ls_flxprc       ! stratiform interface gbm flux_cloud_rain+snow (kg m^-2 s^-1) 
     real(r8), pointer, dimension(:,:) :: ls_flxsnw       ! stratiform interface gbm flux_cloud_snow (kg m^-2 s^-1)
     
-    !! cloud mixing ratio pointers (note: large-scale in state)
+    ! cloud mixing ratio pointers (note: large-scale in state)
     ! More pointers;  pbuf in convect_shallow.F90 (cam4) or stratiform.F90 (cam5)
     ! calc in hk_conv.F90 (CAM4 should be 0!), uwshcu.F90 but then affected by micro so values from stratiform.F90 (CAM5)
     real(r8), pointer, dimension(:,:) :: sh_cldliq       ! shallow gbm cloud liquid water (kg/kg)
@@ -1252,79 +1174,22 @@ CONTAINS
                                            ! subsample_and_optics which would
                                            ! fail runtime if compiled more strictly, like in debug mode 
     
-    ! COSPv2 stuff
+    ! COSP error handling
     character(len=256),dimension(100) :: cosp_status
     integer :: nerror
 
 
-    ! ######################################################################################
-    ! Initialization
-    ! ######################################################################################
     ! Find the chunk and ncol from the state vector
     lchnk = state%lchnk    ! state variable contains a number of columns, one chunk
     ncol  = state%ncol     ! number of columns in the chunk
-    
-    ! ######################################################################################
-    ! DECIDE WHICH COLUMNS YOU ARE GOING TO RUN COSP ON....
-    ! ######################################################################################
-    !! run_cosp is set for each column in each chunk in the first timestep of the run
-    !! hist_fld_col_active in cam_history.F90 is used to decide if you need to run cosp.
-    if (first_run_cosp(lchnk)) then
-       ! initalize run logicals as false
-       run_cosp(1:ncol,lchnk)=.false.
-       run_radar(1:nf_radar,1:ncol)=.false.
-       run_calipso(1:nf_calipso,1:ncol)=.false.
-       run_isccp(1:nf_isccp,1:ncol)=.false.
-       run_misr(1:nf_misr,1:ncol)=.false.
-       run_modis(1:nf_modis,1:ncol)=.false.
-       
-       if (lradar_sim) then
-          do i=1,nf_radar
-             run_radar(i,1:pcols)=hist_fld_col_active(fname_radar(i),lchnk,pcols)
-          end do
-       end if
-       if (llidar_sim) then
-          do i=1,nf_calipso
-             run_calipso(i,1:pcols)=hist_fld_col_active(fname_calipso(i),lchnk,pcols)
-          end do
-       end if
-       if (lisccp_sim) then
-          do i=1,nf_isccp
-             run_isccp(i,1:pcols)=hist_fld_col_active(fname_isccp(i),lchnk,pcols)
-          end do
-       end if
-       if (lmisr_sim) then
-          do i=1,nf_misr
-             run_misr(i,1:pcols)=hist_fld_col_active(fname_misr(i),lchnk,pcols)
-          end do
-       end if
-       if (lmodis_sim) then
-          do i=1,nf_modis
-             run_modis(i,1:pcols)=hist_fld_col_active(fname_modis(i),lchnk,pcols)
-          end do
-       end if
-       
-       do i=1,ncol
-          if ((any(run_radar(:,i))) .or. (any(run_calipso(:,i))) .or. (any(run_isccp(:,i))) &
-               .or. (any(run_misr(:,i))) .or. (any(run_modis(:,i)))) then
-             run_cosp(i,lchnk)=.true.
-          end if
-       end do
-       
-       first_run_cosp(lchnk)=.false.
-    endif
-    
+   
     call t_startf('cosp_translate_variables')
-    ! need query index for cldliq and cldice
-    ! use cnst_get_ind subroutine in constituents.F90.
-    ! can also get MG microphysics number from state using similar procedure.
-    call cnst_get_ind('CLDLIQ',ixcldliq)  !! replaced cnst_names(1) not setting abort flag which is optional in cnst_get_ind
-    call cnst_get_ind(cnst_names(2),ixcldice)
+
+    ! Get indices to radiative constituents
+    call cnst_get_ind('CLDLIQ',ixcldliq)
+    call cnst_get_ind('CLDICE',ixcldice)
     
-    Npoints = ncol        ! default is running all columns in the chunk, not pcols = maximum number
-    Nlevels = pver
-    
-    ! 3) radiative constituent interface variables:
+    ! radiative constituent interface variables:
     ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
     ! Note: these all have dims (pcol,pver) but the values don't change much for the well-mixed gases.
     call rad_cnst_get_gas(0,'H2O', state, pbuf,  q)                     
@@ -1361,15 +1226,6 @@ CONTAINS
     call pbuf_get_field(pbuf, lsflxprc_idx, ls_flxprc  )
     call pbuf_get_field(pbuf, lsflxsnw_idx, ls_flxsnw  )
    
-    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    ! CALCULATE COSP INPUT VARIABLES FROM CAM VARIABLES, done for all columns within chunk
-    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
-    ! CAM4 note: don't take the cloud water from the hack shallow convection scheme or the deep convection.  
-    ! cloud water values for convection are the same as the stratiform value. (Sungsu)
-
-    use_precipitation_fluxes = .true.      !!! consistent with cam4 implementation.
-    
     ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
     rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
          (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
@@ -1381,65 +1237,21 @@ CONTAINS
     rain_ls_interp(1:ncol,1:pver) = 0._r8 
     snow_ls_interp(1:ncol,1:pver) = 0._r8
     do i = 1,ncol
-       ! find weights (pressure weighting?)
+       ! Find intepolation weights
        call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
-       ! interpolate  lininterp1d(arrin, nin, arrout, nout, interp_wgts)
-       ! note: lininterp is an interface, contains lininterp1d -- code figures out to use lininterp1d.
+       ! Do interpolation
        call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
        call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
        call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
        call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
        call lininterp_finish(interp_wgts)
-       !! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
+       ! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
        rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
     end do
-    
-    !! CAM5 cloud mixing ratio calculations
-    !! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
-    !! Convective cloud water is NOT part of radiation calculations.
-    mr_ccliq(1:ncol,1:pver)           = 0._r8
-    mr_ccice(1:ncol,1:pver)           = 0._r8
-    mr_lsliq(1:ncol,1:pver)           = 0._r8
-    mr_lsice(1:ncol,1:pver)           = 0._r8
-    do k=1,pver
-       do i=1,ncol
-          if (cld(i,k) .gt. 0._r8) then
-             !! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
-             mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
-             mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
-             mr_lsliq(i,k) = state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
-             mr_lsice(i,k) = state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
-          else
-             mr_ccliq(i,k) = 0._r8
-             mr_ccice(i,k) = 0._r8
-             mr_lsliq(i,k) = 0._r8
-             mr_lsice(i,k) = 0._r8
-          end if
-       end do
-    end do
-    
-    !! Previously, I had set use_reff=.false.
-    !! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
-
-    !! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
-    !! All of the values that I have assembled in the code are in microns... convert to meters here since that is what COSP wants.
-    use_reff = .true.
-    reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
-    ! note: reff_cosp dimensions should be same as cosp (reff_cosp has 9 hydrometeor dimension)
-    reff_cosp(1:ncol,1:pver,1) = rel(1:ncol,1:pver)*1.e-6_r8          !! LSCLIQ  (same as effc and effliq in stratiform.F90)
-    reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8          !! LSCICE  (same as effi and effice in stratiform.F90)
-    reff_cosp(1:ncol,1:pver,3) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! LSRAIN  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,4) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! LSSNOW  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,7) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! CVRAIN (same as stratiform per Andrew)
-    reff_cosp(1:ncol,1:pver,8) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! CVSNOW (same as stratiform per Andrew)
-    reff_cosp(1:ncol,1:pver,9) = 0._r8                                !! LSGRPL (using radar default reff)
- 
-    !! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small 
-    !! negative values to zero.
-    !! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
-    !! So I set negative values to zero here... 
+    ! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small 
+    ! negative values to zero.
+    ! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
+    ! So I set negative values to zero here... 
     do k=1,pver
        do i=1,ncol
           if (rain_ls_interp(i,k) .lt. 0._r8) then
@@ -1456,6 +1268,62 @@ CONTAINS
           end if
        end do
     end do
+    
+    ! CAM5 cloud mixing ratio calculations
+    ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
+    ! Convective cloud water is NOT part of radiation calculations.
+    mr_ccliq(1:ncol,1:pver)           = 0._r8
+    mr_ccice(1:ncol,1:pver)           = 0._r8
+    mr_lsliq(1:ncol,1:pver)           = 0._r8
+    mr_lsice(1:ncol,1:pver)           = 0._r8
+    do k=1,pver
+       do i=1,ncol
+          if (cld(i,k) .gt. 0._r8) then
+             ! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
+             mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
+             mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
+             mr_lsliq(i,k) = state%q(i,k,ixcldliq)   ! state only includes stratiform (kg/kg)  
+             mr_lsice(i,k) = state%q(i,k,ixcldice)   ! state only includes stratiform (kg/kg)
+          else
+             mr_ccliq(i,k) = 0._r8
+             mr_ccice(i,k) = 0._r8
+             mr_lsliq(i,k) = 0._r8
+             mr_lsice(i,k) = 0._r8
+          end if
+       end do
+    end do
+    
+    ! Previously, I had set use_reff=.false.
+    ! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
+    ! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
+    ! All of the values that I have assembled in the code are in microns...convert to meters since that is what COSP wants.
+    reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
+    reff_cosp(1:ncol,1:pver,I_LSCLIQ) = rel(1:ncol,1:pver)*1.e-6_r8          ! (same as effc and effliq in stratiform.F90)
+    reff_cosp(1:ncol,1:pver,I_LSCICE) = rei(1:ncol,1:pver)*1.e-6_r8          ! (same as effi and effice in stratiform.F90)
+    reff_cosp(1:ncol,1:pver,I_LSRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
+    reff_cosp(1:ncol,1:pver,I_LSSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
+    reff_cosp(1:ncol,1:pver,I_CVCLIQ) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
+    reff_cosp(1:ncol,1:pver,I_CVCICE) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
+    reff_cosp(1:ncol,1:pver,I_CVRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
+    reff_cosp(1:ncol,1:pver,I_CVSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
+    reff_cosp(1:ncol,1:pver,I_LSGRPL) = 0._r8                                ! (using radar default reff)
+
+    ! NOTES:
+    ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
+    ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
+    ! 3) snow_tau and snow_emis are passed without modification to COSP
+    dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of stratiform (in-cloud)
+    dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of convective (in-cloud)
+    dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
+    dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
+    if (present(snow_tau) .and. present(snow_emis)) then
+       dem_s_snow(1:ncol,1:pver)  = snow_emis(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
+       dtau_s_snow(1:ncol,1:pver) = snow_tau(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
+    else
+       dem_s_snow(1:ncol,1:pver) = 0._r8
+       dtau_s_snow(1:ncol,1:pver) = 0._r8
+    end if
+
     call t_stopf('cosp_translate_variables')
 
     ! Construct COSP output derived type.
@@ -1494,8 +1362,7 @@ CONTAINS
        end if
     end do
     cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
-    cospstateIN%phalf(1:ncol,1)                = 0._r8
-    cospstateIN%phalf(1:ncol,2:pver+1)         = state%pint(1:ncol,2:pver+1)
+    cospstateIN%phalf(1:ncol,1:pver+1)         = state%pint(1:ncol,1:pver+1) !0._r8
     ! add surface height (surface geopotential/gravity) to convert CAM heights
     ! based on geopotential above surface into height above sea level
     do k = 1,pver
@@ -1517,25 +1384,6 @@ CONTAINS
     end if
     call t_stopf('cosp_construct_cospIN')
 
-    ! NOTES:
-    ! 1) CAM4 assumes same radiative properties for stratiform and convective clouds, 
-    ! (see ISCCP_CLOUD_TYPES subroutine call in cloudsimulator.F90)
-    ! I presume CAM5 is doing the same thing based on the ISCCP simulator calls within RRTM's radiation.F90
-    ! 2) COSP wants in-cloud values.  CAM5 values cld_swtau are in-cloud.
-    ! 3) snow_tau and snow_emis are passed without modification to COSP
-    dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)  ! mean 0.67 micron optical depth of stratiform (in-cloud)
-    dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)  ! mean 0.67 micron optical depth of convective (in-cloud)
-    dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
-    dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
-    if (present(snow_tau) .and. present(snow_emis)) then
-       dem_s_snow(1:ncol,1:pver)  = snow_emis(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
-       dtau_s_snow(1:ncol,1:pver) = snow_tau(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
-    else
-       dem_s_snow(1:ncol,1:pver) = 0._r8
-       dtau_s_snow(1:ncol,1:pver) = 0._r8
-    end if
-
-    ! *NOTE* Fields passed into subsample_and_optics are ordered from TOA-2-SFC.
     call t_startf('cosp_subsample_and_optics')
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
          use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),     &
@@ -1551,14 +1399,9 @@ CONTAINS
     if (lradar_sim) sd_cs(lchnk) = sd_wk
     call t_stopf('cosp_subsample_and_optics')
 
-    ! Translate EAM fields to COSP fields
-    !call translate_eam_to_cosp()
-    
     ! Call COSP and check status
     call t_startf('cosp_simulator')
     cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
-
-    ! Check status flags
     nerror = 0
     do i = 1, ubound(cosp_status, 1)
        if (len_trim(cosp_status(i)) > 0) then
@@ -1857,6 +1700,7 @@ CONTAINS
    end subroutine cosp_write_outputs
 #endif
 
+   ! Utility function to weight MODIS outputs by cloud fraction
    subroutine weight_output(arr, wgt, fillvalue)
       real(r8), intent(inout) :: arr(:)
       real(r8), intent(in)    :: wgt(:)
@@ -1868,6 +1712,8 @@ CONTAINS
       end where
    end subroutine weight_output
 
+   ! Utility functions, used in cosp_write_outputs to replace fill values with
+   ! zeros for 3d vars that may contain points below surface
    subroutine replace_values2d(arr, v1, v2)
       real(r8), intent(inout) :: arr(:,:)
       real(r8), intent(in) :: v1
