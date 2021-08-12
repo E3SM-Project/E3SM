@@ -173,7 +173,6 @@ _TESTS = {
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
-            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-RICO",
             )
         },
 
@@ -217,9 +216,7 @@ _TESTS = {
             "SMS_Ln9.ne4pg2_ne4pg2.F-MMF2-ECPP",
             # MMF-SCM tests
             "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
-            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-RICO",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
-            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-RICO",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.eam-rrtmgp",
             )
