@@ -46,9 +46,6 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
 
   ekat::enable_fpes(get_default_fpes());
 
-  // Initialize yakl
-  if(!yakl::isInitialized()) { yakl::init(); }
-
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
@@ -98,9 +95,11 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   for (int i=0; i<num_dyn_iters; ++i) {
     ad.run(dt);
   }
+
+  // Finalize the drive. YAKL will be finalized inside
+  // RRTMGPRadiation::finalize_impl after RRTMGP has had the
+  // opportunity to deallocate all it's arrays.
   ad.finalize();
-  // Finalize YAKL
-  yakl::finalize();
 
 
   // If we got here, we were able to run homme

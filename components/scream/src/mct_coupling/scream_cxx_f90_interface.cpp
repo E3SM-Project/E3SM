@@ -81,9 +81,6 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     // First of all, initialize the scream session
     scream::initialize_scream_session();
 
-    // Initialize yakl
-    if(!yakl::isInitialized()) { yakl::init(); }
-
     // Create the context
     auto& c = ScreamContext::singleton();
 

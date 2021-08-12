@@ -172,6 +172,10 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   using PC = scream::physics::Constants<Real>;
+
+  // Initialize yakl
+  if(!yakl::isInitialized()) { yakl::init(); }
+
   // Names of active gases
   auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
   m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
@@ -371,6 +375,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 void RRTMGPRadiation::finalize_impl  () {
   gas_concs.reset();
   rrtmgp::rrtmgp_finalize();
+
+  // Finalize YAKL
+  yakl::finalize();
 }
 
 void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {

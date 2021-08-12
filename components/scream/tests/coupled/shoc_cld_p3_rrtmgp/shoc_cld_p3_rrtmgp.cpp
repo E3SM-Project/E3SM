@@ -18,9 +18,6 @@ TEST_CASE("shoc-stand-alone", "") {
 
   constexpr int num_iters = 5;
 
-  // Initialize yakl
-  if(!yakl::isInitialized()) { yakl::init(); }
-
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
@@ -51,8 +48,6 @@ TEST_CASE("shoc-stand-alone", "") {
 
   // Finalize 
   ad.finalize();
-  // Finalize YAKL
-  yakl::finalize();
 
   // If we got here, we were able to run shoc
   REQUIRE(true);
