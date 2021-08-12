@@ -373,8 +373,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
   call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
   call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
-  call mpibcast(swrad_off,1,mpilog,0,mpicom)
-  call mpibcast(lwrad_off,1,mpilog,0,mpicom)
   call mpibcast(precip_off,1,mpilog,0,mpicom)
 #endif
 
