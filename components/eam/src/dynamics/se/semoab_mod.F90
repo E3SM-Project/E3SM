@@ -25,6 +25,7 @@ module semoab_mod
   use seq_comm_mct,  only: atm_pg_active ! turn it on when PG style mesh active
 
   use dyn_grid,      only: fv_nphys ! phys grid mesh will be replicated too
+  use gllfvremap_mod,         only:  gfr_f_get_corner_latlon
 
   use control_mod, only :  west, east, south, north  ! 1, 2, 3, 4
   implicit none
