@@ -16,6 +16,7 @@ extern "C" void limiter_clip_and_sum_c_callable(
   Real* ptens, const Real* sphweights, Real* minp, Real* maxp,
   const Real* dpmass);
 
+#ifndef HOMMEXX_BFB_TESTING
 static bool almost_equal (const Real& a, const Real& b,
                           const Real tol = 0) {
   const auto re = std::abs(a-b)/(1 + std::abs(a));
@@ -25,6 +26,7 @@ static bool almost_equal (const Real& a, const Real& b,
            a, b, re, tol);
   return good;
 }
+#endif
 
 static bool equal (const Real& a, const Real& b,
                    // Used only if not defined HOMMEXX_BFB_TESTING.
