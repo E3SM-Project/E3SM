@@ -247,7 +247,8 @@
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%MMF*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="%MMF[12OX]*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/mmf-scm</value>
+    <value compset="EAM%MMF[12OX]*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
+    <value compset="EAM%SCAM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>

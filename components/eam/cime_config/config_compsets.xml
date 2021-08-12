@@ -312,7 +312,8 @@
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
-	<value  compset="RICO_EAM">GREGORIAN</value>
+	<value  compset="EAM%SCAM">GREGORIAN</value>
+	<value  compset="EAM%MMF[12OX]*-SCM">GREGORIAN</value>
       </values>
     </entry>
 
@@ -355,7 +356,7 @@
 
     <entry id="PTS_MODE">
       <values>
-        <value compset="_EAM%MMF[12XO]*-SCM_">TRUE</value>
+        <value compset="EAM%MMF[12XO]*-SCM">TRUE</value>
       </values>
     </entry>
     
