@@ -25,7 +25,8 @@
 - Quick Start Guides:
   - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-cori.html)
   - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-compy.html)
-  - [Quick Start Guide for LCRC (Chrysalis and Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-lcrc.html)
+  - [Quick Start Guide for LCRC-Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-anvil.html)
+  - [Quick Start Guide for LCRC-Chrysalis](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-chrysalis.html)
 - Example run scripts:
   - [Model Climo vs Observation Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex5-model-vs-obs)
   - [Model Climo vs Model Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex4-model-vs-model)

@@ -11,7 +11,8 @@ please instead refer to :ref:`Latest stable release <install_latest>`.
 
 Most of the E3SM analysis software is maintained with an Anaconda metapackage
 (E3SM unified environment).
-If you have an account on an E3SM supported machine (**Acme1, Anvil, Compy, Cooley, Cori, Rhea**),
+If you have an account on an E3SM supported machine
+(**Acme1, Andes, Anvil, Chrysalis, Compy, Cooley, Cori**),
 then to get all of the tools in the metapackage in your path,
 use the corresponding activation command below.
 (Change ``.sh`` to ``.csh`` for csh shells.)
@@ -23,7 +24,7 @@ Both <obs_path> and <test_data_path> have two subdirectories:
 
 Also listed below are paths where the HTML files (<html_path>) must be located to be displayed
 at their corresponding web addresses (<web_address>).
-Note that only some machines (**Acme1, Anvil, Compy, Cori**) have a web server.
+Note that only some machines (**Acme1, Anvil, Chrysalis, Compy, Cori**) have a web server.
 
 
 Acme1
@@ -39,7 +40,7 @@ Acme1
 <web_address>: ``https://acme-viewer.llnl.gov/<username>``
 
 Andes
-^^^^
+^^^^^
 <activation_path>: ``source /ccs/proj/cli900/sw/rhea/e3sm-unified/load_latest_e3sm_unified_andes.sh``
 
 <obs_path>:``/ccs/proj/cli115/e3sm_diags_data/obs_for_e3sm_diags/``

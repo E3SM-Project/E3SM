@@ -1,3 +1,6 @@
+..
+    Comment: If you want to edit `quick-guide-{machine_name}.rst`, edit `quick-guide-generic.rst` instead and run `generate_quick_guides.py`.
+
 Cori-Haswell quick guide for running e3sm_diags v2
 =========================================================================
 

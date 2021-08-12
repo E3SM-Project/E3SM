@@ -7,7 +7,8 @@ Quick Guides
 
    quick-guide-general
    quick-guide-acme1
-   quick-guide-lcrc
+   quick-guide-anvil
+   quick-guide-chrysalis
    quick-guide-compy
-   quick-guide-cori
+   quick-guide-cori-haswell
    old/index
