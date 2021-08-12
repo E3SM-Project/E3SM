@@ -849,9 +849,8 @@ CONTAINS
        !call addfld('CAM_MP_LSSNOW',horiz_only, 'A', 'kg/kg','CAM Microphysics Large-Scale Snow',           flag_xyfill=.true., fill_value=R_UNDEF)
        !call addfld('CAM_MP_LSGRPL',horiz_only, 'A', 'kg/kg','CAM Microphysics Large-Scale Graupel',        flag_xyfill=.true., fill_value=R_UNDEF)
 
-
        ! add_default calls for CFMIP experiments or else all fields are added to history file except those with sub-column dimension
-       !! add all radar outputs to the history file specified by the CAM namelist variable cosp_histfile_num
+       ! add all radar outputs to the history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CFAD_DBZE94_CS',cosp_histfile_num,' ')
        call add_default ('CLD_CAL_NOTCS', cosp_histfile_num,' ')
        call add_default ('CLDTOT_CALCS',  cosp_histfile_num,' ')
@@ -1060,8 +1059,175 @@ CONTAINS
   ! ######################################################################################
   subroutine cospsimulator_intr_run(state,pbuf, cam_in,emis,coszrs,cld_swtau,snow_tau,snow_emis)    
     use physics_types,        only: physics_state
-    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer,       only: physics_buffer_desc
     use camsrfexch,           only: cam_in_t
+    use interpolate_data,     only: lininterp_init,lininterp,lininterp_finish,interp_type
+#ifdef USE_COSP
+    use mod_cosp_config,      only: R_UNDEF,parasol_nrefl, Nlvgrid, vgrid_zl, vgrid_zu
+    use mod_cosp,             only: cosp_simulator
+#endif
+
+    ! Inputs
+    type(physics_state), intent(in),target  :: state
+    type(physics_buffer_desc),      pointer :: pbuf(:)
+    type(cam_in_t),      intent(in)         :: cam_in
+    real(r8), intent(in) :: emis(pcols,pver)               ! cloud longwave emissivity
+    real(r8), intent(in) :: coszrs(pcols)                  ! cosine solar zenith angle (to tell if day or night)
+    real(r8), intent(in) :: cld_swtau(pcols,pver)          ! cld_swtau, read in using this variable
+    real(r8), intent(in),optional :: snow_tau(pcols,pver)  ! grid-box mean SW snow optical depth
+    real(r8), intent(in),optional :: snow_emis(pcols,pver) ! grid-box mean LW snow optical depth
+
+#ifdef USE_COSP
+    ! Local variables
+    integer :: ncol  ! number of active atmospheric columns
+    
+    ! COSP-related local vars
+    type(cosp_outputs)        :: cospOUT      ! COSP simulator outputs
+    type(cosp_optical_inputs) :: cospIN       ! COSP optical (or derived?) fields needed by simulators
+    type(cosp_column_inputs)  :: cospstateIN  ! COSP model fields needed by simulators
+    
+    ! COSP error handling
+    character(len=256),dimension(100) :: cosp_status
+    integer :: nerror, i
+
+
+    ! Number of collumns in this physics chunk
+    ncol = state%ncol
+   
+    ! Construct COSP output derived type.
+    call t_startf('cosp_construct_cosp_outputs')
+    call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
+    call t_stopf('cosp_construct_cosp_outputs')
+    
+    ! Model state inputs
+    call t_startf('cosp_construct_cospstateIN')
+    call construct_cospstateIN(ncol,pver,0,cospstateIN)      
+    call t_stopf('cosp_construct_cospstateIN')
+    
+    call t_startf('cosp_populate_cosp_gridbox')
+    call populate_cosp_gridbox(state, pbuf, cam_in, coszrs, cospstateIN)
+    call t_stopf('cosp_populate_cosp_gridbox')
+
+    ! Optical inputs
+    call t_startf('cosp_construct_cospIN')
+    call construct_cospIN(ncol,nscol_cosp,pver,cospIN)
+    call t_stopf('cosp_construct_cospIN')
+
+    call t_startf('cosp_subsample_and_optics')
+    call populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
+    call t_stopf('cosp_subsample_and_optics')
+
+    ! Call COSP and check status
+    call t_startf('cosp_simulator')
+    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
+    nerror = 0
+    do i = 1, ubound(cosp_status, 1)
+       if (len_trim(cosp_status(i)) > 0) then
+          write(iulog,*) "cosp_simulator: ERROR: "//trim(cosp_status(i))
+          nerror = nerror + 1
+       end if
+    end do
+    if (nerror > 0) then
+       call endrun('cospsimulator_intr_run: error return from cosp_simulator')
+    end if
+    call t_stopf('cosp_simulator')
+  
+    ! Write COSP inputs to output file for offline use.
+    if (cosp_histfile_aux) then
+       call t_startf("cosp_histfile_aux")
+       call cosp_histfile_aux_out(state, cospstateIN, cospIN)
+       call t_stopf("cosp_histfile_aux")
+    end if
+
+    ! Set dark-scenes to fill value. Only done for passive simulators
+    ! TODO: revisit this! We should NOT have to do this here! The simulators
+    ! should be masking night values for us.
+    call t_startf('cosp_remask_passive')
+    call cosp_remask_passive(cospstateIN, cospOUT)
+    call t_stopf('cosp_remask_passive')
+
+    ! Write COSP outputs to history files
+    call t_startf('cosp_write_outputs')
+    call cosp_write_outputs(state, cospIN, cospOUT)
+    call t_stopf('cosp_write_outputs')
+
+    ! Clean up
+    call t_startf('cosp_finalize')
+    call destroy_cospIN(cospIN)
+    call destroy_cospstateIN(cospstateIN)
+    call destroy_cosp_outputs(cospOUT) 
+    call t_stopf('cosp_finalize')
+#endif /* USE_COSP */
+  end subroutine cospsimulator_intr_run
+
+#ifdef USE_COSP
+  subroutine populate_cosp_gridbox(state, pbuf, cam_in, coszrs, cospstateIN)
+    use physics_types,        only: physics_state
+    use physics_buffer,       only: physics_buffer_desc
+    use camsrfexch,           only: cam_in_t
+    use rad_constituents,     only: rad_cnst_get_gas
+    use physconst,            only: pi, gravit
+    type(physics_state)       , intent(in),target  :: state
+    type(physics_buffer_desc) , pointer            :: pbuf(:)
+    type(cam_in_t)            , intent(in)         :: cam_in
+    real(r8)                  , intent(in)         :: coszrs(:)  ! cosine solar zenith angle (to tell if day or night)
+    type(cosp_column_inputs), intent(inout)        :: cospstateIN  ! COSP model fields needed by simulators
+    ! CAM pointers to get variables from radiation interface (get from rad_cnst_get_gas)
+    real(r8), pointer, dimension(:,:) :: q               ! specific humidity (kg/kg)
+    real(r8), pointer, dimension(:,:) :: o3              ! Mass mixing ratio 03
+    ! Other local variables
+    integer :: ncol, i, k
+
+    ncol = state%ncol
+
+    ! radiative constituent interface variables:
+    ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
+    ! Note: these all have dims (pcol,pver) but the values don't change much for the well-mixed gases.
+    call rad_cnst_get_gas(0,'H2O', state, pbuf,  q)                     
+    call rad_cnst_get_gas(0,'O3',  state, pbuf,  o3)
+ 
+    do i = 1,ncol
+       cospstateIN%lat(i)                      = state%lat(i)*180._r8/ pi
+       cospstateIN%lon(i)                      = state%lon(i)*180._r8 / pi
+    end do
+    cospstateIN%at                             = state%t(1:ncol,1:pver) 
+    cospstateIN%qv                             = q(1:ncol,1:pver)
+    cospstateIN%o3                             = o3(1:ncol,1:pver)  
+    ! Compute sunlit flag
+    do i = 1,ncol
+       if (coszrs(i) > 0.0_r8) then
+          cospstateIN%sunlit(i) = 1
+       else
+          cospstateIN%sunlit(i) = 0
+       end if
+    end do
+    cospstateIN%skt                            = cam_in%ts(1:ncol)
+    ! Compute land mask
+    do i = 1,ncol
+       if (cam_in%landfrac(i) > 0.01_r8) then
+          cospstateIN%land(i) = 1
+       else
+          cospstateIN%land(i) = 0
+       end if
+    end do
+    cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
+    cospstateIN%phalf(1:ncol,1:pver+1)         = state%pint(1:ncol,1:pver+1) !0._r8
+    ! add surface height (surface geopotential/gravity) to convert CAM heights
+    ! based on geopotential above surface into height above sea level
+    do k = 1,pver
+       do i = 1,ncol
+          cospstateIN%hgt_matrix(i,k)          = state%zm(i,k) + state%phis(i) / gravit
+          cospstateIN%hgt_matrix_half(i,k)     = state%zi(i,k+1) + state%phis(i) / gravit
+       end do
+    end do
+    cospstateIN%surfelev(1:ncol)               = state%zi(1:ncol,pver+1) + state%phis(1:ncol) / gravit
+  end subroutine populate_cosp_gridbox
+#endif /* USE_COSP */
+
+#ifdef USE_COSP
+  subroutine populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
+    use physics_types,        only: physics_state
+    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
     use constituents,         only: cnst_get_ind
     use rad_constituents,     only: rad_cnst_get_gas
     use interpolate_data,     only: lininterp_init,lininterp,lininterp_finish,interp_type
@@ -1069,25 +1235,20 @@ CONTAINS
     use cam_history,          only: hist_fld_col_active 
     use cam_history_support,  only: max_fieldname_len
     use cmparray_mod,         only: CmpDayNite, ExpDayNite
-#ifdef USE_COSP
     use mod_cosp_config,      only: R_UNDEF,parasol_nrefl, Nlvgrid, vgrid_zl, vgrid_zu
     use mod_cosp,             only: cosp_simulator
     use mod_quickbeam_optics, only: size_distribution
-#endif
 
     ! ######################################################################################
     ! Inputs
     ! ######################################################################################
     type(physics_state), intent(in),target  :: state
     type(physics_buffer_desc),      pointer :: pbuf(:)
-    type(cam_in_t),      intent(in)         :: cam_in
     real(r8), intent(in) :: emis(pcols,pver)                  ! cloud longwave emissivity
-    real(r8), intent(in) :: coszrs(pcols)                     ! cosine solar zenith angle (to tell if day or night)
     real(r8), intent(in) :: cld_swtau(pcols,pver)             ! RRTM cld_swtau, read in using this variable
     real(r8), intent(in),optional :: snow_tau(pcols,pver)  ! RRTM grid-box mean SW snow optical depth, used for CAM5 simulations 
     real(r8), intent(in),optional :: snow_emis(pcols,pver) ! RRTM grid-box mean LW snow optical depth, used for CAM5 simulations 
 
-#ifdef USE_COSP
     ! ######################################################################################
     ! Local variables
     ! ######################################################################################
@@ -1100,9 +1261,8 @@ CONTAINS
     integer :: ixcldice                                   ! cloud ice amount index
     
     ! COSP-related local vars
-    type(cosp_outputs)        :: cospOUT                  ! COSP simulator outputs
-    type(cosp_optical_inputs) :: cospIN                   ! COSP optical (or derived?) fields needed by simulators
-    type(cosp_column_inputs)  :: cospstateIN              ! COSP model fields needed by simulators
+    type(cosp_optical_inputs), intent(inout) :: cospIN                   ! COSP optical (or derived?) fields needed by simulators
+    type(cosp_column_inputs), intent(inout)  :: cospstateIN              ! COSP model fields needed by simulators
     
     ! COSP input variables that depend on CAM
     logical :: use_reff = .true.                          ! True if effective radius to be used by radar simulator 
@@ -1173,28 +1333,12 @@ CONTAINS
                                            ! This is to avoid directly passing  sd_cs(lchnk) to
                                            ! subsample_and_optics which would
                                            ! fail runtime if compiled more strictly, like in debug mode 
-    
-    ! COSP error handling
-    character(len=256),dimension(100) :: cosp_status
-    integer :: nerror
 
+    ncol = state%ncol
+    lchnk = state%lchnk
 
-    ! Find the chunk and ncol from the state vector
-    lchnk = state%lchnk    ! state variable contains a number of columns, one chunk
-    ncol  = state%ncol     ! number of columns in the chunk
-   
-    call t_startf('cosp_translate_variables')
+    cospIN%emsfc_lw      = emsfc_lw
 
-    ! Get indices to radiative constituents
-    call cnst_get_ind('CLDLIQ',ixcldliq)
-    call cnst_get_ind('CLDICE',ixcldice)
-    
-    ! radiative constituent interface variables:
-    ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
-    ! Note: these all have dims (pcol,pver) but the values don't change much for the well-mixed gases.
-    call rad_cnst_get_gas(0,'H2O', state, pbuf,  q)                     
-    call rad_cnst_get_gas(0,'O3',  state, pbuf,  o3)
-    
     ! 4) get variables from physics buffer
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
@@ -1202,7 +1346,7 @@ CONTAINS
     call pbuf_get_field(pbuf, rel_idx, rel  )
     call pbuf_get_field(pbuf, rei_idx, rei)
     
-    !added some more sizes to physics buffer in stratiform.F90 for COSP inputs
+    ! added some more sizes to physics buffer in stratiform.F90 for COSP inputs
     call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
     call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
     call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
@@ -1272,6 +1416,9 @@ CONTAINS
     ! CAM5 cloud mixing ratio calculations
     ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
     ! Convective cloud water is NOT part of radiation calculations.
+    ! Get indices to radiative constituents
+    call cnst_get_ind('CLDLIQ',ixcldliq)
+    call cnst_get_ind('CLDICE',ixcldice)
     mr_ccliq(1:ncol,1:pver)           = 0._r8
     mr_ccice(1:ncol,1:pver)           = 0._r8
     mr_lsliq(1:ncol,1:pver)           = 0._r8
@@ -1324,67 +1471,10 @@ CONTAINS
        dtau_s_snow(1:ncol,1:pver) = 0._r8
     end if
 
-    call t_stopf('cosp_translate_variables')
-
-    ! Construct COSP output derived type.
-    call t_startf('cosp_construct_cosp_outputs')
-    call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
-    call t_stopf('cosp_construct_cosp_outputs')
-    
-    ! Model state inputs
-    call t_startf('cosp_construct_cospstateIN')
-    call construct_cospstateIN(ncol,pver,0,cospstateIN)      
-    call t_stopf('cosp_construct_cospstateIN')
-    
-    call t_startf('cosp_populate_cospstateIN')
-    do i = 1,ncol
-       cospstateIN%lat(i)                      = state%lat(i)*180._r8/ pi
-       cospstateIN%lon(i)                      = state%lon(i)*180._r8 / pi
-    end do
-    cospstateIN%at                             = state%t(1:ncol,1:pver) 
-    cospstateIN%qv                             = q(1:ncol,1:pver)
-    cospstateIN%o3                             = o3(1:ncol,1:pver)  
-    ! Compute sunlit flag
-    do i = 1,ncol
-       if (coszrs(i) > 0.0_r8) then
-          cospstateIN%sunlit(i) = 1
-       else
-          cospstateIN%sunlit(i) = 0
-       end if
-    end do
-    cospstateIN%skt                            = cam_in%ts(1:ncol)
-    ! Compute land mask
-    do i = 1,ncol
-       if (cam_in%landfrac(i) > 0.01_r8) then
-          cospstateIN%land(i) = 1
-       else
-          cospstateIN%land(i) = 0
-       end if
-    end do
-    cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
-    cospstateIN%phalf(1:ncol,1:pver+1)         = state%pint(1:ncol,1:pver+1) !0._r8
-    ! add surface height (surface geopotential/gravity) to convert CAM heights
-    ! based on geopotential above surface into height above sea level
-    do k = 1,pver
-       do i = 1,ncol
-          cospstateIN%hgt_matrix(i,k)          = state%zm(i,k) + state%phis(i) / gravit
-          cospstateIN%hgt_matrix_half(i,k)     = state%zi(i,k+1) + state%phis(i) / gravit
-       end do
-    end do
-    cospstateIN%surfelev(1:ncol)               = state%zi(1:ncol,pver+1) + state%phis(1:ncol) / gravit
-    call t_stopf('cosp_populate_cospstateIN')
-
-    ! Optical inputs
-    call t_startf('cosp_construct_cospIN')
-    call construct_cospIN(ncol,nscol_cosp,pver,cospIN)
-    cospIN%emsfc_lw      = emsfc_lw
     if (lradar_sim) then 
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
        sd_wk = sd_cs(lchnk)
     end if
-    call t_stopf('cosp_construct_cospIN')
-
-    call t_startf('cosp_subsample_and_optics')
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
          use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),     &
          concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
@@ -1397,50 +1487,10 @@ CONTAINS
          dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
          dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
     if (lradar_sim) sd_cs(lchnk) = sd_wk
-    call t_stopf('cosp_subsample_and_optics')
 
-    ! Call COSP and check status
-    call t_startf('cosp_simulator')
-    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
-    nerror = 0
-    do i = 1, ubound(cosp_status, 1)
-       if (len_trim(cosp_status(i)) > 0) then
-          write(iulog,*) "cosp_simulator: ERROR: "//trim(cosp_status(i))
-          nerror = nerror + 1
-       end if
-    end do
-    if (nerror > 0) then
-       call endrun('cospsimulator_intr_run: error return from cosp_simulator')
-    end if
-    call t_stopf('cosp_simulator')
-  
-    ! Write COSP inputs to output file for offline use.
-    if (cosp_histfile_aux) then
-       call t_startf("cosp_histfile_aux")
-       call cosp_histfile_aux_out(state, cospstateIN, cospIN)
-       call t_stopf("cosp_histfile_aux")
-    end if
-
-    ! Set dark-scenes to fill value. Only done for passive simulators
-    ! TODO: revisit this! We should NOT have to do this here! The simulators
-    ! should be masking night values for us.
-    call t_startf('cosp_remask_passive')
-    call cosp_remask_passive(cospstateIN, cospOUT)
-    call t_stopf('cosp_remask_passive')
-
-    ! Write COSP outputs to history files
-    call t_startf('cosp_write_outputs')
-    call cosp_write_outputs(state, cospIN, cospOUT)
-    call t_stopf('cosp_write_outputs')
-
-    ! Clean up
-    call t_startf('cosp_finalize')
-    call destroy_cospIN(cospIN)
-    call destroy_cospstateIN(cospstateIN)
-    call destroy_cosp_outputs(cospOUT) 
-    call t_stopf('cosp_finalize')
+   end subroutine populate_cosp_subcol
 #endif /* USE_COSP */
-  end subroutine cospsimulator_intr_run
+ 
 
 #ifdef USE_COSP
    ! Remask passive simulator output after call to COSP. This should NOT be necessary, and if it is
@@ -1765,7 +1815,7 @@ CONTAINS
       call outfld('MODIS_ssa',    cospIN%ss_alb , ncol, lchnk)
       call outfld('MODIS_fracliq',cospIN%fracLiq, ncol, lchnk)
    end subroutine cosp_histfile_aux_out
-#endif /* USE_COSP */USE_COSP
+#endif /* USE_COSP */
 
 #ifdef USE_COSP
   ! ######################################################################################
