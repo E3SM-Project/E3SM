@@ -111,7 +111,9 @@ struct SPAFunctions
     const SPAData&   data_end,
     const SPAOutput& data_out,
     Int ncols,
-    Int nlevs);
+    Int nlevs,
+    Int nswbands,
+    Int nlwbands);
 }; // struct Functions
 
 } // namespace spa 

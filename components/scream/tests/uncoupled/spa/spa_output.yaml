@@ -9,10 +9,10 @@ FREQUENCY:
   OUT_MAX_STEPS: 10
 FIELDS:
   Number of Fields: 6
-  field 1: CCN3_beg
-  field 2: PS_beg
-  field 3: hyam
-  field 4: hybm
-  field 5: nc_activated
+  field 1: nc_activated
+  field 2: aero_g_sw
+  field 3: aero_ssa_sw
+  field 4: aero_tau_sw
+  field 5: aero_tau_lw
   field 6: p_mid 
 ...

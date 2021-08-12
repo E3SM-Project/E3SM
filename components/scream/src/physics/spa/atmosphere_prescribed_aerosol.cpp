@@ -148,8 +148,23 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 
   SPAData_start.CCN3             = m_spa_fields_in["CCN3_beg"].get_reshaped_view<const Pack**>();
   SPAData_end.CCN3               = m_spa_fields_in["CCN3_end"].get_reshaped_view<const Pack**>();
-
   SPAData_out.CCN3               = m_spa_fields_out["nc_activated"].get_reshaped_view<Pack**>();
+
+  SPAData_start.AER_G_SW         = m_spa_fields_in["AER_G_SW_beg"].get_reshaped_view<const Pack***>();
+  SPAData_end.AER_G_SW           = m_spa_fields_in["AER_G_SW_end"].get_reshaped_view<const Pack***>();
+  SPAData_out.AER_G_SW           = m_spa_fields_out["aero_g_sw"].get_reshaped_view<Pack***>();
+
+  SPAData_start.AER_SSA_SW       = m_spa_fields_in["AER_SSA_SW_beg"].get_reshaped_view<const Pack***>();
+  SPAData_end.AER_SSA_SW         = m_spa_fields_in["AER_SSA_SW_end"].get_reshaped_view<const Pack***>();
+  SPAData_out.AER_SSA_SW         = m_spa_fields_out["aero_ssa_sw"].get_reshaped_view<Pack***>();
+
+  SPAData_start.AER_TAU_SW       = m_spa_fields_in["AER_TAU_SW_beg"].get_reshaped_view<const Pack***>();
+  SPAData_end.AER_TAU_SW         = m_spa_fields_in["AER_TAU_SW_end"].get_reshaped_view<const Pack***>();
+  SPAData_out.AER_TAU_SW         = m_spa_fields_out["aero_tau_sw"].get_reshaped_view<Pack***>();
+
+  SPAData_start.AER_TAU_LW       = m_spa_fields_in["AER_TAU_LW_beg"].get_reshaped_view<const Pack***>();
+  SPAData_end.AER_TAU_LW         = m_spa_fields_in["AER_TAU_LW_end"].get_reshaped_view<const Pack***>();
+  SPAData_out.AER_TAU_LW         = m_spa_fields_out["aero_tau_lw"].get_reshaped_view<Pack***>();
 }
 
 // =========================================================================================
@@ -165,7 +180,7 @@ void SPA::run_impl (const Real dt)
     SPATimeState.days_this_month = (Real)ts.get_dpm();
   }
 
-  SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs);
+  SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
 
   // Advance current timestamp.
   ts += dt;
