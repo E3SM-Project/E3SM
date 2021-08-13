@@ -246,7 +246,7 @@ flags should be captured within MPAS CMake files.
   </CFLAGS>
   <CXXFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
-    <append DEBUG="FALSE"> -O3  </append>
+    <append DEBUG="FALSE"> -O2  </append>
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CXXFLAGS>
@@ -1634,7 +1634,7 @@ flags should be captured within MPAS CMake files.
   </CFLAGS>
   <CXXFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
-    <append DEBUG="FALSE"> -O3  </append>
+    <append DEBUG="FALSE"> -O2  </append>
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CXXFLAGS>
@@ -1853,7 +1853,7 @@ flags should be captured within MPAS CMake files.
   </CFLAGS>
   <CXXFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
-    <append DEBUG="FALSE"> -O3  </append>
+    <append DEBUG="FALSE"> -O2  </append>
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CXXFLAGS>
