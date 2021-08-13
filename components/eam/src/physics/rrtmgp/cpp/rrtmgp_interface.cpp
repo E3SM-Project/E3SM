@@ -182,7 +182,7 @@ extern "C" void rrtmgp_run_sw (
     auto pmid_host = pmid.createHostCopy();
     bool top_at_1 = pmid_host(1, 1) < pmid_host (1, 2);
     real2d toa_flux("toa_flux", ncol, nswgpts);
-    k_dist_sw.gas_optics(top_at_1, pmid, pint, tmid, gas_concs, combined_optics, toa_flux);
+    k_dist_sw.gas_optics(ncol, nlay, top_at_1, pmid, pint, tmid, gas_concs, combined_optics, toa_flux);
 
     // Apply TOA flux scaling
     parallel_for(Bounds<2>(nswgpts,ncol), YAKL_LAMBDA (int igpt, int icol) {
@@ -332,7 +332,7 @@ extern "C" void rrtmgp_run_lw (
         t_sfc(icol) = tint(icol,nlay+1);
     }
     //k_dist_lw.gas_optics(top_at_1, pmid, pint, tmid, t_sfc, gas_concs, combined_optics, lw_sources, real2d(), real2d());
-    k_dist_lw.gas_optics(top_at_1, pmid, pint, tmid, t_sfc, gas_concs, combined_optics, lw_sources, real2d(), tint);
+    k_dist_lw.gas_optics(ncol, nlay, top_at_1, pmid, pint, tmid, t_sfc, gas_concs, combined_optics, lw_sources, real2d(), tint);
 
     // Add in aerosol; we can define this by bands or gpoints. If we define by
     // bands, then internally when increment() is called it will map these to
