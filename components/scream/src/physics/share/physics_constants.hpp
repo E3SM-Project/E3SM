@@ -98,7 +98,7 @@ struct Constants
   static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
-  static constexpr Scalar nmltratio     = 0.2; // ratio of rain number produced to ice number loss from melting
+  static constexpr Scalar nmltratio     = 1.0; // ratio of rain number produced to ice number loss from melting
   static constexpr Scalar basetemp      = 300.0;
   static constexpr Scalar r_earth       = 6.376e6; // Radius of the earth in m
 
