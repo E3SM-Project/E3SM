@@ -45,15 +45,21 @@ TEST_CASE("spa-stand-alone", "") {
   // Init and run
   util::TimeStamp time (0,0,0,0);
 
+  printf("Initialization...");
   ad.initialize(atm_comm,ad_params,time);
+  printf(" done\n");
 
   // Run the code
   for (int i=0; i<num_iters; ++i) {
+    printf("Run step %d ...",i);
     ad.run(dt);
+    printf(" done\n");
   }
 
-  // Finalize 
+  // Finalize
+  printf("Finalization ...");
   ad.finalize();
+  printf(" done\n");
 
 }
 
