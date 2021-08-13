@@ -1,17 +1,11 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include <iostream>
-#include <fstream>
-
-#include "scream_config.h"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-
 #include "share/io/scream_scorpio_interface.hpp"
+#include "scream_config.h"
+
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
 
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager, see output_manager.hpp
@@ -25,7 +19,6 @@
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
  *  3. a shared pointer to the field manager
- *  4. a shared pointer to the grids manager
  * 
  *  The EKAT parameter list must contain all of the top level output control information and follows the format:
  *  ------
@@ -36,11 +29,7 @@
  *    OUT_N: INT
  *    OUT_OPTION: STRING
  *    OUT_MAX_STEPS: INT
- *  FIELDS:
- *    Number of Fields: INT
- *    field 1: STRING
- *    ...
- *    field N: STRING
+ *  FIELDS: [field_1, field_2, ..., field_N]
  *  restart_hist_N: INT            (optional)
  *  restart_hist_OPTION: STRING    (optional)
  *  RESTART FILE: BOOL             (optional)
@@ -57,9 +46,7 @@
  *    OUT_N is an integer of the frequency of output given the units from OUT_OPTION
  *    OUT_OPTION is a string for the units of output frequency, examples would be "Steps", "Months", "Years", "Hours", etc.
  *    OUT_MAX_STEPS is an integer of the maximum number of steps that can exist on a single file (controls files getting too big).
- *  FIELDS is a subsection that lists all the fields in this output stream.
- *    Number of Fields is an integer that specifies the number of fields in this output stream.
- *    field 1,...,field N is a list of each field in the output stream by name in field manager.
+ *  FIELDS is a list of fields that need to be added to this output stream
  *  restart_hist_N is an optional integer parameter that specifies the frequenct of restart history writes.
  *  restart_hist_OPTION is an optional string parameter for the units of restart history output.
  *  RESTART FILE is an optional boolean parameter that specifies if this output stream is a restart output, which is treated differently.
@@ -77,7 +64,10 @@ namespace scream
 template<typename T>
 class FieldManager;
 
+class FieldLayout;
+
 class AbstractGrid;
+
 namespace util { class TimeStamp; }
 
 class AtmosphereOutput 
@@ -89,81 +79,84 @@ public:
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
+  // Note on the last two inputs:
+  //  - is_restart_run: if true, this is a restarted run. This is only importand
+  //    if this output instance is *not* for writing model restart files,
+  //    and *only* for particular choices of "Averaging Type".
+  //  - is_model_restart_output: if true, this Output is for model restart files.
+  //    In this case, we have to also create an "rpointer.atm" file (which
+  //    contains metadata, and is expected by the component coupled)
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
                    const std::shared_ptr<const FieldManager<Real>>& field_mgr,
-                   const bool read_restart_hist = false);
+                   const bool is_restarted_run = false,
+                   const bool is_model_restart_output = false);
 
   // Main Functions
   void init();
-  // Allow run to be called with a timestamp input (typical runs) and a floating point value (used for unit tests)
-  void run(const Real time);
-  void run(const util::TimeStamp& time);
+  void run (const util::TimeStamp& time);
   void finalize();
 
-  // Helper Functions
-  void check_status();
-  std::map<std::string,Int> get_status() const { return m_status; }
-
 protected:
+
   // Internal functions
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename);
   void set_degrees_of_freedom(const std::string& filename);
-  std::vector<Int> get_var_dof_offsets (const int dof_len, const bool has_cols);
+  std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   void new_file(const std::string& filename);
-  void run_impl(const Real time, const std::string& time_str);  // Actual run routine called by outward facing "run"
-  void set_restart_hist_read( const bool bval ) { m_read_restart_hist = bval; }
-  // Internal variables
+  void run_impl(const Real time, const std::string& time_str);
+  std::string compute_filename_root () const;
+
+  // --- Internal variables --- //
   ekat::Comm                                  m_comm;
   ekat::ParameterList                         m_params;
   std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
   std::shared_ptr<const AbstractGrid>         m_grid;
   
-  // Main output control data
-  std::string m_casename;
-  std::string m_avg_type;
-  std::string m_filename;
+  // The output filename root
+  std::string       m_casename;
+
+  // How to combine multiple snapshots in the output: Instant, Max, Min, Average
+  std::string       m_avg_type;
+
   // Frequency of output control
-  Int m_out_max_steps;
-  Int m_out_frequency;
+  int m_out_max_steps;
+  int m_out_frequency;
   std::string m_out_units;
 
-  // Restart history control
-  Int m_restart_hist_n;
-  std::string m_restart_hist_option;
-
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>               m_fields;
-  std::map<std::string,Int>              m_dofs;
-  std::map<std::string,Int>              m_dims;
+  std::vector<std::string>      m_fields;
+  std::map<std::string,int>     m_dofs;
+  std::map<std::string,int>     m_dims;
+
   // Local views of each field to be used for "averaging" output and writing to file.
+  std::map<std::string,view_1d_host>    m_host_views_1d;
 
-  std::map<std::string,view_1d_host>   m_host_views_1d;
+  // Whether this Output object writes a model restart file, or normal model output.
+  bool m_is_model_restart_output;
 
-  // Manage when files are open and closed, and what type of file I am writing.
-  bool m_is_init = false;
-  bool m_is_restart_hist = false;  //TODO:  If instead we rely on the timestamp to determine how many steps are represented in the averaging value, or maybe filename, we won't need this.
-  bool m_is_restart = false;
-  bool m_read_restart_hist = false;
+  // If this is normal output, whether data to restart the history is needed/generated.
+  bool m_has_restart_data;
+  int m_checkpoint_freq;
 
-  // Helper map to monitor an output stream's status.  Most used fields are Snaps and Avg Count which are
-  // used to monitor if a new file is needed and if output should be written according to the frequency settings.
-  std::map<std::string,Int> m_status = {
-                                  {"Init",          0},  // Records the number of files this output stream has managed
-                                  {"Run",           0},  // Total number of times "Run" has been called
-                                  {"Finalize",      0},  // Total number of times "Finalize" has been called (should always be 1)
-                                  {"Snaps",         0},  // Total number of timesnaps saved to the currently open file.
-                                  {"Avg Count",     0},  // Total number of timesnaps that have gone by since the last time output was written.
-                                       }; 
+  // Whether this run is the restart of a previous run (in which case, we might load an output checkpoint)
+  bool m_is_restarted_run;
 
-}; // Class AtmosphereOutput
+  // Whether the output file is open.
+  // Note: this is redundant, since it's equal to m_num_snapshots_in_file==0, but it makes code more readable.
+  bool m_is_output_file_open = false;
 
-//// ====================== IMPLEMENTATION ===================== //
-inline void AtmosphereOutput::check_status()
-{
-  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d), (Avg. Count: %2d), (Snaps: %2d)\n",
-                   m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"],m_status["Avg Count"],m_status["Snaps"]);
-} // check_status
+  // When this equals m_out_frequency, it's time to write the output.
+  int m_nsteps_since_last_output = 0;
+
+  // When this equals m_checkpoint_freq, it's time to write a history restart file.
+  int m_nsteps_since_last_checkpoint = 0;
+
+  // When this equals m_out_max_steps, it's time to close the out file, and open a new one.
+  int m_num_snapshots_in_file = 0;
+};
+
 } //namespace scream
+
 #endif // SCREAM_SCORPIO_OUTPUT_HPP

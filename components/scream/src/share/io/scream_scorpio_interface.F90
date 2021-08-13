@@ -1122,23 +1122,27 @@ contains
   !  grid_read_darray_1d_real: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d_real(filename, hbuf, varname)
+  subroutine grid_read_darray_1d_real(filename, varname, var_data_ptr)
 
     ! Dummy arguments
-    character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),               intent(out)   :: hbuf(:)
-    character(len=*),          intent(in)    :: varname
+    character(len=*), intent(in) :: filename       ! PIO filename
+    character(len=*), intent(in) :: varname
+    type (c_ptr),     intent(in) :: var_data_ptr
 
     ! Local variables
-    type(pio_atm_file_t),pointer             :: pio_atm_file
-    type(hist_var_t), pointer                :: var
-    integer                                  :: ierr
-    logical                                  :: found
+    type(pio_atm_file_t),pointer       :: pio_atm_file
+    type(hist_var_t), pointer          :: var
+    integer                            :: ierr, var_size
+    logical                            :: found
+    real(rtype), dimension(:), pointer :: var_data
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
+    var_size = PRODUCT(var%dimlen)
+    call c_f_pointer (var_data_ptr, var_data, [var_size])
+
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
     call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
 
   end subroutine grid_read_darray_1d_real

@@ -1,8 +1,7 @@
 #include <catch2/catch.hpp>
+#include <memory>
 
-#include "scream_config.h"
-#include "share/scream_types.hpp"
-
+#include "ekat/util/ekat_string_utils.hpp"
 #include "share/io/output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -16,6 +15,11 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/util/scream_time_stamp.hpp"
+#include "share/scream_types.hpp"
+#include "scream_config.h"
+
+#include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -33,6 +37,77 @@ std::shared_ptr<FieldManager<Real>>      get_test_fm(std::shared_ptr<const Abstr
 std::shared_ptr<UserProvidedGridsManager>   get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 ekat::ParameterList                         get_om_params(const Int casenum, const ekat::Comm& comm);
 ekat::ParameterList                         get_in_params(const std::string type, const ekat::Comm& comm);
+
+// TEST_CASE("ciccio")
+// {
+//   using namespace scream;
+//   using namespace ShortFieldTagsNames;
+//   using FR = FieldRequest;
+//   using GR = GroupRequest;
+//   using FL = FieldLayout;
+
+//   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+//   Int num_gcols = 2*io_comm.size();
+//   Int nlevs = 3;
+
+//   // Initialize the pio_subsystem for this test:
+//   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+//   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+
+//   // First set up a field manager and grids manager to interact with the output functions
+//   auto grid_name = "Physics GLL";
+//   auto grid = create_point_grid(grid_name,num_gcols,nlevs,io_comm);
+
+//   // Create fields and field manager
+//   const int lcols = grid->get_num_local_dofs();
+//   const auto units = ekat::units::m;
+//   auto field_mgr = std::make_shared<FieldManager<Real>>(grid);
+//   field_mgr->registration_begins();
+//   field_mgr->register_field(FR("f1",FL({COL,LEV},{lcols,nlevs}),units,grid_name,"group"));
+//   field_mgr->register_field(FR("f2",FL({COL,LEV},{lcols,nlevs}),units,grid_name,"group"));
+//   field_mgr->register_field(FR("f3",FL({COL,LEV},{lcols,nlevs}),units,grid_name));
+//   field_mgr->register_group(GR("group",grid_name,Bundling::Required));
+//   field_mgr->registration_ends();
+
+//   // Fill fields
+//   auto f3 = field_mgr->get_field("f3");
+//   auto g  = field_mgr->get_field_group("group").m_bundle;
+//   REQUIRE ((g));
+//   for (int icol=0; icol<lcols; ++icol) {
+//     for (int ilev=0; ilev<nlevs; ++ilev) {
+//       f3.get_view<Real**,Host>()(icol,ilev) = icol*nlevs+ilev;
+//       g->get_view<Real***,Host>()(icol,0,ilev) = icol*2*nlevs+ilev;
+//       g->get_view<Real***,Host>()(icol,1,ilev) = icol*2*nlevs+nlevs+ilev;
+//     }
+//   }
+//   f3.sync_to_dev();
+//   g->sync_to_dev();
+//   util::TimeStamp ts(2020,8,11,12345);
+//   f3.get_header().get_tracking().update_time_stamp(ts);
+//   g->get_header().get_tracking().update_time_stamp(ts);
+
+//   // Create parameter list
+//   ekat::ParameterList params;
+//   params.set("FILENAME",std::string("bart"));
+//   params.set("GRID",std::string("THE_GRID"));
+
+//   // Mismatched grid name between params and field_mgr->grid()
+//   REQUIRE_THROWS(AtmosphereOutput(io_comm,params,field_mgr));
+//   params.set("GRID",std::string(grid_name));
+//   params.set("FIELDS",std::vector<std::string>{"f2","f3"});
+//   params.sublist("FREQUENCY").set("OUT_MAX_STEPS",1);
+//   params.sublist("FREQUENCY").set("OUT_N",2);
+//   params.sublist("FREQUENCY").set("OUT_OPTION",std::string("Steps"));
+//   params.set("Checkpoint Frequency",1);
+//   params.set("AVERAGING TYPE",std::string("Max"));
+
+//   AtmosphereOutput out (io_comm,params,field_mgr);
+
+//   out.run(1.0);
+
+//   out.finalize();
+//   scorpio::eam_pio_finalize();
+// }
 
 TEST_CASE("input_output_basic","io")
 {
@@ -120,7 +195,7 @@ TEST_CASE("input_output_basic","io")
   Real tol = pow(10,-6);
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_manager);
-  ins_input.pull_input();
+  ins_input.read_variables();
   auto f1 = field_manager->get_field("field_1");
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
@@ -147,7 +222,7 @@ TEST_CASE("input_output_basic","io")
 
   // Check average output
   input_type avg_input(io_comm,avg_params,field_manager);
-  avg_input.pull_input();
+  avg_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -168,7 +243,7 @@ TEST_CASE("input_output_basic","io")
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
   input_type max_input(io_comm,max_params,field_manager);
-  max_input.pull_input();
+  max_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -184,7 +259,7 @@ TEST_CASE("input_output_basic","io")
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
   input_type min_input(io_comm,min_params,field_manager);
-  min_input.pull_input();
+  min_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -198,28 +273,6 @@ TEST_CASE("input_output_basic","io")
     REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
   }
   
-  // Test pulling input without the field manager:
-  using view_2d  = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-  using pview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Pack>;
-  int num_packs = ekat::npack<Pack>(num_levs);
-  view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
-  pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
-  std::string filename = ins_params.get<std::string>("FILENAME");
-  std::vector<std::string> var_dims = {"lev","ncol"};
-  bool has_columns = true;
-  std::vector<int> dim_lens = {num_lcols,num_levs};
-  input_type loc_input(io_comm,grid);
-  loc_input.pull_input<Real>(filename, loc_field_3.label(), var_dims, has_columns, dim_lens, loc_field_3.data());
-  loc_input.pull_input<Pack>(filename, loc_field_4.label(), var_dims, has_columns, dim_lens, loc_field_4.data());
-  for (int ii=0;ii<num_lcols;++ii) {
-    for (int jj=0;jj<num_levs;++jj) {
-      int ipack = jj / packsize;
-      int ivec  = jj % packsize;
-      REQUIRE(std::abs(loc_field_3(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      REQUIRE(std::abs(loc_field_4(ii,ipack)[ivec]-(ii+max_steps*dt + (jj+1)/10.))<tol);
-    }
-  }
-
   // All Done 
   scorpio::eam_pio_finalize();
   (*grid_man).clean_up();
@@ -346,7 +399,8 @@ ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
 ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm)
 {
   ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type+".Steps_x10.0000-01-01.000010.nc");
+  auto type_ci = ekat::upper_case(type);
+  in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_packed"};
   in_params.set("FIELDS",fnames);

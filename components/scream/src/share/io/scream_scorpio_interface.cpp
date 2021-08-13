@@ -17,7 +17,7 @@ extern "C" {
   void register_infile_c2f(const char*&& filename);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
-  void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, const Int dim1_length, Real *hbuf);
+  void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, Real *&hbuf);
   void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
 
   void grid_write_data_array_c2f_real_1d(const char*&& filename, const char*&& varname, const Int dim1_length, const Real* hbuf);
@@ -145,35 +145,8 @@ void count_pio_atm_file() {
 
 }
 /* ----------------------------------------------------------------- */
-// Read and Write routines
-// Inputs:
-//   filename:   is the filename for the associated netCDF file.
-//   varname:    is the variable name for this netCDF operation.
-//   dims:       is a vector of integers with length equal to the total number of dimensions for the variable.
-//               note, each dimension here is the actual physical dimension, which can be different than the allocated dimension.
-//               If, for example, a variable is padded then the final value of dims would be smaller than the allocation size.
-//   dim_length: is the total number of real data values.  Again, if a variable is padded, the padding should not be included in this value.
-//   padding:    is the amount of padding the variable has, see documentation on packed variables in fields.hpp.  Note padding should be >= 0.
-//   hbuf:       is a pointer to where the data for this variable is stored.
-/* ----------------------------------------------------------------- */
-// Handling the reading of input for packed arrays
-void grid_read_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, Real *hbuf) {
-
-  if (padding == 0) // then no xtra data, is contiguous
-  {
-    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
-  } else {
-    std::vector<Real> hbuf_new(dim_length);
-    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
-    // Copy the read in values back to the packed array, add padding
-    add_remove_padding(dims,padding,hbuf_new.data(),hbuf,true);
-  }
-};
-/* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, Real *hbuf) {
-
-  grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
+void grid_read_data_array(const std::string &filename, const std::string &varname, Real *hbuf) {
+  grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 };
 /* ----------------------------------------------------------------- */
 // Handling the writing of output for packed arrays

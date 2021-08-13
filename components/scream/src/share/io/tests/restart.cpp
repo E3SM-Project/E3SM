@@ -124,7 +124,7 @@ TEST_CASE("restart","io")
   Initialize_field_manager(*field_manager,num_lcols,num_levs);
   // grab restart data
   input_type ins_input(io_comm,res_params,field_manager);
-  ins_input.pull_input();
+  ins_input.read_variables();
   // Note, that only field_1, field_2, and field_4 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
@@ -146,8 +146,6 @@ TEST_CASE("restart","io")
     for (Int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
       REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
-      std::cout << "f  : " << field4_hst(ii,0,jj) << "\n";
-      std::cout << "tgt: " << ((jj+1)/10.+ii+15) << "\n";
       REQUIRE(std::abs(field4_hst(ii,0,jj)-((jj+1)/10.+ii+15))<tol);
       REQUIRE(std::abs(field4_hst(ii,1,jj)-(-((jj+1)/10.+ii)+15))<tol);
     }
@@ -206,7 +204,7 @@ TEST_CASE("restart","io")
   // the restart history file, but was re-initialized and run for the last 5 steps.
   auto avg_params = get_in_params("Final",io_comm);
   input_type avg_input(io_comm,avg_params,field_manager);
-  avg_input.pull_input();
+  avg_input.read_variables();
   field1.sync_to_host();
   field2.sync_to_host();
   field3.sync_to_host();
@@ -368,7 +366,7 @@ ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& com
     std::vector<std::string> fnames = {"field_1", "field_2", "field_4"};
     in_params.set("FIELDS",fnames);
   } else if (type=="Final") {
-    filename = "io_output_restart_np" + std::to_string(comm.size()) + ".Average.Steps_x10.0000-01-01.000020.nc";
+    filename = "io_output_restart_np" + std::to_string(comm.size()) + ".AVERAGE.Steps_x10.0000-01-01.000020.nc";
     std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_4"};
     in_params.set("FIELDS",fnames);
   }

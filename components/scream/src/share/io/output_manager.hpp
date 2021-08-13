@@ -1,13 +1,15 @@
 #ifndef SCREAM_OUTPUT_MANAGER_HPP
 #define SCREAM_OUTPUT_MANAGER_HPP
 
+#include "share/field/field_manager.hpp"
+#include "share/grid/grids_manager.hpp"
+
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "share/field/field_manager.hpp"
-#include "share/grid/grids_manager.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
 
 namespace scream
 {
@@ -90,13 +92,7 @@ public:
 
   void init();
   void run(util::TimeStamp& current_ts);
-  void run(Real current_ts);
   void finalize();
-
-/* Short function to add a new output stream to the output manager.  By making this an independent
- * function it is possible to add an output stream after initialization has been called.           */
-  void new_output(const ekat::ParameterList& params);
-  void new_output(const ekat::ParameterList& params,const bool runtype_restart);
 
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
@@ -106,6 +102,9 @@ public:
   void make_restart_param_list(ekat::ParameterList& params);
 
 protected:
+  // Add an output stream.
+  void new_output(const ekat::ParameterList& params, const bool model_restart_output);
+
   std::vector<std::shared_ptr<output_type>>    m_output_streams;
   ekat::Comm                                   atm_comm;
   ekat::Comm                                   pio_comm; 
@@ -119,22 +118,11 @@ protected:
   bool                        m_runtype_restart  = false;
 
 }; // class OutputManager
-/*===============================================================================================*/
-/* Short function to add a new output stream to the output manager.  By making this an independent
- * function it is possible to add an output stream after initialization has been called.
- * Note: new_output requires a parameter list with all of the output control information for this
- * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
-inline void OutputManager::new_output(const ekat::ParameterList& params)
+
+inline void OutputManager::new_output(const ekat::ParameterList& params, const bool model_restart_output)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_runtype_restart);
-  output_instance->init();
-  m_output_streams.push_back(output_instance);
-}
-/* --------------------------------------------------------------------- */
-inline void OutputManager::new_output(const ekat::ParameterList& params, const bool runtype_restart)
-{
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,runtype_restart);
-  output_instance->init();
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,
+                                                       m_runtype_restart, model_restart_output);
   m_output_streams.push_back(output_instance);
 }
 /*===============================================================================================*/
@@ -184,7 +172,7 @@ inline void OutputManager::init()
   {
     auto& out_params = m_params.sublist("Restart Control");
     make_restart_param_list(out_params);
-    new_output(out_params,false);
+    new_output(out_params,true);
     // Gather restart frequency info for restart history files
     auto& freq_params = out_params.sublist("FREQUENCY");
     restart_hist_N = freq_params.get<Int>("OUT_N");
@@ -199,9 +187,8 @@ inline void OutputManager::init()
   {
     ekat::ParameterList out_params(it);
     parse_yaml_file(it,out_params);
-    out_params.set<Int>("restart_hist_N",restart_hist_N);
-    out_params.set<std::string>("restart_hist_OPTION",restart_hist_OPTION);
-    new_output(out_params);
+    out_params.set<Int>("CHECKPOINT FREQUENCY",restart_hist_N);
+    new_output(out_params,false);
   }
 }
 /*===============================================================================================*/
@@ -214,14 +201,6 @@ inline void OutputManager::init()
  */
 // Overload run to allow for passing a TimeStamp or just directly a Real
 inline void OutputManager::run(util::TimeStamp& current_ts)
-{
-  for (auto& it : m_output_streams)
-  {
-    it->run(current_ts);
-  }
-}
-/*-----------------------------------------------------------------------------------------------*/
-inline void OutputManager::run(Real current_ts)
 {
   for (auto& it : m_output_streams)
   {

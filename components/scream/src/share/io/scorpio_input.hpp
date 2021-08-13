@@ -1,22 +1,14 @@
 #ifndef SCREAM_SCORPIO_INPUT_HPP
 #define SCREAM_SCORPIO_INPUT_HPP
 
-#include "scream_config.h"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-
 #include "share/io/scream_scorpio_interface.hpp"
 
 #include "share/field/field_manager.hpp"
-#include "share/field/field_header.hpp"
-#include "share/field/field.hpp"
-#include "share/field/field_identifier.hpp"
+#include "share/grid/abstract_grid.hpp"
+#include "scream_config.h"
 
-#include "share/grid/grids_manager.hpp"
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
 
 /*  The AtmosphereInput class handles all input streams to SCREAM.
  *  It is important to note that there does not exist an InputManager,
@@ -33,14 +25,13 @@
  *  this class to facilitate cases where reading input over some number of simulation
  *  timesteps is possible.
  *
- *  At construction time All input instances require
+ *  At construction time input instances require
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
  *  3. a shared pointer to the field manager
- *  4. a shared pointer to the grids manager
  *  The parameter list contains all of the essential data regarding
  *  the input file name and the set of variables to be read.  The parameter list can be
- *  created localling in the process needing input, see src/share/io/tests/ for examples of
+ *  created locally in the process needing input, see src/share/io/tests/ for examples of
  *  setting up the input parameter list.
  *
  *  A typical input parameter list looks like:
@@ -48,28 +39,20 @@
  *  Input Parameters
  *    FILENAME: STRING
  *    GRID: STRING
- *    FIELDS
- *      Number of Fields: INT
- *      field_1: STRING
- *      ...
- *      field_N: STRING
+ *    FIELDS: [field_name_1, field_name_2, ..., field_name_N]
  *  -----
  *  where,
  *  FILENAME: is a string value of the name of the input file to be read.
  *  GRID: is a string of the grid the input file is written on, currently only "Physics" is supported.
- *  FIELDS: designation of a sublist, so empty here
- *    Number of Fields: is an integer value>0 telling the number of fields
- *    field_x: is the xth field variable name.  Should match the name in the file and the name in the field manager.  TODO: add a rename option if variable names differ in file and field manager.
+ *  FIELDS: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *  TODO: add a rename option if variable names differ in file and field manager.
  *
  * Usage:
  * 1. Construct an instance of the AtmosphereInput class:
- *    AtmosphereInput in_object(comm,params);
- * 2. Use pull input to gather the desired data:
- *    in_object.pull_input(*grid_manager)
+ *    AtmosphereInput in_object(comm,params,field_mgr);
+ * 2. Use read_variables to gather the registered variables
+ *    in_object.read_variables();
  *
- * The AtmosphereInput class will replace all fields in the field_manager that are part of the input with
- * data read from the input file.
- *    
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
  */
@@ -80,76 +63,53 @@ namespace scream
 class AtmosphereInput 
 {
 public:
+  using fm_type = FieldManager<Real>;
+
+  using KT = KokkosTypes<DefaultDevice>;
   template<int N>
-  using view_ND_host = typename KokkosTypes<DefaultDevice>::template view_ND<Real,N>::HostMirror;
+  using view_ND_host = typename KT::template view_ND<Real,N>::HostMirror;
   using view_1d_host = view_ND_host<1>;
 
   // --- Constructor(s) & Destructor --- //
-  AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const FieldManager<Real>>& field_mgr);
   AtmosphereInput (const ekat::Comm& comm,
-                   const std::shared_ptr<const AbstractGrid>& grid);
+                   const ekat::ParameterList& params,
+                   const std::shared_ptr<const fm_type>& field_mgr);
 
   virtual ~AtmosphereInput () = default;
 
   // --- Methods --- //
-
-  void pull_input ();
-
-  // Used by scorpio_output when handling restart history files.
-  view_1d_host pull_input (const std::string& name);
-
-  // var_dims is a list of tags for each of the physical dimensions of this variable.
-  // dim_lens is a vector of the physical dimension lengths without any padding, in other words
-  // dim_lens is a vector of integer for the physical length of each of the tags in var_dims.
-  // one last way to think of dim_lens would be the array dimensions lengths if ValueType=Real (no padding)
-  void pull_input (const std::string& filename, const std::string& var_name,
-                   const std::vector<std::string>& var_dims,
-                   const bool has_columns, const std::vector<int>& dim_lens,
-                   const int padding, Real* data);
-
-  // Determine padding from the type of the variable.
-  template<typename ValueType>
-  void pull_input (const std::string& filename, const std::string& var_name,
-                   const std::vector<std::string>& var_dims,
-                   const bool has_columns, const std::vector<int>& dim_lens,
-                   ValueType* data)
-  {
-    // Determine the padding for this data
-    constexpr int pack_size = sizeof(ValueType) / sizeof(Real);
-    const int padding = ekat::PackInfo<pack_size>::padding(dim_lens.back());
-    // Make sure to pass the data as a Real pointer.
-    auto data_real = reinterpret_cast<Real*>(data);
-    pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, data_real);
-  }
-
+  // Sets up the scorpio metadata to preare for reading
   void init();
+  // Read fields that were required via parameter list.
+  void read_variables ();
+  int read_int_scalar (const std::string& name);
   void finalize();
 
 protected:
   // Internal functions
+  void set_parameters (const ekat::ParameterList& params);
+  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+
   void register_variables();
   void set_degrees_of_freedom();
-  void read_input(const std::string& name);
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
   std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
-  std::vector<Int> get_var_dof_offsets (const int dof_len, const bool has_cols);
+  std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
 
-  std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
-  std::shared_ptr<const AbstractGrid>         m_grid;
+  std::shared_ptr<const fm_type>        m_field_mgr;
+  std::shared_ptr<const AbstractGrid>   m_grid;
   
-  std::string m_filename;
-  std::string m_avg_type;
+  std::string               m_filename;
+  std::vector<std::string>  m_fields_names;
 
-  std::vector<std::string>               m_fields_names;
-  std::map<std::string,Int>              m_dofs_sizes;
-
-  bool m_is_rhist = false;
+  // Whether we are reading the history restart file of a model output (see output class for details)
+  bool m_is_history_restart = false;
 
 }; // Class AtmosphereInput
 

@@ -1,6 +1,7 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
+#include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
 #include <vector>
@@ -52,8 +53,7 @@ namespace scorpio {
   void pio_update_time(const std::string &filename, const Real time);
 
   /* Read data for a specific variable from a specific file. */
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Real* hbuf);
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, Real* hbuf);
+  void grid_read_data_array (const std::string &filename, const std::string &varname, Real* hbuf);
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf);
