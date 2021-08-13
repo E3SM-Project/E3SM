@@ -124,7 +124,7 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: &
                 ssh
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      real(kind=RKIND), dimension(:), pointer :: fEdge, betaEdge
+      real(kind=RKIND), dimension(:), pointer :: fEdge
       integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
@@ -177,7 +177,6 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'betaEdge', betaEdge)
       call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -685,7 +684,6 @@ contains
 
                c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
 
-               print *, c_mode1, fEdge(iEdge), betaEdge(iEdge), dcEdge(iEdge)
                resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
                                   / dcEdge(iEdge)
                if (resolution .ge. 2.0) then
@@ -923,7 +921,7 @@ contains
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
       type(mpas_pool_type), pointer :: diagnosticsPool
-      real(kind=RKIND), dimension(:), pointer :: dcEdge, latEdge, betaEdge, fEdge 
+      real(kind=RKIND), dimension(:), pointer :: dcEdge, latEdge, fEdge 
 
       integer :: iEdge
       integer, pointer :: nEdges
@@ -965,10 +963,15 @@ contains
          end if
 
          RediGMinitValue = 1.0_RKIND
-         if(config_GM_closure == 'Visbeck' .or. config_GM_closure == 'visbeck' .or. config_gm_enable_horizontal_resolution_function) then
+         !compute beta
+         if(config_GM_closure == 'Visbeck'.or. &
+            config_GM_closure == 'visbeck'.or. &
+            config_GM_closure == 'EdenGreatbatch'.or. &
+            config_GM_closure == 'edengreatbatch'.or. &
+            config_GM_closure == 'edenGreatbatch'.or. &
+            config_gm_enable_horizontal_resolution_function) then
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            call mpas_pool_get_array(meshPool, 'betaEdge', betaEdge)
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
@@ -1031,7 +1034,6 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
