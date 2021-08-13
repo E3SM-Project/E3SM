@@ -2860,7 +2860,7 @@
         <command name="purge"/>
         <command name="ls"/>
         <command name="load">DefApps</command>
-        <command name="load">python/3.5.2</command>
+        <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
         <command name="load">cmake/3.20.2</command>
@@ -2918,6 +2918,10 @@
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables compiler="ibm.*">
+      <env name="XLC_USR_CONFIG">/gpfs/alpine/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.1</env>
+      <env name="LD_LIBRARY_PATH">/sw/summit/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
