@@ -68,12 +68,12 @@
 
   <compset>
     <alias>F20TR-SHOC</alias>
-    <lname>20TR_EAM%CMIP6-P3_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_EAM%CMIP6-SHOC_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F20TR-SHOC-piAEROSOL</alias>
-    <lname>20TR_EAM%CMIP6-P3-piAEROSOL_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_EAM%CMIP6-SHOC-piAEROSOL_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
