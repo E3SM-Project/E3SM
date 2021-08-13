@@ -1000,9 +1000,9 @@ contains
 
     integer                  :: mpigrp_cplid ! coupler pes
     integer                  :: mpigrp_old   !  component group pes
-    integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
+    integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMeshFort, iMOAB_SendMeshFort
     integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
-    integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
+    integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
     integer                  :: ierr, context_id
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO, maxMLID, maxMSID ! max pids for moab apps atm, ocn, lnd, sea-ice
@@ -1055,10 +1055,10 @@ contains
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
         if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
-          ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+          ierr = iMOAB_SendMeshFort(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
         else
           ! still use the mhid, original coarse mesh
-          ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+          ierr = iMOAB_SendMeshFort(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
         endif
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in sending mesh from atm comp '
@@ -1073,7 +1073,7 @@ contains
           write(logunit,*) subname,' error in registering ', appname
           call shr_sys_abort(subname//' ERROR registering '// appname)
         endif
-        ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
+        ierr = iMOAB_ReceiveMeshFort(mbaxid, mpicom_join, mpigrp_old, id_old)
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in receiving mesh on atm coupler '
           call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
@@ -1113,7 +1113,7 @@ contains
       ! now we have the spectral atm on coupler pes, and we want to send some data from
       ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
       ! atm phys and spectral atm mesh on coupler PEs
-      ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
+      ! ierr = iMOAB_ComputeCommGraphFort(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
       !    &typeA, &typeB, &cmpatm, &physatm);
       ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
       ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
@@ -1121,7 +1121,7 @@ contains
       !!typeB = 1 ! spectral elements
       !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                   ! components/cam/src/cpl/atm_comp_mct.F90
-      !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+      !!ierr = iMOAB_ComputeCommGraphFort( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
       !!    typeA, typeB, ATM_PHYS_CID, id_join)
 !  comment out this above part
 
@@ -1167,7 +1167,7 @@ contains
 #endif
 
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        ierr = iMOAB_SendMeshFort(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in sending ocean mesh to coupler '
           call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler ')
@@ -1194,7 +1194,7 @@ contains
         appname = "COUPLE_MPASO"//CHAR(0)
         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
         ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mboxid)
-        ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
+        ierr = iMOAB_ReceiveMeshFort(mboxid, mpicom_join, mpigrp_old, id_old)
 
         ! define here the tag that will be projected from atmosphere
         tagnameProj = 'a2oTbot_proj'//CHAR(0)  ! temperature
@@ -1242,7 +1242,7 @@ contains
 #ifdef MOAB_HAVE_ZOLTAN
         partMethod = 2  !  RCB for point cloud
 #endif
-        ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        ierr = iMOAB_SendMeshFort(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in sending land mesh '
            call shr_sys_abort(subname//' ERROR in sending land mesh ')
@@ -1268,7 +1268,7 @@ contains
            write(logunit,*) subname,' error in registering coupler land '
            call shr_sys_abort(subname//' ERROR in registering coupler land')
         endif
-        ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
+        ierr = iMOAB_ReceiveMeshFort(mblxid, mpicom_join, mpigrp_old, id_old)
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in receiving coupler land mesh'
            call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
@@ -1339,7 +1339,7 @@ contains
 #endif
 ! start copy from ocean code
         !  send sea ice mesh to coupler
-        ierr = iMOAB_SendMesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        ierr = iMOAB_SendMeshFort(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod)
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in sending sea ice mesh to coupler '
           call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
@@ -1367,7 +1367,7 @@ contains
         appname = "COUPLE_MPASSI"//CHAR(0)
         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
         ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mbixid)
-        ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
+        ierr = iMOAB_ReceiveMeshFort(mbixid, mpicom_join, mpigrp_old, id_old)
 
 !        ! define here the tag that will be projected from atmosphere
 !        tagnameProj = 'a2oTbot_proj'//CHAR(0)  ! temperature
