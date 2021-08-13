@@ -501,6 +501,22 @@ Valid values: values around 100s
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_gm_enable_horizontal_resolution_function" type="logical"
+  category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+  "Flag to enable the resolution tapering in the horizontal of Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_disable_ml_kappa" type="logical"
+  category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Flag to disable the gm bolus kappa value in the mixed layer
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_spatially_variable_max_kappa" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'.

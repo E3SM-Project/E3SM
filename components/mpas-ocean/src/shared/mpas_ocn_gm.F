@@ -122,8 +122,9 @@ contains
                                                     layerThickness
 
       real(kind=RKIND), dimension(:), pointer   :: &
-                ssh, fEdge
+                ssh
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
+      real(kind=RKIND), dimension(:), pointer :: fEdge, betaEdge
       integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
@@ -150,8 +151,8 @@ contains
       type(mpas_pool_type), pointer :: tracersPool
       real(kind=RKIND), dimension(:, :, :), pointer :: activeTracers
       integer, pointer :: indexTemperature, indexSalinity
-      integer :: timeLevel
-
+      integer :: timeLevel, mldEdge
+      real(kind=RKIND) :: resolution, c_mode1
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
@@ -176,6 +177,8 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'betaEdge', betaEdge)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
 
@@ -257,7 +260,7 @@ contains
             !$omp end do
             !$omp end parallel
          end if
-   
+  
          if (config_Redi_use_surface_taper) then
             !$omp parallel
             !$omp do schedule (runtime) private(zMLD, k)
@@ -663,6 +666,60 @@ contains
          endif
 
          nEdges = nEdgesArray(3)
+         if(config_gm_enable_horizontal_resolution_function) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+               sumN2 = 0.0
+
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
+
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                                lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
+
+               end do
+
+               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
+
+               print *, c_mode1, fEdge(iEdge), betaEdge(iEdge), dcEdge(iEdge)
+               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
+                                  / dcEdge(iEdge)
+               if (resolution .ge. 2.0) then
+                  gmKappaScaling(:,iEdge) = 0.0_RKIND
+               else
+                  gmKappaScaling(:,iEdge) = 1.0_RKIND
+               end if
+
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+
+         if (config_GM_disable_ml_kappa) then !disables bolus kappa in the mixed layer
+            !$omp parallel
+            !$omp do schedule (runtime) private(k,cell1,cell2,mldEdge)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               mldEdge = max(indMLD(cell1), indMLD(cell2))
+               if(gmKappaScaling(minLevelEdgeBot(iEdge),iEdge) > 0.0) then
+                  do k=minLevelEdgeBot(iEdge),mldEdge
+                     gmKappaScaling(k,iEdge) = 0.0_RKIND
+                  enddo
+                  do k=mldEdge+1,maxLevelEdgeTop(iEdge)
+                     gmKappaScaling(k,iEdge) = 1.0_RKIND
+                  end do
+               end if
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+
+ 
          !!$omp parallel
          !!$omp do schedule(runtime) private(cell1, cell2, k, &
          !!$omp             BruntVaisalaFreqTopEdge, N) &
@@ -866,14 +923,12 @@ contains
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
       type(mpas_pool_type), pointer :: diagnosticsPool
-      real(kind=RKIND), dimension(:), pointer :: dcEdge 
+      real(kind=RKIND), dimension(:), pointer :: dcEdge, latEdge, betaEdge, fEdge 
 
       integer :: iEdge
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
-            gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
@@ -889,7 +944,6 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
@@ -911,6 +965,18 @@ contains
          end if
 
          RediGMinitValue = 1.0_RKIND
+         if(config_GM_closure == 'Visbeck' .or. config_GM_closure == 'visbeck' .or. config_gm_enable_horizontal_resolution_function) then
+            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+            call mpas_pool_get_array(meshPool, 'betaEdge', betaEdge)
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1,nEdges
+              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if 
          if (config_GM_closure == 'constant') then
             local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
@@ -946,13 +1012,9 @@ contains
             local_config_GM_compute_Visbeck = .true.
             local_config_GM_compute_EdenGreatbatch = .false.
 
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
@@ -964,7 +1026,6 @@ contains
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .true.
 
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             !$omp parallel

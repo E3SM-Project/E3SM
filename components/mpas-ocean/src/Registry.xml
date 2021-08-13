@@ -338,6 +338,14 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
+		<nml_option name="config_GM_disable_ml_kappa" type="logical" default_value=".false." units="unitless"
+					description="Flag to disable the gm bolus kappa value in the mixed layer"
+					possible_values=".false. or .true."
+		/>
+		<nml_option name="config_gm_enable_horizontal_resolution_function" type="logical" default_value=".false." units="unitless"
+					description="Flag to enable the resolution tapering in the horizontal of Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values=".false. or .true."
+		/>
 		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
 					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
