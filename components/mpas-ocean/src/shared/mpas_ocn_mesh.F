@@ -113,6 +113,7 @@ module ocn_mesh
       yVertex, &! Cartesian y coord of vertex
       zVertex, &! Cartesian z coord of vertex
       fEdge, &! Coriolus parameter at edge
+      betaEdge, &! Beta parameter
       fVertex, &! Coriolus parameter at vertex
       fCell, &! Coriolus parameter at cell center
       dcEdge, &! length of edge = dist between cells across edge
@@ -422,6 +423,8 @@ contains
                                zVertex)
       call mpas_pool_get_array(meshPool, 'fEdge', &
                                fEdge)
+      call mpas_pool_get_array(meshPool, 'betaEdge', &
+                               betaEdge)
       call mpas_pool_get_array(meshPool, 'fVertex', &
                                fVertex)
       call mpas_pool_get_array(meshPool, 'fCell', &
@@ -625,6 +628,7 @@ contains
          !$acc                   yVertex,                  &
          !$acc                   zVertex,                  &
          !$acc                   fEdge,                    &
+         !$acc                   betaEdge,                 &
          !$acc                   fVertex,                  &
          !$acc                   fCell,                    &
          !$acc                   dcEdge,                   &
@@ -754,6 +758,7 @@ contains
       !$acc                  yVertex,           &
       !$acc                  zVertex,           &
       !$acc                  fEdge,             &
+      !$acc                  betaEdge,          &
       !$acc                  fVertex,           &
       !$acc                  fCell,             &
       !$acc                  dcEdge,            &
@@ -844,6 +849,7 @@ contains
                yVertex, &
                zVertex, &
                fEdge, &
+               betaEdge, &
                fVertex, &
                fCell, &
                dcEdge, &
@@ -1181,6 +1187,7 @@ contains
       !$acc               yVertex,                  &
       !$acc               zVertex,                  &
       !$acc               fEdge,                    &
+      !$acc               betaEdge,                 &
       !$acc               fVertex,                  &
       !$acc               fCell,                    &
       !$acc               dcEdge,                   &

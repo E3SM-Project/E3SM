@@ -114,6 +114,8 @@ add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
 add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_gm_enable_horizontal_resolution_function');
+add_default($nl, 'config_GM_disable_ml_kappa');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
 add_default($nl, 'config_GM_spatially_variable_max_kappa');
 add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
