@@ -1308,6 +1308,118 @@ Filepath for dataset containing CO2 flux from fossil fuel.
 Default: none
 </entry>
 
+<!-- Conditional diagnostics -->
+<entry id="metric_name" type="char*8(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+List of fields to use for conditional sampling
+Default: none
+</entry>
+
+<entry id="metric_nver" type="integer(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Number of vertical levels of the metrics used for conditional sampling
+Default: none
+</entry>
+
+<entry id="metric_cmpr_type" type="integer(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Type of comparison (.gt., .ge., .lt., .le.) to be used
+for each matric in conditional sampling.
+Different metrics can have different types of comparison.
+Default: none
+</entry>
+
+<entry id="metric_threshold" type="real(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Threshold to be used for each matric in conditional sampling.
+Different metrics can have different thresholds.
+Default: none
+</entry>
+
+<entry id="metric_threshold" type="real(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Threshold to be used for each matric in conditional sampling.
+Different metrics can have different thresholds.
+Default: none
+</entry>
+
+<entry id="metric_tolerance" type="real(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Tolerance for the "equal to" comparison type.
+Default: none
+</entry>
+
+<entry id="cnd_eval_chkpt" type="char*8(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+A List. Each element specifies the checkpoint at which the
+corresponding conditional sampling criterion
+will be evaluated. The number of checkpoints specified here
+should match the number of non-empty elements in metric_name;
+Default: none
+</entry>
+
+<entry id="cnd_end_chkpt" type="char*8(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+A List. Each element specifies the checkpoint that marks the end
+of the time step of the corresponding sampling condition.
+At this checkpoint, the masking of QoIs will be done
+and the masked values will be send to history buffer.
+Default: none
+</entry>
+
+<entry id="qoi_chkpt" type="char*8(99)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Checkpoints at which QoIs will be monitored.
+Default: none
+</entry>
+
+<entry id="qoi_name" type="char*8(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+List of fields to which conditional sampling will be applied.
+Default: none
+</entry>
+
+<entry id="qoi_nver" type="integer(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Number of vertical levels
+Default: none
+</entry>
+
+<entry id="qoi_x_dp" type="integer(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether a QoI should be multiplied by dp for output;
+if so, wet or dry.
+Default: none
+</entry>
+
+<entry id="chkpt_x_dp" type="integer(99)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether QoIs at a checkpoint should be multiplied by dp
+for output if applicable; if so, wet or dry.
+Default: none
+</entry>
+
+<entry id="l_output_state" type="logical"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether the state of the above-specified fields will be written
+to history file(s).
+Default: none
+</entry>
+
+<entry id="l_output_incrm" type="logical"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether the increments of the above-specified fields will be written
+to history file(s).
+Default: none
+</entry>
+
+<entry id="hist_tape_with_all_output" type="integer(12)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Indices of history tapes that will each contain a whole suite of the output
+variables specific to the conditional diagnostics tool.
+Default: none
+</entry>                
+
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(10)"  category="history"
