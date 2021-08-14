@@ -414,7 +414,7 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
   ! tracer array. If variable is not found on the tracer list, and index value 
   ! of -1 will be returned
 
-  call cnst_get_ind(trim(adjustl(varname)),idx, abort=.false.)  !in, out, in
+  call cnst_get_ind(trim(adjustl(varname)),idx, abrtf=.false.)  !in, out, in
 
   if (idx /= -1) then ! This variable is a tracer field
      arrayout(1:ncol,:) = state%q(1:ncol,:,idx)

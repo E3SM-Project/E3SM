@@ -20,6 +20,8 @@ module physpkg
        physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
+  use conditional_diag, only: cnd_diag_t, cnd_diag_info
+  use conditional_diag_main, only: cnd_diag_checkpoint
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p, phys_proc_cost
   use phys_gmean,       only: gmean_mass
@@ -725,6 +727,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
+    use conditional_diag_output_utils, only: cnd_diag_output_init
 
 
     ! Input/output arguments
@@ -773,6 +776,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call aoa_tracers_init()
 
     teout_idx = pbuf_get_index( 'TEOUT')
+
+    ! addfld and add_default calls for conditional diagnostics
+
+    call cnd_diag_output_init( pver, cnd_diag_info )
 
     ! For adiabatic or ideal physics don't need to initialize any of the
     ! parameterizations below:
@@ -933,7 +940,7 @@ end subroutine phys_init
   !-----------------------------------------------------------------------
   !
 
-subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
+subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phys_diag )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -967,6 +974,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     type(physics_buffer_desc), pointer, dimension(:,:) :: pbuf2d
     type(cam_in_t),                     dimension(begchunk:endchunk) :: cam_in
     type(cam_out_t),                    dimension(begchunk:endchunk) :: cam_out
+    type(cnd_diag_t),    intent(inout), dimension(begchunk:endchunk) :: phys_diag
+
     !-----------------------------------------------------------------------
     !
     !---------------------------Local workspace-----------------------------
@@ -1876,7 +1885,7 @@ end subroutine tphysac
 
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
-       tend,    pbuf,     fsds,                     &
+       tend,    pbuf,     fsds,   diag,    &
        sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
@@ -2463,6 +2472,8 @@ end if
        snow_pcw_macmic = 0._r8
 
        do macmic_it = 1, cld_macmic_num_steps
+
+        write(char_macmic_it,'(i2.2)') macmic_it
 
         if (l_st_mac) then
 

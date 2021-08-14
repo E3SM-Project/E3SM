@@ -200,6 +200,7 @@ subroutine compute_cape( state, pbuf, pcols, pver, cape )
   integer  ::  zlel(pcols)      ! index of highest theoretical convective plume.
   integer  ::  zlon(pcols)      ! index of onset level for deep convection.
   integer  :: zmaxi(pcols)      ! index of level with largest moist static energy.
+  logical iclosure              ! switch on sequence of call to buoyan_dilute to derive DCAPE
 
   !----------------------------------------------------------------------- 
   ncol  = state%ncol
@@ -243,13 +244,14 @@ subroutine compute_cape( state, pbuf, pcols, pver, cape )
   !----------------
   ! Calculate CAPE
   !----------------
+  iclosure = .true. !standard calculation, scanning for launching level up to 600 hPa
   call buoyan_dilute(lchnk ,ncol, qv, temp,            &! in
                      pmid_in_hPa, zmid_above_sealevel, &! in
                      pint_in_hPa,                      &! in
                      ztp, zqstp, ztl,                  &! out
                      latvap, cape, pblt,               &! in, out, in
                      zlcl, zlel, zlon, zmaxi,          &! out
-                     rair, gravit, cpair, msg, tpert   )! in
+                     rair, gravit, cpair, msg, tpert, iclosure )! in
 
  end subroutine compute_cape
 !---------------------------
