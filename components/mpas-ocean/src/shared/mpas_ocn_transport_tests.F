@@ -522,13 +522,13 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
     call lonlat2xyz(lon, lat, x, y, z)
     call lonlat2xyz(lon1, lat1, x1, y1, z1)
     r1 = great_circle_dist_xyz(x, y, z, x1, y1, z1)
-    cbs = b
+    cbs = 0
     if (r1 < r) then
-       cbs = b + cosine_bell(r1, r)
+       cbs = cosine_bell(r1, r)
     else
        call lonlat2xyz(lon2, lat2, x2, y2, z2)
        r2 = great_circle_dist_xyz(x, y, z, x2, y2, z2)
-       if (r2 < r) cbs = b + cosine_bell(r2, r)
+       if (r2 < r) cbs = cosine_bell(r2, r)
     end if
   end function cosine_bells
 
