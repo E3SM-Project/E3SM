@@ -530,6 +530,7 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
        r2 = great_circle_dist_xyz(x, y, z, x2, y2, z2)
        if (r2 < r) cbs = cosine_bell(r2, r)
     end if
+    cbs = b + c*cbs
   end function cosine_bells
 
   ! Lauritzen et al. 2012 eqn. (10)
