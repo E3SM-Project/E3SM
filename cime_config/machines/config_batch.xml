@@ -504,7 +504,7 @@
        <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" default="true">batch</queue>
+       <queue walltimemax="02:00" strict="true" default="true">batch</queue>
      </queues>
    </batch_system>
 
