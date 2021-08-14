@@ -124,7 +124,7 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    integer, external :: iMOAB_RegisterFortranApplication
+    integer, external :: iMOAB_RegisterApplicationFortran
     integer :: ierr
     character*32  appname
     logical :: samegrid_al !
@@ -280,7 +280,7 @@ contains
 #ifdef HAVE_MOAB
     appname="LNDMB"//CHAR(0)
     ! first land instance, should be 9
-    ierr = iMOAB_RegisterFortranApplication(appname, mpicom_lnd, LNDID, mlnid)
+    ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_lnd, LNDID, mlnid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app')
     if(masterproc) then

@@ -1497,7 +1497,7 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFort, iMOAB_ReceiveElementTagFort, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
     integer, external :: iMOAB_WriteMesh
 
     call seq_infodata_getData(infodata, &
@@ -1518,12 +1518,12 @@ contains
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
-      ierr = iMOAB_SendElementTagFort(mboxid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTagFortran(mboxid, tagName, mpicom_join, context_id)
 
     endif
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       ! receive on ocean pes, a tag that was computed on coupler pes
-       ierr = iMOAB_ReceiveElementTagFort(mpoid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTagFortran(mpoid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 

@@ -1001,7 +1001,7 @@ CONTAINS
 
     integer :: ATM_PHYS ! our numbering
 
-    integer , external :: iMOAB_RegisterFortranApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    integer , external :: iMOAB_RegisterApplicationFortran, iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
          iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
@@ -1032,7 +1032,7 @@ CONTAINS
 
     appname="ATM_PHYS"//CHAR(0)
     ATM_PHYS = 200 + ATMID !
-    ierr = iMOAB_RegisterFortranApplication(appname, mpicom_atm, ATM_PHYS, mphaid)
+    ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_atm, ATM_PHYS, mphaid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app for atm physics')
     if(masterproc) then

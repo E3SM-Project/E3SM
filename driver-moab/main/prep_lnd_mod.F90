@@ -578,7 +578,7 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFort, iMOAB_ReceiveElementTagFort, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
     integer, external :: iMOAB_WriteMesh
 
     call seq_infodata_getData(infodata, &
@@ -599,12 +599,12 @@ contains
     if (mblxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
-      ierr = iMOAB_SendElementTagFort(mblxid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTagFortran(mblxid, tagName, mpicom_join, context_id)
 
     endif
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       ! receive on land pes, a tag that was computed on coupler pes
-       ierr = iMOAB_ReceiveElementTagFort(mlnid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTagFortran(mlnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
