@@ -135,7 +135,7 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    integer, external :: iMOAB_RegisterFortranApplication
+    integer, external :: iMOAB_RegisterApplicationFortran
     integer :: ierr
     character*32  appname
 #endif
@@ -278,7 +278,7 @@ contains
 #ifdef HAVE_MOAB
        appname="ROFMB"//CHAR(0) ! only if rof_prognostic
     ! first rof instance, should be
-       ierr = iMOAB_RegisterFortranApplication(appname, mpicom_rof, ROFID, mrofid)
+       ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_rof, ROFID, mrofid)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: cannot register moab app')
        if(masterproc) then

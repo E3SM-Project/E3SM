@@ -42,7 +42,7 @@ module mpas_moabmesh
     real(kind=RKIND), pointer :: x_period, y_period
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
 
-    integer , external :: iMOAB_RegisterFortranApplication, &
+    integer , external :: iMOAB_RegisterApplicationFortran, &
         iMOAB_CreateVertices, iMOAB_CreateElements, &
         iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
         iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
@@ -60,7 +60,7 @@ module mpas_moabmesh
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
     appname = 'MPAS_MB_'//trim(lnum)// CHAR(0)
-    ierr = iMOAB_RegisterFortranApplication(appname, c_comm, ext_comp_id, pid)
+    ierr = iMOAB_RegisterApplicationFortran(appname, c_comm, ext_comp_id, pid)
     pidmoab = pid ! this is exported, need for send to work
     call errorout(ierr, 'fail to register MPAS_MOAB mesh')
     proc_id = domain % dminfo % my_proc_id

@@ -578,7 +578,7 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
     integer, external :: iMOAB_WriteMesh
 
     call seq_infodata_getData(infodata, &
@@ -600,13 +600,13 @@ contains
 
       ! basically, use the initial partitioning
        context_id = lndid1
-       ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_SendElementTagFortran(mblxid, tagName, mpicom_join, context_id)
 
     endif
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       ! receive on land pes, a tag that was computed on coupler pes
        context_id = id_join
-       ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTagFortran(mlnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
