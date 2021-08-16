@@ -72,7 +72,7 @@
       <arg flag="--cwd" name="CASEROOT"/>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" ($TOTALPES + $MAX_MPITASKS_PER_NODE - 1)/$MAX_MPITASKS_PER_NODE"/>
+      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
@@ -268,6 +268,15 @@
     <batch_system MACH="blues" type="slurm">
       <queues>
         <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">biggpu</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="swing" type="slurm">
+      <directives>
+        <directive> --gres=gpu:1</directive>
+      </directives>
+      <queues>
+        <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">gpu</queue>
       </queues>
     </batch_system>
 
@@ -489,16 +498,10 @@
        <directive>-P {{ project }}</directive>
      </directives>
      <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
+       <directive>-alloc_flags smt$ENV{SMT_MODE}</directive>
      </directives>
-     <directives compiler="ibmgpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="pgigpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="gnugpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
+     <directives compiler=".*gpu">
+       <directive>-alloc_flags "gpumps smt$ENV{SMT_MODE}"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>
@@ -510,16 +513,10 @@
        <directive>-P {{ project }}</directive>
      </directives>
      <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
+       <directive>-alloc_flags smt$ENV{SMT_MODE}</directive>
      </directives>
-     <directives compiler="ibmgpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="pgigpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <directives compiler="gnugpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
+     <directives compiler=".*gpu">
+       <directive>-alloc_flags "gpumps smt$ENV{SMT_MODE}"</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true" strict="true">batch</queue>

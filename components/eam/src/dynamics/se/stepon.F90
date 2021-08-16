@@ -14,7 +14,7 @@ module stepon
    use constituents,   only: pcnst, cnst_name, cnst_longname
    use cam_abortutils, only: endrun
    use ppgrid,         only: begchunk, endchunk
-   use physconst,      only: zvir, cappa
+   use physconst,      only: zvir, cappa, gravit
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
    use perf_mod,       only: t_startf, t_stopf, t_barrierf
@@ -28,6 +28,7 @@ module stepon
    use scamMod,        only: use_iop, doiopupdate, single_column, &
                              setiopupdate, readiopdata, dp_crm
    use element_mod,    only: element_t
+   use element_ops,    only: get_field, get_field_i
    use shr_const_mod,       only: SHR_CONST_PI
    use se_single_column_mod, only: scm_broadcast
 
@@ -156,6 +157,10 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_V'    ,(/ 'lev' /), 'A', 'm/s',  'Meridional Velocity',    gridname='GLL')
   call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
   call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
+  call addfld('DYN_PNH'  ,(/ 'lev' /), 'A', 'Pa',   'Nonhydrostatic pressure',gridname='GLL')
+  call addfld('DYN_W'    ,(/ 'ilev' /),'A', 'm/s',  'Vertical velocity',      gridname='GLL')
+  call addfld('DYN_Z3'   ,(/ 'ilev' /),'A', 'm',    'Geopotential Height (above sea level)', gridname='GLL')
+  call addfld('DYN_MU'   ,(/ 'ilev' /),'A', 'Pa/Pa','dPNH/dPH',               gridname='GLL')
 
 end subroutine stepon_init
 
@@ -262,6 +267,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: rec2dt
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
+   real(r8) :: tmp_dyn_i(np,np,nlevp)
    real(r8) :: fmtmp(np,np,nlev)
    real(r8) :: p_m(np,np,nlev)    ! temporary midpoint pressure for DYN_OMEGA output
    real(r8) :: p_i(np,np,nlevp)   ! temporary interface pressure for DYN_OMEGA output
@@ -437,6 +443,33 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call outfld('DIV',tmp_dyn(1,1,1,ie),npsq,ie)
       enddo
    endif
+
+   if (hist_fld_active('DYN_PNH')) then
+       do ie=1,nelemd
+          ! time level ntQ is not used
+          call get_field(dyn_in%elem(ie),'pnh',tmp_dyn(:,:,:,ie),hvcoord,tl_f,1)
+          call outfld('DYN_PNH',tmp_dyn(1,1,1,ie),npsq,ie)
+       enddo
+   endif
+   if (hist_fld_active('DYN_Z3')) then
+      do ie=1,nelemd
+         call get_field_i(dyn_in%elem(ie),'geo_i',tmp_dyn_i(:,:,:),hvcoord,tl_f)
+         call outfld('DYN_Z3',tmp_dyn_i(:,:,:) / gravit ,npsq,ie)
+      enddo
+   endif
+   if (hist_fld_active('DYN_W')) then
+      do ie=1,nelemd
+         call get_field_i(dyn_in%elem(ie),'w_i',tmp_dyn_i(:,:,:),hvcoord,tl_f)
+         call outfld('DYN_W',tmp_dyn_i(:,:,:),npsq,ie)
+      enddo
+   endif
+   if (hist_fld_active('DYN_MU')) then
+      do ie=1,nelemd
+         call get_field_i(dyn_in%elem(ie),'mu_i',tmp_dyn_i(:,:,:),hvcoord,tl_f)
+         call outfld('DYN_MU',tmp_dyn_i(:,:,:),npsq,ie)
+      enddo
+   endif
+
    if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
       do ie=1,nelemd
          do j=1,np

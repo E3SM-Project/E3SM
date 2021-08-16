@@ -15,7 +15,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column, swrad_off
+   use scamMod,          only: scm_crm_mode, single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -375,13 +375,21 @@ contains
       ! and the longwave. In practice, these are probably usually the same.
       select case (op)
          case ('sw') ! do a shortwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradsw == 1                     &
-                          .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+            if (iradsw==0) then
+               radiation_do = .false.
+            else
+               radiation_do = nstep == 0 .or. iradsw == 1                     &
+                             .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
+                             .or. nstep <= irad_always
+            end if
          case ('lw') ! do a longwave heating calc this timestep?
-            radiation_do = nstep == 0 .or. iradlw == 1                     &
-                          .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
-                          .or. nstep <= irad_always
+            if (iradlw==0) then
+               radiation_do = .false.
+            else
+               radiation_do = nstep == 0 .or. iradlw == 1                     &
+                             .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
+                             .or. nstep <= irad_always
+            end if
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
@@ -412,16 +420,15 @@ contains
       nstep  = get_nstep()
       dtime  = get_step_size()
       offset = 0
-      do while (.not. dosw)
-         nstep = nstep + 1
-         offset = offset + dtime
-         if (radiation_do('sw', nstep)) then
-            radiation_nextsw_cday = get_curr_calday(offset=offset)
-            dosw = .true.
-         end if
-      end do
-      if(radiation_nextsw_cday == -1._r8) then
-         call endrun('error in radiation_nextsw_cday')
+      if (iradsw/=0) then
+         do while (.not. dosw)
+            nstep = nstep + 1
+            offset = offset + dtime
+            if (radiation_do('sw', nstep)) then
+               radiation_nextsw_cday = get_curr_calday(offset=offset) 
+               dosw = .true.
+            end if
+         end do
       end if
 
    end function radiation_nextsw_cday
@@ -1345,10 +1352,6 @@ contains
          ! Get cosine solar zenith angle for current time step.
          call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
          call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
-         ! If the swrad_off flag is set, meaning we should not do SW radiation, then
-         ! we just set coszrs to zero everywhere. TODO: why not just set dosw false
-         ! and skip the loop?
-         if (swrad_off) coszrs(:) = 0._r8
 
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')

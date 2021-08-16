@@ -1,9 +1,10 @@
 include(ScreamUtils)
 
 # Set flags needed for YAKL
+set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if (CUDA_BUILD)
-    set(ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr ${CUDA_FLAGS} ${YAKL_CXX_FLAGS}")
+    set(YAKL_ARCH "CUDA")
+    set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
 endif()
 
 # Required libraries

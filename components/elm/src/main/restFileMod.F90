@@ -1116,8 +1116,9 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub, mxpft_nc
     use pftvarcon , only : pftname_len, pftname
+    use elm_varctl,  only : use_crop
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
@@ -1131,6 +1132,7 @@ contains
     !-----------------------------------------------------------------------
     
     do ptype = natpft_lb, mxpft
+       if(.not. use_crop .and. ptype > mxpft_nc) EXIT ! exit the do loop
        attname = att_prefix // pftname(ptype)
        call ncd_putatt(ncid, ncd_global, attname, ptype)
     end do

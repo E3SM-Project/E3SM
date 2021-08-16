@@ -1,7 +1,8 @@
 # Add CUDA flags for YAKL
+set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if (CUDA_BUILD)
-    set(ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr ${CUDA_FLAGS} ${YAKL_CXX_FLAGS}")
+    set(YAKL_ARCH "CUDA")
+    set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
 endif()
 
 # RRTMGP++ requires YAKL
@@ -24,7 +25,7 @@ set(EXTERNAL_SRC
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 target_link_libraries(rrtmgp yakl)
-set_target_properties(rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS} ${CXX_FLAGS}")
+set_target_properties(rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 target_include_directories(rrtmgp PUBLIC 
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp

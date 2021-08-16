@@ -15,7 +15,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
-#include "Intrinsics.h"
+#include "YAKL.h"
 #include "rrtmgp_test_utils.hpp"
 // Other helper headers needed for the specifics of this test
 #include "physics/share/physics_constants.hpp"

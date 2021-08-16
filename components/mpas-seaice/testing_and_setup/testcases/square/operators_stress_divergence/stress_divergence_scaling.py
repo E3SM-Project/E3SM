@@ -426,6 +426,9 @@ def L2_norm(numerical, analytical, nVertices, areaTriangle, useVertex):
 
     degreesToRadians = math.pi / 180.0
 
+    #norms  = np.multiply(areaTriangle, np.power(numerical - analytical, 2))
+    #denoms = np.multiply(areaTriangle, np.power(analytical, 2))
+
     norm  = 0.0
     denom = 0.0
 
@@ -436,6 +439,9 @@ def L2_norm(numerical, analytical, nVertices, areaTriangle, useVertex):
             norm  = norm  + areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical[iVertex],2)
 
             denom = denom + areaTriangle[iVertex] * math.pow(analytical[iVertex],2)
+
+    #norm = np.sum(norms[useVertex])
+    #denom = np.sum(norms[useVertex])
 
     norm = math.sqrt(norm / denom)
 
@@ -590,6 +596,9 @@ def stress_divergence_scaling():
     stressDivergenceLabels = {"U":r"(a) $(\nabla \cdot \sigma)_u$",
                               "V":r"(b) $(\nabla \cdot \sigma)_v$"}
 
+    ylabels = {"U":r"$L_2$ error norm",
+               "V":None}
+
 
     # scaling lines
     xMin = 2e-3
@@ -597,11 +606,22 @@ def stress_divergence_scaling():
     yMin = 1.5e-3
 
     # plot
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
+    cm = 1/2.54  # centimeters in inches
+    plt.rc('font', family='Times New Roman', size=8)
+    plt.rc('mathtext',fontset="stix")
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 8
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2,3))
+
+    fig, axes = plt.subplots(1, 2, figsize=(15*cm,7*cm))
 
     j = 0
     for stressDivergence in stressDivergences:
@@ -632,9 +652,11 @@ def stress_divergence_scaling():
                     useVertex = get_use_vertex(filename)
 
                     if (gridType == "hex"):
-                        normU, normV = get_norm_integral_triangle(filenameIC, filename, useVertex)
+                        #normU, normV = get_norm_integral_triangle(filenameIC, filename, useVertex)
+                        normU, normV = get_norm(filenameIC, filename, useVertex)
                     elif (gridType == "quad"):
-                        normU, normV = get_norm_integral_square(filenameIC, filename, useVertex)
+                        #normU, normV = get_norm_integral_square(filenameIC, filename, useVertex)
+                        normU, normV = get_norm(filenameIC, filename, useVertex)
 
                     x.append(get_resolution(filename, useVertex))
                     if (stressDivergence == "U"):
@@ -655,8 +677,8 @@ def stress_divergence_scaling():
 
         axes[j].set_ylim((3.8e-5,5e-2))
         axes[j].set_xlabel("Grid resolution")
-        axes[j].set_ylabel(r"$L_2$ error norm")
-        axes[j].set_title(stressDivergenceLabels[stressDivergence])
+        axes[j].set_ylabel(ylabels[stressDivergence])
+        axes[j].set_title(stressDivergenceLabels[stressDivergence],loc="left")
         axes[j].set_xticks(ticks=[3e-3,4e-3,5e-3,6e-3,7e-3,8e-3,9e-3],minor=True)
         axes[j].set_xticklabels(labels=[None,None,None,None,None,None,None],minor=True)
         axes[j].set_xticks(ticks=[2e-3,1e-2],minor=False)
@@ -664,8 +686,8 @@ def stress_divergence_scaling():
 
         j += 1
 
-    plt.tight_layout()
-    plt.savefig("stress_divergence_scaling.png",dpi=400)
+    plt.tight_layout(pad=0.2, w_pad=0.6, h_pad=0.2)
+    plt.savefig("stress_divergence_scaling.png",dpi=300)
     plt.savefig("stress_divergence_scaling.eps")
 
 #-------------------------------------------------------------------------------

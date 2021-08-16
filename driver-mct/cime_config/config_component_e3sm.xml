@@ -390,8 +390,8 @@
       <value compset=".+" grid="a%ne1024np4">1152</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
-      <value compset=".+" grid="a%ne0np4_northamericax4v1" >96</value>
-      <value compset=".+" grid="a%ne0np4_antarcticax4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>
+      <value compset=".+" grid="a%ne0np4_antarcticax4v1" >48</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
@@ -406,12 +406,9 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
-      <!-- a shorter timestep is needed for stability in MMF compsets -->
-      <!-- (i.e. super-parameterization, MMF, CRM) -->
-      <value compset="_EAM%SP"       grid="a%ne4np4">96</value>
-      <value compset="_EAM%SP.*ECPP" grid="a%ne4np4">72</value>
-      <value compset="_EAM%MMF"      grid="a%ne4np4">96</value>
-      <value compset="_EAM%MMF"      grid="a%ne4np4.pg2">72</value>
+      <!-- a shorter timestep is needed for stability in MMF  -->
+      <!-- Use for all "low res" grids (i.e. ne4, ne30, ne45) -->
+      <value compset="_EAM%MMF">72</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

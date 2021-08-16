@@ -133,7 +133,8 @@ def plot_subfigure_contour(axes,
         axes.set_title(title)
 
     if (subfigureLabel != None):
-        axes.text(0.12, 0.9, subfigureLabel, verticalalignment='bottom', horizontalalignment='right',transform=axes.transAxes, fontsize=8)
+        #axes.text(0.12, 0.9, subfigureLabel, verticalalignment='bottom', horizontalalignment='right',transform=axes.transAxes, fontsize=8)
+        axes.set_title(subfigureLabel, loc='left')
 
     # contour plot
     x = []
@@ -155,7 +156,7 @@ def plot_subfigure_contour(axes,
     zi = griddata((x,y), z, (X,Y), method='linear', fill_value=0)
 
     print("  Contour plot...")
-    contourPlot = axes.contour(X, Y, zi, 10, linewidths=0.3, colors='k', levels=contourLevels)
+    contourPlot = axes.contour(X, Y, zi, 10, linewidths=0.5, colors='k', levels=contourLevels)
     if (addCLabels):
         axes.clabel(contourPlot, inline=1, fontsize=5, inline_spacing=1, fmt=FormatStrFormatter('%g'))#, manual=clabelLocations, inline_spacing=1)
 
@@ -249,29 +250,49 @@ def advection_map():
     maxY =  sphereRadius * scaleFactor
 
     # plotting
-    mpl.rc('font',family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
+
+    cm = 1/2.54  # centimeters in inches
+    plt.rcParams["font.family"] = "Times New Roman"
+    #mpl.rc('text', usetex=True)
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 8
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+    #mpl.rcParams['axes.linewidth'] = 0.5
 
 
     print("Create plots...")
 
-    fig, axes = plt.subplots(2, 3)
-    fig.set_size_inches(6.496, 4.2)
+    fig, axes = plt.subplots(2, 3, figsize=(15*cm,11*cm))
 
     contour = True
 
     if (contour):
 
-        plot_subfigure_contour(axes[0,0], nCells, xCell, yCell, zCell, iceAreaInitialCB, minX, maxX, minY, maxY, False, False, r'', 'm', '(a)', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
-        plot_subfigure_contour(axes[1,0], nCells, xCell, yCell, zCell, iceAreaInitialSC, minX, maxX, minY, maxY, False, False, r'', 'm', '(d)', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
-        plot_subfigure_contour(axes[0,1], nCells, xCell, yCell, zCell, iceAreaUpwindCB,  minX, maxX, minY, maxY, False, False, r'', 'm', '(b)', contourLevels=[0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2], addCLabels=True)
-        plot_subfigure_contour(axes[1,1], nCells, xCell, yCell, zCell, iceAreaUpwindSC,  minX, maxX, minY, maxY, False, False, r'', 'm', '(e)', contourLevels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], addCLabels=True)
-        plot_subfigure_contour(axes[0,2], nCells, xCell, yCell, zCell, iceAreaIRCB,      minX, maxX, minY, maxY, False, False, r'', 'm', '(c)', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
-        plot_subfigure_contour(axes[1,2], nCells, xCell, yCell, zCell, iceAreaIRSC,      minX, maxX, minY, maxY, False, False, r'', 'm', '(f)', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
+        plot_subfigure_contour(axes[0,0], nCells, xCell, yCell, zCell, iceAreaInitialCB, minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(a) CB initial condition', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
+        plot_subfigure_contour(axes[1,0], nCells, xCell, yCell, zCell, iceAreaInitialSC, minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(d) SC initial condition', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
+        plot_subfigure_contour(axes[0,1], nCells, xCell, yCell, zCell, iceAreaUpwindCB,  minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(b) CB upwind', contourLevels=[0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2], addCLabels=True)
+        plot_subfigure_contour(axes[1,1], nCells, xCell, yCell, zCell, iceAreaUpwindSC,  minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(e) SC upwind', contourLevels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], addCLabels=True)
+        plot_subfigure_contour(axes[0,2], nCells, xCell, yCell, zCell, iceAreaIRCB,      minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(c) CB incremental remapping', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
+        plot_subfigure_contour(axes[1,2], nCells, xCell, yCell, zCell, iceAreaIRSC,      minX, maxX, minY, maxY, False, False, r'', 'm',
+                               '(f) SC incremental remapping', contourLevels=[0.05,0.1,0.3,0.5,0.7,0.9,0.95])
 
+        #plt.tight_layout()
         plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
-        plt.savefig("advection_map.png",dpi=400)
+        plt.savefig("advection_map.png",dpi=300)
+        plt.savefig("advection_map.eps")
 
     else:
 

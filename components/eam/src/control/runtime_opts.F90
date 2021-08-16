@@ -177,8 +177,6 @@ logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
 logical  :: scm_crm_mode
 logical  :: scm_observed_aero
-logical  :: swrad_off
-logical  :: lwrad_off
 logical  :: precip_off
 logical  :: scm_multcols
 logical  :: dp_crm
@@ -337,7 +335,7 @@ contains
                          iop_nudge_tq, iop_nudge_uv, iop_nudge_tq_low, &
                          iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero,swrad_off,lwrad_off, precip_off, &
+                         scm_observed_aero, precip_off, &
                          iop_perturb_high, dp_crm
 
 !-----------------------------------------------------------------------
@@ -386,8 +384,6 @@ contains
         scm_diurnal_avg_out=scm_diurnal_avg, &
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
-        swrad_off_out=swrad_off, &
-        lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
         scm_multcols_out=scm_multcols, &
         dp_crm_out=dp_crm, &
@@ -472,8 +468,6 @@ contains
                             scm_diurnal_avg_in=scm_diurnal_avg, &
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
-                            swrad_off_in=swrad_off, &
-                            lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
                             scm_multcols_in=scm_multcols,&
                             dp_crm_in=dp_crm,&

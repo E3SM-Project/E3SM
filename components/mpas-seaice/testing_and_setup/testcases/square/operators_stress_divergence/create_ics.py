@@ -57,13 +57,10 @@ def create_ic(gridfile, icfile):
     nCells = len(grid.dimensions["nCells"])
     nVertices = len(grid.dimensions["nVertices"])
     maxEdges = len(grid.dimensions["maxEdges"])
-    vertexDegree = len(grid.dimensions["vertexDegree"])
 
     nEdgesOnCell = grid.variables["nEdgesOnCell"][:]
     verticesOnCell = grid.variables["verticesOnCell"][:]
     verticesOnCell[:] = verticesOnCell[:] - 1
-    cellsOnVertex = grid.variables["cellsOnVertex"][:]
-    cellsOnVertex[:] = cellsOnVertex[:] - 1
 
     xCell = grid.variables["xCell"][:]
     yCell = grid.variables["yCell"][:]
@@ -89,17 +86,11 @@ def create_ic(gridfile, icfile):
     strain22Vertex = np.zeros(nVertices)
     strain12Vertex = np.zeros(nVertices)
 
-    solveVelocity = np.zeros(nVertices,dtype="i")
-    solveVelocityPrevious = np.zeros(nVertices,dtype="i")
+    solveVelocity = np.ones(nVertices,dtype="i")
+    solveVelocityPrevious = np.ones(nVertices,dtype="i")
     solveStress = np.ones(nCells,dtype="i")
 
     for iVertex in range(0,nVertices):
-
-        interiorVertex = True
-        for iCellOnVertex in range(0,vertexDegree):
-            iCell = cellsOnVertex[iVertex,iCellOnVertex]
-            if (iCell == -1):
-                interiorVertex = False
 
         x = (xVertex[iVertex] - xMin)
         y = (yVertex[iVertex] - yMin)
@@ -115,10 +106,6 @@ def create_ic(gridfile, icfile):
 
         stressDivergenceU[iVertex] = divu
         stressDivergenceV[iVertex] = divv
-
-        if (interiorVertex):
-            solveVelocity[iVertex] = 1
-            solveVelocityPrevious[iVertex] = 1
 
     strain11Cell = np.zeros(nCells)
     strain22Cell = np.zeros(nCells)

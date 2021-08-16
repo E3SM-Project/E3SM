@@ -55,6 +55,8 @@ function(set_compilers_e3sm)
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
 
+  # USE_CUDA is set through Macros.cmake / config_compilers.xml
+  # If it exists, then set parent's scope to true; otherwise to false
   if (USE_CUDA)
     set(USE_CUDA TRUE PARENT_SCOPE)
   else()
