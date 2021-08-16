@@ -244,6 +244,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
  Notes:  (see xlf user's guide for the details)
@@ -1636,7 +1642,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1648,6 +1654,7 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="summit" COMPILER="ibmgpu">
@@ -1657,6 +1664,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <append> -DFORTRAN_SAME -DCPRIBM</append>
     <append COMP_NAME="eam"> -DUSE_CBOOL </append>
@@ -1695,7 +1708,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1707,6 +1720,7 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgi">
@@ -1870,6 +1884,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <append> -DFORTRAN_SAME -DCPRIBM</append>
     <append COMP_NAME="eam"> -DUSE_CBOOL </append>
