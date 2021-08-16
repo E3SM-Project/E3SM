@@ -491,50 +491,50 @@ contains
        this%grvlfrac_patch(p) = grvl3d(g,1)/100.0_r8
     end do
 
-    ! Read fmax
-
-    allocate(gti(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='FMAX', flag='read', data=gti, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       this%wtfact_col(c) = gti(g)
-    end do
-    deallocate(gti)
-
-    ! Read hksat_adj
-
-    allocate(hai(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       this%hksat_adj_col(c) = hai(g)
-    end do
-    deallocate(hai)
-
-    ! Read hksat data
-
-    allocate(hksat3d(bounds%begg:bounds%endg,nlevsoifl))
-    call ncd_io(ncid=ncid, varname='HKSAT', flag='read', data=hksat3d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: HKSAT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       do lev = 1,nlevgrnd
-	 if (lev <= nlevsoi) then
-	   this%hksat_obs_col(c,lev) = hksat3d(g, lev)
-         else
-           this%hksat_obs_col(c,lev) = hksat3d(g, nlevsoifl)
-         end if
-       end do
-    end do
-    deallocate(hksat3d)
+!    ! Read fmax
+!
+!    allocate(gti(bounds%begg:bounds%endg))
+!    call ncd_io(ncid=ncid, varname='FMAX', flag='read', data=gti, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+!    end if
+!    do c = bounds%begc, bounds%endc
+!       g = col_pp%gridcell(c)
+!       this%wtfact_col(c) = gti(g)
+!    end do
+!    deallocate(gti)
+!
+!    ! Read hksat_adj
+!
+!    allocate(hai(bounds%begg:bounds%endg))
+!    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
+!    do c = bounds%begc, bounds%endc
+!       g = col_pp%gridcell(c)
+!       this%hksat_adj_col(c) = hai(g)
+!    end do
+!    deallocate(hai)
+!
+!    ! Read hksat data
+!
+!    allocate(hksat3d(bounds%begg:bounds%endg,nlevsoifl))
+!    call ncd_io(ncid=ncid, varname='HKSAT', flag='read', data=hksat3d, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: HKSAT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
+!    do c = bounds%begc, bounds%endc
+!       g = col_pp%gridcell(c)
+!       do lev = 1,nlevgrnd
+!	 if (lev <= nlevsoi) then
+!	   this%hksat_obs_col(c,lev) = hksat3d(g, lev)
+!         else
+!           this%hksat_obs_col(c,lev) = hksat3d(g, nlevsoifl)
+!         end if
+!       end do
+!    end do
+!    deallocate(hksat3d)
 
     ! Close file
 
