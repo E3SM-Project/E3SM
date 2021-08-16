@@ -1589,6 +1589,36 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30pg2_oECv3_gis1to10" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="f09_g16_g" compset="_MALI">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -2520,6 +2550,8 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_oEC60to30v3.200511.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_oEC60to30v3.200511.nc</file>
+      <file grid="atm|lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_EC30to60E2r2.210312.nc</file>
+      <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_EC30to60E2r2.210312.nc</file>
       <desc>ne120np4 is Spectral Elem 1/4-deg grid w/ 2x2 FV physics grid</desc>
     </domain>
 
@@ -2788,6 +2820,8 @@
       <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="atm" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_WC14to60E2r3.200929.nc</file>
       <file grid="lnd" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_WC14to60E2r3.200929.nc</file>
+      <file grid="atm" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_EC30to60E2r2.210412.nc</file>
+      <file grid="lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_EC30to60E2r2.210412.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
@@ -3425,6 +3459,14 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_oEC60to30v3_bilin.200331.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne120pg2_mono.200331.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_ne120pg2_mono.200331.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne120np4.pg2" ocn_grid="EC30to60E2r2">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_EC30to60E2r2_mono.210311.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_EC30to60E2r2_bilin.210311.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_EC30to60E2r2_bilin.210311.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne120pg2_mono.210311.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne120pg2_mono.210311.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne120np4.pg2" lnd_grid="r05">
@@ -4531,6 +4573,11 @@
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r0125_to_oEC60to30v3_smoothed.r150e300.190812.nc</map>
     </gridmap>
 
+    <gridmap ocn_grid="EC30to60E2r2" rof_grid="r0125">
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r0125_to_EC30to60E2r2_smoothed.r150e300.210311.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r0125_to_EC30to60E2r2_smoothed.r150e300.210311.nc</map>
+    </gridmap>
+
     <gridmap ocn_grid="oEC60to30wLI" rof_grid="r05">
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_r05_to_oEC60to30wLI_smoothed.r300e600.160926.nc</map>
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r05_to_oEC60to30wLI_smoothed.r300e600.160926.nc</map>
@@ -4655,6 +4702,20 @@
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_r05_mono.200602.nc</map>
     </gridmap>
 
+    <gridmap glc_grid="mpas.gis1to10km" lnd_grid="ne30np4.pg2">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10km_mono.210304.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10km_bilin.210304.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne30pg2_mono.210304.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne30pg2_mono.210304.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis1to10km" lnd_grid="r0125">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_gis1to10km_mono.210304.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_gis1to10km_bilin.210304.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_r0125_mono.210304.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_r0125_mono.210304.nc</map>
+    </gridmap>
+
     <gridmap glc_grid="mpas.gis1to10km" ocn_grid="oEC60to30v3">
       <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_aave.200602.nc</map>
       <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_bilin.200602.nc</map>
@@ -4664,6 +4725,17 @@
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_oEC60to30v3_aave.200602.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis1to10km" ocn_grid="EC30to60E2r2">
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_aave.210304.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10km_bilin.210304.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
     </gridmap>
 
     <!-- ====================  -->
