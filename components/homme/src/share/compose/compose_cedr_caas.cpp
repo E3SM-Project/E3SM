@@ -8,6 +8,12 @@ namespace compose {
 typedef cedr::Int Int;
 typedef cedr::Real Real;
 
+// On Chrysalis, optimization level above O1 leads to BFB variance w.r.t. PE
+// layout on the WC v2 problem, despite the e3sm_atm_developer and
+// e3sm_atm_integration passing against baselines.
+#ifdef __INTEL_COMPILER
+# pragma intel optimization_level 1
+#endif
 void CAAS::run_horiz_omp () {
   cedr_assert(finished_setup_);
   cedr_assert(user_reducer_ != nullptr);
