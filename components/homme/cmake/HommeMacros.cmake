@@ -130,6 +130,10 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
+  # If this is a Kokkos executable, e.g. theta-l_kokkos, then link to the C++
+  # Compose library; if not, then link to the F90 one.
+  #   If Compose is not enabled, then COMPOSE_LIBRARY_F90 and
+  # COMPOSE_LIBRARY_CPP are empty, so then COMPOSE_LIBRARY_TYPE will be, too.
   string(FIND ${execType} "kokkos" KOKKOS_SUFFIX_LOC)
   if (KOKKOS_SUFFIX_LOC EQUAL -1)
     set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_F90})
@@ -241,6 +245,7 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_LINK_LIBRARIES(${libName} ittnotify)
   ENDIF ()
 
+  # COMPOSE_LIBRARY is empty if Compose SL transport is not enabled.
   TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (HOMME_USE_KOKKOS)
