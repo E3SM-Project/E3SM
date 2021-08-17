@@ -124,7 +124,7 @@ void AtmosphereOutput::init()
       res_params.set<std::string>("GRID","Physics");
       res_params.set("FIELDS",m_fields);
 
-      AtmosphereInput hist_restart (m_comm,res_params,m_field_mgr);
+      AtmosphereInput hist_restart (m_comm,res_params,m_grid,m_host_views_1d,m_layouts);
       hist_restart.read_variables();
       m_nsteps_since_last_output = hist_restart.read_int_scalar("avg_count");
       hist_restart.finalize();
@@ -247,7 +247,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   for (auto const& name : m_fields) {
     // Get all the info for this field.
     const auto  field = m_field_mgr->get_field(name);
-    const auto& layout = field.get_header().get_identifier().get_layout();
+    const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
 
@@ -342,26 +342,30 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  */
   using namespace scorpio;
 
-  auto fid = m_field_mgr->get_field(name).get_header().get_identifier();
-  // check to see if all the dims for this field are already set to be registered.
-  for (int ii=0; ii<fid.get_layout().rank(); ++ii) {
+  // Store the field layout
+  const auto& fid = m_field_mgr->get_field(name).get_header().get_identifier();
+  const auto& layout = fid.get_layout();
+  m_layouts.emplace(name,layout);
+
+  // Now check taht all the dims of this field are already set to be registered.
+  for (int i=0; i<layout.rank(); ++i) {
     // check tag against m_dims map.  If not in there, then add it.
-    const auto& tags = fid.get_layout().tags();
-    const auto& dims = fid.get_layout().dims();
-    const auto tag_name = get_nc_tag_name(tags[ii],dims[ii]);
+    const auto& tags = layout.tags();
+    const auto& dims = layout.dims();
+    const auto tag_name = get_nc_tag_name(tags[i],dims[i]);
     auto tag_loc = m_dims.find(tag_name);
     if (tag_loc == m_dims.end()) {
       int tag_len = 0;
-      if(e2str(tags[ii]) == "COL") {
+      if(e2str(tags[i]) == "COL") {
         // Note: This is because only cols are decomposed over mpi ranks. 
         //       In this case, we need the GLOBAL number of cols.
         tag_len = m_grid->get_num_global_dofs();
       } else {
-        tag_len = fid.get_layout().dim(ii);
+        tag_len = layout.dim(i);
       }
-      m_dims.emplace(std::make_pair(get_nc_tag_name(tags[ii],dims[ii]),tag_len));
+      m_dims.emplace(std::make_pair(get_nc_tag_name(tags[i],dims[i]),tag_len));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(tag_name)==fid.get_layout().dim(ii) or e2str(tags[ii])=="COL",
+      EKAT_REQUIRE_MSG(m_dims.at(tag_name)==dims[i] or e2str(tags[i])=="COL",
         "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
     }
   }
@@ -386,7 +390,7 @@ void AtmosphereOutput::register_views()
         field.get_header().get_alloc_properties().get_padding()==1 &&
         field.get_header().get_parent().expired();
 
-    const auto size = field.get_header().get_identifier().get_layout().size();
+    const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
       m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Host>(),size));

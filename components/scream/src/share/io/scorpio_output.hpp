@@ -74,9 +74,10 @@ class AtmosphereOutput
 {
 public:
 
+  using KT = KokkosTypes<DefaultDevice>;
   template<int N>
-  using view_Nd_host = typename KokkosTypes<HostDevice>::view_ND<Real,N>;
-  using view_1d_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
+  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+  using view_1d_host = view_Nd_host<1>;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -129,9 +130,10 @@ protected:
   std::string m_out_units;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>      m_fields;
-  std::map<std::string,int>     m_dofs;
-  std::map<std::string,int>     m_dims;
+  std::vector<std::string>            m_fields;
+  std::map<std::string,FieldLayout>   m_layouts;
+  std::map<std::string,int>           m_dofs;
+  std::map<std::string,int>           m_dims;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
