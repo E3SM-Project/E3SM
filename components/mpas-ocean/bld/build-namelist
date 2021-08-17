@@ -13,8 +13,8 @@
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
 # was run.  By default it will use the config_cache.xml file that was written by configure to
-# determine the build time properties of the executable, and will write the files that contain 
-# the output namelists in that same directory.  
+# determine the build time properties of the executable, and will write the files that contain
+# the output namelists in that same directory.
 #
 #
 # Date        Contributor      Modification
@@ -35,18 +35,18 @@ SYNOPSIS
      build-namelist [options]
 OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
-     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying 
+     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying
                            a string containing FORTRAN namelist syntax, e.g.,
                               -namelist "&mpaso_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -test                 Enable checking that input datasets exist on local filesystem.
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -casebuild            CASEBUILD directory variable          
+     -casebuild            CASEBUILD directory variable
      -cimeroot             CIMEROOT directory variable
      -ocn_grid             OCN_GRID variable
      -ocn_forcing          variable for defining if the ocn model is forced with an active atm
-                           or using CORE forcing.  
+                           or using CORE forcing.
                            Options are: active_atm, datm_forced, datm_forced_restoring
      -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
                            for icebergs from the seaice model
@@ -71,7 +71,7 @@ NOTE: The precedence for setting the values of namelist variables is (highest to
       1. namelist values set by specific command-line options, i.e. (none right now)
       2. values set on the command-line using the -namelist option,
       3. values read from the file specified by -infile,
-      4. values from the namelist defaults file - or values specifically set in build-namelist 
+      4. values from the namelist defaults file - or values specifically set in build-namelist
 EOF
 }
 
@@ -86,7 +86,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -127,7 +127,7 @@ GetOptions(
     "caseroot=s"      => \$opts{'caseroot'},
     "casebuild=s"     => \$opts{'casebuild'},
     "cimeroot=s"      => \$opts{'cimeroot'},
-    "inst_string=s"   => \$opts{'inst_string'},	   
+    "inst_string=s"   => \$opts{'inst_string'},
     "ocn_grid=s"      => \$opts{'ocn_grid'},
     "ocn_forcing=s"   => \$opts{'ocn_forcing'},
     "ocn_iceberg=s"   => \$opts{'ocn_iceberg'},
@@ -257,7 +257,7 @@ EOF
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
 # fixed MPASO tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.mpaso directory - we allow the definition file 
+# who make use of the SourceMods/src.mpaso directory - we allow the definition file
 # to come from that directory
 my $nl_definition_file;
 if (-f "${CASEROOT}/SourceMods/src.mpaso/namelist_definition_mpaso.xml") {
@@ -296,7 +296,7 @@ require Build::Namelist;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the MPASO config_cache.xml file-  created by 
+# Create a configuration object from the MPASO config_cache.xml file-  created by
 # mpaso.cpl7.template in $CASEBUILD/mpasoconf
 my $cfg = Build::Config->new('config_cache.xml');
 
@@ -436,13 +436,13 @@ if ($inst_string) {
     $output_r = "./${CASE}.mpaso${inst_string}.r";
     $output_h = "./${CASE}.mpaso${inst_string}.h";
     $output_d = "./${CASE}.mpaso${inst_string}.d";
-} 
+}
 
 # Environment variables set in mpaso.buildnml.csh that are not xml variables
-my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
+my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}";
 my $LID = $ENV{'LID'};
 
-my $ntasks = $NTASKS_OCN / $NINST_OCN; 
+my $ntasks = $NTASKS_OCN / $NINST_OCN;
 
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
@@ -451,7 +451,7 @@ print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Determine namelist 
+# Determine namelist
 #-----------------------------------------------------------------------------------------------
 
 
@@ -1590,6 +1590,14 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
+#######################################
+# Namelist group: transport_tests     #
+#######################################
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1792,7 +1800,7 @@ sub add_default {
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
     # the CCSM inputdata root directory.
-    # TODO: unless ignore_abs is passed as argument 
+    # TODO: unless ignore_abs is passed as argument
     if ($is_input_pathname eq 'abs') {
       unless ($opts{'noprepend'}){
         $val = set_abs_filepath($val, $DIN_LOC_ROOT);
@@ -2000,8 +2008,8 @@ sub expand_env_xml {
 	my $subst = $xmlvars{$1};
 	$value =~ s/\$${1}/$subst/g;
     }
-    return $value; 
-}	 
+    return $value;
+}
 
 #-------------------------------------------------------------------------------
 
@@ -2030,7 +2038,7 @@ sub print_nl_to_screen {
 sub valid_date {
 # return 1 if given date ($$month/$$day/$$year) exists in calendar $cal
 # otherwise subtract number of days in $$month from $$day, and increment
-# $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
+# $$month by 1 (also incrementing $$year if going from Dec to Jan) and
 # then return 0.
 
   use Switch;

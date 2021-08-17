@@ -1027,4 +1027,10 @@
 <config_AM_harmonicAnalysis_use_Q1>.true.</config_AM_harmonicAnalysis_use_Q1>
 <config_AM_harmonicAnalysis_use_P1>.true.</config_AM_harmonicAnalysis_use_P1>
 
+<!-- transport_tests -->
+<config_transport_tests_vert_levels>3</config_transport_tests_vert_levels>
+<config_transport_tests_temperature>15</config_transport_tests_temperature>
+<config_transport_tests_salinity>35</config_transport_tests_salinity>
+<config_transport_tests_flow_id>0</config_transport_tests_flow_id>
+
 </namelist_defaults>

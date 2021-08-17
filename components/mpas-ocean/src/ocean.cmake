@@ -78,6 +78,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_ecosys.F
   core_ocean/shared/mpas_ocn_tracer_DMS.F
   core_ocean/shared/mpas_ocn_tracer_MacroMolecules.F
+  core_ocean/shared/mpas_ocn_transport_tests.F
   core_ocean/shared/mpas_ocn_high_freq_thickness_hmix_del2.F
   core_ocean/shared/mpas_ocn_tracer_surface_flux_to_tend.F
   core_ocean/shared/mpas_ocn_test.F
