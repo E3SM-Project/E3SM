@@ -1086,23 +1086,38 @@ contains
   !  grid_write_darray_1d_real: Write a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_write_darray_1d_real(filename, hbuf, varname)
-
+  subroutine grid_write_darray_1d_real(filename, varname, var_data_ptr)
     ! Dummy arguments
-    character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),               intent(in)    :: hbuf(:)
-    character(len=*),          intent(in)    :: varname
+    character(len=*),   intent(in) :: filename       ! PIO filename
+    character(len=*),   intent(in) :: varname
+    type (c_ptr),       intent(in) :: var_data_ptr
 
     ! Local variables
-    type(pio_atm_file_t), pointer              :: pio_atm_file
-    type(hist_var_t), pointer                :: var
-    integer                                  :: ierr
-    logical                                  :: found
+    real(rtype), dimension(:), pointer :: var_data
+    type(pio_atm_file_t), pointer      :: pio_atm_file
+    type(hist_var_t), pointer          :: var
+    integer                            :: ierr,var_size,ndims,i
+    logical                            :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
+
+    ! We don't want the extent along the 'time' dimension
+    if (var%has_t_dim) then
+      ndims = SIZE(var%dimlen)-1
+    else
+      ndims = SIZE(var%dimlen)-1
+    endif
+    var_size = 1
+    do i=1,ndims
+      var_size = var_size*var%dimlen(i)
+    enddo
+
+    ! Now we know the exact size of the array, and can shape the f90 pointer
+    call c_f_pointer (var_data_ptr, var_data, [var_size])
+
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
     call errorHandle( 'eam_grid_write_darray_1d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_1d_real
 !=====================================================================!
@@ -1132,13 +1147,25 @@ contains
     ! Local variables
     type(pio_atm_file_t),pointer       :: pio_atm_file
     type(hist_var_t), pointer          :: var
-    integer                            :: ierr, var_size
+    integer                            :: ierr, var_size, ndims, i
     logical                            :: found
     real(rtype), dimension(:), pointer :: var_data
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
-    var_size = PRODUCT(var%dimlen)
+    
+    ! We don't want the extent along the 'time' dimension
+    if (var%has_t_dim) then
+      ndims = SIZE(var%dimlen)-1
+    else
+      ndims = SIZE(var%dimlen)-1
+    endif
+    var_size = 1
+    do i=1,ndims
+      var_size = var_size*var%dimlen(i)
+    enddo
+
+    ! Now we know the exact size of the array, and can shape the f90 pointer
     call c_f_pointer (var_data_ptr, var_data, [var_size])
 
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))

@@ -74,6 +74,8 @@ class AtmosphereOutput
 {
 public:
 
+  template<int N>
+  using view_Nd_host = typename KokkosTypes<HostDevice>::view_ND<Real,N>;
   using view_1d_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
 
   virtual ~AtmosphereOutput () = default;
@@ -107,6 +109,7 @@ protected:
   void new_file(const std::string& filename);
   void run_impl(const Real time, const std::string& time_str);
   std::string compute_filename_root () const;
+  void combine (const Real& new_val, Real& curr_val) const;
 
   // --- Internal variables --- //
   ekat::Comm                                  m_comm;
@@ -156,6 +159,22 @@ protected:
   // When this equals m_out_max_steps, it's time to close the out file, and open a new one.
   int m_num_snapshots_in_file = 0;
 };
+
+inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val) const
+{
+  if (m_avg_type=="INSTANT" || m_nsteps_since_last_output == 1) {
+    curr_val = new_val;
+  } else {
+    // Update local view given the averaging type.
+    if (m_avg_type == "AVERAGE") {
+      curr_val = (curr_val*(m_nsteps_since_last_output-1) + new_val)/(m_nsteps_since_last_output);
+    } else if (m_avg_type == "MAX") {
+      curr_val = std::max(curr_val,new_val);
+    } else if (m_avg_type == "Min") {
+      curr_val = std::min(curr_val,new_val);
+    }
+  }
+}
 
 } //namespace scream
 

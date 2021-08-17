@@ -193,7 +193,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   //     If you zero nsteps_since_last_checkout at the 1st output, you would get history
   //     restarts all messed up, at day 10,13, ...
   const bool is_output_step = (m_nsteps_since_last_output == m_out_frequency);
-  const bool is_checkpoint_step = !m_is_model_restart_output &&
+  const bool is_checkpoint_step = !m_is_model_restart_output && m_checkpoint_freq>0 &&
                                    (m_nsteps_since_last_checkpoint % m_checkpoint_freq)==0 &&
                                   !is_output_step;
 
@@ -238,17 +238,12 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   }
 
   // Take care of updating and possibly writing fields.
-  using view_2d_host = typename KokkosTypes<HostDevice>::view_2d<Real>;
-  using view_3d_host = typename KokkosTypes<HostDevice>::view_3d<Real>;
-  for (auto const& name : m_fields)
-  {
+  for (auto const& name : m_fields) {
     // Get all the info for this field.
     const auto  field = m_field_mgr->get_field(name);
-    const auto& fap = field.get_header().get_alloc_properties();
     const auto& layout = field.get_header().get_identifier().get_layout();
-    const auto rank = layout.rank();
-    const auto num_reals = fap.get_alloc_size() / sizeof(Real);
-    const auto last_dim = fap.get_last_extent();
+    const auto& dims = layout.dims();
+    const auto  rank = layout.rank();
 
     // Safety check: make sure that the field was written at least once before using it.
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
@@ -257,59 +252,48 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     // Make sure host data is up to date
     field.sync_to_host();
 
-    // This tmp view may contain garbage entries, if the field has padding
-    view_1d_host hview_1d("",num_reals);
+    // Manually update the 'running-tally' views with data from the field,
+    // by combining new data with current avg values.
+    // NOTE: the running-tally is not a tally for Instant avg_type.
+    auto data = m_host_views_1d.at(name).data();
     switch (rank) {
       case 1:
       {
-        auto view_1d = field.get_view<const Real*,Host>();
-        Kokkos::deep_copy(hview_1d,view_1d);
+        auto new_view_1d = field.get_view<const Real*,Host>();
+        auto avg_view_1d = view_Nd_host<1>(data,dims[0]);
+
+        for (int i=0; i<dims[0]; ++i) {
+          combine(new_view_1d(i), avg_view_1d(i));
+        }
         break;
       }
       case 2:
       {
-        auto view_2d = field.get_view<const Real**,Host>();
-        Kokkos::deep_copy(view_2d_host(hview_1d.data(),layout.dim(0),last_dim),view_2d);
+        auto new_view_2d = field.get_view<const Real**,Host>();
+        auto avg_view_2d = view_Nd_host<2>(data,dims[0],dims[1]);
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            combine(new_view_2d(i,j), avg_view_2d(i,j));
+        }}
         break;
       }
       case 3:
       {
-        auto view_3d = field.get_view<const Real***,Host>();
-        Kokkos::deep_copy(view_3d_host(hview_1d.data(),layout.dim(0),layout.dim(1),last_dim),view_3d);
+        auto new_view_3d = field.get_view<const Real***,Host>();
+        auto avg_view_3d = view_Nd_host<3>(data,dims[0],dims[1],dims[2]);
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            for (int k=0; k<dims[2]; ++k) {
+              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k));
+        }}}
         break;
       }
       default:
         EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
     }
 
-    auto l_view = m_host_views_1d.at(name);
-    int size = l_view.size();
-
-    // It is not necessary to do any operations between local and global views if the frequency of output
-    // is instantaneous, or if the Average Counter is 1 (meaning the beginning of a new record).
-    if (m_avg_type=="INSTANT" || m_nsteps_since_last_output == 1) {
-      Kokkos::deep_copy(l_view, hview_1d);
-    } else {
-      // Update local view given the averaging type.
-      if (m_avg_type == "AVERAGE") {
-        for (int i=0; i<size; ++i) {
-          l_view(i) = (l_view(i)*(m_nsteps_since_last_output-1) + hview_1d(i))/(m_nsteps_since_last_output);
-        }
-      } else if (m_avg_type == "MAX") {
-        for (int i=0; i<size; ++i) {
-          l_view(i) = std::max(l_view(i),hview_1d(i));
-        }
-      } else if (m_avg_type == "Min") {
-        for (int i=0; i<size; ++i) {
-          l_view(i) = std::min(l_view(i),hview_1d(i));
-        }
-      }
-    } // m_avg_type != "Instant"
-
     if (is_write_step) {
-      auto l_dims = field.get_header().get_identifier().get_layout().dims();
-      int padding = field.get_header().get_alloc_properties().get_padding();
-      grid_write_data_array(filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
+      grid_write_data_array(filename,name,data);
     }
   }
 
@@ -387,9 +371,23 @@ void AtmosphereOutput::register_views()
     // to store running tallies for the average operation. However, we create them
     // also for Instant avg_type, for simplicity later on.
 
-    // Create a local host view.
-    const auto num_reals = field.get_header().get_alloc_properties().get_alloc_size() / sizeof(Real);
-    m_host_views_1d.emplace(name,view_1d_host("",num_reals));
+    // If we have an 'Instant' avg type, we can alias the tmp views with the
+    // host view of the field, provided that the field does not have padding,
+    // and that it is not a subfield of another field (or else the view
+    // would be strided).
+    bool can_alias_field_view =
+        m_avg_type=="Instant" &&
+        field.get_header().get_alloc_properties().get_padding()==1 &&
+        field.get_header().get_parent().expired();
+
+    const auto size = field.get_header().get_identifier().get_layout().size();
+    if (can_alias_field_view) {
+      // Alias field's data, to save storage.
+      m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Host>(),size));
+    } else {
+      // Create a local host view.
+      m_host_views_1d.emplace(name,view_1d_host("",size));
+    }
   }
 }
 /* ---------------------------------------------------------- */

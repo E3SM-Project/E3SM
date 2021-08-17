@@ -250,22 +250,21 @@ contains
     return
   end subroutine convert_c_string
 !=====================================================================!
-  subroutine grid_write_data_array_c2f_real_1d(filename_in,varname_in,dim1_length,hbuf_in) bind(c)
+  subroutine grid_write_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
 
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length
-    real(kind=c_real), intent(in), dimension(dim1_length) :: hbuf_in
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    type(c_ptr), intent(in) :: var_data_ptr
 
     character(len=256) :: filename
     character(len=256) :: varname
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call grid_write_data_array(filename,hbuf_in,varname)
+    call grid_write_data_array(filename,varname,var_data_ptr)
 
-  end subroutine grid_write_data_array_c2f_real_1d
+  end subroutine grid_write_data_array_c2f_real
 !=====================================================================!
   subroutine grid_read_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array

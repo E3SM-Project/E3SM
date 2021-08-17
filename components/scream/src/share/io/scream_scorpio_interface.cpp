@@ -20,14 +20,7 @@ extern "C" {
   void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, Real *&hbuf);
   void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
 
-  void grid_write_data_array_c2f_real_1d(const char*&& filename, const char*&& varname, const Int dim1_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_2d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_3d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_4d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Real* hbuf);
-  void grid_write_data_array_c2f_int_1d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_2d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_3d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_4d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Int* hbuf);
+  void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
   void eam_pio_finalize_c2f();
   void register_outfile_c2f(const char*&& filename);
@@ -149,55 +142,9 @@ void grid_read_data_array(const std::string &filename, const std::string &varnam
   grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 };
 /* ----------------------------------------------------------------- */
-// Handling the writing of output for packed arrays
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf)
-{
-  if (padding == 0) // then no xtra data, is contiguous
-  {
-    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-  } else {
-    std::vector<Real> hbuf_new(dim_length);
-    // Packed along final dimension
-    add_remove_padding(dims,padding,hbuf,hbuf_new.data(),false);
-    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
-  }
-}
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
+void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {
+  grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 };
-/* ----------------------------------------------------------------- */
-void add_remove_padding(const std::vector<int>& dims, const int padding,
-                        const Real* data_in, Real* data_out, const bool add_padding)
-{
-  using KT = KokkosTypes<HostDevice>;
-
-  // Split dims in [dim_1,...,dim_{N-1}] and dim_N, compute product P of first N-1 dims,
-  // and reshape pointers as 2d views of dims (P,dim_N) and (P,dim_N+padding)
-  int fast_dim = dims.back();
-  int size = 1;
-  for (auto d : dims) {
-    size *= d;
-  }
-  int lumped_slow_dims = size / fast_dim;
-
-  const int dim2_in  = add_padding ? fast_dim : fast_dim + padding;
-  const int dim2_out = add_padding ? fast_dim + padding : fast_dim;
-  ekat::Unmanaged<KT::view_2d<const Real>> from(data_in, lumped_slow_dims,dim2_in);
-  ekat::Unmanaged<KT::view_2d<Real>>       to  (data_out,lumped_slow_dims,dim2_out);
-  for (int i=0; i<lumped_slow_dims; ++i) {
-    for (int j=0; j<fast_dim; ++j) {
-      to(i,j) = from(i,j);
-    }
-    if (add_padding) {
-      for (int j=fast_dim; j<dim2_out; ++j) {
-        to(i,j) = ekat::ScalarTraits<Real>::invalid();
-      }
-    }
-  }
-}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio
