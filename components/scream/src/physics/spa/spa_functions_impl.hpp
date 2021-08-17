@@ -30,6 +30,7 @@ void SPAFunctions<S,D>
   // For now we require that the Data in and the Data out have the same number of columns.
   EKAT_REQUIRE(ncols_scream==pressure_state.ncols);
 
+  // Set up temporary arrays that will be used for the spa interpolation.
   view_2d<Spack> p_src("p_mid_src",ncols_scream,pressure_state.nlevs), 
                  ccn3_src("ccn3_src",ncols_scream,pressure_state.nlevs);
   view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols_scream,nswbands,pressure_state.nlevs),
@@ -65,18 +66,23 @@ void SPAFunctions<S,D>
     // First Step: Horizontal Interpolation if needed - Skip for Now
   
     // Second Step: Temporal Interpolation
+    // Use basic linear interpolation function y = b + mx
     auto slope = (t_now-t_beg)/t_len;
     /* Determine PS for the source data at this time */
     auto ps_src  =  ps_beg_sub + slope * (ps_end_sub-ps_beg_sub);
-    /* Reconstruct the vertical pressure profile for the data and time interpolation
-     * of the data */
     {
+    /* Reconstruct the vertical pressure profile for the data and time interpolation
+     * of the data.
+     * Note: CCN3 has the same dimensions as pressure so we handle that time interpolation
+     *       in this loop as well.  */
     using C = scream::physics::Constants<Real>;
     static constexpr auto P0 = C::P0;
     const Int nk_pack = ekat::npack<Spack>(pressure_state.nlevs);
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+        // Reconstruct vertical temperature profile using the hybrid coordinate system.
         p_src_sub(k)    = ps_src * pressure_state.hybm(k) + P0 * pressure_state.hyam(k);
+        // Time interpolation for CCN3
         ccn3_src_sub(k) = ccn3_beg_sub(k) + slope * (ccn3_end_sub(k) - ccn3_beg_sub(k));
     });
     team.team_barrier();
@@ -126,23 +132,33 @@ void SPAFunctions<S,D>
   });
   Kokkos::fence();
 
+  // Third Step: Vertical interpolation, project the SPA data onto the pressure profile for this simulation.
+  // This is done using the EKAT linear interpolation routine, see /externals/ekat/util/ekat_lin_interp.hpp
+  // for more details. 
   using LIV = ekat::LinInterp<Real,Spack::n>;
   Real minthreshold = 0.0;  // Hard-code a minimum value for aerosol concentration to zero.
 
   LIV VertInterp(ncols_scream,pressure_state.nlevs,nlevs_scream,minthreshold);
+  /* Parallel loop strategy:
+   * 1. Loop over all simulation columns (i index)
+   * 2. Where applicable, loop over all aerosol bands (n index)
+   */ 
   Kokkos::parallel_for("vertical-interp-spa",
     VertInterp.m_policy,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
     const int i = team.league_rank();
+    /* Setup the linear interpolater for this column. */
     VertInterp.setup(team,
                      ekat::subview(p_src,i),
                      ekat::subview(pressure_state.pmid,i));
     team.team_barrier();
+    /* Conduct vertical interpolation for the 2D variable CCN3 */
     VertInterp.lin_interp(team,
                           ekat::subview(p_src,i),
                           ekat::subview(pressure_state.pmid,i),
                           ekat::subview(ccn3_src,i),
                           ekat::subview(data_out.CCN3,i));
+    /* Conduct vertical interpolation for the LW banded data - nlwbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
       VertInterp.lin_interp(team,
@@ -151,6 +167,7 @@ void SPAFunctions<S,D>
                             ekat::subview(aer_tau_lw_src,i,n),
                             ekat::subview(data_out.AER_TAU_LW,i,n));
     });
+    /* Conduct vertical interpolation for the SW banded data - nswbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
       VertInterp.lin_interp(team,
@@ -171,6 +188,7 @@ void SPAFunctions<S,D>
     });
   });
   Kokkos::fence();
+
 }
 /*-----------------------------------------------------------------*/
 

@@ -28,6 +28,7 @@ struct PhysicsFunctions
   // Determines the density given the definition of pseudo_density passed by the dycore
   //   rho = pseudo_density/dz/g
   // where,
+  //   rho            is the density of air, [kg/m3]
   //   pseudo_density is the pressure level thickness given a shallow atmosphere, [Pa]
   //   dz             is the geopotential thickness of the layer, [m]
   //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
