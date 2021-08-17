@@ -108,7 +108,7 @@ protected:
   void register_views();
   void new_file(const std::string& filename);
   void run_impl(const Real time, const std::string& time_str);
-  std::string compute_filename_root () const;
+  std::string compute_filename_root (const std::string& casename) const;
   void combine (const Real& new_val, Real& curr_val) const;
 
   // --- Internal variables --- //

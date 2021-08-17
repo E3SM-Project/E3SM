@@ -92,7 +92,13 @@ void AtmosphereOutput::init()
     rpointer_file.open("rpointer.atm");
     std::string filename;
     bool found = false;
-    std::string testname = compute_filename_root();
+    std::string testname;
+    if (m_params.isParameter("RESTART HISTORY FILENAME")) {
+      auto hist_fname = m_params.get<std::string>("RESTART HISTORY FILENAME");
+      testname = compute_filename_root(hist_fname);
+    } else {
+      testname = compute_filename_root(m_casename);
+    }
     while (rpointer_file >> filename) {
       if (filename.find(testname) != std::string::npos) {
         found = true;
@@ -201,7 +207,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   const bool is_write_step = is_output_step || is_checkpoint_step;
   std::string filename;
   if (is_write_step) {
-    filename = compute_filename_root() + "." + time_str;
+    filename = compute_filename_root(m_casename) + "." + time_str;
     // If we are going to write an output checkpoint file, or a model restart file,
     // we need to append to the filename ".rhist" or ".r" respectively, and add
     // the filename to the rpointer.atm file.
@@ -505,9 +511,9 @@ void AtmosphereOutput::new_file(const std::string& filename)
   eam_pio_enddef (filename); 
 }
 
-std::string AtmosphereOutput::compute_filename_root () const
+std::string AtmosphereOutput::compute_filename_root (const std::string& casename) const
 {
-  return m_casename + "." +
+  return casename + "." +
          m_avg_type + "." +
          m_out_units + "_x" +
          std::to_string(m_out_frequency);
