@@ -62,7 +62,7 @@ MACHINE_METADATA = {
                   ""),
     "syrah"  : (["module --force purge", "module load StdEnv cmake/3.16.8 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3"],
                  ["mpicxx","mpifort","mpicc"],
-                  "salloc --partition=pdebug",
+                  "salloc --partition=pbatch --time=60",
                   16,
                   16,
                   ""),
