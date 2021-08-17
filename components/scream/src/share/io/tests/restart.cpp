@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream> 
 
+#include "ekat/util/ekat_string_utils.hpp"
 #include "scream_config.h"
 #include "share/scream_types.hpp"
 
@@ -17,6 +18,7 @@
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 namespace {
@@ -24,25 +26,44 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldManager<Real>>    get_test_fm(std::shared_ptr<const AbstractGrid> grid);
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-ekat::ParameterList                       get_om_params(const Int casenum, const ekat::Comm& comm);
-ekat::ParameterList                       get_in_params(const std::string& type, const ekat::Comm& comm);
-void                                      Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs);
+std::shared_ptr<FieldManager<Real>>
+get_test_fm(std::shared_ptr<const AbstractGrid> grid);
+
+std::shared_ptr<FieldManager<Real>>
+backup_fm(const std::shared_ptr<FieldManager<Real>>& src);
+
+std::shared_ptr<UserProvidedGridsManager>
+get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const bool check);
+
+ekat::ParameterList
+get_in_params(const std::string& type, const ekat::Comm& comm);
+
+void randomize_fields (const FieldManager<Real>& fm, const int seed);
+
+void time_advance (const FieldManager<Real>& fm,
+                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const double dt);
 
 TEST_CASE("restart","io")
 {
+  std::random_device rd;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   Int num_gcols = 2*io_comm.size();
-  Int num_levs = 2;
+  Int num_levs = 3;
 
   // First set up a field manager and grids manager to interact with the output functions
   auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
   auto grid = grid_man->get_grid("Physics");
-  int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
+  randomize_fields(*field_manager,seed);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -50,7 +71,7 @@ TEST_CASE("restart","io")
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
-  auto output_params = get_om_params(2,io_comm);
+  auto output_params = get_om_params(io_comm,false);
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
@@ -59,171 +80,113 @@ TEST_CASE("restart","io")
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
+  const auto& out_fields = field_manager->get_groups_info().at("output")->m_fields_names;
 
-  //  Cycle through data and write output
-  const auto& out_fields = field_manager->get_groups_info().at("output");
-  Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
-  Real dt = 1.0;
-  for (Int ii=0;ii<max_steps;++ii) {
-    for (const auto& fname : out_fields->m_fields_names) {
-      auto f  = field_manager->get_field(fname);
-      f.sync_to_host();
-      auto fl = f.get_header().get_identifier().get_layout();
-      switch (fl.rank()) {
-        case 1:
-          {
-            auto v = f.get_view<Real*,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              v(i) += dt;
-            }
-          }
-          break;
-        case 2:
-          {
-            auto v = f.get_view<Real**,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              for (int j=0; j<fl.dim(1); ++j) {
-                v(i,j) += dt;
-              }
-            }
-          }
-          break;
-        case 3:
-          {
-            auto v = f.get_view<Real***,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              for (int j=0; j<fl.dim(1); ++j) {
-                for (int k=0; k<fl.dim(2); ++k) {
-                  v(i,j,k) += dt;
-                }
-              }
-            }
-          }
-          break;
-        default:
-          EKAT_ERROR_MSG ("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
-      }
-      f.sync_to_dev();
-    }
+  // We advance the fields, by adding dt to each entry of the fields at each time step
+  // The restart data is written every 5 time steps, while the output freq is 10.
+  // We run for 17 steps, which means that after 17 steps we should have both a restart
+  // and a history restart files, with solution at t=15. 
+
+  // Time-advance all fields
+  const Real dt = 1.0;
+  const int nsteps = 15;
+  for (int i=0; i<nsteps; ++i) {
+    time_advance(*field_manager,out_fields,dt);
+    time += dt;
+    m_output_manager.run(time);
+  }
+
+  // Create a copy of the field manager current status, for checking restart
+  auto fm_15 = backup_fm(field_manager);
+
+  // Restart the simulation from t=15. The restart group should match
+  // what was in the fm at t=15, while field_3, which is not in the restart
+  // group, should be 
+  auto fm_res = get_test_fm(grid);
+  auto res_params = get_in_params("Restart",io_comm);
+  input_type ins_input(io_comm,res_params,fm_res);
+  ins_input.read_variables();
+
+  // Restart group fields must all match
+  for (const auto& fn : {"field_1", "field_2", "field_4"}) {
+    auto res_f = field_manager->get_field(fn);
+    auto tgt_f = fm_15->get_field(fn);
+
+    // The stored values must match
+    REQUIRE ( views_are_equal(res_f,tgt_f) );
+
+    // The time stamps must match
+    const auto& res_ts = res_f.get_header().get_tracking().get_time_stamp();
+    const auto& tgt_ts = tgt_f.get_header().get_tracking().get_time_stamp();
+    REQUIRE (res_ts==tgt_ts);
+  }
+  // "field_3" is not in restart group, so it should contain all -1
+  // Create a dummy field of equal layout, and simply call 'views_are_equal'
+  auto f3 = fm_res->get_field("field_3");
+  Field<Real> f_check(f3.get_header().get_identifier());
+  f_check.allocate_view();
+  f_check.deep_copy(-1.0);
+  REQUIRE (views_are_equal(f_check,f3));
+
+  // THIS IS HACKY BUT VERY IMPORTANT!
+  // E3SM relies on the 'rpointer.atm' file to write/read the name of the restart files.
+  // As of this point, rpointer contains the restart info for the timestep 15.
+  // But when we run the next 5 time steps, we will reach another restart checkpoint,
+  // at which point the rpointer file will be updated, and the info about the
+  // restart files at timestep 15 will be lost.
+  // To overcome this, we open the rpointer fiile NOW, store its content in a string,
+  // run the next 5 timesteps, and then OVERWRITE the rpointer file with the content
+  // we saved from the timestep=15 one.
+  std::ifstream rpointer_file_in;
+  rpointer_file_in.open("rpointer.atm");
+  std::string content, line;
+  while (rpointer_file_in >> line) {
+    content += line + "\n";
+  }
+  rpointer_file_in.close();
+
+  // Continue initial simulation for 5 more steps, to get to the next output step
+  for (int i=0; i<5; ++i) {
+    time_advance(*field_manager,out_fields,dt);
     time += dt;
     m_output_manager.run(time);
   }
   m_output_manager.finalize();
 
-  // At this point we should have produced 2 files, a restart and a restart history file.
+  // Restore the rpointer file as it was after timestep=15
+  std::ofstream rpointer_file_out;
+  rpointer_file_out.open("rpointer.atm", std::ios_base::trunc | std::ios_base::out);
+  rpointer_file_out << content;
+  rpointer_file_out.close();
+
+  // Creating a new scorpio output (via the output manager) should
+  // restart the output from the saved history.
+
+  // Create Output manager, and read the restart
   util::TimeStamp time_res (0,0,0,15);
+  auto output_params_res = get_om_params(io_comm,true);
   OutputManager m_output_manager_res;
-  m_output_manager_res.set_params(output_params);
+  m_output_manager_res.set_params(output_params_res);
   m_output_manager_res.set_comm(io_comm);
   m_output_manager_res.set_grids(grid_man);
-  m_output_manager_res.set_field_mgr(field_manager);
+  m_output_manager_res.set_field_mgr(fm_res);
   m_output_manager_res.set_runtype_restart(true);
   m_output_manager_res.init();
-  auto res_params = get_in_params("Restart",io_comm);
-  // reinit fields
-  Initialize_field_manager(*field_manager,num_lcols,num_levs);
-  // grab restart data
-  input_type ins_input(io_comm,res_params,field_manager);
-  ins_input.read_variables();
-  // Note, that only field_1, field_2, and field_4 were marked for restart.  Check to make sure values
-  // in the field manager reflect those fields as restarted from 15 and field_3 as being
-  // freshly restarted:
-  auto field1 = field_manager->get_field("field_1");
-  auto field2 = field_manager->get_field("field_2");
-  auto field3 = field_manager->get_field("field_3");
-  auto field4 = field_manager->get_field("field_4");
-  auto field1_hst = field1.get_view<Real*,Host>();
-  auto field2_hst = field2.get_view<Real*,Host>();
-  auto field3_hst = field3.get_view<Real**,Host>();
-  auto field4_hst = field4.get_view<Real***,Host>();
-  field1.sync_to_host();
-  field2.sync_to_host();
-  field3.sync_to_host();
-  field4.sync_to_host();
-  Real tol = pow(10,-6);
-  for (Int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
-    for (Int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
-      REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
-      REQUIRE(std::abs(field4_hst(ii,0,jj)-((jj+1)/10.+ii+15))<tol);
-      REQUIRE(std::abs(field4_hst(ii,1,jj)-(-((jj+1)/10.+ii)+15))<tol);
-    }
-  }
-  // Finish the last 5 steps
-  for (Int ii=0;ii<5;++ii) {
-    for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_manager->get_field(fname);
-      f.sync_to_host();
-      auto fl = f.get_header().get_identifier().get_layout();
-      switch (fl.rank()) {
-        case 1:
-          {
-            auto v = f.get_view<Real*,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              v(i) += dt;
-            }
-          }
-          break;
-        case 2:
-          {
-            auto v = f.get_view<Real**,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              for (int j=0; j<fl.dim(1); ++j) {
-                v(i,j) += dt;
-              }
-            }
-          }
-          break;
-        case 3:
-          {
-            auto v = f.get_view<Real***,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              for (int j=0; j<fl.dim(1); ++j) {
-                for (int k=0; k<fl.dim(2); ++k) {
-                  v(i,j,k) += dt;
-                }
-              }
-            }
-          }
-          break;
-        default:
-          EKAT_ERROR_MSG ("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
-      }
-      f.sync_to_dev();
-    }
+
+  // Run 5 more steps from the restart, to get to the next output step.
+  // We should be generating the same output file as before.
+  for (int i=0; i<5; ++i) {
+    time_advance(*fm_res,out_fields,dt);
     time_res += dt;
     m_output_manager_res.run(time_res);
   }
   m_output_manager_res.finalize();
-  
-  // We have now finished running a restart that should have loaded a restart history mid-way through averaging.  The
-  // final output should be stored in a file: io_output_restart.Average.Steps_x10.0000-01-01.000020.nc
-  // and reflect averaged values over the last 10 steps for fields 1 and 2 which were restarted and field 3 which started
-  // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
-  // the restart history file, but was re-initialized and run for the last 5 steps.
-  auto avg_params = get_in_params("Final",io_comm);
-  input_type avg_input(io_comm,avg_params,field_manager);
-  avg_input.read_variables();
-  field1.sync_to_host();
-  field2.sync_to_host();
-  field3.sync_to_host();
-  Real avg_val;
-  for (Int ii=0;ii<num_lcols;++ii) {
-    avg_val = (20+11)/2.+ii;
-    REQUIRE(std::abs(field1_hst(ii)-avg_val)<tol);
-    for (Int jj=0;jj<num_levs;++jj) {
-      avg_val = (20+11)/2.+(jj+1)/10.0;
-      REQUIRE(std::abs(field2_hst(jj)-avg_val)<tol);
-      avg_val = (15+11)/4. + (5+1)/4. + ii + (jj+1)/10.;
-      REQUIRE(std::abs(field3_hst(ii,jj)-avg_val)<tol);
-    }
-  }
-  
+
   // Finalize everything
   scorpio::eam_pio_finalize();
   grid_man->clean_up();
 } // TEST_CASE restart
+
 /*===================================================================================================================*/
 std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
@@ -264,40 +227,49 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   fm->register_field(FR{fid4,SL{"output","restart"}});
   fm->registration_ends();
 
-  // Initialize these fields
-  Initialize_field_manager(*fm,num_lcols,num_levs);
-  // Update timestamp
+  // Initialize fields to -1.0, and set initial time stamp
   util::TimeStamp time (0,0,0,0);
   fm->init_fields_time_stamp(time);
+  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
+    fm->get_field(fn).deep_copy(-1.0);
+  }
 
   return fm;
 }
-/*===================================================================================================================*/
-void Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs)
+
+std::shared_ptr<FieldManager<Real>>
+backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm)
 {
+  // Now, create a copy of the field manager current status, for comparisong
+  auto dst_fm = get_test_fm(src_fm->get_grid());
+  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
+          auto f_dst = dst_fm->get_field(fn);
+    const auto f_src = src_fm->get_field(fn);
+    f_dst.deep_copy(f_src);
+
+    auto src_ts = f_src.get_header().get_tracking().get_time_stamp();
+    f_dst.get_header().get_tracking().update_time_stamp(src_ts);
+  }
+  return dst_fm;
+}
+
+/*===================================================================================================================*/
+void randomize_fields (const FieldManager<Real>& fm, const int seed)
+{
+  using rngAlg = std::mt19937_64;
+  rngAlg engine(seed);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.01,0.99);
 
   // Initialize these fields
   const auto& f1 = fm.get_field("field_1");
   const auto& f2 = fm.get_field("field_2");
   const auto& f3 = fm.get_field("field_3");
   const auto& f4 = fm.get_field("field_4");
-  auto f1_hst = f1.get_view<Real*, Host>();
-  auto f2_hst = f2.get_view<Real*, Host>();
-  auto f3_hst = f3.get_view<Real**,Host>();
-  auto f4_hst = f4.get_view<Real***,Host>();
-  for (int ii=0;ii<num_lcols;++ii) {
-    f1_hst(ii) = ii;
-    for (int jj=0;jj<num_levs;++jj) {
-      f2_hst(jj) = (jj+1)/10.0;
-      f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
-      f4_hst(ii,0,jj) = ii + (jj+1)/10.0;
-      f4_hst(ii,1,jj) = -( ii + (jj+1)/10.0 );
-    }
-  }
-  f1.sync_to_dev();
-  f2.sync_to_dev();
-  f3.sync_to_dev();
-  f4.sync_to_dev();
+  randomize(f1,engine,pdf);
+  randomize(f2,engine,pdf);
+  randomize(f3,engine,pdf);
+  randomize(f4,engine,pdf);
 }
 
 /*===================================================================================================================*/
@@ -313,33 +285,18 @@ std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm,
   return upgm;
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const bool check)
 {
   ekat::ParameterList om_params("Output Manager");
   om_params.set<Int>("PIO Stride",1);
-  if (casenum == 1)
-  {
-    std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
-                                           "io_test_max",    "io_test_min" };
-    for (auto& name : fileNames) {
-      name += "_np" + std::to_string(comm.size()) + ".yaml";
-    }
 
-    om_params.set("Output YAML Files",fileNames);
-  } 
-  else if (casenum == 2)
-  {
-    std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
-    om_params.set("Output YAML Files",fileNames);
-    auto& res_sub = om_params.sublist("Restart Control");
-    auto& freq_sub = res_sub.sublist("FREQUENCY");
-    freq_sub.set<Int>("OUT_N",5);
-    freq_sub.set<std::string>("OUT_OPTION","Steps");
-  }
-  else
-  {
-    EKAT_REQUIRE_MSG(false,"Error, incorrect case number for get_om_params");
-  }
+  std::vector<std::string> fileNames (1);
+  fileNames[0] = std::string("io_test_restart") + (check ? "_check" : "") + "_np" + std::to_string(comm.size()) + ".yaml";
+  om_params.set("Output YAML Files",fileNames);
+  auto& res_sub = om_params.sublist("Restart Control");
+  auto& freq_sub = res_sub.sublist("FREQUENCY");
+  freq_sub.set<Int>("OUT_N",5);
+  freq_sub.set<std::string>("OUT_OPTION","Steps");
 
   return om_params;  
 }
@@ -375,4 +332,53 @@ ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& com
   return in_params;
 }
 /*===================================================================================================================*/
+
+void time_advance (const FieldManager<Real>& fm,
+                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const double dt) {
+  for (const auto& fname : fnames) {
+    auto f  = fm.get_field(fname);
+    f.sync_to_host();
+    auto fl = f.get_header().get_identifier().get_layout();
+    switch (fl.rank()) {
+      case 1:
+        {
+          auto v = f.get_view<Real*,Host>();
+          for (int i=0; i<fl.dim(0); ++i) {
+            v(i) += dt;
+          }
+        }
+        break;
+      case 2:
+        {
+          auto v = f.get_view<Real**,Host>();
+          for (int i=0; i<fl.dim(0); ++i) {
+            for (int j=0; j<fl.dim(1); ++j) {
+              v(i,j) += dt;
+            }
+          }
+        }
+        break;
+      case 3:
+        {
+          auto v = f.get_view<Real***,Host>();
+          for (int i=0; i<fl.dim(0); ++i) {
+            for (int j=0; j<fl.dim(1); ++j) {
+              for (int k=0; k<fl.dim(2); ++k) {
+                v(i,j,k) += dt;
+              }
+            }
+          }
+        }
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
+    }
+    f.sync_to_dev();
+    auto ft = f.get_header_ptr()->get_tracking();
+    auto ts = ft.get_time_stamp();
+    ft.update_time_stamp(ts+dt);
+  }
+}
+
 } // undefined namespace
