@@ -303,7 +303,7 @@ module ocn_time_integration_split
                                              tracersPool)
       call mpas_pool_get_subpool(tendPool,  'tracersTend', &
                                              tracersTendPool)
-      call mpas_pool_get_subpool(block%structs, 'diagnosticsPool', diagnosticsPool)
+      call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
 
       !*** Retrieve state variables at two time levels
 
