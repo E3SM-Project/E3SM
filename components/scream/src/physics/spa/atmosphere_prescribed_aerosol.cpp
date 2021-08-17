@@ -180,6 +180,7 @@ void SPA::run_impl (const Real dt)
     SPATimeState.days_this_month = (Real)ts.get_dpm();
   }
 
+  // Call the main SPA routine to get interpolated aerosol forcings.
   SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
 
   // Advance current timestamp.
