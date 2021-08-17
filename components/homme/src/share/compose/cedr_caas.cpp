@@ -253,7 +253,7 @@ void CAAS<ES>::finish_locally () {
 }
 
 template <typename ES>
-const CAAS<ES>::DeviceOp& CAAS<ES>::get_device_op() { return o; }
+const typename CAAS<ES>::DeviceOp& CAAS<ES>::get_device_op() { return o; }
 
 template <typename ES>
 void CAAS<ES>::run () {

@@ -613,7 +613,7 @@ template <typename ES> void QLT<ES>
 }
 
 template <typename ES>
-const QLT<ES>::DeviceOp& QLT<ES>::get_device_op() { return o; }
+const typename QLT<ES>::DeviceOp& QLT<ES>::get_device_op() { return o; }
 
 template <typename ES>
 void QLT<ES>::run () {
