@@ -17,7 +17,6 @@ module NitrogenStateUpdate1Mod
   use ColumnDataType         , only : col_ns, col_nf
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_ns, veg_nf
-  use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
@@ -28,6 +27,7 @@ module NitrogenStateUpdate1Mod
   use decompMod              , only : bounds_type
   use elm_varcon             , only : dzsoi_decomp
   use elm_varctl             , only : use_fates
+  #define is_active_betr_bgc .false.
   !
   implicit none
   save
@@ -105,7 +105,6 @@ contains
     ! variables (except for gap-phase mortality and fire fluxes)
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

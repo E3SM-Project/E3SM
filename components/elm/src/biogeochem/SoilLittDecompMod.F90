@@ -36,6 +36,7 @@ module SoilLittDecompMod
   ! clm interface & pflotran:
   use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl             , only : use_cn, use_fates
+  use elm_instMod            , only : alm_fates
   !
   implicit none
   save
@@ -43,7 +44,7 @@ module SoilLittDecompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public :: readSoilLittDecompParams
+   public :: readSoilLittDecompParams
   public :: SoilLittDecompAlloc
   ! pflotran
   public :: SoilLittDecompAlloc2
@@ -106,7 +107,7 @@ contains
     !-----------------------------------------------------------------------------
 
     ! !USES:
-      !$acc routine seq
+   !$acc routine seq
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:
@@ -119,6 +120,8 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
+
+    ! add phosphorus --
 !    type(crop_type)          , intent(in)    :: crop_vars
     real(r8),   intent(in)    :: dtime
     !
@@ -138,7 +141,7 @@ contains
     real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
-    character(len=256) :: event
+    character(len=64) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                                           &
@@ -383,23 +386,22 @@ contains
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
       event = 'CNAllocation - phase-2'
-      call t_start_lnd(event)
-      call Allocation2_ResolveNPLimit(bounds,                     &
+      !call t_start_lnd(event)
+      call Allocation2_ResolveNPLimit(bounds,                       &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
                soilstate_vars, dtime)
-      call t_stop_lnd(event)
+      !call t_stop_lnd(event)
 
 
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
 
+      !-------------------------------------------------------------------------------------------------
+      ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
+      !-------------------------------------------------------------------------------------------------
 
-          !-------------------------------------------------------------------------------------------------
-          ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
-          !-------------------------------------------------------------------------------------------------
-
-          ! upon return from CNAllocation, the fraction of potential immobilization
+      ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
       ! Also calculate denitrification losses as a simple proportion
@@ -415,11 +417,11 @@ contains
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
+                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation 
+                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
@@ -480,7 +482,7 @@ contains
           end do
       end if
 
-      if (nu_com .ne. 'RD') then
+   if (nu_com .ne. 'RD') then
       do fc = 1,num_soilc
           c = filter_soilc(fc)
           soil_n_immob_flux(c) =0.0_r8
@@ -514,8 +516,8 @@ contains
                end if
              end do
           end do
-       end do
-       end if
+      end do
+   end if
 
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
@@ -608,7 +610,7 @@ contains
     ! For methane code
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
-    character(len=256) :: event
+    character(len=64) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                                      &
@@ -621,7 +623,6 @@ contains
          net_pmin_vr                      =>    col_pf%net_pmin_vr                    , & ! Output: [real(r8) (:,:)   ]
          gross_pmin                       =>    col_pf%gross_pmin                     , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
          net_pmin                         =>    col_pf%net_pmin                       , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
-
 
          fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Output:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units)
          fpi                              =>    cnstate_vars%fpi_col                                   , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
@@ -662,6 +663,7 @@ contains
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
+#ifndef _OPENACC
       if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
          ! fpg calculation
          do fc=1,num_soilc
@@ -757,24 +759,24 @@ contains
          end do
 
       end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
-
+#endif
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       if(.not.use_fates)then
         event = 'CNAllocation - phase-3'
-        call t_start_lnd(event)
+        !call t_start_lnd(event)
         call Allocation3_PlantCNPAlloc (bounds                      , &
                   num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                   canopystate_vars                                    , &
                   cnstate_vars, crop_vars, dt)
-        call t_stop_lnd(event)
+        !call t_stop_lnd(event)
       end if
       !------------------------------------------------------------------
 
     if(use_pflotran.and.pf_cmode) then
-    ! in Allocation3_PlantCNPAlloc():
-    ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
-    ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
+      ! in Allocation3_PlantCNPAlloc():
+      ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
+      ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
       do fc = 1,num_soilc
            c = filter_soilc(fc)
            do j = 1,nlevdecomp
@@ -810,18 +812,18 @@ contains
   !-------------------------------------------------------------------------------------------------
   !
   subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  !
+  !DESCRIPTION:
+  !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
+  !  if not properly set.
+  !
+  !USES:
+    use elm_varctl         , only : carbon_only, carbonnitrogen_only
+    use elm_varpar         , only : nlevdecomp , ndecomp_cascade_transitions
+    use ColumnDataType     , only : col_ps_setvalues, col_pf_setvalues 
+    use VegetationDataType , only : veg_ps_setvalues, veg_pf_setvalues 
     !
-    !DESCRIPTION:
-    !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
-    !  if not properly set.
-    !
-    !USES:
-    !$acc routine seq
-    use VegetationDataType, only : veg_ps_SetValues, veg_pf_setvalues
-    use ColumnDataType   , only : col_ps_setvalues, col_pf_setvalues
-    use elm_varctl   , only: carbon_only, carbonnitrogen_only
-    use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
-   !
+
    !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
@@ -857,11 +859,11 @@ contains
 
    ! pflotran not yet support phosphous cycle
    if ( carbon_only .or.  carbonnitrogen_only  ) then
-      !call veg_ps_setvalues(this=veg_ps,num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      !call col_ps_setvalues(this=col_ps,num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call veg_ps_SetValues(veg_ps, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_ps_SetValues(col_ps, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      !call veg_pf_setvalues(this=veg_pf, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      !call col_pf_setvalues(this=col_pf, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call veg_pf_setvalues(veg_pf, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_pf_setvalues(col_pf, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
    end if
 
   end associate

@@ -68,6 +68,10 @@ contains
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
+#if _CUDA
+    use cudafor 
+#endif 
+
     !
     ! !ARGUMENTS:
     type(ESMF_Clock),           intent(inout) :: EClock           ! Input synchronization clock
@@ -116,8 +120,12 @@ contains
     character(len=32), parameter :: sub = 'lnd_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
     !-----------------------------------------------------------------------
+#if _CUDA
+    integer(kind=cuda_count_kind) :: heapsize,free1,free2,total
+    integer  :: istat, val
+#endif
 
-    ! Set cdata data
+   ! Set cdata data
 
     call seq_cdata_setptrs(cdata_l, ID=LNDID, mpicom=mpicom_lnd, &
          gsMap=GSMap_lnd, dom=dom_l, infodata=infodata)
@@ -158,6 +166,15 @@ contains
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (iulog)
     
+#ifdef _OPENACC
+    if(masterproc) write(iulog,*), "Initializing OpenACC Devices"
+    call acc_initialization()
+#endif
+
+#if _CUDA
+    istat = cudaMemGetInfo(free1, total)
+    print *, "Amount of GPU memory available",free1
+#endif 
     ! Identify SMP nodes and process/SMP mapping for this instance
     ! (Assume that processor names are SMP node names on SMP clusters.)
     write(c_inst_index,'(i8)') inst_index
@@ -233,7 +250,7 @@ contains
                         hostname_in=hostname, username_in=username)
 
     ! Read namelist, grid and surface data
-
+    print *, "calling initialize 1:"
     call initialize1( )
 
     ! If no land then exit out of initialization
@@ -269,8 +286,9 @@ contains
     call mct_aVect_zero(l2x_l)
 
     ! Finish initializing elm
-
+    print *, " initialize 2 "
     call initialize2()
+    print *, "initialize 3:"
     call initialize3()
 
     ! Check that elm internal dtime aligns with elm coupling interval
@@ -709,5 +727,27 @@ contains
     deallocate(idata)
 
   end subroutine lnd_domain_mct
+  
+  subroutine acc_initialization()
+      use openacc 
+      use spmdMod,    only : iam 
+      use abortutils, only : endrun 
+      use elm_varctl, only : iulog 
+     
+      implicit none 
+      integer :: mygpu, ngpus 
+
+      call acc_init(acc_device_nvidia)
+      ngpus = acc_get_num_devices(acc_device_nvidia)
+      if (ngpus==0) then
+        write(iulog,*) "Error: No GPUs detected with OpenACC enabled"
+        call endrun() 
+     endif 
+     call acc_set_device_num(mod(iam,ngpus),acc_device_nvidia)
+
+     mygpu = acc_get_device_num(acc_device_nvidia)
+     write(iulog,*) "iam, mygpu:",iam,mygpu, ngpus
+
+  end subroutine 
 
 end module lnd_comp_mct

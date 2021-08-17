@@ -2425,6 +2425,7 @@ end subroutine shr_flux_MOstability
 ! except for tau_diff and prev_tau_diff, which can be of either sign.
 subroutine shr_flux_update_stress(wind0, wsresp, tau_est, tau, prev_tau, &
      tau_diff, prev_tau_diff, wind_adj)
+  !$acc routine seq 
   ! Wind speed from atmosphere (not updated by iteration) [m/s]
   real(r8), intent(in) :: wind0
   ! Response of boundary layer wind to stress changes in a time step [m/s/Pa]

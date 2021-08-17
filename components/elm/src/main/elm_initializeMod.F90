@@ -80,6 +80,7 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
+    use domainMod, only : domain_transfer 
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -258,7 +259,7 @@ contains
 
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
-
+    call domain_transfer() 
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     ! 

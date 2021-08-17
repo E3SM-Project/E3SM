@@ -52,7 +52,7 @@ module EcosystemDynMod
   use ColumnDataType , only : col_cf_summary, col_nf_summary, col_pf_Summary
   use ColumnDataType , only : col_cs_summary, col_ns_summary, col_ps_summary
   use ColumnDataType , only : col_cf_summary_for_ch4
-  use ColumnDataType , only : col_cf_setvalues, col_nf_setvalues, col_pf_setvalues 
+  use ColumnDataType , only : col_cf_setvalues, col_nf_setvalues, col_pf_setvalues
 
 
   !
@@ -120,18 +120,15 @@ contains
     ! respiration, decomposition, allocation, phenology, and growth respiration.
     ! These routines happen on the radiation time step so that canopy structure
     ! stays synchronized with albedo calculations.
-    !
+     !$acc routine seq
     ! !USES:
-    use spmdMod              , only: masterproc
-    use PhosphorusDynamicsMod         , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
-    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin,PhosphorusLeaching
+    use PhosphorusDynamicsMod     , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
+    use PhosphorusDynamicsMod     , only: PhosphorusBiochemMin,PhosphorusLeaching
     use NitrogenDynamicsMod       , only: NitrogenLeaching
     use NitrogenStateUpdate3Mod   , only: NitrogenStateUpdate3
-    use PhosphorusStateUpdate3Mod     , only: PhosphorusStateUpdate3
-    use PrecisionControlMod  , only: PrecisionControl
-    use perf_mod             , only: t_startf, t_stopf
-    use shr_sys_mod          , only: shr_sys_flush
-    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin_balance
+    use PhosphorusStateUpdate3Mod , only: PhosphorusStateUpdate3
+    use PrecisionControlMod    , only: PrecisionControl
+    use PhosphorusDynamicsMod  , only: PhosphorusBiochemMin_balance
 
     !
     ! !ARGUMENTS:
@@ -148,6 +145,7 @@ contains
     type(canopystate_type)   , intent(inout) :: canopystate_vars
 
     character(len=64) :: event
+    character(len=4) :: isotope
     real(r8) :: dt
     !-----------------------------------------------------------------------
     dt = dtime_mod;
@@ -183,16 +181,10 @@ contains
        call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
             cnstate_vars, dt)
        call t_stop_lnd(event)
-    else
-      ! nu_com_phosphatase is true
-      !call t_startf('PhosphorusBiochemMin')
-      !call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
-      !     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-      !call t_stopf('PhosphorusBiochemMin')
     end if
 
     !-----------------------------------------------------------------------
-    ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
+    ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call ELM-CN's N leaching module
     if (.not. (pf_cmode .and. pf_hmode)) then
      call NitrogenLeaching(bounds, num_soilc, filter_soilc, dt)
 
@@ -221,28 +213,31 @@ contains
     if(.not.use_fates) then
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
        call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
-       if ( use_c13 ) then
-          call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
-          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c13')
-       end if
-       if ( use_c14 ) then
-          call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
-          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c14')
-       end if
+     !  if ( use_c13 ) then
+     !     isotope = 'c13'
+     !     call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
+     !     call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, isotope)
+     !  end if
+     !  if ( use_c14 ) then
+     !     isotope = 'c14'
+     !     call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
+     !     call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, isotope)
+     !  end if
        call veg_cs_Summary(veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
-       if ( use_c13 ) then
-          call veg_cs_Summary(c13_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
-          call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc)
-       end if
-       if ( use_c14 ) then
-          call veg_cs_Summary(c14_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
-          call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
-       end if
+     !  if ( use_c13 ) then
+     !     call veg_cs_Summary(c13_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
+     !     call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc)
+     !  end if
+     !  if ( use_c14 ) then
+     !     call veg_cs_Summary(c14_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
+     !     call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
+     !  end if
        call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
        call veg_ns_Summary(veg_ns, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
        call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
        call veg_ps_Summary(veg_ps, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
     else
+#ifndef _OPENACC
        ! In this scenario, we simply zero all of the
        ! column level variables that would had been upscaled
        ! in the veg summary with p2c
@@ -252,14 +247,16 @@ contains
        call col_cf%ZeroForFates(bounds,num_soilc, filter_soilc)
        call col_nf%ZeroForFates(bounds,num_soilc, filter_soilc)
        call col_pf%ZeroForFates(bounds,num_soilc, filter_soilc)
+#endif
     end if
-
-    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk')
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! isotope = 'bulk'
+    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, isotope)
     call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc)
-
+    !
     call col_nf_Summary(col_nf,bounds, num_soilc, filter_soilc)
     call col_ns_Summary(col_ns,bounds, num_soilc, filter_soilc)
-
+    !
     call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc)
     call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
 
@@ -286,36 +283,36 @@ contains
     ! respiration, decomposition, allocation, phenology, and growth respiration.
     ! These routines happen on the radiation time step so that canopy structure
     ! stays synchronized with albedo calculations.
-    !
+    !$acc routine seq
     ! !USES:
-    use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use PhosphorusDynamicsMod       , only: PhosphorusDeposition
-    use MaintenanceRespMod          , only: MaintenanceResp
+    use NitrogenDynamicsMod   , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
+    use PhosphorusDynamicsMod , only: PhosphorusDeposition
+    use MaintenanceRespMod    , only: MaintenanceResp
     use DecompCascadeBGCMod   , only: decomp_rate_constants_bgc
     use DecompCascadeCNMod    , only: decomp_rate_constants_cn
     use CropType              , only: crop_type
     use elm_varpar            , only: crop_prog
     use AllocationMod         , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
     use NitrogenDynamicsMod   , only: NitrogenLeaching
-    use PhosphorusDynamicsMod       , only: PhosphorusLeaching
-    use NitrogenDynamicsMod         , only: NitrogenFixation_balance
-    use PhosphorusDynamicsMod       , only: PhosphorusWeathering,PhosphorusAdsportion,PhosphorusDesoprtion,PhosphorusOcclusion
-    use PhosphorusDynamicsMod       , only: PhosphorusBiochemMin,PhosphorusBiochemMin_balance
-
+    use PhosphorusDynamicsMod , only: PhosphorusLeaching
+    use NitrogenDynamicsMod   , only: NitrogenFixation_balance
+    use PhosphorusDynamicsMod , only: PhosphorusWeathering,PhosphorusAdsportion
+    use PhosphorusDynamicsMod , only: PhosphorusDesoprtion,PhosphorusOcclusion
+    use PhosphorusDynamicsMod , only: PhosphorusBiochemMin,PhosphorusBiochemMin_balance
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
-    integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(canopystate_type)   , intent(in)    :: canopystate_vars
-    type(soilstate_type)     , intent(inout) :: soilstate_vars
-    type(crop_type)          , intent(in)    :: crop_vars
-    type(ch4_type)           , intent(in)    :: ch4_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
+    type(bounds_type)     , intent(in)    :: bounds
+    integer               , intent(in)    :: num_soilc         ! number of soil columns in filter
+    integer               , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+    integer               , intent(in)    :: num_soilp         ! number of soil patches in filter
+    integer               , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+    type(cnstate_type)    , intent(inout) :: cnstate_vars
+    type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
+    type(canopystate_type), intent(in)    :: canopystate_vars
+    type(soilstate_type)  , intent(inout) :: soilstate_vars
+    type(crop_type)       , intent(in)    :: crop_vars
+    type(ch4_type)        , intent(in)    :: ch4_vars
+    type(photosyns_type)  , intent(in)    :: photosyns_vars
 
     character(len=64) :: event
     real(r8) :: dt, dayspyr
@@ -325,17 +322,15 @@ contains
     year = year_curr; mon = mon_curr; day = day_curr; sec= secs_curr
     dayspyr = dayspyr_mod
     !-----------------------------------------------------------------------
-
     ! Call the main CN routines
-
     ! --------------------------------------------------
     ! zero the C and N fluxes
     ! --------------------------------------------------
-
     event = 'CNZero'
     call t_start_lnd(event)
 
     if(.not.use_fates) then
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
        if ( use_c13 ) then
           call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
@@ -345,8 +340,9 @@ contains
           call veg_cf_setvalues(c14_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c14_col_cf,num_soilc, filter_soilc, 0._r8)
        end if
-       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8)
-       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8)
+       call veg_nf_setvalues(veg_nf,num_soilp, filter_soilp, 0._r8)
+       call veg_pf_SetValues(veg_pf,num_soilp, filter_soilp, 0._r8)
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     end if
 
     call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8)
@@ -443,12 +439,10 @@ contains
     call decomp_vertprofiles(bounds,                        &
           num_soilc, filter_soilc, num_soilp, filter_soilp, &
           soilstate_vars, canopystate_vars, cnstate_vars)
-
     !-------------------------------------------------------------------------------------------------
     ! Allocation1 is always called (w/ or w/o use_elm_interface)
     ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
     if(.not.use_fates)then
-
        event = 'CNAllocation - phase-1'
        call t_start_lnd(event)
        call Allocation1_PlantNPDemand (bounds                             , &
@@ -481,17 +475,17 @@ contains
     ! respiration, decomposition, allocation, phenology, and growth respiration.
     ! These routines happen on the radiation time step so that canopy structure
     ! stays synchronized with albedo calculations.
-    !
+    !$acc routine seq
     ! !USES:
     use PhenologyMod         , only: Phenology, CNLitterToColumn
     use GrowthRespMod             , only: GrowthResp
     use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
-    use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
-    use PhosphorusStateUpdate1Mod       , only: PhosphorusStateUpdate1
-    use GapMortalityMod        , only: GapMortality
+    use NitrogenStateUpdate1Mod   , only: NitrogenStateUpdate1
+    use PhosphorusStateUpdate1Mod , only: PhosphorusStateUpdate1
+    use GapMortalityMod           , only: GapMortality
     use CarbonStateUpdate2Mod     , only: CarbonStateUpdate2, CarbonStateUpdate2h
-    use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
-    use PhosphorusStateUpdate2Mod       , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
+    use NitrogenStateUpdate2Mod   , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
+    use PhosphorusStateUpdate2Mod , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use FireMod              , only: FireArea, FireFluxes
     use ErosionMod           , only: ErosionFluxes
     use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
@@ -500,11 +494,11 @@ contains
     use WoodProductsMod      , only: WoodProducts
     use CropHarvestPoolsMod  , only: CropHarvestPools
     use SoilLittVertTranspMod, only: SoilLittVertTransp
-    use CropType               , only: crop_type
-    use dynHarvestMod          , only: CNHarvest
-    use RootDynamicsMod        , only: RootDynamics
-    use SoilLittDecompMod            , only: SoilLittDecompAlloc
-    use SoilLittDecompMod            , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
+    use CropType             , only: crop_type
+    use dynHarvestMod        , only: CNHarvest
+    use RootDynamicsMod      , only: RootDynamics
+    use SoilLittDecompMod    , only: SoilLittDecompAlloc
+    use SoilLittDecompMod    , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
 
     !
     ! !ARGUMENTS:
@@ -525,8 +519,8 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
-!
     type(sedflux_type)       , intent(in)    :: sedflux_vars
+
     character(len=64) :: event
     real(r8) :: dt
     integer :: c13, c14
@@ -536,8 +530,8 @@ contains
     dt = dtime_mod
     ! Call the main CN routines
 
-    event = 'SoilLittDecompAlloc'
-    call t_start_lnd(event)
+    !event = 'SoilLittDecompAlloc'
+    !call t_start_lnd(event)
     !----------------------------------------------------------------
     if(.not.use_elm_interface) then
        ! directly run elm-bgc
@@ -549,7 +543,7 @@ contains
                   dt)
     end if !if(.not.use_elm_interface)
 
-    call t_stopf('SoilLittDecompAlloc')
+    !call t_stopf('SoilLittDecompAlloc')
 
     event = 'SoilLittDecompAlloc2'
     call t_start_lnd(event)
@@ -571,11 +565,9 @@ contains
         !--------------------------------------------
         ! Phenology
         !--------------------------------------------
-
         ! Phenology needs to be called after SoilLittDecompAlloc, because it
         ! depends on current time-step fluxes to new growth on the last
         ! litterfall timestep in deciduous systems
-
         event = 'Phenology'
         call t_start_lnd(event)
         call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -631,7 +623,8 @@ contains
        end if
        call t_stop_lnd(event)
 
-        !--------------------------------------------
+        !-------------------------------------------
+#ifndef _OPENACC 
         if(use_pheno_flux_limiter)then
           event = 'phenology_flux_limiter'
           call t_start_lnd(event)
@@ -643,6 +636,7 @@ contains
             veg_nf, veg_ns, veg_pf, veg_ps)
           call t_stop_lnd(event)
         endif
+#endif 
         event = 'CNLitterToColumn'
         call t_start_lnd(event)
         call CNLitterToColumn(num_soilp, filter_soilp, cnstate_vars )
@@ -665,10 +659,11 @@ contains
                cnstate_vars , &
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
          end if
-         call t_stop_lnd(event) 
+         call t_stop_lnd(event)
 
     end if  ! if(.not.use_fates)
 
+#ifndef _OPENACC
     if(use_fates) then
        ! In this scenario, we simply zero all of the
        ! column level variables that would had been upscaled
@@ -678,7 +673,8 @@ contains
        ! Transfer fates litter fluxes into ELM source arrays
        call alm_fates%UpdateLitterFluxes(bounds)
     end if
-    
+#endif
+
    event = 'CNUpdate1'
    call t_start_lnd(event)
 
@@ -700,15 +696,15 @@ contains
    call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
         cnstate_vars, dt)
 
-
    call t_stop_lnd(event)
 
    event = 'SoilLittVertTransp'
    call t_start_lnd(event)
-   call SoilLittVertTransp(bounds, &
+   call SoilLittVertTransp(    &
             num_soilc, filter_soilc, &
             canopystate_vars, cnstate_vars )
        call t_stop_lnd(event)
+
    if(.not.use_fates)then
        event = 'CNGapMortality'
        call t_start_lnd(event)
@@ -724,8 +720,8 @@ contains
 
        if ( use_c13 ) then
            call CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-                cnstate_vars,  &
-                isotope=c13, isocol_cs=c13_col_cs, isoveg_cs=c13_veg_cs, isocol_cf=c13_col_cf, isoveg_cf=c13_veg_cf)
+                cnstate_vars, isotope=c13, isocol_cs=c13_col_cs, isoveg_cs=c13_veg_cs, &
+                isocol_cf=c13_col_cf, isoveg_cf=c13_veg_cf)
        end if
 
        if ( use_c14 ) then
@@ -733,8 +729,6 @@ contains
                 cnstate_vars, &
                 isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
-
-
 
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             col_cs, veg_cs, col_cf, veg_cf, dt)
@@ -753,10 +747,10 @@ contains
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
 
-       if (get_do_harvest()) then
-          call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars )
-       end if
+      ! if (get_do_harvest()) then
+      !    call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+      !         cnstate_vars )
+      ! end if
 
        if ( use_c13 ) then
           call CarbonIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -769,8 +763,6 @@ contains
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
 
-
-
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
              col_cs, veg_cs, col_cf, veg_cf, dt)
        if ( use_c13 ) then
@@ -781,25 +773,16 @@ contains
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
-
-       call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt)
-
-       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt)
-
+       call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
+       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
        call WoodProducts(num_soilc, filter_soilc )
-
        call CropHarvestPools(num_soilc, filter_soilc, dt)
 
        call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, energyflux_vars, soilhydrology_vars, &
             cnstate_vars )
-
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars)
-
-
        call t_stop_lnd(event)
 
    end if
@@ -810,11 +793,9 @@ contains
        call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars )
        call t_stop_lnd(event)
    end if
-
    !--------------------------------------------
    ! Update3
    !--------------------------------------------
-
    if(.not.use_fates)then
        if ( use_c13 ) then
        call CarbonIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -838,8 +819,6 @@ contains
           call CarbonStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
-
-
        if ( use_c14 ) then
           call C14Decay(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars )
@@ -849,20 +828,18 @@ contains
        end if
 
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
-       if( use_c13 ) then
-          call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc)
-          call veg_cf_summary_for_ch4(c13_veg_cf,bounds, num_soilp, filter_soilp)
-       endif
-       if( use_c14 ) then
-          call col_cf_summary_for_ch4(c14_col_cf,bounds, num_soilc, filter_soilc)
-          call veg_cf_summary_for_ch4(c14_veg_cf,bounds, num_soilp, filter_soilp)
-       endif
+      ! if( use_c13 ) then
+      !    call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc)
+      !    call veg_cf_summary_for_ch4(c13_veg_cf,bounds, num_soilp, filter_soilp)
+      ! endif
+      ! if( use_c14 ) then
+      !    call col_cf_summary_for_ch4(c14_col_cf,bounds, num_soilc, filter_soilc)
+      !    call veg_cf_summary_for_ch4(c14_veg_cf,bounds, num_soilp, filter_soilp)
+      ! endif
 
-  end if !end of if not use_fates block
+   end if !end of if not use_fates block
 
   call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
-
-
 
 end subroutine EcosystemDynNoLeaching2
 

@@ -14,10 +14,7 @@ module PhosphorusStateUpdate3Mod
   use elm_varctl          , only : use_erosion, ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
-  use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
   use elm_varctl          , only : nu_com
@@ -25,6 +22,7 @@ module PhosphorusStateUpdate3Mod
   use VegetationPropertiesType      , only : veg_vp
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
+  #define is_active_betr_bgc .false. 
   !
   implicit none
   save

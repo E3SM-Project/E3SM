@@ -17,6 +17,7 @@ module CarbonStateUpdate3Mod
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
   ! bgc interface & pflotran:
   use elm_varctl       , only : use_pflotran, pf_cmode
+  #define is_active_betr_bgc .false.
   !
   implicit none
   save
@@ -37,7 +38,6 @@ contains
     ! variables affected by fire fluxes and also erosion flux
     !
       !$acc routine seq
-    use tracer_varcon       , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

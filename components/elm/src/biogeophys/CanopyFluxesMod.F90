@@ -91,7 +91,7 @@ contains
     ! !USES:
       !$acc routine seq
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
-    use shr_flux_mod       , only : shr_flux_update_stress
+    use SimpleMathMod       , only : shr_flux_update_stress_elm
     use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use elm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
     use elm_varcon         , only : isecspday, degpsec
@@ -99,7 +99,7 @@ contains
     use elm_varcon         , only : c14ratio
 
     !NEW
-    use domainMod          , only : ldomain
+    use domainMod          , only : ldomain_gpu
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, implicit_stress
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
@@ -640,7 +640,7 @@ contains
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
                   h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
                   h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
-                  deficit        = max((h2osoi_liq_so + ldomain%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
+                  deficit        = max((h2osoi_liq_so + ldomain_gpu%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
 
                   ! Add deficit to irrig_rate, converting units from mm to mm/sec
                   irrig_rate(p)  = irrig_rate(p) + deficit/(dtime*irrig_nsteps_per_day)
@@ -782,7 +782,7 @@ contains
             ! basic form of iteration in this loop...
             if (implicit_stress) then
                tau(p) = forc_rho(t)*wind_speed_adj(p)/ram1(p)
-               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+               call shr_flux_update_stress_elm(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
                ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
@@ -1248,6 +1248,8 @@ contains
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
 
          ! Check for convergence of stress.
+         
+#ifndef _OPENACC
          if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
             if (nstep_mod > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for canopy ',&
@@ -1256,7 +1258,7 @@ contains
                     ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
             end if
          end if
-
+#endif
       end do
 
       if ( use_fates ) then

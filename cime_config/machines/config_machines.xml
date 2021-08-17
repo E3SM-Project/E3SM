@@ -2776,7 +2776,7 @@
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.10</command>
+        <command name="load">pgi/20.4</command>
         <command name="load">pgi-cxx14/default</command>
       </modules>
       <modules compiler="pgigpu">

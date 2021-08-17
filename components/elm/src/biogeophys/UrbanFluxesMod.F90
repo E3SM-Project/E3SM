@@ -56,15 +56,13 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
-    !$acc routine seq
-    
-    use shr_flux_mod         , only : shr_flux_update_stress
+      !$acc routine seq
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use elm_varctl          , only : use_vsfm
@@ -90,16 +88,9 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
-    integer  :: filterl_copy(num_urbanl)                ! iteration copy of filter_urbanl
-    integer  :: filterc_copy(num_urbanc)                ! iteration copy of filter_urbanc
-    integer  :: fnl_iter                                ! iteration num_urbanl
-    integer  :: fnl_iter_old                            ! previous iteration fnl_iter
-    integer  :: fnc_iter                                ! iteration num_urbanc
-    integer  :: fnc_iter_old                            ! previous iteration fnc_iter
-
-    real(r8) :: canyontop_wind(bounds%begl:bounds%endl)              ! wind at canyon top (m/s) 
-    real(r8) :: canyon_u_wind(bounds%begl:bounds%endl)               ! u-component of wind speed inside canyon (m/s)
-    real(r8) :: canyon_wind(bounds%begl:bounds%endl)                 ! net wind speed inside canyon (m/s)
+    real(r8) :: canyontop_wind(num_urbanl)              ! wind at canyon top (m/s)
+    real(r8) :: canyon_u_wind (num_urbanl)               ! u-component of wind speed inside canyon (m/s)
+    real(r8) :: canyon_wind   (num_urbanl)                 ! net wind speed inside canyon (m/s)
     real(r8) :: canyon_resistance(bounds%begl:bounds%endl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
 
     real(r8) :: ur(bounds%begl:bounds%endl)                          ! wind speed at reference height (m/s)
@@ -126,13 +117,12 @@ contains
     real(r8) :: wtaq(bounds%begl:bounds%endl)                        ! latent heat conductance for urban air to atmospheric air (m/s)
     real(r8) :: wts_sum(bounds%begl:bounds%endl)                     ! sum of wtas, wtus_roof, wtus_road_perv, wtus_road_imperv, wtus_sunwall, wtus_shadewall
     real(r8) :: wtq_sum(bounds%begl:bounds%endl)                     ! sum of wtaq, wtuq_roof, wtuq_road_perv, wtuq_road_imperv, wtuq_sunwall, wtuq_shadewall
-    real(r8) :: beta(bounds%begl:bounds%endl)                        ! coefficient of convective velocity
-    real(r8) :: zii(bounds%begl:bounds%endl)                         ! convective boundary layer height (m)
-    real(r8) :: fm(bounds%begl:bounds%endl)                          ! needed for BGC only to diagnose 10m wind speed
+    real(r8) :: beta                         ! coefficient of convective velocity
+    real(r8) :: zii                          ! convective boundary layer height (m)
+    real(r8) :: fm  (bounds%begl:bounds%endl)                        ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: wtus(bounds%begc:bounds%endc)                        ! sensible heat conductance for urban columns (scaled) (m/s)
     real(r8) :: wtuq(bounds%begc:bounds%endc)                        ! latent heat conductance for urban columns (scaled) (m/s)
     integer  :: iter                                                 ! iteration index
-    integer  :: iter_final                                           ! number of iterations used
     real(r8) :: dthv                                                 ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: tstar                                                ! temperature scaling parameter
     real(r8) :: qstar                                                ! moisture scaling parameter
@@ -190,38 +180,26 @@ contains
     real(r8) :: dqsat2mdT                                            ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     !
     real(r8), parameter :: lapse_rate = 0.0098_r8 ! Dry adiabatic lapse rate (K/m)
-    real(r8), parameter :: dtaumin = 0.01_r8      ! max limit for stress convergence [Pa]
-    integer, parameter  :: itmin = 3              ! minimum number of iterations
-    integer, parameter  :: itmax = 30             ! maximum number of iterations
-    integer  :: loopmax                           ! bound for iteration loop
-    real(r8) :: wind_speed0(bounds%begl:bounds%endl) ! Wind speed from atmosphere at start of iteration
-    real(r8) :: wind_speed_adj(bounds%begl:bounds%endl) ! Adjusted wind speed for iteration
-    real(r8) :: tau(bounds%begl:bounds%endl)      ! Stress used in iteration
-    real(r8) :: tau_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tau
-    real(r8) :: prev_tau(bounds%begl:bounds%endl) ! Previous iteration tau
-    real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
+    integer , parameter  :: niters = 3            ! maximum number of iterations for surface temperature
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
-         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
-         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
-         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
-         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
-         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
-         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+    associate(                                                                &
+         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers
+         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type
+         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)
+         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)
+         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)
+         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit
+         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width
+         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road
 
-         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
-         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
-         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
-         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
-         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
-         wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
-         tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
-         ugust               =>   top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
+         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)
+         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)
+         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)
+         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)
+         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
+         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
+         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -301,8 +279,8 @@ contains
       secs = secs_curr
 
       ! Set constants (same as in Biogeophysics1Mod)
-      beta(begl:endl) = 1._r8             ! Should be set to the same values as in Biogeophysics1Mod
-      zii(begl:endl)  = 1000._r8          ! Should be set to the same values as in Biogeophysics1Mod
+      beta = 1._r8             ! Should be set to the same values as in Biogeophysics1Mod
+      zii  = 1000._r8          ! Should be set to the same values as in Biogeophysics1Mod
 
       ! Compute canyontop wind using Masson (2000)
 
@@ -334,22 +312,34 @@ contains
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 #endif
-         ! Initialize winds for iteration.
-         if (implicit_stress) then
-            wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-            wind_speed_adj(l) = wind_speed0(l)
-            ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
+         ! Magnitude of atmospheric wind
 
-            prev_tau(l) = tau_est(t)
-         else
-            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+         ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+
+         ! Canyon top wind
+
+         canyontop_wind(fl) = ur(l) * &
+              log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
+              log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
+
+         ! U component of canyon wind
+
+         if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
+            canyon_u_wind(fl) = canyontop_wind(fl) * exp( -0.5_r8*canyon_hwr(l)* &
+                 (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
+         else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
+            canyon_u_wind(fl) = canyontop_wind(fl) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
+                 (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
+                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+         else  ! skimming flow
+            canyon_u_wind(fl) = canyontop_wind(fl) * (2._r8/rpi) * &
+                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
          end if
-         tau_diff(l) = 1.e100_r8
 
       end do
 
       ! Compute fluxes - Follows elm approach for bare soils (Oleson et al 2004)
-
+      !$acc loop seq
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
@@ -369,57 +359,47 @@ contains
       end do
 
       ! Initialize conductances
-      wtus_roof(begl:endl)        = 0._r8
-      wtus_road_perv(begl:endl)   = 0._r8
-      wtus_road_imperv(begl:endl) = 0._r8
-      wtus_sunwall(begl:endl)     = 0._r8
-      wtus_shadewall(begl:endl)   = 0._r8
-      wtuq_roof(begl:endl)        = 0._r8
-      wtuq_road_perv(begl:endl)   = 0._r8
-      wtuq_road_imperv(begl:endl) = 0._r8
-      wtuq_sunwall(begl:endl)     = 0._r8
-      wtuq_shadewall(begl:endl)   = 0._r8
-      wtus_roof_unscl(begl:endl)        = 0._r8
-      wtus_road_perv_unscl(begl:endl)   = 0._r8
-      wtus_road_imperv_unscl(begl:endl) = 0._r8
-      wtus_sunwall_unscl(begl:endl)     = 0._r8
-      wtus_shadewall_unscl(begl:endl)   = 0._r8
-      wtuq_roof_unscl(begl:endl)        = 0._r8
-      wtuq_road_perv_unscl(begl:endl)   = 0._r8
-      wtuq_road_imperv_unscl(begl:endl) = 0._r8
-      wtuq_sunwall_unscl(begl:endl)     = 0._r8
-      wtuq_shadewall_unscl(begl:endl)   = 0._r8
-
+      do fl = 1, num_urbanl
+         l = filter_urbanl(fl)
+         wtus_roof(l)        = 0._r8
+         wtus_road_perv(l)   = 0._r8
+         wtus_road_imperv(l) = 0._r8
+         wtus_sunwall(l)     = 0._r8
+         wtus_shadewall(l)   = 0._r8
+         wtuq_roof(l)        = 0._r8
+         wtuq_road_perv(l)   = 0._r8
+         wtuq_road_imperv(l) = 0._r8
+         wtuq_sunwall(l)     = 0._r8
+         wtuq_shadewall(l)   = 0._r8
+         wtus_roof_unscl(l)        = 0._r8
+         wtus_road_perv_unscl(l)   = 0._r8
+         wtus_road_imperv_unscl(l) = 0._r8
+         wtus_sunwall_unscl(l)     = 0._r8
+         wtus_shadewall_unscl(l)   = 0._r8
+         wtuq_roof_unscl(l)        = 0._r8
+         wtuq_road_perv_unscl(l)   = 0._r8
+         wtuq_road_imperv_unscl(l) = 0._r8
+         wtuq_sunwall_unscl(l)     = 0._r8
+         wtuq_shadewall_unscl(l)   = 0._r8
+      end do
       ! Start stability iteration
-      fnl_iter = num_urbanl
-      fnc_iter = num_urbanc
-      filterl_copy(1:num_urbanl) = filter_urbanl(1:num_urbanl)
-      filterc_copy(1:num_urbanc) = filter_urbanc(1:num_urbanc)
+      iter = 0
+       do while(iter < niters)
 
-      if (implicit_stress) then
-         loopmax = itmax
-      else
-         loopmax = itmin
-      end if
+        if (num_urbanl > 0) then
+           call FrictionVelocity(begl, endl, &
+               num_urbanl, filter_urbanl, &
+               z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
+               obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
+               temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
+               frictionvel_vars, landunit_index=.true.)
+        end if
 
-      ITERATION: do iter = 1, loopmax
 
-         ! Get friction velocity, relation for potential
-         ! temperature and humidity profiles of surface boundary layer.
-
-         if (fnl_iter > 0) then
-            call FrictionVelocity(begl, endl, &
-                 num_urbanl, filter_urbanl, &
-                 z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
-                 obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
-                 temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
-                 frictionvel_vars, landunit_index=.true.)
-         end if
-
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
-            t = lun_pp%topounit(l)
-            g = lun_pp%gridcell(l)
+        do fl = 1, num_urbanl
+           l = filter_urbanl(fl)
+           t = lun_pp%topounit(l)
+           g = lun_pp%gridcell(l)
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
@@ -427,59 +407,21 @@ contains
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
 
-            ! Calculate magnitude of stress and update wind speed.
-            if (implicit_stress) then
-               tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
-               call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
-                    tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
-                    wind_speed_adj(l))
-               ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
-            end if
-
-            ! Canyon top wind
-            ! If the wind does not change in this loop (explicit stress), then
-            ! we only need to calculate this on the first iteration.
-            if (implicit_stress .or. iter == 1) then
-               canyontop_wind(l) = ur(l) * &
-                    log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
-                    log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
-
-               ! U component of canyon wind 
-
-               if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
-                  canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
-                       (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
-               else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
-                  canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
-                       (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
-                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-               else  ! skimming flow
-                  canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
-                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-               end if
-            end if
-
             ! Determine magnitude of canyon wind by using horizontal wind determined
             ! previously and vertical wind from friction velocity (Masson 2000)
 
-            canyon_wind(l) = sqrt(canyon_u_wind(l)**2._r8 + ustar(l)**2._r8)
+            canyon_wind(fl) = sqrt(canyon_u_wind(fl)**2._r8 + ustar(l)**2._r8)
 
             ! Determine canyon_resistance (currently this single resistance determines the
             ! resistance from urban surfaces (roof, pervious and impervious road, sunlit and
             ! shaded walls) to urban canopy air, since it is only dependent on wind speed
             ! Also from Masson 2000.
 
-            canyon_resistance(l) = cpair * forc_rho(t) / (11.8_r8 + 4.2_r8*canyon_wind(l))
+            canyon_resistance(l) = cpair * forc_rho(t) / (11.8_r8 + 4.2_r8*canyon_wind(fl))
 
-         end do
 
-         ! This is the first term in the equation solutions for urban canopy air temperature
-         ! and specific humidity (numerator) and is a landunit quantity
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
-            t = lun_pp%topounit(l)
-            g = lun_pp%gridcell(l)
-
+           ! This is the first term in the equation solutions for urban canopy air temperature
+           ! and specific humidity (numerator) and is a landunit quantity
             taf_numer(l) = thm_g(l)/rahu(l)
             taf_denom(l) = 1._r8/rahu(l)
             qaf_numer(l) = forc_q(t)/rawu(l)
@@ -494,171 +436,170 @@ contains
 
          ! Gather other terms for other urban columns for numerator and denominator of
          ! equations for urban canopy air temperature and specific humidity
+!         do fc = 1,num_urbanc
+!            c = filter_urbanc(fc)
+!            l = col_pp%landunit(c)
+!
+!            if (ctype(c) == icol_roof) then
+!
+!               ! scaled sensible heat conductance
+!               wtus(c) = wtlunit_roof(l)/canyon_resistance(l)
+!               wtus_roof(l) = wtus(c)
+!               ! unscaled sensible heat conductance
+!               wtus_roof_unscl(l) = 1._r8/canyon_resistance(l)
+!
+!               if (snow_depth(c) > 0._r8) then
+!                  fwet_roof = min(snow_depth(c)/0.05_r8, 1._r8)
+!               else
+!                  fwet_roof = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
+!                  fwet_roof = min(fwet_roof,1._r8)
+!               end if
+!               if (qaf(l) > qg(c)) then
+!                  fwet_roof = 1._r8
+!               end if
+!               ! scaled latent heat conductance
+!               wtuq(c) = fwet_roof*(wtlunit_roof(l)/canyon_resistance(l))
+!               wtuq_roof(l) = wtuq(c)
+!               ! unscaled latent heat conductance
+!               wtuq_roof_unscl(l) = fwet_roof*(1._r8/canyon_resistance(l))
+!
+!               ! wasteheat from heating/cooling
+!               if (urban_hac == urban_wasteheat_on) then
+!                  eflx_wasteheat_roof(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+!                       ht_wasteheat_factor * eflx_urban_heat(c)
+!               else
+!                  eflx_wasteheat_roof(l) = 0._r8
+!               end if
+!
+!               ! If air conditioning on, always replace heat removed with heat into canyon
+!               if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+!                  eflx_heat_from_ac_roof(l) = abs(eflx_urban_ac(c))
+!               else
+!                  eflx_heat_from_ac_roof(l) = 0._r8
+!               end if
 
-         do fc = 1, fnc_iter
-            c = filterc_copy(fc)
-            l = col_pp%landunit(c)
+            ! else if (ctype(c) == icol_road_perv) then
+            !
+            !    ! scaled sensible heat conductance
+            !    wtus(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+            !    wtus_road_perv(l) = wtus(c)
+            !    ! unscaled sensible heat conductance
+            !    wtus_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
+            !
+            !    ! scaled latent heat conductance
+            !    wtuq(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+            !    wtuq_road_perv(l) = wtuq(c)
+            !    ! unscaled latent heat conductance
+            !    wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
+            !
+            !    if (use_vsfm) then
+            !       if (qaf(l) < qg(c)) then
+            !          if (do_soilevap_beta()) then
+            !             wtuq_road_perv(l)       = soilbeta(c)*wtuq_road_perv(l)
+            !             wtuq_road_perv_unscl(l) = soilbeta(c)*wtuq_road_perv_unscl(l)
+            !          endif
+            !       endif
+            !    endif
+!             else if (ctype(c) == icol_road_imperv) then
+!
+!                ! scaled sensible heat conductance
+!                wtus(c) = (1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+!                wtus_road_imperv(l) = wtus(c)
+!                ! unscaled sensible heat conductance
+!                wtus_road_imperv_unscl(l) = 1._r8/canyon_resistance(l)
+!
+!                if (snow_depth(c) > 0._r8) then
+!                   fwet_road_imperv = min(snow_depth(c)/0.05_r8, 1._r8)
+!                else
+!                   fwet_road_imperv = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
+!                   fwet_road_imperv = min(fwet_road_imperv,1._r8)
+!                end if
+!                if (qaf(l) > qg(c)) then
+!                   fwet_road_imperv = 1._r8
+!                end if
+!                ! scaled latent heat conductance
+!                wtuq(c) = fwet_road_imperv*(1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+!                wtuq_road_imperv(l) = wtuq(c)
+!                ! unscaled latent heat conductance
+!                wtuq_road_imperv_unscl(l) = fwet_road_imperv*(1._r8/canyon_resistance(l))
+!
+!             else if (ctype(c) == icol_sunwall) then
+!
+!                ! scaled sensible heat conductance
+!                wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+!                wtus_sunwall(l) = wtus(c)
+!                ! unscaled sensible heat conductance
+!                wtus_sunwall_unscl(l) = 1._r8/canyon_resistance(l)
+!
+!                ! scaled latent heat conductance
+!                wtuq(c) = 0._r8
+!                wtuq_sunwall(l) = wtuq(c)
+!                ! unscaled latent heat conductance
+!                wtuq_sunwall_unscl(l) = 0._r8
+!
+!                ! wasteheat from heating/cooling
+!                if (urban_hac == urban_wasteheat_on) then
+!                   eflx_wasteheat_sunwall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+!                        ht_wasteheat_factor * eflx_urban_heat(c)
+!                else
+!                   eflx_wasteheat_sunwall(l) = 0._r8
+!                end if
+!
+!                ! If air conditioning on, always replace heat removed with heat into canyon
+!                if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+!                   eflx_heat_from_ac_sunwall(l) = abs(eflx_urban_ac(c))
+!                else
+!                   eflx_heat_from_ac_sunwall(l) = 0._r8
+!                end if
+!
+!             else if (ctype(c) == icol_shadewall) then
+!
+!                ! scaled sensible heat conductance
+!                wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
+!                wtus_shadewall(l) = wtus(c)
+!                ! unscaled sensible heat conductance
+!                wtus_shadewall_unscl(l) = 1._r8/canyon_resistance(l)
+!
+!                ! scaled latent heat conductance
+!                wtuq(c) = 0._r8
+!                wtuq_shadewall(l) = wtuq(c)
+!                ! unscaled latent heat conductance
+!                wtuq_shadewall_unscl(l) = 0._r8
+!
+!                ! wasteheat from heating/cooling
+!                if (urban_hac == urban_wasteheat_on) then
+!                   eflx_wasteheat_shadewall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+!                        ht_wasteheat_factor * eflx_urban_heat(c)
+!                else
+!                   eflx_wasteheat_shadewall(l) = 0._r8
+!                end if
+!
+!                ! If air conditioning on, always replace heat removed with heat into canyon
+!                if (urban_hac == urban_hac_on .or. urban_hac == urban_wasteheat_on) then
+!                   eflx_heat_from_ac_shadewall(l) = abs(eflx_urban_ac(c))
+!                else
+!                   eflx_heat_from_ac_shadewall(l) = 0._r8
+!                end if
+! #ifndef _OPENACC
+!             else
+!                write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
+!                write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
+!                write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
+!                call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
+! #endif
+!             end if
+!
+!             taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
+!             taf_denom(l) = taf_denom(l) + wtus(c)
+!             qaf_numer(l) = qaf_numer(l) + qg(c)*wtuq(c)
+!             qaf_denom(l) = qaf_denom(l) + wtuq(c)
 
-            if (ctype(c) == icol_roof) then
-
-               ! scaled sensible heat conductance
-               wtus(c) = wtlunit_roof(l)/canyon_resistance(l)
-               wtus_roof(l) = wtus(c)
-               ! unscaled sensible heat conductance
-               wtus_roof_unscl(l) = 1._r8/canyon_resistance(l)
-
-               if (snow_depth(c) > 0._r8) then
-                  fwet_roof = min(snow_depth(c)/0.05_r8, 1._r8)
-               else
-                  fwet_roof = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
-                  fwet_roof = min(fwet_roof,1._r8)
-               end if
-               if (qaf(l) > qg(c)) then
-                  fwet_roof = 1._r8
-               end if
-               ! scaled latent heat conductance
-               wtuq(c) = fwet_roof*(wtlunit_roof(l)/canyon_resistance(l))
-               wtuq_roof(l) = wtuq(c)
-               ! unscaled latent heat conductance
-               wtuq_roof_unscl(l) = fwet_roof*(1._r8/canyon_resistance(l))
-
-               ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_roof(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
-                       ht_wasteheat_factor * eflx_urban_heat(c)
-               else
-                  eflx_wasteheat_roof(l) = 0._r8
-               end if
-
-               ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_roof(l) = abs(eflx_urban_ac(c))
-               else
-                  eflx_heat_from_ac_roof(l) = 0._r8
-               end if
-
-            else if (ctype(c) == icol_road_perv) then
-
-               ! scaled sensible heat conductance
-               wtus(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_road_perv(l) = wtus(c)
-               ! unscaled sensible heat conductance
-               wtus_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
-
-               ! scaled latent heat conductance
-               wtuq(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtuq_road_perv(l) = wtuq(c)
-               ! unscaled latent heat conductance
-               wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
-
-               if (use_vsfm) then
-                  if (qaf(l) < qg(c)) then
-                     if (do_soilevap_beta()) then
-                        wtuq_road_perv(l)       = soilbeta(c)*wtuq_road_perv(l)
-                        wtuq_road_perv_unscl(l) = soilbeta(c)*wtuq_road_perv_unscl(l)
-                     endif
-                  endif
-               endif
-            else if (ctype(c) == icol_road_imperv) then
-
-               ! scaled sensible heat conductance
-               wtus(c) = (1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_road_imperv(l) = wtus(c)
-               ! unscaled sensible heat conductance
-               wtus_road_imperv_unscl(l) = 1._r8/canyon_resistance(l)
-
-               if (snow_depth(c) > 0._r8) then
-                  fwet_road_imperv = min(snow_depth(c)/0.05_r8, 1._r8)
-               else
-                  fwet_road_imperv = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
-                  fwet_road_imperv = min(fwet_road_imperv,1._r8)
-               end if
-               if (qaf(l) > qg(c)) then
-                  fwet_road_imperv = 1._r8
-               end if
-               ! scaled latent heat conductance
-               wtuq(c) = fwet_road_imperv*(1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtuq_road_imperv(l) = wtuq(c)
-               ! unscaled latent heat conductance
-               wtuq_road_imperv_unscl(l) = fwet_road_imperv*(1._r8/canyon_resistance(l))
-
-            else if (ctype(c) == icol_sunwall) then
-
-               ! scaled sensible heat conductance
-               wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_sunwall(l) = wtus(c)
-               ! unscaled sensible heat conductance
-               wtus_sunwall_unscl(l) = 1._r8/canyon_resistance(l)
-
-               ! scaled latent heat conductance
-               wtuq(c) = 0._r8
-               wtuq_sunwall(l) = wtuq(c)
-               ! unscaled latent heat conductance
-               wtuq_sunwall_unscl(l) = 0._r8
-
-               ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_sunwall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
-                       ht_wasteheat_factor * eflx_urban_heat(c)
-               else
-                  eflx_wasteheat_sunwall(l) = 0._r8
-               end if
-
-               ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_sunwall(l) = abs(eflx_urban_ac(c))
-               else
-                  eflx_heat_from_ac_sunwall(l) = 0._r8
-               end if
-
-            else if (ctype(c) == icol_shadewall) then
-
-               ! scaled sensible heat conductance
-               wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_shadewall(l) = wtus(c)
-               ! unscaled sensible heat conductance
-               wtus_shadewall_unscl(l) = 1._r8/canyon_resistance(l)
-
-               ! scaled latent heat conductance
-               wtuq(c) = 0._r8
-               wtuq_shadewall(l) = wtuq(c)
-               ! unscaled latent heat conductance
-               wtuq_shadewall_unscl(l) = 0._r8
-
-               ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_shadewall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
-                       ht_wasteheat_factor * eflx_urban_heat(c)
-               else
-                  eflx_wasteheat_shadewall(l) = 0._r8
-               end if
-
-               ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_shadewall(l) = abs(eflx_urban_ac(c))
-               else
-                  eflx_heat_from_ac_shadewall(l) = 0._r8
-               end if
-            else
-#ifndef _OPENACC
-               write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
-               write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
-               write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
-               call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
-#endif
-            end if
-
-            taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
-            taf_denom(l) = taf_denom(l) + wtus(c)
-            qaf_numer(l) = qaf_numer(l) + qg(c)*wtuq(c)
-            qaf_denom(l) = qaf_denom(l) + wtuq(c)
-
-         end do
+!         end do !!! column loop
 
          ! Calculate new urban canopy air temperature and specific humidity
 
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             g = lun_pp%gridcell(l)
 
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
@@ -694,8 +635,8 @@ contains
          ! This section of code is not required if niters = 1
          ! Determine stability using new taf and qaf
          ! TODO: Some of these constants replicate what is in FrictionVelocity and BareGround fluxes should consildate. EBK
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
@@ -711,43 +652,15 @@ contains
                um(l) = max(ur(l),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta(l)*(-grav*ustar(l)*thvstar*zii(l)/thv_g(l))**0.333_r8
+               wc = beta*(-grav*ustar(l)*thvstar*zii/thv_g(l))**0.333_r8
                um(l) = sqrt(ur(l)*ur(l) + wc*wc)
             end if
 
             obu(l) = zldis(l)/zeta
          end do
 
-         ! Test for convergence
-         iter_final = iter
-         if (iter >= itmin) then
-            fnl_iter_old = fnl_iter
-            fnl_iter = 0
-            do fl = 1, fnl_iter_old
-               l = filterl_copy(fl)
-               if (.not. (abs(tau_diff(l)) < dtaumin)) then
-                  fnl_iter = fnl_iter + 1
-                  filterl_copy(fnl_iter) = l
-               end if
-            end do
-            if (fnl_iter == 0) then
-               exit ITERATION
-            end if
-            ! After weeding out landunits that have converged, we also need to
-            ! filter out the associated columns.
-            fnc_iter_old = fnc_iter
-            fnc_iter = 0
-            do fc = 1, fnc_iter_old
-               c = filterc_copy(fc)
-               l = col_pp%landunit(c)
-               if (.not. (abs(tau_diff(l)) < dtaumin)) then
-                  fnc_iter = fnc_iter + 1
-                  filterc_copy(fnc_iter) = c
-               end if
-            end do
-         end if
-
-      end do ITERATION ! end iteration
+          iter = iter + 1
+      end do  ! end ITERATION
 
       ! Determine fluxes from canyon surfaces
 
@@ -810,12 +723,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p) = -forc_rho(t)*forc_u(t)/ramu(l)
-         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(l)
-         if (implicit_stress) then
-            taux(p) = taux(p) * (wind_speed_adj(l) / wind_speed0(l))
-            tauy(p) = tauy(p) * (wind_speed_adj(l) / wind_speed0(l))
-         end if
+         taux(p)          = -forc_rho(t)*forc_u(t)/ramu(l)
+         tauy(p)          = -forc_rho(t)*forc_v(t)/ramu(l)
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)
@@ -900,7 +809,6 @@ contains
          if (abs(eflx_err(l)) > 0.01_r8) then
             found = .true.
             indexl = l
-            exit
          end if
       end do
 
@@ -927,7 +835,6 @@ contains
          if (abs(qflx_err(l)) > 4.e-9_r8) then
             found = .true.
             indexl = l
-            exit
          end if
       end do
 
@@ -943,21 +850,6 @@ contains
          end if
       end if
 #endif
-
-      ! Check for convergence of stress.
-      if (implicit_stress) then
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
-            if (abs(tau_diff(l)) > dtaumin) then
-               if (nstep > 0) then ! Suppress common warnings on the first time step.
-                  write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
-                       ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
-                       ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
-                       ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
-               end if
-            end if
-         end do
-      end if
 
       ! Gather terms required to determine internal building temperature
 

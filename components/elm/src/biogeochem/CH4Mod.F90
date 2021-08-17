@@ -1471,12 +1471,14 @@ contains
          if (ch4offline) then
             forc_pch4(t) = atmch4*forc_pbot(t)
          else
+#ifndef _OPENACC
             if (forc_pch4(t) == 0._r8) then
                write(iulog,*) 'not using ch4offline, but methane concentration not passed from the atmosphere'//&
                      'to land model! CLM Model is stopping.'
                call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
                      errMsg(__FILE__, __LINE__))
             end if
+#endif 
          end if
          c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(t)  / rgasm / forc_t(t) ! [mol/m3 air]
@@ -1854,6 +1856,7 @@ contains
                ! Check balance
                errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
                     - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
+#ifndef _OPENACC 
                if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
                   write(iulog, *) 'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)',&
                        nstep,c,errch4
@@ -1861,6 +1864,7 @@ contains
                   write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                   call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
+#endif 
             end if
 
          end do
@@ -1874,6 +1878,7 @@ contains
                   ! Check balance
                   errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
                        - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
+#ifndef _OPENACC
                   if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
                      write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)',&
                            nstep,c,errch4
@@ -1882,6 +1887,7 @@ contains
                      call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
                           errMsg(__FILE__, __LINE__))
                   end if
+#endif 
                end if
 
             end do
@@ -2090,8 +2096,10 @@ contains
                      end if ! anoxia
                   end if
                else
+#ifndef _OPENACC 
                   call endrun(msg=' ERROR: No source for decomp rate in CH4Prod.'//&
                        ' CH4 model currently requires CN.'//errMsg(__FILE__, __LINE__))
+#endif 
                end if ! use_cn
 
                ! For sensitivity studies
@@ -3061,6 +3069,7 @@ contains
                  ch4_aere_depth(c,j) - ch4_ebul_depth(c,j) ! [mol/m3-total/s]
             ! aerenchyma added to surface flux below
             ! ebul added to soil depth just above WT
+#ifndef _OPENACC
             if (source(c,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:',&
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
@@ -3076,8 +3085,9 @@ contains
                call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
                     errMsg(__FILE__, __LINE__))
             end if
-
+#endif
             source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
+#ifndef _OPENACC
             if (source(c,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:',&
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
@@ -3092,7 +3102,7 @@ contains
                write(iulog,*)  'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
-
+#endif 
             conc_ch4_bef(c,j) = conc_ch4(c,j) !For Balance Check
          enddo ! fc
       enddo ! j
@@ -3426,6 +3436,7 @@ contains
 
                   if (conc_ch4_rel(c,j) < 0._r8) then
                      deficit = - conc_ch4_rel(c,j)*epsilon_t(c,j,1)*dz(c,j)  ! Mol/m^2 added
+#ifndef _OPENACC 
                      if (deficit > 1.e-3_r8 * scale_factor_gasdiff) then
                         if (deficit > 1.e-2_r8) then
                            write(iulog,*)  'Note: sink > source in ch4_tran, sources are changing '// &
@@ -3436,6 +3447,7 @@ contains
                            write(iulog,*) 'If this occurs frequently, consider reducing land model (or  methane model) timestep, or reducing the max. sink per timestep in the methane model.'
                         end if
                      end if
+#endif 
                      conc_ch4_rel(c,j) = 0._r8
                      ! Subtract deficit
                      ch4_surf_diff(c) = ch4_surf_diff(c) - deficit/dtime_ch4
@@ -3546,9 +3558,11 @@ contains
          if (abs(errch4(c)) < 1.e-8_r8) then
             ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
+#ifndef _OPENACC
             write(iulog,*) 'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)'
             g = col_pp%gridcell(c)
             write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+#endif 
          end if
       end do
 

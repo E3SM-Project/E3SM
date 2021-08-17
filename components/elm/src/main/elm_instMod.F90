@@ -134,6 +134,28 @@ module elm_instMod
   public :: elm_inst_biogeophys
   public :: alm_fates
 
+  !$acc declare create(ch4_vars)
+  !$acc declare create(crop_vars)
+  !$acc declare create(cnstate_vars)
+  !$acc declare create(dust_vars)
+  !$acc declare create(drydepvel_vars)
+  !$acc declare create(aerosol_vars)
+  !$acc declare create(canopystate_vars)
+  !$acc declare create(energyflux_vars)
+  !$acc declare create(frictionvel_vars)
+  !$acc declare create(lakestate_vars)
+  !$acc declare create(photosyns_vars)
+  !$acc declare create(sedflux_vars)
+  !$acc declare create(soilstate_vars)
+  !$acc declare create(soilhydrology_vars)
+  !$acc declare create(solarabs_vars)
+  !$acc declare create(surfalb_vars)
+  !$acc declare create(surfrad_vars)
+  !$acc declare create(atm2lnd_vars)
+  !$acc declare create(glc2lnd_vars)
+  !$acc declare create(lnd2atm_vars)
+  !$acc declare create(lnd2glc_vars)
+
 contains
 
 

@@ -1374,11 +1374,13 @@ contains
 #ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,2) = (rds(c,2)*(swliq(c,2)+swice(c,2)) + rds(c,1)*(zwliq+zwice))/(swliq(c,2)+swice(c,2)+zwliq+zwice)
+#ifndef _OPENACC
                 if ((rds(c,2) < 30.) .or. (rds(c,2) > 1500.)) then
                    write (iulog,*) "2. SNICAR ERROR: snow grain radius of",rds(c,2),rds(c,1)
                    write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,2), swice(c,2),zwliq, zwice
                    write (iulog,*) "layers ", msno
                 endif
+#endif
               !mgf--
 #else
               rds(c,2) = rds(c,1) ! (combo)
@@ -1608,11 +1610,13 @@ contains
 #ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,4) = (rds(c,4)*(swliq(c,4)+swice(c,4)) + rds(c,3)*(zwliq+zwice))/(swliq(c,4)+swice(c,4)+zwliq+zwice)
+#ifndef _OPENACC
                 if ((rds(c,4) < 30.) .or. (rds(c,4) > 1500.)) then
                    write (iulog,*) "4. SNICAR ERROR: snow grain radius of",rds(c,4),rds(c,3)
                    write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,4), swice(c,4),zwliq, zwice
                    write (iulog,*) "layers ", msno
                 endif
+#endif 
               !mgf--
 #else
               rds(c,4) = rds(c,3) ! (combo)
@@ -1724,11 +1728,13 @@ contains
 #ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,5) = (rds(c,5)*(swliq(c,5)+swice(c,5)) + rds(c,4)*(zwliq+zwice))/(swliq(c,5)+swice(c,5)+zwliq+zwice)
+#ifndef _OPENACC
                 if ((rds(c,5) < 30.) .or. (rds(c,5) > 1500.)) then
                    write (iulog,*) "5. SNICAR ERROR: snow grain radius of",rds(c,5),rds(c,4)
                    write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,5), swice(c,5),zwliq, zwice
                    write (iulog,*) "layers ", msno
                 endif
+#endif 
               !mgf--
 #else
               rds(c,5) = rds(c,4) ! (combo)
@@ -1780,7 +1786,7 @@ contains
                    snwicetot(c) = snwicetot(c) - h2osoi_ice(c,j)
                    snwliqtot(c) = snwliqtot(c) - h2osoi_liq(c,j)
                 end if
-
+#ifndef _OPENACC
                 if (j == 0) then
                    if ( abs(dztot(c)) > 1.e-10_r8 .or. abs(snwicetot(c)) > 1.e-7_r8 .or. &
                         abs(snwliqtot(c)) > 1.e-7_r8 ) then
@@ -1789,6 +1795,7 @@ contains
                       call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                    end if
                 end if
+#endif 
              end do
           end do
        end if
@@ -1814,7 +1821,7 @@ contains
      ! !DESCRIPTION:
      ! Subdivides up to 16 snow layers if they exceed their prescribed maximum thickness.
      ! This alternate subroutine is needed if "use_extrasnowlayers" is true.
-     !
+     !$acc routine seq 
      ! !USES:
      use elm_varcon,  only : tfrz 
      use LakeCon   ,  only : lsadz
@@ -2106,16 +2113,16 @@ contains
                    snwliqtot(c) = snwliqtot(c) - h2osoi_liq(c,j)
                 end if
 
+#ifndef _OPENACC
                 if (j == 0) then
                    if ( abs(dztot(c)) > 1.e-10_r8 .or. abs(snwicetot(c)) > 1.e-7_r8 .or. &
                         abs(snwliqtot(c)) > 1.e-7_r8 ) then
-#ifndef _OPENACC
                       write(iulog,*)'Inconsistency in SnowDivision_Lake! c, remainders', &
                            'dztot, snwicetot, snwliqtot = ',c,dztot(c),snwicetot(c),snwliqtot(c)
                       call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
-#endif
                    end if
                 end if
+#endif
              end do
           end do
        end if
@@ -2248,7 +2255,7 @@ contains
      ! Density and temperature of the layer are conserved (density needs some work, temperature is a state
      ! variable)
      !
-     !
+     !$acc routine seq 
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
      integer                , intent(in)    :: num_nolakec       ! number of column points that need to be initialized
@@ -2324,12 +2331,14 @@ contains
              dz(c,0) = h2osoi_ice(c,0) / rho 
            end if
 
+#ifndef _OPENACC 
            ! Check that water capacity is still positive
            if (h2osoi_ice(c,0) < 0._r8 .or. h2osoi_liq(c,0) < 0._r8 ) then
               write(iulog,*)'ERROR: capping procedure failed (negative mass remaining) c = ',c
               write(iulog,*)'h2osoi_ice = ', h2osoi_ice(c,0), ' h2osoi_liq = ', h2osoi_liq(c,0)
               call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
            end if
+#endif 
 
            ! Correct the top layer aerosol mass to account for snow capping.
            ! This approach conserves the aerosol mass concentration but not aerosol mass. 
@@ -2432,7 +2441,7 @@ contains
      ! mobile should be initialized to .true. and zpseudo should be initialized to 0.
      !
      ! !USES:
-     !
+     !$acc routine seq 
      ! !ARGUMENTS:
      real(r8) , intent(in)    :: bi              ! partial density of ice [kg/m3]
      real(r8) , intent(in)    :: forc_wind       ! atmospheric wind speed [m/s]
@@ -2538,6 +2547,7 @@ contains
    !-----------------------------------------------------------------------
    
    function MassWeightedSnowRadius( rds1, rds2, swtot, zwtot ) result(mass_weighted_snowradius)
+     !$acc routine seq 
      ! (from CLMv5)
      ! !DESCRIPTION:
      ! Calculate the mass weighted snow radius when two layers are combined

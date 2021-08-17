@@ -312,10 +312,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given landunit is active
-    !
+    !$acc routine seq 
     ! !USES:
     use landunit_varcon, only : istsoil, istice, istice_mec
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -354,7 +354,7 @@ contains
        ! rather than icemask is a (typically small) performance cost.
        ! PET: 4/25/2018: By keeping the glcmask reference at the gridcell level, this forces
        ! is_active_l = .true. for istice_mec landunits on all topounits for the gridcell.
-       if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true.
+       if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) is_active_l = .true.
 
        ! In general, include a virtual natural vegetation landunit. This aids
        ! initialization of a new landunit; and for runs that are coupled to CISM, this
@@ -386,10 +386,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given landunit is active
-    !$acc routine seq
+   !! !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istsoil, istice, istice_mec
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -408,7 +408,7 @@ contains
         lun_pp_active(l) = .false.
 
         if (lun_pp%wttopounit(l) > 0) lun_pp_active(l) = .true.
-        if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) lun_pp_active(l) = .true.
+        if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) lun_pp_active(l) = .true.
 
         if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(lun_pp%topounit(l), istice)) then
             lun_pp_active(l) = .true.
@@ -423,10 +423,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given column is active
-    !
+    !$acc routine seq 
     ! !USES:
     use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -461,7 +461,7 @@ contains
        !
        ! Note that we use glcmask rather than icemask here; see comment in is_active_l
        ! for the rationale.
-       if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_c = .true.
+       if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) is_active_c = .true.
 
        ! We don't really need to run over 0-weight urban columns. But because of some
        ! messiness in the urban code (many loops are over the landunit filter, then drill
@@ -481,10 +481,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given column is active
-    !$acc routine seq
+    !! !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -507,7 +507,7 @@ contains
         if (lun_pp%active(l) .and. col_pp%wtlunit(c) > 0._r8) col_pp_active(c) = .true.
         !
         !
-        if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) col_pp_active(c) = .true.
+        if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) col_pp_active(c) = .true.
         if (lun_pp%active(l) .and. (lun_pp%itype(l) >= isturb_MIN .and. lun_pp%itype(l) <= isturb_MAX)) then
             col_pp_active(c) = .true.
         end if
@@ -527,7 +527,7 @@ contains
     ! Determine whether the given pft is active
     !
     ! !USES:
-    !
+    !$acc routine seq 
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: p   ! pft index

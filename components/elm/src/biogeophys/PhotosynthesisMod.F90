@@ -888,25 +888,24 @@ contains
                end if
 
                ! Make sure iterative solution is correct
-
+#ifndef _OPENACC
                if (gs_mol(p,iv) < 0._r8) then
                   write(iulog,*) 'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
                   call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
-                  stop
                end if
-
+#endif 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
 
                hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(p))
                rh_leaf(p) = hs
                gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(t) + bbb(p)
-
+#ifndef _OPENACC 
                if (abs(gs_mol(p,iv)-gs_mol_err) > 1.e-01_r8) then
                   write(iulog,*) 'Ball-Berry error check - stomatal conductance error:'
                   write (iulog,*) gs_mol(p,iv), gs_mol_err
                end if
-
+#endif
             end if    ! night or day if branch
          end do       ! canopy layer loop
       end do          ! patch loop
@@ -1283,10 +1282,12 @@ contains
     b=x2
     fa=f1
     fb=f2
+#ifndef _OPENACC 
     if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
        write(iulog,*) 'root must be bracketed for brent'
        call endrun(msg=errmsg(__FILE__, __LINE__))
     endif
+#endif 
     c=b
     fc=fb
     iter = 0
@@ -2523,12 +2524,13 @@ contains
                end if
 
                ! Make sure iterative solution is correct
-
+#ifndef _OPENACC
                if (gs_mol_sun(p,iv) < 0._r8 .or. gs_mol_sha(p,iv) < 0._r8) then
                   write (iulog,*)'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
                   call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
+#endif 
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
 
@@ -2537,20 +2539,23 @@ contains
                !KO  Follow CLM photosynthesis to limit bbb
                gs_mol_err = mbb(p)*max(an_sun(p,iv), 0._r8)*hs/cs_sun*forc_pbot(t) + max( bsun(p)*bbb(p), 1._r8 )
 
+#ifndef _OPENACC
                if (abs(gs_mol_sun(p,iv)-gs_mol_err) > 1.e-01_r8) then
                   write (iulog,*) 'Ball-Berry error check - sunlit stomatal conductance error:'
                   write (iulog,*) gs_mol_sun(p,iv), gs_mol_err
                end if
-
+#endif
                hs = (gb_mol(p)*ceair + gs_mol_sha(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol_sha(p,iv))*esat_tv(p))
                rh_leaf_sha(p) = hs
                !KO  Follow CLM photosynthesis to limit bbb
                gs_mol_err = mbb(p)*max(an_sha(p,iv), 0._r8)*hs/cs_sha*forc_pbot(t) + max( bsha(p)*bbb(p), 1._r8)
 
+#ifndef _OPENACC
                if (abs(gs_mol_sha(p,iv)-gs_mol_err) > 1.e-01_r8) then
                   write (iulog,*) 'Ball-Berry error check - shaded stomatal conductance error:'
                   write (iulog,*) gs_mol_sha(p,iv), gs_mol_err
                end if
+#endif
 
             end if    ! night or day if branch
          end do       ! canopy layer loop
@@ -2945,12 +2950,14 @@ contains
     fa(:)=(/f1sun,f1sha/)
     fb(:)=(/f2sun,f2sha/)
 
+#ifndef _OPENACC  
     do phase=1, nphs
        if ( (fa(phase) > 0._r8 .and. fb(phase) > 0._r8) .or. (fa(phase) < 0._r8 .and. fb(phase) < 0._r8) ) then
           write(iulog,*) 'root must be bracketed for brent'
           call endrun(msg=errmsg(__FILE__, __LINE__))
        endif
     enddo
+#endif 
 
     c=b
     fc=fb
@@ -3026,7 +3033,9 @@ contains
 
        if( (fb(sun) == 0._r8) .and. (fb(sha) == 0._r8) ) exit
     enddo
+#ifndef _OPENACC 
     if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
+#endif 
     xsun=b(sun)
     xsha=b(sha)
 

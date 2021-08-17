@@ -68,7 +68,6 @@ module PhenologyMod
   type(PnenolParamsType), public ::  PhenolParamsInst
   !$acc declare create(PhenolParamsInst)
 
-  !real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
   real(r8) :: crit_onset_fdd                ! critical number of freezing days
   real(r8) :: crit_onset_swi                ! water stress days for offset trigger
@@ -78,12 +77,6 @@ module PhenologyMod
   real(r8) :: soilpsi_off                   ! water potential for offset trigger (MPa)
   real(r8) :: lwtop                         ! live wood turnover proportion (annual fraction)
   !$acc declare create(fracday         )
-  !$acc declare create(crit_dayl       )
-  !$acc declare create(crit_dayl_stress)
-  !$acc declare create(cumprec_onset   )
-  !$acc declare create(ndays_on        )
-  !$acc declare create(ndays_off       )
-  !$acc declare create(fstor2tran      )
   !$acc declare create(crit_onset_fdd  )
   !$acc declare create(crit_onset_swi  )
   !$acc declare create(soilpsi_on      )
@@ -234,7 +227,7 @@ contains
     PhenolParamsInst%lwtop=tempr   
 
      !!!!========== Update to device ========= !!!
-     !$acc update device(PhenolParamsInst%crit_dayl, &
+     !$acc enter data copyin(PhenolParamsInst%crit_dayl, &
      !$acc PhenolParamsInst%crit_dayl_stress, &
      !$acc PhenolParamsInst%cumprec_onset   , &
      !$acc PhenolParamsInst%ndays_on        , &
@@ -382,12 +375,6 @@ contains
 
     !$acc update device(&
     !$acc   fracday         &
-    !$acc  , crit_dayl       &
-    !$acc  , crit_dayl_stress&
-    !$acc  , cumprec_onset   &
-    !$acc  , ndays_on        &
-    !$acc  , ndays_off       &
-    !$acc  , fstor2tran      &
     !$acc  , crit_onset_fdd  &
     !$acc  , crit_onset_swi  &
     !$acc  , soilpsi_on      &
@@ -2108,11 +2095,15 @@ contains
          tkil = (tbase - 6._r8) - 6._r8 * hdidx(p)
          if (tkil >= tcrown) then
             if ((0.95_r8 - 0.02_r8 * (tcrown - tkil)**2) >= 0.02_r8) then
+#ifndef _OPENACC 
                write (iulog,*)  'crop damaged by cold temperatures at p,c =', p,c
+#endif 
             else if (tlai(p) > 0._r8) then ! slevis: kill if past phase1
                gddmaturity(p) = 0._r8      !         by forcing through
                huigrain(p)    = 0._r8      !         harvest
+#ifndef _OPENACC 
                write (iulog,*)  '95% of crop killed by cold temperatures at p,c =', p,c
+#endif 
             end if
          end if
       end if

@@ -162,7 +162,7 @@ contains
     ! into its history buffer for appropriate tapes.
     !
     use histFileMod, only : ntapes
-    use decompMod, only : get_proc_bounds,get_clump_bounds, bounds_type
+    use decompMod, only : get_proc_bounds,get_clump_bounds_gpu, bounds_type
     ! !ARGUMENTS:
     integer , intent(in) :: step
     integer , intent(in) :: inc
@@ -183,7 +183,7 @@ contains
     do nc = 1, nclumps
       do f = 1, total_flds
         !call get_proc_bounds(bounds)
-        call get_clump_bounds(nc, bounds)
+        call get_clump_bounds_gpu(nc, bounds)
 
         numdims = tape_gpu(f)%numdims
         if ( numdims == 1) then

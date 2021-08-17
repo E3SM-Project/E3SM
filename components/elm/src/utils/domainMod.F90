@@ -55,13 +55,29 @@ module domainMod
   end type domain_type
 
   type(domain_type)    , public :: ldomain
-  !$acc declare create(ldomain)
   real(r8), allocatable, public :: lon1d(:), lat1d(:) ! 1d lat/lons for 2d grids
-!
+
+  type, public :: domain_params_type
+     !! This is a type that holds only physically relevant fields of ldomain
+     !! Needed to workaround gpu compiler issues.  Alternative may be to pass ldomain
+     !! as arguments instead of by USE.
+     real(r8), pointer :: f_grd(:)
+     real(r8), pointer :: f_surf(:)
+     real(r8), pointer :: firrig(:)
+     !real(r8), pointer :: area(:)  !Only in CNPBudgetMod?
+     !real(r8), pointer :: frac(:)
+     integer, pointer :: glcmask(:)
+
+  end type domain_params_type
+
+  type(domain_params_type), public :: ldomain_gpu
+  !$acc declare create(ldomain_gpu)
+
 ! !PUBLIC MEMBER FUNCTIONS:
   public domain_init          ! allocates/nans domain types
   public domain_clean         ! deallocates domain types
   public domain_check         ! write out domain info
+  public :: domain_transfer
 !
 ! !REVISION HISTORY:
 ! Originally elm_varsur by Mariana Vertenstein
@@ -165,7 +181,7 @@ contains
     domain%xCell    = nan
     domain%yCell    = nan
     domain%area     = nan
-    domain%firrig   = 0.7_r8    
+    domain%firrig   = 0.7_r8
     domain%f_surf   = 1.0_r8
     domain%f_grd    = 0.0_r8
 
@@ -177,7 +193,7 @@ contains
     endif
 
     domain%pftm     = -9999
-    domain%glcmask  = 0  
+    domain%glcmask  = 0
 
 end subroutine domain_init
 !------------------------------------------------------------------------------
@@ -299,6 +315,27 @@ end subroutine domain_clean
   endif
 
 end subroutine domain_check
+
+subroutine domain_transfer()
+
+   implicit none
+   integer :: nend
+
+   nend = ubound(ldomain%f_grd,1)
+
+   allocate(ldomain_gpu%f_grd  (1:nend) )
+   allocate(ldomain_gpu%f_surf (1:nend) )
+   allocate(ldomain_gpu%firrig (1:nend) )
+   allocate(ldomain_gpu%glcmask(1:nend) )
+   ldomain_gpu%f_grd(:)  = ldomain%f_grd(:)
+   ldomain_gpu%f_surf(:)  = ldomain%f_surf(:)
+   ldomain_gpu%firrig(:)  = ldomain%firrig(:)
+   ldomain_gpu%glcmask(:) = ldomain%glcmask(:)
+
+   ! area(:)  !Only in CNPBudgetMod?
+   ! frac(:)
+
+end subroutine domain_transfer
 
 !------------------------------------------------------------------------------
 

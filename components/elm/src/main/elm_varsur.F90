@@ -41,5 +41,6 @@ module elm_varsur
   ! subgrid glacier_mec sfc elevation
   real(r8), pointer :: topo_glc_mec(:,:) 
   !-----------------------------------------------------------------------
-
+    
+  !$acc declare create(wt_lunit) 
 end module elm_varsur

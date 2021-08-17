@@ -25,7 +25,7 @@ module CarbonStateUpdate1Mod
   use VegetationType          , only : veg_pp
   use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux
   use VegetationPropertiesType, only : veg_vp
-
+  #define is_active_betr_bgc .false. 
   !
   implicit none
   save
@@ -177,7 +177,6 @@ contains
     ! variables (except for gap-phase mortality and fire fluxes)
     !
       !$acc routine seq
-    use tracer_varcon       , only : is_active_betr_bgc
     use decompMod           , only : bounds_type
     ! !ARGUMENTS:
     type(bounds_type)            , intent(in)    :: bounds

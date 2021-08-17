@@ -45,7 +45,7 @@ contains
     !
     ! Downscaling is done over columns defined by filter_do_smb_c. But we also do direct copies
     ! of gridcell-level forcings into column-level forcings over all other active columns.
-    !$ac routine seq 
+    !$acc routine seq 
     ! !USES:
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold
@@ -71,7 +71,7 @@ contains
     real(r8) :: egcm_c, rhos_c
     real(r8) :: dum1,   dum2
 
-    character(len=*), parameter :: subname = 'downscale_forcings'
+    !character(len=*), parameter :: subname = 'downscale_forcings'
     !-----------------------------------------------------------------------
 
     associate(&

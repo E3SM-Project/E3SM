@@ -16,7 +16,7 @@ module PrecisionControlMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType  , only : veg_ns, veg_ps
-
+  #define is_active_betr_bgc .false.
   !
   implicit none
   save
@@ -40,7 +40,6 @@ contains
     use elm_varctl , only : iulog, use_c13, use_c14, use_fates
     use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
-    use tracer_varcon          , only : is_active_betr_bgc
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:

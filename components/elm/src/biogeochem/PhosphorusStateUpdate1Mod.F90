@@ -14,7 +14,6 @@ module PhosphorusStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use VegetationType              , only : veg_pp
-  use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com
@@ -28,7 +27,7 @@ module PhosphorusStateUpdate1Mod
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
-
+  #define is_active_betr_bgc .false.
   !
   implicit none
   save

@@ -41,6 +41,14 @@ module VegetationDataType
   implicit none
   save
   public
+
+  public :: veg_cf_summary_for_ch4
+  public :: veg_cf_summary, veg_cs_summary
+  public :: veg_nf_summary, veg_ns_summary
+  public :: veg_pf_summary, veg_ps_summary
+  public :: veg_cf_setvalues, veg_pf_setvalues, veg_nf_setvalues
+  public :: veg_cf_summary_rr
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information at the vegetation level.
   !-----------------------------------------------------------------------
@@ -154,7 +162,7 @@ module VegetationDataType
   contains
     procedure, public :: Init     => veg_cs_init
     procedure, public :: Restart  => veg_cs_restart
-    procedure, public :: Summary  => veg_cs_summary
+    !procedure, public :: Summary  => veg_cs_summary
     procedure, public :: ZeroDwt  => veg_cs_zerodwt
     procedure, public :: Clean    => veg_cs_clean
   end type vegetation_carbon_state
@@ -239,7 +247,7 @@ module VegetationDataType
   contains
     procedure, public :: Init      => veg_ns_init
     procedure, public :: Restart   => veg_ns_restart
-    procedure, public :: Summary   => veg_ns_summary
+    !procedure, public :: Summary   => veg_ns_summary
     procedure, public :: SetValues => veg_ns_setvalues
     procedure, public :: ZeroDwt   => veg_ns_zerodwt
     procedure, public :: Clean     => veg_ns_clean
@@ -287,7 +295,7 @@ module VegetationDataType
     procedure, public :: Restart   => veg_ps_restart
     procedure, public :: SetValues => veg_ps_setvalues
     procedure, public :: ZeroDWT   => veg_ps_zerodwt
-    procedure, public :: Summary   => veg_ps_summary
+    !procedure, public :: Summary   => veg_ps_summary
     procedure, public :: Clean     => veg_ps_clean
   end type vegetation_phosphorus_state
 
@@ -655,10 +663,10 @@ module VegetationDataType
   contains
     procedure, public :: Init       => veg_cf_init
     procedure, public :: Restart    => veg_cf_restart
-    procedure, public :: Summary    => veg_cf_summary
-    procedure, public :: SummaryRR  => veg_cf_summary_rr      ! Root respiration summary
-    procedure, public :: SummaryCH4 => veg_cf_summary_for_ch4 ! Summary for CH4 model
-    procedure, public :: SetValues  => veg_cf_setvalues
+    !procedure, public :: Summary    => veg_cf_summary
+    !procedure, public :: SummaryRR  => veg_cf_summary_rr      ! Root respiration summary
+    !procedure, public :: SummaryCH4 => veg_cf_summary_for_ch4 ! Summary for CH4 model
+    !procedure, public :: SetValues  => veg_cf_setvalues
     procedure, public :: Clean      => veg_cf_clean
   end type vegetation_carbon_flux
 
@@ -840,8 +848,8 @@ module VegetationDataType
   contains
     procedure, public :: Init      => veg_nf_init
     procedure, public :: Restart   => veg_nf_restart
-    procedure, public :: SetValues => veg_nf_setvalues
-    procedure, public :: Summary   => veg_nf_summary
+    !procedure, public :: SetValues => veg_nf_setvalues
+    !procedure, public :: Summary   => veg_nf_summary
     procedure, public :: Clean     => veg_nf_clean
   end type vegetation_nitrogen_flux
 
@@ -1005,8 +1013,8 @@ module VegetationDataType
   contains
     procedure, public :: Init      => veg_pf_init
     procedure, public :: Restart   => veg_pf_restart
-    procedure, public :: SetValues => veg_pf_setvalues
-    procedure, public :: Summary   => veg_pf_summary
+    !procedure, public :: SetValues => veg_pf_setvalues
+    !procedure, public :: Summary   => veg_pf_summary
     procedure, public :: Clean     => veg_pf_clean
   end type vegetation_phosphorus_flux
 
@@ -3507,9 +3515,9 @@ module VegetationDataType
     !
     ! !DESCRIPTION:
     ! Vegetation-level carbon state summary calculations
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(vegetation_carbon_state)                :: this
+    type(vegetation_carbon_state)                :: this
     type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -4184,9 +4192,9 @@ module VegetationDataType
     ! !DESCRIPTION:
     ! Vegetation-level nitrogen state summary calculations
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(vegetation_nitrogen_state)            :: this
+    type(vegetation_nitrogen_state)            :: this
     type(bounds_type)           , intent(in)    :: bounds
     integer                     , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -4854,7 +4862,7 @@ module VegetationDataType
     !
     ! !DESCRIPTION:
     ! Set phosphorus state variables, column-level
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
     class (vegetation_phosphorus_state) :: this
     integer , intent(in)                :: num_patch
@@ -4933,9 +4941,9 @@ module VegetationDataType
   !-----------------------------------------------------------------------
   subroutine veg_ps_summary (this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class (vegetation_phosphorus_state) :: this
+    type (vegetation_phosphorus_state) :: this
     type(bounds_type) , intent(in)      :: bounds
     integer           , intent(in)      :: num_soilc       ! number of soil columns in filter
     integer           , intent(in)      :: filter_soilc(:) ! filter for soil columns
@@ -7939,7 +7947,7 @@ module VegetationDataType
        end if
     end do
 
-    call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
+    call veg_cf_SetValues (this, num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
 
   end subroutine veg_cf_init
 
@@ -8090,15 +8098,15 @@ module VegetationDataType
     !
     ! !USES:
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(vegetation_carbon_flux)                 :: this
+    type(vegetation_carbon_flux)                 :: this
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    character(len=*)       , intent(in)    :: isotope
+    character(len=4)       , intent(in)    :: isotope
     type(column_carbon_flux), intent(inout):: col_cf_input    ! receives p2c output
     !
     ! !LOCAL VARIABLES:
@@ -8470,9 +8478,9 @@ module VegetationDataType
     !
     ! !USES:
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(vegetation_carbon_flux) :: this
+    type(vegetation_carbon_flux) :: this
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_soilp
     integer, intent(in) :: filter_soilp(:)
@@ -8512,14 +8520,14 @@ module VegetationDataType
   !------------------------------------------------------------
   subroutine veg_cf_summary_for_ch4( this, bounds, num_soilp, filter_soilp)
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !DESCRIPTION:
     ! summarize vegetation-level fluxes for methane calculation
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(vegetation_carbon_flux) :: this
+    type(vegetation_carbon_flux) :: this
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_soilp
     integer, intent(in) :: filter_soilp(:)
@@ -8578,9 +8586,9 @@ module VegetationDataType
     !
     ! !DESCRIPTION:
     ! Set vegetation-level carbon fluxes
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class (vegetation_carbon_flux) :: this
+    type (vegetation_carbon_flux) :: this
     integer , intent(in) :: num_patch
     integer , intent(in) :: filter_patch(:)
     real(r8), intent(in) :: value_patch
@@ -9527,7 +9535,7 @@ module VegetationDataType
        end if
     end do
 
-    call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
+    call veg_nf_SetValues (this, num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
 
   end subroutine veg_nf_init
 
@@ -9610,9 +9618,9 @@ module VegetationDataType
     !
     ! !DESCRIPTION:
     ! Set vegetation-level nitrogen fluxes
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class (vegetation_nitrogen_flux) :: this
+    type (vegetation_nitrogen_flux) :: this
     integer , intent(in)             :: num_patch
     integer , intent(in)             :: filter_patch(:)
     real(r8), intent(in)             :: value_patch
@@ -9781,9 +9789,9 @@ module VegetationDataType
     ! !DESCRIPTION:
     ! Vegetation-level nitrogen flux summary calculations
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(vegetation_nitrogen_flux)             :: this
+    type(vegetation_nitrogen_flux)             :: this
     type(bounds_type)           , intent(in)    :: bounds
     integer                     , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -10641,7 +10649,7 @@ module VegetationDataType
        end if
     end do
 
-    call this%SetValues (num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
+    call veg_pf_SetValues (this, num_patch=num_special_patch, filter_patch=special_patch, value_patch=0._r8)
 
   end subroutine veg_pf_init
 
@@ -10739,9 +10747,9 @@ module VegetationDataType
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class (vegetation_phosphorus_flux) :: this
+    type (vegetation_phosphorus_flux) :: this
     integer , intent(in) :: num_patch
     integer , intent(in) :: filter_patch(:)
     real(r8), intent(in) :: value_patch
@@ -10904,9 +10912,9 @@ module VegetationDataType
   !-----------------------------------------------------------------------
   subroutine veg_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
     !
-    !$acc routine seq 
+    !$acc routine seq
     ! !ARGUMENTS:
-    class (vegetation_phosphorus_flux) :: this
+    type (vegetation_phosphorus_flux) :: this
     type(bounds_type) , intent(in)     :: bounds
     integer           , intent(in)     :: num_soilc       ! number of soil columns in filter
     integer           , intent(in)     :: filter_soilc(:) ! filter for soil columns

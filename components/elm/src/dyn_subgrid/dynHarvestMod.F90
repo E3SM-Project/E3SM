@@ -26,7 +26,7 @@ module dynHarvestMod
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
   use VegetationDataType    , only : veg_ps, veg_pf  
-
+  use timeinfoMod 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -56,7 +56,8 @@ module dynHarvestMod
   real(r8) , allocatable   :: harvest(:) ! harvest rates
   logical                  :: do_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
-
+  !$acc declare create(harvest(:))
+  !$acc declare create(do_harvest) 
 contains
 
   !-----------------------------------------------------------------------
@@ -175,9 +176,9 @@ contains
     ! Harvest mortality routine for coupled carbon-nitrogen code (CN)
     !
     ! !USES:
+    !$acc routine seq 
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
     use elm_varcon      , only : secspday
-    use clm_time_manager, only : get_days_per_year
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -335,7 +336,7 @@ contains
    )
 
 
-   days_per_year = get_days_per_year()
+   days_per_year = dayspyr_mod !get_days_per_year()
 
    ! patch loop
    do fp = 1,num_soilp
@@ -467,7 +468,7 @@ contains
    ! !DESCRIPTION:
    ! called at the end of CNHarvest to gather all pft-level harvest litterfall fluxes
    ! to the column level and assign them to the three litter pools
-   !
+   !$acc routine seq 
    ! !USES:
    use elm_varpar , only : maxpatch_pft, nlevdecomp
    !

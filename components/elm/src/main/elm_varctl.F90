@@ -238,7 +238,7 @@ module elm_varctl
   !  BeTR switches
   !----------------------------------------------------------
   logical, public :: use_betr = .false.          ! true=> use BeTR
-  !$acc declare create(use_betr)
+  !$acc declare copyin(use_betr)
 
   !----------------------------------------------------------
   ! lai streams switch for Sat. Phenology
@@ -458,19 +458,17 @@ module elm_varctl
    character(len=fname_len), public :: co2_file       = ' '    ! co2 file for CPL_BYPASS mode
    character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
 
-  !$acc declare create(use_fates)
+  !$acc declare copyin(use_fates)
 
   !$acc declare copyin(use_c13, use_cn, use_lch4, glcmec_downscale_rain_snow_convert)
   !$acc declare copyin(use_c14)
   !$acc declare copyin(glcmec_downscale_longwave, subgridflag)
   !$acc declare copyin(use_nofire         )
   !$acc declare copyin(use_lch4           )
-  !$acc declare copyin(use_nitrif_denitrif)
   !$acc declare copyin(use_vertsoilc      )
   !$acc declare copyin(use_extralakelayers)
   !$acc declare copyin(use_vichydro       )
   !$acc declare copyin(use_century_decomp )
-  !$acc declare copyin(use_cn             )
   !$acc declare copyin(use_crop           )
   !$acc declare copyin(use_snicar_frc     )
   !$acc declare copyin(use_snicar_ad      )
@@ -478,13 +476,15 @@ module elm_varctl
   !$acc declare copyin(use_mexicocity     )
   !$acc declare copyin(use_noio           )
   !$acc declare copyin(use_var_soil_thick )
+  !$acc declare copyin(irrigate)
   !$acc declare copyin(tw_irr)
   !$acc declare copyin(use_vsfm                   )
   !$acc declare copyin(vsfm_use_dynamic_linesearch)
   !$acc declare copyin(vsfm_include_seepage_bc    )
   !$acc declare copyin(vsfm_satfunc_type          )
   !$acc declare copyin(vsfm_lateral_model_type    )
-
+  !$acc declare copyin(use_extrasnowlayers)
+  !$acc declare copyin(extra_gw_irr)
 
   !----------------------------------------------------------
   ! Budgets

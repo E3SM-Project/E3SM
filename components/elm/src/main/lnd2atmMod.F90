@@ -12,7 +12,6 @@ module lnd2atmMod
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates
-  use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g
@@ -31,7 +30,7 @@ module lnd2atmMod
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type
-
+  #define is_active_betr_bgc .false. 
   !
   ! !PUBLIC TYPES:
   implicit none
