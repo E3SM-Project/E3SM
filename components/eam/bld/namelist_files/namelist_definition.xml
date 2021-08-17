@@ -4056,6 +4056,18 @@ Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
 </entry>
 
+<entry id="MMF_orientation_angle" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Angle of CRM domain in degrees used to apply large scale wind forcing.
+Default value depends on whether CRM domain is 2D or 3D. For 2D runs a value 
+of 90deg used for a south-north orientation to reduce precipitation biases
+that tend to occur when the CRM aligns with the prevailing wind.
+A value of -1 enables an experimental randomly rotating CRM orientation.
+Defaults: 
+  2D CRM: 90 (i.e. north-south)
+  3D CRM: 0
+</entry>
+
 <entry id="MMF_VT_wn_max" type="real" category="conv"
        group="phys_ctl_nl" valid_values="">
 Wavenumber cutoff for filtered MMF variance transport. 
