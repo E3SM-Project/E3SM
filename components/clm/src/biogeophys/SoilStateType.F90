@@ -358,8 +358,8 @@ contains
     real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
     real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
-    real(r8) ,pointer  :: hai(:)                        ! read in - hksat_adj: saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
-    real(r8) ,pointer  :: hksat3d(:,:)                  ! read in - hksat obs: saturated hydraulic conductivity observed profile
+    !real(r8) ,pointer  :: hai(:)                        ! read in - hksat_adj: saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
+    !real(r8) ,pointer  :: hksat3d(:,:)                  ! read in - hksat obs: saturated hydraulic conductivity observed profile
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: grvl3d (:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
@@ -504,37 +504,37 @@ contains
     end do
     deallocate(gti)
 
-    ! Read hksat_adj
-
-    allocate(hai(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       this%hksat_adj_col(c) = hai(g)
-    end do
-    deallocate(hai)
-
-    ! Read hksat data
-
-    allocate(hksat3d(bounds%begg:bounds%endg,nlevsoifl))
-    call ncd_io(ncid=ncid, varname='HKSAT', flag='read', data=hksat3d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: HKSAT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
-    do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       do lev = 1,nlevgrnd
-	 if (lev <= nlevsoi) then
-	   this%hksat_obs_col(c,lev) = hksat3d(g, lev)
-         else
-           this%hksat_obs_col(c,lev) = hksat3d(g, nlevsoifl)
-         end if
-       end do
-    end do
-    deallocate(hksat3d)
+!    ! Read hksat_adj
+!
+!    allocate(hai(bounds%begg:bounds%endg))
+!    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
+!    do c = bounds%begc, bounds%endc
+!       g = col_pp%gridcell(c)
+!       this%hksat_adj_col(c) = hai(g)
+!    end do
+!    deallocate(hai)
+!
+!    ! Read hksat data
+!
+!    allocate(hksat3d(bounds%begg:bounds%endg,nlevsoifl))
+!    call ncd_io(ncid=ncid, varname='HKSAT', flag='read', data=hksat3d, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: HKSAT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
+!    do c = bounds%begc, bounds%endc
+!       g = col_pp%gridcell(c)
+!       do lev = 1,nlevgrnd
+!	 if (lev <= nlevsoi) then
+!	   this%hksat_obs_col(c,lev) = hksat3d(g, lev)
+!         else
+!           this%hksat_obs_col(c,lev) = hksat3d(g, nlevsoifl)
+!         end if
+!       end do
+!    end do
+!    deallocate(hksat3d)
 
     ! Close file
 
