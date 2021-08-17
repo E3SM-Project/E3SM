@@ -1024,6 +1024,26 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
+    <model_grid alias="peruSCx4v1_peruSCx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_peruSCx4v1</grid>
+      <grid name="lnd">ne0np4_peruSCx4v1</grid>
+      <grid name="ocnice">ne0np4_peruSCx4v1</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="peruSCx4v1_ne30_peruSCx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_peruSCx4v1</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">ne0np4_peruSCx4v1</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="conusx4v1_r05_oECv3">
       <grid name="atm">ne0np4_conus_x4v1_lowcon</grid>
       <grid name="lnd">r05</grid>
@@ -2857,6 +2877,14 @@
       <desc>1-deg with 1/4-deg over Tropical West Pacific (version 1):</desc>
     </domain>
 
+    <domain name="ne0np4_peruSCx4v1">
+      <nx>75161</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/domain.lnd.perux4v1_oEC60to30v3.210528.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/domain.ocn.perux4v1_oEC60to30v3.210528.nc</file>
+      <desc>1-deg with 1/4-deg over Peruvian marine stratocumulus:</desc>
+    </domain>
+
     <domain name="ne0np4_conus_x4v1_lowcon">
       <nx>89147</nx>
       <ny>1</ny>
@@ -3531,6 +3559,20 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne0np4_peruSCx4v1" ocn_grid="oEC60to30v3">
+      <map name="ATM2OCN_FMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_perux4v1_to_oEC60to30v3_mono.20210528.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_perux4v1_to_oEC60to30v3_intbilin.20210528.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_perux4v1_to_oEC60to30v3_intbilin.20210528.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_oEC60to30v3_to_perux4v1_monotr.20210528.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_oEC60to30v3_to_perux4v1_monotr.20210528.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_peruSCx4v1" lnd_grid="ne30np4">
+      <map name="ATM2LND_FMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_perux4v1_to_ne30np4_mono.20210811.nc</map>
+      <map name="ATM2LND_SMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_perux4v1_to_ne30np4_mono.20210811.nc</map>
+      <map name="LND2ATM_FMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_ne30np4_to_perux4v1_monotr.20210811.nc</map>
+      <map name="LND2ATM_SMAPNAME">/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/map_ne30np4_to_perux4v1_monotr.20210811.nc</map>
+    </gridmap>
 
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/conusx4v1/map_conusx4v1_to_oEC60to30v3_mono.200514.nc</map>

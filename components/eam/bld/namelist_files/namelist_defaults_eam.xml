@@ -19,6 +19,7 @@
 <dtime dyn="se"    hgrid="ne240np4">600 </dtime>
 <dtime dyn="se"    hgrid="ne0np4_arm_x8v3_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"  >900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_peruSCx4v1"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_northamericax4v1"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_antarcticax4v1"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"  >600</dtime>
@@ -79,6 +80,7 @@
 
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
+<ncdata dyn="se" hgrid="ne0np4_peruSCx4v1"  nlev="72"                     >/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/ifs_oper_T1279_2016080100_mod_subset_perux4v1_topoadj_L72.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="72"                     >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
@@ -128,6 +130,7 @@
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_peruSCx4v1" >/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/peru_RRM_topo.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"        >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon" npg="2">atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_northamericax4v1"  >atm/cam/topo/USGS_northamericax4v1_12xdel2_consistentSGH_191023.nc</bnd_topo>
@@ -672,6 +675,7 @@
 <drydep_srf_file hgrid="ne1024np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne1024pg2_200212.nc</drydep_srf_file>
 
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_peruSCx4v1" >/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/atmsrf_perux4v1_101206.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" >atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" npg="2" >atm/cam/chem/trop_mam/atmsrf_conusx4v1pg2_20020609.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_northamericax4v1">atm/cam/chem/trop_mam/atmsrf_northamericax4v1np4_20191023.nc</drydep_srf_file>
@@ -1202,6 +1206,7 @@
 <!-- RRM grids  -->
 
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>
+<se_ne hgrid="ne0np4_peruSCx4v1" > 0 </se_ne>
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_northamericax4v1"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
@@ -1210,6 +1215,7 @@
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
 <mesh_file>/dev/null</mesh_file>
+<mesh_file hgrid="ne0np4_peruSCx4v1" >/global/cscratch1/sd/bogensch/E3SM_simulations/peru_files/perux4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_northamericax4v1"  >atm/cam/inic/homme/northamericax4v1.g</mesh_file>
@@ -1229,6 +1235,7 @@
 <nu_top dyn_target="theta-l" hgrid="ne1024np4"> 1e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 1e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_peruSCx4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 1e5 </nu_top>
@@ -1272,6 +1279,7 @@
 <se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_peruSCx4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 75 </se_tstep>
@@ -1338,6 +1346,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu dyn_target="preqx" hgrid="ne512np4">  2.0e11 </nu>
 <nu dyn_target="preqx" hgrid="ne1024np4"> 2.5e10 </nu>
 <nu dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
+<nu dyn_target="preqx" hgrid="ne0np4_peruSCx4v1"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 8.0e-8</nu>
 <nu dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 8.0e-8</nu>
@@ -1358,6 +1367,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu_div dyn_target="preqx" hgrid="ne512np4">  5.0e11 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne1024np4"> 6.25e10 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_peruSCx4v1"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 20.0e-8</nu_div>
@@ -1368,6 +1378,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <hypervis_scaling dyn_target="preqx" > 0 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
+<hypervis_scaling dyn_target="preqx" hgrid="ne0np4_peruSCx4v1"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 3.2 </hypervis_scaling>
@@ -1410,6 +1421,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <se_nsplit dyn_target="preqx" hgrid="ne512np4">  5 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne1024np4"> 10 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 5 </se_nsplit>
+<se_nsplit dyn_target="preqx" hgrid="ne0np4_peruSCx4v1"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_antarcticax4v1"  > 4 </se_nsplit>
@@ -1430,6 +1442,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_subcycle hgrid="ne512np4" dyn_target="preqx">  10 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne1024np4" dyn_target="preqx"> 20 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon" dyn_target="preqx" > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_peruSCx4v1" dyn_target="preqx" > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon" dyn_target="preqx" > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_northamericax4v1" dyn_target="preqx"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_antarcticax4v1" dyn_target="preqx"  > 7 </hypervis_subcycle>
