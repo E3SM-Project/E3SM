@@ -52,7 +52,9 @@ struct SPAFunctions
     SPATimeState() = default;
     // The current month
     Int current_month;
-    // Julian Date for the beginning of the month
+    // Julian Date for the beginning of the month, as defined in
+    //           /src/share/util/scream_time_stamp.hpp
+    // See this file for definition of Julian Date.
     Real t_beg_month;
     // Current simulation Julian Date
     Real t_now;
@@ -62,7 +64,7 @@ struct SPAFunctions
 
   struct SPAPressureState {
     SPAPressureState() = default;
-    // Number of vertical levels for the data
+    // Number of horizontal columns and vertical levels for the data
     Int ncols;
     Int nlevs;
     // Surface pressure for data at the beginning of the month
@@ -77,30 +79,31 @@ struct SPAFunctions
 
   struct SPAData {
     SPAData() = default;
-    // CCN3
+    // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
     view_2d<const Spack> CCN3;
-    // AER_G_SW - 14 bands
+    // AER_G_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<const Spack> AER_G_SW;
-    // AER_SSA_SW - 14 bands
+    // AER_SSA_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<const Spack> AER_SSA_SW;
-    // AER_TAU_LW - 16 bands
-    view_3d<const Spack> AER_TAU_LW;
-    // AER_TAU_SW - 14 bands
+    // AER_TAU_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<const Spack> AER_TAU_SW;
+    // AER_TAU_LW: unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
+    view_3d<const Spack> AER_TAU_LW;
   }; // SPAPrescribedAerosolData
 
   struct SPAOutput {
     SPAOutput() = default;
-    // CCN3
+    // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
     view_2d<Spack> CCN3;
     // AER_G_SW - 14 bands
+    // AER_G_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_G_SW;
-    // AER_SSA_SW - 14 bands
+    // AER_SSA_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_SSA_SW;
-    // AER_TAU_LW - 16 bands
-    view_3d<Spack> AER_TAU_LW;
-    // AER_TAU_SW - 14 bands
+    // AER_TAU_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_TAU_SW;
+    // AER_TAU_LW: unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
+    view_3d<Spack> AER_TAU_LW;
   }; // SPAPrescribedAerosolData
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
@@ -110,8 +113,8 @@ struct SPAFunctions
     const SPAData&   data_beg,
     const SPAData&   data_end,
     const SPAOutput& data_out,
-    Int ncols,
-    Int nlevs,
+    Int ncols_scream,
+    Int nlevs_scream,
     Int nswbands,
     Int nlwbands);
 }; // struct Functions

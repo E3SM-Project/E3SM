@@ -17,8 +17,8 @@ void SPAFunctions<S,D>
   const SPAData&   data_beg,
   const SPAData&   data_end,
   const SPAOutput& data_out,
-  Int ncols,
-  Int nlevs,
+  Int ncols_scream,
+  Int nlevs_scream,
   Int nswbands,
   Int nlwbands)
 {
@@ -28,27 +28,31 @@ void SPAFunctions<S,D>
   auto& t_len = time_state.days_this_month;
 
   // For now we require that the Data in and the Data out have the same number of columns.
-  EKAT_REQUIRE(ncols==pressure_state.ncols);
+  EKAT_REQUIRE(ncols_scream==pressure_state.ncols);
 
-  view_2d<Spack> p_src("p_mid_src",ncols,pressure_state.nlevs), 
-                 ccn3_src("ccn3_src",ncols,pressure_state.nlevs);
-  view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols,nswbands,pressure_state.nlevs),
-                 aer_ssa_sw_src("aer_ssa_sw_src",ncols,nswbands,pressure_state.nlevs),
-                 aer_tau_sw_src("aer_tau_sw_src",ncols,nswbands,pressure_state.nlevs),
-                 aer_tau_lw_src("aer_tau_lw_src",ncols,nlwbands,pressure_state.nlevs);
+  view_2d<Spack> p_src("p_mid_src",ncols_scream,pressure_state.nlevs), 
+                 ccn3_src("ccn3_src",ncols_scream,pressure_state.nlevs);
+  view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols_scream,nswbands,pressure_state.nlevs),
+                 aer_ssa_sw_src("aer_ssa_sw_src",ncols_scream,nswbands,pressure_state.nlevs),
+                 aer_tau_sw_src("aer_tau_sw_src",ncols_scream,nswbands,pressure_state.nlevs),
+                 aer_tau_lw_src("aer_tau_lw_src",ncols_scream,nlwbands,pressure_state.nlevs);
 
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nlevs);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nk_pack);
+  const Int nk_pack = ekat::npack<Spack>(nlevs_scream);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols_scream, nk_pack);
   // SPA Main loop
+  // Parallel loop order:
+  // 1. Loop over all horizontal columns (i index)
+  // 2. Loop over all aerosol bands (n index) - where applicable
+  // 3. Loop over all vertical packs (k index)
   Kokkos::parallel_for(
     "spa main loop",
     policy,
     KOKKOS_LAMBDA(const MemberType& team) {
 
-    const Int i = team.league_rank();
+    const Int i = team.league_rank();  // SCREAM column index
 
-    // Get single-column subviews of all inputs
+    // Get single-column subviews of all 2D inputs, i.e. those that don't have aerosol bands
     const auto& ps_beg_sub                 = pressure_state.ps_this_month(i);
     const auto& ps_end_sub                 = pressure_state.ps_next_month(i);
     const auto& pmid_sub                   = ekat::subview(pressure_state.pmid, i);
@@ -76,37 +80,45 @@ void SPAFunctions<S,D>
         ccn3_src_sub(k) = ccn3_beg_sub(k) + slope * (ccn3_end_sub(k) - ccn3_beg_sub(k));
     });
     team.team_barrier();
+    }
+    {
+    /* Loop over all SW variables with nswbands */
     Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nk_pack), [&] (int k) {
-      const auto& aer_g_sw_beg_sub           = ekat::subview(data_beg.AER_G_SW, i);
-      const auto& aer_g_sw_end_sub           = ekat::subview(data_end.AER_G_SW, i);
-      const auto& aer_g_sw_src_sub           = ekat::subview(aer_g_sw_src, i);
+      Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
+      const auto& aer_g_sw_beg_sub           = ekat::subview(data_beg.AER_G_SW, i, n);
+      const auto& aer_g_sw_end_sub           = ekat::subview(data_end.AER_G_SW, i, n);
+      const auto& aer_g_sw_src_sub           = ekat::subview(aer_g_sw_src, i, n);
 
-      const auto& aer_ssa_sw_beg_sub         = ekat::subview(data_beg.AER_SSA_SW, i);
-      const auto& aer_ssa_sw_end_sub         = ekat::subview(data_end.AER_SSA_SW, i);
-      const auto& aer_ssa_sw_src_sub         = ekat::subview(aer_ssa_sw_src, i);
+      const auto& aer_ssa_sw_beg_sub         = ekat::subview(data_beg.AER_SSA_SW, i, n);
+      const auto& aer_ssa_sw_end_sub         = ekat::subview(data_end.AER_SSA_SW, i, n);
+      const auto& aer_ssa_sw_src_sub         = ekat::subview(aer_ssa_sw_src, i, n);
   
-      const auto& aer_tau_sw_beg_sub         = ekat::subview(data_beg.AER_TAU_SW, i);
-      const auto& aer_tau_sw_end_sub         = ekat::subview(data_end.AER_TAU_SW, i);
-      const auto& aer_tau_sw_src_sub         = ekat::subview(aer_tau_sw_src, i);
+      const auto& aer_tau_sw_beg_sub         = ekat::subview(data_beg.AER_TAU_SW, i, n);
+      const auto& aer_tau_sw_end_sub         = ekat::subview(data_end.AER_TAU_SW, i, n);
+      const auto& aer_tau_sw_src_sub         = ekat::subview(aer_tau_sw_src, i, n);
 
+      /* Now loop over fastest index, the number of vertical packs */
       Kokkos::parallel_for(
-        Kokkos::ThreadVectorRange(team, nswbands), [&] (Int n) {
-        aer_g_sw_src_sub(n,k)   = aer_g_sw_beg_sub(n,k)   + slope * (aer_g_sw_end_sub(n,k)   - aer_g_sw_beg_sub(n,k));
-        aer_ssa_sw_src_sub(n,k) = aer_ssa_sw_beg_sub(n,k) + slope * (aer_ssa_sw_end_sub(n,k) - aer_ssa_sw_beg_sub(n,k));
-        aer_tau_sw_src_sub(n,k) = aer_tau_sw_beg_sub(n,k) + slope * (aer_tau_sw_end_sub(n,k) - aer_tau_sw_beg_sub(n,k));
+        Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
+        aer_g_sw_src_sub(k)   = aer_g_sw_beg_sub(k)   + slope * (aer_g_sw_end_sub(k)   - aer_g_sw_beg_sub(k));
+        aer_ssa_sw_src_sub(k) = aer_ssa_sw_beg_sub(k) + slope * (aer_ssa_sw_end_sub(k) - aer_ssa_sw_beg_sub(k));
+        aer_tau_sw_src_sub(k) = aer_tau_sw_beg_sub(k) + slope * (aer_tau_sw_end_sub(k) - aer_tau_sw_beg_sub(k));
       });
     });
     team.team_barrier();
+    }
+    {
+    /* Loop over all LW variables with nlwbands */
     Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nk_pack), [&] (int k) {
-      const auto& aer_tau_lw_beg_sub         = ekat::subview(data_beg.AER_TAU_LW, i);
-      const auto& aer_tau_lw_end_sub         = ekat::subview(data_end.AER_TAU_LW, i);
-      const auto& aer_tau_lw_src_sub         = ekat::subview(aer_tau_lw_src, i);
+      Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
+      const auto& aer_tau_lw_beg_sub         = ekat::subview(data_beg.AER_TAU_LW, i, n);
+      const auto& aer_tau_lw_end_sub         = ekat::subview(data_end.AER_TAU_LW, i, n);
+      const auto& aer_tau_lw_src_sub         = ekat::subview(aer_tau_lw_src, i, n);
 
+      /* Now loop over fastest index, the number of vertical packs */
       Kokkos::parallel_for(
-        Kokkos::ThreadVectorRange(team, nlwbands), [&] (Int n) {
-        aer_tau_lw_src_sub(n,k) = aer_tau_lw_beg_sub(n,k) + slope * (aer_tau_lw_end_sub(n,k) - aer_tau_lw_beg_sub(n,k));
+        Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
+        aer_tau_lw_src_sub(k) = aer_tau_lw_beg_sub(k) + slope * (aer_tau_lw_end_sub(k) - aer_tau_lw_beg_sub(k));
       });
     });
     team.team_barrier();
@@ -117,7 +129,7 @@ void SPAFunctions<S,D>
   using LIV = ekat::LinInterp<Real,Spack::n>;
   Real minthreshold = 0.0;  // Hard-code a minimum value for aerosol concentration to zero.
 
-  LIV VertInterp(ncols,pressure_state.nlevs,nlevs,minthreshold);
+  LIV VertInterp(ncols_scream,pressure_state.nlevs,nlevs_scream,minthreshold);
   Kokkos::parallel_for("vertical-interp-spa",
     VertInterp.m_policy,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {

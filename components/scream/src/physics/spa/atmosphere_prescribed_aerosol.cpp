@@ -26,7 +26,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
 
   const auto& grid_name = m_spa_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
@@ -75,20 +75,20 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 int SPA::requested_buffer_size_in_bytes() const
 {
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
+  const Int num_int_packs = ekat::npack<Spack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
   const int interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
-      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
-      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Spack);
+      Buffer::num_2d_vector*m_num_cols*num_mid_packs*sizeof(Spack) +
+      Buffer::num_2dp1_vector*m_num_cols*num_int_packs*sizeof(Spack);
 
   // Number of Reals needed by the WorkspaceManager
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 3, policy);
+  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_mid_packs);
+  const int wsm_request   = WSM::get_total_bytes_needed(num_mid_packs, 3, policy);
 
   return interface_request + wsm_request;
 }
@@ -107,12 +107,12 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
   // 2d packed views
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
+  const Int num_int_packs = ekat::npack<Spack>(m_num_levs+1);
 
-  m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(s_mem, m_num_cols, nk_pack);
+  m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(s_mem, m_num_cols, num_mid_packs);
   s_mem += m_buffer.p_mid_src.size();
-  m_buffer.ccn3_src = decltype(m_buffer.ccn3_src)(s_mem, m_num_cols, nk_pack);
+  m_buffer.ccn3_src = decltype(m_buffer.ccn3_src)(s_mem, m_num_cols, num_mid_packs);
   s_mem += m_buffer.ccn3_src.size();
 
   // WSM data
@@ -120,8 +120,8 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 3, policy)/sizeof(Spack);
+  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_mid_packs);
+  const int wsm_size = WSM::get_total_bytes_needed(num_mid_packs, 3, policy)/sizeof(Spack);
   s_mem += wsm_size;
 
   int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
