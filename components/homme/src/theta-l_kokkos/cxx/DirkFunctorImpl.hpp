@@ -582,7 +582,9 @@ struct DirkFunctorImpl {
     };
     parallel_for(Kokkos::TeamThreadRange(kv.team, 1), f2);
     const auto f3 = [&] (const int km1) {
-      const auto k = km1 + 1;
+      // The following is morally a const var, but there are issues with
+      // gnu and std=c++14. The macro ConstExceptGnu is defined in share/cxx/Config.hpp.
+      ConstExceptGnu auto k = km1 + 1;
       const auto kr = [&] (const int i) {
         dpnh_dp_i(k,i) = ((pnh(k,i) - pnh(k-1,i))/
                           ((dp3d(k-1,i) + dp3d(k,i))/2));
@@ -721,7 +723,9 @@ struct DirkFunctorImpl {
     };
     parallel_for(pt1, f1);
     const auto f2 = [&] (const int km1) {
-      const auto k = km1 + 1;
+      // The following is morally a const var, but there are issues with
+      // gnu and std=c++14. The macro ConstExceptGnu is defined in share/cxx/Config.hpp.
+      ConstExceptGnu  auto k = km1 + 1;
       const auto kmid = [&] (const int i) { // middle Jacobian rows
         const auto b = 2*a/(dp3d(k-1,i) + dp3d(k,i));
         dl(k,i) = b*(pnh(k-1,i)/dphi(k-1,i));

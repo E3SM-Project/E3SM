@@ -403,7 +403,7 @@ contains
                              vertAleTransportTop, tendVel, err)
 
       ! Add pressure gradient
-      call ocn_vel_pressure_grad_tend(ssh, pressure, &
+      call ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
                                montgomeryPotential, zMid, &
                                density, potentialDensity, &
                                indxTemp, indxSalt, activeTracers, &
@@ -414,7 +414,7 @@ contains
       call ocn_compute_tidal_potential_forcing(err)
       if (config_time_integrator == 'RK4') then
         ! for split explicit, tidal forcing is added in barotropic subcycles
-        call ocn_vel_tidal_potential_tend(ssh, tendVel, err) 
+        call ocn_vel_tidal_potential_tend(ssh,surfacePressure, tendVel, err)
       endif
 
       ! Add horizontal mixing

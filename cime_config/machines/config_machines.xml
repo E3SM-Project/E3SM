@@ -1323,6 +1323,75 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="swing">
+    <DESC>ANL/LCRC Linux Cluster: 6x 128c EPYC nodes with 8x A100 GPUs</DESC>
+    <NODENAME_REGEX>gpulogin.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>pgigpu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/swing</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/swing/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_gpu</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -n {{ total_tasks }} -N {{ num_nodes }} -K </arg>
+        <arg name="binding">$SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;}</arg>
+        <arg name="thread_count">-c $SHELL{echo 256/ {{ tasks_per_node }} |bc}</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/gpfs/fs1/soft/swing/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-5tuyfdb/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/gpfs/fs1/soft/swing/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-5tuyfdb/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/gpfs/fs1/soft/swing/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-5tuyfdb/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/gpfs/fs1/soft/swing/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-5tuyfdb/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">cmake/3.21.1-e5i6eks</command>
+      </modules>
+      <modules compiler="pgigpu">
+        <command name="load">nvhpc/20.9-37zsymt</command>
+        <command name="load">cuda/11.1.1-nkh7mm7</command>
+        <command name="load">openmpi/4.1.1-r6ebr2e</command>
+        <command name="load">netcdf-c/4.7.4-zppo53l</command>
+        <command name="load">netcdf-cxx/4.2-wjm7fye</command>
+        <command name="load">netcdf-fortran/4.5.3-srsajjs</command>
+        <command name="load">parallel-netcdf/1.12.1-75szceu</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="bebop">
     <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
     <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
@@ -2791,7 +2860,7 @@
         <command name="purge"/>
         <command name="ls"/>
         <command name="load">DefApps</command>
-        <command name="load">python/3.5.2</command>
+        <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
         <command name="load">cmake/3.20.2</command>
@@ -2849,6 +2918,10 @@
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables compiler="ibm.*">
+      <env name="XLC_USR_CONFIG">/gpfs/alpine/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.1</env>
+      <env name="LD_LIBRARY_PATH">/sw/summit/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
@@ -2982,6 +3055,7 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
+      <env name="PATH">/gpfs/wolf/cli115/world-shared/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
