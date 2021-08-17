@@ -114,8 +114,6 @@ module prim_cxx_driver_base
 
   subroutine prim_finalize ()
     use prim_driver_base, only: prim_finalize_base=>prim_finalize
-    use control_mod, only: transport_alg
-    use compose_mod, only: compose_finalize
     interface
       subroutine finalize_hommexx_session() bind(c)
       end subroutine finalize_hommexx_session

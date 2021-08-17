@@ -6,28 +6,28 @@
 #include "cedr_test_randomized.hpp"
 
 namespace Kokkos {
-struct Real2 {
+struct ComposeReal2 {
   cedr::Real v[2];
-  KOKKOS_INLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
+  KOKKOS_INLINE_FUNCTION ComposeReal2 () { v[0] = v[1] = 0; }
 
-  KOKKOS_INLINE_FUNCTION void operator= (const Real2& s) {
+  KOKKOS_INLINE_FUNCTION void operator= (const ComposeReal2& s) {
     v[0] = s.v[0];
     v[1] = s.v[1];
   }
-  KOKKOS_INLINE_FUNCTION void operator= (const volatile Real2& s) volatile {
+  KOKKOS_INLINE_FUNCTION void operator= (const volatile ComposeReal2& s) volatile {
     v[0] = s.v[0];
     v[1] = s.v[1];
   }
 
-  KOKKOS_INLINE_FUNCTION Real2& operator+= (const Real2& o) {
+  KOKKOS_INLINE_FUNCTION ComposeReal2& operator+= (const ComposeReal2& o) {
     v[0] += o.v[0];
     v[1] += o.v[1];
     return *this;
   }
 };
 
-template<> struct reduction_identity<Real2> {
-  KOKKOS_INLINE_FUNCTION static Real2 sum() { return Real2(); }
+template<> struct reduction_identity<ComposeReal2> {
+  KOKKOS_INLINE_FUNCTION static ComposeReal2 sum() { return ComposeReal2(); }
 };
 } // namespace Kokkos
 
@@ -171,16 +171,16 @@ void CAAS<ES>::reduce_locally () {
     const auto calc_Qm_clip = KOKKOS_LAMBDA (const typename ESU::Member& t) {
       const auto k = t.league_rank();
       const auto os = (k+1)*nlclcells;
-      const auto reduce = [&] (const Int& i, Kokkos::Real2& accum) {
+      const auto reduce = [&] (const Int& i, Kokkos::ComposeReal2& accum) {
         Real Qm_clip, Qm_term;
         calc_Qm_scalars(d, probs, nt, nlclcells, k, os, i, Qm_clip, Qm_term);
         d(os+i) = Qm_clip;
         accum.v[0] += Qm_clip;
         accum.v[1] += Qm_term;
       };
-      Kokkos::Real2 accum;
+      Kokkos::ComposeReal2 accum;
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(t, nlclcells),
-                              reduce, Kokkos::Sum<Kokkos::Real2>(accum));
+                              reduce, Kokkos::Sum<Kokkos::ComposeReal2>(accum));
       send(     k) = accum.v[0];
       send(nt + k) = accum.v[1];
     };
