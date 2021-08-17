@@ -10,14 +10,30 @@ namespace scream
 /* ---------------------------------------------------------- */
 AtmosphereInput::
 AtmosphereInput (const ekat::Comm& comm,
-                 const ekat::ParameterList& params,
-                 const std::shared_ptr<const fm_type>& field_mgr)
+                 const ekat::ParameterList& params)
  : m_comm (comm)
 {
   set_parameters (params);
-  set_field_manager (field_mgr);
+}
 
-  init ();
+AtmosphereInput::
+AtmosphereInput (const ekat::Comm& comm,
+                 const ekat::ParameterList& params,
+                 const std::shared_ptr<const fm_type>& field_mgr)
+ : AtmosphereInput(comm,params)
+{
+  init (field_mgr);
+}
+
+AtmosphereInput::
+AtmosphereInput (const ekat::Comm& comm,
+                 const ekat::ParameterList& params,
+                 const std::shared_ptr<const grid_type>& grid,
+                 const std::map<std::string,view_1d_host>& host_views_1d,
+                 const std::map<std::string,FieldLayout>&  layouts)
+ : AtmosphereInput(comm,params)
+{
+  init(grid,host_views_1d,layouts);
 }
 
 /* ---------------------------------------------------------- */
@@ -61,6 +77,11 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       "       no greater than the global number of columns.\n"
       "       Consider decreasing the size of IO MPI group.\n");
 
+  if (m_params.isParameter("GRID")) {
+    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==grid->name(),
+        "Error! Input grid name in the parameter list does not match the name of the input grid.\n");
+  }
+
   // The grid is good. Store it.
   m_grid = grid;
 }
@@ -68,120 +89,183 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 /* ---------------------------------------------------------- */
 void AtmosphereInput::read_variables ()
 {
-  using namespace scream::scorpio;
+  EKAT_REQUIRE_MSG (m_is_inited,
+      "Error! The init method has not been called yet.\n");
 
   for (auto const& name : m_fields_names) {
-    // Retrieve field, and some of its metadata
-    auto field = m_field_mgr->get_field(name);
-    const auto& fh  = field.get_header();
-    const auto& fl  = fh.get_identifier().get_layout();
-    const auto& fap = fh.get_alloc_properties();
-
-    // The field might be a subfield or have padding, in which case its view
-    // is not a contiguous array in memory.
-    // Strategy: create a temp contiguous view, and use it for reading from file.
-    // Then, deep copy back to the input view. If the field does *not* have
-    // a parent and is *not* padded, the temp view can store the same memory
-    // pointer as the Host view in the Field.
-    using field_type = decltype(field);
-    using RT         = typename field_type::RT;
-
-    // Use a 1d view of correct (i.e., physical) size for scorpio reading
-    ekat::Unmanaged<view_1d_host> temp_view;
-    view_1d_host scratch_view;
-    bool needs_scratch_view = not (fh.get_parent().expired() && fap.get_padding()==0);
-    if (needs_scratch_view) {
-      scratch_view = decltype(scratch_view)("",fl.size());
-      temp_view = decltype(temp_view)(scratch_view.data(),fl.size());
-    } else {
-      temp_view = decltype(temp_view)(field.get_internal_view_data<Host>(),fl.size());
-    }
 
     // Read the data
-    grid_read_data_array(m_filename,name,temp_view.data());
+    scorpio::grid_read_data_array(m_filename,name,m_host_views_1d.at(name).data());
 
-    // If temp_view is a simple reshape of the field's Host view data, then we're alreaddy done.
-    // Otherwise, we need to do a deep copy.
-    if (needs_scratch_view) {
-      // Get the host view of the field properly reshaped, and deep copy
-      // from temp_view (properly reshaped as well).
-      auto rank = fl.rank();
-      switch (rank) {
-        case 1:
-          {
-            // No reshape needed, simply copy
-            auto dst = field.get_view<RT*,Host>();
-            for (int i=0; i<fl.dim(0); ++i) {
-              dst(i) = temp_view(i);
+    // If we have a field manager, make sure the data is correctly
+    // synced to both host and device views of the field.
+    if (m_field_mgr) {
+
+      auto f = m_field_mgr->get_field(name);
+      const auto& fh  = f.get_header();
+      const auto& fl  = fh.get_identifier().get_layout();
+      const auto& fap = fh.get_alloc_properties();
+
+      using field_type = decltype(f);
+      using RT         = typename field_type::RT;
+
+      // Check if the stored 1d view is sharing the data ptr with the field
+      const bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+
+      // If the 1d view is a simple reshape of the field's Host view data,
+      // then we're already done. Otherwise, we need to manually copy.
+      if (not can_alias_field_view) {
+        // Get the host view of the field properly reshaped, and deep copy
+        // from temp_view (properly reshaped as well).
+        auto rank = fl.rank();
+        auto view_1d = m_host_views_1d.at(name);
+        switch (rank) {
+          case 1:
+            {
+              // No reshape needed, simply copy
+              auto dst = f.get_view<RT*,Host>();
+              for (int i=0; i<fl.dim(0); ++i) {
+                dst(i) = view_1d(i);
+              }
+              break;
             }
-            break;
-          }
-        case 2:
-          {
-            // Reshape temp_view to a 2d view, then copy
-            auto dst = field.get_view<RT**,Host>();
-            auto src = view_ND_host<2>(temp_view.data(),fl.dim(0),fl.dim(1));
-            Kokkos::Impl::ViewRemap<decltype(dst),decltype(src),HostDevice,2>(dst,src);
-            break;
-          }
-        case 3:
-          {
-            // Reshape temp_view to a 3d view, then copy
-            auto dst = field.get_view<RT***,Host>();
-            auto src = view_ND_host<3>(temp_view.data(),fl.dim(0),fl.dim(1),fl.dim(2));
-            Kokkos::Impl::ViewRemap<decltype(dst),decltype(src),HostDevice,3>(dst,src);
-            break;
-          }
-        default:
-          EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
+          case 2:
+            {
+              // Reshape temp_view to a 2d view, then copy
+              auto dst = f.get_view<RT**,Host>();
+              auto src = view_Nd_host<2>(view_1d.data(),fl.dim(0),fl.dim(1));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  dst(i,j) = src(i,j);
+              }}
+              break;
+            }
+          case 3:
+            {
+              // Reshape temp_view to a 3d view, then copy
+              auto dst = f.get_view<RT***,Host>();
+              auto src = view_Nd_host<3>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    dst(i,j,k) = src(i,j,k);
+              }}}
+              break;
+            }
+          default:
+            EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
+        }
       }
-    }
 
-    // Sync to device
-    field.sync_to_dev();
+      // Sync to device
+      f.sync_to_dev();
+    }
   }
 } 
 
 int AtmosphereInput::
 read_int_scalar (const std::string& name)
 {
+  EKAT_REQUIRE_MSG (m_is_inited,
+      "Error! The init method has not been called yet.\n");
+
   return scorpio::get_int_attribute_c2f(m_filename.c_str(),name.c_str());
 }
 
+void AtmosphereInput::
+init(const std::shared_ptr<const fm_type>& field_mgr) 
+{
+  EKAT_REQUIRE_MSG (not m_is_inited,
+      "Error! This instance of AtmosphereInput was already inited.\n"
+      "       We do not allow re-initialization.\n");
+
+  set_field_manager(field_mgr);
+
+  for (auto const& name : m_fields_names) {
+    auto f = m_field_mgr->get_field(name);
+    const auto& fh  = f.get_header();
+    const auto& fap = fh.get_alloc_properties();
+    const auto& fid = fh.get_identifier();
+    const auto& fl  = fid.get_layout();
+
+    // Store tha layout
+    m_layouts.emplace(name,fl);
+
+    // If we can alias the field's host view, do it.
+    // Otherwise, create a temporary.
+    bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+    if (can_alias_field_view) {
+      auto data = f.get_internal_view_data<Host>();
+      m_host_views_1d[name] = view_1d_host(data,fl.size());
+    } else {
+      // We have padding, or the field is a subfield (or both).
+      // Either way, we need a temporary view.
+      m_host_views_1d[name] = view_1d_host("",fl.size());
+    }
+  }
+
+  init_scorpio_structures ();
+}
+
+void AtmosphereInput::
+init(const std::shared_ptr<const grid_type>& grid,
+     const std::map<std::string,view_1d_host>& host_views_1d,
+     const std::map<std::string,FieldLayout>&  layouts)
+{
+  EKAT_REQUIRE_MSG (not m_is_inited,
+      "Error! This instance of AtmosphereInput was already inited.\n"
+      "       We do not allow re-initialization.\n");
+
+  set_grid(grid);
+
+  // Sanity checks
+  EKAT_REQUIRE_MSG (host_views_1d.size()==m_fields_names.size(),
+      "Error! Input host views map has the wrong size.\n"
+      "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
+      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
+  EKAT_REQUIRE_MSG (layouts.size()==m_fields_names.size(),
+      "Error! Input layouts map has the wrong size.\n"
+      "       Input size: " + std::to_string(layouts.size()) + "\n"
+      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
+
+  // Loop over names, rather than just set inputs map in the class.
+  // This way, if an expected name is missing, the at(..) method will throw.
+  for (auto const& name : m_fields_names) {
+    m_layouts.emplace(name,layouts.at(name));
+    m_host_views_1d[name] = host_views_1d.at(name);
+  }
+
+  init_scorpio_structures ();
+}
+
 /* ---------------------------------------------------------- */
-void AtmosphereInput::init() 
+void AtmosphereInput::finalize() 
+{
+  EKAT_REQUIRE_MSG (m_is_inited,
+      "Error! The init method has not been called yet.\n");
+
+  scorpio::eam_pio_closefile(m_filename);
+} // finalize
+
+/* ---------------------------------------------------------- */
+void AtmosphereInput::init_scorpio_structures() 
 {
   // This method ensures that the nc file is open, and that all
   // the variables (along with their dimensions) are correctly
   // registered, and sets up scorpio for reading.
 
-  using namespace scorpio;
-  using namespace ShortFieldTagsNames;
-
-  // Sanity check: if a grid was specified in the input file,
-  // it must match the one stored.
-  if (m_params.isParameter("GRID")) {
-    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==m_grid->name(),
-        "Error! Input grid name in the parameter list does not match the name of the input grid.\n");
-  }
-
   // Register netCDF file for input.
-  register_infile(m_filename);
+  scorpio::register_infile(m_filename);
 
-  // Register variables with netCDF file.  Must come after dimensions are registered.
+  // Register variables with netCDF file.
   register_variables();
   set_degrees_of_freedom();
 
   // Finish the definition phase for this file.
-  set_decomp  (m_filename); 
-} // init
+  scorpio::set_decomp  (m_filename); 
 
-/* ---------------------------------------------------------- */
-void AtmosphereInput::finalize() 
-{
-/* Cleanup by closing the input file */
-  scorpio::eam_pio_closefile(m_filename);
-} // finalize
+  m_is_inited = true;
+} // init
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::register_variables()
@@ -190,15 +274,10 @@ void AtmosphereInput::register_variables()
   // This allows SCORPIO to lookup vars in the nc file with the correct
   // dof decomposition across different ranks.
 
-  using namespace scorpio;
-
   // Cycle through all fields
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
-    auto& fid  = field.get_header().get_identifier();
-
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    auto vec_of_dims   = get_vec_of_dims(fid.get_layout());
+    auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
     auto io_decomp_tag = get_io_decomp(vec_of_dims);
 
     // Register the variable
@@ -206,8 +285,8 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    get_variable(m_filename, name, name, vec_of_dims.size(),
-                 vec_of_dims, PIO_REAL, io_decomp_tag);
+    scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
+                          vec_of_dims, PIO_REAL, io_decomp_tag);
   }
 }
 
@@ -246,17 +325,11 @@ std::string AtmosphereInput::get_io_decomp(const std::vector<std::string>& dims_
 /* ---------------------------------------------------------- */
 void AtmosphereInput::set_degrees_of_freedom()
 {
-  using namespace scorpio;
-  using namespace ShortFieldTagsNames;
-
   // For each field, tell PIO the offset of each DOF to be read.
   // Here, offset is meant in the *global* array in the nc file.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
-    auto& fid  = field.get_header().get_identifier();
-
-    auto var_dof = get_var_dof_offsets(fid.get_layout());
-    set_dof(m_filename,name,var_dof.size(),var_dof.data());
+    auto var_dof = get_var_dof_offsets(m_layouts.at(name));
+    scorpio::set_dof(m_filename,name,var_dof.size(),var_dof.data());
   }
 } // set_degrees_of_freedom
 

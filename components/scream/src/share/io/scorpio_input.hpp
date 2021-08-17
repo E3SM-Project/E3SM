@@ -63,23 +63,39 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using fm_type = FieldManager<Real>;
+  using fm_type   = FieldManager<Real>;
+  using grid_type = AbstractGrid;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
-  using view_ND_host = typename KT::template view_ND<Real,N>::HostMirror;
-  using view_1d_host = view_ND_host<1>;
+  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+  using view_1d_host = view_Nd_host<1>;
 
   // --- Constructor(s) & Destructor --- //
   AtmosphereInput (const ekat::Comm& comm,
+                   const ekat::ParameterList& params);
+  AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr);
+  AtmosphereInput (const ekat::Comm& comm,
+                   const ekat::ParameterList& params,
+                   const std::shared_ptr<const grid_type>& grid,
+                   const std::map<std::string,view_1d_host>& host_views_1d,
+                   const std::map<std::string,FieldLayout>&  layouts);
 
   virtual ~AtmosphereInput () = default;
 
   // --- Methods --- //
   // Sets up the scorpio metadata to preare for reading
-  void init();
+  // The first version manually specifies grid, host 1d views, and layouts.
+  // The second version grabs everything from the field manager.
+  // NOTE: the first version cannot handle padded fields, while the latter
+  //       can, and can also handle subfields.
+  void init(const std::shared_ptr<const grid_type>& grid,
+            const std::map<std::string,view_1d_host>& host_views_1d,
+            const std::map<std::string,FieldLayout>&  layouts);
+  void init(const std::shared_ptr<const fm_type>& field_mgr);
+
   // Read fields that were required via parameter list.
   void read_variables ();
   int read_int_scalar (const std::string& name);
@@ -91,6 +107,7 @@ protected:
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
 
+  void init_scorpio_structures ();
   void register_variables();
   void set_degrees_of_freedom();
 
@@ -104,12 +121,16 @@ protected:
 
   std::shared_ptr<const fm_type>        m_field_mgr;
   std::shared_ptr<const AbstractGrid>   m_grid;
+
+  std::map<std::string, view_1d_host>   m_host_views_1d;
+  std::map<std::string, FieldLayout>    m_layouts;
   
   std::string               m_filename;
   std::vector<std::string>  m_fields_names;
 
   // Whether we are reading the history restart file of a model output (see output class for details)
   bool m_is_history_restart = false;
+  bool m_is_inited = false;
 
 }; // Class AtmosphereInput
 
