@@ -1679,6 +1679,7 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
+                transport_tests
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

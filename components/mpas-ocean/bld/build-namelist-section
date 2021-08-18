@@ -1067,3 +1067,10 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
+#######################################
+# Namelist group: transport_tests     #
+#######################################
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
