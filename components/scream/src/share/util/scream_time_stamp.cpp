@@ -111,10 +111,10 @@ std::string TimeStamp::to_string () const {
 }
 
 double TimeStamp::get_julian_day () const {
-  return get_julian_day(m_yy,m_mm,m_dd,m_ss);
+  return julian_day(m_yy,m_mm,m_dd,m_ss);
 }
 
-double TimeStamp::get_julian_day (const int yy, const int mm, const int dd, const double ss) const {
+double julian_day (const int yy, const int mm, const int dd, const double ss) {
   // Initialize Julian Day
   double julianday = dd + ss;
   for (int m=0;m<mm;m++) {
@@ -125,10 +125,6 @@ double TimeStamp::get_julian_day (const int yy, const int mm, const int dd, cons
 
 int TimeStamp::get_dpm () const {
   return dpm(m_yy,m_mm);
-}
-
-int TimeStamp::get_dpm (const int yy, const int mm) const {
-  return dpm(yy,mm);
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {

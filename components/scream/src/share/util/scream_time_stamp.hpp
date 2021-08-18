@@ -26,9 +26,7 @@ public:
 
   std::string to_string () const;
   double get_julian_day () const;
-  double get_julian_day (const int yy, const int mm, const int dd, const double ss) const;
   int    get_dpm () const;
-  int    get_dpm (const int yy, const int mm) const;
 
   // === Update method(s) === //
 
@@ -61,6 +59,11 @@ inline bool TimeStamp::is_valid () const {
 inline double TimeStamp::test_double () const {
   return (m_yy+1)*1e4 + (m_mm+1)*1e2 + (m_dd+1) + m_ss/86400;
 }
+
+// Caclulate julian day as defined by the number of days after the beginning of the year:
+//   julian_day = sum(day_per_month(m),m=1...mm) + dd + ss/86400
+// Note the year, yy, is also an input to allow for accurate calculation during a leap year if applicable.
+double julian_day (const int yy, const int mm, const int dd, const double ss);
 
 } // namespace util
 

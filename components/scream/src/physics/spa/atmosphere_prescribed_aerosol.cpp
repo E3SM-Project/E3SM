@@ -1,5 +1,7 @@
 #include "atmosphere_prescribed_aerosol.hpp"
 
+#include "share/util/scream_time_stamp.hpp"
+
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 
@@ -134,7 +136,7 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
   // Initialize Time Data
   auto ts = timestamp();
   SPATimeState.current_month = ts.get_months();
-  SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
+  SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
   SPATimeState.days_this_month = (Real)ts.get_dpm();
 
   // Initialize SPA input data
@@ -176,7 +178,7 @@ void SPA::run_impl (const Real dt)
   SPATimeState.t_now = ts.get_julian_day();
   if (ts.get_months() != SPATimeState.current_month) {
     SPATimeState.current_month = ts.get_months();
-    SPATimeState.t_beg_month = ts.get_julian_day(ts.get_years(),ts.get_months(),0,0);
+    SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
     SPATimeState.days_this_month = (Real)ts.get_dpm();
   }
 
