@@ -10,6 +10,10 @@ add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_CURRENT_BINARY_
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-fno-default-real-8 -fno-default-double-8>)
 EkatDisableAllWarning(yakl)
 
+# We will need the shr_orb_mod source too
+enable_language(Fortran)
+add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
+
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
 # NOTE: The external RRTMGP build needs some fixes to work with CUDA in a library build, so for now we will build these ourselves
 #add_subdirectory(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_build)

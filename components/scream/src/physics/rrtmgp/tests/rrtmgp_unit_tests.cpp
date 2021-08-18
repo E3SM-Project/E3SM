@@ -1,8 +1,10 @@
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+//#include "physics/rrtmgp/zenith.hpp"
 #include "YAKL/YAKL.h"
 #include "physics/share/physics_constants.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod.hpp"
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -154,4 +156,14 @@ TEST_CASE("rrtmgp_test_limit_to_bounds") {
     arr.deallocate();
     arr_limited.deallocate();
     yakl::finalize();
+}
+
+TEST_CASE("rrtmgp_test_zenith") {
+
+    // Create some dummy data
+    //
+    // Call zenith function with dummy data
+    //
+    // Verify we get expected result
+
 }
