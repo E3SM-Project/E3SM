@@ -744,7 +744,8 @@ end subroutine micro_p3_readnl
                               rho_h2os, &
                               qsmall, &
                               mincld, & 
-                              inv_cp 
+                              inv_cp, &
+                              grav=g 
 
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
@@ -1046,6 +1047,15 @@ end subroutine micro_p3_readnl
        ! ccn is uniformly distributed throughout the cell, but P3 computes in-cloud values assuming cell-averages are comprised 
        ! of zero values outside cloud. Preemptively multiplying by cldfrac here is needed to get the correct in-cloud ccn value in P3
        nccn_prescribed = ccn_trcdat*cld_frac_l
+       ! SPA produced ccn is in units of #/cm3 rather than #/kg, so we need to
+       ! convert
+       if (is_spa_active) then
+          do icol = 1,ncol
+             do k = 1,pver
+                nccn_prescribed(icol,k) = nccn_prescribed(icol,k)*1.0e6_rtype * (dz(icol,k)*grav)/state%pmid(icol,k)
+             end do
+          end do
+       end if 
     end if
 
     ! CALL P3
