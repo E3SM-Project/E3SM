@@ -778,7 +778,9 @@ module ocn_forward_mode
       ! destroy the ocean mesh structure
       call ocn_meshDestroy(ierr)
 
-      call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      if ( config_time_integrator == 'split_explicit') then
+         call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      end if
 
       call ocn_analysis_finalize(domain, ierr)
 
