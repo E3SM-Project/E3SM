@@ -161,7 +161,7 @@
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
       USE W3IDATMD, ONLY: TIN, ICEI
       USE W3IDATMD, ONLY: TLN, WLEV
-      use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
+      use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr, ndse, ndso, &
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
                           fnmpre, ifile4
       use w3servmd, only: w3xyrtn
@@ -227,6 +227,7 @@
       integer,save :: stdout
       integer,save :: odat(40)
       integer,save :: nds(13)
+      integer,save :: mds(5)
 
       real,allocatable,save :: AnglDL(:)
 
@@ -279,7 +280,7 @@ CONTAINS
       type(mct_aVect) :: x2w0
 
       integer             :: unitn            ! namelist unit number
-      integer             :: ndso, ndse, ntrace(2), time0(2)
+      integer             :: ntrace(2), time0(2)
       integer             :: nu
       integer             :: iproc
       integer             :: timen(2), nh(4), iprt(6)
@@ -344,9 +345,15 @@ CONTAINS
 
       call mpi_barrier ( mpi_comm, ierr )
       call mpi_comm_rank(mpi_comm, iproc, ierr)
+
       
+      mds(1) = shr_file_getunit()
+      mds(2) = shr_file_getunit()
+      mds(3) = shr_file_getunit()
+      mds(4) = shr_file_getunit()
+      mds(5) = shr_file_getunit()
       if ( iproc .eq. 0 ) then
-        call w3grid
+        call w3grid(mds)
       endif
 
       call mpi_barrier ( mpi_comm, ierr )
@@ -401,7 +408,7 @@ CONTAINS
       ! 1.b For WAVEWATCH III (See W3INIT) ??? ask adrean if i am missing something
       !
       ! The following units are referenced in module w3initmd
-      ! NDS(1) ! OUTPUT LOG: General output unit number ("log file") (NDS0)
+      ! NDS(1) ! OUTPUT LOG: General output unit number ("log file") (NDSO)
       ! NDS(2) ! OUTPUT LOG: Error output unit number (NDSE)
       ! NDS(3) ! OUTPUT LOG: Test output unit number (NDST)
       ! NDS(4) ! OUTPUT LOG: Unit for 'direct' output (SCREEN)
@@ -418,11 +425,12 @@ CONTAINS
       ! NDS(13) ! unit for output for FLOUT(6) flag
       ! NDS(10) ! unit for output for FLOUT(5) flag
 
+      stdout = shr_file_getunit()
+      ndso   = stdout
+      ndse   = stdout
+
       if (iaproc .eq. napout) then
-         stdout = shr_file_getunit()
          call shr_file_setio('wav_modelio.nml'//trim(inst_suffix),stdout)
-      else
-         stdout = 6
       endif
 
       nds( 1) = stdout
@@ -439,10 +447,8 @@ CONTAINS
       nds(12) = shr_file_getunit()
       nds(13) = shr_file_getunit()
 
-      ndso      =  stdout
-      ndse      =  stdout
       ntrace(1) =  nds(3)
-      ntrace(2) =  10
+      ntrace(2) =  stdout
 
       ! Redirect share output to wav log
       call shr_file_getLogUnit (shrlogunit)
@@ -1454,7 +1460,6 @@ CONTAINS
 
     ! Adapted from ww3_shel.ftn
 
-    NDSO = 6
     NDSL = shr_file_getunit()
     COMSTR = "$"
 
@@ -1508,6 +1513,8 @@ CONTAINS
       END DO ! end of file                      
     END DO ! ILOOP
     CLOSE(NDSL)
+    call shr_file_freeUnit(NDSL)
+    
 
  2945 FORMAT ( '            Point  1 : ',2F8.2,2X,A)
  2946 FORMAT ( '              ',I6,' : ',2F8.2,2X,A)
