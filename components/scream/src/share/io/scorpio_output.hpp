@@ -162,6 +162,11 @@ protected:
   int m_num_snapshots_in_file = 0;
 };
 
+// ===================== IMPLEMENTATION ======================== //
+
+// This helper function updates the current output val with a new one,
+// according to the "averaging" type, and according to the number of
+// model time steps since the last output step.
 inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val) const
 {
   if (m_avg_type=="INSTANT" || m_nsteps_since_last_output == 1) {

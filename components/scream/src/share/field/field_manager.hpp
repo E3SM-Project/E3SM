@@ -382,7 +382,7 @@ registration_ends ()
   //     we must be able to allocate C bundled.
   //  5) For each cluster, call the function contiguous_superset from scream_utils.hpp
   //     (see that file for details). If the fcn fails to find an ordering of the cluster's
-  //     field that accommodate all bundled request, it will return an empty list.
+  //     field that accommodate all bundled requests, it will return an empty list.
   //     Otherwise it will return the ordering of all fields in the cluster that allows all
   //     groups of the cluster to be a contiguous subset of C.
   //  6) If step 4 fails for a cluster, remove from the cluster the groups whose bundling

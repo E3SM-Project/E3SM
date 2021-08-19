@@ -83,6 +83,10 @@ public:
 
   // A wrapper of all of the above (except setting SurfaceCoupling),
   // which is handy for scream standalone tests.
+  //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
+  //  - params: parameter list with all atm options (organized in sublists)
+  //  - t0: the time stamp where the simulation starts
+  //  - restarted_run: whether this run is restarting from the output of a previous run
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
                    const util::TimeStamp& t0,

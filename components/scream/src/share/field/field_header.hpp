@@ -102,7 +102,7 @@ protected:
   extra_data_type                 m_extra_data;
 };
 
-// Use this free functions to exploit features of enable_from_this
+// Use this free function to exploit features of enable_from_this
 template<typename... Args>
 inline std::shared_ptr<FieldHeader>
 create_header(const Args&... args) {
@@ -111,6 +111,9 @@ create_header(const Args&... args) {
   return ptr;
 }
 
+// Use this free function to create a header for a field that
+// is the subfield of another field, that is, for something
+// that (in matlab syntax) looks like sf = f(:,1,:)
 std::shared_ptr<FieldHeader>
 create_subfield_header (const FieldIdentifier& id,
                         std::shared_ptr<FieldHeader> parent,

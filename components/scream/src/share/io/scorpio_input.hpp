@@ -25,7 +25,7 @@
  *  this class to facilitate cases where reading input over some number of simulation
  *  timesteps is possible.
  *
- *  At construction time input instances require
+ *  At construction time, input instances require
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
  *  3. a shared pointer to the field manager
@@ -45,6 +45,14 @@
  *  FILENAME: is a string value of the name of the input file to be read.
  *  GRID: is a string of the grid the input file is written on, currently only "Physics" is supported.
  *  FIELDS: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *  Note: equivalently, you can specify lists (such as the FIELDS list above) with the syntax
+ *
+ *    FIELDS:
+ *      - field_name_1
+ *      - field_name_2
+ *        ...
+ *      - field_name_N
+ *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
  * Usage:
@@ -72,11 +80,42 @@ public:
   using view_1d_host = view_Nd_host<1>;
 
   // --- Constructor(s) & Destructor --- //
+  // Creates bare input. Will require a call to one of the two 'init' methods.
+  // Constructor inputs:
+  //  - comm: the MPI comm used for I/O operations. Notice that the
+  //          associated MPI group *must* be contained in the MPI
+  //          group in the overall atm comm, but it *might* be smaller
+  //          (and likely *will* be smaller, for large scale runs).
+  //  - params: a parameter list containing info on the file/fields to load.
   AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params);
+  // Creates input to read into FieldManager-owned fields.
+  // Constructor inputs:
+  //  - comm: the MPI comm used for I/O operations. Notice that the
+  //          associated MPI group *must* be contained in the MPI
+  //          group in the overall atm comm, but it *might* be smaller
+  //          (and likely *will* be smaller, for large scale runs).
+  //  - params: a parameter list containing info on the file/fields to load.
+  //  - field_mgr: the FieldManager containing the Field's where the
+  //               variables from the input filed will be read into.
+  //               Fields can be padded/strided.
+  // It calls init(field_mgr) at the end.
   AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr);
+  // Creates input to read into user-provided flattened 1d host views.
+  // Constructor inputs:
+  //  - comm: the MPI comm used for I/O operations. Notice that the
+  //          associated MPI group *must* be contained in the MPI
+  //          group in the overall atm comm, but it *might* be smaller
+  //          (and likely *will* be smaller, for large scale runs).
+  //  - params: a parameter list containing info on the file/fields to load.
+  //  - grid: the grid where the variables live
+  //  - host_views_1d: the 1d flattened views where data will be read into.
+  //                   These views must be contiguous (no padding/striding).
+  //  - layouts: the layout of the vars (used to reshape the views).
+  // It calls init(grid,host_views_1d,layouts) at the end.
+  // TODO: do not require layouts, and read them from file.
   AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params,
                    const std::shared_ptr<const grid_type>& grid,
@@ -87,14 +126,21 @@ public:
 
   // --- Methods --- //
   // Sets up the scorpio metadata to preare for reading
-  // The first version manually specifies grid, host 1d views, and layouts.
-  // The second version grabs everything from the field manager.
-  // NOTE: the first version cannot handle padded fields, while the latter
-  //       can, and can also handle subfields.
+  // Inputs:
+  //  - field_mgr: the FieldManager containing the Field's where the
+  //               variables from the input filed will be read into.
+  //               Fields can be padded/strided.
+  void init(const std::shared_ptr<const fm_type>& field_mgr);
+
+  // Sets up the scorpio metadata to preare for reading
+  // Inputs:
+  //  - grid: the grid where the variables live
+  //  - host_views_1d: the 1d flattened views where data will be read into.
+  //                   These views must be contiguous (no padding/striding).
+  //  - layouts: the layout of the vars (used to reshape the views).
   void init(const std::shared_ptr<const grid_type>& grid,
             const std::map<std::string,view_1d_host>& host_views_1d,
             const std::map<std::string,FieldLayout>&  layouts);
-  void init(const std::shared_ptr<const fm_type>& field_mgr);
 
   // Read fields that were required via parameter list.
   void read_variables ();

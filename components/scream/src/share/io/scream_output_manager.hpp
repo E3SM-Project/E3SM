@@ -46,8 +46,8 @@ namespace scream
  *
  * Adding output streams mid-simulation:
  * It is possible to add an output stream after init has been called by calling
- * the internal function 'new_output' which takes an EKAT parameter list as input.
- * See comments in new_output below for more details.
+ * the internal function 'add_output_stream' which takes an EKAT parameter list as input.
+ * See comments in add_output_stream below for more details.
  *
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
@@ -61,6 +61,9 @@ public:
   OutputManager () = default;
   virtual ~OutputManager () = default;
 
+  // Set up the manager, creating all output streams. Inputs:
+  //  - params: the parameter list with file/fields info, as well as method of output options
+  //  - model_restart_output: whether this output stream is to write a model restart file
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::shared_ptr<const fm_type>& field_mgr,
               const bool runtype_restart);
@@ -68,7 +71,9 @@ public:
   void finalize();
 
 protected:
-  // Add an output stream.
+  // Add an output stream. Inputs:
+  //  - params: the parameter list with file/fields info, as well as method of output options
+  //  - model_restart_output: whether this output stream is to write a model restart file
   void new_output(const ekat::ParameterList& params, const bool model_restart_output);
 
   // Craft the restart parameter list
