@@ -25,6 +25,7 @@ set (GENF90_SOURCE
 # FORTRAN_SOURCE lists the source files we want to build that do NOT need to be run through the genf90
 # perl script. We will append to this list below with our processed genf90 files.
 set (FORTRAN_SOURCE
+    shr_orb_mod_c.F90
     ${SCREAM_BASE_DIR}/../../share/util/shr_orb_mod.F90
     ${SCREAM_BASE_DIR}/../../share/util/shr_kind_mod.F90
     ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90

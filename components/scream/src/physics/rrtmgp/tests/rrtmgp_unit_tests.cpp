@@ -4,7 +4,7 @@
 //#include "physics/rrtmgp/zenith.hpp"
 #include "YAKL/YAKL.h"
 #include "physics/share/physics_constants.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c.hpp"
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -161,6 +161,31 @@ TEST_CASE("rrtmgp_test_limit_to_bounds") {
 TEST_CASE("rrtmgp_test_zenith") {
 
     // Create some dummy data
+    int orbital_year = 1990;
+    double calday = 1.0000000000000000;
+    double eccen_ref = 1.6707719799280658E-002;
+    double mvelpp_ref = 4.9344679089867318;
+    double lambm0_ref = -3.2503635878519378E-002;
+    double obliqr_ref = 0.40912382465788016;
+    double delta_ref = -0.40302893695478670;
+    double eccf_ref = 1.0342222039093694;
+    double lat = -7.7397590528644963E-002;
+    double lon = 2.2584340271163548;
+    double coszrs_ref = 0.61243613606766745;
+
+    // Test shr_orb_params()
+    // Get orbital parameters based on calendar day
+    double eccen;
+    double obliq;  // obliquity in degrees
+    double mvelp;  // moving vernal equinox long of perihelion; degrees?
+    double obliqr;
+    double lambm0;
+    double mvelpp;
+    bool flag_print = false;
+    shr_orb_params_c(&orbital_year, &eccen, &obliq, &mvelp, 
+                     &obliqr, &lambm0, &mvelpp); //, flag_print); // Note fortran code has optional arg
+
+    REQUIRE(eccen == eccen_ref);
     //
     // Call zenith function with dummy data
     //

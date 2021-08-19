@@ -10,7 +10,7 @@ add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_CURRENT_BINARY_
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-fno-default-real-8 -fno-default-double-8>)
 EkatDisableAllWarning(yakl)
 
-# We will need the shr_orb_mod source too
+# We will need the shr_orb_mod source too; this builds library share_util
 enable_language(Fortran)
 add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
 
@@ -55,7 +55,7 @@ set(INTERFACE_SRC
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 set_target_properties(scream_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-target_link_libraries(scream_rrtmgp ${NETCDF_C} rrtmgp yakl scream_share physics_share)
+target_link_libraries(scream_rrtmgp ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${NetCDF_C_PATHS}/include)
 target_include_directories(scream_rrtmgp PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${SCREAM_BASE_DIR}/../../externals)
