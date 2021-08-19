@@ -6,7 +6,7 @@
 #include "scream_config.h"
 #include "share/scream_types.hpp"
 
-#include "share/io/output_manager.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
@@ -70,13 +70,9 @@ TEST_CASE("restart","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // Create an Output manager for testing output
-  OutputManager m_output_manager;
+  OutputManager output_manager;
   auto output_params = get_om_params(io_comm,false);
-  m_output_manager.set_params(output_params);
-  m_output_manager.set_comm(io_comm);
-  m_output_manager.set_grids(grid_man);
-  m_output_manager.set_field_mgr(field_manager);
-  m_output_manager.init();
+  output_manager.setup(io_comm,output_params,field_manager,false);
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
@@ -93,7 +89,7 @@ TEST_CASE("restart","io")
   for (int i=0; i<nsteps; ++i) {
     time_advance(*field_manager,out_fields,dt);
     time += dt;
-    m_output_manager.run(time);
+    output_manager.run(time);
   }
 
   // Create a copy of the field manager current status, for checking restart
@@ -149,9 +145,9 @@ TEST_CASE("restart","io")
   for (int i=0; i<5; ++i) {
     time_advance(*field_manager,out_fields,dt);
     time += dt;
-    m_output_manager.run(time);
+    output_manager.run(time);
   }
-  m_output_manager.finalize();
+  output_manager.finalize();
 
   // Restore the rpointer file as it was after timestep=15
   std::ofstream rpointer_file_out;
@@ -165,22 +161,17 @@ TEST_CASE("restart","io")
   // Create Output manager, and read the restart
   util::TimeStamp time_res (0,0,0,15);
   auto output_params_res = get_om_params(io_comm,true);
-  OutputManager m_output_manager_res;
-  m_output_manager_res.set_params(output_params_res);
-  m_output_manager_res.set_comm(io_comm);
-  m_output_manager_res.set_grids(grid_man);
-  m_output_manager_res.set_field_mgr(fm_res);
-  m_output_manager_res.set_runtype_restart(true);
-  m_output_manager_res.init();
+  OutputManager output_manager_res;
+  output_manager_res.setup(io_comm,output_params_res,fm_res,true);
 
   // Run 5 more steps from the restart, to get to the next output step.
   // We should be generating the same output file as before.
   for (int i=0; i<5; ++i) {
     time_advance(*fm_res,out_fields,dt);
     time_res += dt;
-    m_output_manager_res.run(time_res);
+    output_manager_res.run(time_res);
   }
-  m_output_manager_res.finalize();
+  output_manager_res.finalize();
 
   // Finalize everything
   scorpio::eam_pio_finalize();

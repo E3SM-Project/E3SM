@@ -7,7 +7,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
-#include "share/io/output_manager.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
@@ -74,7 +74,7 @@ public:
   void initialize_fields (const util::TimeStamp& t0);
 
   // Initialie I/O structures for output
-  void initialize_output_manager ();
+  void initialize_output_managers (const bool restarted_run = false);
 
   // Call 'initialize' on all atm procs
   void initialize_atm_procs ();
@@ -85,7 +85,8 @@ public:
   // which is handy for scream standalone tests.
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0);
+                   const util::TimeStamp& t0,
+                   const bool restarted_run = false);
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -120,7 +121,7 @@ protected:
 
   ekat::ParameterList                                 m_atm_params;
 
-  OutputManager                                       m_output_manager;
+  std::map<std::string,OutputManager>                 m_output_managers;
 
   ATMBufferManager                                    m_memory_buffer;
 

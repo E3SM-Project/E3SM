@@ -2,7 +2,7 @@
 #include <memory>
 
 #include "ekat/util/ekat_string_utils.hpp"
-#include "share/io/output_manager.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
@@ -127,13 +127,9 @@ TEST_CASE("input_output_basic","io")
   auto field_manager = get_test_fm(grid);
 
   // Create an Output manager for testing output
-  OutputManager m_output_manager;
+  OutputManager output_manager;
   auto output_params = get_om_params(1,io_comm);
-  m_output_manager.set_params(output_params);
-  m_output_manager.set_comm(io_comm);
-  m_output_manager.set_grids(grid_man);
-  m_output_manager.set_field_mgr(field_manager);
-  m_output_manager.init();
+  output_manager.setup(io_comm,output_params,field_manager,false);
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
@@ -172,9 +168,9 @@ TEST_CASE("input_output_basic","io")
       }
       f.sync_to_dev();
     }
-    m_output_manager.run(time);
+    output_manager.run(time);
   }
-  m_output_manager.finalize();
+  output_manager.finalize();
   // Because the next test for input in this sequence relies on the same fields.  We set all field values
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
   for (const auto& fname : out_fields->m_fields_names)
