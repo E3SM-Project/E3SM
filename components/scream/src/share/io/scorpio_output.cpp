@@ -208,18 +208,22 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     // we need to append to the filename ".rhist" or ".r" respectively, and add
     // the filename to the rpointer.atm file.
     if (m_is_model_restart_output) {
-      filename+=".r";
-      std::ofstream rpointer;
-      rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
-      rpointer << filename + ".nc" << std::endl;
+      filename+=".r.nc";
+      if (m_comm.am_i_root()) {
+        std::ofstream rpointer;
+        rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
+        rpointer << filename << std::endl;
+      }
+    } else if (is_checkpoint_step) {
+      filename+=".rhist.nc";
+      if (m_comm.am_i_root()) {
+        std::ofstream rpointer;
+        rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
+        rpointer << filename << std::endl;
+      }
+    } else {
+      filename += ".nc";
     }
-    if (is_checkpoint_step) {
-      filename+=".rhist"; 
-      std::ofstream rpointer;
-      rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
-      rpointer << filename + ".nc" << std::endl;
-    }
-    filename += ".nc";
 
     // If it's a checkpoint file, or if there's no file open for the output, we need to open the pio file.
     if( is_checkpoint_step or !m_is_output_file_open) {
