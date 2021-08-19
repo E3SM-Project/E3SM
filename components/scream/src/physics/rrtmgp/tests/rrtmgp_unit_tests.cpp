@@ -184,11 +184,26 @@ TEST_CASE("rrtmgp_test_zenith") {
     bool flag_print = false;
     shr_orb_params_c(&orbital_year, &eccen, &obliq, &mvelp, 
                      &obliqr, &lambm0, &mvelpp); //, flag_print); // Note fortran code has optional arg
-
     REQUIRE(eccen == eccen_ref);
-    //
-    // Call zenith function with dummy data
-    //
-    // Verify we get expected result
+    REQUIRE(obliqr == obliqr_ref);
+    REQUIRE(mvelpp == mvelpp_ref);
+    REQUIRE(lambm0 == lambm0_ref);
+    REQUIRE(mvelpp == mvelpp_ref);
 
+    // Test shr_orb_decl()
+    double delta;
+    double eccf;
+    shr_orb_decl_c(calday, eccen, mvelpp, lambm0,
+                   obliqr, &delta, &eccf);
+    REQUIRE(delta == delta_ref);
+    REQUIRE(eccf  == eccf_ref );
+
+    double dt_avg = 0.; //3600.0000000000000;
+    double coszrs = shr_orb_cosz_c(calday, lat, lon, delta, dt_avg);
+    REQUIRE(coszrs == coszrs_ref);
+
+    // Another case, this time WITH dt_avg flag:
+    //  DEBUG: calday, eccen, mvelpp, lambm0, obliqr, delta, eccf, lat, lon, dt_avg, coszrs =    1.0833333333333333        1.67077
+    //  19799280658E-002   4.9344679089867318       -3.2503635878519378E-002  0.40912382465788016      -0.40292121709083456
+    //  1.0342248931660425       -1.0724153591027763        4.5284876076962712        3600.0000000000000       0.14559973262047626
 }

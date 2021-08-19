@@ -26,11 +26,11 @@ contains
          calday, eccen, mvelpp, lambm0, &
          obliqr, delta, eccf            &
          ) bind(C, name='shr_orb_decl_c')
-      real(c_double) :: calday
-      real(c_double) :: eccen
-      real(c_double) :: mvelpp
-      real(c_double) :: lambm0
-      real(c_double) :: obliqr
+      real(c_double), VALUE :: calday
+      real(c_double), VALUE :: eccen
+      real(c_double), VALUE :: mvelpp
+      real(c_double), VALUE :: lambm0
+      real(c_double), VALUE :: obliqr
       real(c_double) :: delta
       real(c_double) :: eccf
       call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, eccf)
@@ -39,11 +39,11 @@ contains
    real(c_double) function shr_orb_cosz_c( &
          jday, lat, lon, declin, dt_avg   &
          ) bind(C, name='shr_orb_cosz_c')
-      real(c_double), intent(in) :: jday
-      real(c_double), intent(in) :: lat
-      real(c_double), intent(in) :: lon
-      real(c_double), intent(in) :: declin
-      real(c_double), intent(in) :: dt_avg
+      real(c_double), VALUE :: jday
+      real(c_double), VALUE :: lat
+      real(c_double), VALUE :: lon
+      real(c_double), VALUE :: declin
+      real(c_double), VALUE :: dt_avg
       shr_orb_cosz_c = shr_orb_cosz(jday, lat, lon, declin, dt_avg)
       return
    end function shr_orb_cosz_c
