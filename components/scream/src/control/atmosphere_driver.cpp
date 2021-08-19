@@ -314,19 +314,19 @@ initialize_fields (const util::TimeStamp& t0)
   }
   ic_reader_params.set("FIELDS",ic_fields_names);
 
-  // Check the status of lat and lon values on reference grid:
+  // Check whether we need to load latitude/longitude of reference grid dofs.
   // This option allows the user to set lat or lon in their own
   // test or run setup code rather than by file.
-  bool skip_init_lat = true;
-  bool skip_init_lon = true;
-  if (ic_pl.isParameter("skip_init_lat")) {
-    skip_init_lat = ic_pl.get<bool>("skip_init_lat");
+  bool load_latitude  = false;
+  bool load_longitude = false;
+  if (ic_pl.isParameter("I")) {
+    load_latitude = ic_pl.get<bool>("Load Latitude");
   }
-  if (ic_pl.isParameter("skip_init_lon")) {
-    skip_init_lon = ic_pl.get<bool>("skip_init_lon");
+  if (ic_pl.isParameter("load_longitude")) {
+    load_longitude = ic_pl.get<bool>("Load Longitude");
   }
 
-  if (ifield>0 || !skip_init_lon || !skip_init_lat) {
+  if (ifield>0 || load_longitude || load_latitude) {
     // There are fields to read from the nc file. We must have a valid nc file then.
     ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
 
@@ -346,7 +346,7 @@ initialize_fields (const util::TimeStamp& t0)
     }
 
     // Case where lat and/or lon pulled from initial condition file
-    if ( !skip_init_lat || !skip_init_lon) {
+    if ( load_latitude || load_longitude) {
       using namespace ShortFieldTagsNames;
       using view_d = AbstractGrid::geo_view_type;
       using view_h = view_d::HostMirror;
@@ -358,13 +358,13 @@ initialize_fields (const util::TimeStamp& t0)
       std::map<std::string,FieldLayout> layouts;
       std::map<std::string,view_h> host_views;
       std::map<std::string,view_d> dev_views;
-      if (!skip_init_lat) {
+      if (load_latitude) {
         dev_views["lat"] = ref_grid->get_geometry_data("lat");
         host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
         layouts.emplace("lat",layout);
         fnames.push_back("lat");
       }
-      if (!skip_init_lon) {
+      if (load_longitude) {
         dev_views["lon"] = ref_grid->get_geometry_data("lon");
         host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
         layouts.emplace("lon",layout);
