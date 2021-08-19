@@ -47,10 +47,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
   // Construct and store an output stream instance for each output request.
   // Typical output is controlled by parameter list which is stored in individual YAML files.
-  // A list of those files is passed to the output manager via the parameter list using the
-  // key "Output YAML Files".  See srd/share/io/tests for examples.
+  // A list of those files is passed to the output manager via the parameter list.
+  // In particular, check the 'Output YAML Files' sublist, and look for the entry
+  // with the same name as the grid.
+  // See srd/share/io/tests for examples.
   std::vector<std::string> empty;
-  auto& list_of_files = m_params.get("Output YAML Files",empty);
+  const auto& grid_name = m_field_mgr->get_grid()->name();
+  auto& list_of_files = m_params.sublist("Output YAML Files").get(grid_name,empty);
   for (auto& it : list_of_files) {
     ekat::ParameterList out_params(it);
     parse_yaml_file(it,out_params);

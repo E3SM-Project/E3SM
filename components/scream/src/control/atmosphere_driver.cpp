@@ -223,19 +223,10 @@ void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   // For each grid in the grids manager, grab a homonymous sublist of the
   // "Output Managers" atm params sublist (might be empty), and create
   // an output manager for that grid.
-  auto& out_mgrs_params = m_atm_params.sublist("SCREAM Output");
+  auto& io_params = m_atm_params.sublist("SCORPIO");
   for (auto it : m_grids_manager->get_repo()) {
-    auto& out_params = out_mgrs_params.sublist(it.first);
     auto fm = m_field_mgrs.at(it.first);
-    // The restart params are the same for all grids, so they are specified
-    // once (if at all) in the input file. If there is a 'SCREAM Restart'
-    // subsection, copy it inside the out_params list before passing it
-    // to the OutpuManager ctor.
-    if (m_atm_params.isSublist("SCREAM Restart")) {
-      auto& restart_params = m_atm_params.sublist("SCREAM Restart");
-      out_params.sublist("Restart Control") = restart_params;
-    }
-    m_output_managers[it.first].setup(m_atm_comm,out_params,fm,restarted_run);
+    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,restarted_run);
   }
 
   m_ad_status |= s_output_inited;

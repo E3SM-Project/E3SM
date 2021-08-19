@@ -21,7 +21,8 @@ Grids Manager:
 Initial Conditions:
   Initial Conditions File: p3_init_ne2np4.nc
 
-# The name of the output control file for this test.
-Output Manager:
- Output YAML Files: ["p3_stand_alone_output.yaml"] 
+# The parameters for I/O control
+SCORPIO:
+  Output YAML Files:
+    Physics: ["p3_stand_alone_output.yaml"]
 ...
