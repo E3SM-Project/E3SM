@@ -239,9 +239,9 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
       ADD_SUBDIRECTORY(theta-nlev128)
     ENDIF()
 
-    IF (HOMMEXX_BFB_TESTING)
+    #    IF (HOMMEXX_BFB_TESTING)
       ADD_SUBDIRECTORY(thetal_kokkos_ut)
-    ENDIF()
+      #ENDIF()
   endif()
 
 ENDIF()
@@ -256,19 +256,19 @@ IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
-IF (HOMMEXX_BFB_TESTING)
+#IF (HOMMEXX_BFB_TESTING)
   # Test some stuff in the shared folder
   ADD_SUBDIRECTORY (share_kokkos_ut)
-ENDIF ()
+  #ENDIF ()
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(preqx-nlev26)
   ADD_SUBDIRECTORY(preqx-nlev26-kokkos)
   ADD_SUBDIRECTORY(preqx-nlev72)
   ADD_SUBDIRECTORY(preqx-nlev72-kokkos)
-  IF (HOMMEXX_BFB_TESTING)
+  #  IF (HOMMEXX_BFB_TESTING)
     ADD_SUBDIRECTORY(preqx_kokkos_ut)
-  ENDIF ()
+    #ENDIF ()
 ENDIF ()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
