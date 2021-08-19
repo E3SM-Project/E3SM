@@ -13,7 +13,7 @@ module lnd2atmMod
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates
   use tracer_varcon        , only : is_active_betr_bgc
-  use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
+  use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g
   use lnd2atmType          , only : lnd2atm_type
