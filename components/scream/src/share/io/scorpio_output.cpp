@@ -114,10 +114,6 @@ void AtmosphereOutput::init()
     //      "Restart History" to false in the input parameter list.
     //      For now, simply print a warning.
     if (found) {
-      // If restart data is needed, the history restart file *must* be found.
-      EKAT_REQUIRE_MSG(found,
-          "Error!! No history restart file found in rpointer file for '" + m_casename + "'.\n");
-
       // Create an input stream on the fly, and init averaging data
       ekat::ParameterList res_params("Input Parameters");
       res_params.set<std::string>("FILENAME",filename);

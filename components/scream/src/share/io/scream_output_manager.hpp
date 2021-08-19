@@ -74,7 +74,7 @@ protected:
   // Add an output stream. Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options
   //  - model_restart_output: whether this output stream is to write a model restart file
-  void new_output(const ekat::ParameterList& params, const bool model_restart_output);
+  void add_output_stream(const ekat::ParameterList& params, const bool model_restart_output);
 
   // Craft the restart parameter list
   void make_restart_param_list(ekat::ParameterList& params);
@@ -86,7 +86,6 @@ protected:
   ekat::Comm                          m_io_comm;
   ekat::ParameterList                 m_params;
   std::shared_ptr<const fm_type>      m_field_mgr;
-  std::string                         m_ref_grid_name;
 
   bool m_runtype_restart  = false;
 

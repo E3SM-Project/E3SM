@@ -43,9 +43,6 @@ public:
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
   explicit FieldHeader (const identifier_type& id);
-  FieldHeader (const identifier_type& id,
-               std::shared_ptr<FieldHeader> parent,
-               const int idim, const int k);
 
   // Assignment deleted, to prevent sneaky overwrites.
   FieldHeader& operator= (const FieldHeader&) = delete;

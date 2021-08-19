@@ -1,7 +1,7 @@
 #ifndef SCREAM_FAMILY_TRACKING_CLASS
 #define SCREAM_FAMILY_TRACKING_CLASS
 
-#include "ekat/std_meta//ekat_std_enable_shared_from_this.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <list>
@@ -71,8 +71,8 @@ FamilyTracking<DerivedType>::FamilyTracking ()
   // Note: we cannot put the static assert in the class decl, cause DerivedType
   //       is still incomplete at that point.
   static_assert (std::is_base_of<tracking_type,derived_type>::value,
-      "Error! Do not try to instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
-      "       This class is trying to use the Curiously Recurring Template Pattern (CRTP).\n");
+      "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
+      "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
 }
 
 template<typename DerivedType>

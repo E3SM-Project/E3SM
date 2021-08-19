@@ -1106,7 +1106,7 @@ contains
     if (var%has_t_dim) then
       ndims = SIZE(var%dimlen)-1
     else
-      ndims = SIZE(var%dimlen)-1
+      ndims = SIZE(var%dimlen)
     endif
     var_size = 1
     do i=1,ndims
@@ -1158,7 +1158,7 @@ contains
     if (var%has_t_dim) then
       ndims = SIZE(var%dimlen)-1
     else
-      ndims = SIZE(var%dimlen)-1
+      ndims = SIZE(var%dimlen)
     endif
     var_size = 1
     do i=1,ndims

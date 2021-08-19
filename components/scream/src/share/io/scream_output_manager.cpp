@@ -37,7 +37,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // Get restart parameters, and create a param list for the model restart output
     auto& out_params = m_params.sublist("Restart Control");
     make_restart_param_list(out_params);
-    new_output(out_params,true);
+    add_output_stream(out_params,true);
 
     // Gather restart frequency info for restart history files
     auto& freq_params = out_params.sublist("FREQUENCY");
@@ -56,7 +56,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     parse_yaml_file(it,out_params);
     out_params.set("CHECKPOINT FREQUENCY",restart_freq);
     out_params.set("OUT_OPTION",restart_freq_units);
-    new_output(out_params,false);
+    add_output_stream(out_params,false);
   }
 }
 /*===============================================================================================*/
@@ -80,7 +80,7 @@ void OutputManager::finalize()
 }
 /*===============================================================================================*/
 void OutputManager::
-new_output(const ekat::ParameterList& params, const bool model_restart_output)
+add_output_stream(const ekat::ParameterList& params, const bool model_restart_output)
 {
   auto output = std::make_shared<output_type>(m_io_comm,params,m_field_mgr,
                                               m_runtype_restart, model_restart_output);
