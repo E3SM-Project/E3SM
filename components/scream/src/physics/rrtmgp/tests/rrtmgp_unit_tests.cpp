@@ -203,7 +203,18 @@ TEST_CASE("rrtmgp_test_zenith") {
     REQUIRE(coszrs == coszrs_ref);
 
     // Another case, this time WITH dt_avg flag:
-    //  DEBUG: calday, eccen, mvelpp, lambm0, obliqr, delta, eccf, lat, lon, dt_avg, coszrs =    1.0833333333333333        1.67077
-    //  19799280658E-002   4.9344679089867318       -3.2503635878519378E-002  0.40912382465788016      -0.40292121709083456
-    //  1.0342248931660425       -1.0724153591027763        4.5284876076962712        3600.0000000000000       0.14559973262047626
+    calday = 1.0833333333333333;
+    eccen = 1.6707719799280658E-002;
+    mvelpp = 4.9344679089867318;
+    lambm0 = -3.2503635878519378E-002;
+    obliqr = 0.40912382465788016;
+    delta = -0.40292121709083456;
+    eccf = 1.0342248931660425;
+    lat = -1.0724153591027763;
+    lon = 4.5284876076962712;
+    dt_avg = 3600.0000000000000;
+    coszrs_ref = 0.14559973262047626;
+    coszrs = shr_orb_cosz_c(calday, lat, lon, delta, dt_avg);
+    REQUIRE(coszrs == coszrs_ref);
+
 }
