@@ -56,20 +56,19 @@
       <value compset="_EAM%WC"       >-chem waccm_mozart_mam3</value>
       <value compset="_EAM%WCMX"  >-waccmx</value>
       <!-- MMF compset (i.e. super-parameterization) -->
-      <value compset="_EAM%MMF"               >-use_MMF -crm_adv MPDATA -nlev 60 -crm_nz 50 </value>
-      <value compset="_EAM%MMF"               >-crm_dx 2000 -crm_dt 10 </value>
-      <value compset="_EAM%MMF"               >-crm_nx 64 -crm_nx_rad 4 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF"               >-rad rrtmgp </value>
-      <value compset="_EAM%MMF[12]"           >-crm sam</value>
-      <value compset="_EAM%MMFXX"             >-crm samxx</value>
-      <value compset="_EAM%MMFOMP"            >-crm samomp</value>
-      <value compset="_EAM%MMF[1XO]"          >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%MMF2"              >-MMF_microphysics_scheme m2005 </value>
-      <value compset="_EAM%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
-      <value compset="_EAM%MMF2-ECPP"         >-use_ECPP </value>
-      <value compset="_EAM%MMF.*-AQUA"        >-aquaplanet </value>
-      <value compset="_EAM%MMF.*-RCE"         >-aquaplanet -rce </value>
-      <value compset="_EAM%MMF.*-SCM"         >-scam </value>
+      <value compset="_EAM%MMF"        >-use_MMF -crm_adv MPDATA -nlev 60 -crm_nz 50 </value>
+      <value compset="_EAM%MMF"        >-crm_dx 2000 -crm_dt 10 </value>
+      <value compset="_EAM%MMF"        >-crm_nx 64 -crm_nx_rad 4 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_EAM%MMF"        >-rad rrtmgp </value>
+      <value compset="_EAM%MMF[12]"    >-crm sam</value>
+      <value compset="_EAM%MMFXX"      >-crm samxx</value>
+      <value compset="_EAM%MMFOMP"     >-crm samomp</value>
+      <value compset="_EAM%MMF[1XO]"   >-MMF_microphysics_scheme sam1mom -chem none</value>
+      <value compset="_EAM%MMF2"       >-MMF_microphysics_scheme m2005 </value>
+      <value compset="_EAM%MMF2-ECPP"  >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -use_ECPP </value>
+      <value compset="_EAM%MMF.*-AQUA" >-aquaplanet </value>
+      <value compset="_EAM%MMF.*-RCE"  >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF.*-SCM"  >-scam </value>
 
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
@@ -230,9 +229,10 @@
     <desc compset="_EAM%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="EAM.*_BGC%B">EAM prognostic CO2 cycle turned on.</desc>
     <!-- MMF / Super-Parameterization -->
-    <desc compset="_EAM%MMF1"     >E3SM-MMF (Fortran) with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
-    <desc compset="_EAM%MMF2-ECPP">E3SM-MMF (Fortran) with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
-    <desc compset="_EAM%MMFXX"    >E3SM-MMF (C++) with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_EAM%MMF1"     >E3SM-MMF (Fortran w/ OpenACC offload), RRTMGP, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_EAM%MMF2-ECPP">E3SM-MMF (Fortran w/ OpenACC offload), RRTMGP, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <desc compset="_EAM%MMFOMP"   >E3SM-MMF (Fortran w/ OpenMP offload), RRTMGP, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_EAM%MMFXX"    >E3SM-MMF (C++ w/ YAKL offload), RRTMGP, 1-mom micro, prescribed aerosol</desc>
     <!--  -->
   </description>
 
