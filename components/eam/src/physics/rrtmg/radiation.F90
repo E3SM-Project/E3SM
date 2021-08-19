@@ -24,8 +24,7 @@ use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
-                           have_clwp,clwpobs,have_tg,tground,swrad_off,&
-                           lwrad_off
+                           have_clwp,clwpobs,have_tg,tground
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
 
@@ -304,20 +303,24 @@ function radiation_do(op, timestep)
    end if
 
    select case (op)
-
-   case ('sw') ! do a shortwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradsw == 1                     &
-                    .or. (mod(nstep-1,iradsw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case ('lw') ! do a longwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradlw == 1                     &
-                    .or. (mod(nstep-1,iradlw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case default
-      call endrun('radiation_do: unknown operation:'//op)
-
+      case ('sw') ! do a shortwave heating calc this timestep?
+         if (iradsw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradsw == 1                     &
+                          .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case ('lw') ! do a longwave heating calc this timestep?
+         if (iradlw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradlw == 1                     &
+                          .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case default
+         call endrun('radiation_do: unknown operation:'//op)
    end select
 end function radiation_do
 
@@ -344,18 +347,17 @@ real(r8) function radiation_nextsw_cday()
    nstep  = get_nstep()
    dtime  = get_step_size()
    offset = 0
-   do while (.not. dosw)
-      nstep = nstep + 1
-      offset = offset + dtime
-      if (radiation_do('sw', nstep)) then
-         radiation_nextsw_cday = get_curr_calday(offset=offset) 
-         dosw = .true.
-      end if
-   end do
-   if(radiation_nextsw_cday == -1._r8) then
-      call endrun('error in radiation_nextsw_cday')
+   if (iradsw/=0) then
+      do while (.not. dosw)
+         nstep = nstep + 1
+         offset = offset + dtime
+         if (radiation_do('sw', nstep)) then
+            radiation_nextsw_cday = get_curr_calday(offset=offset) 
+            dosw = .true.
+         end if
+      end do
    end if
-        
+
 end function radiation_nextsw_cday
 
 !================================================================================================
@@ -1111,10 +1113,6 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
-    
-    if (swrad_off) then
-       coszrs(:)=0._r8 ! coszrs is only output for zenith
-    endif    
 
     call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 
@@ -1464,22 +1462,7 @@ end function radiation_nextsw_cday
                        clm_seed,     lu,           ld                                            )
                   call t_stopf ('rad_rrtmg_lw')
 
-                  if (lwrad_off) then
-                     qrl(:,:) = 0._r8
-                     qrlc(:,:) = 0._r8
-                     flns(:) = 0._r8
-                     flnt(:) = 0._r8
-                     flnsc(:) = 0._r8
-                     flntc(:) = 0._r8
-                     cam_out%flwds(:) = 0._r8
-                     flut(:) = 0._r8
-                     flutc(:) = 0._r8
-                     fnl(:,:) = 0._r8
-                     fcnl(:,:) = 0._r8
-                     fldsc(:) = 0._r8
-                  end if !lwrad_off
-		  
-		  do i=1,ncol
+                  do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
                   end do
 

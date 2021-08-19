@@ -19,13 +19,14 @@ void damping() {
 
   real constexpr tau_min    = 60.0;
   real constexpr tau_max    = 450.0;
-  real constexpr damp_depth = 0.4;
+  real constexpr fractional_damp_depth = 0.4;
 
-  int1d  n_damp("n_damp",ncrms);
-  real2d t0loc ("t0loc" ,nzm,ncrms);
-  real2d u0loc ("u0loc" ,nzm,ncrms);
-  real2d v0loc ("v0loc" ,nzm,ncrms);
-  real2d tau   ("tau"   ,nzm,ncrms);
+  int1d  n_damp    ("n_damp",ncrms);
+  int2d  do_damping("n_damp",nzm,ncrms);
+  real2d t0loc     ("t0loc" ,nzm,ncrms);
+  real2d u0loc     ("u0loc" ,nzm,ncrms);
+  real2d v0loc     ("v0loc" ,nzm,ncrms);
+  real2d tau       ("tau"   ,nzm,ncrms);
 
   if (tau_min < 2.0*dt) { 
     std::cout << "Error: in damping() tau_min is too small!";
@@ -34,12 +35,19 @@ void damping() {
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    for (int k=nzm-1; k>=0; k--) {
-      if(z(nzm-1,icrm)-z(k,icrm) < damp_depth*z(nzm-1,icrm)) {
-        n_damp(icrm)=nzm-1-k+1;
-      }
-    }
+    n_damp(icrm) = 0;
   });
+
+  // for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    if(z(nzm-1,icrm)-z(k,icrm) < fractional_damp_depth*z(nzm-1,icrm)) {
+      do_damping(k,icrm)=1;
+    } else {
+      do_damping(k,icrm)=0;
+    }
+    yakl::atomicAdd( n_damp(icrm), do_damping(k,icrm) );
+  });
+
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {

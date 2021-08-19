@@ -2479,7 +2479,7 @@ contains
        end if
 
        ! BGC fields
-       if (config_use_ecosysTracers) then
+       if (config_use_ecosysTracers .and. index_o2x_Faoo_fco2_ocn /= 0) then
           ! convert from mmolC/m2/s to kg CO2/m2/s
           o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = avgCO2_gas_flux(i)*44.e-6_RKIND
        endif

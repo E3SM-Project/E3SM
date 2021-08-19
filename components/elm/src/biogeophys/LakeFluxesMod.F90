@@ -17,13 +17,13 @@ module LakeFluxesMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use GridcellType         , only : grc_pp   
-  use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
+  use GridcellType         , only : grc_pp
+  use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ws  
+  use ColumnDataType       , only : col_es, col_ws
   use VegetationType       , only : veg_pp
-  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf  
-  !    
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -37,8 +37,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine LakeFluxes(bounds, num_lakec, filter_lakec, num_lakep, filter_lakep, &
-       atm2lnd_vars, solarabs_vars, frictionvel_vars, temperature_vars, &
-       energyflux_vars, waterstate_vars, waterflux_vars, lakestate_vars) 
+       atm2lnd_vars, solarabs_vars, frictionvel_vars, &
+       energyflux_vars, lakestate_vars)
     !
     ! !DESCRIPTION:
     ! Calculates lake temperatures and surface fluxes.
@@ -47,19 +47,21 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
+      !$acc routine seq
+    use shr_flux_mod        , only : shr_flux_update_stress
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use elm_varctl          , only : use_lch4
-    use elm_varctl          , only : use_lch4, use_extrasnowlayers
+    use elm_varctl          , only : iulog, use_lch4, use_extrasnowlayers
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use clm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds  
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_lakec         ! number of column non-lake points in column filter
     integer                , intent(in)    :: filter_lakec(:)   ! column filter for non-lake points
     integer                , intent(in)    :: num_lakep         ! number of column non-lake points in pft filter
@@ -68,16 +70,15 @@ contains
     type(solarabs_type)    , intent(inout) :: solarabs_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
-    type(waterflux_type)   , intent(inout) :: waterflux_vars
-    type(temperature_type) , intent(inout) :: temperature_vars
     type(lakestate_type)   , intent(inout) :: lakestate_vars
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer :: z0mg_col(:)               ! roughness length over ground, momentum [m]
     real(r8), pointer :: z0hg_col(:)               ! roughness length over ground, sensible heat [m]
     real(r8), pointer :: z0qg_col(:)               ! roughness length over ground, latent heat [m]
-    integer , parameter  :: niters = 4             ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8       ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmax_expl = 4          ! maximum number of iterations with no tau update
+    integer, parameter  :: itmax_impl = 30         ! maximum number of iterations with tau update
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
     integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
@@ -85,6 +86,8 @@ contains
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
     integer  :: iter                               ! iteration index
+    integer  :: iter_final                         ! number of iterations used
+    integer  :: itmax                              ! maximum number of iterations
     integer  :: nmozsgn(bounds%begp:bounds%endp)   ! number of times moz changes sign
     integer  :: jtop(bounds%begc:bounds%endc)      ! top level for each column (no longer all 1)
     real(r8) :: ax                                 ! used in iteration loop for calculating t_grnd (numerator of NR solution)
@@ -147,6 +150,12 @@ contains
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -165,63 +174,66 @@ contains
          forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         wsresp           =>    top_as%wsresp                          , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est          =>    top_as%tau_est                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         ugust            =>    top_as%ugust                           , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
          fsr_nir_d        =>    solarabs_vars%fsr_nir_d_patch          , & ! Input:  [real(r8) (:)   ]  reflected direct beam nir solar radiation (W/m**2)
-         fsr_nir_i        =>    solarabs_vars%fsr_nir_i_patch          , & ! Input:  [real(r8) (:)   ]  reflected diffuse nir solar radiation (W/m**2)    
-         sabg_lyr         =>    solarabs_vars%sabg_lyr_patch           , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]       
+         fsr_nir_i        =>    solarabs_vars%fsr_nir_i_patch          , & ! Input:  [real(r8) (:)   ]  reflected diffuse nir solar radiation (W/m**2)
+         sabg_lyr         =>    solarabs_vars%sabg_lyr_patch           , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
          sabg_chk         =>    solarabs_vars%sabg_chk_patch           , & ! Output: [real(r8) (:)   ]  sum of soil/snow using current fsno, for balance check
-         sabg             =>    solarabs_vars%sabg_patch               , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)       
-         
+         sabg             =>    solarabs_vars%sabg_patch               , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
+
          savedtke1        =>    lakestate_vars%savedtke1_col           , & ! Input:  [real(r8) (:)   ]  top level eddy conductivity from previous timestep (W/mK)
-         lakefetch        =>    lakestate_vars%lakefetch_col           , & ! Input:  [real(r8) (:)   ]  lake fetch from surface data (m)                  
-         
-         h2osoi_liq       =>    col_ws%h2osoi_liq         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         h2osoi_ice       =>    col_ws%h2osoi_ice         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
+         lakefetch        =>    lakestate_vars%lakefetch_col           , & ! Input:  [real(r8) (:)   ]  lake fetch from surface data (m)
 
-         t_lake           =>    col_es%t_lake            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)                       
-         t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)             
+         h2osoi_liq       =>    col_ws%h2osoi_liq         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_ice       =>    col_ws%h2osoi_ice         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
 
-         forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch      , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft level [m]     
+         t_lake           =>    col_es%t_lake            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)
+         t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)
+
+         forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch      , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft level [m]
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch      , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft level [m]
          forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch      , & ! Input:  [real(r8) (:)   ]  observational height of specific humidity at pft level [m]
 
-         q_ref2m          =>    veg_ws%q_ref2m          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
-         rh_ref2m         =>    veg_ws%rh_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
-         qflx_evap_soi    =>    veg_wf%qflx_evap_soi     , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)          
-         qflx_evap_tot    =>    veg_wf%qflx_evap_tot     , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
+         q_ref2m          =>    veg_ws%q_ref2m          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         rh_ref2m         =>    veg_ws%rh_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
+         qflx_evap_soi    =>    veg_wf%qflx_evap_soi     , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+         qflx_evap_tot    =>    veg_wf%qflx_evap_tot     , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
 
          qflx_snwcp_ice   =>    veg_wf%qflx_snwcp_ice    , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
-         qflx_snwcp_liq   =>    veg_wf%qflx_snwcp_liq    , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+] 
+         qflx_snwcp_liq   =>    veg_wf%qflx_snwcp_liq    , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
          qflx_prec_grnd   =>    veg_wf%qflx_prec_grnd    , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
          qflx_dirct_rain  =>    veg_wf%qflx_dirct_rain   , & ! Output: [real(r8) (:)   ]  direct rain throughfall [mm H2O/s]
          qflx_leafdrip    =>    veg_wf%qflx_leafdrip     , & ! Output: [real(r8) (:)   ]  leaf rain drip [mm H2O/s]
 
-         t_veg            =>    veg_es%t_veg             , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)                   
-         t_ref2m          =>    veg_es%t_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
-         t_grnd           =>    col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)                       
+         t_veg            =>    veg_es%t_veg             , & ! Output: [real(r8) (:)   ]  vegetation temperature (Kelvin)
+         t_ref2m          =>    veg_es%t_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
+         t_grnd           =>    col_es%t_grnd            , & ! Output: [real(r8) (:)   ]  ground temperature (Kelvin)
 
-         ram1             =>    frictionvel_vars%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
+         ram1             =>    frictionvel_vars%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
 
-         eflx_lwrad_out   =>    veg_ef%eflx_lwrad_out   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net   =>    veg_ef%eflx_lwrad_net   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_soil_grnd   =>    veg_ef%eflx_soil_grnd   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]           
-         eflx_lh_tot      =>    veg_ef%eflx_lh_tot      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]       
-         eflx_lh_grnd     =>    veg_ef%eflx_lh_grnd     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]  
+         eflx_lwrad_out   =>    veg_ef%eflx_lwrad_out   , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
+         eflx_lwrad_net   =>    veg_ef%eflx_lwrad_net   , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_soil_grnd   =>    veg_ef%eflx_soil_grnd   , & ! Output: [real(r8) (:)   ]  soil heat flux (W/m**2) [+ = into soil]
+         eflx_lh_tot      =>    veg_ef%eflx_lh_tot      , & ! Output: [real(r8) (:)   ]  total latent heat flux (W/m8*2)  [+ to atm]
+         eflx_lh_grnd     =>    veg_ef%eflx_lh_grnd     , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]
          eflx_sh_grnd     =>    veg_ef%eflx_sh_grnd     , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot      =>    veg_ef%eflx_sh_tot      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
-         eflx_gnet        =>    veg_ef%eflx_gnet        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)                
-         taux             =>    veg_ef%taux             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
-         tauy             =>    veg_ef%tauy             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)              
+         eflx_sh_tot      =>    veg_ef%eflx_sh_tot      , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         eflx_gnet        =>    veg_ef%eflx_gnet        , & ! Output: [real(r8) (:)   ]  net heat flux into ground (W/m**2)
+         taux             =>    veg_ef%taux             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)
+         tauy             =>    veg_ef%tauy             , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)
 
-         ks               =>    lakestate_vars%ks_col                  , & ! Output: [real(r8) (:)   ]  coefficient passed to LakeTemperature            
-         ws               =>    lakestate_vars%ws_col                  , & ! Output: [real(r8) (:)   ]  surface friction velocity (m/s)                   
+         ks               =>    lakestate_vars%ks_col                  , & ! Output: [real(r8) (:)   ]  coefficient passed to LakeTemperature
+         ws               =>    lakestate_vars%ws_col                  , & ! Output: [real(r8) (:)   ]  surface friction velocity (m/s)
          betaprime        =>    lakestate_vars%betaprime_col           , & ! Output: [real(r8) (:)   ]  fraction of solar rad absorbed at surface: equal to NIR fraction
-         ram1_lake        =>    lakestate_vars%ram1_lake_patch         , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
-         ust_lake         =>    lakestate_vars%ust_lake_col            , & ! Output: [real(r8) (:)   ]  friction velocity (m/s)                           
-         lake_raw         =>    lakestate_vars%lake_raw_col            , & ! Output: [real(r8) (:)   ]  aerodynamic resistance for moisture (s/m)   
-         
+         ram1_lake        =>    lakestate_vars%ram1_lake_patch         , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
+         ust_lake         =>    lakestate_vars%ust_lake_col            , & ! Output: [real(r8) (:)   ]  friction velocity (m/s)
+         lake_raw         =>    lakestate_vars%lake_raw_col            , & ! Output: [real(r8) (:)   ]  aerodynamic resistance for moisture (s/m)
+
          begp             =>    bounds%begp                            , &
          endp             =>    bounds%endp                              &
          )
@@ -338,7 +350,18 @@ contains
 
          ! Initialize stability variables
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+         end if
+         tau_diff(p) = 1.e100_r8
+
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -347,7 +370,6 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg(p), um(p), obu(p))
-
       end do
 
       iter = 1
@@ -355,8 +377,13 @@ contains
       fpcopy(1:num_lakep) = filter_lakep(1:num_lakep)
 
       ! Begin stability iteration
+      if (implicit_stress) then
+         itmax = itmax_impl
+      else
+         itmax = itmax_expl
+      end if
 
-      ITERATION : do while (iter <= niters .and. fncopy > 0)
+      ITERATION : do while (iter <= itmax .and. fncopy > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
@@ -364,8 +391,8 @@ contains
          call FrictionVelocity(begp, endp, fncopy, fpcopy, &
               displa(begp:endp), z0mg(begp:endp), z0hg(begp:endp), z0qg(begp:endp), &
               obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
-              temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
-              frictionvel_vars)
+              temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), &
+              fm(begp:endp), frictionvel_vars)
 
          do fp = 1, fncopy
             p = fpcopy(fp)
@@ -401,6 +428,15 @@ contains
             end if
             ram1(p) = ram(p)       ! pass value to global variable
             ram1_lake(p) = ram1(p) ! for history
+
+            ! Calculate magnitude of stress and update wind speed.
+            if (implicit_stress) then
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram(p)
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+            end if
 
             ! Get derivative of fluxes with respect to ground temperature
 
@@ -505,15 +541,16 @@ contains
 
          end do   ! end of filtered pft loop
 
+         iter_final = iter
          iter = iter + 1
-         if (iter <= niters ) then
+         if (iter <= itmax ) then
             ! Rebuild copy of pft filter for next pass through the ITERATION loop
 
             fnold = fncopy
             fncopy = 0
             do fp = 1, fnold
                p = fpcopy(fp)
-               if (nmozsgn(p) < 3) then
+               if (nmozsgn(p) < 3 .or. (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   fncopy = fncopy + 1
                   fpcopy(fncopy) = p
                end if
@@ -537,7 +574,7 @@ contains
          ! comment means)
          ! Zack Subin, 3/27/09: Since they are now a function of whatever t_grnd was before cooling
          !    to freezing temperature, then this value should be used in the derivative correction term.
-         ! Allow convection if ground temp is colder than lake but warmer than 4C, or warmer than 
+         ! Allow convection if ground temp is colder than lake but warmer than 4C, or warmer than
          !    lake which is warmer than freezing but less than 4C.
          if ( (snl(c) < 0 .or. t_lake(c,1) <= tfrz) .and. t_grnd(c) > tfrz) then
             t_grnd_temp = t_grnd(c)
@@ -579,6 +616,10 @@ contains
 
          taux(p) = -forc_rho(t)*forc_u(t)/ram(p)
          tauy(p) = -forc_rho(t)*forc_v(t)/ram(p)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p) = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)
@@ -620,6 +661,16 @@ contains
          z0qg_col(c) = z0qg(p)
          ust_lake(c) = ustar(p)
 
+         ! Check for convergence of stress.
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
+            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for lake ',&
+                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
+                    ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
+                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
+            end if
+         end if
+
       end do
 
       ! The following are needed for global average on history tape.
@@ -628,7 +679,7 @@ contains
          p = filter_lakep(fp)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
-         
+
          t_veg(p) = forc_t(t)
          eflx_lwrad_net(p)  = eflx_lwrad_out(p) - forc_lwrad(t)
          qflx_prec_grnd(p) = forc_rain(t) + forc_snow(t)
