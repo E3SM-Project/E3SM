@@ -152,10 +152,10 @@
       <!-- MMF / Super-Parameterization -->
       <value compset="2000(?:SOI)?_EAM%MMF[1XO]">2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000(?:SOI)?_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF.*-RCE"    >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF.*-AQUA"   >aquaplanet_MMF-1mom</value>
-      <value compset="AR97_EAM%MMF.*-SCM"   >scam_arm97_MMF-1mom</value>
-      <value compset="RICO_EAM%MMF.*-SCM"   >scam_rico_MMF-1mom</value>
+      <value compset="_EAM%MMF.*-RCE"           >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-AQUA"          >aquaplanet_MMF-1mom</value>
+      <value compset="AR97_EAM%MMF.*-SCM"       >scam_arm97_MMF-1mom</value>
+      <value compset="RICO_EAM%MMF.*-SCM"       >scam_rico_MMF-1mom</value>
     </values>
 
     <group>run_component_cam</group>
