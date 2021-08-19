@@ -4,7 +4,7 @@ Debug:
   Atmosphere DAG Verbosity Level: 5
 
 Initial Conditions:
-  Initial Conditions File: homme_standalone_ne4np4.nc
+  Initial Conditions File: homme_stand_alone_ne4np4.nc
   # Set X_prev = X
   T_mid_prev: T_mid
   horiz_winds_prev: horiz_winds

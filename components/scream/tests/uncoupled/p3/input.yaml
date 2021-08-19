@@ -23,5 +23,5 @@ Initial Conditions:
 
 # The name of the output control file for this test.
 Output Manager:
- Output YAML Files: ["p3_standalone_output.yaml"] 
+ Output YAML Files: ["p3_stand_alone_output.yaml"] 
 ...
