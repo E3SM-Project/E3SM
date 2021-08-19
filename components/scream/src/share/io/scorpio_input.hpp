@@ -25,29 +25,22 @@
  *  this class to facilitate cases where reading input over some number of simulation
  *  timesteps is possible.
  *
- *  At construction time, input instances require
- *  1. an EKAT comm group and
- *  2. a EKAT parameter list
- *  3. a shared pointer to the field manager
- *  The parameter list contains all of the essential data regarding
- *  the input file name and the set of variables to be read.  The parameter list can be
- *  created locally in the process needing input, see src/share/io/tests/ for examples of
- *  setting up the input parameter list.
+ *  At construction time ALL output instances require at least an EKAT comm group and
+ *  an EKAT parameter list. The following arguments depend on the input class use case.
+ *  See constructors documentation for more info.
  *
- *  A typical input parameter list looks like:
+ *  The EKAT parameter list contains the following options to control input behavior:
  *  -----
  *  Input Parameters
- *    FILENAME: STRING
- *    GRID: STRING
- *    FIELDS: [field_name_1, field_name_2, ..., field_name_N]
+ *    Filename: STRING
+ *    Fields:   ARRAY OF STRINGS
  *  -----
- *  where,
- *  FILENAME: is a string value of the name of the input file to be read.
- *  GRID: is a string of the grid the input file is written on, currently only "Physics" is supported.
- *  FIELDS: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
- *  Note: equivalently, you can specify lists (such as the FIELDS list above) with the syntax
- *
- *    FIELDS:
+ *  The meaning of these parameters is the following:
+ *   - Filename: the name of the input file to be read.
+ *   - Fields: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *  Note: you can specify lists (such as the 'Fields' list above) with either of the two syntaxes
+ *    Fields: [field_name1, field_name2, ... , field_name_N]
+ *    Fields:
  *      - field_name_1
  *      - field_name_2
  *        ...
@@ -55,14 +48,9 @@
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
- * Usage:
- * 1. Construct an instance of the AtmosphereInput class:
- *    AtmosphereInput in_object(comm,params,field_mgr);
- * 2. Use read_variables to gather the registered variables
- *    in_object.read_variables();
- *
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
+ *  (2021-08-19) Luca Bertagna (SNL)
  */
 
 namespace scream
@@ -162,7 +150,6 @@ protected:
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
-  ekat::ParameterList m_params;
   ekat::Comm          m_comm;
 
   std::shared_ptr<const fm_type>        m_field_mgr;
@@ -174,8 +161,6 @@ protected:
   std::string               m_filename;
   std::vector<std::string>  m_fields_names;
 
-  // Whether we are reading the history restart file of a model output (see output class for details)
-  bool m_is_history_restart = false;
   bool m_is_inited = false;
 
 }; // Class AtmosphereInput

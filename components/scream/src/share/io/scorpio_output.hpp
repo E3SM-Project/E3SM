@@ -8,53 +8,71 @@
 #include "ekat/mpi/ekat_comm.hpp"
 
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
- *  Typical usage is to register an AtmosphereOutput object with the OutputManager, see output_manager.hpp
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
  *
- *  Similar to the typical AtmosphereProcess, output streams have a init, run and finalize routines.
- *  These routines are called during the respective steps of the AD call, i.e. ad.init(), ad.run() and ad.finalize()/
+ *  Similar to other SCREAM classes, output streams have a init, run and finalize routines.
+ *  These routines are called during the homonymous steps of the AD.
  *
- *  Each AtmosphereOutput instance handles one output stream.
+ *  Each AtmosphereOutput instance handles one output stream. That means that each instance can
+ *  only write to a single file, and can only write output from a single grid.
  *
- *  At construction time ALL output instances require
- *  1. an EKAT comm group and
- *  2. a EKAT parameter list
- *  3. a shared pointer to the field manager
+ *  At construction time ALL output instances require at least an EKAT comm group, an
+ *  EKAT parameter list, and a pointer to the field manager.
  * 
- *  The EKAT parameter list must contain all of the top level output control information and follows the format:
+ *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  FILENAME: STRING
- *  AVERAGING TYPE: STRING
- *  GRID: STRING                   (optional)
- *  FREQUENCY:
- *    OUT_N: INT
- *    OUT_OPTION: STRING
- *    OUT_MAX_STEPS: INT
- *  FIELDS: [field_1, field_2, ..., field_N]
- *  restart_hist_N: INT            (optional)
- *  restart_hist_OPTION: STRING    (optional)
- *  RESTART FILE: BOOL             (optional)
+ *  Casename:                     STRING
+ *  Averaging Type:               STRING
+ *  Max Snapshots Per File:       INT                   (default: 1)
+ *  Fields:                       ARRAY OF STRINGS
+ *  Output:
+      Frequency:                  INT
+ *    Frequency Units:            STRING                (default: Steps)
+ *  Checkpointing:
+ *    Frequency:                  INT                   (default: 0)
+ *    Frequency Units:            STRING                (default: ${Output->Frequency Units})
+ *  Restart:
+ *    Casename:                   STRING                (default: ${Casename})
+ *    Perform Restart:            BOOL                  (default: true)
  *  -----
- *  where,
- *  FILENAME is a string of the filename suffix.  TODO: change this to a casename associated with the whole run.
- *  AVERAGING TYPE is a string that describes which type of output, current options are:
- *    instant - no averaging, output each snap as is.
- *    average - average of the field over some interval described in frequency section.
- *    min     - minimum value of the field over some time interval
- *    max     - maximum value of the field over some time interval
- *  GRID is a string describing which grid to write on, currently the only option is the default Physics.
- *  FREQUENCY is a subsection that controls the frequency parameters of output.
- *    OUT_N is an integer of the frequency of output given the units from OUT_OPTION
- *    OUT_OPTION is a string for the units of output frequency, examples would be "Steps", "Months", "Years", "Hours", etc.
- *    OUT_MAX_STEPS is an integer of the maximum number of steps that can exist on a single file (controls files getting too big).
- *  FIELDS is a list of fields that need to be added to this output stream
- *  restart_hist_N is an optional integer parameter that specifies the frequenct of restart history writes.
- *  restart_hist_OPTION is an optional string parameter for the units of restart history output.
- *  RESTART FILE is an optional boolean parameter that specifies if this output stream is a restart output, which is treated differently.
+ *  The meaning of these parameters is the following:
+ *  - Casename: the output filename root.
+ *  - Averaging Type: a string that describes which type of output, current options are:
+ *      instant - no averaging, output each snap as is.
+ *      average - average of the field over some interval.
+ *      min     - minimum value of the field over time interval.
+ *      max     - maximum value of the field over time interval.
+ *    Here, 'time interval' is described by ${Output Frequency} and ${Output Frequency Units}.
+ *    E.g., with 'Output Frequency'=10 and 'Output Frequency Units'="Days", the time interval is 10 days.
+ *  - Fields: a list of fields that need to be added to this output stream
+ *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
+ *  - Output: parameters for output control
+ *    - Frequency: the frequency of output writes (in the units specified by ${Output Frequency Units})
+ *    - Frequency Units: the units of output frequency (Steps, Months, Years, Hours, Days,...)
+ *      snapshots have been written on a single nc file, the class will close the file, and open a new one
+ *  - Checkpointing: parameters for checkpointing control
+ *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if
+ *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
+ *    - Frequency Units: the units of restart history output.
+ *  - Restart: parameters for history restart
+ *    - Casename: the history restart filename root.
+ *    - Perform Restart: if this is a restarted run, and Averaging Type is not Instant, this flag
+ *      determines whether we want to restart the output history or start from scrach. That is,
+ *      you can set this to false to force a fresh new history, even in a restarted run.
+
+ *  Note: you can specify lists (such as the 'Fields' list above) with either of the two syntaxes
+ *    Fields: [field_name1, field_name2, ... , field_name_N]
+ *    Fields:
+ *      - field_name_1
+ *      - field_name_2
+ *        ...
+ *      - field_name_N
  *
  *  Usage of this class is to create an output file, write data to the file and close the file.
- *  This class keeps a running copy of data for all output fields locally to be used for the different averaging flags.
+ *  This class keeps a temp array for all output fields to be used to perform averaging.
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
+ *  (2021-08-19) Luca Bertagna (SNL)
  */
 
 namespace scream
@@ -125,9 +143,8 @@ protected:
   std::string       m_avg_type;
 
   // Frequency of output control
-  int m_out_max_steps;
   int m_out_frequency;
-  std::string m_out_units;
+  std::string m_out_frequency_units;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>            m_fields;
@@ -143,7 +160,10 @@ protected:
 
   // If this is normal output, whether data to restart the history is needed/generated.
   bool m_has_restart_data;
+  
+  // Frequency of checkpoint writes
   int m_checkpoint_freq;
+  std::string m_checkpoint_freq_units;
 
   // Whether this run is the restart of a previous run (in which case, we might load an output checkpoint)
   bool m_is_restarted_run;
@@ -158,7 +178,10 @@ protected:
   // When this equals m_checkpoint_freq, it's time to write a history restart file.
   int m_nsteps_since_last_checkpoint = 0;
 
-  // When this equals m_out_max_steps, it's time to close the out file, and open a new one.
+  // To keep nc files small, we limit the number of snapshots in each nc file
+  // When the number of snapshots in a file reaches m_out_max_steps, it's time
+  // to close the out file, and open a new one.
+  int m_max_snapshots_per_file;
   int m_num_snapshots_in_file = 0;
 };
 

@@ -32,13 +32,12 @@ get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<FieldManager<Real>>
 backup_fm(const std::shared_ptr<FieldManager<Real>>& src);
 
-std::shared_ptr<UserProvidedGridsManager>
-get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+std::shared_ptr<const AbstractGrid>
+get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const bool check);
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check);
 
-ekat::ParameterList
-get_in_params(const std::string& type, const ekat::Comm& comm);
+ekat::ParameterList get_in_params();
 
 void randomize_fields (const FieldManager<Real>& fm, const int seed);
 
@@ -60,8 +59,7 @@ TEST_CASE("restart","io")
   Int num_levs = 3;
 
   // First set up a field manager and grids manager to interact with the output functions
-  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
-  auto grid = grid_man->get_grid("Physics");
+  auto grid = get_test_grid(io_comm,num_gcols,num_levs);
   auto field_manager = get_test_fm(grid);
   randomize_fields(*field_manager,seed);
 
@@ -71,7 +69,7 @@ TEST_CASE("restart","io")
 
   // Create an Output manager for testing output
   OutputManager output_manager;
-  auto output_params = get_om_params(io_comm,false);
+  auto output_params = get_om_params(io_comm,grid->name(),false);
   output_manager.setup(io_comm,output_params,field_manager,false);
 
   // Construct a timestamp
@@ -99,7 +97,7 @@ TEST_CASE("restart","io")
   // what was in the fm at t=15, while field_3, which is not in the restart
   // group, should be 
   auto fm_res = get_test_fm(grid);
-  auto res_params = get_in_params("Restart",io_comm);
+  auto res_params = get_in_params();
   input_type ins_input(io_comm,res_params,fm_res);
   ins_input.read_variables();
 
@@ -160,7 +158,7 @@ TEST_CASE("restart","io")
 
   // Create Output manager, and read the restart
   util::TimeStamp time_res (0,0,0,15);
-  auto output_params_res = get_om_params(io_comm,true);
+  auto output_params_res = get_om_params(io_comm,grid->name(),true);
   OutputManager output_manager_res;
   output_manager_res.setup(io_comm,output_params_res,fm_res,true);
 
@@ -175,7 +173,6 @@ TEST_CASE("restart","io")
 
   // Finalize everything
   scorpio::eam_pio_finalize();
-  grid_man->clean_up();
 } // TEST_CASE restart
 
 /*===================================================================================================================*/
@@ -264,62 +261,46 @@ void randomize_fields (const FieldManager<Real>& fm, const int seed)
 }
 
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<const AbstractGrid>
+get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = create_point_grid("Physics",num_gcols,num_levs,io_comm);
-  auto upgm = std::make_shared<UserProvidedGridsManager>();
-  upgm->set_grid(dummy_grid);
-
-  return upgm;
+  return create_point_grid("Physics",num_gcols,num_levs,io_comm);
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const bool check)
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check)
 {
   ekat::ParameterList om_params("Output Manager");
-  om_params.set<Int>("PIO Stride",1);
-
+  auto& files = om_params.sublist("Output YAML Files");
   std::vector<std::string> fileNames (1);
   fileNames[0] = std::string("io_test_restart") + (check ? "_check" : "") + "_np" + std::to_string(comm.size()) + ".yaml";
-  om_params.set("Output YAML Files",fileNames);
-  auto& res_sub = om_params.sublist("Restart Control");
-  auto& freq_sub = res_sub.sublist("FREQUENCY");
-  freq_sub.set<Int>("OUT_N",5);
-  freq_sub.set<std::string>("OUT_OPTION","Steps");
+  files.set(grid,fileNames);
+  auto& res_sub = om_params.sublist("Model Restart");
+  res_sub.sublist("Output").set<int>("Frequency",5);
+  res_sub.sublist("Output").set<std::string>("Frequency Units","Steps");
 
   return om_params;  
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& comm)
+ekat::ParameterList get_in_params()
 {
   ekat::ParameterList in_params("Input Parameters");
   std::string filename;
-  if (type=="Restart")
-  {
-    std::ifstream rpointer_file;
-    rpointer_file.open("rpointer.atm");
-    bool found = false;
-    while (rpointer_file >> filename)
-    {
-      if (filename.find(".r.") != std::string::npos)
-      {
-        found = true;
-        break;
-      }
-    }
-    EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
-  
-    std::vector<std::string> fnames = {"field_1", "field_2", "field_4"};
-    in_params.set("FIELDS",fnames);
-  } else if (type=="Final") {
-    filename = "io_output_restart_np" + std::to_string(comm.size()) + ".AVERAGE.Steps_x10.0000-01-01.000020.nc";
-    std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_4"};
-    in_params.set("FIELDS",fnames);
-  }
-  in_params.set<std::string>("FILENAME",filename);
-  in_params.set<std::string>("GRID","Physics");
+
+  // Get input file name from rpointer.atm
+  std::ifstream rpointer_file("rpointer.atm");
+  EKAT_REQUIRE_MSG (rpointer_file.is_open(), "Error! Could not open rpointer.atm file.\n");
+  bool found = false;
+  while (rpointer_file >> filename) {
+    if (filename.find(".r.") != std::string::npos) {
+      found = true;
+      break;
+  }}
+  EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
+
+  std::vector<std::string> fnames = {"field_1", "field_2", "field_4"};
+  in_params.set("Fields",fnames);
+  in_params.set<std::string>("Filename",filename);
+
   return in_params;
 }
 /*===================================================================================================================*/

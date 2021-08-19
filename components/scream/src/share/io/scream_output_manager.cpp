@@ -15,34 +15,33 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_field_mgr = field_mgr;
   m_runtype_restart = runtype_restart;
 
-  // Check for restart output
+  // Check for model restart output
   // Restarts are a special kind of output that have unique characteristics.
   // The following constructs the parameter list to control the restart output stream.
   // The user can trigger restart output at runtime by adding the sublist
-  // "Restart Control" to the SCREAM control YAML file.
+  // "Model Restart" to the SCREAM control YAML file.
   // A typical restart control entry may look like:
   // ----
-  // Restart Contol
-  //   FREQUENCY
-  //     OUT_N: INT
-  //     OUT_OPTION: STRING
+  // Model Restart:
+  //   Output:
+  //     Frequency:       INT
+  //     Frequency Units: STRING
   // ----
-  // where OUT_OPTION is the units of the output frequency (ex. Steps, Months, etc.),
-  // and OUT_N>0 is the actual frequency. E.g., OUT_N=2 meanse every other ${OUT_OPTION}
+  // where Frequency Units is the units of the output frequency (ex. Steps, Months, etc.),
+  // and Frequency>0 is the actual frequency. E.g., Frequency=2 meanse every other ${Frequency Units}
 
   // The output history should have the same restart frequency as the model restart output.
-  int restart_freq = 0;
-  std::string restart_freq_units = "None";
-  if (m_params.isSublist("Restart Control")) {
+  int checkpoint_freq = 0;
+  std::string checkpoint_freq_units = "None";
+  if (m_params.isSublist("Model Restart")) {
     // Get restart parameters, and create a param list for the model restart output
-    auto& out_params = m_params.sublist("Restart Control");
+    auto& out_params = m_params.sublist("Model Restart");
     make_restart_param_list(out_params);
     add_output_stream(out_params,true);
 
-    // Gather restart frequency info for restart history files
-    auto& freq_params = out_params.sublist("FREQUENCY");
-    restart_freq = freq_params.get<Int>("OUT_N");
-    restart_freq_units = freq_params.get<std::string>("OUT_OPTION");
+    // Gather restart frequency info, since the checkpointing info must match them
+    checkpoint_freq       = out_params.sublist("Output").get<Int>("Frequency");
+    checkpoint_freq_units = out_params.sublist("Output").get<std::string>("Frequency Units");
   }
 
   // Construct and store an output stream instance for each output request.
@@ -57,8 +56,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   for (auto& it : list_of_files) {
     ekat::ParameterList out_params(it);
     parse_yaml_file(it,out_params);
-    out_params.set("CHECKPOINT FREQUENCY",restart_freq);
-    out_params.set("OUT_OPTION",restart_freq_units);
+    auto& checkpointing_params = out_params.sublist("Checkpointing");
+    EKAT_REQUIRE_MSG (checkpointing_params.get("Frequency",checkpoint_freq)==checkpoint_freq,
+        "Error! Output checkpointing frequency is different from the model restart output one.\n"
+        "       In case model restart output is generated, checkpointing must have the same frequency.\n");
+    EKAT_REQUIRE_MSG (checkpointing_params.get("Frequency Units",checkpoint_freq_units)==checkpoint_freq_units,
+        "Error! Output checkpointing frequency units are different from the model restart output one.\n"
+        "       In case model restart output is generated, checkpointing must have the same units.\n");
     add_output_stream(out_params,false);
   }
 }
@@ -95,17 +99,13 @@ void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   // Given the unique nature of restart files, this routine sets up the specific requirements.
 
   //TODO change this to some sort of case_name, TODO: control so suffix is .r.nc
-  params.set<std::string>("FILENAME", "scorpio_restart_test");
+  params.set<std::string>("Casename", "scorpio_restart_test");
 
   // Parse the parameters that controls this output instance.
   // Model restart themselves are instant snapshots (no averaging of any kind).
-  params.set<std::string>("AVERAGING TYPE","Instant");
+  params.set<std::string>("Averaging Type","Instant");
 
-  if (not params.isParameter("GRID")) {
-    params.set<std::string>("GRID",m_field_mgr->get_grid()->name());
-  }
-  auto& freq_params = params.sublist("FREQUENCY");
-  freq_params.get<Int>("OUT_MAX_STEPS",1);
+  params.set<Int>("Max Snapshots Per File",1);
 
   // Grab the restart fields from the field manager.
   // If a developer wants a field to be stored in the restart file than they must add the "restart" group tag
@@ -120,7 +120,7 @@ void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   for (const auto& fn : restart_fields.m_info->m_fields_names) {
     fields_names.push_back(fn);
   }
-  params.set("FIELDS",fields_names);
+  params.set("Fields",fields_names);
 }
 /*===============================================================================================*/
 } // namespace scream

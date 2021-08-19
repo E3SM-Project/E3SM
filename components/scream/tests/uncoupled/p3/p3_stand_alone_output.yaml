@@ -1,12 +1,12 @@
 %YAML 1.1
 ---
-FILENAME: p3_stand_alone_output
-AVERAGING TYPE: Instant
-GRID: Physics
-FREQUENCY:
-  OUT_N: 10
-  OUT_OPTION: Steps
-  OUT_MAX_STEPS: 1
-FIELDS: [T_mid, T_prev_micro_step, qv, qc, qr, qv_prev_micro_step, eff_radius_qc, eff_radius_qi,
+Casename: p3_stand_alone_output
+Averaging Type: Instant
+Grid: Physics
+Max Snapshots Per File: 1
+Fields: [T_mid, T_prev_micro_step, qv, qc, qr, qv_prev_micro_step, eff_radius_qc, eff_radius_qi,
          micro_liq_ice_exchange, micro_vap_liq_exchange, micro_vap_ice_exchange]
+Output:
+  Frequency: 10
+  Frequency Units: Steps
 ...

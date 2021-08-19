@@ -32,12 +32,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       "       no greater than the global number of columns.\n"
       "       Consider decreasing the size of IO MPI group.\n");
 
-  if (m_params.isParameter("GRID")) {
-    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==m_grid->name(),
-        "Error! Input grid name in the parameter list does not match\n"
-        "       the name of the input grid.\n");
-  }
-
   // Setup I/O structures
   init ();
 }
@@ -46,14 +40,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 void AtmosphereOutput::init()
 {
   // Parse the parameters that controls this output instance.
-  m_casename = m_params.get<std::string>("FILENAME");
+  m_casename = m_params.get<std::string>("Casename");
 
-  const auto& freq_params = m_params.sublist("FREQUENCY");
-  m_out_max_steps   = freq_params.get<int>("OUT_MAX_STEPS");
-  m_out_frequency   = freq_params.get<int>("OUT_N");
-  m_out_units       = freq_params.get<std::string>("OUT_OPTION");
+  m_max_snapshots_per_file  = m_params.get<int>("Max Snapshots Per File");
+  m_out_frequency           = m_params.sublist("Output").get<int>("Frequency");
+  m_out_frequency_units     = m_params.sublist("Output").get<std::string>("Frequency Units");
 
-  auto avg_type = m_params.get<std::string>("AVERAGING TYPE");
+  auto avg_type = m_params.get<std::string>("Averaging Type");
   m_avg_type = ekat::upper_case(avg_type);
   auto valid_avg_types = {"INSTANT", "MAX", "MIN", "AVERAGE"};
   EKAT_REQUIRE_MSG (ekat::contains(valid_avg_types,m_avg_type),
@@ -69,12 +62,16 @@ void AtmosphereOutput::init()
     // our averaging in a "restart" file (e.g., the current avg and avg_count).
     // If checkpoint_freq=0, we do not perform checkpointing of the output.
     // NOTE: we may not need to *read* restart data (if this is not a restart run),
-    //       but we might still want to save it.
-    m_checkpoint_freq = m_params.get<int>("CHECKPOINT FREQUENCY",0);
+    //       but we might still want to save it. Viceversa, we might not want
+    //       to save it, but still want to read it (a restarted run, where we
+    //       don't want to save additional restart files).
+    m_is_restarted_run     &= m_params.sublist("Restart").get("Perform Restart",true);
+    m_checkpoint_freq       = m_params.sublist("Checkpointing").get("Frequency",0);
+    m_checkpoint_freq_units = m_params.sublist("Checkpointing").get("Frequency Units",m_out_frequency_units);
   }
 
   // For each output field, ensure its dimensions are registered in the pio file
-  m_fields = m_params.get<std::vector<std::string>>("FIELDS");
+  m_fields = m_params.get<std::vector<std::string>>("Fields");
   for (const auto& var_name : m_fields) {
     register_dimensions(var_name);
   }
@@ -85,20 +82,14 @@ void AtmosphereOutput::init()
   // If this is "normal" output of a restarted run, and avg_type requires restart data,
   // then we have to open the history restart file and read its data.
   // The user can skip this (which means the Output averaging would start from scratch)
-  // by setting "Restart History" to false.
-  m_is_restarted_run &= m_params.get("Restart History",true);
-  if (m_has_restart_data && m_is_restarted_run && !m_is_model_restart_output) {
+  // by setting "Restart History" in the "Output Restart" to false.
+  if (m_is_restarted_run && m_has_restart_data) {
     std::ifstream rpointer_file;
     rpointer_file.open("rpointer.atm");
     std::string filename;
     bool found = false;
-    std::string testname;
-    if (m_params.isParameter("RESTART HISTORY FILENAME")) {
-      auto hist_fname = m_params.get<std::string>("RESTART HISTORY FILENAME");
-      testname = compute_filename_root(hist_fname);
-    } else {
-      testname = compute_filename_root(m_casename);
-    }
+    auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
+    auto testname = compute_filename_root(hist_restart_testname);
     while (rpointer_file >> filename) {
       if (filename.find(testname) != std::string::npos) {
         found = true;
@@ -116,9 +107,8 @@ void AtmosphereOutput::init()
     if (found) {
       // Create an input stream on the fly, and init averaging data
       ekat::ParameterList res_params("Input Parameters");
-      res_params.set<std::string>("FILENAME",filename);
-      res_params.set<std::string>("GRID","Physics");
-      res_params.set("FIELDS",m_fields);
+      res_params.set<std::string>("Filename",filename);
+      res_params.set("Fields",m_fields);
 
       AtmosphereInput hist_restart (m_comm,res_params,m_grid,m_host_views_1d,m_layouts);
       hist_restart.read_variables();
@@ -308,7 +298,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     sync_outfile(filename);
     // If snaps equals max per file, close this file and set flag to open a new one next write step.
     if (is_output_step) {
-      if (m_num_snapshots_in_file == m_out_max_steps) {
+      if (m_num_snapshots_in_file == m_max_snapshots_per_file) {
         m_num_snapshots_in_file = 0;
 
         // This file is "full". Close it.
@@ -519,7 +509,7 @@ std::string AtmosphereOutput::compute_filename_root (const std::string& casename
 {
   return casename + "." +
          m_avg_type + "." +
-         m_out_units + "_x" +
+         m_out_frequency_units + "_x" +
          std::to_string(m_out_frequency);
 }
 

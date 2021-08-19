@@ -267,7 +267,6 @@ initialize_fields (const util::TimeStamp& t0)
 
   // Create parameter list for AtmosphereInput
   ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("GRID",ref_grid_name);
   std::vector<std::string> ic_fields_names;
   int ifield=0;
   std::vector<FieldIdentifier> ic_fields_to_copy;
@@ -301,7 +300,7 @@ initialize_fields (const util::TimeStamp& t0)
     }
     f.get_header().get_tracking().update_time_stamp(t0);
   }
-  ic_reader_params.set("FIELDS",ic_fields_names);
+  ic_reader_params.set("Fields",ic_fields_names);
 
   // Check whether we need to load latitude/longitude of reference grid dofs.
   // This option allows the user to set lat or lon in their own
@@ -317,7 +316,7 @@ initialize_fields (const util::TimeStamp& t0)
 
   if (ifield>0 || load_longitude || load_latitude) {
     // There are fields to read from the nc file. We must have a valid nc file then.
-    ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
+    ic_reader_params.set("Filename",ic_pl.get<std::string>("Initial Conditions File"));
 
     MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
     if (!scorpio::is_eam_pio_subsystem_inited()) {
@@ -361,9 +360,8 @@ initialize_fields (const util::TimeStamp& t0)
       }
 
       ekat::ParameterList lat_lon_params;
-      lat_lon_params.set("FIELDS",fnames);
-      lat_lon_params.set("GRID",ref_grid->name());
-      lat_lon_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
+      lat_lon_params.set("Fields",fnames);
+      lat_lon_params.set("Filename",ic_pl.get<std::string>("Initial Conditions File"));
 
       AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params);
       lat_lon_reader.init(ref_grid,host_views,layouts);

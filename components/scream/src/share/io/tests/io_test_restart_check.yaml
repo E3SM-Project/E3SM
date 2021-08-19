@@ -1,12 +1,13 @@
 %YAML 1.1
 ---
-FILENAME: io_output_restart_check_np${MPI_RANKS}
-RESTART HISTORY FILENAME: io_output_restart_np${MPI_RANKS}
-AVERAGING TYPE: Average
-GRID: Physics
-FREQUENCY:
-  OUT_N: 10
-  OUT_OPTION: Steps
-  OUT_MAX_STEPS: 1
-FIELDS: [field_1, field_2, field_3, field_4]
+Casename: io_output_restart_check_np${MPI_RANKS}
+Averaging Type: Average
+Grid: Physics
+Max Snapshots Per File: 1
+Fields: [field_1, field_2, field_3, field_4]
+Output:
+  Frequency: 10
+  Frequency Units: Steps
+Restart:
+  Casename: io_output_restart_np${MPI_RANKS}
 ...

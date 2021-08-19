@@ -37,17 +37,10 @@ AtmosphereInput (const ekat::Comm& comm,
 }
 
 /* ---------------------------------------------------------- */
-
-/* ---------------------------------------------------------- */
 void AtmosphereInput::
 set_parameters (const ekat::ParameterList& params) {
-  m_params = params;
-
-  m_filename = m_params.get<std::string>("FILENAME");
-  m_fields_names = m_params.get<std::vector<std::string>>("FIELDS");
-
-  // If this is a history restart type of read, make sure its noted
-  m_is_history_restart = m_params.get("History Restart", false);
+  m_filename = params.get<std::string>("Filename");
+  m_fields_names = params.get<std::vector<std::string>>("Fields");
 }
 
 /* ---------------------------------------------------------- */
@@ -76,11 +69,6 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       "Error! PIO interface requires the size of the IO MPI group to be\n"
       "       no greater than the global number of columns.\n"
       "       Consider decreasing the size of IO MPI group.\n");
-
-  if (m_params.isParameter("GRID")) {
-    EKAT_REQUIRE_MSG (m_params.get<std::string>("GRID")==grid->name(),
-        "Error! Input grid name in the parameter list does not match the name of the input grid.\n");
-  }
 
   // The grid is good. Store it.
   m_grid = grid;

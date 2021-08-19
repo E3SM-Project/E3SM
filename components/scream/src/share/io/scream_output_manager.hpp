@@ -51,6 +51,7 @@ namespace scream
  *
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
+ *  (2021-08-19) Luca Bertagna (SNL)
  */
 class OutputManager
 {

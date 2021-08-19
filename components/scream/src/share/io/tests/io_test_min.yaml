@@ -1,11 +1,11 @@
 %YAML 1.1
 ---
-FILENAME: io_output_test_np${MPI_RANKS}
-AVERAGING TYPE: Min
-GRID: Physics
-FREQUENCY:
-  OUT_N: 10
-  OUT_OPTION: Steps
-  OUT_MAX_STEPS: 1
-FIELDS: [field_1, field_2, field_3, field_packed]
+Casename: io_output_test_np${MPI_RANKS}
+Averaging Type: Min
+Grid: Physics
+Max Snapshots Per File: 1
+Fields: [field_1, field_2, field_3, field_packed]
+Output:
+  Frequency: 10
+  Frequency Units: Steps
 ...

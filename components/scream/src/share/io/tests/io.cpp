@@ -33,10 +33,10 @@ using input_type = AtmosphereInput;
 const int packsize = 2;
 using Pack         = ekat::Pack<Real,packsize>;
 
-std::shared_ptr<FieldManager<Real>>      get_test_fm(std::shared_ptr<const AbstractGrid> grid);
-std::shared_ptr<UserProvidedGridsManager>   get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-ekat::ParameterList                         get_om_params(const Int casenum, const ekat::Comm& comm);
-ekat::ParameterList                         get_in_params(const std::string type, const ekat::Comm& comm);
+std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid);
+std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+ekat::ParameterList                 get_om_params(const ekat::Comm& comm, const std::string& grid);
+ekat::ParameterList                 get_in_params(const std::string type, const ekat::Comm& comm);
 
 TEST_CASE("input_output_basic","io")
 {
@@ -50,14 +50,13 @@ TEST_CASE("input_output_basic","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // First set up a field manager and grids manager to interact with the output functions
-  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
-  auto grid = grid_man->get_grid("Physics");
+  auto grid = get_test_grid(io_comm,num_gcols,num_levs);
   int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
 
   // Create an Output manager for testing output
   OutputManager output_manager;
-  auto output_params = get_om_params(1,io_comm);
+  auto output_params = get_om_params(io_comm,grid->name());
   output_manager.setup(io_comm,output_params,field_manager,false);
 
   // Construct a timestamp
@@ -200,7 +199,6 @@ TEST_CASE("input_output_basic","io")
   
   // All Done 
   scorpio::eam_pio_finalize();
-  (*grid_man).clean_up();
 } // TEST_CASE output_instance
 /* ----------------------------------*/
 
@@ -283,52 +281,33 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   return fm;
 }
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = create_point_grid("Physics",num_gcols,num_levs,io_comm);
-  auto upgm = std::make_shared<UserProvidedGridsManager>();
-  upgm->set_grid(dummy_grid);
-
-  return upgm;
+  return create_point_grid("Physics",num_gcols,num_levs,io_comm);
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid)
 {
   ekat::ParameterList om_params("Output Manager");
-  om_params.set<Int>("PIO Stride",1);
-  if (casenum == 1) {
-    std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
-                                            "io_test_max",    "io_test_min" };
-    for (auto& name : fileNames) {
-      name += "_np" + std::to_string(comm.size()) + ".yaml";
-    }
-
-    om_params.set("Output YAML Files",fileNames);
-  } else if (casenum == 2) {
-    std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
-    om_params.set("Output YAML Files",fileNames);
-    auto& res_sub = om_params.sublist("Restart Control");
-    auto& freq_sub = res_sub.sublist("FREQUENCY");
-    freq_sub.set<Int>("OUT_N",5);
-    freq_sub.set<std::string>("OUT_OPTION","Steps");
-  } else {
-    EKAT_REQUIRE_MSG(false,"Error, incorrect case number for get_om_params");
+  auto& files = om_params.sublist("Output YAML Files");
+  std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
+                                          "io_test_max",    "io_test_min" };
+  for (auto& name : fileNames) {
+    name += "_np" + std::to_string(comm.size()) + ".yaml";
   }
+
+  files.set(grid,fileNames);
 
   return om_params;  
 }
 /*===================================================================================================================*/
 ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm)
 {
+  using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
   auto type_ci = ekat::upper_case(type);
-  in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
-  in_params.set<std::string>("GRID","Physics");
-  std::vector<std::string> fnames = {"field_1", "field_2", "field_3", "field_packed"};
-  in_params.set("FIELDS",fnames);
+  in_params.set<std::string>("Filename","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
+  in_params.set<vos_type>("Fields",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
 }
 /*===================================================================================================================*/
