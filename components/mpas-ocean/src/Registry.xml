@@ -179,6 +179,24 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
+  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3" units="unitless"
+      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+      possible_values="Any positive integer number greater than 0."
+    />
+    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+      description="Temperature of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="PSU"
+      description="Salinity of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0" units="unitless"
+     description="integer id of transport test."
+     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
+    />
+  </nml_record>
 
 
 	<!--*************************************-->
@@ -3732,7 +3750,6 @@
 <!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
-#ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
-#endif
+
 </registry>
