@@ -396,6 +396,69 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 end subroutine bubble_init
 
 
+subroutine planar_held_suarez_wind(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
+
+  A=200.0 ! height of cos bell
+
+  do j=1,np;  do i=1,np
+
+     xx = elem%sphere%lon
+     zzm = (elem%state%phinh_i(i,j,k,np1)+elem%state%phinh_i(i,j,k+1,np1))/2.0
+     zzi = elem%state%phinh_i(i,j,k,np1)
+
+     !cos bell of size Lx/2
+     coss=cos(xx*pi*4/Lx)+1;
+
+     !check scenario that we are below the extended cos curve for point (xx,zzi)
+     ! set w here
+
+     !this condition is below cos bell, never true
+     if ((abs(xx) < Lx/4) .and. (zzi < A*coss ) ) then
+        wvel=0.0
+!            vecy(i,j)=0; vecx(i,j)=0;
+     else
+        !in bell radius
+        if ( (abs(xx) < Lx/4) ) then
+           !vecx(i,j)=1;
+           !compute zt from z and x:
+            zt = ( (zzi/A - coss ) / (1.0-coss/zt0));
+
+!wind bend in the cos shape for zt<zt0.
+!at zt0=zt the wind becomes parallel to surface
+!for zt>zt0 the wind bends down symmetrically (wrt axis z=A*zt0)
+!which for us is not desirable, so we replace it with horizontal wind
+
+            !zt > zt0 solution 'inverts'
+            if(zt > zt0) then
+                 wvel=0.0
+            !    vecy(i,j)=0;
+            else
+               wvel = -A*pi*4/L*sin(xx*pi*4/L)*(1-zt/zt0);
+            endif
+        else
+           wvel=0.0
+!               vecx(i,j)=1; vecy(i,j)=0;
+        endif
+     endif
+     
+     !now set u
+     !this is below cos bell, never true
+     if ((abs(xx) < Lx/4) .and. (zzm < A*coss ) ) then
+        uvel=0.0
+     else
+        uvel=1.0
+     endif
+
+     elem%state%v(i,j,k,1,np1) = uvel
+     elem%state%v(i,j,k,2,np1) = 0.0
+     elem%state%w_i(i,j,k,np1) = wvel
+
+
+     enddo; enddo
+
+end subroutine planar_held_suarez_wind
+
+
 subroutine planar_held_suarez_init(elem,hybrid,hvcoord,nets,nete)
   use control_mod, only: planar_hs_tinit
   use physical_constants, only: Lx, Ly, Sx, Sy

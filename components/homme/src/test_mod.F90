@@ -30,7 +30,7 @@ use held_suarez_mod,      only: hs0_init_state
 use dry_planar_tests,     only: planar_hydro_gravity_wave_init, planar_nonhydro_gravity_wave_init
 use dry_planar_tests,     only: planar_hydro_mountain_wave_init, planar_nonhydro_mountain_wave_init, planar_schar_mountain_wave_init
 use dry_planar_tests,     only: planar_rising_bubble_init, planar_density_current_init, planar_baroclinic_instab_init
-use dry_planar_tests,     only: planar_held_suarez_init
+use dry_planar_tests,     only: planar_held_suarez_init, planar_held_suarez_wind
 use moist_planar_tests,   only: planar_moist_rising_bubble_init, planar_moist_density_current_init, planar_moist_baroclinic_instab_init
 use moist_planar_tests,   only: planar_tropical_cyclone_init, planar_supercell_init
 
@@ -187,6 +187,7 @@ subroutine set_test_prescribed_wind(elem, deriv, hybrid, hvcoord, dt, tl, nets, 
     case('dcmip2012_test1_1_conv'); call dcmip2012_test1_1_conv(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
     case('dcmip2012_test1_2'); call dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
     case('dcmip2012_test1_3'); call dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,np1,np1,deriv)
+    case('planar_held_suarez'); call planar_held_suarez_wind(elem,hybrid,hvcoord,nets,nete,time,np1,np1)
   endselect
 
 end subroutine
