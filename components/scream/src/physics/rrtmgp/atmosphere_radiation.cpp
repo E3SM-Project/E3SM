@@ -402,7 +402,7 @@ void RRTMGPRadiation::check_required_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
     }
   }
 }
@@ -413,7 +413,7 @@ void RRTMGPRadiation::check_computed_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
     }
   }
 }

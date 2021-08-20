@@ -1,4 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
+#include "share/field/field_property_checks/field_positivity_check.hpp"
+#include "share/field/field_property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_f90.hpp"
 
@@ -181,6 +183,21 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
+  // Set property checks for fields in this process
+  auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+  m_p3_fields_out["qv"].add_property_check(positivity_check);
+  m_p3_fields_out["qc"].add_property_check(positivity_check);
+  m_p3_fields_out["qr"].add_property_check(positivity_check);
+  m_p3_fields_out["qi"].add_property_check(positivity_check);
+  m_p3_fields_out["qm"].add_property_check(positivity_check);
+  m_p3_fields_out["nc"].add_property_check(positivity_check);
+  m_p3_fields_out["nr"].add_property_check(positivity_check);
+  m_p3_fields_out["ni"].add_property_check(positivity_check);
+  m_p3_fields_out["bm"].add_property_check(positivity_check);
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(200, 500);
+  m_p3_fields_out["T_mid"].add_property_check(T_interval_check);
+  
+
   // Initialize p3
   p3_init();
 
@@ -353,7 +370,7 @@ void P3Microphysics::check_required_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
     }
   }
 }
@@ -364,7 +381,7 @@ void P3Microphysics::check_computed_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
     }
   }
 }

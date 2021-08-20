@@ -1,6 +1,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
+#include "share/field/field_property_checks/field_within_interval_check.hpp"
 namespace scream
 {
 
@@ -245,6 +246,11 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
+  // Set field property checks for the fields in this process
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(200, 500);
+  m_shoc_fields_out["T_mid"].add_property_check(T_interval_check);
+
+
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -437,7 +443,7 @@ void SHOCMacrophysics::check_required_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
     }
   }
 }
@@ -448,7 +454,7 @@ void SHOCMacrophysics::check_computed_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
     }
   }
 }

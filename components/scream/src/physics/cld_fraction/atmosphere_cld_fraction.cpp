@@ -1,4 +1,5 @@
 #include "atmosphere_cld_fraction.hpp"
+#include "share/field/field_property_checks/field_within_interval_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -54,6 +55,10 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 // =========================================================================================
 void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 {
+  // Set property checks for fields in this process
+  auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
+  m_cld_fraction_fields_out["cldfrac_ice"].add_property_check(frac_interval_check);
+  m_cld_fraction_fields_out["cldfrac_tot"].add_property_check(frac_interval_check);
 }
 
 // =========================================================================================
@@ -107,7 +112,7 @@ void CldFraction::check_required_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
     }
   }
 }
@@ -118,7 +123,7 @@ void CldFraction::check_computed_fields_impl ()
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name());
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
     }
   }
 }

@@ -814,14 +814,14 @@ void HommeDynamics
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Reference Grid");
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Reference Grid");
     }
   }
   for (auto& f : m_dyn_grid_fields) {
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Dynamics Grid");
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Dynamics Grid");
     }
   }
 }
@@ -833,14 +833,14 @@ void HommeDynamics
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Reference Grid");
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Reference Grid");
     }
   }
   for (auto& f : m_dyn_grid_fields) {
     auto& field = f.second;
     for (auto& pc : field.get_property_checks()) {
       EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Dynamics Grid");
+         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Dynamics Grid");
     }
   }
 }
