@@ -163,42 +163,32 @@ contains
 
       coef_3rd_order = config_coef_3rd_order
 
-      !
-      ! TODO: Move this and the data transfers up right after
-      !       allocates and before any calls
-      ! set the velocity and height at dummy address
-      !    used -1e34 so error clearly occurs if these values are used.
-      !
-
-!     normalVelocity(:,nEdges+1) = -1e34
-!     layerThickness(:,nCells+1) = -1e34
-!     activeTracers(indexTemperature,:,nCells+1) = -1e34
-!     activeTracers(indexSalinity,:,nCells+1) = -1e34
-
 #ifdef MPAS_OPENACC
       !! Listing new inputs required by the first routine where they are used
-      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickness, normalVelocity
+      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickness, (not on device)
+      !!                                            normalVelocity (not on device)
       !! ocn_relativeVorticity_circulation       :: 
-      !! ocn_diagnostic_solve_vortVel            :: normalTransportVelocity, 
-      !!                                            normalGMBolusVelocity
+      !! ocn_diagnostic_solve_vortVel            :: normalTransportVelocity, (diagnostics array)
+      !!                                            normalGMBolusVelocity (diagnostics array)
       !! ocn_diagnostic_solve_kineticEnergy      ::
       !! ocn_diagnostic_solve_vorticity          ::
-      !! ocn_diagnostic_solve_surface_pressure   :: atmosphericPressure,
-      !!                                            seaIcePressure,
-      !!                                            frazilSurfacePressure,
-      !!                                            landIcePressure
+      !! ocn_diagnostic_solve_surface_pressure   :: atmosphericPressure, (not on device)
+      !!                                            seaIcePressure, (not on device)
+      !!                                            frazilSurfacePressure, (not on device)
+      !!                                            landIcePressure (not on device)
       !! ocn_diagnostic_solve_z_coordinates      :: 
-      !! ocn_equation_of_state_density           :: activeTracers,
-      !!                                            tracersSurfaceValue,
-      !!                                            maxLevelCell,
-      !!                                            refBottomDepth 
+      !! ocn_equation_of_state_density           :: activeTracers, (not on device)
+      !!                                            tracersSurfaceValue,(diagnostics array)
+      !!                                            maxLevelCell, (mesh array)
+      !!                                            refBottomDepth  (mesh array)
       !! ocn_diagnostic_solve_pressure           ::
-      !! ocn_diagnostic_solve_richardson         :: edgeAreaFractionOfCell
+      !! ocn_diagnostic_solve_richardson         :: edgeAreaFractionOfCell (mesh array)
 
-      !! tracersSurfaceValue calc                :: minLevelCell
-      !! normalVelocitySurfaceLayer calc         :: minLevelEdgeBot
-      !! surfaceFluxAttenuationCoefficientRunoff :: layerThicknessEdge
-      !! ocn_diagnostic_solve_ssh                :: ssh, landIceDraft
+      !! tracersSurfaceValue calc                :: minLevelCell (mesh array)
+      !! normalVelocitySurfaceLayer calc         :: minLevelEdgeBot (mesh array)
+      !! surfaceFluxAttenuationCoefficientRunoff :: layerThicknessEdge (diagnostics array)
+      !! ocn_diagnostic_solve_ssh                :: ssh, (not on device)
+      !!                                            landIceDraft (not on device)
 
       !$acc enter data copyin(layerThickness, normalVelocity)
       !$acc update device (normalTransportVelocity, &
@@ -209,16 +199,6 @@ contains
       !$acc enter data copyin(activeTracers, ssh)
       !$acc update device(tracersSurfaceValue)
 
-      !!!$acc enter data copyin(activeTracers, ssh)
-      !!, tracersSurfaceValue, maxLevelCell)
-      !!!$acc update device(refBottomDepth)
-      !!!$acc update device(maxLevelCell)
-
-
-      if ( associated(landIceDraft) ) then
-         !$acc enter data copyin(landIceDraft)
-      endif
-
       if ( associated(frazilSurfacePressure) ) then
          !$acc enter data copyin(frazilSurfacePressure)
       endif
@@ -226,6 +206,9 @@ contains
          !$acc enter data copyin(landIcePressure)
       endif
 
+      if ( associated(landIceDraft) ) then
+         !$acc enter data copyin(landIceDraft)
+      endif
 #endif
 
       ! inputs: layerThickness, normalVelocity
@@ -446,13 +429,13 @@ contains
       !$acc update host (surfacePressure)
       !$acc update host(zMid, zTop)
       !$acc exit data copyout(ssh)
-      !$acc update host(tracersSurfaceValue)
       !$acc update host(density, potentialDensity, displacedDensity)
-
       !$acc update host(thermExpCoeff,  &
       !$acc&            salineContractCoeff)
-      !$acc update host(montgomeryPotential, pressure)
+      !$acc update host(tracersSurfaceValue)
+
       !$acc update host(normalVelocitySurfaceLayer)
+      !$acc update host(montgomeryPotential, pressure)
 
       if ( full_compute ) then
          !$acc update host(RiTopOfCell, BruntVaisalaFreqTop)
