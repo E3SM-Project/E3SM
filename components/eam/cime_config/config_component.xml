@@ -67,9 +67,9 @@
       <value compset="_EAM%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_EAM%MMF2-ECPP"         >-use_ECPP </value>
       <value compset="_EAM%MMF[12XO]"         >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF*-AQUA"         >-aquaplanet </value>
-      <value compset="_EAM%MMF*-RCE"          >-aquaplanet -rce </value>
-      <value compset="_EAM%MMF[12XO]*-SCM"    >-scam </value>
+      <value compset="_EAM%MMF.*-AQUA"        >-aquaplanet </value>
+      <value compset="_EAM%MMF.*-RCE"         >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF.*-SCM"         >-scam </value>
 
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
@@ -152,10 +152,10 @@
       <!-- MMF / Super-Parameterization -->
       <value compset="2000(?:SOI)?_EAM%MMF[1XO]">2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000(?:SOI)?_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF*-RCE"    >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF*-AQUA"   >aquaplanet_MMF-1mom</value>
-      <value compset="AR97_EAM%MMF[1XO]*-SCM"   >scam_arm97_MMF-1mom</value>
-      <value compset="RICO_EAM%MMF[1XO]*-SCM"   >scam_rico_MMF-1mom</value>
+      <value compset="_EAM%MMF.*-RCE"    >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="AR97_EAM%MMF.*-SCM"   >scam_arm97_MMF-1mom</value>
+      <value compset="RICO_EAM%MMF.*-SCM"   >scam_rico_MMF-1mom</value>
     </values>
 
     <group>run_component_cam</group>
@@ -245,8 +245,8 @@
     <value compset="DOCN%AQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF[12OX]*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
+    <value compset="EAM%MMF.*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="EAM%MMF.*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     <value compset="EAM%SCAM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     </values>
     <group>run_component_cam</group>
