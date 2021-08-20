@@ -36,12 +36,20 @@ module ocn_transport_tests
   use mpas_stream_manager
   use mpas_dmpar
 
+#ifndef EXCLUDE_INIT_MODE
   use ocn_config, only : config_init_configuration, &
                          config_ocean_run_mode, &
                          config_transport_tests_flow_id, &
                          config_transport_tests_salinity, &
                          config_transport_tests_temperature, &
                          config_transport_tests_vert_levels
+#else
+  use ocn_config, only:  config_ocean_run_mode, &
+                         config_transport_tests_flow_id, &
+                         config_transport_tests_salinity, &
+                         config_transport_tests_temperature, &
+                         config_transport_tests_vert_levels
+#endif
 
   implicit none
   private
@@ -342,23 +350,12 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
 !--------------------------------------------------------------------
 
   subroutine flow_init()
-    if (trim(config_init_configuration) /= trim('transport_tests')) then
-      ! cannot call this routine unless 'config_init_configuration' = 'transport_tests'
-      call mpas_log_write('invalid transport_tests config: '//config_init_configuration, MPAS_LOG_ERR)
-    else
-      ! set ft to positively id a transport test --- required by time stepping routines
-      ft%state = 2
-
-      if (config_transport_tests_flow_id < 1 .or. config_transport_tests_flow_id > 4) then
-        call mpas_log_write('invalid transport_tests flow id', MPAS_LOG_ERR, &
-          intArgs=[config_transport_tests_flow_id])
-      endif
-
-      ft%flow = config_transport_tests_flow_id
-      if ( trim(config_ocean_run_mode) == 'init') then
-      call mpas_log_write("transport_tests: setting up test case "//&
-        trim(flow_id_name(config_transport_tests_flow_id)), MPAS_LOG_OUT, .true.)
-      endif
+    if (config_transport_tests_flow_id > 0) then
+        ft%state = 2
+        ft%flow = config_transport_tests_flow_id
+        call mpas_log_write("transport_tests: setting up test case "//&
+      trim(flow_id_name(config_transport_tests_flow_id)), MPAS_LOG_OUT, .true.)
+        flow_state_set = .true.
     endif
   end subroutine flow_init
 
@@ -370,7 +367,6 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
         call mpas_log_write("forward mode entered subroutine flow_run", MPAS_LOG_OUT, &
          flushNow=flush_log)
 #endif
-        !if (trim(config_init_configuration) == trim('transport_tests')) then
         if (config_transport_tests_flow_id > 0) then
           ft%state = 2
           ft%flow = config_transport_tests_flow_id
