@@ -3750,6 +3750,8 @@
 <!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+#ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
+#endif
 
 </registry>
