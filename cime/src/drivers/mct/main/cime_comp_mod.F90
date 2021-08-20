@@ -3787,7 +3787,7 @@ contains
     !----------------------------------------------------------
 
     if (iamin_CPLALLIACID) then
-       call component_exch(rof, flow='c2x', &
+       call component_exch(iac, flow='c2x', &
             infodata=infodata, infodata_string='iac2cpl_run', &
             mpicom_barrier=mpicom_CPLALLIACID, run_barriers=run_barriers, &
             timer_barrier='CPL:Z2C_BARRIER', timer_comp_exch='CPL:Z2C', &
