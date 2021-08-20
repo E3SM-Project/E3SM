@@ -326,6 +326,7 @@ void P3Microphysics::finalize_impl()
   // Do nothing
 }
 
+// =========================================================================================
 void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
 
   const auto& name = f.get_header().get_identifier().name();
@@ -335,6 +336,7 @@ void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
   add_me_as_customer(f);
 }
 
+// =========================================================================================
 void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
 
   const auto& name = f.get_header().get_identifier().name();
@@ -344,4 +346,26 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
   add_me_as_provider(f);
 }
 
+// =========================================================================================
+void P3Microphysics::check_required_fields_impl ()
+{
+  for (auto& f : m_p3_fields_in) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name());
+    }
+  }
+}
+
+void P3Microphysics::check_computed_fields_impl ()
+{
+  for (auto& f : m_p3_fields_out) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name());
+    }
+  }
+}
 } // namespace scream

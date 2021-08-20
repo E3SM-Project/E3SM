@@ -60,6 +60,9 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
+  void check_required_fields_impl () {}
+  void check_computed_fields_impl () {}
+
   std::map<std::string,const_field_type>  m_zm_fields_in;
   std::map<std::string,field_type>        m_zm_fields_out;
 

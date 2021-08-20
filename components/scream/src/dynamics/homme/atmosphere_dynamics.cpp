@@ -806,5 +806,43 @@ create_dyn_field (const std::string& name,
 
   m_dyn_grid_fields[name] = f;
 }
+// =========================================================================================
+void HommeDynamics
+::check_required_fields_impl ()
+{
+  for (auto& f : m_ref_grid_fields) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Reference Grid");
+    }
+  }
+  for (auto& f : m_dyn_grid_fields) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n before process: " << this->name() << "\n on Dynamics Grid");
+    }
+  }
+}
+
+void HommeDynamics
+::check_computed_fields_impl ()
+{
+  for (auto& f : m_ref_grid_fields) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Reference Grid");
+    }
+  }
+  for (auto& f : m_dyn_grid_fields) {
+    auto& field = f.second;
+    for (auto& pc : field.get_property_checks()) {
+      EKAT_REQUIRE_MSG(pc.check(field),
+         "Error: Field Property Check Failed for\n field: " << f.first << ",\n after process: " << this->name() << "\n on Dynamics Grid");
+    }
+  }
+}
 
 } // namespace scream

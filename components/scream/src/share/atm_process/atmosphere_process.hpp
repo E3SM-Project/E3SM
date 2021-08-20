@@ -107,9 +107,13 @@ public:
     initialize_impl(t_);
   }
   void run        (const Real dt) {
+    // Make sure required fields are valid
+    check_required_fields();
     // Call the subclass's run method and update it afterward.
     run_impl(dt);
     t_ += dt;
+    // Make sure computed fields are valid
+    check_computed_fields();
   }
   void finalize   (/* what inputs? */) {
     finalize_impl(/* what inputs? */);
@@ -138,6 +142,13 @@ public:
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
     set_computed_field_impl (f);
+  }
+
+  void check_required_fields () {
+    check_required_fields_impl();
+  }
+  void check_computed_fields () {
+    check_computed_fields_impl();
   }
 
   // Note: for the following (unlike set_required/computed_field, we do provide an
@@ -335,6 +346,8 @@ protected:
   virtual void set_required_field_impl (const Field<const Real>& f) = 0;
   virtual void set_computed_field_impl (const Field<      Real>& f) = 0;
 
+  virtual void check_required_fields_impl () = 0;
+  virtual void check_computed_fields_impl () = 0;
 private:
 
   std::set<FieldRequest>   m_required_fields;

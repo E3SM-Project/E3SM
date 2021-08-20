@@ -161,6 +161,9 @@ protected:
     m_outputs[f.get_header().get_identifier().name()] = f;
   }
 
+  void check_required_fields_impl () {}
+  void check_computed_fields_impl () {}
+
   std::map<std::string,Field<const Real>>   m_inputs;
   std::map<std::string,Field<      Real>>   m_outputs;
 
