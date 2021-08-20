@@ -37,6 +37,7 @@ module initGridCellsMod
   private set_landunit_wet_ice_lake
   private set_landunit_crop_noncompete
   private set_landunit_urban
+  private set_topounit
   !-----------------------------------------------------------------------
 
 contains
@@ -53,18 +54,15 @@ contains
     use decompMod         , only : get_proc_bounds, get_clump_bounds, get_proc_clumps
     use subgridWeightsMod , only : compute_higher_order_weights
     use topounit_varcon   , only : max_topounits, has_topounit 
-    use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
+    !!use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
     use elm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
-    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu,tmp_tpu2,tmp_msk  ! indices
-    integer :: nclumps                                                     ! number of clumps on this processor
-    real(r8) :: wttopounit2gridcell, elv, slp                              ! topounit weight on gridcell, elevation and slope
-    integer :: asp                                                         ! aspect
-    logical :: is_tpu_active                                              ! Check if topounit is active
+    integer :: nc,ti,li,ci,pi,gdc,topounit, topo_ind      ! indices
+    integer :: nclumps                           ! number of clumps on this processor
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump
     !------------------------------------------------------------------------
@@ -128,34 +126,7 @@ contains
        
        ! For each gridcell in clump, create the correct number of topounits       
        do gdc = bounds_clump%begg, bounds_clump%endg
-          tmp_tpu = ldomain%num_tunits_per_grd(gdc)       ! Actual number of topounits per grid
-          !tmp_tpu2 = num_tunit_per_grd(gdc)
-          tmp_msk = ldomain%mask(gdc)
-          if(max_topounits > 1) then
-             ntopos = tmp_tpu                                
-          else 
-             ntopos = max_topounits
-          endif
-          
-          do topounit = 1, ntopos                    ! use actual/valid # of topounits per grid intead of max_topounits
-             if (max_topounits == 1) then
-                 wttopounit2gridcell = 1.0           ! The weight of topounit is 1 if only 1 topounit per grid
-                 is_tpu_active = .true.              ! Make topounit active if only one topounit is in a grid
-             else
-                 wttopounit2gridcell = wt_tunit(gdc,topounit) !grc_pp%tfrc_area(gdc,topounit) 
-                 !if (topounit <= num_topo_tmp) then
-                 if (wttopounit2gridcell > 0.0) then
-                     is_tpu_active = .true.
-                 else
-                     is_tpu_active = .false.
-                 endif                    
-             endif
-             elv = elv_tunit(gdc,topounit) !grc_pp%televation(gdc,topounit) 
-             slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
-             asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 
-             topo_ind = topounit
-             call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
-          end do
+          call set_topounit(gdc, ti, ldomain%num_tunits_per_grd(gdc) )
        end do
 
        ! With all topounits defined, next place landunits
@@ -264,11 +235,58 @@ contains
        call compute_higher_order_weights(bounds_clump)
 
     end do
-    !$OMP END PARALLEL DO
-
+   !$OMP END PARALLEL DO 
   end subroutine initGridcells
 
-
+  !----------------------------------------------------------------------
+  subroutine set_topounit(gdc, ti, num_tunits_per_grd ) 
+    !
+    ! !DESCRIPTION:
+    ! Initialize each topounit for a gridcell.
+    !
+    ! !USES
+    use elm_varsur , only : wt_tunit, elv_tunit, slp_tunit, asp_tunit, num_tunit_per_grd 
+    use topounit_varcon   , only : max_topounits, has_topounit 
+    ! !ARGUMENTS
+    integer, intent(in) :: gdc
+    integer, intent(inout) :: ti
+    integer, intent(in) :: num_tunits_per_grd
+    ! !LOCAL VARIABLES
+    integer :: topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu
+    real(r8) :: wttopounit2gridcell, elv, slp                  ! topounit weight on gridcell, elevation and slope
+    integer :: asp                                             ! aspect
+    logical :: is_tpu_active                                   ! Check if topounit is active
+     
+    tmp_tpu = num_tunits_per_grd       ! Actual number of topounits per grid
+    if(max_topounits > 1) then
+       ntopos = tmp_tpu                                
+    else 
+       ntopos = max_topounits
+    endif
+    
+    do topounit = 1, ntopos                    ! use actual/valid # of topounits per grid intead of max_topounits
+       if (max_topounits == 1) then
+           wttopounit2gridcell = 1.0           ! The weight of topounit is 1 if only 1 topounit per grid
+           is_tpu_active = .true.              ! Make topounit active if only one topounit is in a grid
+       else
+           wttopounit2gridcell = wt_tunit(gdc,topounit) !grc_pp%tfrc_area(gdc,topounit) 
+           !if (topounit <= num_topo_tmp) then
+           if (wttopounit2gridcell > 0.0) then
+               is_tpu_active = .true.
+           else
+               is_tpu_active = .false.
+           endif                    
+       endif
+       elv = elv_tunit(gdc,topounit) !grc_pp%televation(gdc,topounit) 
+       slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
+       asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 
+       topo_ind = topounit
+       call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
+    end do
+ 
+  end subroutine set_topounit  
+ 
+ 
   !------------------------------------------------------------------------
   subroutine set_landunit_veg_compete (ltype, gi, ti,topo_ind, li, ci, pi, setdata)
     !
