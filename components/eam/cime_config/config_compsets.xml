@@ -313,7 +313,7 @@
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
 	<value  compset="EAM%SCAM">GREGORIAN</value>
-	<value  compset="EAM%MMF[12OX]*-SCM">GREGORIAN</value>
+	<value  compset="EAM%MMF.*-SCM">GREGORIAN</value>
       </values>
     </entry>
 
@@ -356,7 +356,7 @@
 
     <entry id="PTS_MODE">
       <values>
-        <value compset="EAM%MMF[12XO]*-SCM">TRUE</value>
+        <value compset="EAM%MMF.*-SCM">TRUE</value>
       </values>
     </entry>
     
