@@ -4,8 +4,18 @@ Casename: p3_standalone_output
 Averaging Type: Instant
 Grid: Physics
 Max Snapshots Per File: 1
-Fields: [T_mid, T_prev_micro_step, qv, qc, qr, qv_prev_micro_step, eff_radius_qc, eff_radius_qi,
-         micro_liq_ice_exchange, micro_vap_liq_exchange, micro_vap_ice_exchange]
+Fields:
+  - T_mid
+  - T_prev_micro_step
+  - qv
+  - qc
+  - qr
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - micro_liq_ice_exchange
+  - micro_vap_liq_exchange
+  - micro_vap_ice_exchange
 Output:
   Frequency: 10
   Frequency Units: Steps
