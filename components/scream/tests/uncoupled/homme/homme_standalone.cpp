@@ -27,7 +27,7 @@ static int get_default_fpes () {
 #endif
 }
 
-TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
+TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   using namespace scream;
   using namespace scream::control;
 

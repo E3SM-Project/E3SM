@@ -3,7 +3,7 @@ INCLUDE (ScreamUtils)
 SET (NEED_LIBS p3 scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(p3_stand_alone "p3_stand_alone.cpp" "${NEED_LIBS}" LABELS "p3;physics")
+CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS "p3;physics")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
@@ -18,4 +18,4 @@ CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
 CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_universal_constants.inp
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 CONFIGURE_FILE(p3_init_ne2np4.nc p3_init_ne2np4.nc COPYONLY)
-CONFIGURE_FILE(p3_stand_alone_output.yaml p3_stand_alone_output.yaml COPYONLY)
+CONFIGURE_FILE(p3_standalone_output.yaml p3_standalone_output.yaml COPYONLY)

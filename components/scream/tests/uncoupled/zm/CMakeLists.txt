@@ -4,7 +4,7 @@ SET (zmLib zm)
 SET (NEED_LIBS ${zmLib} scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(zm_stand_alone "zm_stand_alone.cpp" "${NEED_LIBS}" LABELS "zm;physics")
+CreateUnitTest(zm_standalone "zm_standalone.cpp" "${NEED_LIBS}" LABELS "zm;physics")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

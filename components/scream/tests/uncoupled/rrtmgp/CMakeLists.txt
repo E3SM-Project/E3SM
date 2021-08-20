@@ -14,15 +14,15 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
 
     # Add source files
-    set (SRC rrtmgp_stand_alone.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
+    set (SRC rrtmgp_standalone.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 
     CreateUnitTest(
-        rrtmgp_stand_alone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
+        rrtmgp_standalone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
     )
-    message(STATUS "rrtmgp_stand_alone YAKL_CXX_FLAGS: ${YAKL_CXX_FLAGS}")
-    set_target_properties(rrtmgp_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-    target_include_directories(rrtmgp_stand_alone PUBLIC
+    message(STATUS "rrtmgp_standalone YAKL_CXX_FLAGS: ${YAKL_CXX_FLAGS}")
+    set_target_properties(rrtmgp_standalone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    target_include_directories(rrtmgp_standalone PUBLIC
           ${SCREAM_BASE_DIR}/src/physics/rrtmgp
           ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
           ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp

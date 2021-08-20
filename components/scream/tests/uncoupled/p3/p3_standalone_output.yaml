@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: p3_stand_alone_output
+Casename: p3_standalone_output
 Averaging Type: Instant
 Grid: Physics
 Max Snapshots Per File: 1

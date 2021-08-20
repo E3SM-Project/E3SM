@@ -37,7 +37,7 @@ namespace scream {
     /* 
      * Run standalone test through SCREAM driver this time
      */
-    TEST_CASE("rrtmgp_scream_stand_alone", "") {
+    TEST_CASE("rrtmgp_scream_standalone", "") {
         using namespace scream;
         using namespace scream::control;
         using PF = scream::PhysicsFunctions<DefaultDevice>;
