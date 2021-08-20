@@ -178,27 +178,6 @@
     <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
   
-  <!-- SCREAM compsets with old 2000 forcings -->
-  <compset>
-    <alias>F2000-SCREAM-LR</alias>
-    <lname>2000_EAM%SCREAM-LR_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
-  </compset> 
-  
-  <compset>
-    <alias>F2000-SCREAM-HR</alias>
-    <lname>2000_EAM%SCREAM-HR_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
-  </compset> 
-
-  <compset>
-    <alias>F2000-SCREAM-LR-DYAMOND1</alias>
-    <lname>2000_EAM%SCREAM-LR-DYAMOND1_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F2000-SCREAM-HR-DYAMOND1</alias>
-    <lname>2000_EAM%SCREAM-HR-DYAMOND1_ELM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
-  </compset>
-
   <compset>
     <alias>FDPSCREAMA97</alias>
       <lname>AR97_EAM%DPSCREAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
