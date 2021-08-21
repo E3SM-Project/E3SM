@@ -178,7 +178,7 @@ contains
       !!                                            landIcePressure (not on device)
       !! ocn_diagnostic_solve_z_coordinates      :: 
       !! ocn_equation_of_state_density           :: activeTracers, (not on device)
-      !!                                            tracersSurfaceValue,(diagnostics array)
+      !!                                            tracersSurfaceValue, (diagnostics array)
       !!                                            maxLevelCell, (mesh array)
       !!                                            refBottomDepth  (mesh array)
       !! ocn_diagnostic_solve_pressure           ::
@@ -186,7 +186,7 @@ contains
 
       !! tracersSurfaceValue calc                :: minLevelCell (mesh array)
       !! normalVelocitySurfaceLayer calc         :: minLevelEdgeBot (mesh array)
-      !! surfaceFluxAttenuationCoefficientRunoff :: layerThicknessEdge (diagnostics array)
+      !! surfaceFluxAttenuationCoefficientRunoff :: layerThickEdge (diagnostics array)
       !! ocn_diagnostic_solve_ssh                :: ssh, (not on device)
       !!                                            landIceDraft (not on device)
 
@@ -391,29 +391,42 @@ contains
 
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
-      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdge
-      !! ocn_relativeVorticity_circulation       :: relativeVorticity, circulation
-      !! ocn_diagnostic_solve_vortVel            :: vertTransportVelocityTop, 
-      !!                                            vertGMBolusVelocityTop,
-      !!                                            relativeVorticityCell, 
-      !!                                            divergence,
-      !!                                            kineticEnergyCell,
-      !!                                            tangentialVelocity
-      !!                                            vertVelocityTop
+      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdge (diagnostics array)
+      !! ocn_relativeVorticity_circulation       :: relativeVorticity, (diagnostics array)
+      !!                                            circulation (diagnostics array)
+      !! ocn_diagnostic_solve_vortVel            :: vertTransportVelocityTop, (diagnostics array)
+      !!                                            vertGMBolusVelocityTop, (diagnostics array)
+      !!                                            relativeVorticityCell, (diagnostics array)
+      !!                                            divergence, (diagnostics array)
+      !!                                            kineticEnergyCell, (diagnostics array)
+      !!                                            tangentialVelocity (diagnostics array)
+      !!                                            vertVelocityTop (diagnostics array)
       !! ocn_diagnostic_solve_kineticEnergy      :: 
-      !! ocn_diagnostic_solve_vorticity          :: normRelVortEdge,
-      !!                                            normPlanetVortEdge, 
-      !!                                            normalizedRelativeVorticityCell
-      !! ocn_diagnostic_solve_surface_pressure   :: surfacePressure
-      !! ocn_diagnostic_solve_z_coordinates      :: zMid, zTop, ssh
-      !! ocn_equation_of_state_density           :: density, potentialDensity, displacedDensity, thermalExpansionCoeff, salineContractionCoeff
-      !! ocn_diagnostic_solve_pressure           :: montgomeryPotential, pressure
-      !! ocn_diagnostic_solve_richardson         :: BruntVaisalaFreqTop, RiTopOfCell
-      !! tracersSurfaceValue calc                :: tracersSurfaceValue
-      !! normalVelocitySurfaceLayer calc         :: normalVelocitySurfaceLayer
-      !! surfaceFluxAttenuationCoefficientRunoff :: tracersSurfaceLayerValue, indexSurfaceLayerDepth, normalVelocitySurfaceLayer,
-      !!                                            surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff
-      !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, gradSSH
+      !! ocn_diagnostic_solve_vorticity          :: normRelVortEdge, (diagnostics array)
+      !!                                            normPlanetVortEdge, (diagnostics array)
+      !!                                            normalizedRelativeVorticityCell (diagnostics array)
+      !! ocn_diagnostic_solve_surface_pressure   :: surfacePressure (diagnostics array)
+      !! ocn_diagnostic_solve_z_coordinates      :: zMid, (diagnostics array)
+      !!                                            zTop,(diagnostics array)
+      !!                                            ssh (not on device)
+      !! ocn_equation_of_state_density           :: density, (diagnostics array)
+      !!                                            potentialDensity, (diagnostics array)
+      !!                                            displacedDensity, (diagnostics array)
+      !!                                            thermalExpansionCoeff, (diagnostics array)
+      !!                                            salineContractionCoeff (diagnostics array)
+      !! ocn_diagnostic_solve_pressure           :: montgomeryPotential, (diagnostics array)
+      !!                                            pressure (diagnostics array)
+      !! ocn_diagnostic_solve_richardson         :: BruntVaisalaFreqTop, (diagnostics array)
+      !!                                            RiTopOfCell (diagnostics array)
+      !! tracersSurfaceValue calc                :: tracersSurfaceValue (diagnostics array)
+      !! normalVelocitySurfaceLayer calc         :: normalVelocitySurfaceLayer (diagnostics array)
+      !! surfaceFluxAttenuationCoefficientRunoff :: tracersSurfaceLayerValue, (diagnostics array)
+      !!                                            indexSurfaceLayerDepth, (diagnostics array)
+      !!                                            normalVelocitySurfaceLayer, (diagnostics array)
+      !!                                            surfaceFluxAttenuationCoefficient, ????
+      !!                                            surfaceFluxAttenuationCoefficientRunoff (diagnostics array)
+      !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
+      !!                                            gradSSH (diagnostics array)
 
       !$acc update host(layerThickEdge)
       !$acc update host(relativeVorticity, circulation)
