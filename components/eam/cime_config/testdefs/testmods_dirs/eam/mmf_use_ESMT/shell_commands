@@ -1,1 +1,1 @@
-./xmlchange --append -id CAM_CONFIG_OPTS -val " -cppdefs ' -DMMF_DIR_NS -DMMF_ESMT -DMMF_USE_ESMT ' "
+./xmlchange --append -id CAM_CONFIG_OPTS -val " -cppdefs ' -DMMF_ESMT -DMMF_USE_ESMT ' "
