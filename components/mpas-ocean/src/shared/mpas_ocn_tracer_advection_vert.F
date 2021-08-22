@@ -230,7 +230,7 @@ module ocn_tracer_advection_vert
 #else
       !$omp do schedule(runtime) &
       !$omp    private(k, kmin, kmax, &
-      !$omp            verticalWeightK verticalWeightKm1)
+      !$omp            verticalWeightK, verticalWeightKm1)
 #endif
       do iCell = 1, nCellsAll
          kmin = minLevelCell(iCell)
@@ -264,6 +264,7 @@ module ocn_tracer_advection_vert
       end do ! iCell Loop
 #ifndef MPAS_OPENACC
       !$omp end do
+      !$omp end parallel
 #endif
 
    !--------------------------------------------------------------------
