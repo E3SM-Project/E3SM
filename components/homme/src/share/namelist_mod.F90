@@ -118,7 +118,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     bubble_zradius, &
     bubble_cosine, &
     bubble_moist, &
-    bubble_moist_dq, &
+    bubble_moist_drh, &
+    bubble_rh_background, &
     bubble_prec_type, &
     case_planar_bubble
 #endif
@@ -352,7 +353,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       bubble_zradius, &
       bubble_cosine, &
       bubble_moist, &
-      bubble_moist_dq, &
+      bubble_moist_drh, &
+      bubble_rh_background, &
       bubble_prec_type
     namelist /vert_nl/        &
       vform,              &
@@ -835,7 +837,8 @@ endif
     call MPI_bcast(bubble_zradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_moist ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(bubble_moist_dq ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist_drh ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rh_background ,1,MPIreal_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)

@@ -195,7 +195,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
-                         bubble_moist, bubble_moist_dq, bubble_prec_type
+                         bubble_moist, bubble_moist_drh, bubble_prec_type, bubble_rh_background
   use physical_constants, only: Lx, Ly, Sx, Sy
   use element_ops, only: set_elem_state
 
@@ -233,7 +233,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      print *, 'bubble_zradius', bubble_zradius
      print *, 'bubble_cosine', bubble_cosine
      print *, 'bubble_moist', bubble_moist
-     print *, 'bubble_moist_dq (RH param)', bubble_moist_dq
+     print *, 'bubble_moist_drh', bubble_moist_drh
+     print *, 'bubble_rh_background', bubble_rh_background
      print *, 'bubble_prec_type (0 is Kessler (default), 1 is RJ)', bubble_prec_type
   endif
 
@@ -330,6 +331,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   enddo; enddo
 
   ! set the rest of conditions for each element
+  rh=bubble_rh_background
   do ie = nets,nete
     do j=1,np; do i=1,np
 
@@ -350,46 +352,22 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
                    (y-bubble_xycenter) * (y-bubble_xycenter) / bubble_xyradius / bubble_xyradius )
         endif
       
-
-#if 0       
-!old 
-        if ( rr < 1.0 ) then 
-          if (bubble_cosine) then
-            offset = cos(rr*dd_pi / 2.0 )
-            th0(k) = bubble_T0 + bubble_dT * offset
-            qi(k)  = qi_s(k)   + bubble_moist_dq * offset
-          else
-            !0/1 nonsmooth function
-            th0(k) = bubble_T0 + bubble_dT
-            qi(k)  = qi_s(k)   + bubble_moist_dq
-          endif
-        else
-          !set to reference profile
-          th0(k) = bubble_T0
-          qi(k) = qi_s(k)  
-        endif
-#else
-!new
         rh = 0.75
         if ( rr < 1.0 ) then
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
             th0(k) = bubble_T0 + bubble_dT * offset
-            rh = rh + bubble_moist_dq * offset
-            !rh=1.0
+            rh = rh + bubble_moist_drh * offset
           else
             !0/1 nonsmooth function
             th0(k) = bubble_T0 + bubble_dT
-            rh = rh + bubble_moist_dq
-            !rh=1.0
+            rh = rh + bubble_moist_drh
           endif
         else
           !set to reference profile
           th0(k) = bubble_T0
-          !rh = ...
         endif
         qi(k) = rh * qi_s(k)
-#endif
       enddo ! k loop
 
       !set theta on midlevels and then T from theta, exner
@@ -400,9 +378,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
       if (bubble_moist) then
         do k=1,nlev
           elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
-
-!this is not good FOR KESSLER, temp hack          
-!          elem(ie)%state%Q(i,j,k,2) =   ( qi_s(k) + qi_s(k+1) ) / 2.0
         enddo        
       else
         elem(ie)%state%Q(i,j,:,1) =   0.0
@@ -420,10 +395,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   !Q   (np,np,nlev,qsize_d)   
   !Qdp (np,np,nlev,qsize_d,2) 
   if (bubble_moist) then
-
      ii=2
-!!!! not KESSLER!, temp hack          
-!     ii=3
   else 
      ii=1
   endif
