@@ -131,7 +131,6 @@ setup_upgm (const int ne) {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   const int num_local_elems = 4;
-  const int num_global_elems = 4*comm.size();
   const int np = 4;
   const int nvl = 128;
   const int ncols = 6*ne*ne*9 + 2;
@@ -146,9 +145,10 @@ setup_upgm (const int ne) {
 
   // Create a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_global_elems,num_local_elems,np,nvl);
+  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_local_elems,np,nvl,comm);
   auto dummy_phys_grid = create_point_grid("Physics",ncols,nvl,comm);
-  dummy_dyn_grid->set_dofs(dyn_dofs,dyn_dofs_map);
+  dummy_dyn_grid->set_dofs(dyn_dofs);
+  dummy_dyn_grid->set_lid_to_idx_map(dyn_dofs_map);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());

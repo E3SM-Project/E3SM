@@ -46,7 +46,7 @@ TEST_CASE("se_grid", "") {
   int num_my_elems = 10;
   int num_elems = 10*comm.size();
   int num_gp = 4, num_levels = 72;
-  SEGrid grid("se_grid",num_elems,num_my_elems, num_gp, num_levels);
+  SEGrid grid("se_grid",num_my_elems,num_gp,num_levels,comm);
   REQUIRE(grid.type() == GridType::SE);
   REQUIRE(grid.name() == "se_grid");
   REQUIRE(grid.get_num_vertical_levels() == num_levels);
@@ -78,7 +78,8 @@ TEST_CASE("se_grid", "") {
   // Move the data to the device and set the DOFs.
   Kokkos::deep_copy(dofs, host_dofs);
   Kokkos::deep_copy(dofs_map, host_dofs_map);
-  grid.set_dofs(dofs, dofs_map);
+  grid.set_dofs(dofs);
+  grid.set_lid_to_idx_map(dofs_map);
 }
 
 } // anonymous namespace
