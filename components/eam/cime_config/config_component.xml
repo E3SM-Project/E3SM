@@ -156,8 +156,6 @@
       <value compset="PIPD_EAM"        >1850-PD_cam5</value>
       <value compset="2010_EAM.*SCREAM-LR" >2010_scream_lr</value>
       <value compset="2010_EAM.*SCREAM-HR" >2010_scream_hr</value>
-      <value compset="2000_EAM.*SCREAM-LR" >2000_scream_lr</value>
-      <value compset="2000_EAM.*SCREAM-HR" >2000_scream_hr</value>
       <value compset="AR97_EAM.*DPSCREAM"  >dpscream_arm97</value>
       <value compset="2010_EAM.*SCREAM-LR-DYAMOND2" >2010_scream_lr_dyamond2</value>
       <value compset="2010_EAM.*SCREAM-HR-DYAMOND2" >2010_scream_hr_dyamond2</value>  
