@@ -10,6 +10,7 @@ module elm_varpar
   use elm_varctl   , only: use_century_decomp, use_c13, use_c14, use_fates
   use elm_varctl   , only: iulog, create_crop_landunit, irrigate
   use elm_varctl   , only: use_vichydro
+  use elm_varctl   , only: use_extrasnowlayers
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -33,7 +34,7 @@ module elm_varpar
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
   
-  integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
+  integer            :: nlevsno               ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: nvegwcs     =   4     ! number of vegetation water conductance segments
@@ -46,16 +47,18 @@ module elm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  integer, parameter :: mxpft       =  24     ! maximum number of PFT's for any mode;
+  integer, parameter :: mxpft       =  50     ! maximum number of PFT's for any mode;
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
   integer :: numpft      = mxpft   ! actual # of patches (without bare)
-  integer :: numcft      =  10     ! actual # of crops
+  integer :: numcft      =  36     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
+
+  integer :: mxpft_nc            ! maximum number of PFT's when use_crop=False;
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 
@@ -112,11 +115,12 @@ contains
 
     if (use_crop) then
        numpft      = mxpft   ! actual # of patches (without bare)
-       numcft      =  10     ! actual # of crops
+       numcft      =  36     ! actual # of crops
        crop_prog   = .true.  ! If prognostic crops is turned on
     else
        numpft      = numveg  ! actual # of patches (without bare)
        numcft      =   2     ! actual # of crops
+       mxpft_nc    =  24     ! maximum number of PFT's when use_crop=False;
        crop_prog   = .false. ! If prognostic crops is turned on
     end if
 
@@ -154,6 +158,12 @@ contains
     if (use_vichydro) then
        nlayert     =  nlayer + (nlevgrnd -nlevsoi)
     endif
+
+    if (.not. use_extrasnowlayers) then
+       nlevsno     =  5     ! maximum number of snow layers
+    else
+       nlevsno     =  16    ! maximum number of snow layers (for firn model)
+    end if
 
     ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
     ! currently it works on either a single level or on nlevsoi and nlevgrnd levels

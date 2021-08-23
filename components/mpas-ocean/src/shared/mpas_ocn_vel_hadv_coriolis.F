@@ -112,7 +112,8 @@ contains
       integer ::       &
          iEdge, j, k,  &! loop indices for edges, vertical
          cell1, cell2, &! neighbor cell indices
-         eoe            ! edge on edge index
+         eoe,          &! edge on edge index
+         kmin, kmax     ! min and max indices for vertical
 
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
@@ -189,13 +190,15 @@ contains
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
       !$acc            minLevelEdgeBot, maxLevelEdgeTop, qArr, tmpVorticity, &
       !$acc            normalVelocity, layerThickEdge) &
-      !$acc    private(k, j, eoe, edgeWeight, avgVorticity)
+      !$acc    private(k, j, eoe, edgeWeight, avgVorticity, kmin, kmax)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(k, j, eoe, edgeWeight, avgVorticity)
+      !$omp    private(k, j, eoe, edgeWeight, avgVorticity, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
 
          do k = 1, nVertLevels
             qArr(k,iEdge) = 0.0_RKIND
@@ -205,7 +208,7 @@ contains
             eoe = edgesOnEdge(j, iEdge)
             edgeWeight = weightsOnEdge(j, iEdge)
 
-            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+            do k = kmin, kmax
                avgVorticity = 0.5_RKIND* &
                               (tmpVorticity(k,iEdge) + &
                                tmpVorticity(k,eoe))
@@ -224,17 +227,20 @@ contains
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
       !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
-      !$acc    private(cell1, cell2, invLength, k)
+      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
 #else
       !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, invLength, k)
+      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          invLength = 1.0_RKIND / dcEdge(iEdge)
 
-         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+         do k = kmin, kmax
             tend(k,iEdge) = tend(k,iEdge) + &
                         edgeMask(k,iEdge)* (qArr(k,iEdge) - &
                            (kineticEnergyCell(k,cell2) &
@@ -308,8 +314,8 @@ contains
          ! tendencies.
          usePlanetVorticity = .false.
 
-      case ('semi_implicit')
-         ! For semi-implicit, Coriolis tendency uses eta/h because
+      case ('split_implicit')
+         ! For split implicit, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.

@@ -24,9 +24,6 @@ module ocn_time_integration
    use mpas_pool_routines
    use mpas_constants
    use mpas_timekeeping
-   use mpas_dmpar
-   use mpas_vector_reconstruction
-   use mpas_spline_interpolation
    use mpas_timer
    use mpas_log
 
@@ -41,9 +38,6 @@ module ocn_time_integration
    private
    save
 
-   public :: ocn_timestep, &
-             ocn_timestep_init
-
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -56,17 +50,30 @@ module ocn_time_integration
    !
    !--------------------------------------------------------------------
 
+   public :: ocn_timestep, &
+             ocn_timestep_init
+
    !--------------------------------------------------------------------
    !
    ! Private module variables
    !
    !--------------------------------------------------------------------
 
-    logical :: rk4On, splitOn, simpOn
+    ! Enum for selecting different time integrators
+    integer :: timeIntegratorChoice
+
+    integer, parameter :: &
+       timeIntUnknown         = 0, &! unknown or undefined
+       timeIntSplitExplicit   = 1, &! split-explicit
+       timeIntUnsplitExplicit = 2, &! unsplit-explicit
+       timeIntSemiImplicit    = 3, &! Semi-implicit
+       timeIntRK4             = 4   ! 4th-order Runge-Kutta
+
+!***********************************************************************
 
    contains
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!***********************************************************************
 !
 !  ocn_timestep
 !
@@ -74,89 +81,152 @@ module ocn_time_integration
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine handles a single timestep for the ocean. It determines
-!>  the time integrator that will be used for the run, and calls the
-!>  appropriate one.
+!>  This routine handles a single timestep for the ocean and advances
+!>  the ocean by one time step dt. It determines the time integrator
+!>  that will be used for the run, and calls the appropriate one.
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_timestep(domain, dt, timeStamp)!{{{
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Advance model state forward in time by the specified time step
-   !
-   ! Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:))
-   !                 plus mesh meta-data
-   ! Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains
-   !                  model state advanced forward in time by dt seconds
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      implicit none
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain
-      real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(in) :: timeStamp
+      real (kind=RKIND), intent(in) :: &
+         dt              !< [in] time step in seconds to advance model
 
-      type (dm_info) :: dminfo
-      type (block_type), pointer :: block
+      character(len=*), intent(in) :: &
+         timeStamp       !< [in] current time step in simulation
 
-      type (mpas_pool_type), pointer :: statePool, meshPool
+      !-----------------------------------------------------------------
+      ! Input/Output variables
+      !-----------------------------------------------------------------
 
-      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
+      type (domain_type), intent(inout) :: &
+         domain !< [inout] model state to advance forward by dt seconds
 
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
 
-      if (rk4On) then
-         call ocn_time_integrator_rk4(domain, dt)
-      elseif (splitOn) then
+      type (MPAS_Time_type) :: &
+         xtime_timeType,              &! current time in time type
+         simulationStartTime_timeType  ! start time in time type
+
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      ! Advance the model base on choice of time integration scheme
+      select case (timeIntegratorChoice)
+      case (timeIntSplitExplicit)
          call ocn_time_integrator_split(domain, dt)
-      elseif (simpOn) then
+      case (timeIntUnsplitExplicit)
+         call ocn_time_integrator_split(domain, dt)
+      case (timeIntSemiImplicit)
          call ocn_time_integrator_si(domain, dt)
-     endif
+      case (timeIntRK4)
+         call ocn_time_integrator_rk4(domain, dt)
+      end select
 
-     block => domain % blocklist
-     do while (associated(block))
-        call mpas_pool_get_subpool(block % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      ! compute time since start of simulation, in days
+      ! time variables stored in diagnostic variables
+      xtime = timeStamp  ! current time (input)
 
-        xtime = timeStamp
+      call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+      call mpas_set_time(simulationStartTime_timeType, &
+                         dateTimeString=simulationStartTime)
+      call mpas_get_timeInterval( &
+           xtime_timeType - simulationStartTime_timeType, &
+           dt=daysSinceStartOfSim)
 
-        ! compute time since start of simulation, in days
-        call mpas_set_time(xtime_timeType, dateTimeString=xtime)
-        call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-        call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+      daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
-        daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
-
-        block => block % next
-     end do
+   !--------------------------------------------------------------------
 
    end subroutine ocn_timestep!}}}
 
-   subroutine ocn_timestep_init(err)!{{{
+!***********************************************************************
+!
+!  ocn_timestep_init
+!
+!> \brief MPAS ocean time integration initialization driver
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
+!> \details
+!>  This routine initializes variables need for the time integration
+!>  scheme. It calls the relevant init routine base on choice of scheme.
+!
+!-----------------------------------------------------------------------
 
-      integer, intent(out) :: err
+   subroutine ocn_timestep_init(domain, dt, err)!{{{
 
-      err = 0
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
 
-      rk4On = .false.
-      splitOn = .false.
-      simpOn = .false.
+      real (kind=RKIND), intent(in) :: &
+         dt              !< [in] time step (sec)
 
-      if (trim(config_time_integrator) == 'RK4') then
-          rk4On = .true.
-      elseif (trim(config_time_integrator) == 'split_explicit' &
-          .or.trim(config_time_integrator) == 'unsplit_explicit') then
-          splitOn = .true.
-      elseif (trim(config_time_integrator) == 'semi_implicit' ) then
-          simpOn = .true.
-      else
-          err = 1
-          call mpas_log_write('Incorrect choice for config_time_integrator:' // trim(config_time_integrator) // &
-             '   choices are: RK4, split_explicit, unsplit_explicit, semi_implicit', MPAS_LOG_CRIT)
-      endif
+      !-----------------------------------------------------------------
+      ! Input/Output variables
+      !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: &
+         domain          !< [inout] model state
+
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err ! returned error flag
+
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      err = 0 ! initialize return code to success (0)
+
+      ! Set enum for choice of time integrator to avoid character
+      ! comparisons later and call relevant init routine
+
+      select case (trim(config_time_integrator))
+      case ('split_explicit')
+         timeIntegratorChoice = timeIntSplitExplicit
+         call ocn_time_integration_split_init(domain)
+
+      case ('unsplit_explicit')
+         timeIntegratorChoice = timeIntUnsplitExplicit
+         call ocn_time_integration_split_init(domain)
+
+      case ('split_implicit')
+         timeIntegratorChoice = timeIntSemiImplicit
+         call ocn_time_integration_si_init(domain, dt)
+
+      case ('RK4')
+         timeIntegratorChoice = timeIntRK4
+         ! No init routine needs to be run for RK4
+
+      case default
+
+         err = 1
+         timeIntegratorChoice = timeIntUnknown
+         call mpas_log_write( &
+            'Incorrect choice for config_time_integrator:' // &
+             trim(config_time_integrator) // &
+             '   choices are: RK4, split_explicit, ' // &
+                 'unsplit_explicit, split_implicit', MPAS_LOG_ERR)
+
+      end select
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_timestep_init!}}}
 
+!***********************************************************************
+
 end module ocn_time_integration
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

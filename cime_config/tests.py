@@ -24,6 +24,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
+            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
             "ERS.ne11_oQU240.I20TRELM",
             "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
@@ -34,6 +35,7 @@ _TESTS = {
             "ERS.f09_g16.IELMBC",
             "SMS.r05_r05.I1850ELMCN.elm-qian_1948",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-lulcc_sville",
+            "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
@@ -81,6 +83,9 @@ _TESTS = {
             "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
+            "SMS_Ln5.ne4_ne4.FC5AV1C-L.eam-gust_export",
+            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-implicit_stress",
+            "ERS_Ld5.ne30_ne30.FC5AV1C-L.eam-implicit_stress",
             )
         },
 
@@ -103,7 +108,7 @@ _TESTS = {
         "tests" : (
             "PGN_P1x1.ne4_ne4.FC5AV1C-L",
             "TSC.ne4_ne4.FC5AV1C-L",
-            "MVK_PL.ne4_ne4.FC5AV1C-L",
+            "MVK_PS.ne4_ne4.FC5AV1C-L",
             )
         },
 
@@ -111,6 +116,7 @@ _TESTS = {
         "tests" : (
             "ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
             "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
 
@@ -129,7 +135,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
@@ -147,23 +153,26 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.A_WCYCL1850",
-            "SMS_D_Ld1.ne30_oECv3.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+            "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "ERS_Ln9.ne4_ne4.FC5AV1C-L",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
             "NCK.ne11_oQU240.A_WCYCL1850",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
-            "PET_Ln9_PS.ne30_oECv3.A_WCYCL1850S.allactive-mach-pet",
-            "PEM_Ln9.ne30_oECv3.A_WCYCL1850S",
-            "ERP_Ld3.ne30_oECv3.A_WCYCL1850S.allactive-pioroot1",
+            "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",
+            "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
+            "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.elm-bgcexp",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
+            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
+            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
-            "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
+            "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6",
+            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             )
         },
 
@@ -199,12 +208,15 @@ _TESTS = {
         "time" : "02:00:00",
         "tests" : (
             # MMF tests
-            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
-            "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-AQP1",
-            "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-crmout",
-            "SMS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-ECPP",
+            "SMS_D_Ln3.ne4pg2_ne4pg2.F-MMF1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-AQP1",
+            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
+            "SMS_Ln9.ne4pg2_ne4pg2.F-MMF2-ECPP",
+            # MMF-SCM tests
+            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
+            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.eam-rrtmgp",
             )
@@ -215,6 +227,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
             "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.A_WCYCL1850S_CMIP6.allactive-wcprodrrm",
             )
         },
@@ -222,9 +235,9 @@ _TESTS = {
     #e3sm tests to mimic BGC production runs
     "e3sm_bgcprod" : {
         "tests"   :  (
-               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.allactive-v1bgc_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.allactive-v1bgc_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
-               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
         },
@@ -382,9 +395,42 @@ _TESTS = {
 
     "e3sm_gpu" : {
         "tests"    : (
-                 "SMS_P36x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
-                 "SMS_P36x1_Ld1.T62_oEC60to30v3.DTESTM",
+                 "SMS_P16x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
+                 "SMS_P16x1_Ld1.T62_oEC60to30v3.DTESTM",
                  )
+    },
+
+    "eam_nl" : {
+        "tests"    : (
+            "SBN.ne4_ne4.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne11_ne11.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne16_ne16.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne30_ne30.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne45pg2_r05_oECv3.FC5AV1C-L.allactive-thetadycore",
+            "SBN.ne120_ne120.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne240_ne240.FC5AV1C-L.eam-thetadycore",
+            "SBN.ne512np4_360x720cru_ne512np4.FC5AV1C-L.allactive-thetadycore",
+            "SBN.ne1024np4_360x720cru_ne1024np4.FC5AV1C-L.allactive-thetadycore",
+            "SBN.conusx4v1_conusx4v1.FC5AV1C-L.eam-thetadycore",
+            "SBN.enax4v1_enax4v1.FC5AV1C-L.eam-thetadycore",
+            "SBN.northamericax4v1_r0125_northamericax4v1.FC5AV1C-L.eam-thetadycore",
+            "SBN.antarcticax4v1_r0125_antarcticax4v1.FC5AV1C-L.allactive-thetadycore",
+            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.FC5AV1C-L.allactive-thetadycore",
+            "SBN.ne4_ne4.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne11_ne11.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne16_ne16.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne30_ne30.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne45pg2_r05_oECv3.FC5AV1C-L.allactive-preqxdycore",
+            "SBN.ne120_ne120.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne240_ne240.FC5AV1C-L.eam-preqxdycore",
+            "SBN.ne512np4_360x720cru_ne512np4.FC5AV1C-L.allactive-preqxdycore",
+            "SBN.ne1024np4_360x720cru_ne1024np4.FC5AV1C-L.allactive-preqxdycore",
+            "SBN.conusx4v1_conusx4v1.FC5AV1C-L.eam-preqxdycore",
+            "SBN.enax4v1_enax4v1.FC5AV1C-L.eam-preqxdycore",
+            "SBN.northamericax4v1_r0125_northamericax4v1.FC5AV1C-L.eam-preqxdycore",
+            "SBN.antarcticax4v1_r0125_antarcticax4v1.FC5AV1C-L.allactive-preqxdycore",
+            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.FC5AV1C-L.allactive-preqxdycore",
+            )
     },
 
 }

@@ -561,6 +561,16 @@ If TRUE, write diagnostic of global radiative temperature written to ELM log fil
 Subgrid fluxes for snow
 </entry>
 
+<entry id="implicit_stress" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="">
+If TRUE, use implicit method to calculate stresses output to atmosphere.
+</entry>
+
+<entry id="atm_gustiness" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="">
+If TRUE, use an extra gustiness supplied by the atmosphere in addition to mean wind.
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->
@@ -626,6 +636,13 @@ Toggle to turn on calculation of SNow and Ice Aerosol Radiation model (SNICAR) r
 Toggle to turn on SNICAR_AD snow shortwave algorithms
 The same snow shortwave algorithm can be turned on for sea-ice simulation
 with config_use_snicar_ad in mpas-seaice namelist
+</entry>
+
+<entry id="use_extrasnowlayers" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to use 16 snow layers instead of 5.  This option enables more realistic
+snowpack conditions on glaciers and ice sheets, including a semi-empirical
+firn densification model.
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
@@ -1274,7 +1291,7 @@ If TRUE, irrigation will be active (find surface datasets with active irrigation
 
 <entry id="sim_year" type="integer" category="default_settings"
        group="default_settings" valid_values=
-"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1955,1965,1975,1985,1995,2000,2005,2010,2015,2025,2035,2045,2055,2065,2075,2085,2095,2100,2105">
+"1000,850,1100,1350,1600,1850,1855,1865,1875,1885,1895,1905,1915,1925,1935,1945,1950,1955,1965,1975,1985,1995,2000,2005,2010,2015,2025,2035,2045,2055,2065,2075,2085,2095,2100,2105">
 Year to simulate and to provide datasets for (such as surface datasets, initial conditions, aerosol-deposition, Nitrogen deposition rates etc.)
 A sim_year of 1000 corresponds to data used for testing only, NOT corresponding to any real datasets.
 A sim_year greater than 2005 corresponds to rcp scenario data

@@ -121,7 +121,7 @@ module seq_flds_mod
   ! variables CCSM_VOC, CCSM_BGC and GLC_NEC.
   !====================================================================
 
-  use shr_kind_mod      , only : CX => shr_kind_CX, CXX => shr_kind_CXX
+  use shr_kind_mod      , only : CS => shr_kind_CS, CX => shr_kind_CX, CXX => shr_kind_CXX
   use shr_sys_mod       , only : shr_sys_abort
   use seq_comm_mct      , only : seq_comm_iamroot, seq_comm_setptrs, logunit
   use seq_drydep_mod    , only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
@@ -150,6 +150,10 @@ module seq_flds_mod
 
   logical            :: rof_heat            ! .true. if river model includes temperature
   logical            :: add_ndep_fields     ! .true. => add ndep fields
+
+  character(len=CS)  :: atm_flux_method     ! explicit => no extra fields needed
+                                            ! implicit_stress => atm provides wsresp and tau_est
+  logical            :: atm_gustiness       ! .true. if the atmosphere model produces gustiness
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -368,7 +372,7 @@ contains
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
-         nan_check_component_fields, rof_heat
+         nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -404,6 +408,8 @@ contains
        seq_flds_i2o_per_cat = .false.
        nan_check_component_fields = .false.
        rof_heat = .false.
+       atm_flux_method = 'explicit'
+       atm_gustiness = .false.
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -431,6 +437,8 @@ contains
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
     call shr_mpi_bcast(nan_check_component_fields, mpicom)
     call shr_mpi_bcast(rof_heat    , mpicom)
+    call shr_mpi_bcast(atm_flux_method, mpicom)
+    call shr_mpi_bcast(atm_gustiness, mpicom)
 
     call glc_elevclass_init(glc_nec)
 
@@ -637,6 +645,40 @@ contains
     units    = 'm s-1'
     attname  = 'Sa_v'
     call metadata_set(attname, longname, stdname, units)
+
+    if (atm_flux_method == 'implicit_stress') then
+       ! first-order response of wind to surface stresses (m/s/Pa)
+       call seq_flds_add(a2x_states,"Sa_wsresp")
+       call seq_flds_add(x2l_states,"Sa_wsresp")
+       call seq_flds_add(x2i_states,"Sa_wsresp")
+       longname = 'Response of wind to surface stress'
+       stdname  = ''
+       units    = 'm s-1 Pa-1'
+       attname  = 'Sa_wsresp'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! surface stress compatible with low level wind (Pa)
+       call seq_flds_add(a2x_states,"Sa_tau_est")
+       call seq_flds_add(x2l_states,"Sa_tau_est")
+       call seq_flds_add(x2i_states,"Sa_tau_est")
+       longname = 'Estimate of surface stress in equilibrium with boundary layer'
+       stdname  = ''
+       units    = 'Pa'
+       attname  = 'Sa_tau_est'
+       call metadata_set(attname, longname, stdname, units)
+    end if
+
+    if (atm_gustiness) then
+       ! extra mean wind speed associated with gustiness (m/s)
+       call seq_flds_add(a2x_states,"Sa_ugust")
+       call seq_flds_add(x2l_states,"Sa_ugust")
+       call seq_flds_add(x2i_states,"Sa_ugust")
+       longname = 'Extra wind speed due to gustiness'
+       stdname  = ''
+       units    = 'm s-1'
+       attname  = 'Sa_ugust'
+       call metadata_set(attname, longname, stdname, units)
+    end if
 
     ! temperature at the lowest model level (K)
     call seq_flds_add(a2x_states,"Sa_tbot")
@@ -2098,27 +2140,6 @@ contains
        call metadata_set(attname, longname, stdname, units)
     endif
 
-    ! Currently only the CESM land and runoff models treat irrigation as a separate
-    ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
-    ! E3SM may want to update its land and runoff models to map irrigation specially, as
-    ! CESM does.
-    !
-    ! (Once E3SM is using this irrigation field, all that needs to be done is to remove
-    ! this conditional: Code in other places in the coupler is written to trigger off of
-    ! whether Flrl_irrig has been added to the field list, so it should Just Work if this
-    ! conditional is removed.)
-    if (trim(cime_model) == 'cesm') then
-       ! Irrigation flux (land/rof only)
-       call seq_flds_add(l2x_fluxes,"Flrl_irrig")
-       call seq_flds_add(x2r_fluxes,"Flrl_irrig")
-       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_irrig')
-       longname = 'Irrigation flux (withdrawal from rivers)'
-       stdname  = 'irrigation'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrl_irrig'
-       call metadata_set(attname, longname, stdname, units)
-    end if
-
     !-----------------------------
     ! rof->ocn (runoff) and rof->lnd (flooding)
     !-----------------------------
@@ -2179,25 +2200,22 @@ contains
     attname  = 'Flrr_volrmch'
     call metadata_set(attname, longname, stdname, units)
 
-    if (trim(cime_model) == 'e3sm') then
-       call seq_flds_add(r2x_fluxes,'Flrr_supply')
-       call seq_flds_add(x2l_fluxes,'Flrr_supply')
-       longname = 'River model supply for land use'
-       stdname  = 'rtm_supply'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrr_supply'
-       call metadata_set(attname, longname, stdname, units)
-    endif
+    call seq_flds_add(r2x_fluxes,'Flrr_supply')
+    call seq_flds_add(x2l_fluxes,'Flrr_supply')
+    longname = 'River model supply for land use'
+    stdname  = 'rtm_supply'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrr_supply'
+    call metadata_set(attname, longname, stdname, units)
     
-	if (trim(cime_model) == 'e3sm') then   
-       call seq_flds_add(r2x_fluxes,'Flrr_deficit')
-       call seq_flds_add(x2l_fluxes,'Flrr_deficit')
-       longname = 'River model supply deficit'
-       stdname  = 'rtm_deficit'
-       units    = 'kg m-2 s-1'
-       attname  = 'Flrr_deficit'
-       call metadata_set(attname, longname, stdname, units)
-    endif
+    call seq_flds_add(r2x_fluxes,'Flrr_deficit')
+    call seq_flds_add(x2l_fluxes,'Flrr_deficit')
+    longname = 'River model supply deficit'
+    stdname  = 'rtm_deficit'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrr_deficit'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------

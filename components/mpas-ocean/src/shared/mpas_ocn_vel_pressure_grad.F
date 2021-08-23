@@ -93,7 +93,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_pressure_grad_tend(ssh, pressure, &
+   subroutine ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
                                   montgomeryPotential, zMid, &
                                   density, potentialDensity, &
                                   indxT, indxS, tracers, &
@@ -111,7 +111,8 @@ contains
          indxS                !< [in] tracer array index for salt
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         ssh                  !< [in] sea surface height
+         ssh,                &!< [in] sea surface height
+         surfacePressure      !< [in] surface pressure
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          pressure,            &!< [in] Pressure field
@@ -164,6 +165,10 @@ contains
          JacobianTz,       &! Jacobian associated with temperature
          JacobianSz         ! Jacobian associated with salinity
 
+      real (kind=RKIND) :: &
+         meridSshGrad,     &! config_meridional_ssh_grad
+         zonalSshGrad       ! config_zonal_ssh_grad
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -175,6 +180,9 @@ contains
       if (pgradOff) return
       call mpas_timer_start("pressure grad")
 
+      meridSshGrad = config_meridional_ssh_grad
+      zonalSshGrad = config_zonal_ssh_grad
+
       !*** Compute pGrad based on method selected
       select case (pGradType)
 
@@ -185,7 +193,7 @@ contains
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
-         !$acc            tend, edgeMask, ssh) &
+         !$acc            tend, edgeMask, ssh,surfacePressure) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #else
          !$omp parallel
@@ -201,8 +209,10 @@ contains
 
             do k=kMin,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
-                               gravity*edgeMask(k,iEdge)*invdcEdge* &
-                               (ssh(cell2) - ssh(cell1))
+                               edgeMask(k,iEdge)*invdcEdge* &
+                               (  gravity*(ssh(cell2) - ssh(cell1)) &
+                                + density0Inv*(  surfacePressure(cell2) &
+                                               - surfacePressure(cell1)) )
             end do
          end do
 #ifndef MPAS_OPENACC
@@ -559,7 +569,7 @@ contains
 #endif
          do iEdge=1,nEdgesOwned
             ! compute the pressure gradient to be applied at the edge
-            pGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
+            pGrad = zonalSshGrad * cos(angleEdge(iEdge)) + meridSshGrad * sin(angleEdge(iEdge))
 
             do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad

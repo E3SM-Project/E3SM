@@ -30,6 +30,7 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
+    use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
     !
     ! Inputs
     !
@@ -51,6 +52,9 @@ contains
 
     ! Init the kokkos views
     call prim_init_elements_views (elem)
+
+    ! Initialize dp3d from ps_v
+    call initialize_dp3d_from_ps_c ()
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
@@ -299,11 +303,23 @@ contains
     call prim_init_diags_views (elem)
   end subroutine prim_init_elements_views
 
-  subroutine prim_init_kokkos_functors ()
+  subroutine prim_init_kokkos_functors (allocate_buffer)
+    use iso_c_binding, only : c_bool
     use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
 
+    !
+    ! Optional Input
+    !
+     logical(kind=c_bool), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+
     ! Initialize the C++ functors in the C++ context
-    call init_functors_c ()
+    ! If no argument allocate_buffer is present,
+    ! let Homme internally allocate buffers
+    if (present(allocate_buffer)) then
+      call init_functors_c (logical(allocate_buffer,c_bool))
+    else
+      call init_functors_c (logical(.true.,c_bool))
+    endif
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()

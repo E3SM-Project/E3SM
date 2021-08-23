@@ -86,11 +86,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     integer , intent(in   ) :: ncrms                            ! Number of "vector" GCM columns to push down into CRM for SIMD vectorization / more threading
     integer , intent(in   ) :: plev                             ! number of levels in parent model
     real(r8), intent(in   ) :: dt_gl                            ! global model's time step
-    type(crm_input_type),      intent(in   ) :: crm_input
-    type(crm_state_type),      intent(inout) :: crm_state
-    type(crm_rad_type), target,intent(inout) :: crm_rad
-    type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
-    type(crm_output_type), target, intent(inout) :: crm_output
+    type(crm_input_type), target,intent(in   ) :: crm_input
+    type(crm_state_type), target,intent(inout) :: crm_state
+    type(crm_rad_type),   target,intent(inout) :: crm_rad
+    type(crm_ecpp_output_type)  ,intent(inout) :: crm_ecpp_output
+    type(crm_output_type),target,intent(inout) :: crm_output
     real(r8), dimension(ncrms,nzm), intent(  out) :: crm_clear_rh
     real(crm_rknd), intent(in) :: latitude0(:)
     real(crm_rknd), intent(in) :: longitude0(:)
