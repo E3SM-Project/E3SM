@@ -2700,6 +2700,64 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_idealAgeTracers -->
+
+<entry id="config_use_idealAgeTracers" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, the 'idealAgeTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_interior_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, interior restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_exponential_decay" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, exponential decay source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, idealAge forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, transit time distribution forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- AM_globalStats -->
 

@@ -3,4 +3,5 @@
 #include "Registry_ecosys.xml"
 #include "Registry_DMS.xml"
 #include "Registry_MacroMolecules.xml"
+#include "Registry_idealAge.xml"
 //#include "Registry_TEMPLATEGRP.xml"
