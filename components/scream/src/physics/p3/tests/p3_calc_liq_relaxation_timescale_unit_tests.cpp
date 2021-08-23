@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -28,6 +29,8 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     // Read in tables
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
     view_1d_table mu_r_table_vals;
@@ -44,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
     constexpr Scalar qc_not_small = 2.0 * qsmall;
     CalcLiqRelaxationData self[max_pack_size];
     for (Int i = 0; i < max_pack_size; ++i) {
-      self[i].randomize();
+      self[i].randomize(engine);
       self[i].qr_incld = (i % 2) ? qr_small : qr_not_small;
       self[i].qc_incld = ((i/2) % 2) ? qc_small : qc_not_small;
       self[i].f1r = C::f1r;

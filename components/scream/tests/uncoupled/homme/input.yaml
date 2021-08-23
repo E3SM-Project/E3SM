@@ -1,0 +1,24 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Initial Conditions:
+  Initial Conditions File: homme_standalone_ne4np4.nc
+  # Set X_prev = X
+  T_mid_prev: T_mid
+  horiz_winds_prev: horiz_winds
+  w_int: 0.0 # Start from zero vert velocity
+  w_int_prev: 0.0
+
+Atmosphere Processes:
+  Number of Entries: 1
+  Process 0:
+    Process Name: Dynamics
+
+Grids Manager:
+  Type: Dynamics Driven
+  Reference Grid: Physics GLL
+  Dynamics Driven:
+    Dynamics Namelist File Name: namelist.nl
+...

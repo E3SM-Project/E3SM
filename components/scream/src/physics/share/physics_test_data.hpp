@@ -6,6 +6,7 @@
 #include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
+#include <random>
 #include <vector>
 #include <utility>
 
@@ -40,23 +41,23 @@ struct SHOCGridData : public PhysicsTestData {
 
 // Convenience macros for up to 11 arguments, beyond that, you're on your own :)
 
-#define PTD_ZEROES0
-#define PTD_ZEROES1 0
-#define PTD_ZEROES2 PTD_ZEROES1, 0
-#define PTD_ZEROES3 PTD_ZEROES2, 0
-#define PTD_ZEROES4 PTD_ZEROES3, 0
-#define PTD_ZEROES5 PTD_ZEROES4, 0
-#define PTD_ZEROES6 PTD_ZEROES5, 0
-#define PTD_ZEROES7 PTD_ZEROES6, 0
-#define PTD_ZEROES8 PTD_ZEROES7, 0
-#define PTD_ZEROES9 PTD_ZEROES8, 0
-#define PTD_ZEROES10 PTD_ZEROES9, 0
-#define PTD_ZEROES11 PTD_ZEROES10, 0
+#define PTD_ONES0
+#define PTD_ONES1 1
+#define PTD_ONES2 PTD_ONES1, 1
+#define PTD_ONES3 PTD_ONES2, 1
+#define PTD_ONES4 PTD_ONES3, 1
+#define PTD_ONES5 PTD_ONES4, 1
+#define PTD_ONES6 PTD_ONES5, 1
+#define PTD_ONES7 PTD_ONES6, 1
+#define PTD_ONES8 PTD_ONES7, 1
+#define PTD_ONES9 PTD_ONES8, 1
+#define PTD_ONES10 PTD_ONES9, 1
+#define PTD_ONES11 PTD_ONES10, 1
 
-#define PTD_ZEROES(a) PTD_ZEROES##a
+#define PTD_ONES(a) PTD_ONES##a
 
 #define PTD_DATA_COPY_CTOR(name, num_args) \
-  name(const name& rhs) : name(PTD_ZEROES(num_args)) { *this = rhs; }
+  name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
 #define  PTD_ASS0(                                ) ((void) (0))
 #define  PTD_ASS1(a                               )                                           a = rhs.a
@@ -255,7 +256,51 @@ class PhysicsTestData
   // the member to a range.
   // Example, to use a -1 to 1 range for wthl member:
   // d.randomize({ {d.wthl, {-1, 1}} });
-  void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
+  template <typename Engine>
+  void randomize(Engine& engine, const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {})
+  {
+    std::uniform_real_distribution<Real> default_real_dist(0.0, 1.0);
+    std::uniform_int_distribution<Int> default_int_dist(0, 1);
+    std::uniform_int_distribution<Int> default_bool_dist(0, 1);
+
+    // generate with default vals
+    m_reals.randomize(engine, default_real_dist);
+    m_ints.randomize(engine, default_int_dist);
+    m_bools.randomize(engine, default_bool_dist);
+
+    // override defaults if user requested something specific
+    for (const auto& p : ranges) {
+      const auto& range = p.second;
+      const Real bottom_range = range.first;
+      const Real top_range    = range.second;
+      EKAT_REQUIRE_MSG(bottom_range <= top_range, "Expect bottom of range <= top of range");
+      void* member = p.first;
+
+      const auto real_search = get_index(reinterpret_cast<Real*>(member));
+      if (real_search.first != std::string::npos) {
+        std::uniform_real_distribution<Real> real_dist(range.first, range.second);
+        m_reals.randomize(engine, real_dist, real_search);
+      }
+      else {
+        const auto int_search = get_index(reinterpret_cast<Int*>(member));
+        if (int_search.first != std::string::npos) {
+          EKAT_REQUIRE_MSG(std::ceil(bottom_range) == bottom_range, "Use of non-round float for integer random range:" << bottom_range);
+          EKAT_REQUIRE_MSG(std::ceil(top_range) == top_range, "Use of non-round float for integer random range:" << top_range);
+          std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
+
+          m_ints.randomize(engine, data_dist, int_search);
+        }
+        else {
+          const auto bool_search = get_index(reinterpret_cast<bool*>(member));
+          EKAT_REQUIRE_MSG(bool_search.first != std::string::npos, "Failed to find member for randomization");
+          EKAT_REQUIRE_MSG(bottom_range == 0.0 || bottom_range == 1.0, "Use 0 or 1 for bool ranges, not:" << bottom_range);
+          EKAT_REQUIRE_MSG(top_range == 0.0 || top_range == 1.0, "Use 0 or 1 for bool ranges, not:" << top_range);
+          std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
+          m_bools.randomize(engine, data_dist, bool_search);
+        }
+      }
+    }
+  }
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another

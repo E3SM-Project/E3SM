@@ -22,16 +22,39 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+ : m_num_elems(state.num_elems())
+ , m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
- , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(state.num_elems()))
- , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(state.num_elems()))
- , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(state.num_elems()))
+ , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+ , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
+ , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
  , m_tu(m_policy_update_states)
+{
+  init_params(params);
+
+  // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
+  m_sphere_ops.allocate_buffers(m_tu);
+}
+
+HyperviscosityFunctorImpl::
+HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
+  : m_num_elems(num_elems)
+  , m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+  , m_hvcoord (Context::singleton().get<HybridVCoord>())
+  , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
+  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
+  , m_tu(m_policy_update_states)
+{
+  init_params(params);
+}
+
+
+void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 {
   // Sanity check
   assert(params.params_set);
@@ -62,6 +85,17 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 #else
   m_process_nh_vars = !params.theta_hydrostatic_mode;
 #endif
+}
+
+void HyperviscosityFunctorImpl::setup(const ElementsGeometry&     geometry,
+                                      const ElementsState&        state,
+                                      const ElementsDerivedState& derived)
+{
+  m_state = state;
+  assert(m_num_elems == m_state.num_elems()); //Sanity check
+  m_derived = derived;
+  m_geometry = geometry;
+  m_sphere_ops = Context::singleton().get<SphereOperators>();
 
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
   m_sphere_ops.allocate_buffers(m_tu);
@@ -74,7 +108,6 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
 
-  const int nelems = m_geometry.num_elems();
   const int nteams = m_tu.get_num_ws_slots();
 
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
@@ -85,9 +118,9 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   const int bhm_scalars_nteams = 2 + (m_process_nh_vars ? 2 : 0);
   const int bhm_vectors_nteams = 1;
 
-  const int size = nelems*(mid_scalars_nelems*size_mid_scalar +
-                           mid_vectors_nelems*size_mid_vector +
-                           int_scalars_nelems*size_int_scalar) +
+  const int size = m_num_elems*(mid_scalars_nelems*size_mid_scalar +
+                                mid_vectors_nelems*size_mid_vector +
+                                int_scalars_nelems*size_int_scalar) +
                    nteams*(bhm_scalars_nteams*size_bhm_scalar +
                            bhm_vectors_nteams*size_bhm_vector);
 

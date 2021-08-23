@@ -6,6 +6,7 @@
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -23,6 +24,8 @@ struct UnitWrap::UnitTest<D>::TestCheckValues {
 
 static void run_check_values_bfb()
 {
+  auto engine = setup_random_test();
+
   CheckValuesData cvd_fortran[] = {
     //          kts_, kte_, timestepcount_, source_ind_, force_abort_
     CheckValuesData(1,  72,              2,         100,       false),
@@ -34,7 +37,7 @@ static void run_check_values_bfb()
   static constexpr Int num_runs = sizeof(cvd_fortran) / sizeof(CheckValuesData);
 
   for (auto& d : cvd_fortran) {
-    d.randomize({ {d.qv, {-4.056E-01, 1.153E+00}}, {d.temp, {1.000E+02, 5.000E+02}} });
+    d.randomize(engine, { {d.qv, {-4.056E-01, 1.153E+00}}, {d.temp, {1.000E+02, 5.000E+02}} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that

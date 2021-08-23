@@ -34,10 +34,10 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using Smask                = typename SHF::Smask;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;
-  using view_1d_const_double = typename SHF::view_1d<const double>;
   using view_2d              = typename SHF::view_2d<SHF::Spack>;
   using view_2d_const        = typename SHF::view_2d<const Spack>;
   using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using sview_2d_const       = typename KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using view_3d              = typename SHF::view_3d<Spack>;
   using view_3d_const        = typename SHF::view_3d<const Spack>;
 
@@ -103,9 +103,15 @@ public:
       const auto sub_z_int = ekat::subview(z_int, i);
       const auto s_z_int = ekat::scalarize(sub_z_int);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        // Exner
+        const auto range = ekat::range<IntSmallPack>(k*Spack::n);
+        const Smask in_nlev_range = (range < nlev);
+
+        // Inverse of Exner. Assert that exner != 0 when in range before computing.
         const Spack p_mid_ik(p_mid(i,k));
-        exner(i,k)  = PF::exner_function(p_mid_ik);
+        const Spack exner_ik = PF::exner_function(p_mid_ik);
+        const Smask nonzero = (exner_ik != 0);
+        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).any());
+        inv_exner(i,k).set(nonzero, 1/exner_ik);
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -165,8 +171,8 @@ public:
 
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
       wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)   = surf_v_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
+      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlev_v)[nlev_p];
+      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlev_v)[nlev_p];
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;
@@ -175,7 +181,7 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_const_double area;
+    view_1d_const        area;
     view_2d_const        T_mid;
     view_2d_const        z_int;
     view_2d_const        z_mid;
@@ -185,8 +191,7 @@ public:
     view_1d_const        phis;
     view_1d_const        surf_sens_flux;
     view_1d_const        surf_latent_flux;
-    view_1d_const        surf_u_mom_flux;
-    view_1d_const        surf_v_mom_flux;
+    sview_2d_const       surf_mom_flux;
     view_2d_const        qv;
     view_2d              qv_copy;
     view_1d              cell_length;
@@ -207,25 +212,25 @@ public:
     view_1d              vpwp_sfc;
     view_2d              wtracer_sfc;
     view_2d              wm_zt;
-    view_2d              exner;
+    view_2d              inv_exner;
     view_2d              thlm;
     view_2d              qw;
     view_2d              cloud_frac;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_const_double& area_,
+                       const view_1d_const& area_,
                        const view_2d_const& T_mid_, const view_2d_const& z_int_,
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
-                       const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
+                       const sview_2d_const& surf_mom_flux_,
                        const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_, const view_1d& cell_length_,
                        const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
-                       const view_2d& wm_zt_,const view_2d& exner_,const view_2d& thlm_,const view_2d& qw_)
+                       const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -241,8 +246,7 @@ public:
       phis = phis_;
       surf_sens_flux = surf_sens_flux_;
       surf_latent_flux = surf_latent_flux_;
-      surf_u_mom_flux = surf_u_mom_flux_;
-      surf_v_mom_flux = surf_v_mom_flux_;
+      surf_mom_flux = surf_mom_flux_;
       qv = qv_;
       qv_copy = qv_copy_;
       // OUT
@@ -264,7 +268,7 @@ public:
       vpwp_sfc = vpwp_sfc_;
       wtracer_sfc = wtracer_sfc_;
       wm_zt = wm_zt_;
-      exner = exner_;
+      inv_exner = inv_exner_;
       thlm = thlm_;
       qw = qw_;
     } // set_variables
@@ -298,10 +302,12 @@ public:
 
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
-        inv_qc_relvar(i,k).set(condition,
-                               ekat::min(inv_qc_relvar_max,
-                                         ekat::max(inv_qc_relvar_min,
-                                                   ekat::square(qc(i,k))/qc2(i,k))));
+        if (condition.any()) {
+          inv_qc_relvar(i,k).set(condition,
+                                 ekat::min(inv_qc_relvar_max,
+                                           ekat::max(inv_qc_relvar_min,
+                                                     ekat::square(qc(i,k))/qc2(i,k))));
+        }
       });
     } // operator
 
@@ -360,7 +366,7 @@ public:
     uview_2d<Spack> zi_grid;
     uview_2d<Spack> wtracer_sfc;
     uview_2d<Spack> wm_zt;
-    uview_2d<Spack> exner;
+    uview_2d<Spack> inv_exner;
     uview_2d<Spack> thlm;
     uview_2d<Spack> qw;
     uview_2d<Spack> s;
@@ -398,7 +404,7 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
@@ -421,7 +427,7 @@ protected:
   Int m_num_tracers;
   Int hdtime;
 
-  KokkosTypes<DefaultDevice>::view_1d<double> m_cell_area;
+  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_area;
 
   // Struct which contains local variables
   Buffer m_buffer;

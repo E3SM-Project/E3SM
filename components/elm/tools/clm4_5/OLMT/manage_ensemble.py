@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys,os, time
 import numpy as np
 import netcdf4_functions as nffun

@@ -141,6 +141,7 @@ def buildnml(case, caseroot, compname):
     # maps key-tuple to case env name to lookup
     yaml_changes = {
         ("SCREAM", "Start Date"): "RUN_STARTDATE",
+        ("SCREAM", "Input Files", "input_root"): "DIN_LOC_ROOT"
     }
 
     # Copy scream/data to rundir/data

@@ -336,6 +336,23 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
+    def test_run_fpe_fail_captured(self):
+        if self._full:
+            if is_cuda_machine(self._machine):
+                self.skipTest("Skipping FPE check on cuda")
+            else:
+                cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FPE_FAIL=True -m $machine -b HEAD -k -t fpe", self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_run_kokkos_oob_captured(self):
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_KOKKOS_OOB=True -m $machine -b HEAD -k -t fpe", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
     def test_run_diff_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)

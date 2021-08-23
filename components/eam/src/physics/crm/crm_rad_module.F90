@@ -37,14 +37,10 @@ contains
 
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_rad_type
-   subroutine crm_rad_initialize(rad, ncrms, crm_nx_rad, crm_ny_rad, crm_nz)
-      use phys_control, only: phys_getopts
-      class(crm_rad_type), intent(inout) :: rad
+   subroutine crm_rad_initialize(rad, ncrms, crm_nx_rad, crm_ny_rad, crm_nz, MMF_microphysics_scheme)
+      type(crm_rad_type),  intent(inout) :: rad
       integer,             intent(in   ) :: ncrms, crm_nx_rad, crm_ny_rad, crm_nz
-
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*),    intent(in   ) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (.not. allocated(rad%qrad))        allocate(rad%qrad       (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%temperature)) allocate(rad%temperature(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
@@ -67,7 +63,7 @@ contains
       rad%qi          = 0
       rad%cld         = 0
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(rad%nc)) allocate(rad%nc(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
          if (.not. allocated(rad%ni)) allocate(rad%ni(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
          if (.not. allocated(rad%qs)) allocate(rad%qs(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
@@ -86,13 +82,9 @@ contains
 
    end subroutine crm_rad_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_rad_finalize(rad)
-      use phys_control, only: phys_getopts
-      class(crm_rad_type), intent(inout) :: rad
-
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+   subroutine crm_rad_finalize(rad, MMF_microphysics_scheme)
+      type(crm_rad_type), intent(inout) :: rad
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (allocated(rad%qrad))        deallocate(rad%qrad)
       if (allocated(rad%temperature)) deallocate(rad%temperature)
@@ -101,7 +93,7 @@ contains
       if (allocated(rad%qi))          deallocate(rad%qi)
       if (allocated(rad%cld))         deallocate(rad%cld)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(rad%nc))       deallocate(rad%nc)
          if (allocated(rad%ni))       deallocate(rad%ni)
          if (allocated(rad%qs))       deallocate(rad%qs)

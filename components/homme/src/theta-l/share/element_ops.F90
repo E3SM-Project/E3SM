@@ -154,8 +154,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
          field = elem%state%w_i(:,:,1:nlevp,nt)
       endif
     case('geo_i');
-      !is phinh_i set for HY runs or should here be an abort?
-      field = elem%state%phinh_i(:,:,1:nlevp,nt)
+      if(theta_hydrostatic_mode) then
+         call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,nt),elem%state%dp3d(:,:,:,nt),field)
+      else
+          field = elem%state%phinh_i(:,:,1:nlevp,nt)
+      endif
     case('mu_i');
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
     case('pnh_i');

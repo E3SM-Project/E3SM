@@ -1,0 +1,74 @@
+	<nml_record name="mixed_layer_eddy" mode="init" configuration="mixed_layer_eddy">
+		<nml_option name="config_mixed_layer_eddy_vert_levels" type="integer" default_value="60" units="unitless"
+			description="Number of vertical levels in mixed layer eddy test case. Typical value is 60."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_mixed_layer_eddy_bottom_depth" type="real" default_value="300.0" units="m"
+			description="Depth of the bottom of the domain for the mixed layer eddy test case."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_mixed_layer_depth" type="real" default_value="200.0" units="m"
+			description="Depth of the mixed layer for the mixed layer eddy test case."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_base_temperature" type="real" default_value="16.0" units="deg C"
+			description="Temperature at the base of the mixed layer."
+			possible_values="Any real number."
+		/>
+        <nml_option name="config_mixed_layer_eddy_temperature_stratification_mixed_layer" type="real" default_value="1e-4" units="deg C m^{-1}"
+			description="Vertical temperature gradient in the mixed layer."
+			possible_values="Any real number."
+		/>
+        <nml_option name="config_mixed_layer_eddy_temperature_stratification_interior" type="real" default_value="1e-2" units="deg C m^{-1}"
+			description="Vertical temperature gradient in the interior."
+			possible_values="Any real number."
+		/>
+        <nml_option name="config_mixed_layer_eddy_temperature_horizontal_gradient" type="real" default_value="2e-5" units="deg C m^{-1}"
+			description="Horizontal temperature gradient in the mixed layer."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_temperature_front_width" type="real" default_value="10e3" units="m"
+			description="Width of the temperature front."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_temperature_perturbation_magnitude" type="real" default_value="1e-5" units="deg C"
+			description="Magnitude of random perturbation in temperature."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number larger than zero."
+		/>
+		<nml_option name="config_mixed_layer_eddy_two_fronts" type="logical" default_value=".false." units="unitless"
+			description="Logical flag that determines if the initial fields has two fronts."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mixed_layer_eddy_restoring_width" type="real" default_value="5e3" units="m"
+			description="E-folding width of the restoring region at meridional boundaries, only used for single front."
+			possible_values="Any real number larger than zero."
+			/>
+		<nml_option name="config_mixed_layer_eddy_restoring_tau" type="real" default_value="5.0" units="days"
+			description="Time scale for restoring at meridional boundaries, only used for single front."
+			possible_values="Any real number larger than zero."
+			/>
+		<nml_option name="config_mixed_layer_eddy_heat_flux" type="real" default_value="0.0" units="m ^oC s^{-1}"
+			description="Surface heat flux."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_evaporation_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
+			description="Evaporative flux"
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_wind_stress_zonal" type="real" default_value="0.0" units="Pa"
+			description="Surface zonal wind stress."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_wind_stress_meridional" type="real" default_value="0.0" units="Pa"
+			description="Surface meridional wind stress."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_mixed_layer_eddy_coriolis_parameter" type="real" default_value="1.0e-4" units="s^{-1}"
+			description="Coriolis parameter for entrie domain."
+			possible_values="Any real number."
+		/>
+	</nml_record>

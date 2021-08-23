@@ -51,9 +51,10 @@ CONTAINS
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char
-    use scream_f2c_mod,     only: scream_init, scream_setup_surface_coupling
-    use scream_cpl_indices, only: scream_set_cpl_indices, num_exports, num_imports, &
-                                  scr_names_x2a, scr_names_a2x, index_x2a, index_a2x
+    use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
+                                  scream_init_atm
+    use scream_cpl_indices, only: scream_set_cpl_indices, num_exports, num_cpl_imports, num_scream_imports, &
+                                  scr_names_x2a, scr_names_a2x, index_x2a, index_a2x, vec_comp_x2a, vec_comp_a2x
     use ekat_string_utils,  only: string_f2c
 
     use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
@@ -132,7 +133,7 @@ CONTAINS
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
-    call scream_init (mpicom_atm, INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT), yaml_fname_c)
+    call scream_create_atm_instance (mpicom_atm, yaml_fname_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
@@ -145,10 +146,15 @@ CONTAINS
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
 
+    ! Complete AD initialization
+    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT))
+
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
-    call scream_setup_surface_coupling (c_loc(scr_names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), num_imports, &
-                                        c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), num_exports)
+    call scream_setup_surface_coupling (c_loc(scr_names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), c_loc(vec_comp_x2a), &
+                                        num_cpl_imports, num_scream_imports, &
+                                        c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), c_loc(vec_comp_a2x), &
+                                        num_exports)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file

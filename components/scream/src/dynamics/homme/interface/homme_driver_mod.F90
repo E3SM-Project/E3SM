@@ -127,6 +127,9 @@ contains
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
                                  elem, hybrid, hvcoord, deriv, tl
 
+    ! Local variable
+    logical(kind=c_bool), parameter :: allocate_buffer = .false.
+
     if (.not. is_data_structures_inited) then
       call abortmp ("Error! 'prim_init_data_structures_f90' has not been called yet.\n")
     elseif (is_model_inited) then
@@ -139,13 +142,18 @@ contains
     call model_init2(elem,hybrid,deriv,hvcoord,tl,1,nelemd)
 
     ! Initialize the C++ functors in the C++ context
-    call prim_init_kokkos_functors ()
+    ! Here we set allocate_buffer=false since the AD
+    ! allocates local memory for each process from a
+    ! single buffer.
+    call prim_init_kokkos_functors (allocate_buffer)
 
     ! Init grid views, ref_states views, and diags views
     call prim_init_grid_views (elem)
     call prim_init_ref_states_views (elem)
     call prim_init_diags_views (elem)
 
+    ! In order to print up to date stuff in F90
+    call prim_copy_cxx_to_f90 (.true.)
     call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
 
     is_model_inited = .true.

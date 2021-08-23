@@ -10,6 +10,8 @@
 
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
+#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
 
 #include "physics/share/physics_only_grids_manager.hpp"
 
@@ -20,6 +22,8 @@ inline void register_physics () {
 
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
+  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
 
   // A physics-only grids manager, in case we run a physics-only test
   auto& gm_factory = GridsManagerFactory::instance();

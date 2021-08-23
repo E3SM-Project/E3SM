@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use elm_varctl     , only : iulog, use_vertsoilc, use_fates
+  use elm_varctl     , only : iulog, use_vertsoilc, use_fates, use_extrasnowlayers
   use elm_varcon     , only : spval, ispval, dzsoi_decomp 
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -210,16 +210,16 @@ module histFileMod
   end type history_tape
 
   type elmpoint_rs                             ! Pointer to real scalar data (1D)
-     real(r8), pointer :: ptr(:)
+     real(r8), pointer :: ptr(:) => null()
   end type elmpoint_rs
   type elmpoint_ra                             ! Pointer to real array data (2D)
-     real(r8), pointer :: ptr(:,:)
+     real(r8), pointer :: ptr(:,:) => null()
   end type elmpoint_ra
 
   ! Pointers into datatype  arrays
   integer, parameter :: max_mapflds = 2500     ! Maximum number of fields to track
-  type (elmpoint_rs) :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
-  type (elmpoint_ra) :: elmptr_ra(max_mapflds) ! Real array data (2D)
+  type (elmpoint_rs), public :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
+  type (elmpoint_ra), public :: elmptr_ra(max_mapflds) ! Real array data (2D)
   !
   ! Master list: an array of master_entry entities
   !
@@ -227,7 +227,7 @@ module histFileMod
   !
   ! History tape: an array of history_tape entities (only active fields)
   !
-  type (history_tape) :: tape(max_tapes)       ! array history tapes
+  type (history_tape), public :: tape(max_tapes)       ! array history tapes
   !
   ! Namelist input
   !
@@ -1630,13 +1630,21 @@ contains
        ! Fill output field appropriately for each layer
        ! When only a subset of snow layers exist, it is the LAST num_snow_layers that exist
 
-       do level = 1, num_nonexistent_layers
-          field_out(point, level) = no_snow_val
-       end do
-       do level = (num_nonexistent_layers + 1), num_levels
-          field_out(point, level) = field_in(point, level)
-       end do
-          
+       if (.not. use_extrasnowlayers) then
+          do level = 1, num_nonexistent_layers
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_nonexistent_layers + 1), num_levels
+             field_out(point, level) = field_in(point, level)
+          end do
+       else ! Levels are rearranged such that the top snow layer (surface layer) becomes level 1, etc.
+          do level = num_levels, (num_levels-num_nonexistent_layers+1), -1
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_levels-num_nonexistent_layers), 1, -1
+             field_out(point, level) = field_in(point, level+num_nonexistent_layers)
+          end do
+       end if
     end do
 
     end associate

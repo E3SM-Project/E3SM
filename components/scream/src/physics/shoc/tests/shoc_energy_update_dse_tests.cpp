@@ -6,6 +6,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -38,14 +39,18 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
     // Liquid water potential temperature [K]
     static constexpr Real thlm[nlev] = {350, 325, 315, 310, 300};
-    // Exner function [-]
-    static constexpr Real exner[nlev] = {0.1, 0.3, 0.5, 0.7, 1.0};
+    // Inverse of the Exner function [-]
+    static constexpr Real inv_exner[nlev] = {1.22, 1.15, 1.10, 1.05, 1.0};
     // Cloud condensate [kg/kg]
     static constexpr Real shoc_ql[nlev] = {5e-6, 8e-5, 4e-4, 3e-4, 1e-6};
     // Mid-point heights [m]
     static constexpr Real zt_grid[nlev] = {9000, 6000, 4000, 2000, 1000};
     // Surface geopotential
     static constexpr Real phis = 100;
+
+    // Set lower/upper bounds to check output DSE
+    static constexpr Real dse_upper = 5e5; // [J/kg]
+    static constexpr Real dse_lower = 1e5; // [J/kg]
 
     // Initialize data structure for bridging to F90
     UpdateHostDseData SDS(shcol, nlev);
@@ -63,7 +68,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
         SDS.thlm[offset] = thlm[n];
         SDS.zt_grid[offset] = zt_grid[n];
-        SDS.exner[offset] = exner[n];
+        SDS.inv_exner[offset] = inv_exner[n];
 
         // Force the first column of cloud liquid
         //   to be zero!
@@ -81,7 +86,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
         REQUIRE(SDS.thlm[offset] > 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
-        REQUIRE(SDS.exner[offset] > 0);
+        REQUIRE(SDS.inv_exner[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] >= 0);
 
         // make sure the two columns are different and
@@ -93,10 +98,11 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
           REQUIRE(SDS.shoc_ql[offsets] > SDS.shoc_ql[offset]);
         }
 
-        // Check that heights and thlm increase upward
+        // Check that heights, thlm, and inverse of exner increase upward
         if (n < nlev-1){
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
           REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0);
+          REQUIRE(SDS.inv_exner[offset + 1] - SDS.inv_exner[offset] < 0);
         }
 
       }
@@ -117,6 +123,10 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
           REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
         }
 
+        // Verify that DSE falls within some reasonable bounds
+        REQUIRE(SDS.host_dse[offset] > dse_lower);
+        REQUIRE(SDS.host_dse[offset] < dse_upper);
+
         // Verify that dse is greater in points with condensate loading
         if (s == 0){
           const auto offsets = n + (s+1) * nlev;
@@ -128,6 +138,8 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     UpdateHostDseData SDS_f90[] = {
       //               shcol, nlev
       UpdateHostDseData(10, 71),
@@ -138,7 +150,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -162,7 +174,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.exner,d.zt_grid,
+      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.inv_exner,d.zt_grid,
                          d.phis,d.host_dse);
       d.transpose<ekat::TransposeDirection::f2c>();
     }

@@ -39,10 +39,10 @@ namespace scream
  *      such large pack was made. E.g., if the field dimensions are
  *      (10,128), then the last dim allows packing with pack size 16.
  *    - Fields are stored as 1d views (basically, just a pointer), so
- *      users need to call the get_reshaped_view<T>() to use it with
+ *      users need to call the get_view<T>() to use it with
  *      a different data type. E.g., to use the field as a 2d field,
  *      with Pack<Real,8> as scalar type, one needs to call
- *        auto v = f.get_reshaped_view<Pack<Real,8>**>()
+ *        auto v = f.get_view<Pack<Real,8>**>()
  *      The alloc props are queried to establish 1) whether the allocation
  *      is compatible with a pack-8 scalar type, and 2) how the dimensions
  *      of the resulting view should be.
@@ -50,7 +50,7 @@ namespace scream
  *      "subview" of a bigger field. E.g., tracers are allocated as a big
  *      array Q, but one may just be interested in a single one (e.g., qv),
  *      yet still use it as a Field. This requires some care during the
- *      get_reshaped_view method, so the field alloc props can be used
+ *      get_view method, so the field alloc props can be used
  *      to detect whether we are in this scenario.
  *
  *  Note: at every request for a new value_type, this class checks the
@@ -97,6 +97,9 @@ public:
 
   // Get the overall allocation size (in Bytes)
   int  get_alloc_size () const;
+
+  // Get number of m_scalar_type_size-sized scalars in the allocation.
+  int  get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
 
   // Wether this allocation is contiguous
   bool contiguous () const { return m_contiguous; }

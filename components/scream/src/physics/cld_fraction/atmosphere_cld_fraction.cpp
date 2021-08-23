@@ -61,10 +61,10 @@ void CldFraction::run_impl (const Real dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
-  auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
-  auto liq_cld_frac = m_cld_fraction_fields_in["cldfrac_liq"].get_reshaped_view<const Pack**>();
-  auto ice_cld_frac = m_cld_fraction_fields_out["cldfrac_ice"].get_reshaped_view<Pack**>();
-  auto tot_cld_frac = m_cld_fraction_fields_out["cldfrac_tot"].get_reshaped_view<Pack**>();
+  auto qi   = m_cld_fraction_fields_in["qi"].get_view<const Pack**>();
+  auto liq_cld_frac = m_cld_fraction_fields_in["cldfrac_liq"].get_view<const Pack**>();
+  auto ice_cld_frac = m_cld_fraction_fields_out["cldfrac_ice"].get_view<Pack**>();
+  auto tot_cld_frac = m_cld_fraction_fields_out["cldfrac_tot"].get_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
 

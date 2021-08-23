@@ -215,11 +215,11 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 2;
+    static constexpr int num_1d_scalar = 1;
     // 2d view packed, size (ncol, nlev_packs)
-    static constexpr int num_2d_vector = 10;
+    static constexpr int num_2d_vector = 8;
+    static constexpr int num_2dp1_vector = 2;
 
-    uview_1d precip_liq_surf;
     uview_1d precip_ice_surf;
     uview_2d inv_exner;
     uview_2d th_atm;
@@ -229,8 +229,8 @@ public:
     uview_2d dz;
     uview_2d qv2qi_depos_tend;
     uview_2d rho_qi;
-    uview_2d precip_liq_flux;
-    uview_2d precip_ice_flux;
+    uview_2d precip_liq_flux; //nlev+1
+    uview_2d precip_ice_flux; //nlev+1
 
     suview_2d col_location;
 
@@ -248,7 +248,7 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
@@ -257,21 +257,6 @@ protected:
 
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
-
-  template<typename T>
-  using view_type = field_type::view_type<T*>;
-
-  template<typename T>
-  using host_view_type = field_type::get_view_type<view_type<T>,Host>;
-
-  using host_view_in_type   = host_view_type<const_field_type::RT>;
-  using host_view_out_type  = host_view_type<      field_type::RT>;
-
-  std::map<std::string,host_view_in_type>   m_p3_host_views_in;
-  std::map<std::string,host_view_out_type>  m_p3_host_views_out;
-
-  std::map<std::string,const Real*>  m_raw_ptrs_in;
-  std::map<std::string,Real*>        m_raw_ptrs_out;
 
   util::TimeStamp     m_current_ts;
   ekat::Comm          m_p3_comm;

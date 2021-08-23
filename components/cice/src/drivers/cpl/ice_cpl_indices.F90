@@ -43,6 +43,9 @@ module ice_cpl_indices
   integer :: index_x2i_Sa_z            ! bottom atm level height
   integer :: index_x2i_Sa_u            ! bottom atm level zon wind
   integer :: index_x2i_Sa_v            ! bottom atm level mer wind
+  integer :: index_x2i_Sa_wsresp       ! wind response to stress
+  integer :: index_x2i_Sa_tau_est      ! estimated tau at equilibrium w/ wind
+  integer :: index_x2i_Sa_ugust        ! wind response to stress
   integer :: index_x2i_Sa_tbot         ! bottom atm level temp
   integer :: index_x2i_Sa_pbot         ! bottom atm level pressure
   integer :: index_x2i_Sa_ptem         ! bottom atm level pot temp
@@ -118,6 +121,9 @@ contains
     index_x2i_Sa_z          = mct_avect_indexra(x2i,'Sa_z')
     index_x2i_Sa_u          = mct_avect_indexra(x2i,'Sa_u')
     index_x2i_Sa_v          = mct_avect_indexra(x2i,'Sa_v')
+    index_x2i_Sa_wsresp     = mct_avect_indexra(x2i,'Sa_wsresp', perrWith='quiet')
+    index_x2i_Sa_tau_est    = mct_avect_indexra(x2i,'Sa_tau_est', perrWith='quiet')
+    index_x2i_Sa_ugust      = mct_avect_indexra(x2i,'Sa_ugust', perrWith='quiet')
     index_x2i_Sa_tbot       = mct_avect_indexra(x2i,'Sa_tbot')
     index_x2i_Sa_ptem       = mct_avect_indexra(x2i,'Sa_ptem')
     index_x2i_Sa_pbot       = mct_avect_indexra(x2i,'Sa_pbot')

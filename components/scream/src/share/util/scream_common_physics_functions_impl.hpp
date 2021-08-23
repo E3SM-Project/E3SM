@@ -9,6 +9,32 @@ namespace scream {
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_density(const ScalarT& pseudo_density, const ScalarT& dz)
+{
+  using C = scream::physics::Constants<Real>;
+
+  static constexpr auto g = C::gravit;
+
+  return pseudo_density/dz/g;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_density(const MemberType& team,
+                                                  const InputProviderP& pseudo_density,
+                                                  const InputProviderZ& dz,
+                                                  const view_1d<ScalarT>& density)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,density.extent(0)),
+                       [&] (const int k) {
+    density(k) = calculate_density(pseudo_density(k),dz(k));
+  });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure)
 {
   using C = scream::physics::Constants<Real>;
@@ -86,8 +112,10 @@ calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const S
   using C = scream::physics::Constants<Real>;
 
   static constexpr auto ep_2 = C::ep_2;
+  static constexpr auto one  = C::ONE;
+  static constexpr auto c1   = - one + one/ep_2;
 
-  return T_virtual*((ep_2*(1.0+qv))/(qv+ep_2));
+  return T_virtual / ( one + c1*qv );
 }
 
 template<typename DeviceT>
@@ -113,7 +141,10 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_virtual_temperature(const ScalarT& 
   using C = scream::physics::Constants<Real>;
 
   static constexpr auto ep_2 = C::ep_2;
-  return temperature*((qv+ep_2)/(ep_2*(1.0+qv)));
+  static constexpr auto one  = C::ONE;
+  static constexpr auto c1   = - one + one/ep_2;
+
+  return temperature * ( one + c1*qv );
 }
 
 template<typename DeviceT>
@@ -158,6 +189,52 @@ void PhysicsFunctions<DeviceT>::calculate_dse(const MemberType& team,
                        [&] (const int k) {
     dse(k) = calculate_dse(temperature(k),z(k),surf_geopotential);
   });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv)
+{
+  return drymmr*(1-qv);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& team,
+                                                             const InputProviderX& drymmr,
+                                                             const InputProviderQ& qv,
+                                                             const view_1d<ScalarT>& wetmmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,wetmmr.extent(0)),
+                       [&] (const int k) {
+                         wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv(k));
+                       });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv)
+{
+  return wetmmr/(1-qv);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& team,
+                                                             const InputProviderX& wetmmr,
+                                                             const InputProviderQ& qv,
+                                                             const view_1d<ScalarT>& drymmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,drymmr.extent(0)),
+                       [&] (const int k) {
+                         drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv(k));
+                       });
 }
 
 template<typename DeviceT>

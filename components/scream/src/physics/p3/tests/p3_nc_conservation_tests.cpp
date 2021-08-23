@@ -5,6 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -17,12 +18,15 @@ struct UnitWrap::UnitTest<D>::TestNcConservation {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     NcConservationData f90_data[max_pack_size];
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
+      d.dt = f90_data[0].dt; // Hold this fixed, this is not packed data
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -52,7 +56,7 @@ struct UnitWrap::UnitTest<D>::TestNcConservation {
         nc_selfcollect_tend[s] = cxx_device(vs).nc_selfcollect_tend;
       }
 
-      Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(0).dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend);
+      Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

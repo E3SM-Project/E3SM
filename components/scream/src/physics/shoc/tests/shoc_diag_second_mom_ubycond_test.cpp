@@ -6,6 +6,7 @@
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -61,6 +62,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     DiagSecondMomentsUbycondData uby_fortran[] = {
       // shcol
       DiagSecondMomentsUbycondData(128),
@@ -72,7 +75,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
     static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(DiagSecondMomentsUbycondData);
 
     for (auto& d : uby_fortran) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that

@@ -16,6 +16,7 @@ set(FFLAGS \"${CMAKE_Fortran_FLAGS}\")
 set(NETCDF_PATH ${NetCDF_Fortran_PATHS})
 "
 )
-  set(ENV{CIMEROOT} ${PROJECT_SOURCE_DIR}/../../cime)
+  set(SRC_ROOT ${PROJECT_SOURCE_DIR}/../..)
+  set(ENV{CIMEROOT} ${SRC_ROOT}/cime)
   add_subdirectory($ENV{CIMEROOT}/tools/cprnc ${BLDROOT})
 endfunction()

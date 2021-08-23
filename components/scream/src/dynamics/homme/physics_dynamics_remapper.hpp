@@ -96,7 +96,7 @@ protected:
   template<typename DataType>
   ::Homme::ExecViewUnmanaged<DataType>
   getHommeView(const Field<RealType>& f) {
-    auto scream_view = f.template get_reshaped_view<DataType>();
+    auto scream_view = f.template get_view<DataType>();
     return ::Homme::ExecViewUnmanaged<DataType>(scream_view.data(),scream_view.layout());
   }
 
@@ -448,8 +448,8 @@ initialize_device_variables()
     }
 
     // Store view pointers
-    h_phys_ptrs(i).ptr = phys.get_view().data();
-    h_dyn_ptrs(i).ptr  = dyn.get_view().data();
+    h_phys_ptrs(i).ptr = phys.get_internal_view_data();
+    h_dyn_ptrs(i).ptr  = dyn.get_internal_view_data();
 
     // Store phys layout
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
@@ -695,7 +695,11 @@ do_remap_fwd() const
 
   const auto concurrency = KT::ExeSpace::concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_DEBUG
+  const int team_size = std::min(256, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#else
   const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#endif
 #else
   const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
 #endif

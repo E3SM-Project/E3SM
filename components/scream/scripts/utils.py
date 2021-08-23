@@ -298,39 +298,82 @@ def get_cpu_core_count():
     return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
 
 ###############################################################################
-def _ensure_pylib_impl(libname, pipname=None):
+def ensure_pip():
+###############################################################################
+    """
+    Ensures that pip is available. Notice that we cannot use the _ensure_pylib_impl
+    function below, since it would cause circular dependencies. This one has to
+    be done by hand.
+    """
+    # Use ensurepip for installing pip
+    import ensurepip
+    ensurepip.bootstrap(user=True)
+
+    # needed to "rehash" available libs
+    site.main() # pylint: disable=no-member
+
+    _ = import_module("pip")
+
+###############################################################################
+def pip_install_lib(pip_libname):
+###############################################################################
+    """
+    Ask pip to install a version of a package which is >= min_version
+    """
+    # Installs will use pip, so we need to ensure it is available
+    ensure_pip()
+
+    # Note: --trusted-host may not work for ancient versions of python
+    #       --upgrade makes sure we get the latest version, even if one is already installed
+    stat, _, err = run_cmd("{} -m pip install --upgrade {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pip_libname))
+    expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pip_libname, err))
+
+    # needed to "rehash" available libs
+    site.main() # pylint: disable=no-member
+
+###############################################################################
+def package_version_ok(pkg, min_version=None):
+###############################################################################
+    """
+    Checks that the loaded package's version is >= that the minimum required one.
+    If no minimum version is passed, then return True
+    """
+    from pkg_resources import parse_version
+
+    return True if min_version is None else parse_version(pkg.__version__) >= parse_version(min_version)
+
+###############################################################################
+def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 ###############################################################################
     """
     Internal method, clients should not call this directly; please use of the
     public ensure_XXX methods. If one does not exist, we will need to evaluate
     if we want to add a new outside dependency.
     """
+
+    install = False
     try:
-        _ = import_module(libname)
+        pkg = import_module(libname)
+
+        if not package_version_ok(pkg,min_version):
+            print("Detected version for package {} is too old: detected {}, required >= {}. Will attempt to upgrade the package locally".format(libname, pkg.__version__,min_version))
+            install = True
+
     except ImportError:
-        print("Detected missing {}, will attempt to install locally".format(libname))
-        pipname = pipname if pipname else libname
+        print("Detected missing package {}. Will attempt to install locally".format(libname))
+        pip_libname = pip_libname if pip_libname else libname
 
-        if libname == "pip":
-            # Use ensurepip for installing pip
-            import ensurepip
-            ensurepip.bootstrap(user=True)
-        else:
-            # Other installs will use pip, so we need to ensure it's available
-            ensure_pip()
+        install = True
 
-            # --trusted-host may not work for ancient versions of python
-            stat, _, err = run_cmd("{} -m pip install {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pipname))
-            expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pipname, err))
+    if install:
+        pip_install_lib(pip_libname)
+        pkg = import_module(libname)
 
-        # needed to "rehash" available libs
-        site.main() # pylint: disable=no-member
-
-        _ = import_module(libname)
+    
+    expect (package_version_ok(pkg,min_version), "Error! Could not find version {} for package {}.".format(min_version,libname))
 
 # We've accepted these outside dependencies
-def ensure_pip():    _ensure_pylib_impl("pip")
-def ensure_yaml():   _ensure_pylib_impl("yaml", pipname="pyyaml")
+def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
 
 ###############################################################################

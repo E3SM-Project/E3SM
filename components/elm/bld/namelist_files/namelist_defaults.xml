@@ -83,6 +83,11 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <glc_snow_persistence_max_days>7300</glc_snow_persistence_max_days>
 
+<!-- Use implicit method for stress sent to atmosphere -->
+<implicit_stress>.false.</implicit_stress>
+<!-- The atmosphere provides gustiness separate from mean wind. -->
+<atm_gustiness>.false.</atm_gustiness>
+
 <!-- ========================================================================================  -->
 <!-- VSFM default                                                                              -->
 <!-- ========================================================================================  -->
@@ -105,7 +110,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c210219.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
@@ -245,6 +250,8 @@ lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr2010_c201210.nc</fsurdat>
+<fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c210607.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
@@ -298,7 +305,7 @@ lnd/clm2/surfdata_map/surfdata_10x15_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_numaIA"       sim_year="2000" use_crop=".true." >
 lnd/clm2/surfdata_map/surfdata_1x1_numaIA_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_smallvilleIA" sim_year="2000" use_crop=".true." >
-lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp24_simyr2000_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c210617.nc</fsurdat>
 
 <fsurdat hgrid="5x5_amazon"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
@@ -416,7 +423,7 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 <flanduse_timeseries hgrid="ne30np4"       sim_year_range="1850-2000" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
  <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2000" 
- use_crop=".false."  >DUMMY</flanduse_timeseries>
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4.pg2_hist_simyr1850-2015_c210113.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"

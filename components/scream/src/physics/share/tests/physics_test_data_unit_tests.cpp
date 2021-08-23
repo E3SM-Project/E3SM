@@ -4,6 +4,7 @@
 #include "share/scream_types.hpp"
 #include "physics_unit_tests_common.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 namespace scream {
 namespace physics {
@@ -56,6 +57,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
 {
   static void test_fake_class1()
   {
+    auto engine = setup_random_test();
+
     const std::vector<std::tuple<Int, Int, Int, Int>> dims = { std::make_tuple(7, 13, 29, 3), std::make_tuple(4, 8, 16, 2) };
     const std::vector<Real> scalars = { 42.1, 43.1 };
     FakeClass1 fakes_1[] = {
@@ -64,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
     };
 
     for (auto& d : fakes_1) {
-      d.randomize({ {d.two123, {-2.0, -1.0}}, {d.three124, {-3.0, -2.0}}, {d.int124, {42, 84}} });
+      d.randomize(engine, { {d.two123, {-2.0, -1.0}}, {d.three124, {-3.0, -2.0}}, {d.int124, {42, 84}} });
     }
 
     static constexpr Int num_runs = sizeof(fakes_1) / sizeof(FakeClass1);
@@ -230,10 +233,12 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
   static void test_all_true()
   {
+    auto engine = setup_random_test();
+
     static constexpr int size = 42;
     AllTrue at(size);
 
-    at.randomize({ {at.bools, {1.0, 1.0}} });
+    at.randomize(engine, { {at.bools, {1.0, 1.0}} });
 
     for (int i = 0; i < size; ++i) {
       REQUIRE(at.bools[i]);

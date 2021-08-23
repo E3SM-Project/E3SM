@@ -1797,7 +1797,7 @@ contains
        do iCell = 1, nCellsSolve
 
           bergFreshwaterFlux(iCell) = bergFreshwaterFluxData(iCell)
-          bergLatentHeatFlux(iCell) = bergFreshwaterFluxData(iCell) * &
+          bergLatentHeatFlux(iCell) = -bergFreshwaterFluxData(iCell) * &
                                      (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
 
        enddo

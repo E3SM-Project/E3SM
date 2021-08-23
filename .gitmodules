@@ -52,3 +52,6 @@
 [submodule "components/mpas-ocean/src/gotm"]
 	path = components/mpas-ocean/src/gotm
 	url = git@github.com:E3SM-Project/GOTMcode.git
+[submodule "externals/mct"]
+	path = externals/mct
+	url = git@github.com:MCSclimate/MCT.git

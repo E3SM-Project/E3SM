@@ -125,6 +125,7 @@ void p3_init () {
 }
 
 Int p3_main (const FortranData& d, bool use_fortran) {
+  EKAT_REQUIRE_MSG(d.dt > 0, "invalid dt");
   if (use_fortran) {
     Real elapsed_s;
     p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
@@ -167,6 +168,7 @@ int test_p3_init () {
 
 int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
+  d->dt = 300.0;
   p3_init();
   p3_main(*d, use_fortran);
   P3GlobalForFortran::deinit();

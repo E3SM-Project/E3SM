@@ -68,12 +68,10 @@ public:
   void create_fields ();
 
   // Sets a pre-built SurfaceCoupling object in the driver (for CIME runs only)
-  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc);
+  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
 
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& t0);
-
-  void initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl);
 
   // Initialie I/O structures for output
   void initialize_output_manager ();
@@ -107,8 +105,11 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
+  const ATMBufferManager& get_memory_buffer() const { return m_memory_buffer; }
+
 protected:
 
+  void initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl);
   void register_groups ();
 
   std::map<std::string,field_mgr_ptr>    m_field_mgrs;
@@ -121,7 +122,7 @@ protected:
 
   OutputManager                                       m_output_manager;
 
-  ATMBufferManager                                    memory_buffer;
+  ATMBufferManager                                    m_memory_buffer;
 
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
