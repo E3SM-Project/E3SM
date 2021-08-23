@@ -3711,14 +3711,14 @@ time_loop: &
       !--------------------------------------------------------------------------------
       !--------------------------------------------------------------------------------
 
-      subroutine find_renaming_pairs (nmodes, to_mode_of_mode, &    !input
+      subroutine find_renaming_pairs (nmodes, dest_mode_of_mode, &    !input
            num_pairs, sz_factor, fmode_dist_tail_fac, v2n_lo_rlx, & !output
            v2n_hi_rlx, ln_diameter_tail_fac, diameter_cutoff, &     !output
            ln_dia_cutoff, diameter_belowcutoff, dryvol_smallest)    !output
 
         !arguments (intent-ins)
         integer, intent(in) :: nmodes              !total number of modes
-        integer, intent(in) :: to_mode_of_mode(:)  !array carry info about the "to" mode of a particular mode
+        integer, intent(in) :: dest_mode_of_mode(:)  !array carry info about the "to" mode of a particular mode
 
         !intent-outs
         integer,  intent(out) :: num_pairs         ! total number of pairs to be found
@@ -3729,7 +3729,7 @@ time_loop: &
         real(r8), intent(out) :: diameter_belowcutoff(:), dryvol_smallest(:) ! some limiters/factors
 
         !local variables
-        integer :: to_mode, from_mode, imode
+        integer :: dest_mode, src_mode, imode
 
         !some parameters
         real(r8), parameter :: sqrt_half = sqrt(0.5)
@@ -3743,19 +3743,19 @@ time_loop: &
         num_pairs = 0 ! Let us assume there are none to start with
 
         !if there can be no possible pairs, just return
-        if (all(to_mode_of_mode(:)<=0)) return
+        if (all(dest_mode_of_mode(:)<=0)) return
 
         !Go through all the modes to find if we have atleast one or more than one pairs
         do imode = 1, nmodes
-           to_mode   = to_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
+           dest_mode   = dest_mode_of_mode(imode) ! transfer "to" mode for mode "imode"
 
-           !if to_mode is <=0, transfer is not possible for this mode, cycle the loop for the next mode
-           if(to_mode <= 0)cycle
+           !if dest_mode is <=0, transfer is not possible for this mode, cycle the loop for the next mode
+           if(dest_mode <= 0)cycle
 
-           from_mode = imode                  ! transfer "from" mode is the current mode (i.e. imode)
+           src_mode = imode                  ! transfer "from" mode is the current mode (i.e. imode)
 
            !^^At this point, we know that particles can be tranfered from the
-           ! "from_mode" to "to_mode". "from_mode" is the current mode (i.e. imode)
+           ! "src_mode" to "dest_mode". "src_mode" is the current mode (i.e. imode)
 
            !update number of pairs found so far
            num_pairs = num_pairs + 1    !increment npair
@@ -3764,30 +3764,30 @@ time_loop: &
            !now precompute some common factors to be used later
            !-------------------------------------------------------
 
-           call compute_size_factor (from_mode, sz_factor) !size factor for "from mode"
-           call compute_size_factor (to_mode,   sz_factor) !size factor for "to mode"
+           call compute_size_factor (src_mode, sz_factor) !size factor for "from mode"
+           call compute_size_factor (dest_mode,   sz_factor) !size factor for "to mode"
 
            !---------------------------------------------------------------------------------------------------------
-           ! We compute few factors below for the "from_mode", which will be used for inter-mode particle transfer
+           ! We compute few factors below for the "src_mode", which will be used for inter-mode particle transfer
            !---------------------------------------------------------------------------------------------------------
 
-           fmode_dist_tail_fac(from_mode) = sqrt_half/alnsg_aer(from_mode) !factor for computing distribution tails of the  "from mode"
+           fmode_dist_tail_fac(src_mode) = sqrt_half/alnsg_aer(src_mode) !factor for computing distribution tails of the  "from mode"
 
-           dryvol_smallest(from_mode) = smallest_dryvol_value
+           dryvol_smallest(src_mode) = smallest_dryvol_value
            !compute volume to number high and low limits with relaxation coefficients (watch out for repeated calculations)
-           v2n_lo_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumlo_aer) * frelax
-           v2n_hi_rlx(from_mode) = compute_vol_to_num_ratio(from_mode, dgnumhi_aer) / frelax
+           v2n_lo_rlx(src_mode) = compute_vol_to_num_ratio(src_mode, dgnumlo_aer) * frelax
+           v2n_hi_rlx(src_mode) = compute_vol_to_num_ratio(src_mode, dgnumhi_aer) / frelax
 
            !A factor for computing diameter at the tails of the distribution
-           ln_diameter_tail_fac(from_mode) = 3.0 * (alnsg_aer(from_mode)**2)
+           ln_diameter_tail_fac(src_mode) = 3.0 * (alnsg_aer(src_mode)**2)
 
            !Cut-off (based on geometric mean) for making decision to do inter-mode transfers
-           diameter_cutoff(from_mode) = sqrt(   &
-                dgnum_aer(from_mode)*exp(1.5*(alnsg_aer(from_mode)**2)) *   &
-                dgnum_aer(to_mode)*exp(1.5*(alnsg_aer(to_mode)**2)) )
+           diameter_cutoff(src_mode) = sqrt(   &
+                dgnum_aer(src_mode)*exp(1.5*(alnsg_aer(src_mode)**2)) *   &
+                dgnum_aer(dest_mode)*exp(1.5*(alnsg_aer(dest_mode)**2)) )
 
-           ln_dia_cutoff(from_mode) = log(diameter_cutoff(from_mode)) !log of cutt-off
-           diameter_belowcutoff(from_mode) = 0.99*diameter_cutoff(from_mode) !99% of the cutoff
+           ln_dia_cutoff(src_mode) = log(diameter_cutoff(src_mode)) !log of cutt-off
+           diameter_belowcutoff(src_mode) = 0.99*diameter_cutoff(src_mode) !99% of the cutoff
 
         enddo
 
@@ -3905,13 +3905,13 @@ time_loop: &
         tmp_dryvol     = 0.0_r8 !dry volume accumulator
         tmp_del_dryvol = 0.0_r8 !dry volume growth(change) accumulator
 
-        !Notes on mass_2_vol factor:Units:[m3/kmol-s]; where kmol-s is the amount of a specie "s"
+        !Notes on mass_2_vol factor:Units:[m3/kmol-of-specie]; where kmol-of-specie is the amount of a specie "s"
         ! This factor is obtained by  (molecular_weight/density) of a specie. That is,
-        ! [ (kg/kmol-s) / (kg/m3) ]; where molecular_weight has units [kg/kmol-s] and density units are [kg/m3]
-        ! which results in the units of m3/kmol-s
+        ! [ (kg/kmol-of-specie) / (kg/m3) ]; where molecular_weight has units [kg/kmol-of-specie] and density units are [kg/m3]
+        ! which results in the units of m3/kmol-of-specie
 
         do ispec = s_spec_ind, e_spec_ind
-           !Multiply by mass_2_vol[m3/kmol-s] to convert q_vmr[kmol-s/kmol-air]) to volume units[m3/kmol-air]
+           !Multiply by mass_2_vol[m3/kmol-of-specie] to convert q_vmr[kmol-of-specie/kmol-air]) to volume units[m3/kmol-air]
            tmp_dryvol     = tmp_dryvol     + q_vmr(ispec,imode)*mass_2_vol(ispec)        !compute current dryvolume
            !accumulate the "grwoth" in volume units as well
            tmp_del_dryvol = tmp_del_dryvol + q_del_growth(ispec,imode)*mass_2_vol(ispec) !compute dryvolume growth
@@ -3927,7 +3927,7 @@ time_loop: &
 
       subroutine do_inter_mode_transfer(nmode, nspec, dest_mode_of_mode, &
            iscldy, v2nlorlx, v2nhirlx, dryvol_a, dryvol_c, deldryvol_a, deldryvol_c, &
-           dryvol_smallest, sz_factor, factoryy, tmp_alnsg2, lndp_cut, dp_belowcut, dp_cut, &
+           dryvol_smallest, sz_factor, fmode_dist_tail_fac, ln_diameter_tail_fac, ln_dia_cutoff, dp_belowcut, dp_cut, &
            qnum_cur, qnumcw_cur, qaer_cur, qaercw_cur)
         use spmd_utils, only   :  masterproc
         use shr_spfn_mod, only: erfc_shr => shr_spfn_erfc  ! acme version of cam
@@ -3938,7 +3938,7 @@ time_loop: &
         real(r8), intent(in) :: v2nlorlx(:), v2nhirlx(:)
         real(r8), intent(in) :: dryvol_a(:), dryvol_c(:), deldryvol_a(:), deldryvol_c(:)
         real(r8), intent(in) :: dryvol_smallest(:)
-        real(r8), intent(in) :: sz_factor(:), factoryy(:), tmp_alnsg2(:), lndp_cut(:), dp_belowcut(:), dp_cut(:)
+        real(r8), intent(in) :: sz_factor(:), fmode_dist_tail_fac(:), ln_diameter_tail_fac(:), ln_dia_cutoff(:), dp_belowcut(:), dp_cut(:)
 
         !intent-inouts
         real(r8), intent(inout) :: qaer_cur(:,:)
@@ -3951,7 +3951,7 @@ time_loop: &
         integer :: src_mode, dest_mode, imode, ispec
 
         real(r8) :: bef_grwth_dryvol, dryvol_del, bef_grwth_num, aft_grwth_dryvol, bef_grwth_diameteraa, tailfr_volold, tmpa, xferfrac_vol
-        real(r8) :: bef_grwth_dryvolbnd, bef_grwth_numbnd, aft_grwth_diameter, lndgn_new, yn_tail, yv_tail, tailfr_numold, xferfrac_num
+        real(r8) :: bef_grwth_dryvolbnd, bef_grwth_numbnd, aft_grwth_diameter, ln_dia_aftgrwth, yn_tail, yv_tail, tailfr_numold, xferfrac_num
         real(r8) :: lndgv_new, tailfr_numnew, tailfr_volnew, bef_grwth_diameter, bef_grwth_dryvolaa, lndgn_old, lndgv_old, tmpd
 
         real(r8), parameter :: onethird = 1.0_r8/3.0_r8
@@ -3993,16 +3993,20 @@ time_loop: &
            bef_grwth_numbnd = min_max_bound(bef_grwth_dryvolbnd*v2nhirlx(src_mode), & !min value
                 bef_grwth_dryvolbnd*v2nlorlx(src_mode), bef_grwth_num) !max value and input
 
-           !   no renaming if dgnum < "base" dgnum,
+           !Compute after growth diameter; if it is less than the "nominal" or "base" diameter for
+           !the source mode, skip inter-mode transfer
            aft_grwth_diameter = (aft_grwth_dryvol/(bef_grwth_numbnd*sz_factor(src_mode)))**onethird
            if (aft_grwth_diameter .le. dgnum_aer(src_mode)) cycle pair_loop
 
+
+
            !   compute new fraction of number and mass in the tail (dp > dp_cut)
-           lndgn_new = log( aft_grwth_diameter )
-           lndgv_new = lndgn_new + tmp_alnsg2(src_mode)
-           yn_tail = (lndp_cut(src_mode) - lndgn_new)*factoryy(src_mode)
-           yv_tail = (lndp_cut(src_mode) - lndgv_new)*factoryy(src_mode)
+           ln_dia_aftgrwth = log( aft_grwth_diameter )
+           yn_tail = (ln_dia_cutoff(src_mode) - ln_dia_aftgrwth)*fmode_dist_tail_fac(src_mode)
            tailfr_numnew = 0.5_r8*erfc_shr( yn_tail )
+
+           lndgv_new = ln_dia_aftgrwth + ln_diameter_tail_fac(src_mode)
+           yv_tail = (ln_dia_cutoff(src_mode) - lndgv_new)*fmode_dist_tail_fac(src_mode)
            tailfr_volnew = 0.5_r8*erfc_shr( yv_tail )
 
            !   compute old fraction of number and mass in the tail (dp > dp_cut)
@@ -4024,9 +4028,9 @@ time_loop: &
               bef_grwth_diameter = min( bef_grwth_diameter, dp_belowcut(src_mode) )
            end if
            lndgn_old = log( bef_grwth_diameter )
-           lndgv_old = lndgn_old + tmp_alnsg2(src_mode)
-           yn_tail = (lndp_cut(src_mode) - lndgn_old)*factoryy(src_mode)
-           yv_tail = (lndp_cut(src_mode) - lndgv_old)*factoryy(src_mode)
+           lndgv_old = lndgn_old + ln_diameter_tail_fac(src_mode)
+           yn_tail = (ln_dia_cutoff(src_mode) - lndgn_old)*fmode_dist_tail_fac(src_mode)
+           yv_tail = (ln_dia_cutoff(src_mode) - lndgv_old)*fmode_dist_tail_fac(src_mode)
            tailfr_numold = 0.5_r8*erfc_shr( yn_tail )
            tailfr_volold = 0.5_r8*erfc_shr( yv_tail )
 
