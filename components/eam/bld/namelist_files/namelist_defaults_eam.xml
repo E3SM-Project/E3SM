@@ -60,16 +60,16 @@
 <!-- L60 files - primarily added for new MMF default (2021) -->
 <!-- These were initially created from L72 files or regridded from similar grid. --> 
 <!-- The resulting IC was used for a 10-day run to produce the final IC file. -->
-<ncdata dyn="se" hgrid="ne4np4"   nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L60_c160909.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L60_c160214.nc</ncdata>
-<ncdata dyn="se" hgrid="ne45np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L60_c20200611.nc</ncdata>
-<ncdata dyn="se" hgrid="ne120np4" nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne120np4_L60_c160318.nc</ncdata>
-<ncdata dyn="se" hgrid="ne4np4"   nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/cami_aqua_ne4np4_L60_c190218.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/cami_aqua_ne30np4_L60_c190215.nc</ncdata>
-<ncdata dyn="se" hgrid="ne45np4"  nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/cami_aqua_ne45np4_L60_c20200611.nc</ncdata>
-<ncdata dyn="se" hgrid="ne4np4"   nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L60_c190919.nc</ncdata>
-<ncdata dyn="se" hgrid="ne30np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L60_c190919.nc</ncdata>
-<ncdata dyn="se" hgrid="ne45np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne45np4_L60_c190919.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne4np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne30np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne45np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne120np4" nlev="60"                         ic_ymd="101" >atm/cam/inic/homme/eam_i_mam3_Linoz_ne120np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/eam_i_aquaplanet_ne4np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/eam_i_aquaplanet_ne30np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="60"  aquaplanet="1"         ic_ymd="101" >atm/cam/inic/homme/eam_i_aquaplanet_ne45np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/eam_i_rcemip_ne4np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/eam_i_rcemip_ne30np4_L60_c20210823.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/eam_i_rcemip_ne45np4_L60_c20210823.nc</ncdata>
 
 <!-- E3SM L72 Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
