@@ -352,7 +352,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
                    (y-bubble_xycenter) * (y-bubble_xycenter) / bubble_xyradius / bubble_xyradius )
         endif
       
-        rh = 0.75
         if ( rr < 1.0 ) then
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
