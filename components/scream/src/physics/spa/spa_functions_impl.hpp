@@ -216,8 +216,10 @@ void SPAFunctions<S,D>
    * 1. Loop over all simulation columns (i index)
    * 2. Where applicable, loop over all aerosol bands (n index)
    */ 
+  const Int most_bands = std::max(nlwbands, nswbands);
+  typename LIV::TeamPolicy band_policy(ncols_atm, ekat::OnGpu<typename LIV::ExeSpace>::value ? most_bands : 1, VertInterp.km2_pack());
   Kokkos::parallel_for("vertical-interp-spa",
-    VertInterp.m_policy,
+    band_policy,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
     const int i = team.league_rank();
     /* Setup the linear interpolater for this column. */
@@ -234,7 +236,9 @@ void SPAFunctions<S,D>
     /* Conduct vertical interpolation for the LW banded data - nlwbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
+      const auto& tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
       VertInterp.lin_interp(team,
+                            tvr,
                             ekat::subview(p_src,i),
                             ekat::subview(pressure_state.pmid,i),
                             ekat::subview(aer_tau_lw_src,i,n),
@@ -243,17 +247,21 @@ void SPAFunctions<S,D>
     /* Conduct vertical interpolation for the SW banded data - nswbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
+      const auto& tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
       VertInterp.lin_interp(team,
+                            tvr,
                             ekat::subview(p_src,i),
                             ekat::subview(pressure_state.pmid,i),
                             ekat::subview(aer_g_sw_src,i,n),
                             ekat::subview(data_out.AER_G_SW,i,n));
       VertInterp.lin_interp(team,
+                            tvr,
                             ekat::subview(p_src,i),
                             ekat::subview(pressure_state.pmid,i),
                             ekat::subview(aer_ssa_sw_src,i,n),
                             ekat::subview(data_out.AER_SSA_SW,i,n));
       VertInterp.lin_interp(team,
+                            tvr,
                             ekat::subview(p_src,i),
                             ekat::subview(pressure_state.pmid,i),
                             ekat::subview(aer_tau_sw_src,i,n),
