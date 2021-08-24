@@ -134,10 +134,10 @@ void AtmosphereDriver::create_fields()
   }
 
   // Register required/computed fields
-  for (const auto& req : m_atm_process_group->get_required_fields()) {
+  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
     m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
   }
-  for (const auto& req : m_atm_process_group->get_computed_fields()) {
+  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
     m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
   }
 
@@ -189,7 +189,7 @@ void AtmosphereDriver::create_fields()
     fm->register_group(rel_on_my_grid);
   };
 
-  for (const auto& req : m_atm_process_group->get_required_groups()) {
+  for (const auto& req : m_atm_process_group->get_required_group_requests()) {
     if (req.relative!=nullptr && req.grid!=req.relative->grid) {
       EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
           "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
@@ -198,7 +198,7 @@ void AtmosphereDriver::create_fields()
     }
     m_field_mgrs.at(req.grid)->register_group(req);
   }
-  for (const auto& req : m_atm_process_group->get_updated_groups()) {
+  for (const auto& req : m_atm_process_group->get_updated_group_requests()) {
     if (req.relative!=nullptr && req.grid!=req.relative->grid) {
       EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
           "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
@@ -260,7 +260,7 @@ initialize_fields (const util::TimeStamp& t0)
   }
 
   // Figure out the list of inputs for the atmosphere.
-  const auto& fields_in = m_atm_process_group->get_required_fields();
+  const auto& fields_in = m_atm_process_group->get_required_field_requests();
 
   const auto& ic_pl = m_atm_params.sublist("Initial Conditions");
   const auto& ref_grid_name = m_grids_manager->get_reference_grid()->name();
@@ -429,8 +429,8 @@ void AtmosphereDriver::initialize_atm_procs ()
 {
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
-  const auto& inputs  = m_atm_process_group->get_required_fields();
-  const auto& outputs = m_atm_process_group->get_computed_fields();
+  const auto& inputs  = m_atm_process_group->get_required_field_requests();
+  const auto& outputs = m_atm_process_group->get_computed_field_requests();
   for (const auto& req : inputs) {
     const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
@@ -443,12 +443,12 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_atm_process_group->set_computed_field(fm->get_field(fid));
   }
   // Set all groups of fields
-  for (const auto& it : m_atm_process_group->get_required_groups()) {
+  for (const auto& it : m_atm_process_group->get_required_group_requests()) {
     auto fm = get_field_mgr(it.grid);
     auto group = fm->get_const_field_group(it.name);
     m_atm_process_group->set_required_group(group);
   }
-  for (const auto& it : m_atm_process_group->get_updated_groups()) {
+  for (const auto& it : m_atm_process_group->get_updated_group_requests()) {
     auto fm = get_field_mgr(it.grid);
     auto group = fm->get_field_group(it.name);
     m_atm_process_group->set_updated_group(group);

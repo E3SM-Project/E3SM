@@ -160,37 +160,37 @@ public:
   virtual void set_required_group (const FieldGroup<const Real>& /* group */) {
     EKAT_ERROR_MSG (
       "Error! This atmosphere process does not require a group of fields, meaning\n"
-      "       that 'get_required_groups' was not overridden in this class, or that\n"
+      "       that 'get_required_group_requests' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
-      "       If you override 'get_required_groups' to return a non-empty set,\n"
-      "       then you must also override 'set_required_group' in your derived class.\n"
+      "       If you override 'get_required_group_requests' to return a non-empty set,\n"
+      "       then you must also override 'set_required_group_request' in your derived class.\n"
     );
   }
   virtual void set_updated_group (const FieldGroup<Real>& /* group */) {
     EKAT_ERROR_MSG (
       "Error! This atmosphere process does not update a group of fields, meaning\n"
-      "       that 'get_updated_groups' was not overridden in this class, or that\n"
+      "       that 'get_updated_group_requests' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
-      "       If you override 'get_updated_groups' to return a non-empty set,\n"
-      "       then you must also override 'set_updated_group' in your derived class.\n"
+      "       If you override 'get_updated_group_requests' to return a non-empty set,\n"
+      "       then you must also override 'set_updated_group_request' in your derived class.\n"
     );
   }
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  const std::set<FieldRequest>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldRequest>& get_computed_fields () const { return m_computed_fields; }
+  const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
+  const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
 
   // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
   // a priori how many they are, or even what they are. Each entry of the returned set is a pair
   // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
   // needed on multiple grids, two separate entries are needed.
-  const std::set<GroupRequest>& get_required_groups () const { return m_required_groups; }
-  const std::set<GroupRequest>& get_updated_groups  () const { return m_updated_groups; }
+  const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
+  const std::set<GroupRequest>& get_updated_group_requests  () const { return m_updated_group_requests; }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
   bool requires_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_required_fields) {
+    for (const auto& it : m_required_field_requests) {
       if (it.fid==id) {
         return true;
       }
@@ -198,7 +198,7 @@ public:
     return false;
   }
   bool computes_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_computed_fields) {
+    for (const auto& it : m_computed_field_requests) {
       if (it.fid==id) {
         return true;
       }
@@ -207,7 +207,7 @@ public:
   }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_required_groups) {
+    for (const auto& it : m_required_group_requests) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -215,7 +215,7 @@ public:
     return false;
   }
   bool updates_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_updated_groups) {
+    for (const auto& it : m_updated_group_requests) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -290,7 +290,7 @@ protected:
       add_field<Required>(req);
       add_field<Computed>(req);
     } else {
-      auto& fields = RT==Required ? m_required_fields : m_computed_fields;
+      auto& fields = RT==Required ? m_required_field_requests : m_computed_field_requests;
       fields.emplace(req);
     }
   }
@@ -316,7 +316,7 @@ protected:
   {
     static_assert(RT==Required || RT==Updated,
         "Error! Invalid request type in call to add_group.\n");
-    auto& groups = RT==Required ? m_required_groups : m_updated_groups;
+    auto& groups = RT==Required ? m_required_group_requests : m_updated_group_requests;
     groups.emplace(req);
   }
 
@@ -350,11 +350,11 @@ protected:
   virtual void check_computed_fields_impl () = 0;
 private:
 
-  std::set<FieldRequest>   m_required_fields;
-  std::set<FieldRequest>   m_computed_fields;
+  std::set<FieldRequest>   m_required_field_requests;
+  std::set<FieldRequest>   m_computed_field_requests;
 
-  std::set<GroupRequest>   m_required_groups;
-  std::set<GroupRequest>   m_updated_groups;
+  std::set<GroupRequest>   m_required_group_requests;
+  std::set<GroupRequest>   m_updated_group_requests;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
