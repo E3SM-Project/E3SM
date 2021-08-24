@@ -331,7 +331,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   enddo; enddo
 
   ! set the rest of conditions for each element
-  rh=bubble_rh_background
   do ie = nets,nete
     do j=1,np; do i=1,np
 
@@ -352,6 +351,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
                    (y-bubble_xycenter) * (y-bubble_xycenter) / bubble_xyradius / bubble_xyradius )
         endif
       
+        rh=bubble_rh_background
         if ( rr < 1.0 ) then
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
