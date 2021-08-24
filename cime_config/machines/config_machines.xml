@@ -2990,8 +2990,7 @@
       <executable>jsrun</executable>
       <arguments>
         <arg name="exit_on_error">-X 1</arg>
-        <arg name="num_rs">--nrs $ENV{NUM_RS}</arg>
-        <arg name="rs_per_node">--rs_per_host $ENV{RS_PER_NODE}</arg>
+        <arg name="num_rs">$SHELL{if [ {{ total_tasks }} -eq 1 ];then echo --nrs 1 --rs_per_host 1;else echo --nrs $NUM_RS --rs_per_host $RS_PER_NODE;fi}</arg>
         <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
@@ -3022,17 +3021,17 @@
         <command name="load">netlib-lapack/3.8.0</command>
         <command name="load">hdf5/1.10.4</command>
       </modules>
+      <modules compiler="pgigpu">
+        <command name="load">cuda/10.1.243</command>
+      </modules>
       <modules compiler="pgi.*">
-        <command name="load">pgi/20.1</command>
+        <command name="load">pgi/19.10</command>
         <command name="use">/gpfs/wolf/cli115/world-shared/e3sm/tools</command>
         <command name="load">pgirc/cxx14</command>
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
         <command name="load">netcdf/4.6.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.1</command>
-      </modules>
-      <modules compiler="pgigpu">
-        <command name="load">cuda/11.2.0</command>
       </modules>
       <modules compiler="ibm.*">
         <command name="load">xl/16.1.1-10</command>
@@ -3070,6 +3069,9 @@
     </environment_variables>
     <environment_variables compiler="ibm.*">
       <env name="XLC_USR_CONFIG">/gpfs/wolf/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.2.89</env>
+      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+    <environment_variables compiler="pgi.*">
       <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables>

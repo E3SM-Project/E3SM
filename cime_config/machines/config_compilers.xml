@@ -503,14 +503,14 @@ flags should be captured within MPAS CMake files.
     <append compile_threaded="TRUE"> -mp </append>
   </CXXFLAGS>
   <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </append>
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </append>
   </CPPDEFS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="TRUE"> -mp </append>
     <append COMP_NAME="eam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -870,7 +870,6 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="blues" COMPILER="pgigpu">
   <CPPDEFS>
-    <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
@@ -878,10 +877,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,deepcopy,nonvvm -Mcuda -Minfo=accel </append>
@@ -902,7 +898,6 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="swing" COMPILER="pgigpu">
   <CPPDEFS>
-    <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
@@ -910,10 +905,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,deepcopy,nonvvm -Mcuda -Minfo=accel </append>
@@ -1594,6 +1586,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1625,6 +1618,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append> -O3 -arch sm_70 --use_fast_math </append>
@@ -1661,6 +1655,7 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
@@ -1727,6 +1722,7 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
@@ -1757,6 +1753,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1765,14 +1762,10 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <CPPDEFS>
-    <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel </append>
@@ -1793,6 +1786,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1822,6 +1816,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1846,6 +1841,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append> -O3 -arch sm_70 --use_fast_math </append>
@@ -1882,6 +1878,7 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
@@ -1949,6 +1946,7 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
@@ -1979,6 +1977,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1987,14 +1986,10 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <CPPDEFS>
-    <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel </append>
@@ -2015,6 +2010,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
