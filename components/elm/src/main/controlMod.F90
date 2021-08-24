@@ -51,18 +51,16 @@ module controlMod
   use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
- !
+  
   ! !PUBLIC TYPES:
   implicit none
   save
-  !
+  
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: control_setNL ! Set namelist filename
   public :: control_init  ! initial run control information
   public :: control_print ! print run control information
-
-  !
-  !
+  
   ! !PRIVATE TYPES:
   character(len=  7) :: runtyp(4)                        ! run type
   character(len=SHR_KIND_CL) :: NLFilename = 'lnd.stdin' ! Namelist filename
@@ -76,14 +74,14 @@ contains
 
   !------------------------------------------------------------------------
   subroutine control_setNL( NLfile )
-    !
+    
     ! !DESCRIPTION:
     ! Set the namelist filename to use
-    !
+    
     ! !ARGUMENTS:
     implicit none
     character(len=*), intent(IN) :: NLFile ! Namelist filename
-    !
+    
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'control_setNL'  ! subroutine name
     logical :: lexist                               ! File exists
@@ -108,19 +106,19 @@ contains
 
   !------------------------------------------------------------------------
   subroutine control_init( )
-    !
+    
     ! !DESCRIPTION:
     ! Initialize CLM run control information
-    !
+    
     ! !USES:
     use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
     use ALMBeTRNLMod              , only : betr_readNL
-    !
+    
     implicit none
-    !
+    
     ! !LOCAL VARIABLES:
     character(len=32)  :: starttype ! infodata start type
     integer :: i,j,n                ! loop indices
@@ -298,6 +296,9 @@ contains
     namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+ 
+    namelist /elm_inparm/ & 
+         use_atm_downscaling_to_topunit, precip_downscaling_method
 
     namelist /elm_inparm/ &
          use_erosion, ero_ccycle
@@ -459,7 +460,7 @@ contains
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
-       
+
        if (use_lch4 .and. use_vertsoilc) then 
           anoxia = .true.
        else
@@ -622,7 +623,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine control_spmd()
-    !
+    
     ! !DESCRIPTION:
     ! Distribute namelist data all processors. All program i/o is 
     ! funnelled through the master processor. Processor 0 either 
@@ -631,13 +632,13 @@ contains
     ! all processors and writes it to disk.
     !
     ! !USES:
-    !
+    
     use spmdMod,    only : mpicom, MPI_CHARACTER, MPI_INTEGER, MPI_LOGICAL, MPI_REAL8
     use elm_varpar, only : numrad
-    !
+    
     ! !ARGUMENTS:
     implicit none
-    !
+    
     ! !LOCAL VARIABLES:
     integer ier       !error code
     !-----------------------------------------------------------------------
@@ -873,7 +874,11 @@ contains
 
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    
+    ! Downscaling of atmospheric forcing to topounits
+    call mpi_bcast (use_atm_downscaling_to_topunit, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (precip_downscaling_method, len(precip_downscaling_method), MPI_CHARACTER, 0, mpicom, ier)
+    
     ! soil erosion
     call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -891,18 +896,18 @@ contains
 
   !------------------------------------------------------------------------
   subroutine control_print ()
-    !
+    
     ! !DESCRIPTION:
     ! Write out the clm namelist run control variables
-    !
+    
     ! !USES:
-    !
+    
     use AllocationMod, only : suplnitro, suplnNon
     use AllocationMod, only : suplphos, suplpNon
-    !
+    
     ! !ARGUMENTS:
     implicit none
-    !
+    
     ! !LOCAL VARIABLES:
     integer i  !loop index
     character(len=32) :: subname = 'control_print'  ! subroutine name
@@ -934,9 +939,11 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
+    write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
+    write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
-    write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
+    write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)    
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else

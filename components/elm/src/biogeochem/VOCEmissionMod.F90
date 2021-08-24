@@ -33,6 +33,8 @@ module VOCEmissionMod
   use ColumnDataType     , only : col_ws
   use VegetationType     , only : veg_pp                
   use VegetationDataType , only : veg_es  
+  use topounit_varcon    , only : max_topounits
+  use GridcellType        , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -63,7 +65,7 @@ module VOCEmissionMod
      real(r8) , pointer, private :: gammaC_out_patch  (:)   ! 
      real(r8) , pointer, private :: vocflx_tot_patch  (:)   ! total VOC flux into atmosphere [moles/m2/sec] 
      real(r8) , pointer, PUBLIC  :: vocflx_patch      (:,:) ! (num_mech_comps) MEGAN flux [moles/m2/sec] 
-     real(r8) , pointer, private :: efisop_grc        (:,:) ! gridcell isoprene emission factors
+     real(r8) , pointer, private :: efisop_grc        (:,:,:) ! gridcell isoprene emission factors
    contains
      procedure, public  :: Init
      procedure, private :: InitAllocate
@@ -154,7 +156,7 @@ contains
     allocate(this%gammaC_out_patch  (begp:endp)) ; this%gammaC_out_patch  (:)   = nan
 
     allocate(this%vocflx_tot_patch  (begp:endp));  this%vocflx_tot_patch  (:)   = nan
-    allocate(this%efisop_grc      (6,begg:endg));  this%efisop_grc        (:,:) = nan
+    allocate(this%efisop_grc      (6,begg:endg,1:max_topounits));  this%efisop_grc        (:,:,:) = nan
     allocate(meg_out(shr_megan_megcomps_n)) 
     do i=1,shr_megan_megcomps_n
        allocate(meg_out(i)%flux_out(begp:endp))
@@ -315,14 +317,14 @@ contains
     integer            :: begg, endg
     type(file_desc_t)  :: ncid       ! netcdf id
     character(len=256) :: locfn      ! local filename
-    real(r8) ,pointer  :: temp_ef(:) ! read in - temporary EFs 
+    real(r8) ,pointer  :: temp_ef(:,:) ! read in - temporary EFs 
     !-----------------------------------------------------------------------
 
     begg = bounds%begg; endg = bounds%endg
 
     ! Time constant
 
-    allocate(temp_ef(begg:endg))
+    allocate(temp_ef(begg:endg,1:max_topounits))
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
@@ -330,37 +332,37 @@ contains
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_BTR'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(1,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(1,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     call ncd_io(ncid=ncid, varname='EF1_FET', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_FET'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(2,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(2,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     call ncd_io(ncid=ncid, varname='EF1_FDT', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_FDT'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(3,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(3,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     call ncd_io(ncid=ncid, varname='EF1_SHR', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_SHR'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(4,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(4,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     call ncd_io(ncid=ncid, varname='EF1_GRS', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_GRS'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(5,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(5,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     call ncd_io(ncid=ncid, varname='EF1_CRP', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_CRP'//errMsg(__FILE__, __LINE__))
     end if
-    this%efisop_grc(6,begg:endg)=temp_ef(begg:endg)
+    this%efisop_grc(6,begg:endg,1:max_topounits)=temp_ef(begg:endg,1:max_topounits)
 
     deallocate(temp_ef)
 
@@ -422,7 +424,7 @@ contains
     !                           and read in MEGAN factors from file.
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp,p,g,t,c              ! indices
+    integer  :: fp,p,g,t,c,ti,topi              ! indices
     real(r8) :: epsilon                 ! emission factor [ug m-2 h-1]
     real(r8) :: gamma                   ! activity factor (accounting for light, T, age, LAI conditions)
     real(r8) :: gamma_p                 ! activity factor for PPFD
@@ -533,6 +535,8 @@ contains
        p = filter_soilp(fp)
        g = veg_pp%gridcell(p)
        t = veg_pp%topounit(p)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
        c = veg_pp%column(p)
 
        ! initialize EF
@@ -578,7 +582,7 @@ contains
              ! set emis factor
              ! if specified, set EF for isoprene with mapped values
              if ( trim(meg_cmp%name) == 'isoprene' .and. shr_megan_mapped_emisfctrs) then
-                epsilon = get_map_EF(veg_pp%itype(p),g, vocemis_vars)
+                epsilon = get_map_EF(veg_pp%itype(p),g, ti, vocemis_vars)
              else
                 epsilon = meg_cmp%emis_factors(veg_pp%itype(p))
              end if
@@ -668,7 +672,7 @@ contains
   end subroutine VOCEmission
 
   !-----------------------------------------------------------------------
-  function get_map_EF(ivt_in, g_in, vocemis_vars)
+  function get_map_EF(ivt_in, g_in, ti_in, vocemis_vars)
     !
     ! Get mapped EF for isoprene
     ! Use gridded values for 6 Patches specified by MEGAN following
@@ -678,6 +682,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(in) :: ivt_in
     integer, intent(in) :: g_in
+    integer, intent(in) :: ti_in  ! Topounit index
     type(vocemis_type), intent(in) :: vocemis_vars
     !
     ! !LOCAL VARIABLES:
@@ -690,20 +695,20 @@ contains
     
     if (     ivt_in == ndllf_evr_tmp_tree  &
          .or.     ivt_in == ndllf_evr_brl_tree) then   !fineleaf evergreen
-       get_map_EF = vocemis_vars%efisop_grc(2,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(2,g_in, ti_in)
     else if (ivt_in == ndllf_dcd_brl_tree) then        !fineleaf deciduous
-       get_map_EF = vocemis_vars%efisop_grc(3,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(3,g_in, ti_in)
     else if (ivt_in >= nbrdlf_evr_trp_tree &
          .and.    ivt_in <= nbrdlf_dcd_brl_tree) then  !broadleaf trees
-       get_map_EF = vocemis_vars%efisop_grc(1,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(1,g_in,ti_in)
     else if (ivt_in >= nbrdlf_evr_shrub &
          .and.    ivt_in <= nbrdlf_dcd_brl_shrub) then !shrubs
-       get_map_EF = vocemis_vars%efisop_grc(4,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(4,g_in, ti_in)
     else if (ivt_in >= nc3_arctic_grass &
          .and.    ivt_in <= nc4_grass) then            !grass
-       get_map_EF = vocemis_vars%efisop_grc(5,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(5,g_in, ti_in)
     else if (ivt_in >= nc3crop) then                   !crops
-       get_map_EF = vocemis_vars%efisop_grc(6,g_in)
+       get_map_EF = vocemis_vars%efisop_grc(6,g_in, ti_in)
     end if
 
   end function get_map_EF

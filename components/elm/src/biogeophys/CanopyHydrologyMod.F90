@@ -121,6 +121,7 @@ contains
      use elm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
+     use TopounitType       , only : top_pp
      use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
      use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
@@ -138,6 +139,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      integer  :: f                                            ! filter index
+     integer  :: tpu_ind                                      ! index of topounit to grid
      integer  :: pi                                           ! patch index
      integer  :: p                                            ! patch index
      integer  :: c                                            ! column index
@@ -269,6 +271,7 @@ contains
           p = filter_nolakep(f)
           g = pgridcell(p)
           t = ptopounit(p)
+          tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
           l = plandunit(p)
           c = pcolumn(p)
 
@@ -379,7 +382,7 @@ contains
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
           if(irrigate) then
            if (tw_irr) then ! else one way  
-               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
+               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
                qflx_real_irrig(p) = 0._r8 
                qflx_surf_irrig(p) = 0._r8
                qflx_grnd_irrig(p) = 0._r8

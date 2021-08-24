@@ -22,6 +22,7 @@ use phys_control,  only: phys_getopts
 use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 
+use scamMod,       only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none
@@ -394,6 +395,8 @@ subroutine diag_init()
    call addfld ('T9251000',horiz_only,   'A','K','Temperature difference 925 mb - 1000 mb') 
    call addfld ('TH9251000',horiz_only,   'A','K','Theta difference 925 mb - 1000 mb')   
    call addfld ('THE9251000',horiz_only,   'A','K','ThetaE difference 925 mb - 1000 mb') 
+   call addfld ('UOVERN',horiz_only,   'A','m','wind speed/brunt vaisalla frequency 800-100 mb') 
+
 
    ! Add in fields for T and U (not already included) to track Sudden Stratospheric Warming events
    ! Levels include: 250, 200, 150, 100, 50, 25, 10, 5, 2, 1, and TOP (numbers in hPa)
@@ -1218,7 +1221,11 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
-    call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    if (single_column) then
+       call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
+    else
+       call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    endif
 
 #if (defined E3SM_SCM_REPLAY )
     call outfld('omega   ',state%omega,    pcols,   lchnk     )

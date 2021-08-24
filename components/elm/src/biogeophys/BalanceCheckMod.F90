@@ -18,6 +18,7 @@ module BalanceCheckMod
   use SolarAbsorbedType  , only : solarabs_type
   use SoilHydrologyType  , only : soilhydrology_type
   use GridcellType       , only : grc_pp
+  use TopounitType   , only : top_pp
   use GridcellDataType   , only : grc_ef, grc_wf, grc_ws
   use TopounitDataType   , only : top_af ! atmospheric flux variables
   use LandunitType       , only : lun_pp
@@ -343,17 +344,19 @@ contains
        do fc = 1,num_do_smb_c
           c = filter_do_smb_c(fc)
           g = col_pp%gridcell(c)
+          write(iulog,*)'WARNING:  glc_dyn_runoff_routing = ', glc_dyn_runoff_routing(g)  ! TKT
           if (glc_dyn_runoff_routing(g)) then
              errh2o(c) = errh2o(c) + qflx_glcice_frz(c)*dtime
              errh2o(c) = errh2o(c) - qflx_glcice_melt(c)*dtime
           endif
        end do
-
+       
        found = .false.
        do c = bounds%begc, bounds%endc
+          
           if (abs(errh2o(c)) > 1.e-7_r8) then
              found = .true.
-             indexc = c
+             indexc = c             
           end if
        end do
 
@@ -363,7 +366,7 @@ contains
                ' nstep= ',nstep, &
                ' local indexc= ',indexc,&
                !' global indexc= ',GetGlobalIndex(decomp_index=indexc, elmlevel=namec), &
-               ' errh2o= ',errh2o(indexc)
+               ' errh2o= ',errh2o(indexc)             
 
           if ((col_pp%itype(indexc) == icol_roof .or. &
                col_pp%itype(indexc) == icol_road_imperv .or. &

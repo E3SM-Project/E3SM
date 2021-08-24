@@ -15,6 +15,7 @@ module elm_initializeMod
   use elm_varctl       , only : use_fates, use_betr
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use elm_varsur       , only : fert_cft
+  use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -70,7 +71,7 @@ contains
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
-    use surfrdMod                 , only: surfrd_get_grid_conn
+    use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
@@ -80,10 +81,11 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
+    use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
-    integer           :: i,j,n,k,c,l,g           ! indices
+    integer           :: i,j,n,k,c,l,g,t,ti,topi           ! indices
     integer           :: nl                      ! gdc and glo lnd indices
     integer           :: ns, ni, nj              ! global grid sizes
     integer           :: begg, endg              ! processor bounds
@@ -220,7 +222,14 @@ contains
        endif
        call surfrd_get_topo(ldomain, flndtopo)  
     endif
-
+    
+    !-------------------------------------------------------------------------
+    ! Topounit
+    !-------------------------------------------------------------------------
+    call topounit_varcon_init(begg, endg,fsurdat,ldomain)  ! Topounits
+    !-------------------------------------------------------------------------
+    
+    !-------------------------------------------------------------------------
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
@@ -229,18 +238,24 @@ contains
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
-    allocate (wt_lunit     (begg:endg, max_lunit           ))
-    allocate (urban_valid  (begg:endg                      ))
-    allocate (wt_nat_patch (begg:endg, natpft_lb:natpft_ub ))
-    allocate (wt_cft       (begg:endg, cft_lb:cft_ub       ))
-    allocate (fert_cft     (begg:endg, cft_lb:cft_ub       ))
+    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
+    allocate (urban_valid  (begg:endg,1:max_topounits                      ))
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, natpft_lb:natpft_ub ))
+    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
-       allocate (wt_glc_mec  (begg:endg, maxpatch_glcmec))
-       allocate (topo_glc_mec(begg:endg, maxpatch_glcmec))
+       allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
+       allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
     else
-       allocate (wt_glc_mec  (1,1))
-       allocate (topo_glc_mec(1,1))
+       allocate (wt_glc_mec  (1,1,1))
+       allocate (topo_glc_mec(1,1,1))
     endif
+    
+    allocate (wt_tunit  (begg:endg,1:max_topounits  )) 
+    allocate (elv_tunit (begg:endg,1:max_topounits  ))
+    allocate (slp_tunit (begg:endg,1:max_topounits  ))
+    allocate (asp_tunit (begg:endg,1:max_topounits  ))
+    allocate (num_tunit_per_grd (begg:endg))
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -270,7 +285,7 @@ contains
 
     
     ! ------------------------------------------------------------------------
-    ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
+    ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
 
     if (create_glacier_mec_landunit) then
@@ -292,6 +307,11 @@ contains
 
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
+    
+    ! Read topounit information from fsurdat
+    if (has_topounit) then
+         call surfrd_topounit_data(begg, endg, fsurdat)         
+    end if
     
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
@@ -319,20 +339,27 @@ contains
 
     call initGridCells()
 
-    ! Set global seg maps for gridcells, landlunits, columns and patches
-
+    ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
+    !if(max_topounits > 1) then 
+    !   if (create_glacier_mec_landunit) then
+    !      call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
+    !   else
+    !      call decompInit_gtlcp(ns, ni, nj,ldomain%num_tunits_per_grd)
+    !   endif
+    !else
     if (create_glacier_mec_landunit) then
        call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
     else
        call decompInit_gtlcp(ns, ni, nj)
     endif
+    !endif
 
     ! Set filters
 
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
-
+    
     nclumps = get_proc_clumps()
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -358,8 +385,9 @@ contains
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
 
-    deallocate (wt_cft, wt_glc_mec)
-
+    !deallocate (wt_lunit, wt_cft, wt_glc_mec)
+    deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
+    deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
     call t_stopf('elm_init1')
 
     ! initialize glc_topo
@@ -367,12 +395,15 @@ contains
     do c = bounds_proc%begc, bounds_proc%endc
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
 
        if (lun_pp%itype(l) == istice_mec) then
           ! For ice_mec landunits, initialize glc_topo based on surface dataset; this
           ! will get overwritten in the run loop by values sent from CISM
           icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-          col_pp%glc_topo(c) = topo_glc_mec(g, icemec_class)
+          col_pp%glc_topo(c) = topo_glc_mec(g,ti, icemec_class)
        else
           ! For other landunits, arbitrarily initialize glc_topo to 0 m; for landunits
           ! where this matters, this will get overwritten in the run loop by values sent
@@ -497,7 +528,6 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
-
     if (nsrest == nsrStartup) then  
        call timemgr_init()
     else

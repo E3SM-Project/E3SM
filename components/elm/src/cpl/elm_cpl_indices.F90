@@ -57,7 +57,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
-  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
+  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes  
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -81,6 +81,7 @@ module elm_cpl_indices
   integer, public ::index_x2l_Sa_shum         ! bottom atm level spec hum
   integer, public ::index_x2l_Sa_pbot         ! bottom atm level pressure
   integer, public ::index_x2l_Sa_tbot         ! bottom atm level temp
+  integer, public ::index_x2l_Sa_uovern      ! ratio of wind speed/brunt vaisalla frequency for precipitation downscaling
   integer, public ::index_x2l_Faxa_lwdn       ! downward lw heat flux
   integer, public ::index_x2l_Faxa_rainc      ! prec: liquid "convective"
   integer, public ::index_x2l_Faxa_rainl      ! prec: liquid "large scale"
@@ -235,6 +236,7 @@ contains
     index_x2l_Sa_ptem       = mct_avect_indexra(x2l,'Sa_ptem')
     index_x2l_Sa_pbot       = mct_avect_indexra(x2l,'Sa_pbot')
     index_x2l_Sa_tbot       = mct_avect_indexra(x2l,'Sa_tbot')
+    index_x2l_Sa_uovern     = mct_avect_indexra(x2l,'Sa_uovern')
     index_x2l_Sa_shum       = mct_avect_indexra(x2l,'Sa_shum')
     index_x2l_Sa_co2prog    = mct_avect_indexra(x2l,'Sa_co2prog',perrwith='quiet')
     index_x2l_Sa_co2diag    = mct_avect_indexra(x2l,'Sa_co2diag',perrwith='quiet')
