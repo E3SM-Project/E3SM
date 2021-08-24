@@ -17,12 +17,14 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 1;
-
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+
+  // run params:
+  const auto& num_iters = ad_params.get<int>("Number of Iterations",1);
+  const auto& dt        = ad_params.get<Real>("dt",300.0);
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -77,8 +79,14 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   // Run the code
   for (int i=0; i<num_iters; ++i) {
-    ad.run(300.0);
+    if (i % 10 == 0) {
+      printf("  -  %5.2f\%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
+    } else {
+      printf("%d, ",i);
+    }
+    ad.run(dt);
   }
+  printf("\n");
 
   // Check ice and total cloud fraction values
   // Sync the values on device back to the host view.

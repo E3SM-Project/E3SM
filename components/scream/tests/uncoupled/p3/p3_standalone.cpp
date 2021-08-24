@@ -19,12 +19,14 @@ TEST_CASE("p3-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 10;
-
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+
+  // run params:
+  const auto& num_iters = ad_params.get<int>("Number of Iterations",5);
+  const auto& dt        = ad_params.get<Real>("dt",300.0);
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -47,8 +49,14 @@ TEST_CASE("p3-stand-alone", "") {
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
-    ad.run(300.0);
+    if (i % 10 == 0) {
+      printf("  -  %f\%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
+    } else {
+      printf("%d, ",i);
+    }
+    ad.run(dt);
   }
+  printf("\n");
 
   // TODO: get the field repo from the driver, and go get (one of)
   //       the output(s) of P3, to check its numerical value (if possible)
