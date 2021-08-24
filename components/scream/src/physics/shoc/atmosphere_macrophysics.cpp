@@ -1,6 +1,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
+#include "share/field/field_property_checks/field_positivity_check.hpp"
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
 namespace scream
 {
@@ -246,10 +247,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
-  // Set field property checks for the fields in this process
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(200, 500);
-  m_shoc_fields_out["T_mid"].add_property_check(T_interval_check);
-
 
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -352,6 +349,15 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
                                  rrho,qv,qw,qc,tke,tke_copy,shoc_ql2,
                                  cldfrac_liq,sgs_buoy_flux,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
+
+  // Set field property checks for the fields in this process
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
+  auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+  m_shoc_fields_out["T_mid"].add_property_check(T_interval_check);
+  m_shoc_fields_out["qv"].add_property_check(positivity_check);
+  m_shoc_fields_out["qc"].add_property_check(positivity_check);
+  m_shoc_fields_out["tke"].add_property_check(positivity_check);
+
 }
 
 // =========================================================================================

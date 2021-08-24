@@ -194,7 +194,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   m_p3_fields_out["nr"].add_property_check(positivity_check);
   m_p3_fields_out["ni"].add_property_check(positivity_check);
   m_p3_fields_out["bm"].add_property_check(positivity_check);
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(200, 500);
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
   m_p3_fields_out["T_mid"].add_property_check(T_interval_check);
   
 

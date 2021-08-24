@@ -23,13 +23,13 @@ public:
   using RangePolicy = typename kt::RangePolicy;
 
   // Default constructor -- cannot repair fields that fail the check.
-  FieldPositivityCheck () : m_lower_bound(0) {}
+  FieldPositivityCheck () : m_lower_bound(-1) {}
 
   // Constructor with lower bound -- can repair fields that fail the check
   // by overwriting nonpositive values with the given lower bound.
   explicit FieldPositivityCheck (const_RT lower_bound) :
     m_lower_bound(lower_bound) {
-    EKAT_ASSERT_MSG(lower_bound > 0, "lower_bound must be positive.");
+    EKAT_ASSERT_MSG(lower_bound >= 0, "lower_bound must be positive.");
   }
 
   // Overrides.
@@ -112,11 +112,11 @@ public:
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
     }
-    return min_val>0;
+    return min_val>=0;
   }
 
   bool can_repair() const override {
-    return (m_lower_bound > 0);
+    return (m_lower_bound >= 0);
   }
 
   void repair(Field<non_const_RT>& field) const override {
@@ -199,7 +199,7 @@ public:
 
 protected:
 
-  // The given lower bound (0 if not supplied).
+  // The given lower bound (-1 if not supplied, and if not supplied won't be used for repair).
   RealType m_lower_bound;
 };
 
