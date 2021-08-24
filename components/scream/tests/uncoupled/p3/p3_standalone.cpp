@@ -50,7 +50,7 @@ TEST_CASE("p3-stand-alone", "") {
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
     if (i % 10 == 0) {
-      printf("  -  %f\%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
+      printf("  -  %f\%\nRun iteration: %d, ",Real(i)/Real(num_iters)*100,i+1);
     } else {
       printf("%d, ",i);
     }

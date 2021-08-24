@@ -244,13 +244,6 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
-  void check_required_fields_impl ();
-  void check_computed_fields_impl ();
-
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 

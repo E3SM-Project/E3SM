@@ -134,6 +134,13 @@ public:
         "Error! This atmosphere process does not require\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
+  
+    const auto& name = f.get_header().get_identifier().name();
+    m_fields_in.emplace(name,f);
+  
+    // Add myself as customer to the field
+    add_me_as_customer(f);
+
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real>& f) {
@@ -141,14 +148,49 @@ public:
         "Error! This atmosphere process does not compute\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
+
+    const auto& name = f.get_header().get_identifier().name();
+    m_fields_out.emplace(name,f);
+  
+    // Add myself as provider for the field
+    add_me_as_provider(f);
+
     set_computed_field_impl (f);
   }
 
-  void check_required_fields () {
+  // These methods check all the fields coming into and out of a process to make sure
+  // they are still valid.  To do this, the routines cycles through all of the
+  // required and computed fields, respectively, and run whatever property checks have
+  // been assigned to them.
+  // Note: We do want to encourage repairing fields that are being passed to a specific
+  //       process, so we set the "check_required_fields" routine to be const.
+  //       On the other hand, we may want to allow computed fields to be repaired, so
+  //       we leave that one non-const.  If a process wants to repair computed fields
+  //       it can do so by overriding the "check_computed_fields_impl" routine.
+  void check_required_fields () { //TODO: Add const
+    // First run any process specific checks.
     check_required_fields_impl();
+    // Now run all field property checks on all fields
+    for (auto& f : m_fields_in) {
+      auto& field = f.second;
+      for (auto& pc : field.get_property_checks()) {
+        EKAT_REQUIRE_MSG(pc.check(field),
+           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      before process: " << this->name());
+      }
+    }
   }
   void check_computed_fields () {
+    // First run any process specific checks.  If a process wants to repair any computed fields
+    // here is where that is done.
     check_computed_fields_impl();
+    // Now run all field property checks on all fields
+    for (auto& f : m_fields_out) {
+      auto& field = f.second;
+      for (auto& pc : field.get_property_checks()) {
+        EKAT_REQUIRE_MSG(pc.check(field),
+           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      after process: " << this->name());
+      }
+    }
   }
 
   // Note: for the following (unlike set_required/computed_field, we do provide an
@@ -343,13 +385,18 @@ protected:
     f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
   }
 
-  virtual void set_required_field_impl (const Field<const Real>& f) = 0;
-  virtual void set_computed_field_impl (const Field<      Real>& f) = 0;
+  virtual void set_required_field_impl (const Field<const Real>& f) {};
+  virtual void set_computed_field_impl (const Field<      Real>& f) {};
 
-  virtual void check_required_fields_impl () = 0;
-  virtual void check_computed_fields_impl () = 0;
+  virtual void check_required_fields_impl () {}  //TODO add const
+  virtual void check_computed_fields_impl () {}
+
+  using field_type       = Field<      Real>;
+  using const_field_type = Field<const Real>;
+  std::map<std::string,const_field_type>  m_fields_in;
+  std::map<std::string,field_type>        m_fields_out;
+
 private:
-
   std::set<FieldRequest>   m_required_field_requests;
   std::set<FieldRequest>   m_computed_field_requests;
 
