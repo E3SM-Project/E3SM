@@ -57,16 +57,6 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
-  void check_required_fields_impl ();
-  void check_computed_fields_impl ();
-
-  std::map<std::string,const_field_type>  m_cld_fraction_fields_in;
-  std::map<std::string,field_type>        m_cld_fraction_fields_out;
-
   ekat::Comm          m_cldfraction_comm;
   ekat::ParameterList m_cld_fraction_params;
 

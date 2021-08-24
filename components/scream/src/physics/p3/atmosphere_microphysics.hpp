@@ -251,9 +251,6 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  std::map<std::string,const_field_type>  m_p3_fields_in;
-  std::map<std::string,field_type>        m_p3_fields_out;
-
   util::TimeStamp     m_current_ts;
   ekat::Comm          m_p3_comm;
   ekat::ParameterList m_p3_params;

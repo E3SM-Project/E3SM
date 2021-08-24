@@ -16,6 +16,7 @@ RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterL
   : AtmosphereProcess::AtmosphereProcess(), m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
 }  // RRTMGPRadiation::RRTMGPRadiation
 
+// =========================================================================================
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
   using namespace ekat::units;
@@ -97,6 +98,7 @@ int RRTMGPRadiation::requested_buffer_size_in_bytes() const
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
+// =========================================================================================
 
 void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 {
@@ -192,31 +194,32 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   rrtmgp::rrtmgp_initialize(gas_concs);
 
 }
+// =========================================================================================
 
 void RRTMGPRadiation::run_impl (const Real dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   // Get data from the FieldManager
-  auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_view<const Real**>();
-  auto d_pint = m_rrtmgp_fields_in.at("p_int").get_view<const Real**>();
-  auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_view<const Real**>();
-  auto d_tint = m_rrtmgp_fields_in.at("t_int").get_view<const Real**>();
-  auto d_sfc_alb_dir_vis = m_rrtmgp_fields_in.at("sfc_alb_dir_vis").get_view<const Real*>();
-  auto d_sfc_alb_dir_nir = m_rrtmgp_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
-  auto d_sfc_alb_dif_vis = m_rrtmgp_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
-  auto d_sfc_alb_dif_nir = m_rrtmgp_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
-  auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_view<const Real*>();
-  auto d_qv = m_rrtmgp_fields_in.at("qv").get_view<const Real**>();
-  auto d_qc = m_rrtmgp_fields_in.at("qc").get_view<const Real**>();
-  auto d_qi = m_rrtmgp_fields_in.at("qi").get_view<const Real**>();
-  auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_view<const Real**>();
-  auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_view<const Real**>();
-  auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_view<const Real**>();
-  auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_view<Real**>();
-  auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_view<Real**>();
-  auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_view<Real**>();
-  auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_view<Real**>();
-  auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_view<Real**>();
-  auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_view<Real**>();
+  auto d_pmid = m_fields_in.at("p_mid").get_view<const Real**>();
+  auto d_pint = m_fields_in.at("p_int").get_view<const Real**>();
+  auto d_pdel = m_fields_in.at("pseudo_density").get_view<const Real**>();
+  auto d_tint = m_fields_in.at("t_int").get_view<const Real**>();
+  auto d_sfc_alb_dir_vis = m_fields_in.at("sfc_alb_dir_vis").get_view<const Real*>();
+  auto d_sfc_alb_dir_nir = m_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
+  auto d_sfc_alb_dif_vis = m_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
+  auto d_sfc_alb_dif_nir = m_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
+  auto d_mu0 = m_fields_in.at("cos_zenith").get_view<const Real*>();
+  auto d_qv = m_fields_in.at("qv").get_view<const Real**>();
+  auto d_qc = m_fields_in.at("qc").get_view<const Real**>();
+  auto d_qi = m_fields_in.at("qi").get_view<const Real**>();
+  auto d_cldfrac_tot = m_fields_in.at("cldfrac_tot").get_view<const Real**>();
+  auto d_rel = m_fields_in.at("eff_radius_qc").get_view<const Real**>();
+  auto d_rei = m_fields_in.at("eff_radius_qi").get_view<const Real**>();
+  auto d_tmid = m_fields_out.at("T_mid").get_view<Real**>();
+  auto d_sw_flux_up = m_fields_out.at("SW_flux_up").get_view<Real**>();
+  auto d_sw_flux_dn = m_fields_out.at("SW_flux_dn").get_view<Real**>();
+  auto d_sw_flux_dn_dir = m_fields_out.at("SW_flux_dn_dir").get_view<Real**>();
+  auto d_lw_flux_up = m_fields_out.at("LW_flux_up").get_view<Real**>();
+  auto d_lw_flux_dn = m_fields_out.at("LW_flux_dn").get_view<Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -279,7 +282,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
-    auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_view<const Real**>();
+    auto d_temp  = m_fields_in.at(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
@@ -371,6 +374,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
   }
 }
+// =========================================================================================
 
 void RRTMGPRadiation::finalize_impl  () {
   gas_concs.reset();
@@ -379,43 +383,7 @@ void RRTMGPRadiation::finalize_impl  () {
   // Finalize YAKL
   yakl::finalize();
 }
-
-void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
-  const auto& name = f.get_header().get_identifier().name();
-  m_rrtmgp_fields_in.emplace(name,f);
-
-  // Add myself as customer to the field
-  add_me_as_customer(f);
-}
-
-void RRTMGPRadiation::set_computed_field_impl(const Field<      Real>& f) {
-  const auto& name = f.get_header().get_identifier().name();
-  m_rrtmgp_fields_out.emplace(name,f);
-
-  // Add myself as provider for the field
-  add_me_as_provider(f);
-}
 // =========================================================================================
-void RRTMGPRadiation::check_required_fields_impl ()
-{
-  for (auto& f : m_rrtmgp_fields_in) {
-    auto& field = f.second;
-    for (auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
-    }
-  }
-}
 
-void RRTMGPRadiation::check_computed_fields_impl ()
-{
-  for (auto& f : m_rrtmgp_fields_out) {
-    auto& field = f.second;
-    for (auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
-    }
-  }
-}
 
 }  // namespace scream

@@ -57,8 +57,8 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 {
   // Set property checks for fields in this process
   auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
-  m_cld_fraction_fields_out["cldfrac_ice"].add_property_check(frac_interval_check);
-  m_cld_fraction_fields_out["cldfrac_tot"].add_property_check(frac_interval_check);
+  m_fields_out["cldfrac_ice"].add_property_check(frac_interval_check);
+  m_fields_out["cldfrac_tot"].add_property_check(frac_interval_check);
 }
 
 // =========================================================================================
@@ -66,10 +66,10 @@ void CldFraction::run_impl (const Real dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
-  auto qi   = m_cld_fraction_fields_in["qi"].get_view<const Pack**>();
-  auto liq_cld_frac = m_cld_fraction_fields_in["cldfrac_liq"].get_view<const Pack**>();
-  auto ice_cld_frac = m_cld_fraction_fields_out["cldfrac_ice"].get_view<Pack**>();
-  auto tot_cld_frac = m_cld_fraction_fields_out["cldfrac_tot"].get_view<Pack**>();
+  auto qi   = m_fields_in["qi"].get_view<const Pack**>();
+  auto liq_cld_frac = m_fields_in["cldfrac_liq"].get_view<const Pack**>();
+  auto ice_cld_frac = m_fields_out["cldfrac_ice"].get_view<Pack**>();
+  auto tot_cld_frac = m_fields_out["cldfrac_tot"].get_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
 
@@ -77,7 +77,7 @@ void CldFraction::run_impl (const Real dt)
   // advance it,
   auto ts = timestamp();
   ts += dt;
-  for (auto& f : m_cld_fraction_fields_out) {
+  for (auto& f : m_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);
   }
 }
@@ -87,45 +87,6 @@ void CldFraction::finalize_impl()
 {
   // Do nothing
 }
-
-void CldFraction::set_required_field_impl (const Field<const Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_cld_fraction_fields_in.emplace(name,f);
-
-  // Add myself as customer to the field
-  add_me_as_customer(f);
-}
-
-void CldFraction::set_computed_field_impl (const Field<      Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_cld_fraction_fields_out.emplace(name,f);
-
-  // Add myself as provider for the field
-  add_me_as_provider(f);
-}
 // =========================================================================================
-void CldFraction::check_required_fields_impl ()
-{
-  for (auto& f : m_cld_fraction_fields_in) {
-    auto& field = f.second;
-    for (auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n before process: " << this->name());
-    }
-  }
-}
-
-void CldFraction::check_computed_fields_impl ()
-{
-  for (auto& f : m_cld_fraction_fields_out) {
-    auto& field = f.second;
-    for (auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Field Property Check, " << pc.name() << ", Failed for\n field: " << f.first << ",\n after process: " << this->name());
-    }
-  }
-}
 
 } // namespace scream
