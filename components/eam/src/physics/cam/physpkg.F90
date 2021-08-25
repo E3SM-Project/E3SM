@@ -2475,7 +2475,7 @@ end if
                 !  Since we "added" the reserved liquid back in this routine, we need 
                 !    to account for it in the energy checker
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
-                flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
+                flx_heat(:ncol) = cam_in%shf(:ncol)
 
                 ! Unfortunately, physics_update does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
@@ -2487,21 +2487,9 @@ end if
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
                 
-!                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-!                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-!                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
- 
-!cam_in%cflx(:,1)/cld_macmic_num_steps     --- vapor influx mass     = CFLX
-!flx_cnd/cld_macmic_num_steps -- water+ice mass                      = rliq up to minus
-!det_ice/... -- just ice mass                                        = det_ice
-!flx_heat added heat                                                 = SFLX
-
-
-!REDO
-                flx_heat(:ncol) = cam_in%shf(:ncol)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                     det_ice-det_ice, flx_heat/cld_macmic_num_steps)
+                     zero, flx_heat/cld_macmic_num_steps)
 
           endif
 
