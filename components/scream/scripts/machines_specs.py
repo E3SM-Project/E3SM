@@ -15,15 +15,6 @@ from utils import expect, get_cpu_core_count, run_cmd_no_fail
 
 import os, sys, pathlib
 
-def get_weaver_queue():
-    out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
-    if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
-        queue = "rhel7W"
-    else:
-        queue = "dev"
-
-    return queue
-
 MACHINE_METADATA = {
     "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.12.3 python/3.7.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
@@ -38,7 +29,7 @@ MACHINE_METADATA = {
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
     "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0", "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/bin:$PATH"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -I -q {} -n 4".format(get_weaver_queue()),
+                  "bsub -I -q rhel7W -n 4",
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
