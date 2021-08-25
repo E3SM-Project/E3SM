@@ -2753,7 +2753,7 @@ contains
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
-      !$omp end parallel present(landIceTracerTransferVelocities)
+      !$omp end parallel
 #endif
 
       if(jenkinsOn) then
