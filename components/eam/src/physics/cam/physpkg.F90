@@ -2487,9 +2487,9 @@ end if
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
                 
-                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+!                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+!                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+!                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
 !cam_in%cflx(:,1)/cld_macmic_num_steps     --- vapor influx mass     = CFLX
 !flx_cnd/cld_macmic_num_steps -- water+ice mass                      = rliq up to minus
@@ -2497,11 +2497,11 @@ end if
 !flx_heat added heat                                                 = SFLX
 
 
-
-!                flx_heat(:ncol) = cam_in%shf(:ncol)
-!                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-!                     cam_in%cflx(:,1)/cld_macmic_num_steps, -flx_cnd/cld_macmic_num_steps, &
-!                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+!REDO
+                flx_heat(:ncol) = cam_in%shf(:ncol)
+                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                     det_ice-det_ice, flx_heat/cld_macmic_num_steps)
 
           endif
 
