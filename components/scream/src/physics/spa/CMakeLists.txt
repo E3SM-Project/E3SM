@@ -1,5 +1,6 @@
 set(CLDFRAC_SRCS
   atmosphere_prescribed_aerosol.cpp
+  atmosphere_prescribed_aerosol_hack.cpp
 )
 
 set(CLDFRAC_HEADERS
