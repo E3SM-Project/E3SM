@@ -360,9 +360,12 @@ module ocn_time_integration_split
                                           lowFreqDivergenceTend)
       call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
 
-      ! If this is a transport test, write advection velocity from prescribed
-      ! flow field.  Otherwise, do nothing.
-      call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, 0.5*dt, normalVelocityCur)
+      if (config_transport_tests_flow_id > 0) then
+        ! This is a transport test. Write advection velocity from prescribed
+        ! flow field.
+        call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, &
+          0.5*dt, normalVelocityCur)
+      endif
 
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.

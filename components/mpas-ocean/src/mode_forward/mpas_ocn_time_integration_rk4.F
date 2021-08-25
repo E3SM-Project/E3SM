@@ -385,10 +385,12 @@ module ocn_time_integration_rk4
           exit ! don't compute in loop meant to update velocity, thickness, and tracers
         end if
 
-        ! if this is a transport test, write advection velocity from prescribed
-        ! flow field.  Otherwise, do nothing.
-        call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, &
-          rk_substep_weights(rk_step), normalVelocityNew)
+        if (config_transport_tests_flow_id > 0) then
+          ! This is a transport test. Write advection velocity from prescribed
+          ! flow field.
+          call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, &
+            rk_substep_weights(rk_step), normalVelocityNew)
+        endif
 
 
         ! Update halos for diagnostic variables.

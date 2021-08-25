@@ -73,14 +73,6 @@ module ocn_transport_tests
   character(len=32), parameter :: tc3str = "divergent2D"
   character(len=32), parameter :: tc4str = "correlatedTracers2D"
 
-  type :: flow_type
-    integer :: state = 0
-    integer :: flow = 0
-  end type flow_type
-
-  type(flow_type), save :: ft
-  logical, save :: flow_state_set = .false.
-
 #ifdef MPAS_DEBUG
   logical, parameter :: flush_log = .true.
 #endif
@@ -165,8 +157,6 @@ module ocn_transport_tests
     call mpas_log_write("config data : "//trim(config_init_configuration), MPAS_LOG_OUT, intArgs=[config_transport_tests_flow_id], realArgs=[config_transport_tests_temperature, config_transport_tests_salinity], flushNow=flush_log)
 #endif
 
-    call flow_init()
-
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh',meshPool)
@@ -225,7 +215,7 @@ module ocn_transport_tests
 
           vs = 1.0_RKIND
           if (associated(debugTracers)) then
-            if (ft%flow /= 4) then
+            if (config_transport_tests_flow_id /= 4) then
               do k = 1, nVertLevels
                  debugTracers(1, k, iCell) = vs*xyztrig(lonCell(iCell), latCell(iCell))
                  debugTracers(2, k, iCell) = vs*cosine_bells(lonCell(iCell), latCell(iCell))
@@ -318,9 +308,6 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
     integer, pointer :: nEdges
     integer :: i
 
-    call flow_run()
-    if (ft%state /= 2) return
-
     time_sec = days_since_start*one_day + dt
     call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
 
@@ -349,35 +336,6 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
 !
 !--------------------------------------------------------------------
 
-  subroutine flow_init()
-    if (config_transport_tests_flow_id > 0) then
-        ft%state = 2
-        ft%flow = config_transport_tests_flow_id
-        call mpas_log_write("transport_tests: setting up test case "//&
-      trim(flow_id_name(config_transport_tests_flow_id)), MPAS_LOG_OUT, .true.)
-        flow_state_set = .true.
-    endif
-  end subroutine flow_init
-
-
-  subroutine flow_run()
-    if ( .not. flow_state_set ) then
-      if ( trim(config_ocean_run_mode) == 'forward') then
-#ifdef MPAS_DEBUG
-        call mpas_log_write("forward mode entered subroutine flow_run", MPAS_LOG_OUT, &
-         flushNow=flush_log)
-#endif
-        if (config_transport_tests_flow_id > 0) then
-          ft%state = 2
-          ft%flow = config_transport_tests_flow_id
-#ifdef MPAS_DEBUG
-           call mpas_log_write("forward mode found transport test: "//trim(flow_id_name(ft%flow)), MPAS_LOG_OUT, flushNow=flush_log)
-#endif
-        endif
-      endif
-      flow_state_set = .true.
-    endif
-  end subroutine
 
   pure function flow_id_name(fid) result(tcname)
     integer, intent(in) :: fid
@@ -407,7 +365,7 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
       nml(2) !< edge normal vector
     real(RKIND) :: vnml, u, v
     u = 0; v = 0
-    select case(ft%flow)
+    select case(config_transport_tests_flow_id)
        case(1); call flow_rotation    (   lon, lat, u, v)
        case(2,4); call flow_nondivergent(t, lon, lat, u, v)
        case(3); call flow_divergent   (t, lon, lat, u, v)
