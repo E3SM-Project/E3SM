@@ -121,12 +121,11 @@ public:
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
         qc_copy(i,k) = qc(i,k);
-        qv_copy(i,k) = qv(i,k);
+
+        qw(i,k) = qv(i,k) + qc(i,k);
 
         // Temperature
         const Spack T_mid_ik(T_mid(i,k));
-        qw(i,k) = qv(i,k) + qc(i,k);
-
         const auto& theta_zt = PF::calculate_theta_from_T(T_mid_ik,p_mid_ik);
         thlm(i,k) = theta_zt - (latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
@@ -193,7 +192,6 @@ public:
     view_1d_const        surf_latent_flux;
     sview_2d_const       surf_mom_flux;
     view_2d_const        qv;
-    view_2d              qv_copy;
     view_1d              cell_length;
     view_2d              qc;
     view_2d              qc_copy;
@@ -225,9 +223,9 @@ public:
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const sview_2d_const& surf_mom_flux_,
-                       const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
+                       const view_2d_const& qv_, const view_2d& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_, const view_1d& cell_length_,
-                       const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
+                       const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
                        const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_)
@@ -248,11 +246,10 @@ public:
       surf_latent_flux = surf_latent_flux_;
       surf_mom_flux = surf_mom_flux_;
       qv = qv_;
-      qv_copy = qv_copy_;
       // OUT
       qc = qc_;
       qc_copy = qc_copy_;
-      shoc_s = s_;
+      shoc_s = dse_;
       tke = tke_;
       tke_copy = tke_copy_;
       cell_length = cell_length_;
@@ -295,7 +292,8 @@ public:
         // of using tracer group output.
         tke(i,k) = tke_copy(i,k);
         qc(i,k) = qc_copy(i,k);
-        qv(i,k) = qv_copy(i,k);
+
+        qv(i,k) = qw(i,k) - qc(i,k);
 
         cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
         sgs_buoy_flux(i,k) = sgs_buoy_flux(i,k)*rrho(i,k)*cpair;
@@ -308,6 +306,12 @@ public:
                                            ekat::max(inv_qc_relvar_min,
                                                      ekat::square(qc(i,k))/qc2(i,k))));
         }
+
+        // Temperature
+        const Spack dse_ik(dse(i,k));
+        const Spack z_mid_ik(z_mid(i,k));
+        const Real  phis_i(phis(i));
+        T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
       });
     } // operator
 
@@ -315,24 +319,28 @@ public:
     int ncol, nlev;
     view_2d_const rrho;
     view_2d qv, qc, tke;
-    view_2d_const qv_copy, qc_copy, tke_copy;
+    view_2d_const qc_copy, tke_copy, qw;
     view_2d_const qc2;
     view_2d cldfrac_liq;
     view_2d sgs_buoy_flux;
     view_2d inv_qc_relvar;
+    view_2d T_mid;
+    view_2d_const dse,z_mid;
+    view_1d_const phis;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
                        const view_2d_const& rrho_,
-                       const view_2d& qv_, const view_2d_const& qv_copy_, const view_2d& qc_, const view_2d_const& qc_copy_,
+                       const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_2d_const& qc2_,
-                       const view_2d& cldfrac_liq_, const view_2d& sgs_buoy_flux_, const view_2d& inv_qc_relvar_)
+                       const view_2d& cldfrac_liq_, const view_2d& sgs_buoy_flux_, const view_2d& inv_qc_relvar_,
+                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
     {
       ncol = ncol_;
       nlev = nlev_;
       rrho = rrho_;
       qv = qv_;
-      qv_copy = qv_copy_;
+      qw = qw_;
       qc = qc_;
       qc_copy = qc_copy_;
       tke = tke_;
@@ -341,6 +349,10 @@ public:
       cldfrac_liq = cldfrac_liq_;
       sgs_buoy_flux = sgs_buoy_flux_;
       inv_qc_relvar = inv_qc_relvar_;
+      T_mid = T_mid_;
+      dse = dse_;
+      z_mid = z_mid_;
+      phis = phis_;
     } // set_variables
   }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -348,7 +360,7 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_scalar     = 5;
-    static constexpr int num_2d_vector_mid = 18;
+    static constexpr int num_2d_vector_mid = 17;
     static constexpr int num_2d_vector_int = 11;
     static constexpr int num_2d_vector_tr  = 1;
 
@@ -369,8 +381,7 @@ public:
     uview_2d<Spack> inv_exner;
     uview_2d<Spack> thlm;
     uview_2d<Spack> qw;
-    uview_2d<Spack> s;
-    uview_2d<Spack> qv_copy;
+    uview_2d<Spack> dse;
     uview_2d<Spack> qc_copy;
     uview_2d<Spack> tke_copy;
     uview_2d<Spack> shoc_ql2;
