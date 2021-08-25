@@ -1103,15 +1103,7 @@ contains
     call get_var(pio_atm_file,varname,var)
 
     ! We don't want the extent along the 'time' dimension
-    if (var%has_t_dim) then
-      ndims = SIZE(var%dimlen)-1
-    else
-      ndims = SIZE(var%dimlen)
-    endif
-    var_size = 1
-    do i=1,ndims
-      var_size = var_size*var%dimlen(i)
-    enddo
+    var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
     call c_f_pointer (var_data_ptr, var_data, [var_size])
@@ -1155,15 +1147,7 @@ contains
     call get_var(pio_atm_file,varname,var)
     
     ! We don't want the extent along the 'time' dimension
-    if (var%has_t_dim) then
-      ndims = SIZE(var%dimlen)-1
-    else
-      ndims = SIZE(var%dimlen)
-    endif
-    var_size = 1
-    do i=1,ndims
-      var_size = var_size*var%dimlen(i)
-    enddo
+    var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
     call c_f_pointer (var_data_ptr, var_data, [var_size])
