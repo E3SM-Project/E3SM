@@ -174,9 +174,6 @@ module ocn_time_integration_rk4
       type (field2DReal), pointer :: normalVelocityField, layerThicknessField
       type (field3DReal), pointer :: tracersGroupField
 
-      ! Time of day
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
-
       ! Tracer Group Iteartion
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
@@ -378,7 +375,6 @@ module ocn_time_integration_rk4
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN RK loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
       do rk_step = 1, 4
 
         if (config_disable_thick_all_tend .and. config_disable_vel_all_tend .and. config_disable_tr_all_tend) then

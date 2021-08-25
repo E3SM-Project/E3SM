@@ -214,8 +214,6 @@ module ocn_time_integration_split
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
 
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
-
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
          tracersGroupCur,      &! old, new tracer arrays
@@ -358,7 +356,6 @@ module ocn_time_integration_split
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-      call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
 
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
