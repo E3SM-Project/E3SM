@@ -2468,13 +2468,6 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
    
-
-!set all fluxes to zer
-!cam_in%shf(:) = 0.0
-!cam_in%cflx(:,1)=0.0
-!rliq(:) =0.0
-!dlf(:,:)=0.0
-
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
