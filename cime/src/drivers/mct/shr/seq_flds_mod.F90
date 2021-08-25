@@ -2135,29 +2135,30 @@ contains
        pftstr=trim(pftstr)
 
        ! Only hr and npp matter, for now
-       call seq_flds_add(l2x_states,'Sl_hr_pft' // pftstr)
-       call seq_flds_add(x2z_states,'Sl_hr_pft' // pftstr)
+       call seq_flds_add(l2x_states,trim('Sl_hr_pft' // pftstr))
+       call seq_flds_add(x2z_states,trim('Sl_hr_pft' // pftstr))
        longname = 'Total heterotrophic respiration' // pftstr
        stdname  = 'lnd_total_heterotrophic_respiration' // pftstr
        units    = 'gC/m^2/s'
        attname  = 'Sl_hr_pft' // pftstr
+       attname  = trim(attname)
        call metadata_set(attname, longname, stdname, units)
        
        call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
        call seq_flds_add(x2z_states,'Sl_npp_pft' // pftstr)
-1       longname = 'Net primary production for pft ' // pftstr
+       longname = 'Net primary production for pft ' // pftstr
        stdname  = 'lnd_net_primary_production_pft' // pftstr
        units    = 'gC/m^2/s'
        attname  = 'Sl_npp_pft' // pftstr
        call metadata_set(attname, longname, stdname, units)
     
        ! Review
-       call seq_flds_add(l2x_states,'Sl_pftwtg_pft' //pftstr)
-       call seq_flds_add(x2z_states,'Sl_pftwtg_pft' //pftstr)
+       call seq_flds_add(l2x_states,'Sl_pftwgt_pft' //pftstr)
+       call seq_flds_add(x2z_states,'Sl_pftwgt_pft' //pftstr)
        longname = 'PFT weight relative to gridcell for pft ' //pftstr
        stdname  = 'lnd_pft_weight_pft' //pftstr
        units    = ''
-       attname  = 'Sl_pftwtg_pft' //pftstr
+       attname  = 'Sl_pftwgt_pft' //pftstr
        call metadata_set(attname, longname, stdname, units)
 
        ! iac->lnd 

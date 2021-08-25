@@ -316,13 +316,14 @@ contains
 
     ! Probably need to compare with namelist 
     iac_npft = numpft
-
-    do p = 0,iac_npft
-       write(cpft,'(I0)') 
+! KVC: this has a different value than in iac. Need to align. Doing manually now
+iac_npft = 17
+    do p = 1,iac_npft
+       write(cpft,'(I0)') p-1
        cpft=trim(cpft)
-       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,'Sl_hr_pft' // cpft)
-       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,'Sl_npp_pft' // cpft)
-       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,'Sl_pftwgt_pft' // cpft)
+       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
+       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
+       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
     enddo
 
     call mct_aVect_clean(x2l)
