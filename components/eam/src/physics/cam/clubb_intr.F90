@@ -1334,7 +1334,7 @@ end subroutine clubb_init_cnst
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
    real(r8) :: wr_a(pcols), wr_b(pcols)
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols), temp_a(pcols,pver)
-   real(r8) :: se_dis, se_a(pcols), se_b(pcols), enthalpy
+   real(r8) :: se_dis, se_a(pcols), se_b(pcols), enthalpy, se_dis_k(pver)
 
    real(r8) :: exner_clubb(pcols,pverp)         ! Exner function consistent with CLUBB          [-]
    real(r8) :: wpthlp_output(pcols,pverp)       ! Heat flux output variable                     [W/m2]
@@ -2538,8 +2538,11 @@ enddo
       enddo
 
       ! Compute the disbalance of total energy, over depth where CLUBB is active
-!      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop))
-      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,1)) * gravit
+      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop)) * gravit
+!      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,1)) * gravit
+
+      se_dis_k(:) = 0.0
+      se_dis_k(clubbtop:pver) = se_dis
 
       !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
       !  for all variables and therefore is never called in this loop
@@ -2550,8 +2553,8 @@ enddo
          ptend_loc%q(i,k,ixq) = (rtm(i,k)-rcm(i,k)-state1%q(i,k,ixq))*invrs_hdtime  ! water vapor
          ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))*invrs_hdtime ! Tendency of liquid water
 
-         ptend_loc%s(i,k)   = cpair*( temp_a(i,k)-state1%T(i,k) )*invrs_hdtime      ! Tendency from clubb
-         ptend_loc%s(i,k)   = ptend_loc%s(i,k) - se_dis*invrs_hdtime                ! Tendency to conserve energy
+         ptend_loc%s(i,k)   = cpair*( temp_a(i,k) - state1%T(i,k) )*invrs_hdtime    ! Tendency from clubb
+         ptend_loc%s(i,k)   = ptend_loc%s(i,k)    - se_dis_k(k)*invrs_hdtime        ! Tendency to conserve energy
 
          if (clubb_do_adv) then
             if (macmic_it .eq. cld_macmic_num_steps) then
