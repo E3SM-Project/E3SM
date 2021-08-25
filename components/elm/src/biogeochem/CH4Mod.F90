@@ -36,7 +36,7 @@ module CH4Mod
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_wf, veg_cs, veg_cf
   use timeinfoMod
-  use topounit_varcon    , only : max_topounits  
+
   !
   implicit none
   save
@@ -688,13 +688,13 @@ contains
     real(r8)          , intent(in) :: cellorg_col (bounds%begc:, 1:)
     !
     ! !LOCAL VARIABLES:
-    integer               :: j ,g,l,c,p,t,ti,topi ! indices
+    integer               :: j ,g, l,c,p ! indices
     type(file_desc_t)     :: ncid        ! netcdf id
-    real(r8)     ,pointer :: zwt0_in (:,:) ! read in - zwt0 
-    real(r8)     ,pointer :: f0_in (:,:)   ! read in - f0 
-    real(r8)     ,pointer :: p3_in (:,:)   ! read in - p3 
-    real(r8)     ,pointer :: pH_in (:,:)   ! read in - pH 
-    logical               :: readvar 
+    real(r8)     ,pointer :: zwt0_in (:) ! read in - zwt0
+    real(r8)     ,pointer :: f0_in (:)   ! read in - f0
+    real(r8)     ,pointer :: p3_in (:)   ! read in - p3
+    real(r8)     ,pointer :: pH_in (:)   ! read in - pH
+    logical               :: readvar
     character(len=256)    :: locfn
     !-----------------------------------------------------------------------
 
@@ -704,10 +704,10 @@ contains
     ! Initialize time constant variables
     !----------------------------------------
 
-    allocate(zwt0_in(bounds%begg:bounds%endg,1:max_topounits))
-    allocate(f0_in(bounds%begg:bounds%endg,1:max_topounits))
-    allocate(p3_in(bounds%begg:bounds%endg,1:max_topounits))
-    if (usephfact) allocate(ph_in(bounds%begg:bounds%endg,1:max_topounits))
+    allocate(zwt0_in(bounds%begg:bounds%endg))
+    allocate(f0_in(bounds%begg:bounds%endg))
+    allocate(p3_in(bounds%begg:bounds%endg))
+    if (usephfact) allocate(ph_in(bounds%begg:bounds%endg))
 
     ! Methane code parameters for finundated
 
@@ -742,16 +742,13 @@ contains
 
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
 
        if (.not. fin_use_fsat) then
-          this%zwt0_col(c) = zwt0_in(g,ti)
-          this%f0_col(c)   = f0_in(g,ti)
-          this%p3_col(c)   = p3_in(g,ti)
+          this%zwt0_col(c) = zwt0_in(g)
+          this%f0_col(c)   = f0_in(g)
+          this%p3_col(c)   = p3_in(g)
        end if
-       if (usephfact) this%pH_col(c) = pH_in(g,ti)
+       if (usephfact) this%pH_col(c) = pH_in(g)
     end do
 
     deallocate(zwt0_in, f0_in, p3_in)

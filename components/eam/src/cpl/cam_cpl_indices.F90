@@ -22,7 +22,6 @@ module cam_cpl_indices
   integer :: index_a2x_Sa_dens         ! bottom atm level air den
   integer :: index_a2x_Sa_pbot         ! bottom atm level pressure
   integer :: index_a2x_Sa_pslv         ! sea level atm pressure
-  integer :: index_a2x_Sa_uovern       ! ratio of wind speed/brunt vaisalla frequency
   integer :: index_a2x_Faxa_lwdn       ! downward lw heat flux
   integer :: index_a2x_Faxa_rainc      ! prec: liquid "convective"
   integer :: index_a2x_Faxa_rainl      ! prec: liquid "large scale"
@@ -166,7 +165,6 @@ contains
     index_a2x_Sa_pslv       = mct_avect_indexra(a2x,'Sa_pslv')
     index_a2x_Sa_shum       = mct_avect_indexra(a2x,'Sa_shum')
     index_a2x_Sa_dens       = mct_avect_indexra(a2x,'Sa_dens')
-    index_a2x_Sa_uovern     = mct_avect_indexra(a2x,'Sa_uovern')
     index_a2x_Faxa_swnet    = mct_avect_indexra(a2x,'Faxa_swnet')
     index_a2x_Faxa_lwdn     = mct_avect_indexra(a2x,'Faxa_lwdn')
     index_a2x_Faxa_rainc    = mct_avect_indexra(a2x,'Faxa_rainc')
