@@ -615,12 +615,6 @@ endif
     do i = 1, ncol
        state%te_cur(i) = te(i)
        state%tw_cur(i) = tw(i)
-
-
-       state%se_cur(i) = se(i) - state%phis(i)*state%ps(i)/gravit
-       state%bcterm_cur(i) = state%phis(i)*state%ps(i)/gravit
-       state%ke_cur(i) = ke(i)
-       state%we_cur(i) = (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
     end do
 
     deallocate(cpairv_loc)

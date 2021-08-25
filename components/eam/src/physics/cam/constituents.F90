@@ -193,7 +193,7 @@ CONTAINS
     cnst_mw  (ind) = mwc
     qmin     (ind) = qminc
     qmincg   (ind) = qminc
-    if (ind == 1) qmincg = 0._r8  ! This crap is replicate what was there before ****
+    if (ind == 1) qmincg = 0._r8 
 
     cnst_rgas(ind) = r_universal * mwc
     cnst_cv  (ind) = cpc - cnst_rgas(ind)
