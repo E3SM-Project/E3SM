@@ -49,7 +49,7 @@ module scream_scorpio_interface
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
-      PIO_double, pio_rearr_subset
+      PIO_double, pio_rearr_subset, pio_write, pio_nowrite
   use pio_kinds,  only : PIO_OFFSET_KIND, i4
   use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
                          PIO_inq_dimlen, PIO_inq_varid, PIO_inq_att
@@ -104,6 +104,9 @@ module scream_scorpio_interface
   integer,parameter :: max_chars = 256
   integer,parameter :: max_hvarname_len = 64
   integer,parameter :: max_hvar_dimlen  = 5
+  integer,parameter :: file_purpose_not_set  = 0
+  integer,parameter :: file_purpose_in  = 1
+  integer,parameter :: file_purpose_out = 2
 
 !----------------------------------------------------------------------
   type, public :: hist_coord_t
@@ -175,7 +178,7 @@ module scream_scorpio_interface
         character(len=max_chars) :: filename = ""
 
         !> @brief Purpose (in/out).
-        character(len=max_chars) :: purpose = ""
+        integer :: purpose = file_purpose_not_set
 
         !> @brief Contains data identifying the file.
         type(file_desc_t)     :: pioFileDesc
@@ -223,11 +226,10 @@ contains
 
     character(len=*), intent(in) :: filename
 
-    type(pio_atm_file_t), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file
 
     if (.not.associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
-    call get_new_pio_atm_file(filename,current_atm_file,1)
-    call eam_pio_createHeader(current_atm_file%pioFileDesc)
+    call get_pio_atm_file(filename,current_atm_file,file_purpose_out)
 
   end subroutine register_outfile
 !=====================================================================!
@@ -236,9 +238,9 @@ contains
 
     character(len=*), intent(in) :: filename
 
-    type(pio_atm_file_t), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file
 
-    call get_new_pio_atm_file(filename,current_atm_file,2)
+    call get_pio_atm_file(filename,current_atm_file,file_purpose_in)
 
   end subroutine register_infile
 !=====================================================================!
@@ -249,80 +251,108 @@ contains
 
     character(len=*), intent(in) :: filename
 
-    type(pio_atm_file_t), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file
     integer                       :: ierr
-    logical                       :: found
+    logical                       :: found, is_open
 
-    call lookup_pio_atm_file(filename,current_atm_file,found)
+    call lookup_pio_atm_file(filename,current_atm_file,found,is_open)
+    if (.not.found .or. .not. is_open) then
+      call errorHandle("PIO ERROR: error running enddef on file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
 
-    ! Gather the pio decomposition for all variables in this file, and assign them pointers.
-    call set_decomp(trim(filename))
-    ! Officially close the definition step for this file.
-    ierr = PIO_enddef(current_atm_file%pioFileDesc)
-    call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
-    current_atm_file%is_enddef = .true.
+    ! It could happen that we are running a test, with an input file opening the
+    ! same file that an output stream just wrote. In this case, the def phase ended
+    ! during the output setup.
+    ! 
+    if (.not. current_atm_file%is_enddef) then
+      ! Gather the pio decomposition for all variables in this file, and assign them pointers.
+      call set_decomp(trim(filename))
+      ! Officially close the definition step for this file.
+      ierr = PIO_enddef(current_atm_file%pioFileDesc)
+      call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
+      current_atm_file%is_enddef = .true.
+    endif
 
   end subroutine eam_pio_enddef
 !=====================================================================!
   ! Register a dimension with a specific pio output file.  Mandatory inputs
   ! include:
-  ! pio_atm_filename: Name of file to add the dimension to.
-  ! shortname:        Short name descriptor for this dimension.  This will be
-  !                   name to find the dimension in the netCDF file.
-  ! longname:         A longer character string with a more descriptive name of
-  !                   the dimension.
-  ! length:           The dimension length (must be >=0).  Choosing 0 marks the
-  !                   dimensions as having "unlimited" length which is used for
-  !                   dimensions such as time.
-  subroutine register_dimension(pio_atm_filename,shortname,longname,length)
-    character(len=*), intent(in)        :: pio_atm_filename   ! Name of file to register the dimension on.
+  ! filename:  Name of file to add the dimension to.
+  ! shortname: Short name descriptor for this dimension.  This will be
+  !            name to find the dimension in the netCDF file.
+  ! longname:  A longer character string with a more descriptive name of
+  !            the dimension.
+  ! length:    The dimension length (must be >=0).  Choosing 0 marks the
+  !            dimensions as having "unlimited" length which is used for
+  !            dimensions such as time.
+  subroutine register_dimension(filename,shortname,longname,length)
+    character(len=*), intent(in)        :: filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
     integer, intent(in)                 :: length             ! Length of the dimension, 0: unlimited (like time), >0 actual length of dimension
 
     type(pio_atm_file_t), pointer       :: pio_atm_file
     type(hist_coord_t), pointer         :: hist_coord
-    type(hist_coord_list_t), pointer    :: curr=>null(), prev=>null()
+    type(hist_coord_list_t), pointer    :: curr, prev
     integer                             :: ierr
-    logical                             :: found
+    logical                             :: found, is_open, dim_found
+
+    dim_found = .false.
 
     ! Make sure the dimension length is reasonable
     if (length<0) call errorHandle("PIO Error: dimension "//trim(shortname)//", can't have a negative dimension length",-999)
 
     ! Find the pointer for this file
-    call lookup_pio_atm_file(trim(pio_atm_filename),pio_atm_file,found)
-    if (.not.found) call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(pio_atm_filename),-999)
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found,is_open)
+    if (.not.found .or. .not. is_open) then
+      call errorHandle("PIO ERROR: error registering dimension "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
     ! Get a new dimension pointer in coord_list
     curr => pio_atm_file%coord_list_top
     do while (associated(curr))
       if (associated(curr%coord)) then
-        if(trim(curr%coord%name)==trim(shortname)) call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
+        if(trim(curr%coord%name)==trim(shortname)) then
+          dim_found = .true.
+          exit
+        endif
       end if
       prev => curr
       curr => prev%next
     end do
-    allocate(prev%next)
-    curr => prev%next
-    allocate(curr%coord)
-    hist_coord => curr%coord
-    pio_atm_file%DimCounter = pio_atm_file%DimCounter + 1  ! AaronDonahue - Is this even still needed?
-    ! Register this dimension
-    hist_coord%name      = trim(shortname)
-    hist_coord%long_name = trim(longname)
-    hist_coord%dimsize   = length
-    if (length.eq.0) then
-      ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
+          ! call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//", already exists in file: "//trim(filename),-999)
+    ! If the dim was not found, create it
+    if (.not. dim_found) then
+      allocate(prev%next)
+      curr => prev%next
+      allocate(curr%coord)
+      hist_coord => curr%coord
+      pio_atm_file%DimCounter = pio_atm_file%DimCounter + 1  ! AaronDonahue - Is this even still needed?
+      ! Register this dimension
+      hist_coord%name      = trim(shortname)
+      hist_coord%long_name = trim(longname)
+      hist_coord%dimsize   = length
+      if (length.eq.0) then
+        ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
+      else
+        ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
+      end if
+      call errorHandle("PIO ERROR: could not define dimension "//trim(shortname)//" on file: "//trim(filename),ierr)
     else
-      ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
-    end if
-    call errorHandle("PIO ERROR: could not define dimension "//trim(shortname)//" on file: "//trim(pio_atm_filename),ierr)
+      ! The dim was already registered by another input/output instance. Check that everything matches
+      hist_coord => curr%coord
+      if (trim(hist_coord%name) .ne. trim(shortname) .or. &
+          trim(hist_coord%long_name) .ne. trim(longname) .or. &
+          hist_coord%dimsize .ne. length) then
+        call errorHandle("PIO ERROR: dimension "//trim(shortname)//" was already defined on file "//trim(filename)//", but with a different length",ierr)
 
-    return
+      endif
+    endif
   end subroutine register_dimension
 !=====================================================================!
   ! Register a variable with a specific pio input file. Mandatory inputs
   ! include:
-  ! pio_atm_filename: The name of the netCDF file this variable will be
-  !                   registered with.
+  ! filename:       The name of the netCDF file this variable will be
+  !                 registered with.
   ! shortname:      A shortname descriptor (tag) for this variable.  This will be
   !                 used to label the variable in the netCDF file as well.
   ! longname:       A longer character string describing the variable.
@@ -338,8 +368,8 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
-  subroutine get_variable(pio_atm_filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
-    character(len=*), intent(in) :: pio_atm_filename         ! Name of the file to register this variable with
+  subroutine get_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+    character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
     character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
@@ -351,53 +381,79 @@ contains
     type(hist_var_t), pointer    :: hist_var
     integer                      :: dim_ii
     integer                      :: ierr
-    logical                      :: found
+    logical                      :: found,is_open,var_found
 
-    type(hist_var_list_t), pointer :: curr => null(), prev => null()
+    type(hist_var_list_t), pointer :: curr, prev
+
+    var_found = .false.
 
     ! Find the pointer for this file
-    call lookup_pio_atm_file(trim(pio_atm_filename),pio_atm_file,found)
-    ! Update the number of variables on file
-    pio_atm_file%varcounter = pio_atm_file%varcounter + 1
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found,is_open)
+    if (.not.found .or. .not. is_open) then
+      call errorHandle("PIO ERROR: error registering variable "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
 
     ! Get a new variable pointer in var_list
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
+
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable "//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
-      end if
+        if (trim(curr%var%name)==trim(shortname)) then
+          var_found = .true.
+          exit
+        ! if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable "//trim(shortname)//", already exists in file: "//trim(filename),-999)
+        endif
+      endif
       prev => curr
       curr => prev%next
     end do
-    allocate(prev%next)
-    curr => prev%next
-    allocate(curr%var)
-    hist_var => curr%var
-    ! Populate meta-data associated with this variable
-    hist_var%name      = trim(shortname)
-    hist_var%long_name = trim(longname)
-    hist_var%numdims   = numdims
-    hist_var%dtype     = dtype
-    hist_var%pio_decomp_tag = trim(pio_decomp_tag)
-    ! Determine the dimension id's saved in the netCDF file and associated with
-    ! this variable, check if variable has a time dimension
-    hist_var%has_t_dim = .false.
-    allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
-    do dim_ii = 1,numdims
-      ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
-      call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
-      ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
-      call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
-      if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
-    end do
 
-    ! Register Variable with PIO
-    ! check to see if variable already is defined with file (for use with input)
-    ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
-    call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(pio_atm_filename),ierr)
+    if (.not. var_found) then
+      allocate(prev%next)
+      curr => prev%next
+      allocate(curr%var)
+      hist_var => curr%var
+      ! Populate meta-data associated with this variable
+      hist_var%name      = trim(shortname)
+      hist_var%long_name = trim(longname)
+      hist_var%numdims   = numdims
+      hist_var%dtype     = dtype
+      hist_var%pio_decomp_tag = trim(pio_decomp_tag)
+      ! Determine the dimension id's saved in the netCDF file and associated with
+      ! this variable, check if variable has a time dimension
+      hist_var%has_t_dim = .false.
+      allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
+      do dim_ii = 1,numdims
+        ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
+        call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
+        ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
+        call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
+        if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+      end do
 
-    return
+      ! Register Variable with PIO
+      ! check to see if variable already is defined with file (for use with input)
+      ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
+      call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
+
+      ! Update the number of variables on file
+      pio_atm_file%varcounter = pio_atm_file%varcounter + 1
+    else
+      ! The var was already registered by another input/output instance. Check that everything matches
+      hist_var => curr%var
+      if ( trim(hist_var%name) .ne. trim(shortname) .or. &
+           trim(hist_var%long_name) .ne. trim(longname) .or. &
+           hist_var%dtype .ne. dtype .or. &
+           (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
+            (hist_var%numdims .ne. numdims .or. &
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) .or. &
+           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
+            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) )then
+        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different name and/or dims and/or dtype and/or decomp tag, in file: "//trim(filename),-999)
+      endif
+    endif
   end subroutine get_variable
 !=====================================================================!
   ! Register a variable with a specific pio output file. Mandatory inputs
@@ -419,8 +475,8 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
-  subroutine register_variable(pio_atm_filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
-    character(len=*), intent(in) :: pio_atm_filename         ! Name of the file to register this variable with
+  subroutine register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+    character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
     character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
@@ -432,57 +488,84 @@ contains
     type(hist_var_t), pointer    :: hist_var
     integer                      :: dim_ii
     integer                      :: ierr
-    logical                      :: found
+    logical                      :: found,is_open,var_found
 
-    type(hist_var_list_t), pointer :: curr => null(), prev => null()
+    type(hist_var_list_t), pointer :: curr, prev
+
+    var_found = .false.
 
     ! Find the pointer for this file
-    call lookup_pio_atm_file(trim(pio_atm_filename),pio_atm_file,found)
-    ! Update the number of variables on file
-    pio_atm_file%varcounter = pio_atm_file%varcounter + 1
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found,is_open)
+    if (.not.found .or. .not. is_open) then
+      call errorHandle("PIO ERROR: error registering variable "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
 
     ! Get a new variable pointer in var_list
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
+
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable "//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
+        if (trim(curr%var%name)==trim(shortname)) then
+          var_found = .true.
+          exit
+        endif
       end if
       prev => curr
       curr => prev%next
     end do
-    allocate(prev%next)
-    curr => prev%next
-    allocate(curr%var)
-    hist_var => curr%var
-    ! Populate meta-data associated with this variable
-    hist_var%name      = trim(shortname)
-    hist_var%long_name = trim(longname)
-    hist_var%numdims   = numdims
-    hist_var%dtype     = dtype
-    hist_var%pio_decomp_tag = trim(pio_decomp_tag)
-    ! Determine the dimension id's saved in the netCDF file and associated with
-    ! this variable, check if variable has a time dimension
-    hist_var%has_t_dim = .false.
-    allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
-    do dim_ii = 1,numdims
-      ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
-      call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
-      ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
-      call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
-      if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
-    end do
 
-    ! Register Variable with PIO
-    ! First, check to see if variable already is defined with file
-    ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
-    if (ierr == PIO_NOERR) call errorHandle("PIO ERROR: could not define variable "//trim(shortname)//" in file "//trim(pio_atm_filename)//", already exists",-999)
+    ! If the var was not found, allocate the new var
+    if (.not. var_found) then
+      allocate(prev%next)
+      curr => prev%next
+      allocate(curr%var)
+      hist_var => curr%var
+      ! Populate meta-data associated with this variable
+      hist_var%name      = trim(shortname)
+      hist_var%long_name = trim(longname)
+      hist_var%numdims   = numdims
+      hist_var%dtype     = dtype
+      hist_var%pio_decomp_tag = trim(pio_decomp_tag)
+      ! Determine the dimension id's saved in the netCDF file and associated with
+      ! this variable, check if variable has a time dimension
+      hist_var%has_t_dim = .false.
+      allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
+      do dim_ii = 1,numdims
+        ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
+        call errorHandle("EAM_PIO ERROR: Unable to find dimension id for "//trim(var_dimensions(dim_ii)),ierr)
+        ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
+        call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
+        if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+      end do
 
-    ! if ierr is not pio_noerror then the variable needs to be defined
-    if (ierr.ne.pio_noerr) ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
-    call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
+      ! Register Variable with PIO
+      ! First, check to see if variable already is defined with file
+      ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
+      if (ierr == PIO_NOERR) call errorHandle("PIO ERROR: could not define variable "//trim(shortname)//" in file "//trim(filename)//", already exists",-999)
 
-    return
+      ! if ierr is not pio_noerror then the variable needs to be defined
+      if (ierr.ne.pio_noerr) ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
+      call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
+
+      ! Update the number of variables on file
+      pio_atm_file%varcounter = pio_atm_file%varcounter + 1
+    else
+      ! The var was already registered by another input/output instance. Check that everything matches
+      hist_var => curr%var
+      if ( trim(hist_var%name) .ne. trim(shortname) .or. &
+           trim(hist_var%long_name) .ne. trim(longname) .or. &
+           hist_var%dtype .ne. dtype .or. &
+           (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
+            (hist_var%numdims .ne. numdims .or. &
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) .or. &
+           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
+            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) )then
+        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different name and/or dims and/or dtype and/or decomp tag, in file: "//trim(filename),-999)
+      endif
+    endif
+
   end subroutine register_variable
 !=====================================================================!
   ! Update the time dimension for a specific PIO file.  This is needed when
@@ -635,16 +718,20 @@ contains
   end subroutine eam_pio_createfile
 !=====================================================================!
   ! Open an already existing netCDF file.
-  subroutine eam_pio_openfile(File,fname)
+  subroutine eam_pio_openfile(pio_file,fname)
 
-    type(file_desc_t), intent(inout) :: File             ! Pio file Handle
+    type(pio_atm_file_t), pointer, intent(in) :: pio_file     ! Pointer to pio file struct associated with this filename
     character(len=*),  intent(in)    :: fname            ! Pio file name
     !--
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
 
-    mode = 0 ! TODO: make sure this is correct.
-    retval = pio_openfile(pio_subsystem,File,pio_iotype,fname,mode)
+    if (pio_file%purpose .eq. file_purpose_in) then
+      mode = pio_nowrite
+    else
+      mode = pio_write
+    endif
+    retval = pio_openfile(pio_subsystem,pio_file%pioFileDesc,pio_iotype,fname,mode)
     call errorHandle("PIO ERROR: unable to open file: "//trim(fname),retval)
 
   end subroutine eam_pio_openfile
@@ -655,7 +742,7 @@ contains
 
     character(len=*),  intent(in)    :: fname            ! Pio file name
     !--
-    type(pio_atm_file_t),pointer     :: pio_atm_file => null()
+    type(pio_atm_file_t),pointer     :: pio_atm_file
     logical                          :: found
 
     ! Find the pointer for this file
@@ -663,6 +750,7 @@ contains
     if (found) then
       call PIO_closefile(pio_atm_file%pioFileDesc)
       pio_atm_file%isopen = .false.
+      pio_atm_file%purpose = file_purpose_not_set
     else
       call errorHandle("PIO ERROR: unable to close file: "//trim(fname)//", was not found",-999)
     end if
@@ -675,8 +763,8 @@ contains
     ! May not be needed, possibly handled by PIO directly.
 
     integer :: ierr
-    type(pio_file_list_t), pointer :: curr => NULL()
-    type(iodesc_list_t),   pointer :: curr_iodesc=>NULL()
+    type(pio_file_list_t), pointer :: curr
+    type(iodesc_list_t),   pointer :: curr_iodesc
 
     ! Close all the PIO Files
     curr => pio_file_list_top
@@ -777,7 +865,7 @@ contains
     integer, intent(in)       :: compdof(:)       ! The degrees of freedom this rank is responsible for
     type(io_desc_t), pointer  :: iodesc           ! The pio decomposition that has been found or created
 
-    logical                     :: found            ! Keep track if a decomp has been found among the previously defined decompositions
+    logical                     :: found            ! Whether a decomp has been found among the previously defined decompositions
     type(iodesc_list_t),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
     integer                     :: loc_len          ! Used to keep track of how many dimensions there are in decomp
 
@@ -868,14 +956,17 @@ contains
 
     character(len=*)               :: filename  ! Name of the pio file to set decomp for
 
-    type(pio_atm_file_t), pointer  :: current_atm_file => null()
+    type(pio_atm_file_t), pointer  :: current_atm_file
     type(hist_var_list_t), pointer :: curr     ! Used to cycle through recursive list of variables
     type(hist_var_t), pointer      :: hist_var ! Pointer to the variable structure that has been found
     integer                        :: loc_len
     logical                        :: found
 
     call lookup_pio_atm_file(filename,current_atm_file,found)
-    if (current_atm_file%is_enddef) call errorHandle("PIO ERROR: unable to set decomposition in file: "//trim(current_atm_file%filename)//", definition phase has ended (pio_enddef)",999)
+    if (.not. found) then
+      call errorHandle("PIO ERROR: pio file '"//trim(filename)//"' not found.",999)
+    endif
+
     curr => current_atm_file%var_list_top
     do while (associated(curr))
       if (associated(curr%var)) then
@@ -1006,13 +1097,14 @@ contains
   end subroutine set_int_attribute
 !=====================================================================!
   ! Lookup pointer for pio file based on filename.
-  subroutine lookup_pio_atm_file(filename,pio_file,found)
+  subroutine lookup_pio_atm_file(filename,pio_file,found,is_open)
 
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     logical, intent(out)          :: found        ! whether or not the file was found
+    logical, intent(out),optional :: is_open      ! whether or not the file was open (if found)
 
-    type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
+    type(pio_file_list_t), pointer :: curr, prev  ! Used to cycle through recursive list of pio atm files
     integer :: cnt
     ! Starting at the top of the current list of PIO_FILES search for this
     ! filename.
@@ -1022,9 +1114,12 @@ contains
     do while (associated(curr))
       cnt = cnt+1
       if (associated(curr%pio_file)) then
-        if (trim(filename)==trim(curr%pio_file%filename).and.curr%pio_file%isopen) then
+        if (trim(filename)==trim(curr%pio_file%filename)) then
           pio_file => curr%pio_file
           found = .true.
+          if (present(is_open)) then
+            is_open = pio_file%isopen
+          endif
           return
         end if
       end if
@@ -1037,38 +1132,55 @@ contains
   end subroutine lookup_pio_atm_file
 !=====================================================================!
   ! Create a new pio file pointer based on filename.
-  subroutine get_new_pio_atm_file(filename,pio_file,purpose)
+  subroutine get_pio_atm_file(filename,pio_file,purpose)
 
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     integer,intent(in)            :: purpose      ! Purpose for this file lookup, 0 = find already existing, 1 = create new as output, 2 = open new as input
 
-    logical                        :: found
-    type(pio_file_list_t), pointer :: curr => NULL()
+    logical                        :: found, is_open
+    type(pio_file_list_t), pointer :: curr
 
     ! Make sure a there isn't a pio_atm_file pointer already estalished for a
     ! file with this filename.
-    call lookup_pio_atm_file(trim(filename),pio_file,found)
-    if (found) call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", has already been registered with the pio_file list.",-999)
-    curr => pio_file_list_bottom
-    allocate(curr%pio_file)
-    pio_file => curr%pio_file
-    pio_file_list_bottom => curr%next
-    ! Create and initialize the new pio file:
-    pio_file%filename = trim(filename)
-    pio_file%isopen = .true.
-    pio_file%numRecs = 0
-    if (purpose == 1) then  ! Will be used for output.  Set numrecs to zero and create the new file.
-      call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
-      pio_file%purpose = "output"
-    elseif (purpose == 2) then ! Will be used for input, just open it
-      call eam_pio_openfile(pio_file%pioFileDesc,trim(pio_file%filename))
-      pio_file%purpose = "input"
-    else
-      call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
-    end if
+    call lookup_pio_atm_file(trim(filename),pio_file,found,is_open)
+    if (found) then
+      if (is_open .and. purpose .ne. pio_file%purpose) then
+        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open with a different purpose.",-999)
+      else
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
+        pio_file%isopen = .true.
+        pio_file%purpose = purpose
+      endif
+    endif
 
-  end subroutine get_new_pio_atm_file
+    if (.not. found) then
+      curr => pio_file_list_bottom
+      allocate(curr%pio_file)
+      pio_file => curr%pio_file
+      pio_file_list_bottom => curr%next
+      ! Create and initialize the new pio file:
+      pio_file%filename = trim(filename)
+      pio_file%isopen = .true.
+      pio_file%numRecs = 0
+      if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
+        call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
+        call eam_pio_createHeader(pio_file%pioFileDesc)
+        pio_file%purpose = file_purpose_out
+      elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
+        pio_file%purpose = file_purpose_in
+      else
+        call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
+      end if
+    endif
+
+    if (purpose .eq. file_purpose_in) then
+      ! We should not be able to add def for a input file
+      pio_file%is_enddef = .true.
+    endif
+
+  end subroutine get_pio_atm_file
 !=====================================================================!
   ! Write output to file based on type (int or real) and dimensionality
   ! (currently support 1-4 dimensions).
