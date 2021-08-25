@@ -5,4 +5,4 @@ add_subdirectory(uncoupled)
 add_subdirectory(coupled)
 
 # Some fake tests for testing infrastructure
-add_subdirectory(infra)
+add_subdirectory(generic)

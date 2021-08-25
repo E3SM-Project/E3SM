@@ -13,8 +13,6 @@
 
 namespace scream {
 
-// === A dummy physics grids for this test === //
-
 TEST_CASE("shoc-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
