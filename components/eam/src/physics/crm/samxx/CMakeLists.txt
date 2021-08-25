@@ -21,9 +21,8 @@ target_compile_features(samxx PUBLIC cxx_std_14)
 set_source_files_properties(${F90_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
 
 # Set YAKL compiler flags
-include(${YAKL_HOME}/process_cxx_source_files.cmake)
-# Have to quote the list of files in order to pass it into a macro
-process_cxx_source_files("${CXX_SRC}")
+include(${YAKL_HOME}/yakl_utils.cmake)
+yakl_process_cxx_source_files("${CXX_SRC}")
 message(STATUS "YAKL Flags: ${YAKL_COMPILER_FLAGS}")
 
 # Include YAKL source and library directories
