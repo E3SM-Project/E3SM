@@ -103,6 +103,7 @@ module physics_types
           te_ini,  &! vertically integrated total (kinetic + static) energy of initial state
           te_cur,  &! vertically integrated total (kinetic + static) energy of current state
           tw_ini,  &! vertically integrated total water of initial state
+          ke_cur, se_cur, we_cur, bcterm_cur, &
           tw_cur    ! vertically integrated total water of new state
      integer :: count ! count of values with significant energy or water imbalances
      integer, dimension(:),allocatable           :: &
@@ -203,7 +204,7 @@ contains
 
   end subroutine physics_type_alloc
 !===============================================================================
-  subroutine physics_update_main(state, ptend, dt, tend)
+  subroutine physics_update_main(state, ptend, dt, tend, aaa)
 !-----------------------------------------------------------------------
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
@@ -249,6 +250,8 @@ contains
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
+
+    logical, optional :: aaa
 
     !-----------------------------------------------------------------------
 
@@ -333,14 +336,33 @@ contains
     call cnst_get_ind('NUMLIQ', ixnumliq, abrtf=.false.)
     call cnst_get_ind('NUMRAI', ixnumrain, abrtf=.false.)
     call cnst_get_ind('NUMSNO', ixnumsnow, abrtf=.false.)
-  
+
+!print *, 'name', name, ptend%name
+
     do m = 1, pcnst
        if(ptend%lq(m)) then
+
+#if 0
+do i = 1, ncol
+if ((state%lchnk == 6092).and.(i == 13).and.(present(aaa)).and.(m == 1)) then
+
+do k=1,72
+!print *,'pu pdel',k, state%pdel(i,k)
+print *,'pu q',k,state%q(i,k,1) + ptend%q(i,k,1) * dt
+print *,'pu q init, dq, dt',k,state%q(i,k,1), ptend%q(i,k,1) * dt, dt
+enddo
+
+endif
+enddo
+#endif
+
           do k = ptend%top_level, ptend%bot_level
              state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
           end do
 
-          ! now test for mixing ratios which are too small
+!if (.not.present(aaa))then
+
+        ! now test for mixing ratios which are too small
           ! don't call qneg3 for number concentration variables
           if (m /= ixnumice  .and.  m /= ixnumliq .and. &
               m /= ixnumrain .and.  m /= ixnumsnow ) then
@@ -360,6 +382,12 @@ contains
                 state%q(:ncol,k,m) = min(1.e10_r8,state%q(:ncol,k,m))
              end do
           end if
+
+!CANNOT RUN WITHOUT THIS LIMITER          
+!else
+!print *, 'guess limiter is not called ', ptend%name
+!endif
+
 
        end if
 
@@ -406,6 +434,9 @@ contains
        end if
     end if
 
+
+
+
     !------------------------------------------------------------------------
     ! Get indices for molecular weights and call WACCM-X physconst_update
     !------------------------------------------------------------------------
@@ -438,6 +469,17 @@ contains
        end do
     end if
 
+#if 0
+if ((state%lchnk == 6092).and.(present(aaa))) then
+i=13
+do k=1,72
+print *,'pu after lim q',k,state%q(i,k,1)
+enddo
+endif
+#endif
+
+
+
     ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
@@ -457,6 +499,16 @@ contains
     ! (The following causes a 'recursive I/O' error with some compilers.)
     ! call shr_sys_flush(iulog)
 
+#if 0
+if ((state%lchnk == 6092).and.(present(aaa))) then
+i=13
+do k=1,72
+print *,'pu3 q',k,state%q(i,k,1)
+enddo
+endif
+#endif
+
+
     if (state_debug_checks) call physics_state_check(state, ptend%name)
 
     deallocate(cpairv_loc, rairv_loc)
@@ -470,6 +522,16 @@ contains
     ptend%lu    = .false.
     ptend%lv    = .false.
     ptend%psetcols = 0
+
+#if 0
+if ((state%lchnk == 6092).and.(present(aaa))) then
+i=13
+do k=1,72
+print *,'pu4 q',k,state%q(i,k,1)
+enddo
+endif
+#endif
+
     call t_stopf ('physics_update_main')
 
   contains
@@ -1319,6 +1381,12 @@ end subroutine physics_ptend_copy
        state_out%te_cur(i) = state_in%te_cur(i) 
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
+
+
+       state_out%ke_cur(i) = state_in%ke_cur(i) 
+       state_out%se_cur(i) = state_in%se_cur(i) 
+       state_out%we_cur(i) = state_in%we_cur(i) 
+       state_out%bcterm_cur(i) = state_in%bcterm_cur(i) 
     end do
 
     do k = 1, pver
@@ -1645,6 +1713,20 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%te_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
   
+
+
+  allocate(state%ke_cur(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+    allocate(state%se_cur(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+    allocate(state%we_cur(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+    allocate(state%bcterm_cur(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+
+
+
+
   allocate(state%tw_ini(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_ini')
   
@@ -1693,7 +1775,11 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%te_ini(:) = inf
   state%te_cur(:) = inf
   state%tw_ini(:) = inf
-  state%tw_cur(:) = inf
+
+  state%ke_cur(:) = inf
+  state%se_cur(:) = inf
+  state%we_cur(:) = inf
+  state%bcterm_cur(:) = inf
 
 end subroutine physics_state_alloc
 
@@ -1795,6 +1881,11 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%te_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
+
+  deallocate(state%ke_cur, stat=ierr)
+  deallocate(state%se_cur, stat=ierr)
+  deallocate(state%we_cur, stat=ierr)
+  deallocate(state%bcterm_cur, stat=ierr)
   
   deallocate(state%tw_ini, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_ini')

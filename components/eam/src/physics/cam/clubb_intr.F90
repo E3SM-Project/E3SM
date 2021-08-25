@@ -37,6 +37,8 @@ module clubb_intr
   use shr_kind_mod,     only: core_rknd=>shr_kind_r8
 #endif
 
+use phys_debug_util, only: phys_debug_col
+
   implicit none
 
   private
@@ -45,6 +47,7 @@ module clubb_intr
   ! ----------------- !
   ! Public interfaces !
   ! ----------------- !
+
 
   public :: clubb_ini_cam, clubb_register_cam, clubb_tend_cam, &
 #ifdef CLUBB_SGS
@@ -1176,7 +1179,7 @@ end subroutine clubb_init_cnst
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
 
    integer :: i, j, k, t, ixind, nadv
-   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
+   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq, ixrain
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
@@ -1328,7 +1331,8 @@ end subroutine clubb_init_cnst
 
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
-   real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
+   real(r8) :: wr_a(pcols), wr_b(pcols)
+   real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols), temp_a(pcols,pver)
    real(r8) :: se_dis, se_a(pcols), se_b(pcols), clubb_s(pver), enthalpy
 
    real(r8) :: exner_clubb(pcols,pverp)         ! Exner function consistent with CLUBB          [-]
@@ -1484,6 +1488,15 @@ end subroutine clubb_init_cnst
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
 
+
+   real(r8) :: bcterm(pcols),cpterm_b(pcols,pver) ! Response to tau perturbation, m/s
+   real(r8) :: totale_b(pcols),totale_a(pcols) ! Response to tau perturbation, m/s
+   real(r8) :: loc1(pcols,pver),loc2(pcols,pver), en1(pcols), en2(pcols) 
+   real(r8) :: se1(pcols),ke1(pcols), wl1(pcols), wv1(pcols), lll 
+
+   integer :: icol
+
+
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
@@ -1494,6 +1507,7 @@ end subroutine clubb_init_cnst
    det_ice(:) = 0.0_r8
 #ifdef CLUBB_SGS
 
+   icol = phys_debug_col(state%lchnk)
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
@@ -1560,6 +1574,7 @@ end subroutine clubb_init_cnst
 
    call cnst_get_ind('Q',ixq)
    call cnst_get_ind('CLDLIQ',ixcldliq)
+   call cnst_get_ind('RAINQM',ixrain)
    call cnst_get_ind('CLDICE',ixcldice)
    call cnst_get_ind('NUMLIQ',ixnumliq)
    call cnst_get_ind('NUMICE',ixnumice)
@@ -1853,6 +1868,7 @@ end subroutine clubb_init_cnst
    ke_b = 0._r8
    wv_b = 0._r8
    wl_b = 0._r8
+   wr_b = 0._r8
    do k=1,pver
      do i=1,ncol
        ! use s=c_pT+g*z, total energy needs term c_pT but not gz
@@ -1861,8 +1877,37 @@ end subroutine clubb_init_cnst
        ke_b(i) = ke_b(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)*invrs_gravit
        wv_b(i) = wv_b(i) + state1%q(i,k,ixq)*state1%pdel(i,k)*invrs_gravit
        wl_b(i) = wl_b(i) + state1%q(i,k,ixcldliq)*state1%pdel(i,k)*invrs_gravit
+       wr_b(i) = wr_b(i) + state1%q(i,k,ixrain)*state1%pdel(i,k)/gravit
      enddo
    enddo
+
+
+   !now compare se_b term with cp*T
+   do k=1,pver
+     do i=1,ncol
+       ! use s=c_pT+g*z, total energy needs term c_pT but not gz
+       cpterm_b(i,k) = state1%s(i,k) - gravit*state1%zm(i,k) - state1%phis(i)
+       if ( abs(cpterm_b(i,k) - cpair*state1%T(i,k))> 1e-8 ) then
+               print *, "se_b part and cp*T part", abs(cpterm_b(i,k) - cpair*state1%T(i,k))
+       endif
+
+     enddo
+   enddo
+
+   !bc term
+     do i=1,ncol
+       bcterm(i) = state1%phis(i)*state1%ps(i)/gravit
+!compare total E in state vs clubb
+
+!te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
+!       totale_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*(wl_b(i)+wr_b(i))+bcterm(i)
+
+!       print *, "diff SE", state1%se_cur(i)-se_b(i)
+!       print *, 'diff KE', state1%ke_cur(i)-ke_b(i)
+!       print *, 'diff WE', state1%we_cur(i) - ( (latvap+latice)*wv_b(i)+latice*(wl_b(i) + wr_b(i)) )
+      
+     enddo
+
 
    !  Compute virtual potential temperature, which is needed for CLUBB
    do k=1,pver
@@ -2432,6 +2477,23 @@ end subroutine clubb_init_cnst
 
       enddo
 
+#if 1
+!!!!OG  clip everything
+lll=0.0
+do k=1,pver
+if (rcm(i,k) < lll ) then
+        rcm(i,k) = lll
+endif
+if (rtm(i,k) < lll ) then
+        rtm(i,k) = lll
+endif
+if (rtm(i,k) < rcm(i,k) ) then
+        rcm(i,k) = rtm(i,k)
+endif
+enddo
+#endif
+
+
       !  Fill up arrays needed for McICA.  Note we do not want the ghost point,
       !   thus why the second loop is needed.
 
@@ -2444,28 +2506,64 @@ end subroutine clubb_init_cnst
       wv_a = 0._r8
       wl_a = 0._r8
       do k=1,pver
-         enthalpy = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner_clubb(i,k))
+
+         temp_a(i,k) = (thlm(i,k)+(latvap/cpair)*rcm(i,k))  /exner_clubb(i,k)
+
+         !enthalpy = cpair*   (thlm(i,k)+(latvap/cpair)*rcm(i,k))  /exner_clubb(i,k)
+
+         enthalpy = cpair * temp_a(i,k)
+
          clubb_s(k) = enthalpy + gravit*state1%zm(i,k)+state1%phis(i)
-!         se_a(i) = se_a(i) + clubb_s(k)*state1%pdel(i,k)*invrs_gravit
+         !         se_a(i) = se_a(i) + clubb_s(k)*state1%pdel(i,k)*invrs_gravit
          se_a(i) = se_a(i) + enthalpy * state1%pdel(i,k)*invrs_gravit
          ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)*invrs_gravit
          wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)*invrs_gravit
          wl_a(i) = wl_a(i) + (rcm(i,k))*state1%pdel(i,k)*invrs_gravit
+
       enddo
 
       ! Based on these integrals, compute the total energy before and after CLUBB call
       ! TE as in Williamson2015, E= \int_{whole domain} (K+c_p*T) +
       ! \int_{surface} p_s\phi_s (up to water forms), but we ignore surface term
       ! under assumption that CLUBB does not change surface pressure
-      do k=1,pver
-         te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i)
-         te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
-      enddo
+      te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i)
 
+!add BC term
+!         te_a(i) = se_a(i) + ke_a(i) + (latvap+latice)*wv_a(i)+latice*wl_a(i) + &
+!state1%phis(i)*state1%ps(i)/gravit
+
+
+      te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
+
+
+!compare te_b with te_cur
+!if(icol >  0) then
+#if 0
+if ((lchnk == 6092).and.(i == 13)) then
+print *, "lat lon ------------------------------CLUBB", state%lat(i), state%lon(i)
+print *, 'rtm', rtm(i,37:40)
+print *, 'rcm', rcm(i,37:40)
+print *, 'TECUR comp',  te_b(i)+bcterm(i)+latice*wr_b(i) - state1%te_cur(i), get_nstep()
+!and flux
+print *, 'TE expected', te_b(i)+bcterm(i)+latice*wr_b(i) - state1%te_cur(i), get_nstep()
+print *, 'TEcur',       state1%te_cur(i), get_nstep()
+print *, 'FLUX', (cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
+print *, 'F parts', cam_in%shf(i)*hdtime, cam_in%cflx(i,1)*(latvap+latice)*hdtime
+!print *, 'cld_macmic_num_steps', cld_macmic_num_steps
+print *, 'expected TE', te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime &
+        +bcterm(i)+wr_b(i)
+!print *, 'se part', se_b(i)
+endif
+#endif
+
+
+!this TE is TE_BEFORE+CFLX+SHFLX, no detrainment water
       ! Take into account the surface fluxes of heat and moisture
       te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
+      !!! OG not yet, do whole column
+
       ! Find first level where wp2 is higher than lowest threshold
       clubbtop = 1
       do while (wp2(i,clubbtop) .eq. w_tol_sqd .and. clubbtop .lt. pver-1)
@@ -2473,12 +2571,27 @@ end subroutine clubb_init_cnst
       enddo
 
       ! Compute the disbalance of total energy, over depth where CLUBB is active
-      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop))
+!      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop))
+      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,1)) * gravit
+
+#if 0
+if ((lchnk == 6092).and.(i == 13)) then
+print *, "lat lon ------------------------------CLUBB", state%lat(i), state%lon(i)
+print *, 'TE_a + bc +wr',  te_a(i)+bcterm(i)+latice*wr_b(i), get_nstep()
+!and flux
+print *, 'ke terms, b, a',ke_b(i),ke_a(i)
+print *, 'se_dis', se_dis
+print *, 'se_dis*volume',se_dis*(state1%pint(i,pverp)-state1%pint(i,1))/gravit
+print *, 'te_a - te_b',te_a(i)-te_b(i)
+endif
+#endif
+
 
       ! Apply this fixer throughout the column evenly, but only at layers where
       ! CLUBB is active.
       do k=clubbtop,pver
-         clubb_s(k) = clubb_s(k) - se_dis*gravit
+! we are not going to use clubb_s
+         clubb_s(k) = clubb_s(k) - se_dis
       enddo
 
       !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
@@ -2489,7 +2602,58 @@ end subroutine clubb_init_cnst
          ptend_loc%v(i,k)   = (vm(i,k)-state1%v(i,k))*invrs_hdtime                  ! north-south wind
          ptend_loc%q(i,k,ixq) = (rtm(i,k)-rcm(i,k)-state1%q(i,k,ixq))*invrs_hdtime  ! water vapor
          ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))*invrs_hdtime ! Tendency of liquid water
-         ptend_loc%s(i,k)   = (clubb_s(k)-state1%s(i,k))*invrs_hdtime               ! Tendency of static energy
+
+!         ptend_loc%s(i,k)   = (clubb_s(k)-state1%s(i,k))*invrs_hdtime               ! Tendency of static energy
+
+         ptend_loc%s(i,k)   = cpair*( temp_a(i,k)-state1%T(i,k) )*invrs_hdtime               ! Tendency of static energy
+         ptend_loc%s(i,k)   = ptend_loc%s(i,k) - se_dis*invrs_hdtime               ! Tendency of static energy
+
+!the ptend_s above contains 1) clubb T tendencies 2) 'small' correction to T tendency to fix energy
+!at the level te_b + fluxes.
+                  
+#if 0
+      enddo
+
+
+if ((lchnk == 6092).and.(i == 13)) then      
+      se1(i)=0.0
+      ke1(i)=0.0
+      wl1(i)=0.0
+      wv1(i)=0.0
+      do k=1,pver
+         enthalpy = cpair * ( state1%T(i,k) +  ptend_loc%s(i,k)*hdtime/cpair )
+         !enthalpy = cpair * ( temp_a(i,k) )
+!         ( temp_a(i,k) ) - ( state1%T(i,k) +  loc1(i,k)*hdtime/cpair ),&
+!         temp_a(i,k) ,  state1%T(i,k) +  loc1(i,k)*hdtime/cpair
+!print *, 'T_a - newT rel', ( (state1%T(i,k) +  loc1(i,k)*dtime/cpair) - temp_a(i,k) )/temp_a(i,k)
+!print *, 'Ta 2 versions', (state1%T(i,k) +  loc1(i,k)*dtime/cpair), temp_a(i,k)
+
+         se1(i) = se1(i) + enthalpy * state1%pdel(i,k)*invrs_gravit
+
+         ke1(i) = ke1(i) + 0.5_r8*state1%pdel(i,k)*invrs_gravit * &
+                 ( (state1%u(i,k) +  ptend_loc%u(i,k)*hdtime)**2 + (state1%v(i,k) +  ptend_loc%v(i,k)*hdtime)**2 )
+         wv1(i) = wv1(i) + ( state1%q(i,k,ixq)      + ptend_loc%q(i,k,ixq)     *hdtime    )*state1%pdel(i,k)*invrs_gravit
+
+print *, 'clubb wv parts term', k, wv1(i)
+
+         wl1(i) = wl1(i) + ( state1%q(i,k,ixcldliq) + ptend_loc%q(i,k,ixcldliq)*hdtime    )*state1%pdel(i,k)*invrs_gravit
+     enddo
+print *, 'in C ke term', ke1(i)
+print *, 'in C se+bc term', se1(i)+bcterm(i)
+print *, 'in C wv term',(latvap+latice)*wv1(i)
+print *, 'in C wl+wr term',latice*(wr_b(i)+wl1(i))
+
+totale_a(i) = se1(i)+ke1(i)+(latvap+latice)*wv1(i)+latice*wl1(i)
+!print *, 'htime', hdtime
+print *,"totale_a - te_b", totale_a(i) - te_b(i)
+
+print *,"totale_a+bc+wr", totale_a(i)+bcterm(i)+latice*wr_b(i)
+print *,"te_b+bc+wr", te_b(i)+bcterm(i)+latice*wr_b(i)
+
+endif
+
+       do k=1,pver
+#endif
 
          if (clubb_do_adv) then
             if (macmic_it .eq. cld_macmic_num_steps) then
@@ -2548,6 +2712,9 @@ end subroutine clubb_init_cnst
    enddo  ! end column loop
    call t_stopf('adv_clubb_core_col_loop')
 
+!print *, 'ICE ',micro_do_icesupersat
+
+
    ! Add constant to ghost point so that output is not corrupted
    if (clubb_do_adv) then
       if (macmic_it .eq. cld_macmic_num_steps) then
@@ -2582,6 +2749,9 @@ end subroutine clubb_init_cnst
       call physics_ptend_init(ptend_all, state%psetcols, 'clubb_ice4')
    endif
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
+
+#if 1
+
    call physics_update(state1,ptend_loc,hdtime)
 
    ! ------------------------------------------------------------ !
@@ -2623,6 +2793,7 @@ end subroutine clubb_init_cnst
             dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
 
+#if 1
          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
          ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
          ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) &
@@ -2634,6 +2805,14 @@ end subroutine clubb_init_cnst
                                      3._r8 * (                         dlf2(i,k)    *  dum1 ) &
                                      / (4._r8*3.14_r8*clubb_ice_sh**3*500._r8)     ! Shallow Convection
          ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
+#else
+         ptend_loc%q(i,k,ixcldliq) = 0.0
+         ptend_loc%q(i,k,ixcldice) = 0.0
+         ptend_loc%q(i,k,ixnumliq) = 0.0
+         ptend_loc%q(i,k,ixnumice) = 0.0
+         ptend_loc%s(i,k)          = 0.0
+#endif
+
 
          ! Only rliq is saved from deep convection, which is the reserved liquid.  We need to keep
          !   track of the integrals of ice and static energy that is effected from conversion to ice
@@ -2653,6 +2832,7 @@ end subroutine clubb_init_cnst
 
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
+
 
    ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
    ! dry constituents to dry air basis.
@@ -3048,6 +3228,57 @@ end subroutine clubb_init_cnst
    endif
 
    return
+#endif
+
+
+#if 0
+      do i = 1, ncol
+if ((lchnk == 6092).and.(i == 13)) then
+
+!print *, 'AAAAAAAAAAAA name is ', ptend_all%name
+      se1(i)=0.0
+      ke1(i)=0.0
+      wl1(i)=0.0
+      wv1(i)=0.0
+      do k=1,pver
+         enthalpy = cpair * ( state%T(i,k) +  ptend_all%s(i,k)*hdtime/cpair )
+         se1(i) = se1(i) + enthalpy * state1%pdel(i,k)*invrs_gravit
+
+         ke1(i) = ke1(i) + 0.5_r8*state%pdel(i,k)*invrs_gravit * &
+                 ( (state%u(i,k) +  ptend_all%u(i,k)*hdtime)**2 + (state%v(i,k) +  ptend_all%v(i,k)*hdtime)**2 )
+         wv1(i) = wv1(i) + ( state%q(i,k,ixq)      + ptend_all%q(i,k,ixq)     *hdtime    )*state%pdel(i,k)*invrs_gravit
+         wl1(i) = wl1(i) + ( state%q(i,k,ixcldliq) + ptend_all%q(i,k,ixcldliq)*hdtime    )*state%pdel(i,k)*invrs_gravit
+
+         print *,'in endClubb wv,k',k,wv1(i)
+
+
+     enddo
+print *, 'in endC ke term', ke1(i)
+print *, 'in endC se+bc term', se1(i)+bcterm(i)
+print *, 'in emdC wv term',(latvap+latice)*wv1(i)
+print *, 'in endC wl+wr term',latice*(wr_b(i)+wl1(i))
+
+totale_a(i) = se1(i)+ke1(i)+(latvap+latice)*wv1(i)+latice*wl1(i)
+!print *, 'htime', hdtime
+print *,"totale_a - te_b", totale_a(i) - te_b(i)
+
+print *,"totale_a+bc+wr", totale_a(i)+bcterm(i)+latice*wr_b(i)
+print *,"te_b+bc+wr", te_b(i)+bcterm(i)+latice*wr_b(i)
+
+do k=1,72
+print *,'pdel',k, state%pdel(i,k)
+print *,'q',k,state%q(i,k,ixq) + ptend_all%q(i,k,ixq)*hdtime 
+print *,'q init, dq, dt',k,state%q(i,k,ixq), ptend_all%q(i,k,ixq)*hdtime, hdtime
+enddo
+
+endif
+enddo
+#endif
+
+
+
+
+
 #endif
   end subroutine clubb_tend_cam
 

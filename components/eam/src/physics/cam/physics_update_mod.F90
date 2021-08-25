@@ -84,13 +84,15 @@ contains
   !----------------------------------------------------------------------------
   !----------------------------------------------------------------------------
 
-  subroutine physics_update(state, ptend, dt, tend)
+  subroutine physics_update(state, ptend, dt, tend, aaa)
     !purpose: This subroutine calls physics_update_main (old physics_update)
     !and also output variables for pergro test
 
     use time_manager,  only: is_first_step
 
     
+logical, optional :: aaa
+
     !Arguments
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
     type(physics_state), intent(inout)  :: state   ! Physics state variables
@@ -120,8 +122,12 @@ contains
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) outfld_active = .false.
     
     !call the old physics update call
+    if (present(aaa)) then
+    call physics_update_main (state, ptend, dt, tend, aaa=.true.)
+    else
     call physics_update_main (state, ptend, dt, tend)
-    
+    endif
+
     if (pergro_test_active .and. outfld_active) then
        
        !write text file to be used for the post processing

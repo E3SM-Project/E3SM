@@ -183,7 +183,10 @@ subroutine phys_register
     ! ***** N.B. ***** This must be the first call to cnst_add so that
     !                  water vapor is constituent 1.
     if (moist_physics) then
-       call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, mm, &
+!!!!OG
+!       call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, mm, &
+!            longname='Specific humidity', readiv=.true., is_convtran1=.true.)
+       call cnst_add('Q', mwh2o, cpwv, 0.0_r8, mm, &
             longname='Specific humidity', readiv=.true., is_convtran1=.true.)
     else
        call cnst_add('Q', mwh2o, cpwv, 0.0_r8, mm, &
@@ -1910,7 +1913,8 @@ subroutine tphysbc (ztodt,               &
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(cam_out_t),     intent(inout) :: cam_out
-    type(cam_in_t),      intent(in)    :: cam_in
+!    type(cam_in_t),      intent(in)    :: cam_in
+    type(cam_in_t),      intent(inout)    :: cam_in
 
 
     !
@@ -2464,6 +2468,13 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
    
+
+!set all fluxes to zer
+!cam_in%shf(:) = 0.0
+!cam_in%cflx(:,1)=0.0
+!rliq(:) =0.0
+!dlf(:,:)=0.0
+
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
@@ -2481,11 +2492,24 @@ end if
                 call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
-                call physics_update(state, ptend, ztodt, tend)
+                call physics_update(state, ptend, ztodt, tend, aaa=.true.)
+                
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
  
+!cam_in%cflx(:,1)/cld_macmic_num_steps     --- vapor influx mass     = CFLX
+!flx_cnd/cld_macmic_num_steps -- water+ice mass                      = rliq up to minus
+!det_ice/... -- just ice mass                                        = det_ice
+!flx_heat added heat                                                 = SFLX
+
+
+
+!                flx_heat(:ncol) = cam_in%shf(:ncol)
+!                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+!                     cam_in%cflx(:,1)/cld_macmic_num_steps, -flx_cnd/cld_macmic_num_steps, &
+!                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+
           endif
 
           call t_stopf('macrop_tend')
