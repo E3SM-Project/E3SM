@@ -303,7 +303,8 @@ std::string AtmosphereInput::get_io_decomp(const std::vector<std::string>& dims_
   // Note: We are hard-coding for only REAL input here.
   // TODO: would be to allow for other dtypes
   std::string io_decomp_tag = "Real";
-  for (const auto& dim : dims_names) {
+  for (auto it = dims_names.crbegin(); it!=dims_names.crend(); ++it) {
+    const auto& dim = *it;
     io_decomp_tag += "-" + dim;
   }
 
