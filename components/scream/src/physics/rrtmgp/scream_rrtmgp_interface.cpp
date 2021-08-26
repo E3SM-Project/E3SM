@@ -242,6 +242,16 @@ namespace scream {
             int ngpt = k_dist.get_ngpt();
             int ngas = gas_concs.get_num_gases();
 
+            // Reset fluxes
+            auto &flux_up = fluxes.flux_up;
+            auto &flux_dn = fluxes.flux_dn;
+            auto &flux_dn_dir = fluxes.flux_dn_dir;
+            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
+                flux_up    (icol,ilev) = 0;
+                flux_dn    (icol,ilev) = 0;
+                flux_dn_dir(icol,ilev) = 0;
+            });
+ 
             // Get daytime indices
             auto dayIndices = int1d("dayIndices", ncol);
             memset(dayIndices, -1);
@@ -342,16 +352,7 @@ namespace scream {
             fluxes_day.flux_dn_dir = flux_dn_dir_day; //real2d("flux_dn_dir", nday,nlay+1);
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
 
-            // Zero out all fluxes before expanding daytime fluxes
-            auto &flux_up = fluxes.flux_up;
-            auto &flux_dn = fluxes.flux_dn;
-            auto &flux_dn_dir = fluxes.flux_dn_dir;
-            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
-                flux_up    (icol,ilev) = 0;
-                flux_dn    (icol,ilev) = 0;
-                flux_dn_dir(icol,ilev) = 0;
-            });
-            
+           
             // Expand daytime fluxes to all columns
             parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
