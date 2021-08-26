@@ -26,6 +26,7 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
+#include "share/field/field_property_checks/field_positivity_check.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -218,6 +219,8 @@ set_updated_group (const FieldGroup<Real>& group)
 
   if (name=="tracers") {
     m_ref_grid_fields["Q"] = *group.m_bundle;
+    m_fields_in["Q"]       = *group.m_bundle;
+    m_fields_out["Q"]      = *group.m_bundle;
   } else {
     m_dyn_grid_fields["Q"] = *group.m_bundle;
   }
@@ -511,6 +514,10 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   EKAT_REQUIRE_MSG (
       m_ref_grid_fields.at("w_int").get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than Dynamics is trying to update the vertical velocity.\n");
+
+  auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+  m_ref_grid_fields["Q"].add_property_check(positivity_check);
+  
 }
 
 void HommeDynamics::run_impl (const Real dt)

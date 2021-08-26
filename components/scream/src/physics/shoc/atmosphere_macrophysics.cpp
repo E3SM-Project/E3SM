@@ -357,6 +357,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   m_fields_out["qv"].add_property_check(positivity_check);
   m_fields_out["qc"].add_property_check(positivity_check);
   m_fields_out["tke"].add_property_check(positivity_check);
+  m_fields_out["Q"].add_property_check(positivity_check);
 
 }
 
