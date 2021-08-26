@@ -131,13 +131,18 @@ TEST_CASE("restart","io")
   // To overcome this, we open the rpointer fiile NOW, store its content in a string,
   // run the next 5 timesteps, and then OVERWRITE the rpointer file with the content
   // we saved from the timestep=15 one.
-  std::ifstream rpointer_file_in;
-  rpointer_file_in.open("rpointer.atm");
-  std::string content, line;
-  while (rpointer_file_in >> line) {
-    content += line + "\n";
+  std::string rpointer_content;
+  if (io_comm.am_i_root()) {
+    std::ifstream rpointer_file_in;
+    rpointer_file_in.open("rpointer.atm");
+    std::string line;
+    while (rpointer_file_in >> line) {
+      rpointer_content += line + "\n";
+    }
+    rpointer_file_in.close();
   }
-  rpointer_file_in.close();
+  // Wait for rank 0 to be done storing the rpointer file content
+  io_comm.barrier();
 
   // Continue initial simulation for 5 more steps, to get to the next output step
   for (int i=0; i<5; ++i) {
@@ -148,10 +153,14 @@ TEST_CASE("restart","io")
   output_manager.finalize();
 
   // Restore the rpointer file as it was after timestep=15
-  std::ofstream rpointer_file_out;
-  rpointer_file_out.open("rpointer.atm", std::ios_base::trunc | std::ios_base::out);
-  rpointer_file_out << content;
-  rpointer_file_out.close();
+  if (io_comm.am_i_root()) {
+    std::ofstream rpointer_file_out;
+    rpointer_file_out.open("rpointer.atm", std::ios_base::trunc | std::ios_base::out);
+    rpointer_file_out << rpointer_content;
+    rpointer_file_out.close();
+  }
+  // Wait for rank 0 to be done hacking the rpointer file
+  io_comm.barrier();
 
   // Creating a new scorpio output (via the output manager) should
   // restart the output from the saved history.

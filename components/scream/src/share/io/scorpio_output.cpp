@@ -84,18 +84,26 @@ void AtmosphereOutput::init()
   // The user can skip this (which means the Output averaging would start from scratch)
   // by setting "Restart History" in the "Output Restart" to false.
   if (m_is_restarted_run && m_has_restart_data) {
-    std::ifstream rpointer_file;
-    rpointer_file.open("rpointer.atm");
-    std::string filename;
+
+    // TODO: add bool support to ekat::Comm MPI types
     bool found = false;
-    auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
-    auto testname = compute_filename_root(hist_restart_testname);
-    while (rpointer_file >> filename) {
-      if (filename.find(testname) != std::string::npos) {
-        found = true;
-        break;
+    std::string filename,rpointer_content;
+    if (m_comm.am_i_root()) {
+      std::ifstream rpointer_file;
+      rpointer_file.open("rpointer.atm");
+      auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
+      auto testname = compute_filename_root(hist_restart_testname);
+      while (rpointer_file >> filename) {
+        rpointer_content += filename + "\n";
+        if (filename.find(testname) != std::string::npos) {
+          found = true;
+          break;
+        }
       }
     }
+
+    // Sanity check
+    m_comm.broadcast(&found,1,0);
 
     // If the history restart file is not found, we must HOPE that it is because
     // the last model restart step coincided with a model output step, in which case
@@ -105,6 +113,12 @@ void AtmosphereOutput::init()
     //      "Restart History" to false in the input parameter list.
     //      For now, simply print a warning.
     if (found) {
+      // Have the root rank communicate the nc filename
+      int filename_size = filename.size();
+      m_comm.broadcast(&filename_size,1,m_comm.root_rank());
+      filename.resize(filename_size);
+      m_comm.broadcast(&filename.front(),filename_size,m_comm.root_rank());
+
       // Create an input stream on the fly, and init averaging data
       ekat::ParameterList res_params("Input Parameters");
       res_params.set<std::string>("Filename",filename);
@@ -116,12 +130,15 @@ void AtmosphereOutput::init()
       hist_restart.finalize();
     } else {
       if (m_comm.am_i_root()) {
+        auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
+        auto testname = compute_filename_root(hist_restart_testname);
         printf ("WARNING! No restart file found in the rpointer for case\n"
                 "        %s\n"
                 "   We *assume* this is because the last model restart write step\n"
                 "   coincided with a model output step, so no history restart file\n"
                 "   was needed. So far, we cannot check this, so we simply cross our fingers...\n",
-                filename.c_str());
+                testname.c_str());
+        printf ("rpointer.atm content:%s\n",rpointer_content.c_str());
       }
     }
   }
@@ -141,7 +158,10 @@ void AtmosphereOutput::run(const util::TimeStamp& time)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::finalize() 
 {
-  // Nothing to do at the moment, but keep just in case future development needs a finalization step
+  // Safety check: we should not quit the simulation with an open file.
+  // TODO: this might need to be adjusted once we test 2+ snapshots per file
+  EKAT_REQUIRE_MSG (not m_is_output_file_open,
+      "Error! AtmosphereOutput::finalize() was called while the output file was still open.\n");
 } // finalize
 /*-----*/
 void AtmosphereOutput::run_impl(const Real time, const std::string& time_str) 
