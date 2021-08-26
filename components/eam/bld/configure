@@ -2610,14 +2610,14 @@ sub write_filepath
         print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_sw\n";
     } elsif ($rad eq 'rrtmgp') {
         print $fh "$camsrcdir/eam/src/physics/rrtmgp\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte/kernels\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp/kernels\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions/rng\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/examples\n";
         if (not defined $opts{'rrtmgpxx'} ) {
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte/kernels\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp/kernels\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions/rng\n";
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/examples\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/f90\n";
         }
     }

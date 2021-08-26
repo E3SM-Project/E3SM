@@ -122,17 +122,7 @@ function(build_model COMP_CLASS COMP_NAME)
       )
       # Add the source files for the interface code to the main E3SM build
       set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
-      set(SOURCES ${SOURCES} ${RRTMGPXX_F90} ${RRTMGPXX_CXX})
-      # Set fortran compiler flags
-      set_source_files_properties(${RRTMGPXX_F90} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
-      # Set YAKL and CPP flags for C++ source files
-      set_source_files_properties(${RRTMGPXX_CXX} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-      if ("${ARCH}" STREQUAL "CUDA")
-          # Set C++ source files to be treated like CUDA files by CMake
-          set_source_files_properties(${RRTMGPXX_CXX} PROPERTIES LANGUAGE CUDA)
-          # Include Nvidia cub
-          include_directories(${YAKL_CUB_HOME})
-      endif()
+      set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
     endif()
   endif()
 
@@ -278,7 +268,7 @@ function(build_model COMP_CLASS COMP_NAME)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
       endif()
       if (USE_RRTMGPXX)
-          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp)
+          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
       endif()
     endif()
     if (USE_KOKKOS)
