@@ -80,13 +80,6 @@ protected:
   void run_sequential (const Real dt);
   void run_parallel   (const Real dt);
 
-  // The methods to set the fields in the process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
-  void check_required_fields_impl () {};
-  void check_computed_fields_impl () {};
-
   // The communicator that each process in this group uses
   ekat::Comm        m_comm;
 

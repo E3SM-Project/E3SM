@@ -171,7 +171,7 @@ public:
   //       On the other hand, we may want to allow computed fields to be repaired, so
   //       we leave that one non-const.  If a process wants to repair computed fields
   //       it can do so by overriding the "check_computed_fields_impl" routine.
-  void check_required_fields () { //TODO: Add const
+  void check_required_fields () const { 
     // First run any process specific checks.
     check_required_fields_impl();
     // Now run all field property checks on all fields
@@ -392,7 +392,7 @@ protected:
   virtual void set_required_field_impl (const Field<const Real>& f) {};
   virtual void set_computed_field_impl (const Field<      Real>& f) {};
 
-  virtual void check_required_fields_impl () {}  //TODO add const
+  virtual void check_required_fields_impl () const {}
   virtual void check_computed_fields_impl () {}
 
   using field_type       = Field<      Real>;
