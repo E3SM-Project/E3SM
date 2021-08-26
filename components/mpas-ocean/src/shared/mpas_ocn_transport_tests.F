@@ -251,7 +251,7 @@ module ocn_transport_tests
        end do
 
        do iEdge = 1,nEdgesSolve
-          normalVelocity(:,iEdge) = 0
+          call ocn_transport_test_velocity(meshPool, 0.0_RKIND, 0.0_RKIND, normalVelocity)
        enddo
 
        block_ptr => block_ptr % next
