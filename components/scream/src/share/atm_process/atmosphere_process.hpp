@@ -139,7 +139,9 @@ public:
     m_fields_in.emplace(name,f);
   
     // Add myself as customer to the field
-    add_me_as_customer(f);
+    if (this->type()!=AtmosphereProcessType::Group) {
+      add_me_as_customer(f);
+    }
 
     set_required_field_impl (f);
   }
@@ -153,7 +155,9 @@ public:
     m_fields_out.emplace(name,f);
   
     // Add myself as provider for the field
-    add_me_as_provider(f);
+    if (this->type()!=AtmosphereProcessType::Group) {
+      add_me_as_provider(f);
+    }
 
     set_computed_field_impl (f);
   }
