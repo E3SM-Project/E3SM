@@ -14,7 +14,7 @@ core_ocean: $(OBJS)
 
 mpas_ocn_core.o:
 
-mpas_ocn_core_interface.o: mpas_ocn_core.o ../inc/structs_and_variables.inc
+mpas_ocn_core_interface.o: mpas_ocn_core.o
 
 clean:
 	$(RM) *.o *.mod *.f90

@@ -165,8 +165,6 @@ mpas_ocn_test.o:  mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_constants.o: mpas_ocn_config.o
 
-mpas_ocn_config.o: ../inc/config_declare.inc ../inc/config_get.inc
-
 mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing_restoring.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_surface_bulk_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equation_of_state.o
