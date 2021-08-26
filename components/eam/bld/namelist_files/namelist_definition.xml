@@ -5350,7 +5350,13 @@ Default: 0 seconds
 <entry id="xactive_prates" type="logical" category="cam_chem"
        group="chem_inparm" valid_values="" >
 If TRUE then use the FTUV method to calculate the photolysis reactions rates,
-otherwise use the look up table method.
+otherwise use the lookup table method.
+Default: FALSE
+
+<entry id="do_cloudj_photolysis" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use the FAST-J method to calculate the photolysis reactions rates,
+otherwise use the lookup table method.
 Default: FALSE
 </entry>
 

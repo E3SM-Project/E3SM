@@ -88,6 +88,10 @@ contains
 !
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
+    call addfld( 'Photolysis_CLOUD',       (/ 'lev' /), 'I', 'fraction', 'Cloud fraction in photolysis')
+    call addfld( 'Photolysis_CLOUD_water', (/ 'lev' /), 'I', 'g/g',      'Cloud liquid water in photolysis')
+    call addfld( 'Photolysis_CLOUD_ice',   (/ 'lev' /), 'I', 'g/g',      'Cloud ice in photolysis')
+    
     do m = 1,extcnt
        WRITE(UNIT=string, FMT='(I2.2)') m
        extfrc_name(m) = 'extfrc_'// trim(string)
@@ -188,10 +192,10 @@ contains
                               tfld, pmid, pdel, pdeldry, pint,  &
                               cldw, troplev, &
                               ncldwtr, ufld, vfld,  &
-                              delt, ps, xactive_prates, &
+                              delt, ps, xactive_prates, do_cloudj_photolysis, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
-                              chem_name, drydepflx, cflx, qtend, pbuf)
+                              chem_name, drydepflx, cflx, qtend, pbuf, ixcldliq, ixcldice)
 
     !-----------------------------------------------------------------------
     !     ... Chem_solver advances the volumetric mixing ratio
@@ -247,7 +251,7 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
-
+    use UCI_cloudJ_interface, only : cloudJ_interface
 !
 ! LINOZ
 !
@@ -283,6 +287,7 @@ contains
     real(r8),       intent(in)    :: pint(pcols,pver+1)             ! interface pressures (Pa)
     real(r8),       intent(in)    :: q(pcols,pver,pcnst)            ! species concentrations (kg/kg)
     logical,        intent(in)    :: xactive_prates
+    logical,        intent(in)    :: do_cloudj_photolysis
     real(r8),       intent(in)    :: fsds(pcols)                    ! longwave down at sfc
     real(r8),       intent(in)    :: icefrac(pcols)                 ! sea-ice areal fraction
     real(r8),       intent(in)    :: ocnfrac(pcols)                 ! ocean areal fraction
@@ -294,7 +299,7 @@ contains
     logical,        intent(in)    :: ghg_chem 
     integer,        intent(in)    :: latmapback(pcols)
     character(len=*), intent(in)  :: chem_name
-    integer,         intent(in) ::  troplev(pcols)
+    integer,         intent(in)   :: troplev(pcols)
 
     real(r8),       intent(inout) :: qtend(pcols,pver,pcnst)        ! species tendencies (kg/kg/s)
     real(r8),       intent(inout) :: cflx(pcols,pcnst)              ! constituent surface flux (kg/m^2/s)
@@ -302,6 +307,9 @@ contains
 
     type(physics_buffer_desc), pointer :: pbuf(:)
 
+    integer,        intent(in)    :: ixcldliq, ixcldice                     ! indicies of liquid and ice cloud water
+
+    
     !-----------------------------------------------------------------------
     !     	... Local variables
     !-----------------------------------------------------------------------
@@ -671,8 +679,19 @@ contains
     call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr  , &
          delta, esfact )
 
+    if ( do_cloudj_photolysis ) then 
 
-    if ( xactive_prates ) then
+       !------------------------------------------------------------------
+       !	... compute the photolysis rates using CLoud-J and Fast-JX
+       !------------------------------------------------------------------
+       call cloudJ_interface( reaction_rates, vmr, invariants, tfld, &
+            cldfr, q(:ncol,:,ixcldliq), q(:ncol,:,ixcldice), &
+            pmid, pint, zmidr, zint, rlats, rlons, col_dens, zen_angle, asdir, &
+            invariants(1,1,indexm), ps, ts, &
+            esfact, relhum, dust_vmr, &
+            ncol, lchnk )    !pjc
+
+    else if ( xactive_prates ) then
        if ( dst_ndx > 0 ) then
           dust_vmr(:ncol,:,1:ndust) = vmr(:ncol,:,dst_ndx:dst_ndx+ndust-1)
        else 
@@ -698,6 +717,7 @@ contains
        call outfld('FRACDAY', fracday(:ncol), ncol, lchnk )
 
     else
+
        !-----------------------------------------------------------------
        !	... lookup the photolysis rates from table
        !-----------------------------------------------------------------
@@ -711,6 +731,11 @@ contains
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
     enddo
 
+    !! NOTE: the lookup table and xactive_photo use cwat, which is the sum of liquid and ice.
+    call outfld( 'Photolysis_CLOUD',       cldfr,               ncol, lchnk )
+    call outfld( 'Photolysis_CLOUD_water', q(:ncol,:,ixcldliq), ncol, lchnk )
+    call outfld( 'Photolysis_CLOUD_ice',   q(:ncol,:,ixcldice), ncol, lchnk )
+     
     !-----------------------------------------------------------------------      
     !     	... Adjust the photodissociation rates
     !-----------------------------------------------------------------------  
