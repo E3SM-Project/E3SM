@@ -18,7 +18,7 @@ contains
       real(c_double) :: obliqr
       real(c_double) :: delta
       real(c_double) :: eccf
-      logical :: print_flag
+      logical :: print_flag = .false.
       call shr_orb_params(orb_year, eccen, mvelpp, lambm0, obliqr, delta, eccf, print_flag)
    end subroutine shr_orb_params_c
         
