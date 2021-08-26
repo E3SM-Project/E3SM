@@ -342,7 +342,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
     // Compute the number of columns owned by all previous ranks.
     int offset = 0;
-    m_comm.scan_sum(&num_cols,&offset,1);
+    m_comm.scan(&num_cols,&offset,1,MPI_SUM);
     offset -= num_cols;
 
     // Compute offsets of all my dofs
