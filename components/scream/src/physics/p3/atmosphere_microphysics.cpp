@@ -291,12 +291,6 @@ void P3Microphysics::run_impl (const Real dt)
     it.second.sync_to_host();
   }
 
-  // Copy outputs back to device
-  // LB: why?!?
-  for (auto& it : m_fields_out) {
-    it.second.sync_to_dev();
-  }
-
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(
     "p3_main_local_vals",
