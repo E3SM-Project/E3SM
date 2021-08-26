@@ -183,11 +183,14 @@ subroutine phys_register
     ! ***** N.B. ***** This must be the first call to cnst_add so that
     !                  water vapor is constituent 1.
     if (moist_physics) then
+#if 0
 !!!!OG
-!       call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, mm, &
-!            longname='Specific humidity', readiv=.true., is_convtran1=.true.)
+       call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, mm, &
+            longname='Specific humidity', readiv=.true., is_convtran1=.true.)
+#else
        call cnst_add('Q', mwh2o, cpwv, 0.0_r8, mm, &
             longname='Specific humidity', readiv=.true., is_convtran1=.true.)
+#endif    
     else
        call cnst_add('Q', mwh2o, cpwv, 0.0_r8, mm, &
             longname='Specific humidity', readiv=.false., is_convtran1=.true.)
@@ -1913,8 +1916,7 @@ subroutine tphysbc (ztodt,               &
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(cam_out_t),     intent(inout) :: cam_out
-!    type(cam_in_t),      intent(in)    :: cam_in
-    type(cam_in_t),      intent(inout)    :: cam_in
+    type(cam_in_t),      intent(in)    :: cam_in
 
 
     !

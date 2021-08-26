@@ -38,8 +38,6 @@ module clubb_intr
   use shr_kind_mod,     only: core_rknd=>shr_kind_r8
 #endif
 
-use phys_debug_util, only: phys_debug_col
-
   implicit none
 
   private
@@ -48,7 +46,6 @@ use phys_debug_util, only: phys_debug_col
   ! ----------------- !
   ! Public interfaces !
   ! ----------------- !
-
 
   public :: clubb_ini_cam, clubb_register_cam, clubb_tend_cam, &
 #ifdef CLUBB_SGS
@@ -1180,7 +1177,7 @@ end subroutine clubb_init_cnst
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
 
    integer :: i, j, k, t, ixind, nadv
-   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq, ixrain
+   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
@@ -1332,9 +1329,8 @@ end subroutine clubb_init_cnst
 
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
-   real(r8) :: wr_a(pcols), wr_b(pcols)
-   real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols), temp_a(pcols,pver)
-   real(r8) :: se_dis, se_a(pcols), se_b(pcols), enthalpy, se_dis_k(pver)
+   real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
+   real(r8) :: se_dis, se_dis_k(pver), se_a(pcols), se_b(pcols), enthalpy, lll, temp_a(pcols,pver)
 
    real(r8) :: exner_clubb(pcols,pverp)         ! Exner function consistent with CLUBB          [-]
    real(r8) :: wpthlp_output(pcols,pverp)       ! Heat flux output variable                     [W/m2]
@@ -1489,15 +1485,6 @@ end subroutine clubb_init_cnst
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
 
-
-   real(r8) :: bcterm(pcols),cpterm_b(pcols,pver) ! Response to tau perturbation, m/s
-   real(r8) :: totale_b(pcols),totale_a(pcols) ! Response to tau perturbation, m/s
-   real(r8) :: loc1(pcols,pver),loc2(pcols,pver), en1(pcols), en2(pcols) 
-   real(r8) :: se1(pcols),ke1(pcols), wl1(pcols), wv1(pcols), lll 
-
-   integer :: icol
-
-
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
@@ -1508,7 +1495,6 @@ end subroutine clubb_init_cnst
    det_ice(:) = 0.0_r8
 #ifdef CLUBB_SGS
 
-   icol = phys_debug_col(state%lchnk)
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
@@ -1575,7 +1561,6 @@ end subroutine clubb_init_cnst
 
    call cnst_get_ind('Q',ixq)
    call cnst_get_ind('CLDLIQ',ixcldliq)
-   call cnst_get_ind('RAINQM',ixrain)
    call cnst_get_ind('CLDICE',ixcldice)
    call cnst_get_ind('NUMLIQ',ixnumliq)
    call cnst_get_ind('NUMICE',ixnumice)
@@ -1869,7 +1854,6 @@ end subroutine clubb_init_cnst
    ke_b = 0._r8
    wv_b = 0._r8
    wl_b = 0._r8
-   wr_b = 0._r8
    do k=1,pver
      do i=1,ncol
        ! use s=c_pT+g*z, total energy needs term c_pT but not gz
@@ -1878,37 +1862,8 @@ end subroutine clubb_init_cnst
        ke_b(i) = ke_b(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)*invrs_gravit
        wv_b(i) = wv_b(i) + state1%q(i,k,ixq)*state1%pdel(i,k)*invrs_gravit
        wl_b(i) = wl_b(i) + state1%q(i,k,ixcldliq)*state1%pdel(i,k)*invrs_gravit
-       wr_b(i) = wr_b(i) + state1%q(i,k,ixrain)*state1%pdel(i,k)/gravit
      enddo
    enddo
-
-
-   !now compare se_b term with cp*T
-   do k=1,pver
-     do i=1,ncol
-       ! use s=c_pT+g*z, total energy needs term c_pT but not gz
-       cpterm_b(i,k) = state1%s(i,k) - gravit*state1%zm(i,k) - state1%phis(i)
-       if ( abs(cpterm_b(i,k) - cpair*state1%T(i,k))> 1e-8 ) then
-               print *, "se_b part and cp*T part", abs(cpterm_b(i,k) - cpair*state1%T(i,k))
-       endif
-
-     enddo
-   enddo
-
-   !bc term
-     do i=1,ncol
-       bcterm(i) = state1%phis(i)*state1%ps(i)/gravit
-!compare total E in state vs clubb
-
-!te_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*wl_b(i)
-!       totale_b(i) = se_b(i) + ke_b(i) + (latvap+latice)*wv_b(i)+latice*(wl_b(i)+wr_b(i))+bcterm(i)
-
-!       print *, "diff SE", state1%se_cur(i)-se_b(i)
-!       print *, 'diff KE', state1%ke_cur(i)-ke_b(i)
-!       print *, 'diff WE', state1%we_cur(i) - ( (latvap+latice)*wv_b(i)+latice*(wl_b(i) + wr_b(i)) )
-      
-     enddo
-
 
    !  Compute virtual potential temperature, which is needed for CLUBB
    do k=1,pver
@@ -2529,8 +2484,6 @@ enddo
       te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
-      !!! OG not yet, do whole column
-
       ! Find first level where wp2 is higher than lowest threshold
       clubbtop = 1
       do while (wp2(i,clubbtop) .eq. w_tol_sqd .and. clubbtop .lt. pver-1)
@@ -2539,7 +2492,6 @@ enddo
 
       ! Compute the disbalance of total energy, over depth where CLUBB is active
       se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop)) * gravit
-!      se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,1)) * gravit
 
       se_dis_k(:) = 0.0
       se_dis_k(clubbtop:pver) = se_dis
@@ -2612,9 +2564,6 @@ enddo
 
    enddo  ! end column loop
    call t_stopf('adv_clubb_core_col_loop')
-
-!print *, 'ICE ',micro_do_icesupersat
-
 
    ! Add constant to ghost point so that output is not corrupted
    if (clubb_do_adv) then
@@ -2722,7 +2671,6 @@ enddo
 
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
-
 
    ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
    ! dry constituents to dry air basis.
@@ -3118,7 +3066,6 @@ enddo
    endif
 
    return
-
 #endif
   end subroutine clubb_tend_cam
 
