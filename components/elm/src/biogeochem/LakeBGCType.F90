@@ -24,8 +24,8 @@ module LakeBGCType
   integer, parameter, public :: small_phyto = 1
   integer, parameter, public :: large_phyto = 2
   ! sediment C pool identifier
-  integer, parameter, public :: pasC = 1
-  integer, parameter, public :: actC = 2
+  integer, parameter, public :: actC = 1
+  integer, parameter, public :: pasC = 2
   ! lake type identifier
   integer, parameter, public :: yedoma_lake = 1
   integer, parameter, public :: thaw_lake = 2
@@ -49,13 +49,15 @@ module LakeBGCType
      real(r8), pointer :: biomas_phyto_col(:,:,:)     ! col phytoplankton biomass (gC/m3)
      real(r8), pointer :: chla_col(:,:)               ! col chlorophyll-a conc (g/m3)
      real(r8), pointer :: soilc_col(:,:,:)            ! col sediment C pools (gC/m3)
+     real(r8), pointer :: totsoilc_col(:)             ! col total sediment C (gC/m2)
+     real(r8), pointer :: totphytoc_col(:)            ! col total phytoplankton biomass (gC/m2)
 
      ! Lake BGC flux variables
      real(r8), pointer :: ch4_sed_diff_col(:)         ! col CH4 diffusion at the water-sediment interface (mol/m2/s)
      real(r8), pointer :: ch4_surf_diff_col(:)        ! col CH4 diffusion at the air-water interface (mol/m2/s)
      real(r8), pointer :: ch4_sed_ebul_col(:)         ! col CH4 ebullition at the water-sediment interface (mol/m2/s)
      real(r8), pointer :: ch4_surf_ebul_col(:)        ! col CH4 ebullition at the air-water interface (mol/m2/s)
-     real(r8), pointer :: ch4_surf_flux_tot_col(:)    ! col total CH4 flux at the air-water interface (kg C/m**2/s)
+     real(r8), pointer :: ch4_surf_totflux_col(:)     ! col total CH4 flux at the air-water interface (kg C/m**2/s)
      real(r8), pointer :: ch4_prod_wat_col(:,:)       ! col water-column depth-resolved CH4 production (mol/m3/s)
      real(r8), pointer :: ch4_prod_sed_col(:,:)       ! col sed-column depth-resolved CH4 production (mol/m3/s)
      real(r8), pointer :: ch4_prod_tot_col(:)         ! col integrated CH4 production (gC/m2/s)
@@ -129,7 +131,7 @@ contains
     allocate( this%ch4_surf_diff_col   (begc:endc))                                  ; this%ch4_surf_diff_col  (:)     = nan
     allocate( this%ch4_sed_ebul_col    (begc:endc))                                  ; this%ch4_sed_ebul_col   (:)     = nan
     allocate( this%ch4_surf_ebul_col   (begc:endc))                                  ; this%ch4_surf_ebul_col  (:)     = nan
-    allocate( this%ch4_surf_flux_tot_col (begc:endc))                                ; this%ch4_surf_flux_tot_col (:)  = nan
+    allocate( this%ch4_surf_totflux_col(begc:endc))                                  ; this%ch4_surf_totflux_col(:)    = nan
     allocate( this%gpp_col             (begc:endc))                                  ; this%gpp_col            (:)     = nan
     allocate( this%npp_col             (begc:endc))                                  ; this%npp_col            (:)     = nan
     allocate( this%ch4_prod_wat_col    (begc:endc,1:nlevlak))                        ; this%ch4_prod_wat_col   (:,:)   = nan
@@ -139,6 +141,8 @@ contains
     allocate( this%ch4_prod_tot_col    (begc:endc))                                  ; this%ch4_prod_tot_col   (:)     = nan
     allocate( this%ch4_oxid_tot_col    (begc:endc))                                  ; this%ch4_oxid_tot_col   (:)     = nan
     allocate( this%nem_col             (begc:endc))                                  ; this%nem_col            (:)     = nan
+    allocate( this%totsoilc_col        (begc:endc))                                  ; this%totsoilc_col       (:)     = nan
+    allocate( this%totphytoc_col       (begc:endc))                                  ; this%totphytoc_col      (:)     = nan
 
   end subroutine InitAllocate
 
@@ -186,6 +190,11 @@ contains
     call hist_addfld1d (fname='CH4_SURF_EBUL_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='ebullition CH4 flux at the lake surface', &
          ptr_col=this%ch4_surf_ebul_col, default='inactive')
+
+    this%ch4_surf_totflux_col(begc:endc) = spval
+    call hist_addfld1d (fname='CH4_SURF_FLUX_LAKE',  units='mol/m^2/s',  &
+         avgflag='A', long_name='total CH4 flux at the lake surface', &
+         ptr_col=this%ch4_surf_totflux_col, default='inactive')
 
     this%gpp_col(begc:endc) = spval
     call hist_addfld1d (fname='GPP_LAKE',  units='gC/m^2/s',  &
@@ -246,10 +255,20 @@ contains
          avgflag='A', long_name='CH4 oxidation in the lake sediment', &
          ptr_col=this%ch4_oxid_sed_col, default='inactive')
 
+    this%ch4_prod_tot_col(begc:endc) = spval
+    call hist_addfld1d (fname='CH4_TOTPROD_LAKE',  units='gC/m^2/s',  &
+         avgflag='A', long_name='total CH4 production in lake', &
+         ptr_col=this%ch4_prod_tot_col, default='inactive')
+
+    this%ch4_oxid_tot_col(begc:endc) = spval
+    call hist_addfld1d (fname='CH4_TOTOXID_LAKE',  units='gC/m^2/s',  &
+         avgflag='A', long_name='total CH4 oxidation in lake', &
+         ptr_col=this%ch4_oxid_tot_col, default='inactive')
+
     this%soilc_col(begc:endc,1:nlevgrnd,1:nsoilclak) = spval
     do k = 1, nsoilclak
        data2dptr => this%soilc_col(:,:,k)
-       write(fieldname, "(A,I0,A)") 'LAKE_SED', k, 'C'
+       write(fieldname, "(A,I0,A)") 'SED', k, 'C_LAKE'
        write(longname, "(A,I0,A)") 'lake sediment ', k, ' C'
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levgrnd', &
             avgflag='A', long_name=longname, ptr_col=data2dptr, default='inactive')
@@ -258,11 +277,21 @@ contains
     this%biomas_phyto_col(begc:endc,1:nlevlak,1:nphytolak) = spval
     do k = 1, nphytolak
        data2dptr => this%biomas_phyto_col(:,:,k)
-       write(fieldname, "(A,I0)") 'LAKE_PHYTO', k
+       write(fieldname, "(A,I0,A)") 'PHYTO', k, 'C_LAKE'
        write(longname, "(A,I0)") 'biomass of lake phytoplankton group', k
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levlak', &
             avgflag='A', long_name=longname, ptr_col=data2dptr, default='inactive')
     end do
+
+    this%totsoilc_col(begc:endc) = spval
+    call hist_addfld1d (fname='TOTSEDC_LAKE',  units='gC/m^2',  &
+         avgflag='A', long_name='total OC in lake sediment', &
+         ptr_col=this%totsoilc_col, default='inactive')
+
+    this%totphytoc_col(begc:endc) = spval
+    call hist_addfld1d (fname='TOTVEGC_LAKE',  units='gC/m^2',  &
+         avgflag='A', long_name='total live phytoplankton biomass in lake', &
+         ptr_col=this%totphytoc_col, default='inactive')
 
     this%chla_col(begc:endc,1:nlevlak) = spval
     call hist_addfld2d (fname='CHLA_LAKE',  units='g/m^3', type2d='levlak', &
@@ -370,7 +399,7 @@ contains
        this%ch4_surf_diff_col(c)                      = 0._r8
        this%ch4_sed_ebul_col(c)                       = 0._r8
        this%ch4_surf_ebul_col(c)                      = 0._r8
-       this%ch4_surf_flux_tot_col(c)                  = 0._r8
+       this%ch4_surf_totflux_col(c)                   = 0._r8
        this%gpp_col(c)                                = 0._r8
        this%npp_col(c)                                = 0._r8
        this%ch4_prod_wat_col(c,1:nlevlak)             = 0._r8
@@ -399,7 +428,7 @@ contains
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
           this%ch4_surf_ebul_col(c)                   = spval
-          this%ch4_surf_flux_tot_col(c)               = spval
+          this%ch4_surf_totflux_col(c)                = spval
           this%gpp_col(c)                             = spval
           this%npp_col(c)                             = spval
           this%ch4_prod_wat_col(c,:)                  = spval
@@ -434,11 +463,11 @@ contains
           
           do j = 1, nlevgrnd
              if (j<=nlevsoi) then
+                this%soilc_col(c,j,actC)              = 0.05e3 * carbon * exp(-zisoifl(j)) 
                 this%soilc_col(c,j,pasC)              = 0.95e3 * carbon * exp(-zisoifl(j)) 
-                this%soilc_col(c,j,actC)              = 0.05e3 * carbon * exp(-zisoifl(j))
              else
-                this%soilc_col(c,j,pasC)              = 0._r8
                 this%soilc_col(c,j,actC)              = 0._r8
+                this%soilc_col(c,j,pasC)              = 0._r8
              end if
           end do
        end if
@@ -571,27 +600,27 @@ contains
          readvar=readvar, interpinic_flag='interp', data=this%chla_col)
 
     data2dptr => this%biomas_phyto_col(:,:,small_phyto)
-    call restartvar(ncid=ncid, flag=flag, varname='LAKE_PHYTO1', xtype=ncd_double, &
+    call restartvar(ncid=ncid, flag=flag, varname='PHYTO1C_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='small phytoplankton lake biomass', units='gC/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)    
 
     data2dptr => this%biomas_phyto_col(:,:,large_phyto)
-    call restartvar(ncid=ncid, flag=flag, varname='LAKE_PHYTO2', xtype=ncd_double, &
+    call restartvar(ncid=ncid, flag=flag, varname='PHYTO2C_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='large phytoplankton lake biomass', units='gC/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
 
-    data2dptr => this%soilc_col(:,:,pasC)
-    call restartvar(ncid=ncid, flag=flag, varname='LAKE_SED1C', xtype=ncd_double, &
-         dim1name='column', dim2name='levgrnd', switchdim=.true., &
-         long_name='passive sediment C', units='gC/m^3', &
-         readvar=readvar, interpinic_flag='interp', data=data2dptr)
-
     data2dptr => this%soilc_col(:,:,actC)
-    call restartvar(ncid=ncid, flag=flag, varname='LAKE_SED2C', xtype=ncd_double, &
+    call restartvar(ncid=ncid, flag=flag, varname='SED1C_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
          long_name='active sediment C', units='gC/m^3', &
+         readvar=readvar, interpinic_flag='interp', data=data2dptr)
+
+    data2dptr => this%soilc_col(:,:,pasC)
+    call restartvar(ncid=ncid, flag=flag, varname='SED2C_LAKE', xtype=ncd_double, &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='passive sediment C', units='gC/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
 
   end subroutine Restart

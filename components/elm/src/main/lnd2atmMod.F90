@@ -357,7 +357,7 @@ contains
 
     if (use_lake_bgc) then
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
     end if
@@ -370,7 +370,7 @@ contains
             c2l_scale_type= unity, l2g_scale_type=unity )
 
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
 
@@ -384,7 +384,7 @@ contains
             c2l_scale_type= unity, l2g_scale_type=unity )
     else if (use_lake_bgc) then
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
        do g = bounds%begg, bounds%endg

@@ -8,6 +8,7 @@ module LakeBGCDynMod
    use shr_log_mod       , only : errMsg => shr_log_errMsg
    use decompMod         , only : bounds_type
    use abortutils        , only : endrun
+   use elm_varctl        , only : spinup_state
    use LakeStateType     , only : lakestate_type
    use SoilStateType     , only : soilstate_type
    use GridcellType      , only : grc_pp
@@ -75,6 +76,9 @@ module LakeBGCDynMod
       real(r8) :: Ko2
       ! oxic CH4 production rate to photosynthesis (mol CH4/m3/s (mol O2/m3/s)-1)
       real(r8) :: Rcoxic
+
+      ! multipliers for soil decomp and deposition during accelerated spinup
+      real(r8) :: spinup_factor
    end type
    type(LakeBGCParamsType), private ::  LakeBGCParamsInst
 
@@ -174,35 +178,34 @@ contains
       !----------------------------------------------------------------------- 
       
       associate(                                                     &
-            dz_lake              => col_pp%dz_lake                      , & ! Input: [real(r8) (:,:)] layer thickness for lake (m)          
-            z_lake               => col_pp%z_lake                       , & ! Input: [real(r8) (:,:)] layer depth for lake (m)
-            dz                   => col_pp%dz                           , & ! Input: [real(r8) (:,:)] layer thickness (m)                   
-            z                    => col_pp%z                            , & ! Input: [real(r8) (:,:)] layer depth (m)                       
-            lakedepth            => col_pp%lakedepth                    , & ! Input: [real(r8) (:)] column lake depth (m)
+            dz_lake              => col_pp%dz_lake                      , & ! Input: [real(r8) (:,:)] layer thickness for lake [m]       
+            z_lake               => col_pp%z_lake                       , & ! Input: [real(r8) (:,:)] layer depth for lake [m]
+            dz                   => col_pp%dz                           , & ! Input: [real(r8) (:,:)] layer thickness [m]              
+            z                    => col_pp%z                            , & ! Input: [real(r8) (:,:)] layer depth [m]                       
+            lakedepth            => col_pp%lakedepth                    , & ! Input: [real(r8) (:)] column lake depth [m]
 
-            t_lake               => col_es%t_lake                       , & ! Input: [real(r8) (:,:)] col lake temperature (Kelvin) 
-            t_soisno             => col_es%t_soisno                     , & ! Input: [real(r8) (:,:)] soil (or snow) temperature (Kelvin)
+            t_lake               => col_es%t_lake                       , & ! Input: [real(r8) (:,:)] col lake temperature [Kelvin] 
+            t_soisno             => col_es%t_soisno                     , & ! Input: [real(r8) (:,:)] soil (or snow) temperature [Kelvin]
 
-            forc_pbot            => top_as%pbot                         , & ! Input: [real(r8) (:)] atmospheric pressure (Pa)
-            forc_wind            => top_as%windbot                      , & ! Input: [real(r8) (:)] horizontal component of wind at atmospheric forcing height (m/s)
-            forc_po2             => top_as%po2bot                       , & ! Input: [real(r8) (:)] O2 partial pressure (Pa)
-            forc_pco2            => top_as%pco2bot                      , & ! Input: [real(r8) (:)] CO2 partial pressure (Pa)      
-            forc_pch4            => top_as%pch4bot                      , & ! Input: [real(r8) (:)] CH4 partial pressure (Pa)
+            forc_pbot            => top_as%pbot                         , & ! Input: [real(r8) (:)] atmospheric pressure [Pa]
+            forc_wind            => top_as%windbot                      , & ! Input: [real(r8) (:)] horizontal component of wind at atmospheric forcing height [m/s]
+            forc_po2             => top_as%po2bot                       , & ! Input: [real(r8) (:)] O2 partial pressure [Pa]
+            forc_pco2            => top_as%pco2bot                      , & ! Input: [real(r8) (:)] CO2 partial pressure [Pa]      
+            forc_pch4            => top_as%pch4bot                      , & ! Input: [real(r8) (:)] CH4 partial pressure [Pa]
 
             watsat               => soilstate_vars%watsat_col           , & ! Input: [real(r8) (:,:)] volumetric soil water at saturation (porosity)
 
             kme                  => lakestate_vars%lake_kme_col         , & ! Input: [real(r8) (:,:)] lake water and sediment heat diffusivity [m2/s]
             hmix                 => lakestate_vars%lake_hmix_col        , & ! Input: [real(r8) (:)] lake mixing layer depth [m]
-            icethick             => lakestate_vars%lake_icethick_col    , & ! Input: [real(r8) (:)] ice thickness (m) (integrated if lakepuddling)
+            icethick             => lakestate_vars%lake_icethick_col    , & ! Input: [real(r8) (:)] ice thickness [m] (integrated if lakepuddling)
             icefrac              => lakestate_vars%lake_icefrac_col     , & ! Input: [real(r8) (:,:)] mass fraction of lake layer that is frozen
-            fsds_vis             => lakestate_vars%lake_fsds_vis_col    , & ! Input: [real(r8) (:,:)] incident vis radiation (W/m^2)
 
             lake_tp              => lakebgc_vars%tp_col                 , & ! Input: [real(r8) (:)] lake column mean total phosphorus [gP/m3]
             lake_ph              => lakebgc_vars%ph_col                 , & ! Input: [real(r8) (:)] lake column mean water pH
             lake_sdep            => lakebgc_vars%sdep_col               , & ! Input: [real(r8) (:)] lake column mean sediment deposition [g/m2/yr]
 
-            nem_lake_grc         => lnd2atm_vars%nem_lake_grc           , & ! Output: [real(r8) (:)] gridcell average net methane correction to CO2 flux (g C/m^2/s)
-          
+            nem_lake_grc         => lnd2atm_vars%nem_lake_grc           , & ! Output: [real(r8) (:)] gridcell average net methane correction to CO2 flux [g C/m^2/s]
+
             conc_gas_wat         => lakebgc_vars%conc_wat_col           , & ! Output: [real(r8) (:,:,:)] lake dissolved gas [mol/m3]
             conc_gas_sed         => lakebgc_vars%conc_sed_col           , & ! Output: [real(r8) (:,:,:)] sediment dissolved gas [mol/m3]
             conc_bubl            => lakebgc_vars%conc_bubl_col          , & ! Output: [real(r8) (:,:,:)] lake bubble gas [mol/m3]
@@ -213,15 +216,17 @@ contains
             ch4_surf_diff        => lakebgc_vars%ch4_surf_diff_col      , & ! Output: [real(r8) (:)] lake ch4 diffusion at air-water interface [mol/m2/s]
             ch4_sed_ebul         => lakebgc_vars%ch4_sed_ebul_col       , & ! Output: [real(r8) (:)] lake ch4 ebullition at water-sediment interface [mol/m2/s]
             ch4_surf_ebul        => lakebgc_vars%ch4_surf_ebul_col      , & ! Output: [real(r8) (:)] lake ch4 ebullition at air-water interface [mol/m2/s]
-            ch4_surf_flux_tot    => lakebgc_vars%ch4_surf_flux_tot_col  , & ! Output: [real(r8) (:)] lake ch4 total flux at air-water interface [kgC/m2/s]
+            ch4_surf_totflux     => lakebgc_vars%ch4_surf_totflux_col   , & ! Output: [real(r8) (:)] lake ch4 total flux at air-water interface [kgC/m2/s]
             ch4_prod_wat         => lakebgc_vars%ch4_prod_wat_col       , & ! Output: [real(r8) (:,:)] lake ch4 production rate [mol/m3/s]
             ch4_prod_sed         => lakebgc_vars%ch4_prod_sed_col       , & ! Output: [real(r8) (:,:)] sediment ch4 production rate [mol/m3/s]
             ch4_oxid_wat         => lakebgc_vars%ch4_oxid_wat_col       , & ! Output: [real(r8) (:,:)] lake ch4 oxidation rate [mol/m3/s]
             ch4_oxid_sed         => lakebgc_vars%ch4_oxid_sed_col       , & ! Output: [real(r8) (:,:)] sediment ch4 oxidation rate [mol/m3/s]
             ch4_prod_tot         => lakebgc_vars%ch4_prod_tot_col       , & ! Output: [real(r8) (:)] lake total CH4 production rate [gC/m2/s]
             ch4_oxid_tot         => lakebgc_vars%ch4_oxid_tot_col       , & ! Output: [real(r8) (:)] lake total CH4 oxidation rate [gC/m2/s]
-            nem_col              => lakebgc_vars%nem_col                , & ! Output: [real(r8) (:)] net adjustment to atm. C flux from methane production (g C/m**2/s)
-            lake_soilc           => lakebgc_vars%soilc_col              & ! Output: [real(r8) (:,:,:)] lake sediment carbon pools (gC/m3)
+            nem_col              => lakebgc_vars%nem_col                , & ! Output: [real(r8) (:)] net adjustment to atm. C flux from methane production [g C/m**2/s]
+            lake_soilc           => lakebgc_vars%soilc_col              , & ! Output: [real(r8) (:,:,:)] lake sediment carbon pools [gC/m3]
+            totsoilc             => lakebgc_vars%totsoilc_col           , & ! Output: [real(r8) (:)] sediment total OC [gC/m2]
+            totphytoc            => lakebgc_vars%totphytoc_col          & ! Output: [real(r8) (:)] lake total phytoplankton biomass [gC/m2]
             )
 
       ! Get time step
@@ -235,7 +240,7 @@ contains
          c = filter_lakec(fc)
          t = col_pp%topounit(c)
 
-         ch4_surf_flux_tot(c) = 0._r8
+         ch4_surf_totflux(c) = 0._r8
          ch4_prod_tot(c) = 0._r8
          ch4_oxid_tot(c) = 0._r8
 
@@ -528,7 +533,7 @@ contains
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
-         ch4_surf_flux_tot(c) = 1e-3_r8 * catomw * (ch4_surf_diff(c) + ch4_surf_ebul(c))
+         ch4_surf_totflux(c) = 1e-3_r8 * catomw * (ch4_surf_diff(c) + ch4_surf_ebul(c))
 
          do j = 1, nlevlak
             ch4_prod_tot(c) = ch4_prod_tot(c) + ch4_prod_wat(c,j)*dz_lake(c,j)*catomw
@@ -701,6 +706,18 @@ contains
          end if
       end do
 
+      ! total phytoplankton biomass
+      do fc = 1, num_lakec
+         c = filter_lakec(fc)
+         
+         totphytoc(c) = 0._r8
+         do j = 1, nlevlak
+            do k = 1, nphytolak
+               totphytoc(c) = totphytoc(c) + biomas_phyto(c,j,k)*dz_lake(c,j)  
+            end do
+         end do
+      end do
+
       ! update sediment C pools
       do fc = 1, num_lakec
          c = filter_lakec(fc)
@@ -714,13 +731,19 @@ contains
 
          ! POC deposition (Tan et al., 2017)
          cdep = 0.061_r8 * lake_sdep(c)**0.766_r8 / 3.1536e7_r8
+         if (spinup_state==1) then
+            cdep = LakeBGCParamsInst%spinup_factor * cdep
+         end if
 
          ! deposition thickness (m)
-         zsoi_inc = lake_sdep(c)/3.1536e7_r8 + max(bphyto_dep_tot(c),0._r8)
+         zsoi_inc = max(bphyto_dep_tot(c),0._r8) + lake_sdep(c)/3.1536e7_r8 
          do k = 1, nphytolak
             zsoi_inc = zsoi_inc + bphyto_dead(c,k)
          end do
          zsoi_inc = 1e-3_r8 * zsoi_inc / 1.4e3_r8 * dtime 
+         if (spinup_state==1) then
+            zsoi_inc = LakeBGCParamsInst%spinup_factor * zsoi_inc
+         end if
 
          ! deposition and compaction
          do j = 1, nlevsoi
@@ -729,16 +752,32 @@ contains
                   0.05_r8*cdep/dz(c,j)*dtime
                lake_soilc(c,j,pasC) = lake_soilc(c,j,pasC)*(1._r8-zsoi_inc/dz(c,j)) + &
                   0.95_r8*cdep/dz(c,j)*dtime
-               do k = 1, nphytolak
-                  lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dead(c,k)/dz(c,j)*dtime
-               end do 
-               lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dep_tot(c)/dz(c,j)*dtime
+               if (spinup_state==1) then
+                  do k = 1, nphytolak
+                     lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dead(c,k)* &
+                        LakeBGCParamsInst%spinup_factor/dz(c,j)*dtime
+                  end do 
+                  lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dep_tot(c)* &
+                     LakeBGCParamsInst%spinup_factor/dz(c,j)*dtime
+               else
+                  do k = 1, nphytolak
+                     lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dead(c,k)/dz(c,j)*dtime
+                  end do
+                  lake_soilc(c,j,actC) = lake_soilc(c,j,actC) + bphyto_dep_tot(c)/dz(c,j)*dtime  
+               end if
             else
                lake_soilc(c,j,:) = lake_soilc(c,j,:)*(1._r8-zsoi_inc/dz(c,j)) + &
                   lake_soilc(c,j-1,:)*zsoi_inc/dz(c,j)
             end if
             lake_soilc(c,j,actC) = max(0._r8, lake_soilc(c,j,actC))
             lake_soilc(c,j,pasC) = max(0._r8, lake_soilc(c,j,pasC))
+         end do
+
+         totsoilc(c) = 0._r8
+         do j = 1, nlevsoi
+            do k = 1, nphytolak
+               totsoilc(c) = totsoilc(c) + lake_soilc(c,j,k)*dz(c,j)
+            end do
          end do
 
       end do
@@ -764,8 +803,8 @@ contains
       integer,  intent(in) :: gas      ! gas index
       !
       ! !LOCAL VARIABLES:
-      real(r8), parameter :: SOLO2(11) = (/14.6, 12.8, 11.3, 10.1, &
-                              9.1, 8.3, 7.6, 7.0, 6.5, 6.0, 5.6/)
+      real(r8), parameter :: SOLO2(11) = (/14.6_r8, 12.8_r8, 11.3_r8, 10.1_r8, &
+                              9.1_r8, 8.3_r8, 7.6_r8, 7.0_r8, 6.5_r8, 6.0_r8, 5.6_r8/)
       real(r8) :: hi, kc1, kc2, par
       integer  :: indx 
       !--------------------------------------------------------------------
@@ -1032,7 +1071,7 @@ contains
       real(r8)               , intent(out) :: eb_sed(1:ngaslak)         ! ebullition rate (mol/m3/s)
       !
       ! !CONSTANTS
-      real(r8), parameter :: Ae = 0.4                 ! relative concentration at which ebullition begins
+      real(r8), parameter :: Ae = 0.4_r8     ! relative concentration at which ebullition begins
       !
       ! !LOCAL VARIABLES:
       real(r8) :: temp, por, depth
@@ -1122,8 +1161,8 @@ contains
       !
       ! !CONSTANTS:
       integer,  parameter :: nrlev = 11   ! bubble size number
-      real(r8), parameter :: Rb0(11) = (/2.5, 3.25, 4.0, 4.75, 5.5, &
-                              6.25, 7.0, 7.75, 8.5, 9.25, 10.0/)  ! mm
+      real(r8), parameter :: Rb0(11) = (/2.5_r8, 3.25_r8, 4.0_r8, 4.75_r8, 5.5_r8, &
+                              6.25_r8, 7.0_r8, 7.75_r8, 8.5_r8, 9.25_r8, 10.0_r8/)  ! mm
       !
       ! !LOCAL VARIABLES:
       integer  :: rindx, locindx
@@ -1340,7 +1379,8 @@ contains
       real(r8)               , intent(inout) :: gsnk(1:nlevlak+nlevsoi,1:ngaslak)   ! mol/m3/s   
       !
       ! !CONSTANTS
-      real(r8), parameter :: ThetaG = 1.08   ! temperature multiplier for phytoplankton growth
+      real(r8), parameter :: chla_max = 155e-3_r8  ! the maximum allowed chla (g/m3)
+      real(r8), parameter :: ThetaG = 1.08_r8      ! temperature multiplier for phytoplankton growth
       real(r8), parameter :: kt(nphytolak) = (/1.93841_r8, 12.76830_r8/)
       real(r8), parameter :: at(nphytolak) = (/29.27777_r8, 21.67022_r8/)
       real(r8), parameter :: bt(nphytolak) = (/0.28991_r8, 0.21632_r8/)
@@ -1374,8 +1414,8 @@ contains
             conc_gas_wat   => lakebgc_vars%conc_wat_col        , & ! Input: [real(r8) (:,:,:)] lake dissolved gas [mol/m3]
             biomas_phyto   => lakebgc_vars%biomas_phyto_col    , & ! Input: [real(r8) (:,:,:)] phytoplankton biomass (gC/m3)
 
-            lake_gpp    => lakebgc_vars%gpp_col                , & ! Output: [real(r8) (:)] depth-integrated gross primary production (gC/m2/s)
-            lake_chla   => lakebgc_vars%chla_col               & ! Output: [real(r8) (:,:)] chlorophyll-a conc (g/m3)
+            lake_gpp       => lakebgc_vars%gpp_col             , & ! Output: [real(r8) (:)] depth-integrated gross primary production (gC/m2/s)
+            lake_chla      => lakebgc_vars%chla_col            & ! Output: [real(r8) (:,:)] chlorophyll-a conc (g/m3)
             )
 
       ipar0 = 1e-6 * 4.6 * fsds_vis(c,1)   ! surface incident vis radiation (mol/m2/s) 
@@ -1427,7 +1467,7 @@ contains
                c2chl = C2Chlmax(k)
             end if
 
-            chla = biomas_phyto(c,j,k) * (1._r8 - icefrac(c,j)) / c2chl
+            chla = min( chla_max, biomas_phyto(c,j,k)*(1._r8-icefrac(c,j))/c2chl )
             lake_chla(c,j) = lake_chla(c,j) + chla
 
             ! radiation factor
@@ -1596,10 +1636,10 @@ contains
          c_o2 = conc_gas_sed(c,j,go2lak)
 
          do k = 1, nsoilclak
-            if (k==pasC) then
-               Rca = LakeBGCParamsInst%Rcapas
-            else if (k==actC) then
+            if (k==actC) then
                Rca = LakeBGCParamsInst%Rcaact
+            else if (k==pasC) then
+               Rca = LakeBGCParamsInst%Rcapas
             end if
             pco2_soilc = Rca * (ThetaCM**(ts-20._r8)) * (c_o2/(Ko2CM+c_o2)) * &
                lake_soilc(c,j,k) / catomw
@@ -1607,7 +1647,12 @@ contains
             gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak)  + pco2_soilc
             gsnk(j+nlevlak,go2lak)  = gsnk(j+nlevlak,go2lak)   + pco2_soilc
 
-            soilc_loss(j,k) = soilc_loss(j,k) + catomw * pco2_soilc
+            if (spinup_state==1) then
+               soilc_loss(j,k) = soilc_loss(j,k) + catomw * pco2_soilc * &
+                  LakeBGCParamsInst%spinup_factor
+            else
+               soilc_loss(j,k) = soilc_loss(j,k) + catomw * pco2_soilc
+            end if
          end do
       end do
 
@@ -1638,7 +1683,7 @@ contains
       !
       ! !CONSTANTS
       real(r8), parameter :: etaO2 = 4e2_r8  ! O2 suppression coefficient (m3 water mol-1) 
-      real(r8), parameter :: Tpr(nsoilclak) = (/276.65_r8,273.15_r8/)   ! CH4 production reference temperature (K)
+      real(r8), parameter :: Tpr(nsoilclak) = (/273.15_r8,276.65_r8/)   ! CH4 production reference temperature (K)
       real(r8), parameter :: pHmin = 2.2_r8  ! minimum allowable pH for CH4 production
       real(r8), parameter :: pHmax = 9.0_r8  ! maximum allowable pH for CH4 production
       real(r8), parameter :: oldcarb0 = 29.3e3_r8  ! yedoma permafrost C (gC/m3)
@@ -1704,20 +1749,7 @@ contains
          
          ch4_prod_sed(c,j) = 0._r8
          do k = 1, nsoilclak
-            if (k==pasC) then
-               ! passive C mainly through hydrogenotrophic methanogenesis
-               Rc = LakeBGCParamsInst%Rcpas 
-               PQ10 = LakeBGCParamsInst%PQ10pas
-               ftemp = PQ10**(0.1_r8*(ts-Tpr(k)))
-               
-               pch4_soilc = 0.25_r8 * Rc * ftemp * fo2 * fph * lake_soilc(c,j,k) / catomw
-               pch4_soilc_yedoma = 0._r8
-
-               gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc
-               gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + 3._r8*pch4_soilc
-
-               soilc_loss(j,k) = soilc_loss(j,k) + 4._r8*catomw*pch4_soilc
-            else if (k==actC) then
+            if (k==actC) then
                ! active C mainly through acetoclastic methanogenesis
                Rc = LakeBGCParamsInst%Rcact
                PQ10 = LakeBGCParamsInst%PQ10act
@@ -1733,7 +1765,30 @@ contains
                gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc + pch4_soilc_yedoma
                gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + pch4_soilc + pch4_soilc_yedoma
 
-               soilc_loss(j,k) = soilc_loss(j,k) + 2._r8*catomw*pch4_soilc
+               if (spinup_state==1) then
+                  soilc_loss(j,k) = soilc_loss(j,k) + 2._r8 * catomw * pch4_soilc * &
+                     LakeBGCParamsInst%spinup_factor
+               else
+                  soilc_loss(j,k) = soilc_loss(j,k) + 2._r8 * catomw * pch4_soilc
+               end if
+            else if (k==pasC) then
+               ! passive C mainly through hydrogenotrophic methanogenesis
+               Rc = LakeBGCParamsInst%Rcpas
+               PQ10 = LakeBGCParamsInst%PQ10pas
+               ftemp = PQ10**(0.1_r8*(ts-Tpr(k)))
+
+               pch4_soilc = 0.25_r8 * Rc * ftemp * fo2 * fph * lake_soilc(c,j,k) / catomw
+               pch4_soilc_yedoma = 0._r8
+
+               gsrc(j+nlevlak,gch4lak) = gsrc(j+nlevlak,gch4lak) + pch4_soilc
+               gsrc(j+nlevlak,gco2lak) = gsrc(j+nlevlak,gco2lak) + 3._r8*pch4_soilc
+
+               if (spinup_state==1) then
+                  soilc_loss(j,k) = soilc_loss(j,k) + 4._r8 * catomw * pch4_soilc * &
+                     LakeBGCParamsInst%spinup_factor
+               else
+                  soilc_loss(j,k) = soilc_loss(j,k) + 4._r8 * catomw * pch4_soilc
+               end if
             end if
 
             ch4_prod_sed(c,j) = ch4_prod_sed(c,j) + pch4_soilc + pch4_soilc_yedoma
@@ -1829,6 +1884,7 @@ contains
       ! !USES:
       use shr_kind_mod , only : r8 => shr_kind_r8
       use ncdio_pio    , only : file_desc_t,ncd_io
+      use elm_varpar   , only : nsoilclak
       !
       ! !ARGUMENTS:
       implicit none
@@ -1841,6 +1897,7 @@ contains
       real(r8)           :: tempr ! temporary to read in constant
       character(len=100) :: tString ! temp. var for reading
    !-----------------------------------------------------------------------
+      LakeBGCParamsInst%spinup_factor = 100._r8 
 
       tString='Vchs'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
