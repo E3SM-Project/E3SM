@@ -238,7 +238,7 @@ void run(std::mt19937_64& engine)
   // DSE property tests:
   //  - calculate_dse(T=0.0, z=0.0) = surf_height
   //  - calculate_dse(T=1/cp, z=1/gravity) = surf_height+2
-  //  - calculate_temperature_from_dse(dse=cp, z=cp/gravity) = -surf_height/cp
+  //  - calculate_temperature_from_dse(dse=cp, z=cp/gravity) = -1.0*surf_height/cp (up to roundoff errors)
   //  - calculate_dse and calculate_temperature_from_dse are one the inverse of the other (up to roundoff errors)
   surf_height = pdf_surface(engine);
   z0          = pdf_height(engine);
@@ -246,7 +246,8 @@ void run(std::mt19937_64& engine)
   T0          = pdf_temp(engine);
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
-  REQUIRE( Check::equal(PF::calculate_temperature_from_dse(ScalarT(cp),ScalarT(cp/g),surf_height),ScalarT(-surf_height/cp)) );
+  REQUIRE( Check::approx_equal(PF::calculate_temperature_from_dse(ScalarT(cp),ScalarT(cp/g),surf_height),
+                               ScalarT(-1.0*surf_height/cp), test_tol) );
   REQUIRE( Check::approx_equal(PF::calculate_dse(PF::calculate_temperature_from_dse(dse0,z0,surf_height),
                                z0,surf_height),dse0,test_tol) );
   REQUIRE( Check::approx_equal(PF::calculate_temperature_from_dse(PF::calculate_dse(T0,z0,surf_height),
