@@ -174,6 +174,10 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 sim_year="1950" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/20210802.ICRUELM-1950.ne30pg2_EC30to60E2r2.elm.r.0051-01-01-00000.nc
 </finidat>
 
+<finidat hgrid="ne30np4.pg2" maxpft="17" mask="SOwISC12to60E2r4" use_cn=".false." ic_ymd="19500101" more_vertlayers=".false."
+sim_year="1950" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/20210817.ICRUELM-1950.ne30pg2_SOwISC12to60E2r4.elm.r.0051-01-01-00000.nc
+</finidat>
+
 <!-- HOMME grid ne120 resolution -->
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
