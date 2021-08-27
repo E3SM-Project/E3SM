@@ -46,6 +46,8 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
+  # USE_CUDA is set through Macros.cmake / config_compilers.xml
+  # If it exists, then set parent's scope to true; otherwise to false
   if (USE_CUDA)
     set(USE_CUDA TRUE PARENT_SCOPE)
   else()

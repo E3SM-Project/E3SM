@@ -356,8 +356,8 @@ gfortran:
 gfortran-clang:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
-	"CC_PARALLEL = mpicc -cc=clang" \
-	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
@@ -673,6 +673,8 @@ ifneq (, $(shell ls $(LAPACK)/liblapack.*))
 	LIBS += -L$(LAPACK)
 else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
 	LIBS += -L$(LAPACK)/lib
+else ifneq (, $(shell ls $(LAPACK)/lib64/liblapack.*))
+	LIBS += -L$(LAPACK)/lib64
 else
 $(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)
 endif
@@ -930,7 +932,13 @@ ifdef MPAS_EXTERNAL_CPPFLAGS
 endif
 ####################################################
 ifeq "$(USE_PIO2)" "true"
-	override LIBS += -lstdc++
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+    	override LIBS += -lc++
+    else
+    	override LIBS += -lstdc++
+    endif
+
 endif
 
 ifeq "$(CONTINUE)" "true"

@@ -200,7 +200,7 @@ module ocn_time_integration
          timeIntegratorChoice = timeIntUnsplitExplicit
          call ocn_time_integration_split_init(domain)
 
-      case ('semi_implicit')
+      case ('split_implicit')
          timeIntegratorChoice = timeIntSemiImplicit
          call ocn_time_integration_si_init(domain, dt)
 
@@ -216,7 +216,7 @@ module ocn_time_integration
             'Incorrect choice for config_time_integrator:' // &
              trim(config_time_integrator) // &
              '   choices are: RK4, split_explicit, ' // &
-                 'unsplit_explicit, semi_implicit', MPAS_LOG_ERR)
+                 'unsplit_explicit, split_implicit', MPAS_LOG_ERR)
 
       end select
 

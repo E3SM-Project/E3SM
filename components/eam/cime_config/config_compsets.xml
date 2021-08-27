@@ -57,6 +57,11 @@
   </compset>
 
   <compset>
+    <alias>F20TR-MPASSI</alias>
+    <lname>20TR_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F2010SC5-CMIP6</alias>
     <lname>2010S_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
@@ -67,13 +72,13 @@
   </compset>
 
   <compset>
-    <alias>FSCM5A97</alias>
-    <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F2010-MPASSI</alias>
+    <lname>2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>F2010SC5-CMIP6-MPASSI</alias>
-    <lname>2010S_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>FSCM5A97</alias>
+    <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -243,18 +248,6 @@
   <!-- ****************************************** -->
 
   <!-- ********** F compsets ********** -->
-
-  <!-- Old MMF compsets for comparing with original ECP fork -->
-  <compset>
-    <alias>FSP1V1</alias>
-    <lname>2000_EAM%SP1V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>FSP2V1</alias>
-    <lname>2000_EAM%SP2V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <!-- New MMF compsets for new implementation in E3SM repo -->
   <compset>
     <alias>F-MMF1</alias>
     <lname>2000_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
@@ -270,6 +263,25 @@
   <compset>
     <alias>F-MMF2-ECPP</alias>
     <lname>2000_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <!-- MMF compsets for stand-alone single column mode of EAM -->
+  <compset>
+    <alias>F-MMF1-SCM-ARM97</alias>
+    <lname>AR97_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-SCM-ARM97</alias>
+    <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F-MMF1-SCM-RICO</alias>
+    <lname>RICO_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-SCM-RICO</alias>
+    <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
@@ -298,12 +310,15 @@
 	<value  compset="C2R4_EAM">2004-01-01</value>
 	<value  compset="AR95_EAM">1995-07-18</value>
 	<value  compset="AR97_EAM">1997-06-19</value>
+	<value  compset="RICO_EAM">2004-12-16</value>
       </values>
     </entry>
 
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
+	<value  compset="EAM%SCAM">GREGORIAN</value>
+	<value  compset="EAM%MMF[12OX]*-SCM">GREGORIAN</value>
       </values>
     </entry>
 
@@ -311,6 +326,7 @@
       <values>
 	<value  compset="AR95_EAM">19800</value>
 	<value  compset="AR97_EAM">84585</value>
+	<value  compset="RICO_EAM">0</value>
       </values>
     </entry>
 
@@ -318,6 +334,7 @@
       <values>
 	<value compset="AR95_EAM">ndays</value>
 	<value compset="AR97_EAM">ndays</value>
+	<value compset="RICO_EAM">ndays</value>
       </values>
     </entry>
 
@@ -325,12 +342,14 @@
       <values>
 	<value compset="AR95_EAM">2</value>
 	<value compset="AR97_EAM">29</value>
+	<value compset="RICO_EAM">1</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
 	<value compset="AR97_EAM">USGS</value>
+	<value compset="RICO_EAM">USGS</value>
       </values>
     </entry>
 
@@ -340,15 +359,23 @@
       </values>
     </entry>
 
+    <entry id="PTS_MODE">
+      <values>
+        <value compset="EAM%MMF[12XO]*-SCM">TRUE</value>
+      </values>
+    </entry>
+    
     <entry id="PTS_LAT">
       <values>
         <value compset="AR9[57]_EAM">36.6</value>
+        <value compset="RICO_EAM">17.97</value>
       </values>
     </entry>
 
     <entry id="PTS_LON">
       <values>
         <value compset="AR9[57]_EAM">262.5</value>
+        <value compset="RICO_EAM">298.54</value>
       </values>
     </entry>
 

@@ -3981,18 +3981,6 @@ Initialize with observed aerosols from IOP file.
 Default: FALSE
 </entry>
 
-<entry id="swrad_off" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Assume night time (turn off SW rad).
-Default: FALSE
-</entry>
-
-<entry id="lwrad_off" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Turn off LW radiation computation.
-Default: FALSE
-</entry>
-
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
 Turn off microphysics computation.
@@ -4066,6 +4054,18 @@ Default: false
        group="phys_ctl_nl" valid_values="m2005, sam1mom" >
 Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
+</entry>
+
+<entry id="MMF_orientation_angle" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Angle of CRM domain in degrees used to apply large scale wind forcing.
+Default value depends on whether CRM domain is 2D or 3D. For 2D runs a value 
+of 90deg used for a south-north orientation to reduce precipitation biases
+that tend to occur when the CRM aligns with the prevailing wind.
+A value of -1 enables an experimental randomly rotating CRM orientation.
+Defaults: 
+  2D CRM: 90 (i.e. north-south)
+  3D CRM: 0
 </entry>
 
 <entry id="MMF_VT_wn_max" type="real" category="conv"

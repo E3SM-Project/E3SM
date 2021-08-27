@@ -336,10 +336,6 @@ def get_use_vertex(filenameIn):
 
 def strain_scaling():
 
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
-
     strains = ["dfdx","dfdy"]
 
     operatorMethods = ["wachspress","pwl","weak","wachspress_avg","pwl_avg","weak_avg"]
@@ -393,7 +389,26 @@ def strain_scaling():
     strainLabels = {"dfdx":r"(a) $\partial{f}/\partial{x}$",
                     "dfdy":r"(b) $\partial{f}/\partial{y}$"}
 
-    fig, axes = plt.subplots(1,2,figsize=(7.2,3))
+    ylabels = {"dfdx":r"$L_2$ error norm",
+               "dfdy":None}
+
+
+    cm = 1/2.54  # centimeters in inches
+    plt.rc('font', family="Times New Roman")
+    plt.rc('mathtext',fontset="stix")
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 8
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
+    fig, axes = plt.subplots(1,2,figsize=(15*cm,7*cm))
 
     iStrain = 0
     for strain in strains:
@@ -473,9 +488,9 @@ def strain_scaling():
         #axes[iStrain].legend(frameon=False, loc=4, fontsize=8, handlelength=2)
 
         axes[iStrain].set_xlabel("Grid resolution")
-        axes[iStrain].set_ylabel(r"$L_2$ error norm")
-        axes[iStrain].set_title(strainLabels[strain])
-        #axes[iStrain].set_ylim(3.5e-5,0.15)
+        axes[iStrain].set_ylabel(ylabels[strain])
+        axes[iStrain].set_title(strainLabels[strain],loc="left")
+        axes[iStrain].set_ylim(None,0.25)
         axes[iStrain].set_xticks(ticks=[3e-3,4e-3,5e-3,6e-3,7e-3,8e-3,9e-3],minor=True)
         axes[iStrain].set_xticklabels(labels=[None,None,None,None,None,None,None],minor=True)
         axes[iStrain].set_xticks(ticks=[2e-3,1e-2],minor=False)
@@ -484,8 +499,8 @@ def strain_scaling():
         iStrain = iStrain + 1
 
 
-    plt.tight_layout()
-    plt.savefig("derivative_scaling.png", dpi=400)
+    plt.tight_layout(pad=0.2, w_pad=0.6, h_pad=0.2)
+    plt.savefig("derivative_scaling.png", dpi=300)
     plt.savefig("derivative_scaling.eps")
 
 #-------------------------------------------------------------------------------

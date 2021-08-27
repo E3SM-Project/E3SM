@@ -1,1 +1,1 @@
-./xmlchange --append -id CAM_CONFIG_OPTS -val " -use_MMF_VT -cppdefs ' -DMMF_DIR_NS -DMMF_VT_KMAX=4 ' "
+./xmlchange --append -id CAM_CONFIG_OPTS -val " -use_MMF_VT "
