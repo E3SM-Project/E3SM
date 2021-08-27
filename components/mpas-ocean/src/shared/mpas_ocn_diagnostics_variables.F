@@ -343,7 +343,7 @@ contains
                    topographic_wave_drag)
       end if
 
-      if (config_use_self_attraction_loading) then
+      if (config_use_tidal_potential_forcing) then
          call mpas_pool_get_array(diagnosticsPool, &
                   'ssh_sal', &
                    ssh_sal)
