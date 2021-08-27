@@ -190,12 +190,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.thlm.size();
   m_buffer.qw = decltype(m_buffer.qw)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.qw.size();
-  m_buffer.s = decltype(m_buffer.s)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.s.size();
-  m_buffer.qv_copy = decltype(m_buffer.qv_copy)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.qv_copy.size();
-  m_buffer.qc_copy = decltype(m_buffer.qc_copy)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.qc_copy.size();
+  m_buffer.dse = decltype(m_buffer.dse)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.dse.size();
   m_buffer.tke_copy = decltype(m_buffer.tke_copy)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.tke_copy.size();
   m_buffer.shoc_ql2 = decltype(m_buffer.shoc_ql2)(s_mem, m_num_cols, nlev_packs);
@@ -286,16 +282,14 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   auto inv_exner   = m_buffer.inv_exner;
   auto thlm        = m_buffer.thlm;
   auto qw          = m_buffer.qw;
-  auto s           = m_buffer.s;
-  auto qv_copy     = m_buffer.qv_copy;
-  auto qc_copy     = m_buffer.qc_copy;
+  auto dse         = m_buffer.dse;
   auto tke_copy    = m_buffer.tke_copy;
   auto shoc_ql2    = m_buffer.shoc_ql2;
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,m_cell_area,
                                 T_mid,z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,cell_length,
-                                s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
+                                surf_mom_flux,qv,qc,tke,tke_copy,cell_length,
+                                dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 
   // Input Variables:
@@ -326,7 +320,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.qtracers     = m_shoc_fields_out["Q"].get_view<Spack***>();
   input_output.tk           = m_shoc_fields_out["eddy_diff_mom"].get_view<Spack**>();
   input_output.shoc_cldfrac = cldfrac_liq;
-  input_output.shoc_ql      = shoc_preprocess.qc_copy;
+  input_output.shoc_ql      = qc;
 
   // Output Variables
   output.pblh     = m_shoc_fields_out["pbl_height"].get_view<Real*>();
@@ -349,8 +343,9 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   history_output.brunt     = m_buffer.brunt;
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
-                                 rrho,qv,qv_copy,qc,qc_copy,tke,tke_copy,shoc_ql2,
-                                 cldfrac_liq,sgs_buoy_flux,inv_qc_relvar);
+                                 rrho,qv,qw,qc,tke,tke_copy,shoc_ql2,
+                                 cldfrac_liq,sgs_buoy_flux,inv_qc_relvar,
+                                 T_mid, dse, z_mid, phis);
 }
 
 // =========================================================================================
