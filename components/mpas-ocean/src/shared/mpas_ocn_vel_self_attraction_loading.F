@@ -612,7 +612,8 @@ contains
                 call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ) ,err)
                 
                 ! Initialize SHTns routine
-                lmax = nlat-1
+                !lmax = nlat-1
+                lmax = int(nlat/2)-1
                 mmax = lmax
                 mres = 1
                 eps_polar = 1.0e-10_dp
