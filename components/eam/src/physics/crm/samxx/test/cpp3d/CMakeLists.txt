@@ -13,7 +13,7 @@ add_executable(cpp3d ../dmdf.F90 ../cpp_driver.F90
 target_link_libraries(cpp3d yakl ${NCFLAGS})
 set_property(TARGET cpp3d APPEND PROPERTY COMPILE_FLAGS ${DEFS3D} )
 
-include(${YAKL_HOME}/process_cxx_source_files.cmake)
-process_cxx_source_files("${CUDA_SRC}")
+include(${YAKL_HOME}/yakl_utils.cmake)
+yakl_process_cxx_source_files("${CUDA_SRC}")
 include_directories(${YAKL_BIN})
 

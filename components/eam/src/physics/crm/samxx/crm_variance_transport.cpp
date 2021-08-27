@@ -129,7 +129,7 @@ void VT_diagnose() {
   //  do j = 1,ny
   //    do i = 1,nx
   //      do icrm = 1,ncrms
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
     yakl::atomicAdd( q_mean(k,icrm) , qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) );
   });
@@ -185,7 +185,7 @@ void VT_diagnose() {
   //   do j = 1,ny
   //     do i = 1,nx
   //       do icrm = 1,ncrms
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_vt(k,icrm) , t_vt_pert(k,j,i,icrm) * t_vt_pert(k,j,i,icrm) );
     yakl::atomicAdd( q_vt(k,icrm) , q_vt_pert(k,j,i,icrm) * q_vt_pert(k,j,i,icrm) );
   });

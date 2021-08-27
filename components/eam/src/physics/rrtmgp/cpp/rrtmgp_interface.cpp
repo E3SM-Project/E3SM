@@ -63,7 +63,7 @@ extern "C" void rrtmgp_initialize_cxx(int ngas, char *gas_names[], char const *c
     // available_gases%gas_name, which gives the name of each gas that would be
     // present in the ty_gas_concs object. So, we can just set this here, rather
     // than trying to fully populate the ty_gas_concs object here, which would be
-    // impossible from this initialization routine because I do not thing the
+    // impossible from this initialization routine because I do not think the
     // rad_cnst objects are setup yet.
     // the other tasks!
     active_gases = string1d("active_gases", ngas);
