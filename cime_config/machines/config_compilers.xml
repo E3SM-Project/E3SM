@@ -2376,6 +2376,12 @@ flags should be captured within MPAS CMake files.
     <append COMP_NAME="gptl"> -fallow-argument-mismatch </append>
     <append> -Wno-implicit-interface  -fallow-invalid-boz -std=legacy </append>
   </FFLAGS>
+  <MPICC> cc  </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
 </compiler>
 
 <compiler MACH="userdefined">
