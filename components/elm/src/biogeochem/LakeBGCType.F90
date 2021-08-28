@@ -60,8 +60,8 @@ module LakeBGCType
      real(r8), pointer :: ch4_surf_totflux_col(:)     ! col total CH4 flux at the air-water interface (kg C/m**2/s)
      real(r8), pointer :: ch4_prod_wat_col(:,:)       ! col water-column depth-resolved CH4 production (mol/m3/s)
      real(r8), pointer :: ch4_prod_sed_col(:,:)       ! col sed-column depth-resolved CH4 production (mol/m3/s)
-     real(r8), pointer :: ch4_prod_tot_col(:)         ! col integrated CH4 production (gC/m2/s)
-     real(r8), pointer :: ch4_oxid_tot_col(:)         ! col integrated CH4 oxidation (gC/m2/s)
+     real(r8), pointer :: ch4_prod_tot_col(:)         ! col integrated CH4 production (mol/m2/s)
+     real(r8), pointer :: ch4_oxid_tot_col(:)         ! col integrated CH4 oxidation (mol/m2/s)
      real(r8), pointer :: nem_col(:)                  ! net adjustment to atm. C flux from methane production (g C/m**2/s)
      real(r8), pointer :: ch4_oxid_wat_col(:,:)       ! col water-column depth-resolved CH4 oxidation (mol/m3/s)
      real(r8), pointer :: ch4_oxid_sed_col(:,:)       ! col sed-column depth-resolved CH4 oxidation (mol/m3/s)
@@ -192,7 +192,7 @@ contains
          ptr_col=this%ch4_surf_ebul_col, default='inactive')
 
     this%ch4_surf_totflux_col(begc:endc) = spval
-    call hist_addfld1d (fname='CH4_SURF_FLUX_LAKE',  units='mol/m^2/s',  &
+    call hist_addfld1d (fname='CH4_SURF_FLUX_LAKE',  units='kgC/m^2/s',  &
          avgflag='A', long_name='total CH4 flux at the lake surface', &
          ptr_col=this%ch4_surf_totflux_col, default='inactive')
 
@@ -256,12 +256,12 @@ contains
          ptr_col=this%ch4_oxid_sed_col, default='inactive')
 
     this%ch4_prod_tot_col(begc:endc) = spval
-    call hist_addfld1d (fname='CH4_TOTPROD_LAKE',  units='gC/m^2/s',  &
+    call hist_addfld1d (fname='CH4_TOTPROD_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='total CH4 production in lake', &
          ptr_col=this%ch4_prod_tot_col, default='inactive')
 
     this%ch4_oxid_tot_col(begc:endc) = spval
-    call hist_addfld1d (fname='CH4_TOTOXID_LAKE',  units='gC/m^2/s',  &
+    call hist_addfld1d (fname='CH4_TOTOXID_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='total CH4 oxidation in lake', &
          ptr_col=this%ch4_oxid_tot_col, default='inactive')
 
