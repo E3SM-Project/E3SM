@@ -594,9 +594,9 @@ contains
          else ! errch4 > 1e-8 mol / m^2 / timestep
             write(iulog,*)'CH4 Conservation Error in LakeBGCDynamics during c, errch4 (mol /m^2.timestep)', &
                  c,errch4(c)
-            write(iulog,*)'Dissolved CH4 change, ice bubble change, total production, total oxidation, '// &
-                 'diffusion, and ebullition: ', delta_ch4(c),delta_iceb(c),ch4_prod_tot(c)*dtime, &
-                 ch4_oxid_tot(c)*dtime,ch4_surf_diff(c)*dtime,ch4_surf_ebul(c)*dtime
+            write(iulog,*)'Dissolved CH4 change, ice bubble change, total production, total oxidation: ', &
+                 delta_ch4(c),delta_iceb(c),ch4_prod_tot(c)*dtime,ch4_oxid_tot(c)*dtime
+            write(iulog,*)'Surface diffusion and ebullition: ',ch4_surf_diff(c)*dtime,ch4_surf_ebul(c)*dtime
             write(iulog,*)'Sediment diffusion and ebullition: ',ch4_sed_diff(c)*dtime,ch4_sed_ebul(c)*dtime
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
@@ -1177,8 +1177,7 @@ contains
       integer  :: j, k, t, jtop
       real(r8) :: pos, pr, vb, temp
       real(r8) :: rr, Atmp 
-      real(r8) :: dr_tmp1, dr_tmp2
-      real(r8) :: dt, tcur, tini
+      real(r8) :: dr_tmp1, dr_tmp2,dt
       real(r8) :: numb, pr_tmp
       real(r8) :: vsc(1:nlevlak)                                  ! viscosity
       real(r8) :: gama(1:nlevlak)                                 ! bubble tension
@@ -1313,7 +1312,7 @@ contains
       ex(1:nlevlak,:) = 0._r8
       do rindx = 1, nrlev
          ! size-integrated bubble gas and gas exchange
-         do j = 1, nlevlak
+         do j = jtop, nlevlak
             conc_bubl(c,j,:) = conc_bubl(c,j,:) + 0.5_r8 * &
                (bgas_rr(j,:,rindx)+bgas_rr(j+1,:,rindx))
             ex(j,:) = ex(j,:) + (bgas_rr(j+1,:,rindx)*vb_rr(j+1,rindx) - &
