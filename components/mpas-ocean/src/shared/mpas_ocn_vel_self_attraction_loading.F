@@ -277,7 +277,7 @@ contains
                     call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                     ! Compute local integral contribution
-                    do iCell = startIdx, endIdx 
+                    do iCell = endIdx, startIdx, -1 
                         SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
                         SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                     enddo
@@ -292,7 +292,7 @@ contains
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                         ! Compute local integral contribution
-                        do iCell = startIdx, endIdx 
+                        do iCell = endIdx, startIdx, -1 
                             SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
                             SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                         enddo
@@ -307,19 +307,20 @@ contains
                         ! Calculate associated Legendre polynomial using recurrence relationship
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
-                        ! Compute local integral contribution
-                        do iCell = startIdx, endIdx
-                            SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                            SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
-                        enddo
-
                         ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = startIdx, endIdx 
+                        do iCell = endIdx, startIdx, -1 
                             pmnm2(iCell) = pmnm1(iCell)
                         enddo
                         do iCell = startIdx, endIdx 
                             pmnm1(iCell) = pmn(iCell)
                         enddo
+
+                        ! Compute local integral contribution
+                        do iCell = endIdx, startIdx, -1 
+                            SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                            SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                        enddo
+
 
                     enddo ! n loop
                 enddo ! blocks loop
@@ -380,7 +381,7 @@ contains
                     call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
     
                     ! Sum together product of spherical harmonic functions and coefficients
-                    do iCell = startIdx, endIdx 
+                    do iCell = endIdx, startIdx, -1 
                         ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
     
@@ -394,7 +395,7 @@ contains
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
     
                         ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = startIdx, endIdx 
+                        do iCell = endIdx, startIdx, -1 
                             ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                         enddo
         
@@ -407,19 +408,20 @@ contains
     
                         ! Calculate associated Legendre polynomial using recurrence relationship
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-    
-                        ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = startIdx, endIdx 
-                            ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
-                        enddo
-    
+
                         ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = startIdx, endIdx 
+                        do iCell = endIdx, startIdx, -1 
                             pmnm2(iCell) = pmnm1(iCell)
                         enddo
                         do iCell = startIdx, endIdx 
                             pmnm1(iCell) = pmn(iCell)
                         enddo
+    
+                        ! Sum together product of spherical harmonic functions and coefficients
+                        do iCell = endIdx, startIdx, -1 
+                            ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                        enddo
+
     
                     enddo ! n loop
                 enddo ! block loop
@@ -848,7 +850,7 @@ contains
 !
 !  routine associatedLegendrePolynomials
 !
-!> \brief   Compute the associated Legendre polynomials via recurrance relation
+!> \brief   Compute the associated Legendre polynomials via recurrence relation
 !> \author  Steven Brus
 !> \date    July 2021
 !> \details
@@ -857,11 +859,15 @@ contains
 !>  For n=m, output array is pmnm2; pmnm1 and pmn are not required
 !>  For n=m+1, output array is pmnm1; only pmnm2 is required
 !>  For n>=m+2, output array is pmn; pmnm2 and pmnm1 are required
+!>  The recurrence coefficients, aRecurrenceCoeff and bRecurrenceCoeff,
+!>  and the cos/sin of the cell center latatides, cosLatCell and sinLatCell,
+!>  are precomputed in ocn_vel_self_attraction_loading_init 
 !
 !-----------------------------------------------------------------------
 
     subroutine associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn) !{{{
 
+   
         integer, intent(in) :: n
         integer, intent(in) :: m
         integer, intent(in) :: startIdx
