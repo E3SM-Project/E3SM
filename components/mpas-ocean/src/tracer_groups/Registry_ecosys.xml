@@ -47,6 +47,10 @@
 			description="if true, surface value is computed for 'ecosysGRP' category"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_ecosysTracers_river_inputs_from_coupler" type="logical" default_value=".false." units="unitless"
+			description="if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_ecosysTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
 			description="if true, couple ecosys fields with sea ice"
 			possible_values=".true. or .false."

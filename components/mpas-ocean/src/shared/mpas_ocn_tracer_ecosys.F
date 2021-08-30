@@ -1740,15 +1740,17 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNH4', depositionFluxNH4)
       call mpas_pool_get_array(ecosysAuxiliary, 'IRON_FLUX_IN', IRON_FLUX_IN)
       call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_IN', dust_FLUX_IN)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDON', riverFluxDON)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOP', riverFluxDOP)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxFe', riverFluxFe)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDIC', riverFluxDIC)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxALK', riverFluxALK)
-      call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOC', riverFluxDOC)
+      if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDON', riverFluxDON)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOP', riverFluxDOP)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxFe', riverFluxFe)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDIC', riverFluxDIC)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxALK', riverFluxALK)
+        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOC', riverFluxDOC)
+      endif
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'ecosysMonthlyForcing', ecosysMonthlyForcing)
 
@@ -1756,15 +1758,17 @@ contains
       call mpas_pool_get_array(ecosysMonthlyForcing, 'depositionFluzNH4', depositionFluzNH4)
       call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_FLUZ_IN', IRON_FLUZ_IN)
       call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_IN', dust_FLUZ_IN)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDON', riverFluzDON)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOP', riverFluzDOP)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzSiO3', riverFluzSiO3)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzFe', riverFluzFe)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDIC', riverFluzDIC)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzALK', riverFluzALK)
-      call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
+      if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDON', riverFluzDON)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOP', riverFluzDOP)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzSiO3', riverFluzSiO3)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzFe', riverFluzFe)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDIC', riverFluzDIC)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzALK', riverFluzALK)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
+      endif
 
       call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
@@ -1810,7 +1814,10 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+! only read in river fluxes if not getting them from coupler
+      if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzNO3', &
@@ -1821,7 +1828,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzPO4', &
@@ -1832,7 +1839,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDON', &
@@ -1843,7 +1850,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOP', &
@@ -1854,7 +1861,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzSiO3', &
@@ -1865,7 +1872,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzFe', &
@@ -1876,7 +1883,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDIC', &
@@ -1887,7 +1894,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzALK', &
@@ -1898,7 +1905,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOC', &
@@ -1908,6 +1915,8 @@ contains
                 'linear',  &
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
+
+      endif  ! config_use_ecosysTracers_river_inputs_from_coupler
 
       call MPAS_forcing_init_field_data( forcingGroupHead, &
         'ecosysMonthlyClimatology',  &
@@ -2012,45 +2021,54 @@ contains
         call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNH4', depositionFluxNH4)
         call mpas_pool_get_array(ecosysAuxiliary, 'IRON_FLUX_IN', IRON_FLUX_IN)
         call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_IN', dust_FLUX_IN)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDON', riverFluxDON)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOP', riverFluxDOP)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxFe', riverFluxFe)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDIC', riverFluxDIC)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxALK', riverFluxALK)
-        call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOC', riverFluxDOC)
+        if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDON', riverFluxDON)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOP', riverFluxDOP)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxFe', riverFluxFe)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDIC', riverFluxDIC)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxALK', riverFluxALK)
+          call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxDOC', riverFluxDOC)
+        endif
 
         call mpas_pool_get_array(ecosysMonthlyForcing, 'depositionFluzNO3', depositionFluzNO3)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'depositionFluzNH4', depositionFluzNH4)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_FLUZ_IN', IRON_FLUZ_IN)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_IN', dust_FLUZ_IN)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDON', riverFluzDON)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOP', riverFluzDOP)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzSiO3', riverFluzSiO3)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzFe', riverFluzFe)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDIC', riverFluzDIC)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzALK', riverFluzALK)
-        call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
+        if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDON', riverFluzDON)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOP', riverFluzDOP)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzSiO3', riverFluzSiO3)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzFe', riverFluzFe)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDIC', riverFluzDIC)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzALK', riverFluzALK)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzDOC', riverFluzDOC)
+        endif
 
         do iCell = 1, nCells
            depositionFluxNO3(iCell) = depositionFluzNO3(iCell)
            depositionFluxNH4(iCell) = depositionFluzNH4(iCell)
            IRON_FLUX_IN(iCell)      = IRON_FLUZ_IN(iCell)
            dust_FLUX_IN(iCell)      = dust_FLUZ_IN(iCell)
-           riverFluxNO3(iCell)      = riverFluzNO3(iCell)
-           riverFluxPO4(iCell)      = riverFluzPO4(iCell)
-           riverFluxDON(iCell)      = riverFluzDON(iCell)
-           riverFluxDOP(iCell)      = riverFluzDOP(iCell)
-           riverFluxSiO3(iCell)     = riverFluzSiO3(iCell)
-           riverFluxFe(iCell)       = riverFluzFe(iCell)
-           riverFluxDIC(iCell)      = riverFluzDIC(iCell)
-           riverFluxALK(iCell)      = riverFluzALK(iCell)
-           riverFluxDOC(iCell)      = riverFluzDOC(iCell)
         enddo
+
+        if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
+          do iCell = 1, nCells
+            riverFluxNO3(iCell)      = riverFluzNO3(iCell)
+            riverFluxPO4(iCell)      = riverFluzPO4(iCell)
+            riverFluxDON(iCell)      = riverFluzDON(iCell)
+            riverFluxDOP(iCell)      = riverFluzDOP(iCell)
+            riverFluxSiO3(iCell)     = riverFluzSiO3(iCell)
+            riverFluxFe(iCell)       = riverFluzFe(iCell)
+            riverFluxDIC(iCell)      = riverFluzDIC(iCell)
+            riverFluxALK(iCell)      = riverFluzALK(iCell)
+            riverFluxDOC(iCell)      = riverFluzDOC(iCell)
+          enddo
+        endif
 
     end subroutine ocn_get_ecosysData!}}}
 
