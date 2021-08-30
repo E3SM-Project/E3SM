@@ -13,11 +13,12 @@ module prep_ocn_mod
 
   use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
-  use seq_map_mod
+  use seq_map_mod        !  will have also moab_map_init_rcfile 
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
@@ -171,6 +172,11 @@ contains
     character(*), parameter  :: subname = '(prep_ocn_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     character(*), parameter  :: F01 = "('"//subname//" : ', A, I8 )"
+
+    character*32             :: appname ! to register moab app
+    integer                  :: rmapid  ! external id to identify the moab app
+    integer, external        :: iMOAB_RegisterApplicationFortran ! 
+    integer                  :: ierr ! 
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -326,6 +332,20 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq  initialization',esmf_map_flag)
+
+               
+          appname = "ROF_OCN_COU"//CHAR(0)
+            ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
+          rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
+          ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, rmapid, mbrmapro)
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in registering rof 2 ocn moab map '
+             call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
+          endif
+
+          call moab_map_init_rcfile(mbrmapro, rof(1), ocn(1), &
+               'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
+               'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
