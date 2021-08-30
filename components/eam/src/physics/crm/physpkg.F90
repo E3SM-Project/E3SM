@@ -526,7 +526,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use radheat,            only: radheat_init
   use radiation,          only: radiation_init
   use wv_saturation,      only: wv_sat_init
-  use microp_aero,        only: microp_aero_init
+  use ndrop,              only: ndrop_init
   use conv_water,         only: conv_water_init
   use tracers,            only: tracers_init
   use aoa_tracers,        only: aoa_tracers_init
@@ -547,6 +547,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use cloud_diagnostics,  only: cloud_diagnostics_init
   use modal_aero_calcsize,   only: modal_aero_calcsize_init
   use modal_aero_wateruptake,only: modal_aero_wateruptake_init
+  use nucleate_ice_cam,      only: nucleate_ice_cam_init
+  use hetfrz_classnuc_cam,   only: hetfrz_classnuc_cam_init
   !-----------------------------------------------------------------------------
   ! Input/output arguments
   !-----------------------------------------------------------------------------
@@ -558,7 +560,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   ! local variables
   !-----------------------------------------------------------------------------
   integer :: lchnk
-  real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
+  real(r8) :: dp1 = huge(1.0_r8) ! set in namelist, assigned in cloud_fraction.F90
+  real(r8) :: bulk_scale         ! prescribed aerosol bulk sulfur scale factor
+  real(r8), parameter :: mincld = 0.0001_r8 ! minimum allowed cloud fraction for aerosol nucleation
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 
@@ -644,7 +648,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   call radheat_init(pref_mid)
 
-  call microp_aero_init()
+  ! The following calls are needed in place of microp_aero_init()
+  if (clim_modal_aero) call ndrop_init()
+  call nucleate_ice_cam_init(mincld, bulk_scale)
+  call hetfrz_classnuc_cam_init(mincld)
+
   call conv_water_init
 
   call crm_physics_init(phys_state, pbuf2d, species_class)
@@ -1325,7 +1333,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   ! Local variables
   !-----------------------------------------------------------------------------
   type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
-  type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
   type(physics_state)   :: state_alt        ! alt state for CRM input
   integer  :: nstep                         ! current timestep number
   real(r8) :: net_flx(pcols)
@@ -1620,7 +1627,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   ! Local variables
   !-----------------------------------------------------------------------------
   type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
-  type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
   type(physics_state)   :: state_alt        ! alt state for CRM input
   integer  :: nstep                         ! current timestep number
   real(r8) :: net_flx(pcols)
