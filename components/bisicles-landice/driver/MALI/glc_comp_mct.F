@@ -6,7 +6,7 @@ module glc_comp_mct
 ! !INTERFACE:
 
 ! !DESCRIPTION:
-!  This is the main driver for the Model for Predication Across Scales - ALBANY Land Ice Model (MALI).
+!  This is the main driver for the Model for Predication Across Scales - ALBANY Land Ice Model (MALI - TJL).
 !
 ! !REVISION HISTORY:
 !
@@ -48,7 +48,7 @@ module glc_comp_mct
   use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
   use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
 
-  ! MALI modules
+  ! MALI - TJL modules
   use li_core
   use li_core_interface
 
@@ -88,8 +88,6 @@ module glc_comp_mct
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
 
-  real(kind=RKIND) :: cur_time
-
 !=======================================================================
 
 contains
@@ -101,7 +99,7 @@ contains
   subroutine glc_init_mct( EClock, cdata_g, x2g_g, g2x_g, NLFilename )!{{{
 !
 ! ! DESCRIPTION:
-! Initialize MALI
+! Initialize MALI - TJL
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -172,9 +170,6 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
-
-    character(kind=c_char,len=32) :: c_inputFilename
-
     character(len=8) :: c_inst_index ! instance number
     character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
@@ -245,12 +240,6 @@ contains
     MALI_MCT_dom_g   => dom_g
 
     call MPI_comm_rank(mpicom_g,iam,ierr)
-
-    c_inputFilename = "inputs.bisiclesTest"
-
-    cur_time = 0.0
-    call bike_driver_init(mpicom_g, cur_time, c_inputFilename)
-
 #if (defined _MEMTRACE)
      if(iam == 0) then
          lbnum=1
@@ -266,7 +255,7 @@ contains
 !   call mali initialization routines
 !
 !-----------------------------------------------------------------------
-#if 1
+
     call t_startf('mali_init')
 
     io_system => shr_pio_getiosys(glcid)
@@ -296,7 +285,7 @@ contains
     call shr_file_setLogUnit(glcLogUnit)
 
     ! Write to glcLogUnit here, because the log module is not open yet.
-    if (iam==0) write(glcLogUnit,'(a,i6)') '=== Beginning glc_init_mct: rank=',iam
+    if (iam==0) write(glcLogUnit,'(a,i6)') '=== Beginning glc_init_mct (MALI - TJL): rank=',iam
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g)
 
@@ -340,7 +329,7 @@ contains
                            no_output=no_taskmap_output           )
     call t_stopf("shr_taskmap_write")
 
-    ! Setup function pointers for MALI core and domain types
+    ! Setup function pointers for MALI - TJL core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
 
@@ -445,7 +434,7 @@ contains
 
     end if
 
-    ! Setup MALI simulation clock
+    ! Setup MALI - TJL simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
        call mpas_log_write('Clock setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
@@ -539,10 +528,10 @@ contains
     !
     call mpas_bootstrap_framework_phase2(domain)
 
-    ! Determine coupling type (not currently needed by MALI)
+    ! Determine coupling type (not currently needed by MALI - TJL)
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
-    ! Initialize the MALI core
+    ! Initialize the MALI - TJL core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
        call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
@@ -586,7 +575,7 @@ contains
 
     call glc_SetGSMap_mct( mpicom_g, glcID, GSMap_g )
     lsize = mct_gsMap_lsize(gsMap_g, mpicom_g)
-    call mpas_log_write('MALI gsMap lsize = $i', intArgs=(/lsize/))
+    call mpas_log_write('MALI - TJL gsMap lsize = $i', intArgs=(/lsize/))
 
     ! Initialize mct glc domain (needs glc initialization info)
     call glc_domain_mct( lsize, gsMap_g, dom_g )
@@ -702,7 +691,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   Calculate initial state in MALI (velocity, upperSurface, masks, etc.)
+!   Calculate initial state in MALI - TJL (velocity, upperSurface, masks, etc.)
 !
 !-----------------------------------------------------------------------
     err_tmp = li_core_initial_solve(domain)
@@ -761,7 +750,6 @@ contains
 !----------------------------------------------------------------------------
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-#endif
 
 #if defined (_MEMTRACE)
     if(iam  == 0) then
@@ -771,7 +759,7 @@ contains
     endif
 #endif
 
-    call mpas_log_write('=== Completed glc_init_mct ===', flushNow=.true.)
+    call mpas_log_write('=== Completed glc_init_mct (MALI - TJL) ===', flushNow=.true.)
 
 !-----------------------------------------------------------------------
 !EOC
@@ -787,14 +775,14 @@ contains
 ! !INTERFACE:
   subroutine glc_run_mct( EClock, cdata_g, x2g_g, g2x_g)!{{{
 
-    ! MALI modules
+    ! MALI - TJL modules
     use li_time_integration
     use li_statistics
 
     implicit none
 !
 ! !DESCRIPTION:
-! Run MALI for one coupling interval
+! Run MALI - TJL for one coupling interval
 !
 ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -813,7 +801,7 @@ contains
 ! Variables related to ACME coupler
       integer :: shrloglev, shrlogunit
 
-! Variable related to MALI
+! Variable related to MALI - TJL
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       integer, pointer :: config_stats_interval   !< interval (number oftimesteps) for writing stats
@@ -825,13 +813,11 @@ contains
       integer :: err, err_tmp, globalErr, streamDirection, iam
       logical :: solveVelo, streamActive
 
-      real(kind=RKIND) :: cur_dt
-
       iam = domain % dminfo % my_proc_id
 
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
-      call mpas_log_write("=== Beginning glc_run_mct ===")
+      call mpas_log_write("=== Beginning glc_run_mct (MALI - TJL) ===")
 
       err = 0
       err_tmp = 0
@@ -858,9 +844,6 @@ contains
       ! Import state from coupler
       call glc_import_mct(x2g_g, err_tmp)
       err = ior(err,err_tmp)
-
-      cur_dt = 0.005
-      call bike_driver_run(cur_time,cur_dt)
 
       ! Initialize time average fields
 !      block_ptr => domain % blocklist
@@ -1028,7 +1011,7 @@ contains
       call check_clocks_sync(domain % clock, Eclock, err_tmp)
       err = ior(err,err_tmp)
 
-      call mpas_log_write('=== Completed glc_run_mct. ===', flushNow=.true.)
+      call mpas_log_write('=== Completed glc_run_mct (MALI - TJL) ===', flushNow=.true.)
 
       ! Reset I/O logs
       call shr_file_setLogUnit (shrlogunit)
@@ -1052,7 +1035,7 @@ contains
     use li_velocity, only: li_velocity_finalize
 !
 ! !DESCRIPTION:
-! Finalize MALI
+! Finalize MALI - TJL
 !
 ! !USES:
 ! !ARGUMENTS:
@@ -1085,7 +1068,7 @@ contains
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (glcLogUnit)
 
-    ! Finalize MALI
+    ! Finalize MALI - TJL
     iErr = domain % core % core_finalize(domain)
     if ( iErr /= 0 ) then
        call mpas_log_write('Core finalize failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
@@ -1120,7 +1103,7 @@ contains
    use mpas_dmpar
 
 ! !DESCRIPTION:
-!  This routine sets up the MALI grid numbering for MCT
+!  This routine sets up the MALI - TJL grid numbering for MCT
 !
 ! !REVISION HISTORY:
 !  same as module
@@ -1204,7 +1187,7 @@ contains
   subroutine glc_domain_mct( lsize, gsMap_g, dom_g )!{{{
 
 ! !DESCRIPTION:
-!  This routine sets up the MCT domain for MALI
+!  This routine sets up the MCT domain for MALI - TJL
 !
 ! !REVISION HISTORY:
 !  same as module
