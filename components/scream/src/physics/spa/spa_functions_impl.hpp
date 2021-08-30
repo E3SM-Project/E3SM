@@ -59,6 +59,7 @@ namespace spa {
 
 // Helper function
 template<typename ScalarT,typename ScalarS>
+KOKKOS_INLINE_FUNCTION
 ScalarT linear_interp(const ScalarT& x0, const ScalarT& x1, const ScalarS& t_norm);
 /*-----------------------------------------------------------------*/
 // The main SPA routine which handles projecting SPA data onto the
