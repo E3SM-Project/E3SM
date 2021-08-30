@@ -2752,8 +2752,6 @@
     <domain name="r2">
       <nx>180</nx>
       <ny>90</ny>
-      <file grid="atm" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU480.200527.nc</file>
-      <file grid="lnd" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU480.200527.nc</file>
       <file grid="atm|lnd" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r2_oQU480.210211.nc</file>
       <desc>r2 is 2 degree river routing grid (only used for testing):</desc>
     </domain>
@@ -2767,6 +2765,8 @@
     <domain name="r05">
       <nx>720</nx>
       <ny>360</ny>
+      <file grid="atm" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU480.200527.nc</file>
+      <file grid="lnd" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU480.200527.nc</file>
       <file grid="atm" mask="oQU240">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU240.200527.nc</file>
       <file grid="lnd" mask="oQU240">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oQU240.200527.nc</file>
       <file grid="atm" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oEC60to30v3.190418.nc</file>
