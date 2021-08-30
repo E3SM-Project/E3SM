@@ -8198,10 +8198,10 @@
       </pes>
     </mach>
   </grid>
- <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30">
+ <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
     <mach name="compy">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 11 nodes pure-MPI, ~2.8 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 on 11 nodes pure-MPI, ~2.8 sypd </comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
           <ntasks_lnd>80</ntasks_lnd>
@@ -8228,7 +8228,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 21 nodes pure-MPI, ~5.5 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 on 21 nodes pure-MPI, ~5.5 sypd </comment>
         <ntasks>
           <ntasks_atm>600</ntasks_atm>
           <ntasks_lnd>120</ntasks_lnd>
@@ -8255,7 +8255,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 46 nodes pure-MPI, ~11 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 on 46 nodes pure-MPI, ~11 sypd </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>280</ntasks_lnd>
@@ -8282,7 +8282,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 90 nodes pure-MPI, ~18 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 on 90 nodes pure-MPI, ~18 sypd </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
           <ntasks_lnd>540</ntasks_lnd>
@@ -8538,10 +8538,10 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_l%.+_oi%oEC60to30">
+  <grid name="a%ne30np4_l%.+_oi%oEC60to30v3">
     <mach name="anvil|bebop">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
-        <comment> A_WCYCL*/ne30_oEC* on 29 nodes pure-MPI, sypd=2.88 </comment>
+        <comment> A_WCYCL*/ne30_oECv3 on 29 nodes pure-MPI, sypd=2.88 </comment>
         <ntasks>
           <ntasks_atm>900</ntasks_atm>
           <ntasks_lnd>180</ntasks_lnd>
@@ -8557,7 +8557,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment> A_WCYCL*/ne30_oEC* on 44 nodes pure-MPI, sypd=4.05 </comment>
+        <comment> A_WCYCL*/ne30_oECv3 on 44 nodes pure-MPI, sypd=4.05 </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>72</ntasks_lnd>
@@ -8573,7 +8573,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
-        <comment> A_WCYCL*/ne30_oEC* on 84 nodes pure-MPI, sypd=5.40 </comment>
+        <comment> A_WCYCL*/ne30_oECv3 on 84 nodes pure-MPI, sypd=5.40 </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
           <ntasks_lnd>108</ntasks_lnd>
@@ -9330,7 +9330,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name=".*oi%oRRS30to10.*">
+  <grid name=".*oi%oRRS30to10v3.*">
     <mach name="theta">
       <pes compset=".*MPASSI.+MPASO.+" pesize="any">
         <comment>30to10-gmpas on 128 nodes</comment>
@@ -9585,7 +9585,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name=".*T62_oi%oRRS18to6*">
+  <grid name=".*T62_oi%oRRS18to6v3*">
     <mach name="cori-knl">
       <pes compset=".*MPASSI.+MPASO.+" pesize="any">
         <comment>cori-knl, hires (18to6) G case on 150 nodes, 64x2, sypd=0.5</comment>
@@ -9614,7 +9614,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name=".*T62_oi%oEC60to30.*">
+  <grid name=".*T62_oi%oEC60to30v3.*">
     <mach name="cori-knl">
       <pes compset=".*MPASSI.+MPASO.+" pesize="any">
         <comment>cori-knl, lowres (60to30) G case on 16 nodes, 64x2, sypd=2.42</comment>
@@ -9728,7 +9728,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62.+_oi%oEC60to30.*">
+  <grid name="a%T62.+_oi%oEC60to30v3.*">
     <mach name="theta">
       <pes compset=".*MPASSI.*DOCN.+" pesize="any">
         <comment>--res T62_oEC60to30v3 --compset DTESTM on 2 nodes</comment>
