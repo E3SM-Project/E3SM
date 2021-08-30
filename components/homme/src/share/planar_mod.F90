@@ -286,7 +286,7 @@ call initgridedge(GridEdge,GridVertex)
     do i=1,np
     do j=1,np
       ! this converts [-1,1] GLL points to [0, dx_ref] or [0, dy_ref], and then adds corner coords
-       elem%cartp(i,j)%x= gll_points(i) * dx_ref/2.0D0 + dx_ref/2.0D0 + elem%corners(1)%x
+       elem%cartp(i,j)%x= gll_points(i) * elem%dx_ref/2.0D0 + elem%dx_ref/2.0D0 + elem%corners(1)%x
        elem%cartp(i,j)%y= gll_points(j) * dy_ref/2.0D0 + dy_ref/2.0D0 + elem%corners(1)%y
 
     ! This maps [0,1] to [Sx, Lx + Sx] or [Sy, Ly + Sy]
@@ -310,7 +310,11 @@ call initgridedge(GridEdge,GridVertex)
   end subroutine coordinates_atomic
 
 
-  subroutine Dmap(D, a,b, corners3D, ref_map, cartp, facenum)
+  subroutine Dmap(elem,D, a,b, corners3D, ref_map, cartp, facenum)
+    use element_mod, only : element_t
+
+    type (element_t) :: elem
+
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
@@ -323,7 +327,7 @@ call initgridedge(GridEdge,GridVertex)
 ! this is composition of 2 maps:
 !  a map from [-1,1]^2 reference ELEMENT to [0,1]^2 reference DOMAIN composed of [ne_x, ne_y] elements
 !  a map from [0,1]^2 reference DOMAIN to physical [Sx,Lx+Sx] x [Sy,Ly+Sy] DOMAIN
-    D(1,1) = dx/2.0d0
+    D(1,1) = elem%dx_ref/2.0d0*Lx
     D(1,2) = 0.0D0
     D(2,1) = 0.0D0
     D(2,2) = dy/2.0d0
@@ -395,7 +399,7 @@ call initgridedge(GridEdge,GridVertex)
     do j=1,np
        do i=1,np
 
-          call Dmap(elem%D(i,j,:,:),1.0D0,1.0D0,elem%corners3D,cubed_sphere_map)
+          call Dmap(elem,elem%D(i,j,:,:),1.0D0,1.0D0,elem%corners3D,cubed_sphere_map)
 
           ! Numerical metric tensor based on analytic D: met = D^T times D
           ! (D maps between physical plane and reference element)
@@ -612,6 +616,42 @@ call initgridedge(GridEdge,GridVertex)
 
     elem%vertex%face_number = 1
 
+
+!consider for x direction half of elements are 2x small
+!corners are coordinates in [0 1] domain, that is [0---elem1---; ----elem2----; ---elem3---;...1]
+
+!this half is small elements
+if(ie <= ne_x/2) then
+!small elems are of size dx= 4/3/ne_x
+!large are 2x bigger
+    elem%dx_ref = 4.0/3.0/ne_x
+
+    startx = ie*elem%dx_ref
+
+    elem%corners(1)%x = startx
+    elem%corners(2)%x = startx+elem%dx_ref
+    elem%corners(3)%x = startx+elem%dx_ref
+    elem%corners(4)%x = startx
+else
+    elem%dx_ref = 8.0/3.0/ne_x
+
+    startx = ie*elem%dx_ref
+
+    elem%corners(1)%x = startx
+    elem%corners(2)%x = startx+elem%dx_ref
+    elem%corners(3)%x = startx+elem%dx_ref
+    elem%corners(4)%x = startx
+endif
+
+
+    starty = je*dy_ref
+    elem%corners(1)%y = starty
+    elem%corners(2)%y = starty
+    elem%corners(3)%y = starty+dy_ref
+    elem%corners(4)%y = starty+dy_ref
+
+
+#if 0
     startx = ie*dx_ref
     starty = je*dy_ref
 
@@ -623,6 +663,7 @@ call initgridedge(GridEdge,GridVertex)
     elem%corners(3)%y = starty+dy_ref
     elem%corners(4)%x = startx
     elem%corners(4)%y = starty+dy_ref
+#endif
 
   end subroutine plane_set_corner_coordinates
 

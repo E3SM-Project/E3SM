@@ -48,6 +48,12 @@ module element_mod
      type (cartesian3D_t)     :: corners3D(4)                         ! Physical coords of corners
 
 
+     real (kind=real_kind)    :: dx_ref                            ! short length scale in km
+     real (kind=real_kind)    :: dy_ref                             ! short length scale in km
+     real (kind=real_kind)    :: dx                             ! short length scale in km
+     real (kind=real_kind)    :: dy                             ! short length scale in km
+
+
      ! Element diagnostics
      real (kind=real_kind)    :: area                                 ! Area of element
      real (kind=real_kind)    :: normDinv                             ! some type of norm of Dinv used for CFL
