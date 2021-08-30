@@ -266,7 +266,7 @@ contains
 !   call mali initialization routines
 !
 !-----------------------------------------------------------------------
-
+#if 1
     call t_startf('mali_init')
 
     io_system => shr_pio_getiosys(glcid)
@@ -761,6 +761,7 @@ contains
 !----------------------------------------------------------------------------
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+#endif
 
 #if defined (_MEMTRACE)
     if(iam  == 0) then
