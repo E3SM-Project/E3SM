@@ -183,9 +183,6 @@ module scream_scorpio_interface
         !> @brief Contains data identifying the file.
         type(file_desc_t)     :: pioFileDesc
 
-        !> @brief Number of output dimensions, and counter to track them during
-        !  registration
-        integer               :: DimCounter = 0
         !> @brief Recursive list of variables
         type(hist_coord_list_t) :: coord_list_top
 
@@ -319,14 +316,12 @@ contains
       prev => curr
       curr => prev%next
     end do
-          ! call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//", already exists in file: "//trim(filename),-999)
     ! If the dim was not found, create it
     if (.not. dim_found) then
       allocate(prev%next)
       curr => prev%next
       allocate(curr%coord)
       hist_coord => curr%coord
-      pio_atm_file%DimCounter = pio_atm_file%DimCounter + 1  ! AaronDonahue - Is this even still needed?
       ! Register this dimension
       hist_coord%name      = trim(shortname)
       hist_coord%long_name = trim(longname)
@@ -402,7 +397,6 @@ contains
         if (trim(curr%var%name)==trim(shortname)) then
           var_found = .true.
           exit
-        ! if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable "//trim(shortname)//", already exists in file: "//trim(filename),-999)
         endif
       endif
       prev => curr
