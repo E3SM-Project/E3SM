@@ -686,14 +686,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   ! Purpose: First part of atmos physics before updating of surface components
   !-----------------------------------------------------------------------------
-#if (defined E3SM_SCM_REPLAY )
-  use cam_history,    only: outfld
-#endif
-  use time_manager,     only: get_nstep
-  use cam_diagnostics,  only: diag_allocate, diag_physvar_ic
-  use check_energy,     only: check_energy_gmean
-  use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
-  use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, fsds
+  use time_manager,           only: get_nstep
+  use cam_diagnostics,        only: diag_allocate, diag_physvar_ic
+  use check_energy,           only: check_energy_gmean
+  use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, &
+                                    pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
+  use comsrf,                 only: fsns, fsnt, flns, sgh, sgh30, flnt, fsds
   use flux_avg,               only: flux_avg_init
   use check_energy,           only: check_energy_chng
   use crm_physics,            only: ncrms, crm_physics_tend
@@ -809,6 +807,15 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   ! CRM physics
   !-----------------------------------------------------------------------------  
+
+  ! Determine column start and end indices for crm_ecpp_output
+  ncol_sum = 0
+  do c=begchunk, endchunk
+    ncol_beg(c) = ncol_sum + 1
+    ncol_end(c) = ncol_sum + phys_state(c)%ncol
+    ncol_sum = ncol_sum + phys_state(c)%ncol
+  end do
+
   if (use_ECPP) then
     call crm_ecpp_output_initialize(crm_ecpp_output_chunk,pcols,pver)
     call crm_ecpp_output_initialize(crm_ecpp_output,      ncrms,pver)
@@ -832,14 +839,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
   call t_barrierf('sync_bc_physics', mpicom)
   call t_startf ('bc_physics2')
-
-  ! Determine column start and end indices for crm_ecpp_output
-  ncol_sum = 0
-  do c=begchunk, endchunk
-    ncol_beg(c) = ncol_sum + 1
-    ncol_end(c) = ncol_sum + phys_state(c)%ncol
-    ncol_sum = ncol_sum + phys_state(c)%ncol
-  end do
 
 !$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, chunk_cost)
   do c=begchunk, endchunk
@@ -1058,7 +1057,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use flux_avg,           only: flux_avg_run
   use phys_control,       only: use_qqflx_fixer
   use co2_cycle,          only: co2_cycle_set_ptend
-  use cam_history,        only: outfld 
 
   implicit none
   !-----------------------------------------------------------------------------
