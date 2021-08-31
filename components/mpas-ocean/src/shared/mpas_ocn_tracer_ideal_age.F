@@ -132,11 +132,11 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
-        iLevel = 1
-          do iTracer=1,nTracers
-             tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell) +  &
-                idealAgeMask(iTracer, iCell)*layerThickness(iLevel,iCell)
-          enddo
+        iLevel = minLevelCell(iCell)
+        do iTracer=1,nTracers
+           tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell) +  &
+              idealAgeMask(iTracer, iCell)*layerThickness(iLevel,iCell)
+        enddo
       enddo
       !$omp end do
       !$omp end parallel

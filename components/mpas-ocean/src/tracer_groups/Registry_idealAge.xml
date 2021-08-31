@@ -19,7 +19,7 @@
 			description="if true, exponential decay source is applied to tracers in 'idealAgeTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_idealAgeTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_idealAgeTracers_idealAge_forcing" type="logical" default_value=".true." units="unitless"
 			description="if true, idealAge forcing source is applied to tracers in 'idealAgeTracers' category"
 			possible_values=".true. or .false."
 		/>
@@ -41,7 +41,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="idealAgeTracers" dimensions="nVertLevels nCells Time" type="real" packages="idealAgeTracersPKG">
+			<var_array name="idealAgeTracers" dimensions="nVertLevels nCells Time" type="real" packages="idealAgeTracersPKG"  default_value="0.0">
 				<var name="iAge" array_group="iAgeGRP" units="seconds" description="tracer for ideal age"
 				/>
 			</var_array>
