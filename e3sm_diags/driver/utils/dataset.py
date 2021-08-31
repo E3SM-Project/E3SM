@@ -179,8 +179,10 @@ class Dataset:
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
         file_path = self._get_timeseries_file_path(primary_var, data_path)
-        with cdms2.open(file_path) as f:
-            return f(static_var)
+        fin = cdms2.open(file_path)
+        result = fin(static_var)
+        fin.close()
+        return result
 
     def is_timeseries(self):
         """
