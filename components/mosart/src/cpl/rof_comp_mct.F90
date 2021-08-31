@@ -24,7 +24,8 @@ module rof_comp_mct
   use RunoffMod        , only : rtmCTL, TRunoff, THeat, TUnit
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag, heatflag
+                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag, heatflag, &
+                                data_bgc_fluxes_to_ocean_flag
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -45,6 +46,12 @@ module rof_comp_mct
                                 index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
+                                index_r2x_Forr_rofDIN, index_r2x_Forr_rofDIP, &
+                                index_r2x_Forr_rofDON, index_r2x_Forr_rofDOP, &
+                                index_r2x_Forr_rofDOC, index_r2x_Forr_rofPP , &
+                                index_r2x_Forr_rofDSi, index_r2x_Forr_rofPOC, &
+                                index_r2x_Forr_rofPN , index_r2x_Forr_rofDIC, &
+                                index_r2x_Forr_rofFe , &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
                                 index_x2r_coszen_str, &
                                 index_r2x_Flrr_supply, index_r2x_Flrr_deficit
@@ -646,6 +653,7 @@ contains
     integer :: ni, n, nt, nliq, nfrz
     logical,save :: first_time = .true.
     character(len=32), parameter :: sub = 'rof_export_mct'
+    real(R8) :: tmp1
     !---------------------------------------------------------------------------
     
     nliq = 0
@@ -693,6 +701,22 @@ contains
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
              endif
+! note runoff has already been divided by area so do not need to do it again for nutrient flux
+             if (data_bgc_fluxes_to_ocean_flag) then
+               tmp1 = r2x_r%rAttr(index_r2x_Forr_rofl,ni)
+               r2x_r%rAttr(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
+             end if
+
           endif
        end do
     else
@@ -708,6 +732,21 @@ contains
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
              endif
+! note runoff has already been divided by area so do not need to do it again for nutrient flux
+             if (data_bgc_fluxes_to_ocean_flag) then
+               tmp1 = r2x_r%rAttr(index_r2x_Forr_rofl,ni)
+               r2x_r%rAttr(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
+               r2x_r%rAttr(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
+               r2x_r%rAttr(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
+             end if
           endif
        end do
     end if

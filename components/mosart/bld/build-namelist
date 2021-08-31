@@ -314,6 +314,7 @@ else {
     add_default($nl, 'inundflag');
     add_default($nl, 'sediflag');
     add_default($nl, 'heatflag');
+    add_default($nl, 'data_bgc_fluxes_to_ocean_flag');
     add_default($nl, 'rstraflag');
     add_default($nl, 'rinittemp');
     add_default($nl, 'ngeom');						 
