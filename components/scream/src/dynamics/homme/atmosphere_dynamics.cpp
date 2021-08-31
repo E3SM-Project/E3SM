@@ -677,6 +677,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
         fq /= dt;
         fq *= dp;
       });
+      Kokkos::fence();
       break;
     case ForcingAlg::FORCING_2:
       // Hard adjustment of qdp
@@ -695,9 +696,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
         qdp = fq*dp;
       });
       Kokkos::fence();
-
-      ff.tracers_forcing(dt,n0,n0_qdp,true,params.moisture);
-
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Unexpected/unsupported forcing algorithm.\n"
                       "  ftype: " + std::to_string(Homme::etoi(ftype)) + "\n");
