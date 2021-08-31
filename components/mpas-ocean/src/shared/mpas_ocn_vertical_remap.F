@@ -46,6 +46,7 @@ module ocn_vertical_remap
    
    type(rmap_opts) :: opts
    integer :: bc_upper, bc_lower
+   integer :: itimestepLastRemap
    
    !--------------------------------------------------------------------
 
@@ -365,7 +366,7 @@ module ocn_vertical_remap
       deallocate(heightEdgeNew)
 
    end subroutine ocn_remap_vert_state
-  
+
 !***********************************************************************
 !
 !  routine ocn_vertical_remap_init
@@ -401,17 +402,27 @@ module ocn_vertical_remap
       elseif ( config_vert_remap_order == 5 ) then
          opts%cell_meth = pqm_method ! PPM method
          opts%edge_meth = p5e_method ! 3rd-order edge interp.
+      else
+         CALL mpas_log_write('Vertical remap order $i not supported', &
+            MPAS_LOG_CRIT, intArgs=(/config_vert_remap_order/))
       endif
-      opts%cell_lims = mono_limit ! monotone slope limits TODO: consider
-onfig_monotonic
-      ! TODO replace hardcoded bcon_loose with config option 
-      !select case (config_vert_remap_bc_upper)
-      !case ('extrapolate')
-       bc_upper = bcon_loose
-      !case ('dirichlet')
-      !bc_upper = bcon_value
-       bc_lower = bcon_loose
-      !bc_lower = bcon_value
+
+      if ( config_remap_limiter == 'monotonic' ) then
+         opts%cell_lims = mono_limit ! monotone slope limits
+      elseif ( config_remap_limiter == 'weno' ) then
+         opts%cell_lims = weno_limit ! WENO slope limits
+         opts%wall_lims = mono_limit ! WENO slope limits
+      elseif ( config_remap_limiter == 'none' ) then
+         opts%cell_lims = null_limit ! no slope limits
+      else
+         CALL mpas_log_write('Remap limiter not supported', &
+            MPAS_LOG_CRIT)
+      endif
+
+      bc_upper = bcon_loose
+      bc_lower = bcon_loose
+
+      itimestepLastRemap = 0
 
    end subroutine ocn_vertical_remap_init
 
