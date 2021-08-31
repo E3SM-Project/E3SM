@@ -24,24 +24,25 @@ module seaice_special_boundaries
        seaice_init_special_boundaries, &
        seaice_set_special_boundaries_velocity, &
        seaice_set_special_boundaries_velocity_masks, &
-       seaice_set_special_boundaries_zero_tracers
+       seaice_set_special_boundaries_tracers
 
   logical, pointer :: &
        useSpecialBoundariesVelocity, &
        useSpecialBoundariesVelocityMasks, &
-       useSpecialBoundariesZeroTracers
+       useSpecialBoundariesTracers
 
   ! vertex flags
   integer, parameter :: &
-       VELOCITY_BOUNDARY_NONE = 0, &
+       VELOCITY_BOUNDARY_NONE     = 0, &
        VELOCITY_BOUNDARY_PERIODIC = 1, &
-       VELOCITY_BOUNDARY_REVERSE = 2, &
-       VELOCITY_BOUNDARY_ZERO = 3
+       VELOCITY_BOUNDARY_REVERSE  = 2, &
+       VELOCITY_BOUNDARY_ZERO     = 3
 
   ! cell flags
   integer, parameter :: &
        TRACER_BOUNDARY_NONE = 0, &
-       TRACER_BOUNDARY_ZERO = 1
+       TRACER_BOUNDARY_ZERO = 1, &
+       TRACER_BOUNDARY_SET  = 2
 
 contains
 
@@ -92,10 +93,6 @@ contains
          specialBoundariesPool, &
          meshPool
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex
-
     integer, dimension(:), pointer :: &
          vertexBoundaryType, &
          vertexBoundarySource, &
@@ -128,8 +125,6 @@ contains
           call MPAS_pool_get_array(specialBoundariesPool, "vertexBoundarySource", vertexBoundarySource)
           call MPAS_pool_get_array(specialBoundariesPool, "vertexBoundarySourceLocal", vertexBoundarySourceLocal)
 
-          call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
-          call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
           call MPAS_pool_get_array(meshPool, "indexToVertexID", indexToVertexID)
 
           allocate(globalToLocalID(nVertices))
@@ -142,7 +137,11 @@ contains
 
           do iVertex = 1, nVertices
 
-             vertexBoundarySourceLocal(iVertex) = globalToLocalID(vertexBoundarySource(iVertex))
+             if (vertexBoundaryType(iVertex) /= VELOCITY_BOUNDARY_NONE) then
+
+                vertexBoundarySourceLocal(iVertex) = globalToLocalID(vertexBoundarySource(iVertex))
+
+             end if
 
           enddo ! iVertex
 
@@ -172,7 +171,70 @@ contains
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
 
-    call MPAS_pool_get_config(domain % configs, "config_use_special_boundaries_zero_tracers", useSpecialBoundariesZeroTracers)
+    type(block_type), pointer :: &
+         blockPtr
+
+    type(mpas_pool_type), pointer :: &
+         specialBoundariesPool, &
+         meshPool
+
+    integer, dimension(:), pointer :: &
+         tracerBoundaryType, &
+         tracerBoundarySource, &
+         tracerBoundarySourceLocal, &
+         indexToCellID
+
+    integer, dimension(:), allocatable :: &
+         globalToLocalID
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(domain % configs, "config_use_special_boundaries_tracers", useSpecialBoundariesTracers)
+
+    if (useSpecialBoundariesTracers) then
+
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
+
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
+
+          call MPAS_pool_get_subpool(blockPtr % structs, "special_boundaries", specialBoundariesPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+
+          call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundaryType", tracerBoundaryType)
+          call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundarySource", tracerBoundarySource)
+          call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundarySourceLocal", tracerBoundarySourceLocal)
+
+          call MPAS_pool_get_array(meshPool, "indexToCellID", indexToCellID)
+
+          allocate(globalToLocalID(nCells))
+
+          do iCell = 1, nCells
+
+             globalToLocalID(indexToCellID(iCell)) = iCell
+
+          enddo ! iCell
+
+          do iCell = 1, nCells
+
+             if (tracerBoundaryType(iCell) /= TRACER_BOUNDARY_NONE) then
+
+                tracerBoundarySourceLocal(iCell) = globalToLocalID(tracerBoundarySource(iCell))
+
+             endif
+
+          enddo ! iCell
+
+          deallocate(globalToLocalID)
+
+          blockPtr => blockPtr % next
+       enddo
+
+    endif
 
   end subroutine init_special_boundaries_tracers
 
@@ -340,7 +402,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_set_special_boundaries_zero_tracers
+!  seaice_set_special_boundaries_tracers
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -350,7 +412,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_set_special_boundaries_zero_tracers(domain)
+  subroutine seaice_set_special_boundaries_tracers(domain)
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -363,7 +425,8 @@ contains
          tracersPool
 
     integer, dimension(:), pointer :: &
-         tracerBoundaryType
+         tracerBoundaryType, &
+         tracerBoundarySource
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -374,9 +437,10 @@ contains
          nCells
 
     integer :: &
-         iCell
+         iCell, &
+         iCellSource
 
-    if (useSpecialBoundariesZeroTracers) then
+    if (useSpecialBoundariesTracers) then
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
@@ -387,6 +451,7 @@ contains
           call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
 
           call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundaryType", tracerBoundaryType)
+          call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundarySourceLocal", tracerBoundarySource)
 
           call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
           call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -395,9 +460,19 @@ contains
           do iCell = 1, nCells
 
              if (tracerBoundaryType(iCell) == TRACER_BOUNDARY_ZERO) then
-                iceAreaCategory(:,:,iCell) = 0.0_RKIND
-                iceVolumeCategory(:,:,iCell) = 0.0_RKIND
+
+                iceAreaCategory(:,:,iCell)    = 0.0_RKIND
+                iceVolumeCategory(:,:,iCell)  = 0.0_RKIND
                 snowVolumeCategory(:,:,iCell) = 0.0_RKIND
+
+             else if (tracerBoundaryType(iCell) == TRACER_BOUNDARY_SET) then
+
+                iCellSource = tracerBoundarySource(iCell)
+
+                iceAreaCategory(:,:,iCell)    = iceAreaCategory(:,:,iCellSource)
+                iceVolumeCategory(:,:,iCell)  = iceVolumeCategory(:,:,iCellSource)
+                snowVolumeCategory(:,:,iCell) = snowVolumeCategory(:,:,iCellSource)
+
              endif
 
           enddo ! iCell
@@ -407,7 +482,7 @@ contains
 
     endif
 
-  end subroutine seaice_set_special_boundaries_zero_tracers
+  end subroutine seaice_set_special_boundaries_tracers
 
   !-----------------------------------------------------------------------
 

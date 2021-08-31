@@ -639,7 +639,7 @@ add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
-add_default($nl, 'config_use_special_boundaries_zero_tracers');
+add_default($nl, 'config_use_special_boundaries_tracers');
 
 ###################################
 # Namelist group: biogeochemistry #
