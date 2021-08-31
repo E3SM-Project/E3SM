@@ -31,13 +31,14 @@ SurfaceCoupling (const field_mgr_ptr& field_mgr)
 }
 
 void SurfaceCoupling::
-set_num_fields (const int num_cpl_imports, const int num_scream_imports, const int num_exports)
+set_num_fields (const int num_cpl_imports, const int num_scream_imports,
+                const int num_cpl_exports)
 {
   EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
                      "Error! You can only set the number of fields in SurfaceCoupling once.\n");
 
   m_scream_imports_dev = decltype(m_scream_imports_dev)("",num_scream_imports);
-  m_scream_exports_dev = decltype(m_scream_exports_dev)("",num_exports);
+  m_scream_exports_dev = decltype(m_scream_exports_dev)("",num_cpl_exports);
 
   m_scream_imports_host = Kokkos::create_mirror_view(m_scream_imports_dev);
   m_scream_exports_host = Kokkos::create_mirror_view(m_scream_exports_dev);
@@ -51,10 +52,11 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports, const i
   // These will be incremented every time we register an import/export.
   // At registration end, they should match the length of the corresponding view above.
   m_num_scream_imports = 0;
-  m_num_exports        = 0;
+  m_num_scream_exports = 0;
 
-  // We keep up with the total number of imports for indexing input data
+  // We keep up with the total number of cpl imports/exports for indexing input data
   m_num_cpl_imports = num_cpl_imports;
+  m_num_cpl_exports = num_cpl_exports;
 
   m_state = RepoState::Open;
 }
@@ -88,7 +90,7 @@ register_import(const std::string& fname,
     // Check that this cpl_idx wasn't already registered
     for (int i=0; i<m_num_scream_imports; ++i) {
       EKAT_REQUIRE_MSG(cpl_idx!=m_scream_imports_host(i).cpl_idx,
-                         "Error! An import with cpl_idx " + std::to_string(cpl_idx) + " was already registered.\n");
+                       "Error! An import with cpl_idx " + std::to_string(cpl_idx) + " was already registered.\n");
     }
 
     auto& info = m_scream_imports_host(m_num_scream_imports);
@@ -122,18 +124,18 @@ register_export (const std::string& fname,
   EKAT_REQUIRE_MSG (m_state!=RepoState::Closed, "Error! Registration phase has already ended.\n");
 
   // Check that we still have room
-  EKAT_REQUIRE_MSG(m_num_exports<m_scream_exports_host.extent_int(0),
+  EKAT_REQUIRE_MSG(m_num_scream_exports<m_scream_exports_host.extent_int(0),
                      "Error! Exports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
 
   // Check that this cpl_idx wasn't already registered
-  for (int i=0; i<m_num_exports; ++i) {
+  for (int i=0; i<m_num_scream_exports; ++i) {
     EKAT_REQUIRE_MSG(cpl_idx!=m_scream_exports_host(i).cpl_idx,
                        "Error! An export with cpl_idx " + std::to_string(cpl_idx) + " was already registered.\n");
   }
 
-  auto& info = m_scream_exports_host(m_num_exports);
+  auto& info = m_scream_exports_host(m_num_scream_exports);
 
   // 2 cases for setting export info:
   //   1. General case: fname describes a field in the FieldManager which has no parent.
@@ -180,7 +182,7 @@ register_export (const std::string& fname,
   info.cpl_idx = cpl_idx;
 
   // Update number of exports stored
-  ++m_num_exports;
+  ++m_num_scream_exports;
 }
 
 void SurfaceCoupling::
@@ -198,9 +200,9 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
                       "Error! You registered less imports than you said you would.\n"
                       "       Imports registered: " + std::to_string(m_num_scream_imports) + "\n"
                       "       Imports declared:   " + std::to_string(m_scream_imports_host.extent_int(0)) + "\n");
-  EKAT_REQUIRE_MSG (m_num_exports==m_scream_exports_host.extent_int(0),
+  EKAT_REQUIRE_MSG (m_num_scream_exports==m_scream_exports_host.extent_int(0),
                       "Error! You registered less exports than you said you would.\n"
-                      "       Exports registered: " + std::to_string(m_num_exports) + "\n"
+                      "       Exports registered: " + std::to_string(m_num_scream_exports) + "\n"
                       "       Exports declared:   " + std::to_string(m_scream_exports_host.extent_int(0)) + "\n");
 
   // Loop over import/exports; make sure both data and field are set,
@@ -209,7 +211,7 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
     EKAT_REQUIRE_MSG (m_scream_imports_host(i).data!=nullptr,
                         "Error! No field set for import index " + std::to_string(i) + ".\n");
   }
-  for (int i=0; i<m_num_exports; ++i) {
+  for (int i=0; i<m_num_scream_exports; ++i) {
     EKAT_REQUIRE_MSG (m_scream_exports_host(i).data!=nullptr,
                         "Error! No field set for import index " + std::to_string(i) + ".\n");
   }
@@ -227,12 +229,12 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
     m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
   }
 
-  if (m_num_exports>0) {
+  if (m_num_scream_exports>0) {
     // Check input pointer
     EKAT_REQUIRE_MSG(cpl_exports_ptr!=nullptr, "Error! Data pointer for exports is null.\n");
 
     // Setup the host and device 2d views
-    m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_exports);
+    m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_scream_exports);
     m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
   }
 
@@ -271,7 +273,7 @@ void SurfaceCoupling::do_import ()
 
 void SurfaceCoupling::do_export ()
 {
-  if (m_num_exports==0) {
+  if (m_num_scream_exports==0) {
     return;
   }
 
@@ -307,7 +309,7 @@ void SurfaceCoupling::do_export ()
   const int num_cols = m_num_cols;
 
   // Pack the fields
-  auto pack_policy   = policy_type (0,m_num_exports*num_cols);
+  auto pack_policy   = policy_type (0,m_num_scream_exports*num_cols);
   Kokkos::parallel_for(pack_policy, KOKKOS_LAMBDA(const int& i) {
     const int ifield = i / num_cols;
     const int icol   = i % num_cols;
