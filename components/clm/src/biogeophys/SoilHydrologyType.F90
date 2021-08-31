@@ -479,6 +479,7 @@ contains
                          om_frac = 0._r8
                       endif
                    end if
+                   om_frac = min(1.0_r8, max(0._r8, om_frac))
 
                    if (lun_pp%urbpoi(l)) om_frac = 0._r8
                    claycol(c,lev)    = clay
