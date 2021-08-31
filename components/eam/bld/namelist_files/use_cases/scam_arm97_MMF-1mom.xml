@@ -41,9 +41,6 @@
 <f11vmr>676.0526e-12</f11vmr>
 <f12vmr>537.05e-12</f12vmr> -->
 
-<!-- For Polar mods -->
-<liqcf_fix>.false.</liqcf_fix>
-
 <!-- For comprehensive history -->
 <history_aerosol>.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
