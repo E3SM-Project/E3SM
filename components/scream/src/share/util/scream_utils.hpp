@@ -2,12 +2,25 @@
 #define SCREAM_UTILS_HPP
 
 #include <ekat/ekat_assert.hpp>
+#include <ekat/kokkos/ekat_kokkos_types.hpp>
 
 #include <list>
 #include <algorithm>
 #include <map>
 
 namespace scream {
+
+// Micro-utility, that given an enum returns the underlying int.
+// The only use of this is if you need to sort scoped enums.
+template<typename EnumT>
+KOKKOS_FUNCTION
+constexpr typename
+std::enable_if<std::is_enum<EnumT>::value,
+               typename std::underlying_type<EnumT>::type
+              >::type
+etoi (const EnumT e) {
+  return static_cast<typename std::underlying_type<EnumT>::type>(e);
+}
 
 // This routine tries to find an arrangment of elements that allow each
 // of the input groups to be a contiguous subarray of the global arrangement.

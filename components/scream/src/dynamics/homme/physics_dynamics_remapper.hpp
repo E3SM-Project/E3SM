@@ -7,6 +7,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
