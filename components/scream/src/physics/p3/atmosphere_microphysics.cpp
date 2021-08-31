@@ -181,8 +181,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
-  m_current_ts = t0;
-
   // Set property checks for fields in this process
   auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
   m_fields_out["qv"].add_property_check(positivity_check);
@@ -282,14 +280,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 // =========================================================================================
 void P3Microphysics::run_impl (const Real dt)
 {
-
-  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
-  for (auto& it : m_fields_in) {
-    it.second.sync_to_host();
-  }
-  for (auto& it : m_fields_out) {
-    it.second.sync_to_host();
-  }
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(

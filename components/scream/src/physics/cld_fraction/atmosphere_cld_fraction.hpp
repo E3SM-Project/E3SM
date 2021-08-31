@@ -57,6 +57,7 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm          m_cldfraction_comm;
   ekat::ParameterList m_cld_fraction_params;
 

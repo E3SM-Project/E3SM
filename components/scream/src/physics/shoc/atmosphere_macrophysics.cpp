@@ -245,9 +245,6 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 {
-  m_current_ts = t0;
-
-
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -364,14 +361,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 // =========================================================================================
 void SHOCMacrophysics::run_impl (const Real dt)
 {
-  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
-  for (auto& it : m_fields_in) {
-    it.second.sync_to_host();
-  }
-  for (auto& it : m_fields_out) {
-    it.second.sync_to_host();
-  }
-
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
   const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);

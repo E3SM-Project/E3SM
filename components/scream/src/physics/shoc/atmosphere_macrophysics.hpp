@@ -412,7 +412,7 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  util::TimeStamp     m_current_ts;
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm          m_shoc_comm;
   ekat::ParameterList m_shoc_params;
 

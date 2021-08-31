@@ -71,13 +71,12 @@ protected:
   std::map<std::string,host_view_in_type>   m_zm_host_views_in;
   std::map<std::string,host_view_out_type>  m_zm_host_views_out;
 
-  util::TimeStamp   m_current_ts;
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm              m_zm_comm;
+  ekat::ParameterList     m_zm_params;
   
   std::map<std::string,const Real*>  m_raw_ptrs_in;
   std::map<std::string,Real*>        m_raw_ptrs_out;
-
-  ekat::ParameterList     m_zm_params;
 
 }; // class ZMDeepConvection
 

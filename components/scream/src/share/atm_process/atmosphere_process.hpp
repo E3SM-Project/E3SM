@@ -389,9 +389,23 @@ protected:
     f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
   }
 
+  // The base class already registers the required and computed fields in
+  // the set_required/computed_field main routines.  These impl definitions
+  // provide a way for subclasses to define extra field bookkeeping that
+  // is not already covered by the `set_required/computed_field`.  It is
+  // not essential for subclasses to overwrite these two routines, but it
+  // is possible.
   virtual void set_required_field_impl (const Field<const Real>& f) {};
   virtual void set_computed_field_impl (const Field<      Real>& f) {};
 
+  // The Base class already runs all registered field checks for all fields.
+  // Similar to the set_required/computed_field_impl comment above, it is
+  // not necessary for a subclass to overwrite these two routines, but it
+  // is possible.  A subclass may want to add extra checks or controls
+  // that occur before or after a process is run that could be included
+  // in an override of these two routine.  An example of an extra check 
+  // that a subclass may want to add would include field repair if a 
+  // field check fails.
   virtual void check_required_fields_impl () const {}
   virtual void check_computed_fields_impl () {}
 

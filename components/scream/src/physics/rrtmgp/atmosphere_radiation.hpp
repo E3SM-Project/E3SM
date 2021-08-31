@@ -50,7 +50,7 @@ public:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  util::TimeStamp m_current_ts;
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm            m_rrtmgp_comm;
   ekat::ParameterList   m_rrtmgp_params;
 
