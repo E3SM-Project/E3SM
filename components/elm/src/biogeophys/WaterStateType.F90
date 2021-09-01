@@ -439,6 +439,8 @@ contains
 
       this%frac_h2osfc_col(bounds%begc:bounds%endc) = 0._r8
 
+      this%wslake_col(bounds%begc:bounds%endc) = 0._r8
+
       this%fwet_patch(bounds%begp:bounds%endp) = 0._r8
       this%fdry_patch(bounds%begp:bounds%endp) = 0._r8
 
