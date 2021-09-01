@@ -23,6 +23,7 @@ module ocn_tracer_ideal_age
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -174,6 +175,8 @@ contains
 
       err = 0
 
+      if (.not. config_use_idealAgeTracers) return
+
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, &
                                  'tracersIdealAgeFields', &
@@ -184,10 +187,14 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
-      ! set mask = 0 for open ocean
-      ! set mask = 1 under ice shelves
-      idealAgeMask = 0.0_RKIND
-      where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
+      if (config_use_idealAgeTracers.and.config_use_idealAgeTracers_idealAge_forcing) then
+         ! set mask = 0 for open ocean
+         ! set mask = 1 under ice shelves
+         idealAgeMask = 0.0_RKIND
+         if (associated(landIceMask)) then
+            where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
+         end if 
+      end if 
 
    end subroutine ocn_tracer_ideal_age_init!}}}
 
