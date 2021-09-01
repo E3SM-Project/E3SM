@@ -2689,8 +2689,9 @@ end if ! l_rad
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
     end if
-
-    call calc_uovern(state,cam_out)
+    if (precip_downscaling_method == "FNM") then
+       call calc_uovern(state,cam_out)
+    end if
 
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
