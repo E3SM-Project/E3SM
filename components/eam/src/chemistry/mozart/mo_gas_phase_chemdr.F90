@@ -403,8 +403,10 @@ contains
   !  
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
+
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
+    real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
     real(r8) :: tmp
  
     ! flags for MMF configuration
@@ -875,6 +877,9 @@ contains
 ! Aerosol processes ...
 !
 
+    if (uci1_ndx > 0) then
+       vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
     call t_startf('aero_model_gasaerexch')
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
@@ -882,6 +887,19 @@ contains
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf )
     call t_stopf('aero_model_gasaerexch')
+!
+! Remove the impact of aerosol processes on gas chemistry tracers ...
+!
+    if (uci1_ndx > 0) then
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+             if ( .not. any( aer_species == n ) ) then
+                vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
+             endif
+          endif
+       enddo
+    endif
 
     if ( has_strato_chem ) then 
 
