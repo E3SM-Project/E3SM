@@ -25,7 +25,7 @@ ADD_LIBRARY(thetal_kokkos_ut_lib ${THETAL_DEPS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
-TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib kokkos)
+TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib kokkoscore)
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   IF(HOMME_USE_SCORPIO)
@@ -41,7 +41,7 @@ SET_TARGET_PROPERTIES(thetal_kokkos_ut_lib PROPERTIES Fortran_MODULE_DIRECTORY $
 # Setting this once and for all, good for all unit tests.
 SET (CONFIG_DEFINES HAVE_CONFIG_H)
 
-IF (HOMMEXX_BFB_TESTING)
+#IF (HOMMEXX_BFB_TESTING)
   ### Equation of state unit tests
 
   SET (EOS_UT_CXX_SRCS
@@ -233,7 +233,7 @@ IF (HOMMEXX_BFB_TESTING)
   ENDIF()
   cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)
-ENDIF ()
+#ENDIF ()
 
 # ### DIRK functor unit test
 

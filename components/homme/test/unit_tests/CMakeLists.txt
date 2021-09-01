@@ -29,6 +29,8 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     ELSE ()
       TARGET_LINK_LIBRARIES(${target_name} pio)
     ENDIF ()
+  ELSE ()
+    ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 
   IF (NOT "${target_f90_srcs}" EQUAL "")
