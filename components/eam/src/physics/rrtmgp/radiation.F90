@@ -1054,7 +1054,7 @@ contains
    ! Primary output from this routine is the heating tendency due to radiative
    ! transfer, as a ptend object.
    subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
-                             landfrac,landm,    icefrac,       snowh,            &
+                             landfrac,icefrac,  snowh,                           &
                              fsns,    fsnt,     flns,          flnt,             &
                              fsds,    net_flux, is_cmip6_volc, dt                )
 
@@ -1125,7 +1125,6 @@ contains
       ! These are not used anymore and exist only because the radiation call is
       ! inflexible
       real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
-      real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
       real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
       real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
 

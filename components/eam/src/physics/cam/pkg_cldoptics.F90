@@ -21,8 +21,7 @@ module pkg_cldoptics
 contains
 
 !===============================================================================
-  subroutine cldefr(lchnk   ,ncol    , &
-       landfrac,t       ,rel     ,rei     ,ps      ,pmid    , landm, icefrac, snowh)
+  subroutine cldefr(lchnk, ncol, t, rel, rei, ps, pmid, landfrac, icefrac, snowh)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -47,7 +46,6 @@ contains
     real(r8), intent(in) :: t(pcols,pver)        ! Temperature
     real(r8), intent(in) :: ps(pcols)            ! Surface pressure
     real(r8), intent(in) :: pmid(pcols,pver)     ! Midpoint pressures
-    real(r8), intent(in) :: landm(pcols)
     real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
 !
 ! Output arguments
@@ -56,7 +54,7 @@ contains
     real(r8), intent(out) :: rei(pcols,pver)      ! Ice effective drop size (microns)
 !
 ! following Kiehl
-         call reltab(ncol, t, landfrac, landm, icefrac, rel, snowh)
+         call reltab(ncol, t, landfrac, icefrac, rel, snowh)
 
 ! following Kristjansson and Mitchell
          call reitab(ncol, t, rei)
@@ -277,7 +275,7 @@ contains
 
 
 !===============================================================================
-  subroutine reltab(ncol, t, landfrac, landm, icefrac, rel, snowh)
+  subroutine reltab(ncol, t, landfrac, icefrac, rel, snowh)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -298,7 +296,6 @@ contains
     real(r8), intent(in) :: landfrac(pcols)      ! Land fraction
     real(r8), intent(in) :: icefrac(pcols)       ! Ice fraction
     real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
-    real(r8), intent(in) :: landm(pcols)         ! Land fraction ramping to zero over ocean
     real(r8), intent(in) :: t(pcols,pver)        ! Temperature
 
 !
@@ -327,7 +324,7 @@ contains
           ! Modify for snow depth over land
           rel(i,k) = rel(i,k) + (rliqocean-rel(i,k)) * min(1.0_r8,max(0.0_r8,snowh(i)*10._r8))
           ! Ramp between polluted value over land to clean value over ocean.
-          rel(i,k) = rel(i,k) + (rliqocean-rel(i,k)) * min(1.0_r8,max(0.0_r8,1.0_r8-landm(i)))
+          rel(i,k) = rel(i,k) + (rliqocean-rel(i,k)) * min(1.0_r8,max(0.0_r8,1.0_r8-landfrac(i)))
           ! Ramp between the resultant value and a sea ice value in the presence of ice.
           rel(i,k) = rel(i,k) + (rliqice-rel(i,k)) * min(1.0_r8,max(0.0_r8,icefrac(i)))
 ! end jrm
