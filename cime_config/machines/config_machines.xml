@@ -2859,7 +2859,6 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="list"/>
         <command name="load">DefApps</command>
         <command name="load">python/3.7-anaconda3</command>
         <command name="load">subversion/1.14.0</command>
@@ -2867,9 +2866,10 @@
         <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.3.0</command>
         <command name="load">netlib-lapack/3.8.0</command>
+        <command name="list"/>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc</command>
+        <command name="load">nvhpc/21.3</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
@@ -2883,26 +2883,14 @@
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="gnu">
-        <command name="load">gcc/9.1.0</command>
-      </modules>
-      <modules compiler="gnugpu">
+      <modules compiler="gnu.*">
         <command name="load">gcc/9.1.0</command>
       </modules>
       <modules>
         <command name="load">netcdf-c/4.8.0</command>
         <command name="load">netcdf-fortran/4.4.5</command>
       </modules>
-      <modules compiler="ibm" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
-      </modules>
-      <modules compiler="pgi.*" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
-      </modules>
-      <modules compiler="gnu" mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
-      </modules>
-      <modules compiler="gnugpu" mpilib="!mpi-serial">
+      <modules mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
       </modules>
       <modules>
