@@ -2758,7 +2758,7 @@
     <domain name="SOwISC12to60E2r4">
       <nx>569915</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">/home/ac.dcomeau/cryo/SOwISC12to60E2r4/domain.ocn.SOwISC12to60E2r4-nomask.210119.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.SOwISC12to60E2r4-nomask.210119.nc</file>
       <desc>SOwISC12to60E2r4 is a MPAS ice/ocean grid with enhanced resolution of 12km in the Southern Ocean around Antarctica. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
