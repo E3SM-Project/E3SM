@@ -70,6 +70,9 @@ module ocn_equation_of_state_wright
 
    real (kind=RKIND), dimension(:,:), allocatable :: &
       tracerTemp, tracerSalt, boussinesqPres
+#ifdef MPAS_OPENACC
+   !$acc declare device_resident(tracerTemp, tracerSalt, boussinesqPres)
+#endif
 
    !*** valid range of T,S for Wright (1997) EOS
    !***   allowing T to become more negative because of sub-ice-shelf cavities
@@ -102,6 +105,8 @@ module ocn_equation_of_state_wright
       c3 = 5.140652e-2_RKIND,           &
       c4 = -2.302158e2_RKIND,           &
       c5 = -3.079464_RKIND
+
+      real (kind=RKIND) eos_wright_ref_pressure !  = config_eos_wright_ref_pressure
 
 !***********************************************************************
 
@@ -215,9 +220,8 @@ contains
                                 boussinesqPres)
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(density, boussinesqPres, tracerTemp, tracerSalt)
       !$acc parallel loop gang vector collapse(2) &
-      !$acc&   present(density, boussinesqPres, tracerTemp, tracerSalt)
+      !$acc&   present(density)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
@@ -243,10 +247,7 @@ contains
          end do
       end do
 
-#ifdef MPAS_OPENACC
-      !$acc update host(density)
-      !$acc exit data delete(density, boussinesqPres, tracerTemp, tracerSalt)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
@@ -382,11 +383,8 @@ contains
 
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(density, boussinesqPres, tracerTemp, tracerSalt, &
-      !$acc&                  thermalExpansionCoeff,  &
-      !$acc&                  salineContractionCoeff)
       !$acc parallel loop gang vector collapse(2)     &
-      !$acc&   present(density, boussinesqPres, tracerTemp, tracerSalt, &
+      !$acc&   present(density, &
       !$acc&           thermalExpansionCoeff,         &
       !$acc&           salineContractionCoeff)
 #else
@@ -432,14 +430,7 @@ contains
          end do
       end do
 
-#ifdef MPAS_OPENACC
-      !$acc update host(density,                &
-      !$acc&            thermalExpansionCoeff,  &
-      !$acc&            salineContractionCoeff)
-      !$acc exit data delete(density, boussinesqPres, tracerTemp, tracerSalt, &
-      !$acc&                 thermalExpansionCoeff,  &
-      !$acc&                 salineContractionCoeff)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
@@ -487,6 +478,8 @@ contains
       !*** initialize error flag
 
       err = 0
+
+      eos_wright_ref_pressure  = config_eos_wright_ref_pressure
 
    !--------------------------------------------------------------------
 
@@ -537,8 +530,13 @@ contains
       real (kind=RKIND) :: &
          T, S               ! adjusted T, S
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector collapse(2) &
+      !$acc    present(tracers, tracerTemp, tracerSalt)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k, T, S)
+#endif
       do iCell=1,nCells
          do k = 1, nVertLevels
             T = min(tracers(indexT, k, iCell), ocnEqStateTmax)
@@ -547,8 +545,10 @@ contains
             tracerSalt(k, iCell) = max(S, ocnEqStateSmin)
          end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
    !--------------------------------------------------------------------
 
@@ -601,8 +601,14 @@ contains
       real (kind=RKIND) :: &
          T, S               ! adjusted T, S
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector collapse(2), &
+      !$acc    present(tracersSurfaceLayerValue, &
+      !$acc&           tracerTemp, tracerSalt)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k, T, S)
+#endif
       do iCell=1,nCells
          do k = 1, nVertLevels
             T = min(tracersSurfaceLayerValue(indexT, iCell), ocnEqStateTmax)
@@ -611,8 +617,10 @@ contains
             tracerSalt(k, iCell) = max(S, ocnEqStateSmin)
          end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
    !--------------------------------------------------------------------
 
@@ -679,8 +687,13 @@ contains
       if ((displacementType == 'relative') .or. &
           (displacementType == 'surfaceDisplaced')) then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc    present(boussinesqPres, maxLevelCell, zMid)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k, kPressure)
+#endif
          do iCell=1,nCells
             do k = 1, nVertLevels
                kPressure = min(k + kDisplaced, maxLevelCell(iCell))
@@ -688,20 +701,28 @@ contains
                boussinesqPres(k, iCell) = -rho_sw*gravity*zMid(kPressure, iCell)
             end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else ! displacementType == 'absolute'
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) present(boussinesqPres)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell=1,nCells
             do k = 1, nVertLevels
-               boussinesqPres(k, iCell) = config_eos_wright_ref_pressure
+               boussinesqPres(k, iCell) = eos_wright_ref_pressure
             end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 
