@@ -74,16 +74,7 @@ def buildnml(case, caseroot, compname):
     analysis_mask_file = ''
     eco_forcing_file = ''
 
-    if ocn_grid == 'oEC60to30':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'oEC60to30'
-        if ocn_ic_mode == 'spunup':
-            ic_date = '160827'
-            ic_prefix = 'oEC60to30.restartFrom_eos1b'
-
-    elif ocn_grid == 'oEC60to30v3':
+    if ocn_grid == 'oEC60to30v3':
         decomp_date = '161222'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
@@ -98,15 +89,6 @@ def buildnml(case, caseroot, compname):
             ic_date = '180418'
             ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
-
-    elif ocn_grid == 'oEC60to30wLI':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '160830'
-        ic_prefix = 'oEC60to30wLI'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oEC60to30v3wLI':
         decomp_date = '170328'
@@ -166,24 +148,6 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ocn_grid == 'mpas120':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'ocean120km'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ocn_grid == 'oRRS30to10':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'ocean.RRS.30-10km'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
     elif ocn_grid == 'oRRS30to10v3':
         decomp_date = '171128'
         decomp_prefix = 'mpas-o.graph.info.'
@@ -202,15 +166,6 @@ def buildnml(case, caseroot, compname):
         analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
         ic_date = '171109'
         ic_prefix = 'oRRS30to10v3wLI'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ocn_grid == 'oRRS18to6':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '160830'
-        ic_prefix = 'ocean.RRS.18-6km'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
