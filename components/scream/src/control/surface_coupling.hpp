@@ -44,8 +44,8 @@ public:
   // This allocates some service views. Since not all imported
   // data is used by SCREAM, we distinguish between cpl
   // imports and SCREAM imports for book keeping.
-  void set_num_fields (const int num_cpl_imports, const int num_scream_imports, const int num_exports);
-
+  void set_num_fields (const int num_cpl_imports, const int num_scream_imports,
+                       const int num_cpl_exports);
   // Version of the above function when num_cpl_imports = num_scream_imports
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
@@ -153,9 +153,10 @@ protected:
 
   field_mgr_ptr m_field_mgr;
 
-  int           m_num_scream_imports;
   int           m_num_cpl_imports;
-  int           m_num_exports;
+  int           m_num_scream_imports;
+  int           m_num_cpl_exports;
+  int           m_num_scream_exports;
 
   int           m_num_cols;
   int           m_num_levs;
