@@ -28,23 +28,23 @@ private:
       return 0;
     }
 
-#ifdef KOKKOS_ENABLE_CUDA
-#ifdef __CUDA_ARCH__
+#if defined(KOKKOS_ENABLE_CUDA) || HIP_BUILD
+//#ifdef __CUDA_ARCH__
     template <typename ExecSpaceType>
     static KOKKOS_INLINE_FUNCTION typename std::enable_if<
         OnGpu<ExecSpaceType>::value, int>::type
     get_team_idx(const int /*team_size*/, const int league_rank) {
       return league_rank;
     }
-#else
-    template <typename ExecSpaceType>
-    static KOKKOS_INLINE_FUNCTION typename std::enable_if<
-        OnGpu<ExecSpaceType>::value, int>::type
-    get_team_idx(const int /*team_size*/, const int /*league_rank*/) {
-      assert(false); // should never happen
-      return -1;
-    }
-#endif // __CUDA_ARCH__
+//#else
+//    template <typename ExecSpaceType>
+//    static KOKKOS_INLINE_FUNCTION typename std::enable_if<
+//        OnGpu<ExecSpaceType>::value, int>::type
+//    get_team_idx(const int /*team_size*/, const int /*league_rank*/) {
+//      assert(false); // should never happen
+//      return -1;
+//    }
+//#endif // __CUDA_ARCH__
 #endif // KOKKOS_ENABLE_CUDA
 
 #ifdef KOKKOS_ENABLE_OPENMP

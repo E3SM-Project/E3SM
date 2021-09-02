@@ -14,7 +14,7 @@
 namespace Homme {
 
 // Until whenever CUDA supports constexpr properly
-#ifdef CUDA_BUILD
+#if defined(CUDA_BUILD) || (HIP_BUILD)
 
   #ifdef CAM
     #define QSIZE_D PCNST

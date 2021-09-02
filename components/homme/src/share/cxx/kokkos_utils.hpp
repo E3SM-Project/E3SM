@@ -101,6 +101,10 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 };
 #endif
 
+//////////
+
+
+
 /*
  * Specialization for Cuda execution space.
  */

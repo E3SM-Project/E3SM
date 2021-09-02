@@ -17,6 +17,11 @@
 # include <cuda.h>
 #endif
 
+#if HIP_BUILD
+#include <hip/hip_runtime.h>
+///#include <hip/hip_runtime_api.h>
+#endif
+
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
@@ -49,6 +54,22 @@ void initialize_kokkos () {
   str.back() = 0;
   args.push_back(const_cast<char*>(str.data()));
 #endif
+#if HIP_BUILD
+  int nd;
+  const auto ret = hipGetDeviceCount(&nd);
+  if (ret != hipSuccess) {
+    // It isn't a big deal if we can't get the device count.
+    nd = 1;
+  }
+  std::stringstream ss;
+  ss << "--kokkos-num-devices=" << nd;
+  const auto key = ss.str();
+  std::vector<char> str(key.size()+1);
+  std::copy(key.begin(), key.end(), str.begin());
+  str.back() = 0;
+  args.push_back(const_cast<char*>(str.data()));
+#endif
+
 
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
@@ -173,11 +194,28 @@ team_num_threads_vectors (const int num_parallel_iterations,
   const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM; //Kokkos::Impl::cuda_internal_maximum_grid_count();
 # endif
 #else
+
+#if HIP_BUILD
+
+  //use 40 wavefronts per CU and 64 CUs
+  const int num_warps_device = 40*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
+  const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
+  const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
+
+///printf() for warpsize
+
+
+#else
+
   // I want thread-distribution rules to be unit-testable even when Cuda is
   // off. Thus, make up a P100-like machine:
   const int num_warps_device = 1792;
   const int num_threads_warp = 32;
   const int max_num_warps = 16;
+
+#endif
+
+
 #endif
 
   return Parallel::team_num_threads_vectors_for_gpu(

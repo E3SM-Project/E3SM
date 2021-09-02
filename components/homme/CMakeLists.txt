@@ -177,20 +177,23 @@ IF (${HOMME_USE_KOKKOS})
 
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
 
+################!!!!!!!!!!!! ?????????????
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
-  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
-    SET (HOMMEXX_CUDA_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
-    SET (HOMMEXX_OPENMP_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
-    SET (HOMMEXX_THREADS_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
-    SET (HOMMEXX_SERIAL_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
-    SET (HOMMEXX_DEFAULT_SPACE ON)
-  ELSE()
-    MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
-  ENDIF()
+#  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
+#    SET (HOMMEXX_HIP_SPACE ON)
+#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+#    SET (HOMMEXX_CUDA_SPACE ON)
+#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
+#    SET (HOMMEXX_OPENMP_SPACE ON)
+#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
+#    SET (HOMMEXX_THREADS_SPACE ON)
+#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
+#    SET (HOMMEXX_SERIAL_SPACE ON)
+#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
+#    SET (HOMMEXX_DEFAULT_SPACE ON)
+#  ELSE()
+#    MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
+#  ENDIF()
 
   # Execution space parameters. 8 is a nice size for V100.
   SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE STRING "Minimum number of warps to get 100% occoupancy on GPU")
@@ -259,14 +262,21 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
 
-  IF (CUDA_BUILD)
+  if(HIP)
+    add_definitions(-DHIP_BUILD)
+    #does not seem to be needed because kokkos::default will be picked up
+    #SET (HOMMEXX_HIP_SPACE ON)
+  endif()
+
+  IF (CUDA_BUILD OR HIP)
+    message("HERE WE ARE--------------------------------------------")
     SET (DEFAULT_VECTOR_SIZE 1)
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()
 
   SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
-    "If AVX or Cuda don't take priority, use this software vector size.")
+	  "If AVX or Cuda or HIP don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
     SET (HOMMEXX_DEBUG ON)
