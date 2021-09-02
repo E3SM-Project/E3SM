@@ -4,11 +4,11 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_alloc_prop.hpp"
+#include "share/util/scream_family_tracking.hpp"
 #include "share/scream_types.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/std_meta/ekat_std_any.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 
 #include <vector>
 #include <map>
@@ -33,7 +33,7 @@ class AtmosphereProcess;
  * to warrant a new sub-object or a specific named member/method.
  */
 
-class FieldHeader : public ekat::enable_shared_from_this<FieldHeader> {
+class FieldHeader : public FamilyTracking<FieldHeader> {
 public:
 
   using identifier_type = FieldIdentifier;
@@ -43,9 +43,6 @@ public:
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
   explicit FieldHeader (const identifier_type& id);
-  FieldHeader (const identifier_type& id,
-               std::shared_ptr<FieldHeader> parent,
-               const int idim, const int k);
 
   // Assignment deleted, to prevent sneaky overwrites.
   FieldHeader& operator= (const FieldHeader&) = delete;
@@ -78,16 +75,16 @@ public:
   const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
         FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
 
-  // Get parent (if any)
-  std::weak_ptr<FieldHeader> get_parent () const { return m_parent; }
-
-  // Get children list (if any)
-  std::list<std::weak_ptr<FieldHeader>> get_children () const { return m_children; }
-
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
 
 protected:
+
+  // Friend this function, so it can set up a subfield header
+  friend std::shared_ptr<FieldHeader>
+  create_subfield_header (const FieldIdentifier&,
+                          std::shared_ptr<FieldHeader>,
+                          const int, const int);
 
   // Static information about the field: name, rank, tags
   identifier_type                 m_identifier;
@@ -97,11 +94,6 @@ protected:
 
   // Allocation properties
   FieldAllocProp                  m_alloc_prop;
-
-  // If this field is a sub-view of another field, we keep a pointer to the parent
-  // OTOH, if other fields are sub-view of this field, we keep a pointer to them
-  std::weak_ptr<FieldHeader>              m_parent;
-  std::list<std::weak_ptr<FieldHeader>>   m_children;
 
   // Extra data associated with this field
   extra_data_type                 m_extra_data;
@@ -115,6 +107,14 @@ create_header(const Args&... args) {
   ptr->setSelfPointer(ptr);
   return ptr;
 }
+
+// Use this free function to create a header for a field that
+// is the subfield of another field, that is, for something
+// that (in matlab syntax) looks like sf = f(:,1,:)
+std::shared_ptr<FieldHeader>
+create_subfield_header (const FieldIdentifier& id,
+                        std::shared_ptr<FieldHeader> parent,
+                        const int idim, const int k);
 
 } // namespace scream
 

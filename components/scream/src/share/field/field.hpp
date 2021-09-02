@@ -96,9 +96,17 @@ public:
   template<typename SrcDT>
   Field (const Field<SrcDT>& src);
 
-  // Assignment: allows const->const, nonconst->nonconst, and nonconst->const copies
-  template<typename SrcDT>
-  Field& operator= (const Field<SrcDT>& src);
+  Field& operator= (const Field& src) = default;
+
+  // Assignment overload to allow nonconst->const assignment
+  template<typename SrcRT>
+  typename std::enable_if<
+    !std::is_const<SrcRT>::value &&
+     std::is_const<RT>::value,
+    Field
+  >::type&
+  operator= (const Field<SrcRT>& src);
+
 
   // ---- Getters and const methods---- //
   const header_type& get_header () const { return *m_header; }
@@ -350,23 +358,22 @@ Field (const Field<SrcRealType>& src)
 }
 
 template<typename RealType>
-template<typename SrcRealType>
-Field<RealType>&
+template<typename SrcRT>
+typename std::enable_if<
+  !std::is_const<SrcRT>::value &&
+  std::is_const<RealType>::value,
+  Field<RealType>
+>::type&
 Field<RealType>::
-operator= (const Field<SrcRealType>& src) {
+operator= (const Field<SrcRT>& src) {
   using src_field_type = typename std::remove_reference<decltype(src)>::type;
 
-  // NOTE: the following checks might be redundant, since Kokkos::View copy
+  // Check that the underlying value type is the same
+  // NOTE: the check might be redundant, since Kokkos::View copy
   //       constructor might already perform analogue checks in order to
   //       assign pointers.
-
-  // Check that the underlying value type is the same
   static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
                 "Error! Cannot use copy constructor if the underlying real type is different.\n");
-  // Check that destination is const or source is nonconst
-  static_assert( std::is_const<RT>::value ||
-                !std::is_const<typename src_field_type::RT>::value,
-                "Error! Cannot create a nonconst field from a const field.\n");
 
   // If the field has a valid header (i.e., m_header!=nullptr), then
   // we only allow assignment of fields with the *same* identifier,
@@ -596,7 +603,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
 
   // Create header
-  auto sv_h = create_header(sf_id,m_header,idim,k);
+  auto sv_h = create_subfield_header(sf_id,m_header,idim,k);
 
   // Create subfield (set host view too)
   field_type sf(sv_h,m_view_d);

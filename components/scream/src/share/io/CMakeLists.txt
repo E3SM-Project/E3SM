@@ -2,6 +2,7 @@ set(SCREAM_SCORPIO_SRCS
   scream_scorpio_interface.F90
   scream_scorpio_interface.cpp
   scream_scorpio_interface_iso_c2f.F90
+  scream_output_manager.cpp
   scorpio_input.cpp
   scorpio_output.cpp
 )

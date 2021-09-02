@@ -1,4 +1,5 @@
 #include "share/field/field_header.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 
 namespace scream
 {
@@ -9,30 +10,6 @@ FieldHeader::FieldHeader (const identifier_type& id)
  , m_alloc_prop ()
 {
   // Nothing to be done here
-}
-
-FieldHeader::FieldHeader (const identifier_type& id,
-                          std::shared_ptr<FieldHeader> parent,
-                          const int idim, const int k)
- : m_identifier (id)
-{
-  EKAT_REQUIRE_MSG (parent!=nullptr,
-      "Error! Invalid pointer for parent header.\n");
-  EKAT_REQUIRE_MSG (id.get_layout_ptr()!=nullptr,
-      "Error! Input field identifier has an invalid layout pointer.\n");
-
-  m_parent = parent;
-
-  m_tracking = create_tracking(id.name(),parent->get_tracking_ptr());
-
-  m_alloc_prop = parent->get_alloc_properties().subview(idim,k);
-  m_alloc_prop.commit(id.get_layout_ptr());
-
-  m_tracking->register_as_children_in_parent();
-
-  // Add me to the list of children of my parent
-  auto me = shared_from_this();
-  parent->m_children.push_back(me);
 }
 
 void FieldHeader::
@@ -48,6 +25,37 @@ set_extra_data (const std::string& key,
   } else {
     m_extra_data[key] = data;
   }
+}
+
+// ---------------- Free function -------------------- //
+
+std::shared_ptr<FieldHeader>
+create_subfield_header (const FieldIdentifier& id,
+                        std::shared_ptr<FieldHeader> parent,
+                        const int idim, const int k)
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (parent!=nullptr,
+      "Error! Invalid pointer for parent header.\n");
+  EKAT_REQUIRE_MSG (id.get_layout_ptr()!=nullptr,
+      "Error! Input field identifier has an invalid layout pointer.\n");
+
+  // Create header, and set up parent/child
+  auto fh = create_header(id);
+  fh->create_parent_child_link(parent);
+
+  // Create tracking, and set up parent/child
+  fh->m_tracking = create_tracking(id.name());
+  fh->m_tracking->create_parent_child_link(parent->get_tracking_ptr());
+  if (parent->get_tracking().get_time_stamp().is_valid()) {
+    fh->m_tracking->update_time_stamp(parent->get_tracking().get_time_stamp());
+  }
+
+  // Create alloc props
+  fh->m_alloc_prop = parent->get_alloc_properties().subview(idim,k);
+  fh->m_alloc_prop.commit(id.get_layout_ptr());
+
+  return fh;
 }
 
 } // namespace scream

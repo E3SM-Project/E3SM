@@ -1,4 +1,5 @@
 #include "scream_scorpio_interface.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 #include "scream_config.h"
 
 #include "ekat/ekat_assert.hpp"
@@ -16,17 +17,10 @@ extern "C" {
   void register_infile_c2f(const char*&& filename);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
-  void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, const Int dim1_length, Real *hbuf);
+  void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, Real *&hbuf);
   void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
 
-  void grid_write_data_array_c2f_real_1d(const char*&& filename, const char*&& varname, const Int dim1_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_2d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_3d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Real* hbuf);
-  void grid_write_data_array_c2f_real_4d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Real* hbuf);
-  void grid_write_data_array_c2f_int_1d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_2d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_3d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int* hbuf);
-  void grid_write_data_array_c2f_int_4d (const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Int* hbuf);
+  void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
   void eam_pio_finalize_c2f();
   void register_outfile_c2f(const char*&& filename);
@@ -144,84 +138,13 @@ void count_pio_atm_file() {
 
 }
 /* ----------------------------------------------------------------- */
-// Read and Write routines
-// Inputs:
-//   filename:   is the filename for the associated netCDF file.
-//   varname:    is the variable name for this netCDF operation.
-//   dims:       is a vector of integers with length equal to the total number of dimensions for the variable.
-//               note, each dimension here is the actual physical dimension, which can be different than the allocated dimension.
-//               If, for example, a variable is padded then the final value of dims would be smaller than the allocation size.
-//   dim_length: is the total number of real data values.  Again, if a variable is padded, the padding should not be included in this value.
-//   padding:    is the amount of padding the variable has, see documentation on packed variables in fields.hpp.  Note padding should be >= 0.
-//   hbuf:       is a pointer to where the data for this variable is stored.
-/* ----------------------------------------------------------------- */
-// Handling the reading of input for packed arrays
-void grid_read_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, Real *hbuf) {
-
-  if (padding == 0) // then no xtra data, is contiguous
-  {
-    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
-  } else {
-    std::vector<Real> hbuf_new(dim_length);
-    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
-    // Copy the read in values back to the packed array
-    int slow_dim_len = dim_length / dims.back();
-    add_remove_padding(slow_dim_len,dims.back(),padding,hbuf_new.data(),hbuf,false);
-  }
-
+void grid_read_data_array(const std::string &filename, const std::string &varname, Real *hbuf) {
+  grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 };
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, Real *hbuf) {
-
-  grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
+void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {
+  grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 };
-/* ----------------------------------------------------------------- */
-// Handling the writing of output for packed arrays
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf)
-{
-  if (padding == 0) // then no xtra data, is contiguous
-  {
-    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-  } else {
-    std::vector<Real> hbuf_new(dim_length);
-    // Packed along final dimension
-    int slow_dim_len = dim_length / dims.back();
-    add_remove_padding(slow_dim_len,dims.back(),padding,hbuf,hbuf_new.data(),true);
-    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
-  }
-}
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void add_remove_padding(const int slow_dim_len, const int pad_dim_len, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding)
-{
-  int loc  = 0; // running tally of what index in the packed array we are at.
-  int dloc = 0; // running tally of what index in the read in contiguous array we are at.
-  int *ind_in, *ind_out;
-  // Keep track of which index is used for input and output, based on if we are adding or removing padding for hbuf_out.
-  if (add_padding)
-  {
-    ind_out = &dloc;
-    ind_in  = &loc;
-  } else {
-    ind_out = &loc;
-    ind_in  = &dloc;
-  }
-//  int ind_in,ind_out;
-  for (int ii=0;ii<slow_dim_len;ii++)
-  {
-    for (int jj=0;jj<pad_dim_len;jj++,loc++,dloc++)
-    {
-      hbuf_out[*ind_out] = hbuf_in[*ind_in];
-    }
-    loc += padding;
-  }
-}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio

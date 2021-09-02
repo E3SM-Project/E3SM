@@ -1,6 +1,7 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
+#include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
 #include <vector>
@@ -52,20 +53,19 @@ namespace scorpio {
   void pio_update_time(const std::string &filename, const Real time);
 
   /* Read data for a specific variable from a specific file. */
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Real* hbuf);
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, Real* hbuf);
+  void grid_read_data_array (const std::string &filename, const std::string &varname, Real* hbuf);
   /* Write data for a specific variable to a specific file. */
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
   /* Helper functions */
-  void add_remove_padding(const int slow_dim_len, const int pad_dim_len, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding);
   void count_pio_atm_file();
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   int  eam_pio_subsystem_comm ();
+  int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
+  void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from

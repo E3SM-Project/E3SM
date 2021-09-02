@@ -88,12 +88,7 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
-  std::random_device rd;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  rngAlg engine(seed);
+  auto engine = setup_random_test ();
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
 
@@ -446,8 +441,8 @@ TEST_CASE("tracers_bundle", "") {
   auto qc = field_mgr.get_field(qc_id.name());
   auto qr = field_mgr.get_field(qr_id.name());
 
-  auto group = field_mgr.get_field_group("tracers");
   // The field_mgr should have allocated the group bundled
+  auto group = field_mgr.get_field_group("tracers");
   REQUIRE (group.m_info->m_bundled);
 
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
@@ -626,16 +621,10 @@ TEST_CASE("field_property_check", "") {
 
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
 
-  std::random_device rd;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  rngAlg engine(seed);
+  auto engine = setup_random_test();
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pos_pdf(0.01,0.99);
   RPDF neg_pdf(-0.99, -0.01);
-
 
   // Check positivity.
   SECTION ("field_positivity_check") {

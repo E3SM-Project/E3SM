@@ -1,9 +1,8 @@
 #include <catch2/catch.hpp>
+#include <memory>
 
-#include "scream_config.h"
-#include "share/scream_types.hpp"
-
-#include "share/io/output_manager.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
@@ -16,6 +15,11 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/util/scream_time_stamp.hpp"
+#include "share/scream_types.hpp"
+#include "scream_config.h"
+
+#include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -29,10 +33,10 @@ using input_type = AtmosphereInput;
 const int packsize = 2;
 using Pack         = ekat::Pack<Real,packsize>;
 
-std::shared_ptr<FieldManager<Real>>      get_test_fm(std::shared_ptr<const AbstractGrid> grid);
-std::shared_ptr<UserProvidedGridsManager>   get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-ekat::ParameterList                         get_om_params(const Int casenum, const ekat::Comm& comm);
-ekat::ParameterList                         get_in_params(const std::string type, const ekat::Comm& comm);
+std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid);
+std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+ekat::ParameterList                 get_om_params(const ekat::Comm& comm, const std::string& grid);
+ekat::ParameterList                 get_in_params(const std::string type, const ekat::Comm& comm);
 
 TEST_CASE("input_output_basic","io")
 {
@@ -46,19 +50,14 @@ TEST_CASE("input_output_basic","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // First set up a field manager and grids manager to interact with the output functions
-  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
-  auto grid = grid_man->get_grid("Physics");
+  auto grid = get_test_grid(io_comm,num_gcols,num_levs);
   int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
 
   // Create an Output manager for testing output
-  OutputManager m_output_manager;
-  auto output_params = get_om_params(1,io_comm);
-  m_output_manager.set_params(output_params);
-  m_output_manager.set_comm(io_comm);
-  m_output_manager.set_grids(grid_man);
-  m_output_manager.set_field_mgr(field_manager);
-  m_output_manager.init();
+  OutputManager output_manager;
+  auto output_params = get_om_params(io_comm,grid->name());
+  output_manager.setup(io_comm,output_params,field_manager,false);
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
@@ -97,9 +96,9 @@ TEST_CASE("input_output_basic","io")
       }
       f.sync_to_dev();
     }
-    m_output_manager.run(time);
+    output_manager.run(time);
   }
-  m_output_manager.finalize();
+  output_manager.finalize();
   // Because the next test for input in this sequence relies on the same fields.  We set all field values
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
   for (const auto& fname : out_fields->m_fields_names)
@@ -119,8 +118,8 @@ TEST_CASE("input_output_basic","io")
   auto max_params = get_in_params("Max",io_comm);
   Real tol = pow(10,-6);
   // Check instant output
-  input_type ins_input(io_comm,ins_params,field_manager,grid_man);
-  ins_input.pull_input();
+  input_type ins_input(io_comm,ins_params,field_manager);
+  ins_input.read_variables();
   auto f1 = field_manager->get_field("field_1");
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
@@ -146,8 +145,8 @@ TEST_CASE("input_output_basic","io")
   }
 
   // Check average output
-  input_type avg_input(io_comm,avg_params,field_manager,grid_man);
-  avg_input.pull_input();
+  input_type avg_input(io_comm,avg_params,field_manager);
+  avg_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -167,8 +166,8 @@ TEST_CASE("input_output_basic","io")
 
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-  input_type max_input(io_comm,max_params,field_manager,grid_man);
-  max_input.pull_input();
+  input_type max_input(io_comm,max_params,field_manager);
+  max_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -183,8 +182,8 @@ TEST_CASE("input_output_basic","io")
   }
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
-  input_type min_input(io_comm,min_params,field_manager,grid_man);
-  min_input.pull_input();
+  input_type min_input(io_comm,min_params,field_manager);
+  min_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -198,31 +197,8 @@ TEST_CASE("input_output_basic","io")
     REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
   }
   
-  // Test pulling input without the field manager:
-  using view_2d  = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-  using pview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Pack>;
-  int num_packs = ekat::npack<Pack>(num_levs);
-  view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
-  pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
-  std::string filename = ins_params.get<std::string>("FILENAME");
-  std::vector<std::string> var_dims = {"lev","ncol"};
-  bool has_columns = true;
-  std::vector<int> dim_lens = {num_lcols,num_levs};
-  input_type loc_input(io_comm,"Physics",grid_man);
-  loc_input.pull_input<Real>(filename, loc_field_3.label(), var_dims, has_columns, dim_lens, loc_field_3.data());
-  loc_input.pull_input<Pack>(filename, loc_field_4.label(), var_dims, has_columns, dim_lens, loc_field_4.data());
-  for (int ii=0;ii<num_lcols;++ii) {
-    for (int jj=0;jj<num_levs;++jj) {
-      int ipack = jj / packsize;
-      int ivec  = jj % packsize;
-      REQUIRE(std::abs(loc_field_3(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      REQUIRE(std::abs(loc_field_4(ii,ipack)[ivec]-(ii+max_steps*dt + (jj+1)/10.))<tol);
-    }
-  }
-
   // All Done 
   scorpio::eam_pio_finalize();
-  (*grid_man).clean_up();
 } // TEST_CASE output_instance
 /* ----------------------------------*/
 
@@ -305,55 +281,33 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   return fm;
 }
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = create_point_grid("Physics",num_gcols,num_levs,io_comm);
-  auto upgm = std::make_shared<UserProvidedGridsManager>();
-  upgm->set_grid(dummy_grid);
-
-  return upgm;
+  return create_point_grid("Physics",num_gcols,num_levs,io_comm);
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid)
 {
   ekat::ParameterList om_params("Output Manager");
-  om_params.set<Int>("PIO Stride",1);
-  if (casenum == 1) {
-    std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
-                                            "io_test_max",    "io_test_min" };
-    for (auto& name : fileNames) {
-      name += "_np" + std::to_string(comm.size()) + ".yaml";
-    }
-
-    om_params.set("Output YAML Files",fileNames);
-  } else if (casenum == 2) {
-    std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
-    om_params.set("Output YAML Files",fileNames);
-    auto& res_sub = om_params.sublist("Restart Control");
-    auto& freq_sub = res_sub.sublist("FREQUENCY");
-    freq_sub.set<Int>("OUT_N",5);
-    freq_sub.set<std::string>("OUT_OPTION","Steps");
-  } else {
-    EKAT_REQUIRE_MSG(false,"Error, incorrect case number for get_om_params");
+  auto& files = om_params.sublist("Output YAML Files");
+  std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
+                                          "io_test_max",    "io_test_min" };
+  for (auto& name : fileNames) {
+    name += "_np" + std::to_string(comm.size()) + ".yaml";
   }
+
+  files.set(grid,fileNames);
 
   return om_params;  
 }
 /*===================================================================================================================*/
 ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm)
 {
+  using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type+".Steps_x10.0000-01-01.000010.nc");
-  in_params.set<std::string>("GRID","Physics");
-  auto& f_list = in_params.sublist("FIELDS");
-  f_list.set<Int>("Number of Fields",4);
-  for (int ii=1;ii<=3+1;++ii) {
-    f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-  }
-  f_list.set<std::string>("field 4","field_packed");
+  auto type_ci = ekat::upper_case(type);
+  in_params.set<std::string>("Filename","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
+  in_params.set<vos_type>("Fields",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
 }
 /*===================================================================================================================*/

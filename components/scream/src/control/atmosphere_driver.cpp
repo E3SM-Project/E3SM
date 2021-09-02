@@ -1,5 +1,7 @@
 #include "control/atmosphere_driver.hpp"
+#include <memory>
 
+#include "ekat/ekat_parameter_list.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -215,20 +217,17 @@ void AtmosphereDriver::create_fields()
   m_ad_status |= s_fields_created;
 }
 
-void AtmosphereDriver::initialize_output_manager () {
+void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  // Create Initial conditions
-
-  // Create Output manager
-  if (m_atm_params.isSublist("Output Manager")) {
-    auto& out_params = m_atm_params.sublist("Output Manager");
-    m_output_manager.set_params(out_params);
-    m_output_manager.set_comm(m_atm_comm);
-    m_output_manager.set_grids(m_grids_manager);
-    m_output_manager.set_field_mgr(get_ref_grid_field_mgr());
+  // For each grid in the grids manager, grab a homonymous sublist of the
+  // "Output Managers" atm params sublist (might be empty), and create
+  // an output manager for that grid.
+  auto& io_params = m_atm_params.sublist("SCORPIO");
+  for (auto it : m_grids_manager->get_repo()) {
+    auto fm = m_field_mgrs.at(it.first);
+    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,restarted_run);
   }
-  m_output_manager.init();
 
   m_ad_status |= s_output_inited;
 }
@@ -268,8 +267,7 @@ initialize_fields (const util::TimeStamp& t0)
 
   // Create parameter list for AtmosphereInput
   ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("GRID",ref_grid_name);
-  auto& ic_fields = ic_reader_params.sublist("FIELDS");
+  std::vector<std::string> ic_fields_names;
   int ifield=0;
   std::vector<FieldIdentifier> ic_fields_to_copy;
   for (const auto& req : fields_in) {
@@ -296,29 +294,29 @@ initialize_fields (const util::TimeStamp& t0)
           "       Ref grid name:    " + ref_grid_name + "\n"
           "       Input field grid: " + req.fid.get_grid_name() + "\n");
 
-      ic_fields.set(ekat::strint("field",ifield+1),name); 
+      ic_fields_names.push_back(name);
       ++ifield;
 
     }
     f.get_header().get_tracking().update_time_stamp(t0);
   }
+  ic_reader_params.set("Fields",ic_fields_names);
 
-  // Check the status of lat and lon values on reference grid:
+  // Check whether we need to load latitude/longitude of reference grid dofs.
   // This option allows the user to set lat or lon in their own
   // test or run setup code rather than by file.
-  bool skip_init_lat = true;
-  bool skip_init_lon = true;
-  if (ic_pl.isParameter("skip_init_lat")) {
-    skip_init_lat     = ic_pl.get<bool>("skip_init_lat");
+  bool load_latitude  = false;
+  bool load_longitude = false;
+  if (ic_pl.isParameter("I")) {
+    load_latitude = ic_pl.get<bool>("Load Latitude");
   }
-  if (ic_pl.isParameter("skip_init_lon")) {
-    skip_init_lon     = ic_pl.get<bool>("skip_init_lon");
+  if (ic_pl.isParameter("load_longitude")) {
+    load_longitude = ic_pl.get<bool>("Load Longitude");
   }
 
-  if (ifield>0 || (!skip_init_lon or !skip_init_lat)) {
+  if (ifield>0 || load_longitude || load_latitude) {
     // There are fields to read from the nc file. We must have a valid nc file then.
-    ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
-    ic_fields.set("Number of Fields",ifield);
+    ic_reader_params.set("Filename",ic_pl.get<std::string>("Initial Conditions File"));
 
     MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
     if (!scorpio::is_eam_pio_subsystem_inited()) {
@@ -328,23 +326,47 @@ initialize_fields (const util::TimeStamp& t0)
           "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
     }
 
-    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,get_ref_grid_field_mgr(),m_grids_manager);
-
     // Case where there are fields to load from initial condition file.
     if (ifield>0) {
-      ic_reader.pull_input();
+      AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,get_ref_grid_field_mgr());
+      ic_reader.read_variables();
+      ic_reader.finalize();
     }
 
     // Case where lat and/or lon pulled from initial condition file
-    auto ref_grid = m_grids_manager->get_reference_grid();
-    int ncol  = ref_grid->get_num_local_dofs();
-    if (!skip_init_lat) {
-      auto& lat = ref_grid->get_geometry_data("lat");
-      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lat",{"ncol"},true,{ncol},lat.data());
-    }
-    if (!skip_init_lon) {
-      auto& lon = ref_grid->get_geometry_data("lon");
-      ic_reader.pull_input<Real>(ic_pl.get<std::string>("Initial Conditions File"),"lon",{"ncol"},true,{ncol},lon.data());
+    if ( load_latitude || load_longitude) {
+      using namespace ShortFieldTagsNames;
+      using view_d = AbstractGrid::geo_view_type;
+      using view_h = view_d::HostMirror;
+      auto ref_grid = m_grids_manager->get_reference_grid();
+      int ncol  = ref_grid->get_num_local_dofs();
+      FieldLayout layout ({COL},{ncol});
+
+      std::vector<std::string> fnames;
+      std::map<std::string,FieldLayout> layouts;
+      std::map<std::string,view_h> host_views;
+      std::map<std::string,view_d> dev_views;
+      if (load_latitude) {
+        dev_views["lat"] = ref_grid->get_geometry_data("lat");
+        host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
+        layouts.emplace("lat",layout);
+        fnames.push_back("lat");
+      }
+      if (load_longitude) {
+        dev_views["lon"] = ref_grid->get_geometry_data("lon");
+        host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
+        layouts.emplace("lon",layout);
+        fnames.push_back("lon");
+      }
+
+      ekat::ParameterList lat_lon_params;
+      lat_lon_params.set("Fields",fnames);
+      lat_lon_params.set("Filename",ic_pl.get<std::string>("Initial Conditions File"));
+
+      AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params);
+      lat_lon_reader.init(ref_grid,host_views,layouts);
+      lat_lon_reader.read_variables();
+      lat_lon_reader.finalize();
     }
   }
 
@@ -441,9 +463,11 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_ad_status |= s_procs_inited;
 }
 
-void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
-                                   const ekat::ParameterList& params,
-                                   const util::TimeStamp& t0)
+void AtmosphereDriver::
+initialize (const ekat::Comm& atm_comm,
+            const ekat::ParameterList& params,
+            const util::TimeStamp& t0,
+            const bool restarted_run)
 {
   set_comm(atm_comm);
   set_params(params);
@@ -456,7 +480,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
 
   initialize_fields (t0);
 
-  initialize_output_manager ();
+  initialize_output_managers (restarted_run);
 
   initialize_atm_procs ();
 }
@@ -478,7 +502,9 @@ void AtmosphereDriver::run (const Real dt) {
   m_current_ts += dt;
 
   // Update output streams
-  m_output_manager.run(m_current_ts);
+  for (auto& out_mgr : m_output_managers) {
+    out_mgr.second.run(m_current_ts);
+  }
 
   if (m_surface_coupling) {
     // Export fluxes from the component coupler (if any)
@@ -490,7 +516,9 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 
   // Finalize output streams, make sure files are closed
-  m_output_manager.finalize();
+  for (auto& out_mgr : m_output_managers) {
+    out_mgr.second.finalize();
+  }
 
   for (auto it : m_field_mgrs) {
     it.second->clean_up();
