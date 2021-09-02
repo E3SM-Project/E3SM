@@ -65,7 +65,7 @@
 </compset>
 
 <compset>
-  <alias>A_WCYCLSSP585_CMIP6</alias>
+  <alias>WCYCLSSP585</alias>
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
@@ -289,7 +289,7 @@
 <!-- E3SM BG compsets -->
 
 <compset>
-  <alias>A_BG1850CN</alias>
+  <alias>BG1850CN</alias>
   <lname>1850_EAM_ELM%CN_MPASSI_MPASO_MOSART_MALI%SIA_SWAV</lname>
 </compset>
 
