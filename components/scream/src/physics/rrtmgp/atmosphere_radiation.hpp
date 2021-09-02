@@ -21,6 +21,10 @@ public:
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using ci_string        = ekat::CaseInsensitiveString;
 
+  using KT               = ekat::KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using uview_1d         = Unmanaged<typename KT::template view_1d<ScalarT>>;
+
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -59,6 +63,8 @@ public:
   int m_nlay;
   view_1d_real m_lat;
   view_1d_real m_lon;
+  // The orbital year, used for zenith angle calculations:
+  Int m_orbital_year;
 
   // Need to hard-code some dimension sizes for now. 
   // TODO: find a better way of configuring this
@@ -73,7 +79,7 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 5;
+    static constexpr int num_1d_ncol        = 6;
     static constexpr int num_2d_nlay        = 14;
     static constexpr int num_2d_nlay_p1     = 7;
     static constexpr int num_2d_nswbands    = 2;
@@ -84,6 +90,7 @@ public:
     real1d sfc_alb_dir_nir;
     real1d sfc_alb_dif_vis;
     real1d sfc_alb_dif_nir;
+    uview_1d<Real> cosine_zenith;
 
     // 2d size (ncol, nlay)
     real2d p_lay;

@@ -96,8 +96,10 @@ namespace scream {
         // Get dimension sizes from the field manager
         const auto& grid = ad.get_grids_manager()->get_grid("Physics");
         const auto& field_mgr = *ad.get_field_mgr(grid->name());
-        int ncol = grid->get_num_local_dofs();
-        int nlay = grid->get_num_vertical_levels();
+        int ncol  = grid->get_num_local_dofs();
+        int nlay  = grid->get_num_vertical_levels();
+        auto& lat = grid->get_geometry_data("lat");
+        auto& lon = grid->get_geometry_data("lon");
 
         // Get number of shortwave bands and number of gases from RRTMGP
         int ngas     =   8;  // TODO: get this intelligently
@@ -185,7 +187,6 @@ namespace scream {
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
         auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
 
         auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
         auto d_co2 = field_mgr.get_field("co2").get_view<Real**>();
@@ -210,7 +211,13 @@ namespace scream {
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const int i = team.league_rank();
 
-            d_mu0(i) = mu0(i+1);
+            // Set lat and lon to single value for just this test:
+            // Note, these values will ensure that the cosine zenith
+            // angle will end up matching the constant velue meant for
+            // the test, which is 0.86
+            lat(i) = 5.224000000000;
+            lon(i) = 167.282000000000; 
+
             d_sfc_alb_dir_vis(i) = sfc_alb_dir_vis(i+1);
             d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);
             d_sfc_alb_dif_vis(i) = sfc_alb_dif_vis(i+1);

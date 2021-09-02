@@ -1,6 +1,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
@@ -64,7 +65,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
   add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
@@ -117,6 +117,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_alb_dif_vis.totElems();
   m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_ncol);
   mem += m_buffer.sfc_alb_dif_nir.totElems();
+  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_ncol);
+  mem += m_buffer.cosine_zenith.size();
 
   // 2d arrays
   m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_ncol, m_nlay);
@@ -174,6 +176,9 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   using PC = scream::physics::Constants<Real>;
+  // Determine orbital year
+  m_orbital_year = m_rrtmgp_params.get<Real>("Orbital Year",1990);
+
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
@@ -198,6 +203,13 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 
 void RRTMGPRadiation::run_impl (const Real dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
+  using PC = scream::physics::Constants<Real>;
+  // get a host copy of lat/lon 
+  auto h_lat  = Kokkos::create_mirror_view(m_lat);
+  auto h_lon  = Kokkos::create_mirror_view(m_lon);
+  Kokkos::deep_copy(h_lat,m_lat);
+  Kokkos::deep_copy(h_lon,m_lon);
+
   // Get data from the FieldManager
   auto d_pmid = m_fields_in.at("p_mid").get_view<const Real**>();
   auto d_pint = m_fields_in.at("p_int").get_view<const Real**>();
@@ -207,7 +219,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_sfc_alb_dir_nir = m_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
   auto d_sfc_alb_dif_vis = m_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
   auto d_sfc_alb_dif_nir = m_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
-  auto d_mu0 = m_fields_in.at("cos_zenith").get_view<const Real*>();
   auto d_qv = m_fields_in.at("qv").get_view<const Real**>();
   auto d_qc = m_fields_in.at("qc").get_view<const Real**>();
   auto d_qi = m_fields_in.at("qi").get_view<const Real**>();
@@ -248,10 +259,34 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
   // Copy data from the FieldManager to the YAKL arrays
   {
+    // Determine the cosine zenith angle
+    // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
+    //       deep copied to a device view.
+    auto d_mu0 = m_buffer.cosine_zenith;
+    auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
+    //       copied back to DEVICE.
+    double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
+    double delta, eccf;
+    // First gather the orbital parameters:
+    shr_orb_params_c(&m_orbital_year, &eccen, &obliq, &mvelp, 
+                       &obliqr, &lambm0, &mvelpp);
+    // Use the oribtal parameters to calculate the delta value
+    auto ts = timestamp();
+    auto calday = ts.get_julian_day();
+    shr_orb_decl_c(calday, eccen, mvelpp, lambm0,
+                     obliqr, &delta, &eccf);
+    // Now assign value to the cosine zenith angle
+    for (int i=0;i<m_ncol;i++) {
+      // Using delta, calculate the zenith angle for all points
+      double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
+      double lon = h_lon(i)*PC::Pi/180.0;
+      h_mu0(i) = shr_orb_cosz_c(calday, lat, lon, delta, dt);
+    }
+    Kokkos::deep_copy(d_mu0,h_mu0);
+
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
-
       mu0(i+1) = d_mu0(i);
       sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);
       sfc_alb_dir_nir(i+1) = d_sfc_alb_dir_nir(i);
