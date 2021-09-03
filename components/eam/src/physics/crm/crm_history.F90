@@ -380,7 +380,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    use ppgrid,                 only: pcols, pver, pverp
    use physconst,              only: cpair
    use cam_history,            only: outfld
-   
+   use cam_abortutils,         only: endrun
    !----------------------------------------------------------------------------
    ! interface variables
    type(physics_state),              intent(in) :: state             ! Global model state 
@@ -398,6 +398,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! local variables
+   character*15 :: subname='crm_history_out'
    real(r8) :: cwp       (pcols,pver)  ! in-cloud cloud (total) water path (kg/m2)
    real(r8) :: gwp       (pcols,pver)  ! grid-box cloud (total) water path (kg/m2)
    real(r8) :: cicewp    (pcols,pver)  ! in-cloud cloud ice water path (kg/m2)
@@ -416,6 +417,11 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    integer :: idx_vt_t, idx_vt_q
 
    !----------------------------------------------------------------------------
+
+   ! check that icol bounds are correct
+   if ( (icol_end-icol_beg+1) /= ncol ) then
+      call endrun(trim(subname)//': icol_beg and icol_end bounds do not match ncol')
+   end if
 
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
