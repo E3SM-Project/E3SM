@@ -733,8 +733,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   type(crm_ecpp_output_type) :: crm_ecpp_output       ! CRM output data for ECPP calculations
   type(crm_ecpp_output_type) :: crm_ecpp_output_chunk ! CRM output data for ECPP calculations (copy)
   integer  :: ncol_sum
-  integer  :: ncol_beg(begchunk:endchunk)
-  integer  :: ncol_end(begchunk:endchunk)
+  integer  :: icol_beg(begchunk:endchunk)
+  integer  :: icol_end(begchunk:endchunk)
 
   integer  :: itim_old, cldo_idx, cld_idx   ! pbuf indices  
   real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
@@ -808,14 +808,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   ! CRM physics
   !-----------------------------------------------------------------------------  
 
-  ! Determine column start and end indices for crm_ecpp_output
-  ncol_sum = 0
-  do c=begchunk, endchunk
-    ncol_beg(c) = ncol_sum + 1
-    ncol_end(c) = ncol_sum + phys_state(c)%ncol
-    ncol_sum = ncol_sum + phys_state(c)%ncol
-  end do
-
   if (use_ECPP) then
     call crm_ecpp_output_initialize(crm_ecpp_output_chunk,pcols,pver)
     call crm_ecpp_output_initialize(crm_ecpp_output,      ncrms,pver)
@@ -840,6 +832,14 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   call t_barrierf('sync_bc_physics', mpicom)
   call t_startf ('bc_physics2')
 
+  ! Determine column start and end indices for crm_ecpp_output
+  ncol_sum = 0
+  do c=begchunk, endchunk
+    icol_beg(c) = ncol_sum + 1
+    icol_end(c) = ncol_sum + phys_state(c)%ncol
+    ncol_sum = ncol_sum + phys_state(c)%ncol
+  end do
+
 !$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, chunk_cost)
   do c=begchunk, endchunk
 
@@ -848,7 +848,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     ! Output physics terms to IC file
     phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
 
-    if (use_ECPP) call crm_ecpp_output_copy( crm_ecpp_output, crm_ecpp_output_chunk, ncol_beg(c), ncol_end(c))
+    if (use_ECPP) call crm_ecpp_output_copy( crm_ecpp_output, crm_ecpp_output_chunk, icol_beg(c), icol_end(c))
 
     call tphysbc2(ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), &
                  phys_state(c), phys_tend(c), phys_buffer_chunk, &
