@@ -10,6 +10,12 @@ Fields:
   - qv
   - qc
   - qr
+  - qi
+  - qm
+  - nc
+  - nr
+  - ni
+  - bm
   - qv_prev_micro_step
   - eff_radius_qc
   - eff_radius_qi

@@ -67,8 +67,6 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Get the set of required/computed fields
-
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
@@ -244,10 +242,6 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
@@ -255,10 +249,7 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  std::map<std::string,const_field_type>  m_p3_fields_in;
-  std::map<std::string,field_type>        m_p3_fields_out;
-
-  util::TimeStamp     m_current_ts;
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm          m_p3_comm;
   ekat::ParameterList m_p3_params;
 

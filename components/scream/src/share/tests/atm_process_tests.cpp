@@ -56,10 +56,6 @@ protected:
   // Clean up
   void finalize_impl ( /* inputs */ ) {}
 
-  // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real>& /* f */) {}
-  void set_computed_field_impl (const Field<      Real>& /* f */) {}
-
   std::string m_name;
   std::string m_grid_name;
 

@@ -366,7 +366,7 @@ add_nodes (const group_type& atm_procs,
       m_unmet_deps[id].clear();
 
       // Input fields
-      for (const auto& req : proc->get_required_fields()) {
+      for (const auto& req : proc->get_required_field_requests()) {
         const auto& fid = req.fid;
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
@@ -381,7 +381,7 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Output fields
-      for (const auto& req : proc->get_computed_fields()) {
+      for (const auto& req : proc->get_computed_field_requests()) {
         const auto& fid = req.fid;
         const int fid_id = add_fid(fid);
         node.computed.insert(fid_id);
@@ -389,7 +389,7 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Input groups
-      for (const auto& itg : proc->get_required_groups()) {
+      for (const auto& itg : proc->get_required_group_requests()) {
         EKAT_REQUIRE_MSG (field_mgrs.find(itg.grid)!=field_mgrs.end(),
             "Error! Field manager not found for this group request.\n"
             "       Group name: " + itg.name + "\n"
@@ -437,7 +437,7 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Input-output groups
-      for (const auto& itg : proc->get_updated_groups()) {
+      for (const auto& itg : proc->get_updated_group_requests()) {
         EKAT_REQUIRE_MSG (field_mgrs.find(itg.grid)!=field_mgrs.end(),
             "Error! Field manager not found for this group request.\n"
             "       Group name: " + itg.name + "\n"

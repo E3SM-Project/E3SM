@@ -93,16 +93,16 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     atm_proc->set_grids(grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
-    for (const auto& req : atm_proc->get_required_fields()) {
+    for (const auto& req : atm_proc->get_required_field_requests()) {
       process_required_field(req);
     }
-    for (const auto& req : atm_proc->get_computed_fields()) {
+    for (const auto& req : atm_proc->get_computed_field_requests()) {
       add_field<Computed>(req);
     }
-    for (const auto& req : atm_proc->get_required_groups()) {
+    for (const auto& req : atm_proc->get_required_group_requests()) {
       add_group<Required>(req);
     }
-    for (const auto& req : atm_proc->get_updated_groups()) {
+    for (const auto& req : atm_proc->get_updated_group_requests()) {
       add_group<Updated>(req);
     }
   }

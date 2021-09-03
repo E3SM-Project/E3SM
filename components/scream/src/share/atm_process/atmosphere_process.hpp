@@ -107,9 +107,13 @@ public:
     initialize_impl(t_);
   }
   void run        (const Real dt) {
+    // Make sure required fields are valid
+    check_required_fields();
     // Call the subclass's run method and update it afterward.
     run_impl(dt);
     t_ += dt;
+    // Make sure computed fields are valid
+    check_computed_fields();
   }
   void finalize   (/* what inputs? */) {
     finalize_impl(/* what inputs? */);
@@ -130,6 +134,15 @@ public:
         "Error! This atmosphere process does not require\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
+  
+    const auto& name = f.get_header().get_identifier().name();
+    m_fields_in.emplace(name,f);
+  
+    // Add myself as customer to the field
+    if (this->type()!=AtmosphereProcessType::Group) {
+      add_me_as_customer(f);
+    }
+
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real>& f) {
@@ -137,7 +150,51 @@ public:
         "Error! This atmosphere process does not compute\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
+
+    const auto& name = f.get_header().get_identifier().name();
+    m_fields_out.emplace(name,f);
+  
+    // Add myself as provider for the field
+    if (this->type()!=AtmosphereProcessType::Group) {
+      add_me_as_provider(f);
+    }
+
     set_computed_field_impl (f);
+  }
+
+  // These methods check all the fields coming into and out of a process to make sure
+  // they are still valid.  To do this, the routines cycles through all of the
+  // required and computed fields, respectively, and run whatever property checks have
+  // been assigned to them.
+  // Note: We do want to encourage repairing fields that are being passed to a specific
+  //       process, so we set the "check_required_fields" routine to be const.
+  //       On the other hand, we may want to allow computed fields to be repaired, so
+  //       we leave that one non-const.  If a process wants to repair computed fields
+  //       it can do so by overriding the "check_computed_fields_impl" routine.
+  void check_required_fields () const { 
+    // First run any process specific checks.
+    check_required_fields_impl();
+    // Now run all field property checks on all fields
+    for (auto& f : m_fields_in) {
+      auto& field = f.second;
+      for (auto& pc : field.get_property_checks()) {
+        EKAT_REQUIRE_MSG(pc.check(field),
+           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      before process: " << this->name());
+      }
+    }
+  }
+  void check_computed_fields () {
+    // First run any process specific checks.  If a process wants to repair any computed fields
+    // here is where that is done.
+    check_computed_fields_impl();
+    // Now run all field property checks on all fields
+    for (auto& f : m_fields_out) {
+      auto& field = f.second;
+      for (auto& pc : field.get_property_checks()) {
+        EKAT_REQUIRE_MSG(pc.check(field),
+           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      after process: " << this->name());
+      }
+    }
   }
 
   // Note: for the following (unlike set_required/computed_field, we do provide an
@@ -149,37 +206,37 @@ public:
   virtual void set_required_group (const FieldGroup<const Real>& /* group */) {
     EKAT_ERROR_MSG (
       "Error! This atmosphere process does not require a group of fields, meaning\n"
-      "       that 'get_required_groups' was not overridden in this class, or that\n"
+      "       that 'get_required_group_requests' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
-      "       If you override 'get_required_groups' to return a non-empty set,\n"
-      "       then you must also override 'set_required_group' in your derived class.\n"
+      "       If you override 'get_required_group_requests' to return a non-empty set,\n"
+      "       then you must also override 'set_required_group_request' in your derived class.\n"
     );
   }
   virtual void set_updated_group (const FieldGroup<Real>& /* group */) {
     EKAT_ERROR_MSG (
       "Error! This atmosphere process does not update a group of fields, meaning\n"
-      "       that 'get_updated_groups' was not overridden in this class, or that\n"
+      "       that 'get_updated_group_requests' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
-      "       If you override 'get_updated_groups' to return a non-empty set,\n"
-      "       then you must also override 'set_updated_group' in your derived class.\n"
+      "       If you override 'get_updated_group_requests' to return a non-empty set,\n"
+      "       then you must also override 'set_updated_group_request' in your derived class.\n"
     );
   }
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  const std::set<FieldRequest>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldRequest>& get_computed_fields () const { return m_computed_fields; }
+  const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
+  const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
 
   // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
   // a priori how many they are, or even what they are. Each entry of the returned set is a pair
   // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
   // needed on multiple grids, two separate entries are needed.
-  const std::set<GroupRequest>& get_required_groups () const { return m_required_groups; }
-  const std::set<GroupRequest>& get_updated_groups  () const { return m_updated_groups; }
+  const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
+  const std::set<GroupRequest>& get_updated_group_requests  () const { return m_updated_group_requests; }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
   bool requires_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_required_fields) {
+    for (const auto& it : m_required_field_requests) {
       if (it.fid==id) {
         return true;
       }
@@ -187,7 +244,7 @@ public:
     return false;
   }
   bool computes_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_computed_fields) {
+    for (const auto& it : m_computed_field_requests) {
       if (it.fid==id) {
         return true;
       }
@@ -196,7 +253,7 @@ public:
   }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_required_groups) {
+    for (const auto& it : m_required_group_requests) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -204,7 +261,7 @@ public:
     return false;
   }
   bool updates_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_updated_groups) {
+    for (const auto& it : m_updated_group_requests) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -279,7 +336,7 @@ protected:
       add_field<Required>(req);
       add_field<Computed>(req);
     } else {
-      auto& fields = RT==Required ? m_required_fields : m_computed_fields;
+      auto& fields = RT==Required ? m_required_field_requests : m_computed_field_requests;
       fields.emplace(req);
     }
   }
@@ -305,7 +362,7 @@ protected:
   {
     static_assert(RT==Required || RT==Updated,
         "Error! Invalid request type in call to add_group.\n");
-    auto& groups = RT==Required ? m_required_groups : m_updated_groups;
+    auto& groups = RT==Required ? m_required_group_requests : m_updated_group_requests;
     groups.emplace(req);
   }
 
@@ -332,16 +389,37 @@ protected:
     f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
   }
 
-  virtual void set_required_field_impl (const Field<const Real>& f) = 0;
-  virtual void set_computed_field_impl (const Field<      Real>& f) = 0;
+  // The base class already registers the required and computed fields in
+  // the set_required/computed_field main routines.  These impl definitions
+  // provide a way for subclasses to define extra field bookkeeping that
+  // is not already covered by the `set_required/computed_field`.  It is
+  // not essential for subclasses to overwrite these two routines, but it
+  // is possible.
+  virtual void set_required_field_impl (const Field<const Real>& f) {};
+  virtual void set_computed_field_impl (const Field<      Real>& f) {};
+
+  // The Base class already runs all registered field checks for all fields.
+  // Similar to the set_required/computed_field_impl comment above, it is
+  // not necessary for a subclass to overwrite these two routines, but it
+  // is possible.  A subclass may want to add extra checks or controls
+  // that occur before or after a process is run that could be included
+  // in an override of these two routine.  An example of an extra check 
+  // that a subclass may want to add would include field repair if a 
+  // field check fails.
+  virtual void check_required_fields_impl () const {}
+  virtual void check_computed_fields_impl () {}
+
+  using field_type       = Field<      Real>;
+  using const_field_type = Field<const Real>;
+  std::map<std::string,const_field_type>  m_fields_in;
+  std::map<std::string,field_type>        m_fields_out;
 
 private:
+  std::set<FieldRequest>   m_required_field_requests;
+  std::set<FieldRequest>   m_computed_field_requests;
 
-  std::set<FieldRequest>   m_required_fields;
-  std::set<FieldRequest>   m_computed_fields;
-
-  std::set<GroupRequest>   m_required_groups;
-  std::set<GroupRequest>   m_updated_groups;
+  std::set<GroupRequest>   m_required_group_requests;
+  std::set<GroupRequest>   m_updated_group_requests;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.

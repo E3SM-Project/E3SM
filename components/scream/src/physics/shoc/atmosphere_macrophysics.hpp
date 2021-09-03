@@ -405,10 +405,6 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
@@ -416,10 +412,7 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  std::map<std::string,const_field_type>  m_shoc_fields_in;
-  std::map<std::string,field_type>        m_shoc_fields_out;
-
-  util::TimeStamp     m_current_ts;
+  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
   ekat::Comm          m_shoc_comm;
   ekat::ParameterList m_shoc_params;
 
