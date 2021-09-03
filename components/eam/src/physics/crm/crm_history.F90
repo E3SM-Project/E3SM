@@ -428,7 +428,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    ncol  = state%ncol
 
    ! Subtract radiative heating for MMF_DT output
-   MMF_DT_out(:ncol,:pver) = ( ptend%s(:ncol,:pver) - qrs(:ncol,:pver) - qrl(:ncol,:pver) )/cpair
+   MMF_DT_out(1:ncol,:pver) = ( ptend%s(1:ncol,:pver) - qrs(1:ncol,:pver) - qrl(1:ncol,:pver) )/cpair
 
    !----------------------------------------------------------------------------
    ! CRM domain average Tendencies
@@ -447,12 +447,12 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    ! CRM_QRS + CRM_QRL output in radiation_tend will show a time lag.
 
    ! GCM level rad heating tendencies
-   call outfld('MMF_QRL   ',qrl/cpair, ncol, lchnk )
-   call outfld('MMF_QRS   ',qrs/cpair, ncol, lchnk )
+   call outfld('MMF_QRL   ',qrl(1:ncol)/cpair, ncol, lchnk )
+   call outfld('MMF_QRS   ',qrs(1:ncol)/cpair, ncol, lchnk )
 
    ! Why do we output this here?
-   call outfld('PRES    ',state%pmid, pcols, lchnk )
-   call outfld('DPRES   ',state%pdel, pcols, lchnk )
+   call outfld('PRES    ',state%pmid(1:ncol), ncol, lchnk )
+   call outfld('DPRES   ',state%pdel(1:ncol), ncol, lchnk )
 
    ! CRM state variables on CRM grid
    call outfld('CRM_U   ',crm_state%u_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
@@ -575,8 +575,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! Compute liquid water paths (for diagnostics only)
-   tgicewp(:ncol) = 0.
-   tgliqwp(:ncol) = 0.
+   tgicewp(1:ncol) = 0.
+   tgliqwp(1:ncol) = 0.
    do k = 1,pver
       do i = 1,ncol
          icol = icol_beg - 1 + i
@@ -586,16 +586,16 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
          tgliqwp(i)  = tgliqwp(i) + crm_output%gliqwp(icol,k) *1.0e-3 ! grid cell mean ice water path.  g/m2 --> kg/m2
       end do
    end do
-   tgwp(:ncol) = tgicewp(:ncol) + tgliqwp(:ncol)
-   gwp(:ncol,:pver) = crm_output%gicewp(icol_beg:icol_end,:pver) + crm_output%gliqwp(icol_beg:icol_end,:pver)
-   cwp(:ncol,:pver) = cicewp(:ncol,:pver) + cliqwp(:ncol,:pver)
+   tgwp(1:ncol) = tgicewp(1:ncol) + tgliqwp(1:ncol)
+   gwp(1:ncol,:pver) = crm_output%gicewp(icol_beg:icol_end,:pver) + crm_output%gliqwp(icol_beg:icol_end,:pver)
+   cwp(1:ncol,:pver) = cicewp(1:ncol,:pver) + cliqwp(1:ncol,:pver)
 
-   call outfld('GCLDLWP' ,gwp,     ncol, lchnk)
-   call outfld('TGCLDCWP',tgwp,    ncol, lchnk)
-   call outfld('TGCLDLWP',tgliqwp, ncol, lchnk)
-   call outfld('TGCLDIWP',tgicewp, ncol, lchnk)
-   call outfld('ICLDTWP' ,cwp,     ncol, lchnk)
-   call outfld('ICLDIWP' ,cicewp,  ncol, lchnk)
+   call outfld('GCLDLWP' ,gwp(1:ncol),     ncol, lchnk)
+   call outfld('TGCLDCWP',tgwp(1:ncol),    ncol, lchnk)
+   call outfld('TGCLDLWP',tgliqwp(1:ncol), ncol, lchnk)
+   call outfld('TGCLDIWP',tgicewp(1:ncol), ncol, lchnk)
+   call outfld('ICLDTWP' ,cwp(1:ncol),     ncol, lchnk)
+   call outfld('ICLDIWP' ,cicewp(1:ncol),  ncol, lchnk)
 
    !----------------------------------------------------------------------------
    ! ECPP
