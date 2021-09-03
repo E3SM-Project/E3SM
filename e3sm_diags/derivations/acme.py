@@ -110,7 +110,20 @@ def qflxconvert_units(var):
     return var
 
 
-def qflx_convert_to_lhflx(var):
+def qflx_convert_to_lhflx(qflx, precc, precl, precsc, precsl):
+    # A more precise formula to close atmospheric energy budget:
+    # LHFLX is modified to account for the latent energy of frozen precipitation.
+    # LHFLX = (Lv+Lf)*QFLX - Lf*1.e3*(PRECC+PRECL-PRECSC-PRECSL)
+    # Constants, from AMWG diagnostics
+    Lv = 2.501e6
+    Lf = 3.337e5
+    var = (Lv + Lf) * qflx - Lf * 1.0e3 * (precc + precl - precsc - precsl)
+    var.units = "W/m2"
+    var.long_name = "Surface latent heat flux"
+    return var
+
+
+def qflx_convert_to_lhflx_approxi(var):
     # QFLX units: kg/((m^2)*s)
     # Multiply by the latent heat of condensation/vaporization (in J/kg)
     # kg/((m^2)*s) * J/kg = J/((m^2)*s) = (W*s)/((m^2)*s) = W/(m^2)
@@ -770,6 +783,16 @@ derived_variables = {
     # Net surface heat flux: W/(m^2)
     "NET_FLUX_SRF": OrderedDict(
         [
+            # A more precise formula to close atmospheric surface budget, than the second entry.
+            (
+                ("FSNS", "FLNS", "QFLX", "PRECC", "PRECL", "PRECSC", "PRECSL", "SHFLX"),
+                lambda fsns, flns, qflx, precc, precl, precsc, precsl, shflx: netflux4(
+                    fsns,
+                    flns,
+                    qflx_convert_to_lhflx(qflx, precc, precl, precsc, precsl),
+                    shflx,
+                ),
+            ),
             (
                 ("FSNS", "FLNS", "LHFLX", "SHFLX"),
                 lambda fsns, flns, lhflx, shflx: netflux4(fsns, flns, lhflx, shflx),
@@ -777,7 +800,7 @@ derived_variables = {
             (
                 ("FSNS", "FLNS", "QFLX", "SHFLX"),
                 lambda fsns, flns, qflx, shflx: netflux4(
-                    fsns, flns, qflx_convert_to_lhflx(qflx), shflx
+                    fsns, flns, qflx_convert_to_lhflx_approxi(qflx), shflx
                 ),
             ),
             (
@@ -899,7 +922,7 @@ derived_variables = {
     "LHFLX": OrderedDict(
         [
             (("hfls",), rename),
-            (("QFLX",), lambda qflx: qflx_convert_to_lhflx(qflx)),
+            (("QFLX",), lambda qflx: qflx_convert_to_lhflx_approxi(qflx)),
         ]
     ),
     "SHFLX": OrderedDict([(("hfss",), rename)]),
