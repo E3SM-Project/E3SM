@@ -2909,10 +2909,6 @@
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
     </environment_variables>
-    <environment_variables compiler="ibm.*">
-      <env name="XLC_USR_CONFIG">/gpfs/alpine/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.1</env>
-      <env name="LD_LIBRARY_PATH">/sw/summit/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
