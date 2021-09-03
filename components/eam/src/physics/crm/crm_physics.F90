@@ -648,7 +648,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    crm_accel_uv = crm_accel_uv_tmp
 
    if (masterproc) then
-     if (use_crm_accel .and. MMF_microphysics_scheme/='sam1mom') then
+     if (use_crm_accel .and. trim(MMF_microphysics_scheme)/='sam1mom') then
        write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
        call endrun('crm main')
      endif
