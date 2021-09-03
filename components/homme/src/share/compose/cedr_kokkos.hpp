@@ -74,7 +74,7 @@ struct DeviceType {
                          typename ExeSpace::memory_space> type;
 };
 
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
 typedef Kokkos::Device<Kokkos::CudaSpace::execution_space,
                        Kokkos::CudaSpace::memory_space> DefaultDeviceType;
 

@@ -18,8 +18,8 @@ public:
   typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
   typedef CAAS<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
-  typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
-  typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
+  typedef Kokkos::View<Real*, Kokkos::LayoutRight, Device> RealList;
+  typedef Kokkos::View<Int*, Kokkos::LayoutRight, Device> IntList;
 
 public:
 

@@ -91,18 +91,6 @@ using UnmanagedView = ko::View<
   typename ViewT::data_type, typename ViewT::array_layout,
   typename ViewT::device_type, ko::MemoryTraits<ko::Unmanaged> >;
 
-#ifdef KOKKOS_HAVE_CUDA
-// A 1D slice of an array.
-template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
-ko::View<typename VT::value_type*, ko::LayoutStride, typename VT::device_type,
-         ko::MemoryTraits<ko::Unmanaged> >
-slice (const VT& v, Int i) { return ko::subview(v, i, ko::ALL()); }
-// An explicitly const 1D slice of an array.
-template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
-ko::View<typename VT::const_value_type*, ko::LayoutStride, typename VT::device_type,
-         ko::MemoryTraits<ko::Unmanaged> >
-const_slice (const VT& v, Int i) { return ko::subview(v, i, ko::ALL()); }
-#else
 template <typename VT> KOKKOS_FORCEINLINE_FUNCTION
 typename VT::value_type*
 slice (const VT& v, Int i) {
@@ -115,7 +103,6 @@ const_slice (const VT& v, Int i) {
   assert(i >= 0 && i < v.extent_int(0));
   return v.data() + v.extent_int(1)*i;
 }
-#endif
 
 // Number of slices in a 2D array, where each row is a slice.
 template <typename A2D> KOKKOS_FORCEINLINE_FUNCTION
