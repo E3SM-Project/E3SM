@@ -453,12 +453,12 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    ! CRM_QRS + CRM_QRL output in radiation_tend will show a time lag.
 
    ! GCM level rad heating tendencies
-   call outfld('MMF_QRL   ',qrl(1:ncol)/cpair, ncol, lchnk )
-   call outfld('MMF_QRS   ',qrs(1:ncol)/cpair, ncol, lchnk )
+   call outfld('MMF_QRL   ',qrl(1:ncol,1:pver)/cpair, ncol, lchnk )
+   call outfld('MMF_QRS   ',qrs(1:ncol,1:pver)/cpair, ncol, lchnk )
 
    ! Why do we output this here?
-   call outfld('PRES    ',state%pmid(1:ncol), ncol, lchnk )
-   call outfld('DPRES   ',state%pdel(1:ncol), ncol, lchnk )
+   call outfld('PRES    ',state%pmid(1:ncol,1:pver), ncol, lchnk )
+   call outfld('DPRES   ',state%pdel(1:ncol,1:pver), ncol, lchnk )
 
    ! CRM state variables on CRM grid
    call outfld('CRM_U   ',crm_state%u_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
@@ -596,12 +596,12 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    gwp(1:ncol,:pver) = crm_output%gicewp(icol_beg:icol_end,:pver) + crm_output%gliqwp(icol_beg:icol_end,:pver)
    cwp(1:ncol,:pver) = cicewp(1:ncol,:pver) + cliqwp(1:ncol,:pver)
 
-   call outfld('GCLDLWP' ,gwp(1:ncol),     ncol, lchnk)
-   call outfld('TGCLDCWP',tgwp(1:ncol),    ncol, lchnk)
-   call outfld('TGCLDLWP',tgliqwp(1:ncol), ncol, lchnk)
-   call outfld('TGCLDIWP',tgicewp(1:ncol), ncol, lchnk)
-   call outfld('ICLDTWP' ,cwp(1:ncol),     ncol, lchnk)
-   call outfld('ICLDIWP' ,cicewp(1:ncol),  ncol, lchnk)
+   call outfld('GCLDLWP' ,gwp(1:ncol,1:pver),    ncol, lchnk)
+   call outfld('TGCLDCWP',tgwp(1:ncol),          ncol, lchnk)
+   call outfld('TGCLDLWP',tgliqwp(1:ncol),       ncol, lchnk)
+   call outfld('TGCLDIWP',tgicewp(1:ncol),       ncol, lchnk)
+   call outfld('ICLDTWP' ,cwp(1:ncol,1:pver),    ncol, lchnk)
+   call outfld('ICLDIWP' ,cicewp(1:ncol,1:pver), ncol, lchnk)
 
    !----------------------------------------------------------------------------
    ! ECPP
