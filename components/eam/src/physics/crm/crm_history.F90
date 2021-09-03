@@ -418,6 +418,9 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
 
+   lchnk = state%lchnk
+   ncol  = state%ncol
+
    ! check that icol bounds are correct
    if ( (icol_end-icol_beg+1) /= ncol ) then
       call endrun(trim(subname)//': icol_beg and icol_end bounds do not match ncol')
@@ -429,9 +432,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(use_MMF_VT_out = use_MMF_VT)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-
-   lchnk = state%lchnk
-   ncol  = state%ncol
 
    ! Subtract radiative heating for MMF_DT output
    MMF_DT_out(1:ncol,:pver) = ( ptend%s(1:ncol,:pver) - qrs(1:ncol,:pver) - qrl(1:ncol,:pver) )/cpair
