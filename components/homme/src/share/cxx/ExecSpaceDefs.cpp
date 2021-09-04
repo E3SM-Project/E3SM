@@ -156,13 +156,26 @@ team_num_threads_vectors_for_gpu (
   if (tp.prefer_threads) {
     const int num_threads = ( (tp.max_threads_usable > num_device_threads) ?
                               num_device_threads :
-                              tp.max_threads_usable );
-    return std::make_pair( num_threads,
-                           prevpow2(num_device_threads / num_threads) );
+			      tp.max_threads_usable );
+
+//TP(16,64)    for 120*64, 64
+//TP(16,64)    for 16*32, 16
+//
+//printf("tp. prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
+//    return std::make_pair( num_threads,
+//                           prevpow2(num_device_threads / num_threads) );
+
+return std::make_pair( 32, 32);
+
+
   } else {
     const int num_vectors = prevpow2( (tp.max_vectors_usable > num_device_threads) ?
                                       num_device_threads :
                                       tp.max_vectors_usable );
+
+//printf("NOT tp. prefer_threads: %4d %4d \n",num_device_threads / num_vectors,
+//                           num_vectors);
+
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
@@ -197,13 +210,20 @@ team_num_threads_vectors (const int num_parallel_iterations,
 
 #if HIP_BUILD
 
-  //use 40 wavefronts per CU and 64 CUs
-  const int num_warps_device = 40*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
-  const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
+//to make sure this is active, it is
+//#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+
+//however slow, combination 16*32 and 16 below ran with all ne
+
+
+  //use 64 wavefronts per CU and 120 CUs
+  const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
+  const int max_num_warps = 64;   //cores per CU, SM  ///HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
   const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
 
-///printf() for warpsize
-
+//warpsize is 64 for hip
+//printf(" warpsize----------: %4d \n",num_threads_warp);
+//printf("        on GPU? %d  \n", OnGpu<ExecSpace>::value);
 
 #else
 

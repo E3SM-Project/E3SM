@@ -317,10 +317,12 @@ VECTOR_SIMD_LOOP
   }
 };
 
-#if defined KOKKOS_ENABLE_CUDA
+#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
 template <>
-struct Dispatch<Kokkos::Cuda> {
-  using ExeSpace = Kokkos::Cuda;
+//struct Dispatch<Kokkos::Cuda> {
+//  using ExeSpace = Kokkos::Cuda;
+struct Dispatch<Hommexx_Cuda> {
+  using ExeSpace = Hommexx_Cuda;
 
   template<typename LoopBdyType, class Lambda, typename ValueType>
   KOKKOS_FORCEINLINE_FUNCTION
@@ -362,7 +364,8 @@ struct Dispatch<Kokkos::Cuda> {
   template<class Lambda>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_for_NP2 (
-    const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
+    //const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
+    const Kokkos::TeamPolicy<Hommexx_Cuda>::member_type& team,
     const Lambda& lambda)
   {
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NP*NP), lambda);
@@ -371,7 +374,8 @@ struct Dispatch<Kokkos::Cuda> {
   template<class Lambda, typename ValueType>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_reduce_NP2 (
-    const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
+    const Kokkos::TeamPolicy<Hommexx_Cuda>::member_type& team,
+    //const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
     const Lambda& lambda, ValueType& result)
   {
     parallel_reduce(team, Kokkos::ThreadVectorRange(team, NP*NP),

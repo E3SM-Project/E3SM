@@ -56,6 +56,21 @@ struct SerialLimiter<Kokkos::Cuda> {
 };
 #endif
 
+#if HIP_BUILD
+template <>
+struct SerialLimiter<Kokkos::Experimental::HIP> {
+  template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
+            typename Array2GllLvl>
+  KOKKOS_INLINE_FUNCTION static void
+  run (const ArrayGll& sphweights, const ArrayGllLvl& idpmass,
+       const Array2Lvl& iqlim, const ArrayGllLvl& iptens,
+       const Array2GllLvl& irwrk) {
+    Kokkos::abort("SerialLimiter::run: Should not be called on GPU.");
+  }
+};
+#endif
+
+
 class EulerStepFunctorImpl {
   struct EulerStepData {
     EulerStepData ()
