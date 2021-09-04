@@ -1900,6 +1900,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use lnd_infodata,    only: precip_downscaling_method
 
     implicit none
 
@@ -2689,7 +2690,9 @@ end if ! l_rad
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
     end if
-    if (precip_downscaling_method == "FNM") then
+
+    if (trim(adjustl(precip_downscaling_method)) == "FNM") then
+       !if the land model's precip downscaling method is FNM, compute uovern
        call calc_uovern(state,cam_out)
     end if
 
