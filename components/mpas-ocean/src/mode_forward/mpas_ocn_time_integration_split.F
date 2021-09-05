@@ -1916,37 +1916,34 @@ module ocn_time_integration_split
                                       timeLevel=2)
       call mpas_timer_stop('se vmix halos normalVelFld')
 
-      if (config_use_idealAgeTracers) then
-         call mpas_pool_begin_iteration(tracersPool)
-         do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
-            if (groupItr%memberType == MPAS_POOL_FIELD) then
+      call mpas_pool_begin_iteration(tracersPool)
+      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+         if (groupItr%memberType == MPAS_POOL_FIELD) then
 
-               ! Reset iAge to zero where mask == 0
-               if (trim(groupItr%memberName) == 'idealAgeTracers') then
-                   call mpas_pool_get_array(tracersPool, &
-                                            groupItr%memberName, &
-                                            tracersGroupNew, 2)
-                   call mpas_pool_get_subpool(forcingPool, &
-                                              'tracersIdealAgeFields', &
-                                               tracersIdealAgeFieldsPool)
-                   call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
-                                            'idealAgeTracersIdealAgeMask', &
-                                             tracerGroupIdealAgeMask)
+            ! Reset iAge to zero where mask == 0
+            if (config_use_idealAgeTracers.and.trim(groupItr%memberName) == 'idealAgeTracers') then
+                call mpas_pool_get_array(tracersPool, &
+                                         groupItr%memberName, &
+                                         tracersGroupNew, 2)
+                call mpas_pool_get_subpool(forcingPool, &
+                                           'tracersIdealAgeFields', &
+                                            tracersIdealAgeFieldsPool)
+                call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
+                                         'idealAgeTracersIdealAgeMask', &
+                                          tracerGroupIdealAgeMask)
 
-                   !$omp parallel
-                   !$omp do schedule(runtime)
-                   do iCell = 1, nCellsAll
-                      tracersGroupNew(1,1,iCell) = tracerGroupIdealAgeMask(1,iCell)*tracersGroupNew(1,1,iCell)
-                   end do ! cells
-                   !$omp end do
-                   !$omp end parallel
-                endif
+                !$omp parallel
+                !$omp do schedule(runtime)
+                do iCell = 1, nCellsAll
+                   tracersGroupNew(1,1,iCell) = tracerGroupIdealAgeMask(1,iCell)*tracersGroupNew(1,1,iCell)
+                end do ! cells
+                !$omp end do
+                !$omp end parallel
+             endif
 
-               call mpas_dmpar_field_halo_exch(domain, &
-                            groupItr%memberName, timeLevel=2)
-            end if
-         end do
-      endif
+            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
+         end if
+      end do
 
       call mpas_timer_stop('se vmix halos')
 

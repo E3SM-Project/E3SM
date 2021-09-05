@@ -193,8 +193,8 @@ contains
          idealAgeMask = 0.0_RKIND
          if (associated(landIceMask)) then
             where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
-         end if 
-      end if 
+         end if
+      end if
 
    end subroutine ocn_tracer_ideal_age_init!}}}
 
