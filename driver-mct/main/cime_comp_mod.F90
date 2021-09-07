@@ -4515,7 +4515,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
        print *, "_wpc3a. pre prep_rof_accum_avg() call timer = ", 'CPL:rofprep_l2xavg'
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-       print *, "_wpc3b. post prep_rof_accum_avg() call timer = ", 'CPL:rofprep_l2xavg'
+       print *, "_wpc4a. post prep_rof_accum_avg() call timer = ", 'CPL:rofprep_l2xavg'
 
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
