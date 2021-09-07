@@ -279,7 +279,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
+   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, temperature, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -287,6 +287,8 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: temperature
 
       !-----------------------------------------------------------------
       !
@@ -339,13 +341,33 @@ contains
 
       nCells = nCellsArray( 3 )
 
+      !hack in a fresh flux
+      if(config_idealized_freshwater_flux_enable) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iCell = 1,nCells
+            if( latCell(iCell) >= config_idealized_freshwater_flux_minLat .and. &
+                latCell(iCell) <= config_idealized_freshwater_flux_maxLat .and. &
+                lonCell(iCell) >= config_idealized_freshwater_flux_minLon .and. &
+                lonCell(iCell) <= config_idealized_freshwater_flux_maxLon .and. &
+                temperature(1,iCell) <= -1.8_RKIND ) then
+                seaIceFreshWaterFlux(iCell) = config_idealized_freshwater_flux_strength
+            else
+                seaIceFreshWaterFlux(iCell) = 0.0_RKIND
+            endif
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
+
       ! Build surface fluxes at cell centers
       !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
-                                    + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
-        surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
+                                    + 0.0_RKIND * seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
+        surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + seaIceFreshWaterFlux(iCell) / rho_fw
+        surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_fw
       end do
       !$omp end do
       !$omp end parallel
@@ -551,12 +573,12 @@ contains
 
            ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
-                      * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
+                      * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_fw
 
            ! Accumulate fluxes that use the freezing point
            seaIceFreshWaterTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
-                                         inLandIceCavity=.false.) / rho_sw
+                                         inLandIceCavity=.false.) / rho_fw
            icebergFreshWaterTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw

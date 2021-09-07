@@ -80,7 +80,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_tend(div, relVort, tend, err)!{{{
+   subroutine ocn_vel_hmix_tend(div, relVort, bottomDrag, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -89,6 +89,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          div,           &!< [in] velocity divergence
          relVort         !< [in] relative vorticity
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         bottomDrag
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -128,7 +131,7 @@ contains
       call ocn_vel_hmix_del2_tend(div, relVort, tend, err1)
       err = ior(err1, err)
 
-      call ocn_vel_hmix_leith_tend(div, relVort, tend, err1)
+      call ocn_vel_hmix_leith_tend(div, relVort, bottomDrag, tend, err1)
       err = ior(err1, err)
 
       call ocn_vel_hmix_del4_tend(div, relVort, tend, err1)
