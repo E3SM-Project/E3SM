@@ -84,19 +84,12 @@ protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
-
-  std::map<std::string,const_field_type>  m_spa_fields_in;
-  std::map<std::string,field_type>        m_spa_fields_out;
 
   ekat::Comm          m_spa_comm;
   ekat::ParameterList m_spa_params;

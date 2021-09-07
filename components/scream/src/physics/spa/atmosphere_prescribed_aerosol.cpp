@@ -161,7 +161,7 @@ void SPA::run_impl (const Real dt)
 
   // Advance current timestamp.
   ts += dt;
-  for (auto& f : m_spa_fields_out) {
+  for (auto& f : m_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);
   }
 }
@@ -170,24 +170,6 @@ void SPA::run_impl (const Real dt)
 void SPA::finalize_impl()
 {
   // Do nothing
-}
-
-void SPA::set_required_field_impl (const Field<const Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_spa_fields_in.emplace(name,f);
-
-  // Add myself as customer to the field
-  add_me_as_customer(f);
-}
-
-void SPA::set_computed_field_impl (const Field<      Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_spa_fields_out.emplace(name,f);
-
-  // Add myself as provider for the field
-  add_me_as_provider(f);
 }
 
 } // namespace scream
