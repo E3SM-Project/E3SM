@@ -4,6 +4,7 @@
 #include <ekat/ekat_assert.hpp>
 #include <ekat/kokkos/ekat_kokkos_types.hpp>
 
+#include <iterator>
 #include <list>
 #include <algorithm>
 #include <map>
@@ -69,7 +70,6 @@ etoi (const EnumT e) {
 // Regardless of the order in which we process the individual lists, if there is
 // an arrangement A of T's that allows to have G1,...,Gn as a contiguous sublist
 // of A, the above algorithm is guaranteed to find it.
-
 template<typename T>
 std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
 {
@@ -78,7 +78,8 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
     return std::list<T>();
   }
 
-  // Intersect two lists. Simply wraps std::set_intersection, allowing a lighter syntax.
+  // Intersection and difference of two lists. Simply wrap std::set_intersection
+  // and std::set_difference resepectively, allowing a lighter syntax.
   auto intersect = [] (const std::list<T>& lhs,
                        const std::list<T>& rhs) -> std::list<T> {
     std::list<T> out;
@@ -86,7 +87,6 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
                           std::back_inserter(out));
     return out;
   };
-
   auto difference = [] (const std::list<T>& lhs,
                        const std::list<T>& rhs) -> std::list<T> {
     std::list<T> out;
@@ -96,7 +96,7 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
   };
 
   // Would be nice if list::sort and list::unique returned the list,
-  // so one can chain them into operations. Since they don't, use a lambda.
+  // so one could chain them into operations. Since they don't, use a lambda.
   auto sort = [] (const std::list<T>& l) {
     auto copy = l;
     copy.sort();
@@ -108,93 +108,138 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
     return copy;
   };
 
-  // A list-of-lists (lol);
-  std::list<std::list<T>> lol;
-  // Process the remaining groups
+  // Check inputs: we require unique lists, already sorted.
   for (const auto& g : groups) {
     EKAT_REQUIRE_MSG(sort(g)==g,
         "Error! Individual input lists must already be sorted.\n");
     EKAT_REQUIRE_MSG(unique(sort(g)).size()==g.size(),
         "Error! Individual input lists must not contain repeated elements.\n");
+  }
 
-    // Keep track of where non-empty intersections happen.
-    // Assuming they happen in a contiguous subset of groups (othewise the algo fails),
-    // they happen in the [first_pos,last_pos) range.
-    // Note: unfortunately, std::list's bidirectional iterator cannot be used as key of std::map.
-    std::map<std::list<T>,std::list<T>> intersections;
-    auto first = lol.end();
-    auto end   = lol.end();
-    bool first_found = false;
-    bool end_found = false;
+  // A list-of-lists (lol);
+  std::list<std::list<T>> lol;
+
+  decltype(lol.begin()) it_lol;
+  for (const auto& g : groups) {
+    // Intersect this group with each inner list inside lol, and keep track of
+    // where non-empty intersections happen. These intersections must happen
+    // with a contiguous set of inner lists (othewise the algo fails, see
+    // description above). Store interval where they happen as [first_pos,last_pos) range.
+    // Note: \cap is the tex command for the set intersection symbol.
+    std::vector<std::list<T>> caps;
+    std::vector<size_t> caps_pos;
     auto remainder = g;
     for (auto it=lol.begin(); it!=lol.end(); ++it) {
-      intersections[*it] = intersect(*it,g);
-      if (intersections[*it].size()>0) {
-        if (not first_found) {
-          first_found = true;
-          first = it;
-        } else {
-          // If we already foudn a "last" non-empty intersection,
-          // it means we found empty intersections after the 1st one.
-          // As described above, if this happens, the overall algorithm has failed.
-          if (end_found) {
-            return std::list<T>();
-          }
-        }
-        remainder = difference(remainder,intersections[*it]);
-      } else {
-        if (first_found && not end_found) {
-          end_found = true;
-          end = it;
-        }
+      auto tmp = intersect(*it,g);
+      if (tmp.size()>0) {
+        // Found non-empty intersection. Track it.
+        caps.emplace_back(std::move(tmp));
+        remainder = difference(remainder,caps.back());
+        caps_pos.push_back(std::distance(lol.begin(),it));
       }
     }
 
-    // If first>lol.begin and last<lol.end(), then if remainder.size()>0 the overall algo failed.
-    if (first!=lol.begin() && end!=lol.end() && remainder.size()>0) {
+    // If we don't have any intersection, append this group to lol, and continue
+    // Note: this for sure happens when processing the first group
+    if (caps_pos.size()==0) {
+      lol.push_back(g);
+      continue;
+    }
+
+    // If we have caps, then they must be with a contiguous set of inner list
+    // (otherwise this group would be fragmented).
+    // This can be checked easily by inspecting 1st and last entry in caps_pos
+    if ( (caps_pos.back()-caps_pos.front()+1)!=caps_pos.size()) {
       return std::list<T>();
     }
 
-    auto last = std::prev(end);
-    // Now, go over each non-empty intersection, and, if its size is smaller than
-    // the size of the sublist of lol, we split such sublist in intersection+rest
-    for (auto it = first; it!=end; ++it) {
-      auto diff = difference(*it,intersections[*it]);
-      if (diff.size()>0) {
-        // Only the first and last non-empty intersections can be "partial", meaning
-        // the intersection is smaller than the whole list in lol.
-        if (not (it==first || it==last) ) {
-          return std::list<T>();
-        }
-            
-        // The intersection is not the whole sublist of lol, so replace the sublist
-        // with the intersection, and add the remainder as a sublist immediately before.
-        *it = intersections[*it];
-        if (it==first) {
-          lol.insert(it,diff);
-        } else {
-          lol.insert(std::next(it),diff);
-          // We added a new entry after it, but we should not iterate over that entry,
-          // so simply advance it.
-          std::advance(it,1);
-        }
+    // If we have a non-empty reminder, then all the caps must be
+    // either at the front or the back of the lol, that is, either the first intersection
+    // is at pos=0, or the last at pos=lol.size()-1, or both (otherwise this group would be fragmented).
+    if (remainder.size()>0 && !(caps_pos.front()==0 || caps_pos.back()==(lol.size()-1))) {
+      return std::list<T>();
+    }
+
+    // If there is a remainder, then either the first or the last intersection must
+    // be "complete", meaning that the intersection is the whole inner list.
+    // If not, there would be fragmentation. E.g., if G=[B,D,E], and
+    // lol=[[A,B],[C,D]], there's no rearrangement that works.
+    if (remainder.size()>0 && caps_pos.size()>1) {
+      auto it_lol_first = std::next(lol.begin(),caps_pos.front());
+      auto it_lol_last  = std::next(lol.begin(),caps_pos.back());
+      if (it_lol_first->size()>caps.front().size() &&
+          it_lol_last->size()>caps.back().size()) {
+        return std::list<T>();
       }
     }
 
-    // If there is a remainder, we need to add it at the front or end (depending where the intersections are)
+    // If we have 3+ caps, only the first and last caps can be
+    // less than the corresponding inner list in lol.
+    for (size_t i=1; i<(caps_pos.size()-1); ++i) {
+      it_lol = std::next(lol.begin(),caps_pos[i]);
+      const auto& intersection = caps[i];
+      if (it_lol->size()!=intersection.size()) {
+        return std::list<T>();
+      }
+    }
+
+    // Ok, we successfully passed all checks. Now we have to do two things:
+    //  - insert the remainder (if any) at the front or back
+    //  - if first/last caps are smaller than corresponding inner list,
+    //    split the inner list in two
+    it_lol = std::next(lol.begin(),caps_pos.front());
+    if (caps.front().size()<it_lol->size()) {
+      // The first intersection is smaller than the inner list.
+      // Split the inner list in intersection and diff=list-intersection.
+      // The order in which the two sublists need to be added
+      // depends on whether there is any other intersection after this:
+      //  - more caps: [diff],[intersection]
+      //  - no more caps: [intersection],[diff]
+      // These choices allow to keep the current group contiguous.
+      // Note: the latter is really needed only if remainder is non-empty.
+
+      auto diff = difference(*it_lol,caps.front());
+      if (caps_pos.size()>1) {
+        *it_lol = std::move(caps.front());
+        lol.emplace(it_lol,std::move(diff));
+      } else {
+        *it_lol = std::move(diff);
+        lol.emplace(it_lol,std::move(caps.front()));
+      }
+
+      // Note: since we added something right before where the 1st
+      //       intersection happened, all caps_pos indices need to
+      //       be updated (adding 1).
+      for (size_t i=1; i<caps_pos.size(); ++i) {
+        ++caps_pos[i];
+      }
+    }
+
+    // Note: process caps_pos.back() only if there's 2+ caps
+    //       (otherwise we process the same intersection twice)
+    it_lol = std::next(lol.begin(),caps_pos.back());
+    if (caps_pos.size()>1 && caps.back().size()<it_lol->size()) {
+      // The last intersection is smaller than the inner list.
+      // Split the inner list in intersection and diff=list-intersection.
+      // Unlike the previous case, here we know that there were 2+ caps,
+      // So we can add the two lists as [intersection][diff].
+      // This will allow the current group to remain contiguous.
+      auto diff = difference(*it_lol,caps.back());
+      *it_lol = std::move(diff);
+      lol.emplace(it_lol,std::move(caps.back()));
+    }
+
+
     if (remainder.size()>0) {
-      if (end_found) {
-        // We found an empty intersection after non-empty ones, so intersections must be at the front.
+      if (caps_pos.front()==0) {
         lol.push_front(remainder);
       } else {
-        // We never found an empty intersection after non-empty ones, so intersections must be at the back.
-        // Or maybe we never found an intersection at all. Either way, append the remainted at the end.
         lol.push_back(remainder);
       }
     }
   }
 
-  // We made it! Not splice all sublists together.
+  // We made it! Now splice all sublists together.
   std::list<T> out;
   for (auto& l : lol) {
     out.splice(out.end(),l);
