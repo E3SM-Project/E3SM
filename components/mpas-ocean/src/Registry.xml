@@ -291,8 +291,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$."
-					possible_values="'constant', 'data'"
+					description="Control what type of function is used for Redi $\kappa$. NOTE: the Abernathey options require input data to contain the maps"
+					possible_values="'constant', 'AbernatheyMap', 'AbernatheyZonal'"
 		/>
 		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
@@ -404,6 +404,32 @@
 		<nml_option name="config_Rayleigh_bottom_damping_coeff" type="real" default_value="1.0e-4" units="s^{-1}"
 					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom."
 					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="idealized_freshwater_flux" mode="forward">
+		<nml_option name="config_idealized_freshwater_flux_enable" type="logical" default_value=".false." units="NA"
+					description="If true, adds simple flux between geographic bounds"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_idealized_freshwater_flux_minLat" type="real" default_value="0.923" units="radians"
+					description="lower latitude bound of the box"
+					possible_values="physical latitudes"
+		/>
+		<nml_option name="config_idealized_freshwater_flux_maxLat" type="real" default_value="1.117" units="radians"
+					description="maximum latitude of box"
+					possible_values="physical latitude greater than minLat"
+		/>
+		<nml_option name="config_idealized_freshwater_flux_minLon" type="real" default_value="5.114" units="radians"
+					description="lower longitude bound of the box"
+					possible_values="physical longitudes"
+		/>
+		<nml_option name="config_idealized_freshwater_flux_maxLon" type="real" default_value="5.194" units="radians"
+					description="maximum longitude of box"
+					possible_values="physical longitude greater than minLon"
+		/>
+		<nml_option name="config_idealized_freshwater_flux_strength" type="real" default_value="1e-2" units="kg m^{-2} s^{-1}"
+					description="strength of freshwater flux in mass units"
+					possible_values="positive real numbers"
 		/>
 	</nml_record>
 	<nml_record name="cvmix" mode="forward">
@@ -2836,6 +2862,14 @@
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
+		/>
+		<var name="rediAbernatheyMap" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+			 description="Redi Kappa Value taken from Abernathey and Marshall (2013) - Global surface eddy diffusivities derived from satellite altimetry -- DOI - https://doi.org/10.1002/jgrc.20066"
+			 packages="gm"
+		/>
+		<var name="rediAbernatheyZonal" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+			 description="Redi kappa value taken from Gnanadesikan et al (2016) - Isopycnal mixing by mesoscale eddies significantly impacts oceanic anthropogenic carbon uptake -- DOI -  https://doi.org/10.1002/2015GL064100"
 			 packages="gm"
 		/>
 		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"

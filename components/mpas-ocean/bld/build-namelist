@@ -594,6 +594,17 @@ add_default($nl, 'config_Rayleigh_bottom_friction');
 add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
 #########################
+# Namelist group: idealized_freshwater_flux
+#########################
+
+add_default($nl, 'config_idealized_freshwater_flux_enable');
+add_default($nl, 'config_idealized_freshwater_flux_minLat');
+add_default($nl, 'config_idealized_freshwater_flux_maxLat');
+add_default($nl, 'config_idealized_freshwater_flux_minLon');
+add_default($nl, 'config_idealized_freshwater_flux_maxLon');
+add_default($nl, 'config_idealized_freshwater_flux_strength');
+
+#########################
 # Namelist group: cvmix #
 #########################
 
@@ -1613,6 +1624,7 @@ my @groups = qw(run_modes
                 mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
+				idealized_freshwater_flux
                 gotm
                 forcing
                 coupling

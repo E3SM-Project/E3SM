@@ -60,6 +60,8 @@ module ocn_vel_hmix_leith
       viscMaxLeith,     &!< maximum viscosity
       sqrt3fact          !< sqrt(3)
 
+   real (kind=RKIND), dimension(:,:), allocatable :: bottomDragEdge
+
 !***********************************************************************
 
 contains
@@ -87,7 +89,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_leith_tend(div, relVort, tend, err)!{{{
+   subroutine ocn_vel_hmix_leith_tend(div, relVort, bottomDrag, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -96,6 +98,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          div,           &!< [in] velocity divergence
          relVort         !< [in] relative vorticity
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         bottomDrag
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -117,7 +122,8 @@ contains
       integer ::           &
          iEdge, k,         &! loop indices for edge, vertical loops
          cell1, cell2,     &! neighbor cell addresses across edge
-         vertex1, vertex2   ! neighbor vertex addresses along edge
+         vertex1, vertex2, &! neighbor vertex addresses along edge
+         j, iCell
 
       real (kind=RKIND) :: &!
          uDiff,            &! velocity diffusion operator
@@ -137,6 +143,7 @@ contains
       if (hmixLeithOff) return
       call mpas_timer_start("vel leith")
 
+      allocate(bottomDragEdge(nVertLevels,nEdgesOwned))
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
@@ -159,7 +166,8 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         visc2tmp = (leithParam*dxLeith*meshScalingDel2(iEdge)/pii)**3
+         visc2tmp = (dvEdge(iEdge)*leithParam/pii)**3
+!         visc2tmp = (leithParam*dxLeith*meshScalingDel2(iEdge)/pii)**3
 
          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
@@ -181,6 +189,7 @@ contains
                     dcEdgeInv*sqrt3fact
             visc2 = min(visc2, viscMaxLeith)
 
+            bottomDragEdge(k,iEdge) = visc2
             tend(k,iEdge) = tend(k,iEdge) + &
                             edgeMask(k,iEdge)*visc2*uDiff
 
@@ -191,6 +200,23 @@ contains
       !$omp end parallel
 #endif
 
+!FIXME - add OMP directives
+      !$omp parallel
+      !$omp do schedule(runtime) private(k,iEdge)
+      do iCell=1,nCellsOwned
+
+         bottomDrag(iCell) = 0.0_RKIND
+         k = maxLevelCell(iCell)
+         do j = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(j, iCell)
+            bottomDrag(iCell) = 1.0E-3 !bottomDrag(iCell) + bottomDragEdge(k,iEdge)*edgeAreaFractionOfCell(j,iCell)
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      !compute the bottom drag at cell centers
+      deallocate(bottomDragEdge)
       call mpas_timer_stop("vel leith")
 
    !--------------------------------------------------------------------
@@ -238,6 +264,7 @@ contains
          leithParam   = config_leith_parameter
          dxLeith      = config_leith_dx
          viscMaxLeith = config_leith_visc2_max
+         config_use_implicit_bottom_drag_variable = .true.
       endif
 
       !-----------------------------------------------------------------

@@ -124,7 +124,7 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: &
                 ssh
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      real(kind=RKIND), dimension(:), pointer :: fEdge
+      real(kind=RKIND), dimension(:), pointer :: fEdge, latEdge
       integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
@@ -145,8 +145,8 @@ contains
       ! gradDensityEdge: Normal gradient of density
       !           units: none
       real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge, gradDensityTopOfEdge, &
-        gradDensityConstZTopOfEdge, dDensityDzTopOfCell, dDensityDzTopOfEdge, &
-        gradZMidEdge, gradZMidTopOfEdge, layerThickHarmonic
+        dDensityDzTopOfCell, dDensityDzTopOfEdge, &
+        gradZMidEdge, gradZMidTopOfEdge, layerThickHarmonic, gradDensityConstZTopOfEdge
 
 
       type(mpas_pool_type), pointer :: tracersPool
@@ -179,6 +179,7 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
 
@@ -428,9 +429,14 @@ contains
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell = 1, nCells
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
-               rtmp = (displacedDensity(k-1,iCell) - density(k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
-               dDensityDzTopOfCell(k,iCell) = min(rtmp, -epsGM)
-            end do
+               rtmp = -0.5_RKIND*(thermExpCoeff(k-1,iCell) + thermExpCoeff(k,iCell))* &
+                        (activeTracers(indexTemperature,k-1,iCell) - activeTracers(indexTemperature,k,iCell)) / &
+                        (zMid(k-1,iCell) - zMid(k,iCell)) + 0.5_RKIND*(salineContractCoeff(k-1,iCell) + &
+                        salineContractCoeff(k,iCell))*(activeTracers(indexSalinity,k-1,iCell) - &
+                        activeTracers(indexSalinity,k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
+!               rtmp = (displacedDensity(k-1,iCell) - density(k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
+               dDensityDzTopOfCell(k,iCell) = rtmp !min(rtmp, -epsGM)
+           end do
 
             ! Approximation of dDensityDzTopOfCell on the top and bottom interfaces through the idea of having
             ! ghost cells above the top and below the bottom layers of the same depths and density.
@@ -468,7 +474,11 @@ contains
             do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                layerThickHarmonic(k,iEdge) = 2.0_RKIND*layerThickness(k,cell1)*layerThickness(k,cell2) / &
                                               (layerThickness(k,cell1) + layerTHickness(k,cell2) + 1.0E-15_RKIND)
-               gradDensityEdge(k,iEdge) = (density(k,cell2) - density(k,cell1)) / dcEdge(iEdge)
+               gradDensityEdge(k,iEdge) = -0.5_RKIND*(thermExpCoeff(k,cell1) + thermExpCoeff(k,cell2))* &
+                                  (activeTracers(indexTemperature,k,cell2) - activeTracers(indexTemperature,k,cell1)) &
+                                  / dcEdge(iEdge) + 0.5_RKIND*(salineContractCoeff(k,cell1) + salineContractCoeff(k,cell2))* &
+                                  (activeTracers(indexSalinity,k,cell2) - activeTracers(indexSalinity,k,cell1))/dcEdge(iEdge)
+!               gradDensityEdge(k,iEdge) = (density(k,cell2) - density(k,cell1)) / dcEdge(iEdge)
                gradZMidEdge(k,iEdge) = (zMid(k,cell2) - zMid(k,cell1)) / dcEdge(iEdge)
             end do
          end do
@@ -601,6 +611,11 @@ contains
 
               k = minLevelEdgeBot(iEdge)+1
               zEdge = -layerThickHarmonic(k-1,iEdge)
+              do while(zEdge > -50.0_RKIND .and. k < maxLevelEdgeTop(iEdge)) 
+                 k = k+1
+                 zEdge = zEdge - layerThickHarmonic(k-1,iEdge)
+              end do
+
               do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
@@ -619,8 +634,8 @@ contains
                 c_Visbeck = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
-                eddyLength(iEdge) = min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
-                                sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge))))
+                eddyLength(iEdge) = max(dcEdge(iEdge),min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
+                                sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge)))))
                 eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_Visbeck*betaEdge(iEdge))) /  &
                                       (1.0E-11_RKIND + sqrt(sumRi)))
                 gmBolusKappa(iEdge) = config_GM_Visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
@@ -696,9 +711,11 @@ contains
 
                c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
 
+               cGMphasespeed(iEdge) = c_mode1
+
                resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
                                   / dcEdge(iEdge)
-               if (resolution .ge. 2.0) then
+               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
                   gmResolutionTaper(iEdge) = 0.0_RKIND
                else
                   gmResolutionTaper(iEdge) = 1.0_RKIND
@@ -709,27 +726,14 @@ contains
             !$omp end parallel
          end if
 
-         if (config_GM_disable_ml_kappa) then !disables bolus kappa in the mixed layer
-            !$omp parallel
-            !$omp do schedule (runtime) private(k,cell1,cell2,mldEdge)
-            do iEdge = 1, nEdges
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               mldEdge = max(indMLD(cell1), indMLD(cell2))
-               if(gmKappaScaling(minLevelEdgeBot(iEdge),iEdge) > 0.0) then
-                  do k=minLevelEdgeBot(iEdge),mldEdge
-                     gmKappaScaling(k,iEdge) = 0.0_RKIND
-                  enddo
-                  do k=mldEdge+1,maxLevelEdgeTop(iEdge)
-                     gmKappaScaling(k,iEdge) = 1.0_RKIND
-                  end do
-               end if
-            end do
-            !$omp end do
-            !$omp end parallel
-         end if
+         if(config_Redi_closure == 'equalGM') then
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iEdge=1,nEdges
+              RediKappa(iEdge) = gmBolusKappa(iEdge)
+           end do
+         end if 
 
- 
          !!$omp parallel
          !!$omp do schedule(runtime) private(cell1, cell2, k, &
          !!$omp             BruntVaisalaFreqTopEdge, N) &
@@ -751,7 +755,7 @@ contains
                                                                      *layerThickHarmonic(k, iEdge)) - BruntVaisalaFreqTopEdge
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickHarmonic(k, iEdge) &
                                  /(layerThickHarmonic(k - 1, iEdge) + layerThickHarmonic(k, iEdge))
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
 
                ! Second to next to the last rows
@@ -764,7 +768,7 @@ contains
                                                                         *layerThickHarmonic(k, iEdge)) - BruntVaisalaFreqTopEdge
                   tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickHarmonic(k, iEdge) &
                                     /(layerThickHarmonic(k - 1, iEdge) + layerThickHarmonic(k, iEdge))
-                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                          *gradDensityConstZTopOfEdge(k,iEdge)
                end do
 
@@ -776,7 +780,7 @@ contains
                                  /(layerThickHarmonic(k - 1, iEdge) + layerThickHarmonic(k, iEdge))
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickHarmonic(k - 1, iEdge) &
                                                                      *layerThickHarmonic(k, iEdge)) - BruntVaisalaFreqTopEdge
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
                N = maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)
@@ -843,8 +847,8 @@ contains
               dDensityDzTopOfEdge, &
               gradZMidEdge, &
               gradZMidTopOfEdge, &
-              layerThickHarmonic, &
-              gradDensityConstZTopOfEdge)
+              gradDensityConstZTopOfEdge, &
+              layerThickHarmonic)
 
       call mpas_timer_stop('gm bolus velocity')
 

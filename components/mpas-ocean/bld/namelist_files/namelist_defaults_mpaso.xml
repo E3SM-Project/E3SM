@@ -187,6 +187,14 @@
 <config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
 <config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
 
+<!-- idealized_freshwater_flux -->
+<config_idealized_freshwater_flux_enable>.false.</config_idealized_freshwater_flux_enable>
+<config_idealized_freshwater_flux_minLat>0.923</config_idealized_freshwater_flux_minLat>
+<config_idealized_freshwater_flux_maxLat>1.117</config_idealized_freshwater_flux_maxLat>
+<config_idealized_freshwater_flux_minLon>5.114</config_idealized_freshwater_flux_minLon>
+<config_idealized_freshwater_flux_maxLon>5.194</config_idealized_freshwater_flux_maxLon>
+<config_idealized_freshwater_flux_strength>0.01</config_idealized_freshwater_flux_strength>
+
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>

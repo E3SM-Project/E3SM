@@ -422,8 +422,8 @@ contains
 
             if(cvmixShearMixingChoice==cvmixShearMixingTypePP) then
                do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
-                  cvmix_variables % Mdiff_iface(k) = cvmix_variables % Mdiff_iface(k) - config_cvmix_background_viscosity
-                  cvmix_variables % Tdiff_iface(k) = cvmix_variables % Tdiff_iface(k) - config_cvmix_background_diffusion
+                  cvmix_variables % Mdiff_iface(k) = cvmix_variables % Mdiff_iface(k)! - config_cvmix_background_viscosity
+                  cvmix_variables % Tdiff_iface(k) = cvmix_variables % Tdiff_iface(k)! - config_cvmix_background_diffusion
                end do
             endif
 

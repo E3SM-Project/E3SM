@@ -110,7 +110,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_thick(tendPool, forcingPool, meshPool)!{{{
+   subroutine ocn_tend_thick(tendPool, forcingPool, meshPool, temperature)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -118,6 +118,8 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool            !< [in] Mesh information (for pass-thru)
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: temperature
 
       !-----------------------------------------------------------------
       ! output variables
@@ -186,7 +188,7 @@ contains
       ! Compute surface mass flux array from bulk forcing
       call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, &
                                           surfaceThicknessFlux, &
-                                          surfaceThicknessFluxRunoff, err)
+                                          surfaceThicknessFluxRunoff, temperature, err)
 
       ! Compute surface thickness flux from land ice
       call ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, &
@@ -287,7 +289,8 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
-         ssh               ! sea surface height
+         ssh, &               ! sea surface height
+         bottomDrag
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          normalVelocity,     &! normal velocity
@@ -334,6 +337,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', &
                                              sfcStressMag)
 
+      call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
       !*** Transfer data to device
       !$acc update device(zMid, divergence, relativeVorticity, normPlanetVortEdge, &
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
@@ -418,7 +422,7 @@ contains
       endif
 
       ! Add horizontal mixing
-      call ocn_vel_hmix_tend(divergence, relativeVorticity, tendVel,err)
+      call ocn_vel_hmix_tend(divergence, relativeVorticity, bottomDrag, tendVel,err)
 
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
@@ -1089,7 +1093,7 @@ contains
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &
                                    RediKappaSfcTaper, RediKappaScaling,&
-                                   rediLimiterCount, tracerGroupTend, err)
+                                   rediLimiterCount, gmResolutionTaper, tracerGroupTend, err)
 
          if (computeBudgets) then
             ! Finish budget calculation by subtracting before, after

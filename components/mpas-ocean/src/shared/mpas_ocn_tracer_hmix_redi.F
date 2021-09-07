@@ -75,7 +75,7 @@ contains
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
-                                        RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
+                                        RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, gmResolutionTaper, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -86,7 +86,7 @@ contains
       type(mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real(kind=RKIND), dimension(:), intent(in) :: &
-         RediKappa
+         RediKappa, gmResolutionTaper
 
       real(kind=RKIND), dimension(:, :), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
@@ -184,7 +184,7 @@ contains
         rediKappaCell(iCell) = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
+          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.25_RKIND*RediKappa(iEdge) * gmResolutionTaper(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
         enddo
         rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
@@ -236,23 +236,23 @@ contains
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
-               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)*gmResolutionTaper(iEdge)
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
-               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
+               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*gmResolutionTaper(iEdge)*layerThicknessEdge(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadDown(k, 1, iEdge)*(tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1)) &
                              /(zMid(k, cell1) - zMid(k + 1, cell1)) &
                              + slopeTriadDown(k, 2, iEdge)*(tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2)) &
                              /(zMid(k, cell2) - zMid(k + 1, cell2)))
                if (minLevelCell(cell1) < minLevelEdgeBot(iEdge)) then
-                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)*gmResolutionTaper(iEdge)* &
                                layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell1) - tracers(iTr, minLevelEdgeBot(iEdge), cell1))/(zMid(minLevelEdgeBot(iEdge) - 1, cell1) - zMid(minLevelEdgeBot(iEdge), cell1))
                endif
                if (minLevelCell(cell2) < minLevelEdgeBot(iEdge)) then
-                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)*gmResolutionTaper(iEdge)* &
                                layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
                endif
@@ -273,12 +273,12 @@ contains
                   tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
                   ! div(h \kappa_2 \nabla \phi) at cell center
-                  flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+                  flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)*gmResolutionTaper(iEdge)
 
                   redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                               (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
-                  flux_term2 = coef*RediKappa(iEdge)*kappaRediEdgeVal*layerThicknessEdge(k, iEdge)* &
+                  flux_term2 = coef*RediKappa(iEdge)*gmResolutionTaper(iEdge)*kappaRediEdgeVal*layerThicknessEdge(k, iEdge)* &
                                0.25_RKIND* &
                                (slopeTriadUp(k, 1, iEdge)*(tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1)) &
                                 /(zMid(k - 1, cell1) - zMid(k, cell1)) &
@@ -307,12 +307,12 @@ contains
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
-               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)*gmResolutionTaper(iEdge)
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
                ! For bottom layer, only use triads pointing up:
-               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
+               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*gmResolutionTaper(iEdge)*layerThicknessEdge(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadUp(k, 1, iEdge)*(tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1)) &
                              /(zMid(k - 1, cell1) - zMid(k, cell1)) &
@@ -320,12 +320,12 @@ contains
                              /(zMid(k - 1, cell2) - zMid(k, cell2)))
 
                if (maxLevelCell(cell1) > maxLevelEdgeTop(iEdge)) then
-                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)*gmResolutionTaper(iEdge)* &
                                layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 1, iEdge)* &
                                (tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1))/(zMid(k, cell1) - zMid(k + 1, cell1))
                endif
                if (maxLevelCell(cell2) > maxLevelEdgeTop(iEdge)) then
-                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)*gmResolutionTaper(iEdge)* &
                                layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 2, iEdge)* &
                                (tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2))/(zMid(k, cell2) - zMid(k + 1, cell2))
                endif
@@ -474,6 +474,7 @@ contains
       type(mpas_pool_type), pointer :: forcingPool
 
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real(kind=RKIND), dimension(:), pointer :: rediAbernatheyZonal, rediAbernatheyMap
       real(kind=RKIND), dimension(:), pointer :: dcEdge
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -498,6 +499,8 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
+         call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyZonal', rediAbernatheyZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyMap', rediAbernatheyMap)
          call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
@@ -510,11 +513,22 @@ contains
             end do
             !$omp end do
             !$omp end parallel
-          else if (config_Redi_closure == 'data') then
+          else if (config_Redi_closure == 'AbernatheyZonal') then
             ! read RediKappa in from input
-            call mpas_log_write("config_Redi_closure = 'data'. "// &
-                                "Make sure that the variable RediKappa is read in from an input file.")
-         else
+            if(associated(rediAbernatheyZonal)) then
+              rediKappa(:) = rediAbernatheyZonal(:)
+            else
+              call mpas_log_write('rediAbernatheyZonal field was not read in from data, check input data stream', MPAS_LOG_CRIT)
+            endif
+          else if (config_Redi_closure == 'AbernatheyMap') then
+            ! read RediKappa in from input
+            if(associated(rediAbernatheyMap)) then
+              rediKappa(:) = rediAbernatheyMap(:)
+              print *, maxval(rediAbernatheyMap),minval(rediAbernatheyMap)
+            else
+              call mpas_log_write('rediAbernatheyMap field was not read in from data, check input data stream', MPAS_LOG_CRIT)
+            endif
+          else if (config_Redi_closure .ne. 'equalGM') then
             call mpas_log_write('Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain%dminfo)
@@ -528,13 +542,13 @@ contains
             !$omp do schedule(runtime) 
             do iEdge=1,nEdges
                if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
-                  RediKappa(iEdge) = 0.0_RKIND
+!                  RediKappa(iEdge) = 0.0_RKIND
                else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
                   ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
                else
-                  RediKappa(iEdge) = RediKappa(iEdge) &
-                                     *(dcEdge(iEdge) - config_eddying_resolution_ramp_min) &
-                                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
+!                  RediKappa(iEdge) = RediKappa(iEdge) &
+!                                     *(dcEdge(iEdge) - config_eddying_resolution_ramp_min) &
+!                                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
                end if
             end do ! iCell
             !$omp end do

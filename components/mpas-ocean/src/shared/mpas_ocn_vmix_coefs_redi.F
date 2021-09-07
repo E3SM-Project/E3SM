@@ -116,7 +116,7 @@ contains
       err = 0
 
       if (config_use_Redi) then
-          call ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, err)
+          call ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, gmResolutionTaper, err)
       end if
 
    !--------------------------------------------------------------------
@@ -136,7 +136,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, gmResolutionTaper, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -162,7 +162,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         RediKappa
+         RediKappa, gmResolutionTaper
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          k33
