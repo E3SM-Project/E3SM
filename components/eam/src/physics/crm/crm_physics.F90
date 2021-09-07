@@ -1089,10 +1089,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call t_startf ('crm_call')
 
       call crm(ncrms, ztodt, pver, &
-               crm_input, crm_state, &
-               crm_rad%qrad, crm_rad%temperature, &
-               crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, &
-               crm_rad%nc, crm_rad%ni, crm_rad%qs, crm_rad%ns, &
+               crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
