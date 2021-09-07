@@ -36,6 +36,7 @@ module ocn_diagnostics
    use ocn_thick_ale
    use ocn_diagnostics_variables
    use ocn_mesh
+   use ocn_surface_land_ice_fluxes
 
    implicit none
    private
@@ -73,8 +74,6 @@ module ocn_diagnostics
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND), pointer ::  coef_3rd_order
-
-   logical :: landIceOn, jenkinsOn, hollandJenkinsOn
 
 !***********************************************************************
 
@@ -153,7 +152,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
-      if (landIceOn) then
+      if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
@@ -205,7 +204,7 @@ contains
       if ( associated(frazilSurfacePressure) ) then
          !$acc enter data copyin(frazilSurfacePressure)
       endif
-      if (landIceOn) then
+      if (landIcePressureOn) then
          !$acc enter data copyin(landIcePressure)
          !$acc enter data copyin(landIceDraft)
       endif
@@ -375,7 +374,7 @@ contains
       !
       ! inputs: layerThickness, normalVelocity, landIceFraction, landIceMask
       ! outputs: 
-      if (landIceOn) then
+      if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
                 landIceFraction, landIceMask, timeLevel, indexTemperature, indexSalinity)
       end if
@@ -385,7 +384,7 @@ contains
          !
          ! inputs: ssh, seaIcePressure, landIceDraft
          ! outputs: pressureAdjustedSSH, gradSSH
-         if (landIceOn) then
+         if (landIcePressureOn) then
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
                    pressureAdjustedSSH, gradSSH, landIceDraft=landIceDraft )
         else 
@@ -471,7 +470,7 @@ contains
       if ( associated(frazilSurfacePressure) ) then
          !$acc exit data delete(frazilSurfacePressure)
       endif
-      if (landIceOn) then
+      if (landIcePressureOn) then
          !$acc exit data delete(landIcePressure)
          !$acc exit data delete(landIceDraft)
       endif
@@ -1987,7 +1986,7 @@ contains
       !$omp end parallel
 #endif
 
-      if (landIceOn) then
+      if (landIcePressureOn) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop present(pressureAdjustedSSH, landIceDraft)
 #else
@@ -3536,20 +3535,6 @@ contains
       integer, intent(out) :: err !< Output: Error flag
 
       err = 0
-
-      if ( trim(config_land_ice_flux_mode) == 'off' ) then
-         landIceOn = .false.
-      else
-         landIceOn = .true.
-      end if
-
-      jenkinsOn = .false.
-      hollandJenkinsOn = .false.
-      if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
-         jenkinsOn = .true.
-      else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
-         hollandJenkinsOn = .true.
-      end if
 
       if(config_include_KE_vertex) then
          ke_vertex_flag = 1
