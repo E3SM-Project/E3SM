@@ -437,7 +437,7 @@ contains
     type(mct_avect), pointer :: x2o_ox
     character(*), parameter  :: subname = '(prep_ocn_accum_avg)'
     !---------------------------------------------------------------
-
+    print *, "wpc1b. start prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
     call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        ! temporary formation of average
@@ -451,6 +451,7 @@ contains
     enddo
     x2oacc_ox_cnt = 0
     call t_drvstopf (trim(timer_accum))
+    print *, "wpc2b. end prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
 
   end subroutine prep_ocn_accum_avg
 
