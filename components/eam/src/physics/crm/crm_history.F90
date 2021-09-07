@@ -438,10 +438,10 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! CRM domain average Tendencies
-   call outfld('MMF_DT    ',MMF_DT_out,            pcols, lchnk ) 
-   call outfld('MMF_DQ    ',ptend%q(1,1,1),        pcols, lchnk )
-   call outfld('MMF_DQC   ',ptend%q(1,1,ixcldliq), pcols, lchnk )
-   call outfld('MMF_DQI   ',ptend%q(1,1,ixcldice), pcols, lchnk )
+   call outfld('MMF_DT    ',MMF_DT_out(1:ncol,:),       ncol, lchnk ) 
+   call outfld('MMF_DQ    ',ptend%q(1:ncol,1,1),        ncol, lchnk )
+   call outfld('MMF_DQC   ',ptend%q(1:ncol,1,ixcldliq), ncol, lchnk )
+   call outfld('MMF_DQI   ',ptend%q(1:ncol,1,ixcldice), ncol, lchnk )
 
    ! CRM radiative heating rate
    ! NOTE: We output the radiative heating rates (MMF_QRS and MMF_QRL) here 
@@ -638,8 +638,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 #endif /* MMF_ESMT */
 
 #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
-   call outfld('MMF_DU',ptend%u, pcols, lchnk )
-   call outfld('MMF_DV',ptend%v, pcols, lchnk )
+   call outfld('MMF_DU',ptend%u(1:ncol,:), ncol, lchnk )
+   call outfld('MMF_DV',ptend%v(1:ncol,:), ncol, lchnk )
 #endif /* MMF_MOMENTUM_FEEDBACK or MMF_ESMT */
 
    !----------------------------------------------------------------------------
