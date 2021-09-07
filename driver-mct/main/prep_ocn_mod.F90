@@ -192,7 +192,7 @@ contains
     allocate(mapper_Sw2o)
 
     if (ocn_present) then
-
+      print *, 'HelloWorld1', 'HelloWorld1b'
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
@@ -450,7 +450,7 @@ contains
        call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
     enddo
     x2oacc_ox_cnt = 0
-    Print *, 'HelloWorld', x2oacc_ox_cnt, 'HelloWorld2'
+    print *, 'HelloWorld', x2oacc_ox_cnt, 'HelloWorld2'
     call t_drvstopf (trim(timer_accum))
     print *, "_wpc2b. end prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
 
