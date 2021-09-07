@@ -4041,9 +4041,9 @@ contains
 
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
-       print *, "wpc1a. pre prep_ocn_accum_avg() call timer_accum = ", 'CPL:ocnprep_avg'
+       print *, "_wpc1a. pre prep_ocn_accum_avg() call timer_accum = ", 'CPL:ocnprep_avg'
        call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-       print *, "wpc2a. post prep_ocn_accum_avg() call timer_accum = ", 'CPL:ocnprep_avg'
+       print *, "_wpc2a. post prep_ocn_accum_avg() call timer_accum = ", 'CPL:ocnprep_avg'
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
