@@ -440,7 +440,8 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
     auto p_mid = ws.take("p_mid");
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
-    
+    team.team_barrier();
+
     // Convert T->Theta->Theta*dp->VTheta*dp
     auto T      = ekat::subview(vtheta_dp,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vtheta_dp,ie,n0,igp,jgp);
@@ -762,7 +763,8 @@ void HommeDynamics::homme_post_process () {
 
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
-    
+    team.team_barrier();
+
     // Convert VTheta_dp->VTheta->Theta->T
     auto T   = ekat::subview(T_view,icol);
     auto v   = ekat::subview(v_view,icol);
