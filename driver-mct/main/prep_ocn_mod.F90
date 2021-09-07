@@ -442,7 +442,9 @@ contains
     do eoi = 1,num_inst_ocn
        ! temporary formation of average
        if (x2oacc_ox_cnt > 1) then
+          print *, "_wpc2b. Pre mct_avect_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
           call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
+          print *, "_wpc3b. Post mct_avect_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
        end if
 
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_ox
@@ -450,9 +452,9 @@ contains
        call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
     enddo
     x2oacc_ox_cnt = 0
-    Print *, 'HelloWorld', x2oacc_ox_cnt, 'HelloWorld2'
+    Print *, '_wpc4b After x2oacc_ox_cnt set to 0. x2oacc_ox_cnt =', x2oacc_ox_cnt
     call t_drvstopf (trim(timer_accum))
-    print *, "_wpc2b. end prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
+    print *, "_wpc5b. end prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
 
   end subroutine prep_ocn_accum_avg
 
