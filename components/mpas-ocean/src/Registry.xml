@@ -763,10 +763,6 @@
 					description="Controls if self-attraction and loading is applied to ssh"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_load_Love_file" type="character" default_value="loveDat.txt" units="unitless"
-					description="Location of the file containing the load Love numbers"
-					possible_values="Any file name string"
-		/>
 		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
 					description="Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid."
 					possible_values="Any file name string"
