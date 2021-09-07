@@ -1,7 +1,5 @@
 #include "control/atmosphere_driver.hpp"
-#include <memory>
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -142,71 +140,57 @@ void AtmosphereDriver::create_fields()
   }
 
   // Register required/updated groups
-  // IMPORTANT: Some FMs on non-ref grids *might* depend on the ref-grid FM.
-  //            E.g., there could be a GroupRequest gr1 that requires to be an
-  //            alias of gr2, with gr2 defined on ref grid. Most obvious case:
-  //            dyn needs a copy of group "tracers" on dyn grid. But nobody
-  //            register tracers on dyn grid, so at first sight, it would appear
-  //            that the tracers group on dyn grid is empty.
-  //            To overcome this issue, dyn can register the tracers group on the
-  //            dyn grid as an "alias" of the tracers group on the ref grid,
-  //            and the AD must take care of ensuring that the two contain the
-  //            same fields (effectively "adding" fields on the dyn grid).
-  //            To do this, we loop over the requests, and if we find a request
-  //            gr1 that has a 'relative' request gr2 (see field_request.hpp for a
-  //            definition of 'relative'), and if gr2 is on a different grid, we
-  //            make sure that:
-  //              a) if the relative group is a 'child' or 'alias' (see field_request.hpp
-  //                 for an explanation of these terms), we ensure the relative
-  //                 group is also registered in this grid, with fields in the same order.
-  //              b) all the fields of the relative request are registered
-  //            in the FM on gr1's grid.
+  // IMPORTANT: Some group requests might be formulated in terms of another
+  //   group request (see field_requests.hpp). The FieldManager class is able
+  //   to handle most of these. However, a GroupRequest that requests to Import
+  //   a group from another grid cannot be handled internally by the FieldManager.
+  //   In particular, the FM needs the fields in the imported group to be
+  //   registered in the FM before it can handle the request.
+  //   For this reason, we scan required/updated group requests from all atm procs,
+  //   and if we find an Import request, for each field in the "source" group,
+  //   we register a corresponding version of the field on the "target" FM.
 
   // Helper lambda to reduce code duplication
-  auto import_relative_group = [&](const GroupRequest& greq) {
-    // Given request on grid g1, with relative (alias or child) on grid g2,
-    // imports all fields of the relative from grid g2 to grid g1.
+  auto process_imported_groups = [&](const std::set<GroupRequest>& group_requests) {
+    for (auto req : group_requests) {
+      if (req.derived_type==DerivationType::Import) {
+        EKAT_REQUIRE_MSG (req.grid!=req.src_grid,
+            "Error! A group request with 'Import' derivation type is meant to import\n"
+            "       a group of fields from a grid to another. Found same grid name instead.\n"
+            "   group name: " + req.name + "\n"
+            "   group to import: " + req.src_name + "\n"
+            "   grid name: " + req.grid + "\n");
+        // Given request for group A on grid g1 to be an Import of
+        // group B on grid g2, register each field in group B in the 
+        // field manager on grid g1.
+        const auto& fm = m_field_mgrs.at(req.grid);
+        const auto& rel_fm   = m_field_mgrs.at(req.src_grid);
+        const auto& rel_info = rel_fm->get_groups_info().at(req.src_name);
 
-    const auto& fm = m_field_mgrs.at(greq.grid);
-    const auto& rel = *greq.relative;
-    const auto& rel_fm   = m_field_mgrs.at(rel.grid);
-    const auto& rel_info = rel_fm->get_groups_info().at(rel.name);
+        auto r = m_grids_manager->create_remapper(req.src_grid,req.grid);
+        // Loop over all fields in group src_name on grid src_grid.
+        for (const auto& fname : rel_info->m_fields_names) {
+          // Get field on src_grid
+          auto f = rel_fm->get_field_ptr(fname);
 
-    auto r = m_grids_manager->create_remapper(rel.grid,greq.grid);
-    // Loop over all fields in group rel_name on grid rel_grid.
-    for (const auto& fname : rel_info->m_fields_names) {
-      // Get field on rel_grid
-      auto f = rel_fm->get_field_ptr(fname);
+          // Build a FieldRequest for the same field on greq's grid
+          auto fid = r->create_tgt_fid(f->get_header().get_identifier());
+          FieldRequest freq(fid,req.src_name,req.pack_size);
+          fm->register_field(freq);
+        }
 
-      // Build a FieldRequest for the same field on greq's grid
-      auto fid = r->create_tgt_fid(f->get_header().get_identifier());
-      FieldRequest freq(fid,rel.name,rel.pack_size);
-      fm->register_field(freq);
+        // Now that the fields have been imported on this grid's GM,
+        // this group request is a "normal" group request, and we can
+        // reset the derivation type to "None"
+        req.derived_type=DerivationType::None;
+      }
+
+      m_field_mgrs.at(req.grid)->register_group(req);
     }
-
-    // Register also the relative group on this grid
-    GroupRequest rel_on_my_grid(rel.name,greq.grid,greq.pack_size,greq.bundling);
-    fm->register_group(rel_on_my_grid);
   };
 
-  for (const auto& req : m_atm_process_group->get_required_group_requests()) {
-    if (req.relative!=nullptr && req.grid!=req.relative->grid) {
-      EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
-          "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
-          "       See field_request.hpp for more info on what that means.\n");
-      import_relative_group(req);
-    }
-    m_field_mgrs.at(req.grid)->register_group(req);
-  }
-  for (const auto& req : m_atm_process_group->get_updated_group_requests()) {
-    if (req.relative!=nullptr && req.grid!=req.relative->grid) {
-      EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
-          "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
-          "       See field_request.hpp for more info on what that means.\n");
-      import_relative_group(req);
-    }
-    m_field_mgrs.at(req.grid)->register_group(req);
-  }
+  process_imported_groups (m_atm_process_group->get_required_group_requests());
+  process_imported_groups (m_atm_process_group->get_updated_group_requests());
 
   // Close the FM's, allocate all fields
   for (auto it : m_grids_manager->get_repo()) {
@@ -239,6 +223,10 @@ initialize_fields (const util::TimeStamp& t0)
   // field is missing from the initial condition file, an error will be thrown.
   // By printing the DAG first, we give the user the possibility of seeing
   // what fields are inputs to the atm time step, so he/she can fix the i.c. file.
+  // TODO: would be nice to do the IC input first, and mark the fields in the
+  //       DAG node "Begin of atm time step" in red if there's no initialization
+  //       mechanism set for them. That is, allow field XYZ to not be found in
+  //       the IC file, and throw an error when the dag is created.
 
   auto& deb_pl = m_atm_params.sublist("Debug");
   const int verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level",-1);

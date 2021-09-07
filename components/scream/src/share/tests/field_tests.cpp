@@ -530,33 +530,33 @@ TEST_CASE("multiple_bundles") {
   FieldIdentifier e_id("e", {tags, dims}, nondim, grid_name);
   FieldIdentifier f_id("f", {tags, dims}, nondim, grid_name);
 
-  FieldRequest a_req(a_id,"group1");
+  FieldRequest a_req(a_id,SL{"group1","group3"});
   FieldRequest b_req(b_id,SL{"group1"});
   FieldRequest c_req(c_id,SL{"group1","group2"});
   FieldRequest d_req(d_id,SL{"group1","group3"});
   FieldRequest e_req(e_id,SL{"group1","group2"});
-  FieldRequest f_req(f_id,SL{"group1","group3"});
+  FieldRequest f_req(f_id,SL{"group1"});
 
   GroupRequest g1_req ("group1",grid_name,Bundling::Required);
   GroupRequest g2_req ("group2",grid_name,Bundling::Required);
-  // group3 = group3 + group2
-  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,&g2_req,Relationship::Child);
+  // group3 += group2
+  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,DerivationType::Superset,g2_req.name,g2_req.grid);
   // group4 = group2
-  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,&g2_req,Relationship::Alias);
-  // group5 = group1 - {c,d}
-  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,&g1_req,Relationship::Parent,SL{"c","d"});
+  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,DerivationType::Copy,g2_req.name,g2_req.grid);
+  // group5 += (group1 - {c,d})
+  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,DerivationType::Subset,g1_req.name,g1_req.grid,SL{"c","d"});
 
-  // The above group specs give the following groups:
+  // The above group specs should give the following groups:
   // g1: [a,b,c,d,e,f]
   // g2: [c,e]
-  // g3: [d,f,c,e]
+  // g3: [a,c,d,e]
   // g4: [c,e]
   // g5: [a,b,e,f]
-  // The bundling requests can be accommodated for g1-g4, but not g5.
+  // The bundling requests can be accommodated for g1,g2,g3,g4, but not g5.
   // But g5 request is only 'Preferred', so the FM won't error out.
-  // The order of fields in the 'encompassing' group is {[c,e][d,f][a,b]},
-  // where [c,e] means that the order of those two fields can be anything.
-  // The 'block'-reverse of that list is also possible: {[a,b][d,f][c,e]}
+  // The order of fields in the 'encompassing' group is {[c,e],[a,d],[b,f]},
+  // where [f1,..,fn] means that the order of those two fields can be anything.
+  // The 'block'-reverse of that list is also possible: {[b,f],[a,d],[c,e]}
 
   FieldManager<Real> field_mgr(pg);
   field_mgr.registration_begins();
@@ -599,14 +599,14 @@ TEST_CASE("multiple_bundles") {
   const auto& f4 = *std::next(fnames.begin(),3);
   const auto& f5 = *std::next(fnames.begin(),4);
   const auto& f6 = *std::next(fnames.begin(),5);
-  if (f1=="a" || f1=="b") {
-    REQUIRE ( ((f1=="a" && f2=="b") || (f1=="b" && f2=="a")) );
-    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+  if (f1=="b" || f1=="f") {
+    REQUIRE ( ((f1=="b" && f2=="f") || (f1=="f" && f2=="b")) );
+    REQUIRE ( ((f3=="a" && f4=="d") || (f3=="d" && f4=="a")) );
     REQUIRE ( ((f5=="c" && f6=="e") || (f5=="e" && f6=="c")) );
   } else {
     REQUIRE ( ((f1=="c" && f2=="e") || (f1=="e" && f2=="c")) );
-    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
-    REQUIRE ( ((f5=="a" && f6=="b") || (f5=="b" && f6=="a")) );
+    REQUIRE ( ((f3=="a" && f4=="d") || (f3=="d" && f4=="a")) );
+    REQUIRE ( ((f5=="b" && f6=="f") || (f5=="f" && f6=="b")) );
   }
 }
 
