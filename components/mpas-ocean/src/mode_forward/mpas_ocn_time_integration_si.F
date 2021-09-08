@@ -3020,15 +3020,12 @@ module ocn_time_integration_si
                                       timeLevel=2)
       call mpas_timer_stop('si vmix halos normalVelFld')
 
-      call mpas_timer_stop('si vmix halos')
-
-      call mpas_timer_stop("si implicit vert mix")
-
-      call mpas_timer_start('si ideal age reset')
-
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if (groupItr%memberType == MPAS_POOL_FIELD) then
+
+            ! Halo update on all tracer groups
+            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
 
             ! Reset iAge to zero where mask == 0
             if (config_use_idealAgeTracers.and.trim(groupItr%memberName) == 'idealAgeTracers') then
@@ -3050,14 +3047,15 @@ module ocn_time_integration_si
                 !$omp end do
                 !$omp end parallel
              endif
-
-            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
          end if
       end do
 
-      call mpas_timer_stop('si ideal age reset')
+      call mpas_timer_stop('si vmix halos')
+
+      call mpas_timer_stop("si implicit vert mix")
 
       call mpas_timer_start('si fini')
+
       if (config_prescribe_velocity) then
          !$omp parallel
          !$omp do schedule(runtime) private(k)

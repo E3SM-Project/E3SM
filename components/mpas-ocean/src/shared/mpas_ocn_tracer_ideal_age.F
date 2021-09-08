@@ -187,7 +187,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
-      if (config_use_idealAgeTracers.and.config_use_idealAgeTracers_idealAge_forcing) then
+      if (config_use_idealAgeTracers_idealAge_forcing) then
          ! set mask = 0 for open ocean
          ! set mask = 1 under ice shelves
          idealAgeMask = 0.0_RKIND

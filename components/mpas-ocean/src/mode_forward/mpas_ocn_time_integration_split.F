@@ -1920,6 +1920,9 @@ module ocn_time_integration_split
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if (groupItr%memberType == MPAS_POOL_FIELD) then
 
+            ! Halo update on all tracer groups
+            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
+
             ! Reset iAge to zero where mask == 0
             if (config_use_idealAgeTracers.and.trim(groupItr%memberName) == 'idealAgeTracers') then
                 call mpas_pool_get_array(tracersPool, &
@@ -1940,8 +1943,6 @@ module ocn_time_integration_split
                 !$omp end do
                 !$omp end parallel
              endif
-
-            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
          end if
       end do
 
