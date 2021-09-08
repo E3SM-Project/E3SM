@@ -13,6 +13,7 @@ implicit none
 private
 
 !Precipitation downscaling method used in the land model (current possible options: ERMM (default), FNM)
-character(len = cs), public :: precip_downscaling_method
+!(Initialize to UNSET to avoid uninitialized behavior)
+character(len = cs), public :: precip_downscaling_method = 'UNSET'
 
 end module lnd_infodata
