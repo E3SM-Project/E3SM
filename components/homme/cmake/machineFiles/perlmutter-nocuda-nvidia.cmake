@@ -1,7 +1,5 @@
 # CMake initial cache file for Perlmutter using nvidia without cuda
 
-#set(HOMMEXX_VECTOR_SIZE 1 CACHE STRING "")
-
 # cray-hdf5-parallel/1.12.0.6  cray-netcdf-hdf5parallel/4.7.4.6 cray-parallel-netcdf/1.12.1.6
 SET(NETCDF_DIR $ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} CACHE FILEPATH "")
 SET(PNETCDF_DIR $ENV{CRAY_PARALLEL_NETCDF_DIR} CACHE FILEPATH "")
