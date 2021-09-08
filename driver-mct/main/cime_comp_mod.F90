@@ -693,7 +693,6 @@ contains
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
     
-
     beg_count = shr_sys_irtc(irtc_rate)
     
     call mpi_init(ierr)
@@ -1378,8 +1377,8 @@ contains
 
   subroutine cime_init()
 
-104 format( A, i10.8, i8)
 103 format( 5A )
+104 format( A, i10.8, i8)
 
   !-----------------------------------------------------------------------------
   !| Component Initialization
@@ -2422,8 +2421,8 @@ contains
     integer               :: hashint(hashcnt)
                                                   ! Driver pause/resume
     logical               :: drv_pause            ! Driver writes pause restart file
-    logical               :: drv_resume           !  Driver resets state from restart file
-    character(len=CL)     :: drv_resume_file      ! the restart file
+    logical               :: drv_resume           ! Driver resets state from restart file
+    character(len=CL)     :: drv_resume_file      ! The restart (resume) file
     character(len=CL), pointer :: resume_files(:) ! Component resume files
 
     type(ESMF_Time)       :: etime_curr           ! Current model time
