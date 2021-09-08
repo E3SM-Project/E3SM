@@ -57,7 +57,7 @@
   -->
 
   <machine MACH="perlmutter">
-    <DESC>Perlmutter.  AMD EPYC 7713 64-Core (Milan) and nvidia A100's</DESC>
+    <DESC>Perlmutter.  Each node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's</DESC>
     <NODENAME_REGEX>login</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
@@ -79,8 +79,8 @@
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">32</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="nvidiagpu">32</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="nvidiagpu">128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidiagpu">4</MAX_MPITASKS_PER_NODE>
