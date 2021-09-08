@@ -15,6 +15,7 @@
 !             Possoin solver and fft routines provided by Stefan Tulich
 !---------------------------------------------------------------------------*/
 #include "scalar_momentum.h"
+
 #ifdef MMF_ESMT
 void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out) {
 /*!------------------------------------------------------------------
@@ -37,34 +38,33 @@ void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out) {
    jump = nx;
    lenwrk = lenr;
 
-#ifdef USE_ORIG_FFT
+#ifndef USE_ORIG_FFT
+   realHost2d arrinHost  = arr_in.createHostCopy();
+   realHost2d arroutHost = arr_out.createHostCopy();
+
    // initialization for FFT
    rfft1i(n,wsave,lensav,ier);
-   if(ier /= 0) printf("ERROR: rfftmi(): ESMT - FFT initialization error %d\n",ier);
 
    //  do the forward transform
    //do k = 1,nzm
    for (auto k = 0; k < nzm; ++k) {
       real atmp[nx];
       real tmp[nx];
-      for (auto i = 0; i < nx; ++i) { atmp[i] = arr_in(i,k); }
-
+      for (auto i = 0; i < nx; ++i) { atmp[i] = arrinHost(k,i); }
       rfft1f( n, inc, atmp, lenr, wsave, lensav, tmp, lenwrk, ier );
-      if(ier /= 0) printf("ERROR: rfftmf(): ESMT - Forward FFT error %d\n ",ier);
-
-      for (int i=0; i<nx; i++) { arr_out(i,k) = atmp[i];  }
+      for (int i=0; i<nx; i++) { arroutHost(k,i) = atmp[i]; }
    }
+
+   arroutHost.deep_copy_to(arr_out);
 #else
     yakl::FFT<nx> fft;
     parallel_for( nzm , YAKL_LAMBDA (int k) {
-      real atmp[nx];
+      real atmp[nx+2];
       real tmp[nx];
 
-      for (int i=0; i<nx ; i++) { atmp[i] = arr_in(i,k); }
-
+      for (int i=0; i<nx ; i++) { atmp[i+1] = arr_in(k,i); }
       fft.forward(atmp, tmp);
-
-      for (int i=0; i<nx; i++) { arr_out(i,k) = atmp[i];  }
+      for (int i=0; i<nx; i++) { arr_out(k,i) = atmp[i+1];  }
     });
 #endif
 
@@ -75,10 +75,10 @@ void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out) {
    }
 
    parallel_for( nh, YAKL_LAMBDA (int j) {
-      k_out(2*j)   = 2.*pi*real(j)/(real(n)*dx);   //cos
-      k_out(2*j+1) = 2.*pi*real(j)/(real(n)*dx);   //sin
+      k_out(2*j+1) = 2.*pi*real(j+1)/(real(n)*dx);   //cos
+      k_out(2*j+2) = 2.*pi*real(j+1)/(real(n)*dx);   //sin
       if ((n%2) == 0) {
-        k_out(n) =  2.*pi/(2.*dx);   //nyquist wavelength for even n
+        k_out(n-1) =  2.*pi/(2.*dx);   //nyquist wavelength for even n
       }
       if (j==0) k_out(0) = 0.0;
    });
@@ -103,34 +103,33 @@ void esmt_fft_backward(real2d& arr_in, real2d& arr_out) {
    jump = nx;
    lenwrk = lenr;
 
-#ifdef USE_ORIG_FFT
+#ifndef USE_ORIG_FFT
+   realHost2d arrinHost  = arr_in.createHostCopy();
+   realHost2d arroutHost = arr_out.createHostCopy();
+
    // initialization for FFT
    rfft1i(n,wsave,lensav,ier);
-   if(ier /= 0) printf("ERROR: rfftmi(): ESMT - FFT initialization error %d\n",ier);
 
    //  do the backward transform
    //do k = 1,nzm
    for (auto k = 0; k < nzm; ++k) {
       real atmp[nx];
       real tmp[nx];
-      for (auto i = 0; i < nx; ++i) atmp[i] = arr_in(i,k);
-
+      for (auto i = 0; i < nx; ++i) atmp[i] = arrinHost(k,i);
       rfft1b( n, inc, atmp, lenr, wsave, lensav, tmp, lenwrk, ier );
-      if(ier /= 0) printf("ERROR: rfftmb(): ESMT - backward FFT error %d\n",ier);
-
-      for (auto i = 0; i < nx; ++i) arr_out(i,k) = atmp[i];
+      for (auto i = 0; i < nx; ++i) arroutHost(k,i) = atmp[i];
    }
+
+   arroutHost.deep_copy_to(arr_out);
 #else
     yakl::FFT<nx> fft;
     parallel_for( nzm , YAKL_LAMBDA (int k) {
-      real atmp[nx];
+      real atmp[nx+2];
       real tmp[nx];
 
-      for (int i=0; i<nx ; i++) { atmp[i] = arr_in(i,k); }
-
+      for (int i=0; i<nx ; i++) { atmp[i+1] = arr_in(k,i); }
       fft.forward(atmp, tmp);
-
-      for (int i=0; i<nx; i++) { arr_out(i,k) = atmp[i];  }
+      for (int i=0; i<nx; i++) { arr_out(k,i) = atmp[i+1];  }
     });
 #endif
 }
@@ -152,15 +151,15 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
    real dampwt;
    real1d k_arr("k_arr",nx);
    real1d u_s_avg("u_s_avg",nzm);
-   real1d a("a",nzm);
-   real1d b("b",nzm);
-   real1d c("c",nzm);
-   real1d rhs("rhs",nzm);
    real1d shr("shr",nzm);
-   real2d w_i("w_i",nx,nzm);
-   real2d w_hat("w_hat",nx,nzm);
-   real2d pgf_hat("pgf_hat",nx,nzm);
-   real2d pgf("pgf",nx,nzm);
+   real2d a("a",nzm,nx);
+   real2d b("b",nzm,nx);
+   real2d c("c",nzm,nx);
+   real2d rhs("rhs",nzm,nx);
+   real2d w_i("w_i",nzm,nx);
+   real2d w_hat("w_hat",nzm,nx);
+   real2d pgf_hat("pgf_hat",nzm,nx);
+   real2d pgf("pgf",nzm,nx);
    real1d dz("dz",nzm+1);
 
    // The loop over "y" points is mostly unessary, since ESMT
@@ -173,9 +172,8 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
      if (k < nzm) {
       dz(k) = zi(k+1,icrm)-zi(k,icrm);
      }
-     dz(nzm) = dz(nzm-1);
+     dz(nzm) = zi(nzm,icrm)-zi(nzm-1,icrm);
    });
-
 
    //do j=1,ny
    for (auto j = 0; j < ny; ++j) {
@@ -195,6 +193,8 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
       parallel_for( nzm, YAKL_LAMBDA (int k) {
          for (auto i = 0; i < nx; ++i) {
             u_s_avg(k) = u_s_avg(k) + u_s(k,j,i);
+           // yakl::atomicAdd( u_s_avg(k) , u_s(k,j,i) );
+
             // note that w is on interface levels
             w_i(k,i) = ( w(k,j,i,icrm) + w(k+1,j,i,icrm) )/2.0;
          }
@@ -220,6 +220,7 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
       //-----------------------------------------
       esmt_fft_forward(w_i, k_arr, w_hat);
 
+      yakl::fence();
       //-----------------------------------------
       // solve vertical structure equation
       // for each zonal wavelength (k_arr)
@@ -232,50 +233,63 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
 
       // Loop through wavelengths
       //do i = 2,nx
+      parallel_for( SimpleBounds<2>(nzm,nx), YAKL_LAMBDA (int k, int i) {
+        if (i>0) {
+           a(k,i) = dz(k+1) / ( dz(k+1) + dz(k) );
+           // the factor of 1.25 crudely accounts for difference between 2D and 3D updraft geometry
+           b(k,i) = -0.5 * 1.25 * pow(k_arr(i), 2.0) * dz(k) * dz(k+1) - 1.0;
+           c(k,i) = dz(k) / ( dz(k+1) + dz(k) );
+           rhs(k,i) = pow(k_arr(i), 2.) * w_hat(k,i) * shr(k) * dz(k) * dz(k+1);
+
+           //lower boundary condition (symmetric)
+           if (k == 0) {
+             b(0,i) =  b(0,i) + a(0,i);
+             a(0,i) = 0.0;
+           }
+
+           //upper boundary condition (symmetric)
+           if (k == nzm-1) {
+             b(nzm-1,i) = b(nzm-1,i) + a(nzm-1,i);
+             c(nzm-1,i) = 0.0;
+           }
+        }
+     });
+
+      // gaussian elimination with no pivoting
+      //do k = 1,nzm-1
       parallel_for( nx, YAKL_LAMBDA (int i) {
-      //   do k = 1,nzm
-         for (auto k = 0; k < nzm; ++k) {
-            a(k) = dz(k+1) / ( dz(k+1) + dz(k) );
-            // the factor of 1.25 crudely accounts for difference between 2D and 3D updraft geometry
-            b(k) = -0.5 * 1.25 * pow(k_arr(i), 2.0) * dz(k) * dz(k+1) - 1.0;
-            c(k) = dz(k) / ( dz(k+1) + dz(k) );
-            rhs(k) = pow(k_arr(i), 2.) * w_hat(k,i) * shr(k) * dz(k) * dz(k+1);
-          }
-
-         //lower boundary condition (symmetric)
-         b(0) = b(0) + a(0);
-         a(0) = 0.0;
-
-         //upper boundary condition (symmetric)
-         b(nzm-1) = b(nzm-1) + c(nzm-1);
-         c(nzm-1) = 0.0;
-
-         // gaussian elimination with no pivoting
-         //do k = 1,nzm-1
+       if (i>0) {
          for (auto k = 0; k < nzm-1; ++k) {
-            b(k+1) = b(k+1) - a(k+1) / b(k) * c(k);
-            rhs(k+1) = rhs(k+1) - a(k+1) / b(k) * rhs(k);
+           b(k+1,i) = b(k+1,i) - a(k+1,i) / b(k,i) * c(k,i);
+           rhs(k+1,i) = rhs(k+1,i) - a(k+1,i) / b(k,i) * rhs(k,i);
          }
+       }
+      });
 
+
+      parallel_for( nx, YAKL_LAMBDA (int i) {
+       if (i>0) {
          // backward substitution
-         rhs(nzm-1) = rhs(nzm-1) / b(nzm-1);
+         rhs(nzm-1,i) = rhs(nzm-1,i) / b(nzm-1,i);
          //do k=nzm-1,1,-1
-         for (auto k = nzm-2; k < 0; --k) {
-            rhs(k) = ( rhs(k) - c(k) * rhs(k+1) ) / b(k);
+         for (auto k = nzm-2; k > -1; --k) {
+           rhs(k,i) = ( rhs(k,i) - c(k,i) * rhs(k+1,i) ) / b(k,i);
          }
+       }
+      });
 
          //do k = 1,nzm
-         for (auto k = 0; k < nzm; ++k) {
-            pgf_hat(k,i) = rhs(k);
-         }
-      }); // i - zonal wavelength
+       parallel_for( SimpleBounds<2>(nzm,nx), YAKL_LAMBDA (int k, int i) {
+         pgf_hat(k,i) = rhs(k,i);
+       });
+
 
       // Note sure what this part does... 
       // something about the Nyquist freq and whether nx is odd or even
-      if ((nx-1)%2 == 0) {
+      if (nx%2 == 0) {
         // do k=1,nzm
          parallel_for( nzm, YAKL_LAMBDA (int k) {
-            pgf_hat(k,nx-1) = pgf_hat(k,nx-1) / 2.0;
+           pgf_hat(k,nx-1) = pgf_hat(k,nx-1) / 2.0;
          }); // k
       }
 
@@ -290,13 +304,13 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
       //do k = 1,nzm
       //   do i = 1,nx
       parallel_for( SimpleBounds<2>(nzm,nx) , YAKL_LAMBDA (int k, int i) {
-         if (k == 1) {
+         if (k == 0) {
             tend(k,j,i) = 0.0;
          } else {
             tend(k,j,i) = -1.0 * pgf(k,i) * rho(k,icrm);
          }
-      }); 
-   }
+      });
+   } // j
 }
 
 void scalar_momentum_tend() {
@@ -308,12 +322,12 @@ void scalar_momentum_tend() {
    auto &ncrms     = :: ncrms;
    auto &u_esmt    = :: u_esmt;
    auto &v_esmt    = :: v_esmt;
-
+   
    real3d u_esmt_pgf_3D("u_esmt_pgf_3D",nzm,ny,nx);
    real3d v_esmt_pgf_3D("v_esmt_pgf_3d",nzm,ny,nx);
 
-   real3d u_esmt_tmp("u_esmt_tmp", nzm, ny, nz);
-   real3d v_esmt_tmp("v_esmt_tmp", nzm, ny, nz);
+   real3d u_esmt_tmp("u_esmt_tmp", nzm,ny,nx);
+   real3d v_esmt_tmp("v_esmt_tmp", nzm,ny,nx);
 
    //do icrm = 1 , ncrms
    for (auto icrm = 0; icrm < ncrms; ++icrm) {

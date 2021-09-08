@@ -1,0 +1,228 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww14640\viewh25240\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\b\fs24 \cf0 Changes to CICE Column Package
+\b0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 This report documents all new development changes needed to the column package interface and elsewhere in CICE, for two purposes:\
+1) to enable E. Hunke to understand the changes more quickly, allowing accelerated release to the CICE community,\
+2) to enable new column package developments to be ported to MPAS-Seaice more easily.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i0 \cf0  \
+
+\b Brief description\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i\b0 \cf0 Provide a one-sentence overview.\
+In a separate document, provide documentation suitable for inclusion in cicedoc.pdf.
+\i0 \
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 New Column Package Modules
+\b0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List any new modules that you have added to the column package.
+\i0 \
+\
+\
+
+\i ----- Changes Necessary to the Column Package Interface or Outside of the Column Package ------
+\i0 \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 Configuration and Declarations
+\b0 \
+\
+changes to standard configuration\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List changes such as the time step, vertical discretization, etc. that are necessary with the new added code capabilities
+\i0 \
+\
+new tracers\
+	cpp flags in comp_ice, bld/Macros.* ice_domain_size.F90\
+	
+\i List new pre-processing flags that have been added to these or other files.
+\i0 \
+\
+	tracer flags and variable names (provide tracer flag and dependency)\
+	
+\i List the flags (nt_name) and what other tracers it depends on for transport, such as ice area, snow volume, brine height, etc
+\i0 .\
+\
+new arrays declared in ice_arrays_column.F90\
+
+\i List the names of each new array.
+\i0 \
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 Initialization and Restart
+\b0 \
+\
+new subroutines (provide module, subroutine name, and module/routine from which it is called)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 E.g., module_name.F90:  new_restart_subroutine_name called from module.F90/subroutine
+\i0 \
+\
+new file unit numbers\
+
+\i List unit number flags for each new required file, e.g. restart_x.
+\i0 \
+\
+additional variables required for exact restart\
+
+\i List the name of each variable required, and indicate whether the variable is in the tracer array or declared elsewhere.
+\i0 \
+\
+other variables initialized outside of new subroutines (provide variable name and module/subroutine)\
+
+\i E.g., variable_name appears in module1.F90/subroutine1, module2.F90/subroutine2
+\i0 \
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 Time Stepping
+\b0 \
+\
+new subroutines (provide module, subroutine name, and module/routine from which it is called)\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 E.g., module_name.F90:  new_step_subroutine called from module.F90/subroutine
+\i0 \
+\
+other subroutine calls added (provide subroutine name, and module/routine from which it is called)\
+
+\i E.g., old_subroutine_name called from module.F90/subroutine
+\i0 \
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 Column Package Interface
+\b0 \
+\
+ice_constants_colpkg.F90:  new parameters\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List new physical or other constant parameters
+\i0 \
+\
+ice_colpkg_shared.F90:  new namelist flags and parameters\
+	tracers\
+	
+\i List flags that control new tracers, e.g. tr_x, restart_x.
+\i0 \
+\
+	namelist (provide namelist name):\
+	
+\i List all other new namelist flags and parameters, and the name of any new namelist (e.g. new_namelist.nml).
+\i0   \
+\
+ice_colpkg_tracers:  new tracers\
+
+\i List flags that control new tracers, e.g. tr_x, restart_x.  These should be the same as in ice_colpkg_shared.F90.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i0 \cf0 \
+\
+ice_colpkg.F90\
+	arguments added to subroutine calls (matching changes also made in subroutines)\
+		(provide subroutine name and arguments added or changed)\
+	
+\i E.g., subroutine1: abc, xyz where abc and xyz are arguments in the subroutine1 call that are new or changed.
+\i0 \
+\
+	new subroutine calls to other modules (with matching 'use' statements)\
+	
+\i List the names of new subroutines called from ice_colpkg.F90.
+\i0 \
+\
+	new subroutines\
+	
+\i List the names of new subroutines added to ice_colpkg.F90.
+\i0 \
+\
+	other changes\
+	
+\i Describe any other changes to the code that are necessary for proper functioning of the new code.
+\i0 \
+\
+\
+
+\b Changes Made Outside of New Subroutines
+\b0 \
+\
+In column package:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List each module and describe the necessary change.  E.g. old_module.F90: use xyz to compute abc instead of ghi.
+\i0 \
+\
+Elsewhere:\
+
+\i As above for CICE modules not included in the column package.
+\i0 \
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\b \cf0 Output and Coupling
+\b0 \
+\
+coupling/history variables declared in ice_flux.F90\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List new variable names.
+\i0 \
+\
+history namelist flags\
+	namelist (provide namelist name):\
+	
+\i List any new namelist names (icefields_newname_nml) and all new namelist flags (f_name).
+\i0 \
+\
+diagnostics\
+	standard\
+	
+\i List any new diagnostic output included in CICE\'92s text log files not listed below.
+\i0 \
+\
+	print_global\
+	
+\i List any new global diagnostic output included in CICE\'92s text log files and controlled by the flag print_global.
+\i0 \
+\
+	print_points\
+
+\i 	List any new local diagnostic output included in CICE\'92s text log files and controlled by the flag print_points.\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i0 \cf0 \
+	tracers added to ice_transport_driver.F90 diagnostics (in init_transport)\
+	
+\i List the flags for all new tracers added to this diagnostic output (nt_name).\
+
+\i0 \
+\
+
+\b Comments (suggestions, bug fixes, etc)
+\b0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\i \cf0 List anything else that needs to be fixed or otherwise might be helpful.
+\i0 \
+	\
+}

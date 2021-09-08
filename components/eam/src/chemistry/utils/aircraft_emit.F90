@@ -344,8 +344,8 @@ contains
              !if it can't find dim1name, it means there is a mismacth in model and netcdf
              !file grid
              call endrun('grid mismatch, failed to find '//dim1name//' dimension in file:'&
-                  ' '//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
-                  ' '//errmsg(__FILE__,__LINE__))
+                  &' '//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
+                  &' '//errmsg(__FILE__,__LINE__))
           endif
 
           !find if the model and netcdf file has same grid resolution
@@ -359,12 +359,12 @@ contains
                 endif
              else
                 call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
-                     ' '//errmsg(__FILE__,__LINE__))
+                     &' '//errmsg(__FILE__,__LINE__))
              endif
           elseif( dycore_is('LR')) then
              if(pio_inq_dimid(fh, trim(adjustl(dim2name)), dim2id) .ne. pio_noerr) then !obtain lat dimension of model
                 call endrun('failed while inquiring dimension'//trim(adjustl(dim2name))//' from file:'&
-                     ' '//trim(adjustl(native_grid_frc_air(m)%input_file))//' '//errmsg(__FILE__,__LINE__))
+                     &' '//trim(adjustl(native_grid_frc_air(m)%input_file))//' '//errmsg(__FILE__,__LINE__))
              endif
              if(pio_inquire_dimension(fh, dim1id, len = dim1len) ==  pio_noerr .and. &
                   pio_inquire_dimension(fh, dim2id, len = dim2len) ==  pio_noerr) then !compare grid and model's dims
@@ -375,7 +375,7 @@ contains
                 endif
              else
                 call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
-                     ' '//errmsg(__FILE__,__LINE__))
+                     &' '//errmsg(__FILE__,__LINE__))
              endif
           else
              call endrun('Only SE or LR(FV) grids are supported currently:'//errmsg(__FILE__,__LINE__))
@@ -447,7 +447,7 @@ contains
                begchunk:endchunk,2), stat=astat )
           if( astat/= 0 ) then
              write(err_str,*) 'failed to allocate native_grid_frc_air(',m,')%native_grid_flds_tslices array; '&
-                  'error = ',astat,',',errmsg(__FILE__, __LINE__)
+                  &'error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           endif
 
@@ -471,14 +471,14 @@ contains
           allocate( forcings_air(m)%sectors(1), stat=astat )
           if( astat/= 0 ) then
              write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%sectors', &
-                  ' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
+                  &' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           end if
 
           allocate( forcings_air(m)%fields(1), stat=astat )
           if( astat/= 0 ) then
              write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%fields', &
-                  ' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
+                  &' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           end if
 

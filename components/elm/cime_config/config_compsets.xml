@@ -94,6 +94,11 @@
     <lname>2000_DATM%QIA_ELM%CN-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
+ <compset>
+    <alias>ICBELMCNCROP</alias>
+    <lname>1850_SATM_ELM%CN-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <compset>
     <alias>IRCP45ELMBGC</alias>
     <lname>RCP4_DATM%QIA_ELM%BGC_SICE_SOCN_MOSART_SGLC_SWAV</lname>

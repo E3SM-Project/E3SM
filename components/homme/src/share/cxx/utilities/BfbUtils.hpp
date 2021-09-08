@@ -118,7 +118,6 @@ bfb_pow_impl (ScalarType val, ExpType e) {
     Kokkos::abort("Cannot take powers of negative numbers.\n");
   }
   if (e<-1.0 || e>1.5) {
-    printf("Bad exponent: %3.15f\n",1);
     Kokkos::abort("bfb_pow x^a impl-ed with only -1.0<a<1.5 in mind.\n");
   }
   if (val==ScalarType(0)) {

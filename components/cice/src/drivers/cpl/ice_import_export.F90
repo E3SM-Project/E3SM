@@ -43,7 +43,7 @@ contains
     integer     :: i, j, iblk, n
     integer     :: ilo, ihi, jlo, jhi !beginning and end of physical domain
     type(block) :: this_block         ! block information for current block
-    integer,parameter                :: nflds=15,nfldv=6
+    integer,parameter                :: nflds=18,nfldv=6
     real (kind=dbl_kind),allocatable :: aflds(:,:,:,:)
     real (kind=dbl_kind)             :: workx, worky
     logical (kind=log_kind)          :: first_call = .true.
@@ -91,7 +91,21 @@ contains
              aflds(i,j,13,iblk)   = x2i(index_x2i_Faxa_lwdn,n)
              aflds(i,j,14,iblk)   = x2i(index_x2i_Faxa_rain,n)
              aflds(i,j,15,iblk)   = x2i(index_x2i_Faxa_snow,n)
-
+             if (index_x2i_Sa_wsresp == 0) then
+                aflds(i,j,16,iblk) = 0._dbl_kind
+             else
+                aflds(i,j,16,iblk) = x2i(index_x2i_Sa_wsresp,n)
+             end if
+             if (index_x2i_Sa_tau_est == 0) then
+                aflds(i,j,17,iblk) = 0._dbl_kind
+             else
+                aflds(i,j,17,iblk) = x2i(index_x2i_Sa_tau_est,n)
+             end if
+             if (index_x2i_Sa_ugust == 0) then
+                aflds(i,j,18,iblk) = 0._dbl_kind
+             else
+                aflds(i,j,18,iblk) = x2i(index_x2i_Sa_ugust,n)
+             end if
           enddo    !i
        enddo    !j
 

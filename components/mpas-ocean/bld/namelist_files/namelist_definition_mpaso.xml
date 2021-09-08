@@ -196,7 +196,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -956,6 +956,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- gotm -->
+
+<entry id="config_use_gotm" type="logical"
+	category="gotm" group="gotm">
+If true, use the General Ocean Turbulence Model routines to compute vertical diffusivity and viscosity
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_namelist_file" type="char*1024"
+	category="gotm" group="gotm">
+File name of GOTM turbulence namelist
+
+Valid values: gotmturb.nml
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_surface_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant surface roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant bottom roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_drag_coeff" type="real"
+	category="gotm" group="gotm">
+The constant bottom drag coefficient.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- forcing -->
 
 <entry id="config_use_variable_drag" type="logical"
@@ -1419,6 +1462,14 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_implicit_bottom_roughness" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, depends on bottom roughness z0
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_implicit_bottom_drag_variable" type="logical"
 	category="bottom_drag" group="bottom_drag">
 If true, spatially-variable implicit bottom drag is used on the momentum equation.
@@ -1451,6 +1502,22 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_topographic_wave_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, topographic wave drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_topographic_wave_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless topographic wave drag coefficient, $c_{topo}$.
+
+Valid values: any positive real, typically 5.0e-4
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- ocean_constants -->
 
@@ -1469,7 +1536,7 @@ Default: Defined in namelist_defaults.xml
 	category="pressure_gradient" group="pressure_gradient">
 Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure.
 
-Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'
+Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential' or 'constant_forced'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1478,6 +1545,22 @@ Default: Defined in namelist_defaults.xml
 The weight between standard Jacobian and weighted Jacobian, $\gamma$.
 
 Valid values: any real between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zonal_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The zonal (x) ssh gradient to be applied.
+
+Valid values: any real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_meridional_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The meridional (y) ssh gradient to be applied.
+
+Valid values: any real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1721,10 +1804,10 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 
 <entry id="config_btr_si_preconditioner" type="char*1024"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Type of preconditioner for the barotropic mode solver
 
 Valid values: ras, block_jacobi, jacobi, none
@@ -1732,24 +1815,24 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_tolerance" type="real"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Tolerance for the barotropic mode solver
 
 Valid values: any positive real, but typically less than 1.0e-9
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_si_outer_iter" type="integer"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-number of outer iterations
+<entry id="config_n_btr_si_large_iter" type="integer"
+	category="split_implicit_ts" group="split_implicit_ts">
+number of large barotropic system iterations
 
-Valid values: any positive integer, but typically 2
+any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_partition_match_mode" type="logical"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
+	category="split_implicit_ts" group="split_implicit_ts">
+If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2007,6 +2090,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_disable_vel_surface_stress" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vel_topographic_wave_drag" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from topographic wave drag
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2414,6 +2505,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, couple ecosys fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, get river nutrient fluxes from coupler instead of from monthly forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

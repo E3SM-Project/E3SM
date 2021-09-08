@@ -63,15 +63,16 @@ struct CaarFunctorImpl {
 
   using deriv_type = ReferenceElement::deriv_type;
 
-  RKStageData                 m_data;
-  const int                   m_rsplit;
-  const HybridVCoord          m_hvcoord;
-  const ElementsState         m_state;
-  const ElementsDerivedState  m_derived;
-  const ElementsGeometry      m_geometry;
-  const Tracers               m_tracers;
-  const deriv_type            m_deriv;
-  Buffers                     m_buffers;
+  RKStageData           m_data;
+  const int             m_num_elems;
+  const int             m_rsplit;
+  HybridVCoord          m_hvcoord;
+  ElementsState         m_state;
+  ElementsDerivedState  m_derived;
+  ElementsGeometry      m_geometry;
+  Tracers               m_tracers;
+  deriv_type      m_deriv;
+  Buffers               m_buffers;
 
   SphereOperators       m_sphere_ops;
 
@@ -80,18 +81,32 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
+  CaarFunctorImpl(const int num_elems, const SimulationParams& params)
+    : m_num_elems(num_elems)
+    , m_rsplit(params.rsplit)
+    , m_policy (Homme::get_default_team_policy<ExecSpace>(m_num_elems))
+  {}
+
   CaarFunctorImpl(const Elements &elements, const Tracers &tracers,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
-      : m_rsplit(params.rsplit)
-      , m_hvcoord(hvcoord)
-      , m_state(elements.m_state)
-      , m_derived(elements.m_derived)
-      , m_geometry(elements.m_geometry)
-      , m_tracers(tracers)
-      , m_deriv(ref_FE.get_deriv())
-      , m_sphere_ops(sphere_ops)
-      , m_policy (Homme::get_default_team_policy<ExecSpace>(elements.num_elems())) {
+    : CaarFunctorImpl(elements.num_elems(),params)
+  {
+    setup(elements,tracers,ref_FE,hvcoord,sphere_ops);
+  }
+
+  void setup (const Elements &elements, const Tracers &tracers,
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+              const SphereOperators &sphere_ops)
+  {
+    m_hvcoord = hvcoord;
+    m_state = elements.m_state;
+    m_derived = elements.m_derived;
+    m_geometry = elements.m_geometry;
+    m_tracers = tracers;
+    m_deriv = ref_FE.get_deriv();
+    m_sphere_ops = sphere_ops;
+
     // Make sure the buffers in sph op are large enough for this functor's needs
     m_sphere_ops.allocate_buffers(m_policy);
   }

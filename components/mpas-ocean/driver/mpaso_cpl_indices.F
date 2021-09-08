@@ -16,8 +16,9 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_s
   integer :: index_o2x_So_dhdx
   integer :: index_o2x_So_dhdy
-  integer :: index_o2x_Fioo_meltp
+  integer :: index_o2x_Fioo_q
   integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
 
@@ -97,6 +98,17 @@ module mpaso_cpl_indices
   integer :: index_x2o_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
   integer :: index_x2o_Foxx_rofl       ! river runoff flux                (kg/m2/s)
   integer :: index_x2o_Foxx_rofi       ! ice runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDIN     ! DIN runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDIP     ! DIP runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDON     ! DON runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDOP     ! DOP runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDOC     ! DOC runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofPP      ! PP  runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDSi     ! DSi runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofPOC     ! POC runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofPN      ! PN  runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofDIC     ! DIC runoff flux                  (kg/m2/s)
+  integer :: index_x2o_Foxx_rofFe      ! Fe  runoff flux                  (kg/m2/s)
 
   ! drv -> glc and internal drv fields
 
@@ -152,8 +164,9 @@ contains
     index_o2x_So_s          = mct_avect_indexra(o2x,'So_s')
     index_o2x_So_dhdx       = mct_avect_indexra(o2x,'So_dhdx')
     index_o2x_So_dhdy       = mct_avect_indexra(o2x,'So_dhdy')
-    index_o2x_Fioo_meltp    = mct_avect_indexra(o2x,'Fioo_meltp',perrWith='quiet')
+    index_o2x_Fioo_q        = mct_avect_indexra(o2x,'Fioo_q',perrWith='quiet')
     index_o2x_Fioo_frazil   = mct_avect_indexra(o2x,'Fioo_frazil',perrWith='quiet')
+    index_o2x_Faoo_h2otemp  = mct_avect_indexra(o2x,'Faoo_h2otemp',perrWith='quiet')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
 
@@ -210,6 +223,19 @@ contains
     index_x2o_Foxx_evap     = mct_avect_indexra(x2o,'Foxx_evap')
     index_x2o_Foxx_rofl     = mct_avect_indexra(x2o,'Foxx_rofl')
     index_x2o_Foxx_rofi     = mct_avect_indexra(x2o,'Foxx_rofi')
+    if (rof2ocn_nutrients) then
+       index_x2o_Foxx_rofDIN   = mct_avect_indexra(x2o,'Foxx_rofDIN')
+       index_x2o_Foxx_rofDIP   = mct_avect_indexra(x2o,'Foxx_rofDIP')
+       index_x2o_Foxx_rofDON   = mct_avect_indexra(x2o,'Foxx_rofDON')
+       index_x2o_Foxx_rofDOP   = mct_avect_indexra(x2o,'Foxx_rofDOP')
+       index_x2o_Foxx_rofDOC   = mct_avect_indexra(x2o,'Foxx_rofDOC')
+       index_x2o_Foxx_rofPP    = mct_avect_indexra(x2o,'Foxx_rofPP')
+       index_x2o_Foxx_rofDSi   = mct_avect_indexra(x2o,'Foxx_rofDSi')
+       index_x2o_Foxx_rofPOC   = mct_avect_indexra(x2o,'Foxx_rofPOC')
+       index_x2o_Foxx_rofPN    = mct_avect_indexra(x2o,'Foxx_rofPN')
+       index_x2o_Foxx_rofDIC   = mct_avect_indexra(x2o,'Foxx_rofDIC')
+       index_x2o_Foxx_rofFe    = mct_avect_indexra(x2o,'Foxx_rofFe')
+    endif
     index_x2o_Faxa_bcphidry = mct_avect_indexra(x2o,'Faxa_bcphidry')
     index_x2o_Faxa_bcphodry = mct_avect_indexra(x2o,'Faxa_bcphodry')
     index_x2o_Faxa_bcphiwet = mct_avect_indexra(x2o,'Faxa_bcphiwet')

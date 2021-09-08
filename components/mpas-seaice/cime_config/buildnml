@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Namelist creator for E3SM's MPAS SEAICE component
@@ -74,16 +74,7 @@ def buildnml(case, caseroot, compname):
     data_iceberg_file = ''
     points_file = ''
 
-    if ice_grid == 'oEC60to30':
-        decomp_date = '151020'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '151020'
-        grid_prefix = 'cice.EC60to30km'
-        if ice_ic_mode == 'spunup':
-            grid_date = '160827'
-            grid_prefix = 'cice.EC60to30km.restartFrom_eos1b'
-
-    elif ice_grid == 'oEC60to30v3':
+    if ice_grid == 'oEC60to30v3':
         decomp_date = '161222'
         decomp_prefix = 'mpas-cice.graph.info.'
         grid_date = '161222'
@@ -95,15 +86,6 @@ def buildnml(case, caseroot, compname):
             grid_date = '180418'
             grid_prefix = 'mpassi.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
-
-    elif ice_grid == 'oEC60to30wLI':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160830'
-        grid_prefix = 'cice.EC60to30wLI'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oEC60to30v3wLI':
         decomp_date = '170905'
@@ -121,15 +103,6 @@ def buildnml(case, caseroot, compname):
         data_iceberg_file = 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
         grid_date = '200408'
         grid_prefix = 'seaice.ECwISC30to60E1r2'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'mpas120':
-        decomp_date = '121116'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '121116'
-        grid_prefix = 'cice120km'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -170,38 +143,11 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ice_grid == 'mpasgx1':
-        decomp_date = '121116'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '121116'
-        grid_prefix = 'grid_gx1'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'oRRS30to10':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '151031'
-        grid_prefix = 'seaice.RRS.30-10km'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
     elif ice_grid == 'oRRS30to10v3':
         decomp_date = '171128'
         decomp_prefix = 'mpas-cice.graph.info.'
         grid_date = '171128'
         grid_prefix = 'seaice.RRS30to10v3'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'oRRS30to10wLI':
-        decomp_date = '160930'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160930'
-        grid_prefix = 'seaice.RRS30-10wLI'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -216,23 +162,14 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ice_grid == 'oRRS18to6':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160830'
-        grid_prefix = 'seaice.RRS.18to6km'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
     elif ice_grid == 'oRRS18to6v3':
         decomp_date = '180214'
         decomp_prefix = 'mpas-seaice.v2.'
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
-            grid_date = '171031'
-            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
+            grid_date = '210321'
+            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromChrysalis'
 
     elif ice_grid == 'oRRS15to5':
         decomp_date = '151209'
@@ -279,6 +216,35 @@ def buildnml(case, caseroot, compname):
             grid_date = '210226'
             grid_prefix = 'mpassi.WC14to60E2r3.rstFromG-anvil'
 
+    elif ice_grid == 'WCAtl12to45E2r4':
+        decomp_date = '210318'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210318'
+        grid_prefix = 'seaice.WCAtl12to45E2r4'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210318'
+            grid_prefix = 'mpassi.WCAtl12to45E2r4.rstFromG-anvil'
+
+    elif ice_grid == 'SOwISC12to60E2r4':
+        decomp_date = '210107'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210107'
+        grid_prefix = 'seaice.SOwISC12to60E2r4'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_SOwISC12to60E2r4.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210203'
+            grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
+
+    elif ice_grid == 'ECwISC30to60E2r1':
+        grid_date = '210413'
+        grid_prefix = 'seaice.ECwISC30to60E2r1'
+        decomp_date = '200916'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210414'
+            grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
+
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs
@@ -289,6 +255,9 @@ def buildnml(case, caseroot, compname):
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/{}.mpassi.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: {}".format(input_file))
+        restart_file = "{}/{}.mpassi.rst.{}_{}.nc".format(rundir, casename, run_refdate, run_reftod)
+        if not os.path.exists(restart_file):
+            safe_copy(input_file, restart_file)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -614,32 +583,63 @@ def buildnml(case, caseroot, compname):
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
-        lines.append('        clobber_mode="truncate"')
+        lines.append('        clobber_mode="append"')
         lines.append('        packages="conservationCheckAMPKG">')
         lines.append('')
         lines.append('    <var name="xtime"/>')
         lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="earthArea"/>')
+        lines.append('    <var name="domainArea"/>')
+        lines.append('    <var name="accumulatedSeaIceArea"/>')
         lines.append('    <var name="initialEnergy"/>')
         lines.append('    <var name="finalEnergy"/>')
         lines.append('    <var name="energyChange"/>')
+        lines.append('    <var name="energyChangeFlux"/>')
+        lines.append('    <var name="energyConsSurfaceHeatFlux"/>')
+        lines.append('    <var name="energyConsAbsorbedShortwaveFlux"/>')
+        lines.append('    <var name="energyConsOceanShortwaveFlux"/>')
+        lines.append('    <var name="energyConsSensibleHeatFlux"/>')
+        lines.append('    <var name="energyConsLongwaveUp"/>')
+        lines.append('    <var name="energyConsLongwaveDown"/>')
+        lines.append('    <var name="energyConsOceanHeatFlux"/>')
+        lines.append('    <var name="energyConsFreezingPotential"/>')
+        lines.append('    <var name="energyConsSnowfallHeat"/>')
+        lines.append('    <var name="energyConsLatentHeat"/>')
         lines.append('    <var name="netEnergyFlux"/>')
         lines.append('    <var name="absoluteEnergyError"/>')
         lines.append('    <var name="relativeEnergyError"/>')
         lines.append('    <var name="initialMass"/>')
         lines.append('    <var name="finalMass"/>')
         lines.append('    <var name="massChange"/>')
+        lines.append('    <var name="massChangeFlux"/>')
+        lines.append('    <var name="massConsRainfallRate"/>')
+        lines.append('    <var name="massConsSnowfallRate"/>')
+        lines.append('    <var name="massConsEvaporation"/>')
+        lines.append('    <var name="massConsFreshWater"/>')
+        lines.append('    <var name="massConsFrazilWater"/>')
         lines.append('    <var name="netMassFlux"/>')
         lines.append('    <var name="absoluteMassError"/>')
         lines.append('    <var name="relativeMassError"/>')
         lines.append('    <var name="initialSalt"/>')
         lines.append('    <var name="finalSalt"/>')
         lines.append('    <var name="saltChange"/>')
+        lines.append('    <var name="saltChangeFlux"/>')
+        lines.append('    <var name="saltConsOceanSaltFlux"/>')
+        lines.append('    <var name="saltConsFrazilSaltFlux"/>')
         lines.append('    <var name="netSaltFlux"/>')
         lines.append('    <var name="absoluteSaltError"/>')
         lines.append('    <var name="relativeSaltError"/>')
+        lines.append('    <var name="initialCarbon"/>')
+        lines.append('    <var name="finalCarbon"/>')
+        lines.append('    <var name="carbonChange"/>')
+        lines.append('    <var name="carbonChangeFlux"/>')
+        lines.append('    <var name="carbonConsOceanCarbonFlux"/>')
+        lines.append('    <var name="netCarbonFlux"/>')
+        lines.append('    <var name="absoluteCarbonError"/>')
+        lines.append('    <var name="relativeCarbonError"/>')
         lines.append('</stream>')
         lines.append('')
-        lines.append('<stream name="conservationCheckRestart"')
+        lines.append('<immutable_stream name="conservationCheckRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
         lines.append('        filename_template="{}.mpassi.rst.am.conservationCheck.$Y-$M-$D_$S.nc"'.format(casename))
@@ -649,7 +649,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        input_interval="initial_only"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="stream:restart:output_interval">')
-        lines.append('</stream>')
+        lines.append('</immutable_stream>')
         lines.append('')
         lines.append('<stream name="loadBalanceOutput"')
         lines.append('        type="output"')

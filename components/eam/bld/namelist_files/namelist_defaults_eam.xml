@@ -139,47 +139,11 @@
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
-<!-- ieflx_opt 0: atmonly, 2: coupled -->
+<!-- ieflx_opt 0: atmonly, 3: coupled -->
 <ieflx_opt  ocn="docn" >0</ieflx_opt>
-<ieflx_opt  ocn="mpaso" >2</ieflx_opt>
+<ieflx_opt  ocn="mpaso" >3</ieflx_opt>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
-
-<!-- CAM3 Bulk aerosols.  Optics for CAM-RT -->
-<bam_cam3_sul   rad="camrt">atm/cam/physprops/sul_cam3_c080918.nc</bam_cam3_sul>
-<bam_cam3_dust1 rad="camrt">atm/cam/physprops/dustv1b1_cam3_c080918.nc</bam_cam3_dust1>
-<bam_cam3_dust2 rad="camrt">atm/cam/physprops/dustv1b2_cam3_c080918.nc</bam_cam3_dust2>
-<bam_cam3_dust3 rad="camrt">atm/cam/physprops/dustv1b3_cam3_c080918.nc</bam_cam3_dust3>
-<bam_cam3_dust4 rad="camrt">atm/cam/physprops/dustv1b4_cam3_c080918.nc</bam_cam3_dust4>
-<bam_cam3_bcpho rad="camrt">atm/cam/physprops/bcpho_cam3_c080918.nc</bam_cam3_bcpho>
-<bam_cam3_bcphi rad="camrt">atm/cam/physprops/bcphi_cam3_c080918.nc</bam_cam3_bcphi>
-<bam_cam3_ocpho rad="camrt">atm/cam/physprops/ocpho_cam3_c080918.nc</bam_cam3_ocpho>
-<bam_cam3_ocphi rad="camrt">atm/cam/physprops/ocphi_cam3_c080918.nc</bam_cam3_ocphi>
-<bam_cam3_ssam  rad="camrt">atm/cam/physprops/ssam_cam3_c080918.nc</bam_cam3_ssam>
-<bam_cam3_sscm  rad="camrt">atm/cam/physprops/sscm_cam3_c080918.nc</bam_cam3_sscm>
-
-<!-- CAM-Chem bulk aerosols (different aerosol names used in prescribed and prognostic modes) -->
-<!-- Optics for CAM-RT -->
-<bam_sulf  rad="camrt">atm/cam/physprops/sulfate_camrt_c080918.nc</bam_sulf>
-<bam_SO4   rad="camrt">atm/cam/physprops/sulfate_camrt_c080918.nc</bam_SO4>
-<bam_dust1 rad="camrt">atm/cam/physprops/dust1_camrt_c080918.nc</bam_dust1>
-<bam_DST01 rad="camrt">atm/cam/physprops/dust1_camrt_c080918.nc</bam_DST01>
-<bam_dust2 rad="camrt">atm/cam/physprops/dust2_camrt_c080918.nc</bam_dust2>
-<bam_DST02 rad="camrt">atm/cam/physprops/dust2_camrt_c080918.nc</bam_DST02>
-<bam_dust3 rad="camrt">atm/cam/physprops/dust3_camrt_c080918.nc</bam_dust3>
-<bam_DST03 rad="camrt">atm/cam/physprops/dust3_camrt_c080918.nc</bam_DST03>
-<bam_dust4 rad="camrt">atm/cam/physprops/dust4_camrt_c080918.nc</bam_dust4>
-<bam_DST04 rad="camrt">atm/cam/physprops/dust4_camrt_c080918.nc</bam_DST04>
-<bam_bcar1 rad="camrt">atm/cam/physprops/bcpho_camrt_c080918.nc</bam_bcar1>
-<bam_CB1   rad="camrt">atm/cam/physprops/bcpho_camrt_c080918.nc</bam_CB1>
-<bam_bcar2 rad="camrt">atm/cam/physprops/bcphi_camrt_c080918.nc</bam_bcar2>
-<bam_CB2   rad="camrt">atm/cam/physprops/bcphi_camrt_c080918.nc</bam_CB2>
-<bam_ocar1 rad="camrt">atm/cam/physprops/ocpho_camrt_c080918.nc</bam_ocar1>
-<bam_OC1   rad="camrt">atm/cam/physprops/ocpho_camrt_c080918.nc</bam_OC1>
-<bam_ocar2 rad="camrt">atm/cam/physprops/ocphi_camrt_c080918.nc</bam_ocar2>
-<bam_OC2   rad="camrt">atm/cam/physprops/ocphi_camrt_c080918.nc</bam_OC2>
-<bam_SSLTA rad="camrt">atm/cam/physprops/ssam_camrt_c080918.nc</bam_SSLTA>
-<bam_SSLTC rad="camrt">atm/cam/physprops/sscm_camrt_c080918.nc</bam_SSLTC>
 
 <!-- CAM-Chem bulk aerosols (different names used in prescribed and prognostic modes) -->
 <!-- Optics for RRTMG -->
@@ -279,7 +243,6 @@
 <mam_mom    rad="rrtmgp">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mom>
 
 <!-- Eruptive volcanic aerosols  -->
-<VOLC_MMR rad="camrt">atm/cam/physprops/sulfuricacid_cam3_c080918.nc</VOLC_MMR>
 <VOLC_MMR rad="rrtmg">atm/cam/physprops/rrtmg_Bi_sigma1.8_c100521.nc'</VOLC_MMR>
 <VOLC_MMR rad="rrtmgp">atm/cam/physprops/rrtmg_Bi_sigma1.8_c100521.nc'</VOLC_MMR>
 
@@ -386,11 +349,6 @@
 <rrtmgp_enable_temperature_warnings rad="rrtmgp"               >.true.</rrtmgp_enable_temperature_warnings>
 <rrtmgp_enable_temperature_warnings rad="rrtmgp" aquaplanet="1">.false.</rrtmgp_enable_temperature_warnings>
 
-
-<!-- CAM-RT absorptivity/emissivity lookup table -->
-<absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
-
-<radiation_scheme rad="camrt">camrt</radiation_scheme>
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
 
@@ -834,11 +792,12 @@
 <use_MMF    use_MMF="1"   > .true. </use_MMF>
 <use_ECPP                 > .false.</use_ECPP>
 <use_ECPP   use_ECPP="1"  > .true. </use_ECPP>
-<use_MAML                 > .false.</use_MAML>
-<use_MAML   use_MAML="1"  > .true. </use_MAML>
 <use_MMF_VT               > .false.</use_MMF_VT>
 <use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
 <MMF_VT_wn_max            > 0      </MMF_VT_wn_max>
+
+<MMF_orientation_angle yes3Dval=0 > 90.0 </MMF_orientation_angle>
+<MMF_orientation_angle yes3Dval=1 >  0.0 </MMF_orientation_angle>
 
 <do_aerocom_ind3                > .false. </do_aerocom_ind3>
 <do_aerocom_ind3  aerocom_ind3="1" > .true.  </do_aerocom_ind3>
@@ -848,6 +807,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme use_MMF="1">     off</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
@@ -881,6 +841,9 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
+<!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
+<micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
+
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
@@ -912,6 +875,7 @@
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
 <macrop_scheme macrophys="park"      >park</macrop_scheme>
 <macrop_scheme macrophys="clubb_sgs" >CLUBB_SGS</macrop_scheme>
+<macrop_scheme use_MMF="1"           >off</macrop_scheme>
 
 <!-- Vertical limit on troposphere cloud physics -->
 
@@ -1020,24 +984,30 @@
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
+<deep_scheme use_MMF="1"       >off      </deep_scheme>
 
 <!-- PBL scheme -->
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>
 <eddy_scheme pbl="hbr"            >HBR      </eddy_scheme>
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
+<eddy_scheme use_MMF="1"          >off      </eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
+<shallow_scheme use_MMF="1"       >off      </shallow_scheme>
 
 <!-- Surface flux averaging -->
-<srf_flux_avg eddy_scheme="HB"       >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
-<srf_flux_avg use_MMF="1"            >0</srf_flux_avg>
+<srf_flux_avg             >0</srf_flux_avg>
+<srf_flux_avg use_MMF="1" >1</srf_flux_avg>
+
+<!-- Linearization of boundary layer winds -->
+<linearize_pbl_winds>.false.</linearize_pbl_winds>
+
+<!-- Export gustiness value -->
+<export_gustiness>.false.</export_gustiness>
 
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>
@@ -1213,7 +1183,6 @@
 <integration> "explicit" </integration>
 
 <se_ftype> 2 </se_ftype>
-<se_ftype scam="1" > 0 </se_ftype>
 
 <se_limiter_option> 9 </se_limiter_option>
 
@@ -1349,6 +1318,12 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
 
+<!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q>
+
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
 
 <!-- ================================================================== -->
@@ -1634,6 +1609,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
 <use_preexisting_ice phys="default">.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
@@ -1667,6 +1643,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <zmconv_ke phys="default" dyn="se"> 5.0E-6      </zmconv_ke>
 <cldfrc2m_rhmaxi phys="default" clubb_sgs="1" clubb_do_deep="0"> 1.05D0    </cldfrc2m_rhmaxi>
 <do_tms phys="default"> .false.   </do_tms>
+<do_tms phys="default" use_MMF="1"> .true.   </do_tms>
 <n_so4_monolayers_pcage phys="default"> 8.0D0     </n_so4_monolayers_pcage>
 <zmconv_tiedke_add phys="default"> 0.8D0     </zmconv_tiedke_add>
 <zmconv_cape_cin phys="default"> 1         </zmconv_cape_cin>
@@ -1684,10 +1661,11 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <cld_sed phys="default" microphys="mg2"> 1.0D0      </cld_sed>
 <effgw_beres phys="default"> 0.35       </effgw_beres>
-<gw_convect_hcf phys="default"> 12.5       </gw_convect_hcf>
+<gw_convect_hcf phys="default"> 10.0       </gw_convect_hcf>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
+<use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
-<clubb_tk1 phys="default"> 253.15D0   </clubb_tk1>
+<clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>
 <linoz_psc_T phys="default"> 197.5      </linoz_psc_T>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>

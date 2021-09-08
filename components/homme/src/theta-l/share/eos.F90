@@ -209,10 +209,12 @@ implicit none
    
 
    if (present(pnh_i_out)) then
-      ! boundary values already computed.  interior only:
+      ! boundary values already computed. interpolate interior
+      ! use linear interpolation in hydrostatic pressure coordinate
+      ! if pnh=pi, then pnh_i will recover pi_i
       do k=2,nlev
-         pnh_i(:,:,k)=(hvcoord%d_etam(k)*pnh(:,:,k)+hvcoord%d_etam(k-1)*pnh(:,:,k-1))/&
-              (hvcoord%d_etai(k)*2)
+         pnh_i(:,:,k)=(dp3d(:,:,k-1)*pnh(:,:,k)+dp3d(:,:,k)*pnh(:,:,k-1))/&
+              (dp3d(:,:,k-1)+dp3d(:,:,k))
       enddo
       pnh_i_out=pnh_i    
    endif

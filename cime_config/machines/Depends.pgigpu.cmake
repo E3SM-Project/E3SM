@@ -5,6 +5,19 @@ list(APPEND NOOPT_FILES
   eam/src/dynamics/sld/dyn_comp.F90
   eam/src/physics/cam/microp_aero.F90)
 
+# Files that cannot be compiled with -O2 without losing reproducibility
+set(O1MODELSRC
+  eam/src/chemistry/aerosol/dust_sediment_mod.F90
+  eam/src/chemistry/modal_aero/modal_aero_convproc.F90
+  eam/src/chemistry/utils/modal_aero_calcsize.F90
+  eam/src/physics/cam/zm_conv.F90)
+if (NOT DEBUG)
+  foreach(ITEM IN LISTS O1MODELSRC)
+    e3sm_remove_flags("${ITEM}" "-O2")
+    e3sm_add_flags("${ITEM}" "-O1 -Mnovect")
+  endforeach()
+endif()
+
 set(FILES_NEED_OPENACC_FLAGS
   eam/src/physics/crm/sam/ADV_MPDATA/advect_scalar.F90
   eam/src/physics/crm/sam/ADV_MPDATA/advect_scalar2D.F90
@@ -40,7 +53,7 @@ set(FILES_NEED_OPENACC_FLAGS
   eam/src/physics/crm/sam/boundaries.F90
   eam/src/physics/crm/sam/coriolis.F90
   eam/src/physics/crm/sam/crmtracers.F90
-  eam/src/physics/crm/sam/crm_ecpp_output_module.F90
+  eam/src/physics/crm/crm_ecpp_output_module.F90
   eam/src/physics/crm/crm_input_module.F90
   eam/src/physics/crm/sam/crm_surface.F90
   eam/src/physics/crm/crm_output_module.F90
@@ -52,7 +65,7 @@ set(FILES_NEED_OPENACC_FLAGS
   eam/src/physics/crm/sam/params.F90
   eam/src/physics/crm/sam/dmdf.F90
   eam/src/physics/crm/sam/domain.F90
-  eam/src/physics/crm/sam/ecppvars.F90
+  eam/src/physics/crm/ecppvars.F90
   eam/src/physics/crm/sam/fft.F90
   eam/src/physics/crm/sam/fftpack5.F90
   eam/src/physics/crm/sam/fftpack5_1d.F90

@@ -11,17 +11,12 @@ module SoilLittVertTranspMod
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CanopyStateType        , only : canopystate_type
-  use CNCarbonFluxType       , only : carbonflux_type
-  use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
-  use PhosphorusStateType    , only : phosphorusstate_type
   use elm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType         , only : col_ns, col_nf, col_ps, col_pf
+  use timeinfoMod
   !
   implicit none
   save
@@ -30,25 +25,30 @@ module SoilLittVertTranspMod
   public :: readSoilLittVertTranspParams
 
   type, private :: SoilLittVertTranspParamsType
-     real(r8) :: som_diffus                 ! Soil organic matter diffusion
-     real(r8) :: cryoturb_diffusion_k       ! The cryoturbation diffusive constant
-                                            ! cryoturbation to the active layer thickness
-     real(r8) :: max_altdepth_cryoturbation ! (m) maximum active layer thickness for cryoturbation to occur
+     real(r8),pointer  :: som_diffus                => null() ! Soil organic matter diffusion
+     real(r8),pointer  :: cryoturb_diffusion_k      => null() ! The cryoturbation diffusive constant cryoturbation to the active layer thickness
+     real(r8),pointer  :: max_altdepth_cryoturbation => null() ! (m) maximum active layer thickness for cryoturbation to occur
   end type SoilLittVertTranspParamsType
 
-  type(SoilLittVertTranspParamsType),     private ::  SoilLittVertTranspParamsInst
+  type(SoilLittVertTranspParamsType), public ::  SoilLittVertTranspParamsInst
+  !$acc declare create(SoilLittVertTranspParamsInst)
 
   !
   real(r8), public :: som_adv_flux =  0._r8
+  !$acc declare copyin(som_adv_flux)
   real(r8), public :: max_depth_cryoturb = 3._r8   ! (m) this is the maximum depth of cryoturbation
+  !$acc declare copyin(max_depth_cryoturb)
   real(r8) :: som_diffus                   ! [m^2/sec] = 1 cm^2 / yr
   real(r8) :: cryoturb_diffusion_k         ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
   real(r8) :: max_altdepth_cryoturbation   ! (m) maximum active layer thickness for cryoturbation to occur
+  !$acc declare create(som_diffus                )
+  !$acc declare create(cryoturb_diffusion_k      )
+  !$acc declare create(max_altdepth_cryoturbation)
   !-----------------------------------------------------------------------
 
 contains
 
-  !-----------------------------------------------------------------------  
+  !-----------------------------------------------------------------------
   subroutine readSoilLittVertTranspParams ( ncid )
     !
     use ncdio_pio   , only : file_desc_t,ncd_io
@@ -64,66 +64,59 @@ contains
     !
     ! read in parameters
     !
-     tString='som_diffus'
-     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     !SoilLittVertTranspParamsInst%som_diffus=tempr
-     ! FIX(SPM,032414) - can't be pulled out since division makes things not bfb
-     SoilLittVertTranspParamsInst%som_diffus = 1e-4_r8 / (secspday * 365._r8)  
+    allocate(SoilLittVertTranspParamsInst%som_diffus                )
+    allocate(SoilLittVertTranspParamsInst%cryoturb_diffusion_k      )
+    allocate(SoilLittVertTranspParamsInst%max_altdepth_cryoturbation)
+    tString='som_diffus'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    !SoilLittVertTranspParamsInst%som_diffus=tempr
+    ! FIX(SPM,032414) - can't be pulled out since division makes things not bfb
+    SoilLittVertTranspParamsInst%som_diffus = 1e-4_r8 / (secspday * 365._r8)
 
-     tString='cryoturb_diffusion_k'
-     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     !SoilLittVertTranspParamsInst%cryoturb_diffusion_k=tempr
-     !FIX(SPM,032414) Todo.  This constant cannot be on file since the divide makes things
-     !SPM Todo.  This constant cannot be on file since the divide makes things
-     !not bfb
-     SoilLittVertTranspParamsInst%cryoturb_diffusion_k = 5e-4_r8 / (secspday * 365._r8)  ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
+    tString='cryoturb_diffusion_k'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    !SoilLittVertTranspParamsInst%cryoturb_diffusion_k=tempr
+    !FIX(SPM,032414) Todo.  This constant cannot be on file since the divide makes things
+    !SPM Todo.  This constant cannot be on file since the divide makes things
+    !not bfb
 
-     tString='max_altdepth_cryoturbation'
-     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     SoilLittVertTranspParamsInst%max_altdepth_cryoturbation=tempr
-    
+    SoilLittVertTranspParamsInst%cryoturb_diffusion_k = 5e-4_r8 / (secspday * 365._r8)  ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
+
+    tString='max_altdepth_cryoturbation'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    SoilLittVertTranspParamsInst%max_altdepth_cryoturbation=tempr
+
+    !$acc enter data copyin(SoilLittVertTranspParamsInst)
   end subroutine readSoilLittVertTranspParams
 
   !-----------------------------------------------------------------------
   subroutine SoilLittVertTransp(bounds, num_soilc, filter_soilc,   &
-       canopystate_vars, cnstate_vars,                               &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
-       nitrogenstate_vars,nitrogenflux_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+       canopystate_vars, cnstate_vars )
     !
     ! !DESCRIPTION:
-    ! Calculate vertical mixing of soil and litter pools.  Also reconcile sources and sinks of these pools 
+    ! Calculate vertical mixing of soil and litter pools.  Also reconcile sources and sinks of these pools
     ! calculated in the CarbonStateUpdate1 and NStateUpdate1 subroutines.
     ! Advection-diffusion code based on algorithm in Patankar (1980)
     ! Initial code by C. Koven and W. Riley
     !
     ! !USES:
-    use clm_time_manager , only : get_step_size, get_curr_date
+      !$acc routine seq
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
     use elm_varcon       , only : zsoi, dzsoi_decomp, zisoi
     use TridiagonalMod   , only : Tridiagonal
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds 
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    real(r8) :: dtime  ! land model time step (sec)
+    integer  :: year, mon, day, secs
 
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     real(r8) :: diffus (bounds%begc:bounds%endc,1:nlevdecomp+1)    ! diffusivity (m2/s)  (includes spinup correction, if any)
@@ -153,34 +146,37 @@ contains
     integer  :: ntype
     integer  :: i_type,s,fc,c,j,l             ! indices
     integer  :: jtop(bounds%begc:bounds%endc) ! top level at each column
-    real(r8) :: dtime                         ! land model time step (sec)
     integer  :: zerolev_diffus
     real(r8) :: spinup_term                   ! spinup accelerated decomposition factor, used to accelerate transport as well
     real(r8) :: epsilon                       ! small number
-    integer  :: year, mon, day, sec
+
 
     !-----------------------------------------------------------------------
 
     ! Set statement functions
     aaa (pe) = max (0._r8, (1._r8 - 0.1_r8 * abs(pe))**5)  ! A function from Patankar, Table 5.2, pg 95
-  
+
     associate(                                                      &
-         is_cwd           => decomp_cascade_con%is_cwd            , & ! Input:  [logical (:)    ]  TRUE => pool is a cwd pool                                
+         is_cwd           => decomp_cascade_con%is_cwd            , & ! Input:  [logical (:)    ]  TRUE => pool is a cwd pool
          spinup_factor    => decomp_cascade_con%spinup_factor     , & ! Input:  [real(r8) (:)   ]  spinup accelerated decomposition factor, used to accelerate transport as well
 
-         altmax           => canopystate_vars%altmax_col          , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                             
-         altmax_lastyear  => canopystate_vars%altmax_lastyear_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                  
+         altmax           => canopystate_vars%altmax_col          , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw
+         altmax_lastyear  => canopystate_vars%altmax_lastyear_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
 
-         som_adv_coef     => cnstate_vars%som_adv_coef_col        , & ! Output: [real(r8) (:,:) ]  SOM advective flux (m/s)                               
-         som_diffus_coef  => cnstate_vars%som_diffus_coef_col       & ! Output: [real(r8) (:,:) ]  SOM diffusivity due to bio/cryo-turbation (m2/s)       
+         som_adv_coef     => cnstate_vars%som_adv_coef_col        , & ! Output: [real(r8) (:,:) ]  SOM advective flux (m/s)
+         som_diffus_coef  => cnstate_vars%som_diffus_coef_col       & ! Output: [real(r8) (:,:) ]  SOM diffusivity due to bio/cryo-turbation (m2/s)
          )
 
       !Set parameters of vertical mixing of SOM
-      som_diffus                 = SoilLittVertTranspParamsInst%som_diffus 
-      cryoturb_diffusion_k       = SoilLittVertTranspParamsInst%cryoturb_diffusion_k 
-      max_altdepth_cryoturbation = SoilLittVertTranspParamsInst%max_altdepth_cryoturbation 
+      som_diffus                 = SoilLittVertTranspParamsInst%som_diffus
+      cryoturb_diffusion_k       = SoilLittVertTranspParamsInst%cryoturb_diffusion_k
+      max_altdepth_cryoturbation = SoilLittVertTranspParamsInst%max_altdepth_cryoturbation
 
-      dtime = get_step_size()
+      dtime = dtime_mod
+      year = year_curr
+      mon = mon_curr
+      day = day_curr
+
 
       ntype = 3
       if ( use_c13 ) then
@@ -203,10 +199,10 @@ contains
                ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
                do j = 1,nlevdecomp+1
                   if ( zisoi(j) < max(altmax(c), altmax_lastyear(c)) ) then
-                     som_diffus_coef(c,j) = cryoturb_diffusion_k 
+                     som_diffus_coef(c,j) = cryoturb_diffusion_k
                      som_adv_coef(c,j) = 0._r8
                   else
-                     som_diffus_coef(c,j) = max(cryoturb_diffusion_k * & 
+                     som_diffus_coef(c,j) = max(cryoturb_diffusion_k * &
                           ( 1._r8 - ( zisoi(j) - max(altmax(c), altmax_lastyear(c)) ) / &
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
                      som_adv_coef(c,j) = 0._r8
@@ -215,7 +211,7 @@ contains
             elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
                ! constant advection, constant diffusion
                do j = 1,nlevdecomp+1
-                  som_adv_coef(c,j) = som_adv_flux 
+                  som_adv_coef(c,j) = som_adv_flux
                   som_diffus_coef(c,j) = som_diffus
                end do
             else
@@ -227,7 +223,7 @@ contains
             endif
          end do
 
-         ! Set the distance between the node and the one ABOVE it   
+         ! Set the distance between the node and the one ABOVE it
          dz_node(1) = zsoi(1)
          do j = 2,nlevdecomp+1
             dz_node(j)= zsoi(j) - zsoi(j-1)
@@ -270,12 +266,12 @@ contains
                source            => c14_col_cf%decomp_cpools_sourcesink
                trcr_tendency_ptr => c14_col_cf%decomp_cpools_transport_tendency
             else
+#ifndef _OPENACC
                write(iulog,*) 'error.  ncase = 5, but c13 and c14 not both enabled.'
                call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif
             endif
          end select
-
-	 call get_curr_date(year, mon, day, sec)
 
          if (use_vertsoilc) then
 
@@ -297,17 +293,17 @@ contains
                         if ( abs(som_adv_coef(c,j)) * spinup_term < epsilon ) then
                            adv_flux(c,j) = epsilon
                         else
-			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then 
+			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then
                              adv_flux(c,j) = som_adv_coef(c,j) * spinup_term / cnstate_vars%scalaravg_col(c,j)
  			   else
                              adv_flux(c,j) = som_adv_coef(c,j) * spinup_term
-			   end if			     
+			   end if
                         endif
                         !
                         if ( abs(som_diffus_coef(c,j)) * spinup_term < epsilon ) then
                            diffus(c,j) = epsilon
                         else
-			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then 
+			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then
                              diffus(c,j) = som_diffus_coef(c,j) * spinup_term / cnstate_vars%scalaravg_col(c,j)
                            else
                              diffus(c,j) = som_diffus_coef(c,j) * spinup_term
@@ -332,7 +328,7 @@ contains
 
                         conc_trcr(c,j) = conc_ptr(c,j,s)
                         ! dz_tracer below is the difference between gridcell edges  (dzsoi_decomp)
-                        ! dz_node_tracer is difference between cell centers 
+                        ! dz_node_tracer is difference between cell centers
 
                         ! Calculate the D and F terms in the Patankar algorithm
                         if (j == 1) then
@@ -407,7 +403,7 @@ contains
                            a_tri(c,j) = -(d_m1_zm1(c,j) * aaa(pe_m1(c,j)) + max( f_m1(c,j), 0._r8)) ! Eqn 5.47 Patankar
                            c_tri(c,j) = -(d_p1_zp1(c,j) * aaa(pe_p1(c,j)) + max(-f_p1(c,j), 0._r8))
                            b_tri(c,j) = -a_tri(c,j) - c_tri(c,j) + a_p_0
-                           r_tri(c,j) = source(c,j,s) * dzsoi_decomp(j) /dtime + (a_p_0 - adv_flux(c,j)) * conc_trcr(c,j) 
+                           r_tri(c,j) = source(c,j,s) * dzsoi_decomp(j) /dtime + (a_p_0 - adv_flux(c,j)) * conc_trcr(c,j)
                         elseif (j < nlevdecomp+1) then
                            a_tri(c,j) = -(d_m1_zm1(c,j) * aaa(pe_m1(c,j)) + max( f_m1(c,j), 0._r8)) ! Eqn 5.47 Patankar
                            c_tri(c,j) = -(d_p1_zp1(c,j) * aaa(pe_p1(c,j)) + max(-f_p1(c,j), 0._r8))
@@ -416,7 +412,7 @@ contains
                         else ! j==nlevdecomp+1; 0 concentration gradient at bottom
                            a_tri(c,j) = -1._r8
                            b_tri(c,j) = 1._r8
-                           c_tri(c,j) = 0._r8 
+                           c_tri(c,j) = 0._r8
                            r_tri(c,j) = 0._r8
                         endif
                      enddo ! fc; column
@@ -445,7 +441,6 @@ contains
                        r_tri(bounds%begc:bounds%endc, :), &
                        conc_trcr(bounds%begc:bounds%endc,0:nlevdecomp+1))
 
-
                   ! add post-transport concentration to calculate tendency term
                   do fc = 1, num_soilc
                      c = filter_soilc (fc)
@@ -469,7 +464,7 @@ contains
                do j = 1,nlevdecomp
                   do fc = 1, num_soilc
                      c = filter_soilc (fc)
-                     conc_ptr(c,j,s) = conc_trcr(c,j) 
+                     conc_ptr(c,j,s) = conc_trcr(c,j)
                   end do
                end do
 
@@ -494,9 +489,9 @@ contains
          endif
 
       end do  ! i_type
-   
+
     end associate
 
   end subroutine SoilLittVertTransp
- 
+
 end module SoilLittVertTranspMod

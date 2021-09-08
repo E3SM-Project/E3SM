@@ -117,10 +117,10 @@ contains
                              wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete)
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
-         psmin_p, dpmin_p, thetamin_p
+         psmin_p, dpmin_p, TSmin_p
 
     real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d),&
-         psmax_p, dpmax_p, thetamax_p
+         psmax_p, dpmax_p, TSmax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
          pssum_p, dpsum_p, thetasum_p, wsum_p
@@ -135,7 +135,7 @@ contains
                              tmin_local(2), tmax_local(2), phimin_local(2), phimax_local(2), &
                              fumin_local(2), fumax_local(2), fvmin_local(2), fvmax_local(2), &
                              ftmin_local(2), ftmax_local(2), fqmin_local(2), fqmax_local(2), &
-                             dpmin_local(2), dpmax_local(2), &
+                             dpmin_local(2), dpmax_local(2), mumax_local(2), mumin_local(2), &
                              w_over_dz_max_local(2)
     character(len=3)      :: which
  
@@ -217,17 +217,23 @@ contains
        qvsum_p(q) = global_shared_sum(1)
     enddo
 
+
+    ! compute TS min/max
+    do ie=nets,nete
+       call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
+       psmin_local(ie) = MINVAL(tdiag(:,:,nlev))
+       psmax_local(ie) = MAXVAL(tdiag(:,:,nlev))
+    enddo
+    TSmin_p = ParallelMin(psmin_local,hybrid)
+    TSmax_p = ParallelMax(psmax_local,hybrid)
+
+
+
+
     !
     do ie=nets,nete
-       if (theta_hydrostatic_mode) then
-          ! show min/max/num of temperature as a diagnostic
-          call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
-          !use muvalue to avoid if-statements below
-          muvalue(:,:,1:nlev) = tdiag(:,:,1:nlev)
-       else
-          ! show min/max/num of dpnh / dp as a diagnostic
-          call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
-       endif
+       call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
+       call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
 
        ! layer thickness
        call get_phi(elem(ie),dphi,phi_i,hvcoord,n0)
@@ -245,11 +251,8 @@ contains
 
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
-       if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlev)
-       else
-          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlevp)
-       endif
+       call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets),nlev)
+       call extremumLevelHelper(mumax_local,muvalue,'max',logical(ie == nets),nlevp)
        call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets),nlev)
        call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets),nlev)
 
@@ -257,11 +260,8 @@ contains
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
-       if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlev)
-       else
-          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlevp)
-       endif
+       call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets),nlev)
+       call extremumLevelHelper(mumin_local,muvalue,'min',logical(ie == nets),nlevp)
        call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets),nlev)
 
        !======================================================
@@ -273,7 +273,7 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       tsum_local(ie)    = SUM(muvalue)
+       tsum_local(ie)    = SUM(tdiag)
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
@@ -295,6 +295,8 @@ contains
        global_shared_buf(ie,10)= dpsum_local(ie)
        global_shared_buf(ie,11)= phisum_local(ie)
        global_shared_buf(ie,12)=thetasum_local(ie)
+
+
     end do
 
     which = 'u'
@@ -312,6 +314,10 @@ contains
     which = 't'
     call findExtremumWithLevel(elem,tmax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
     call findExtremumWithLevel(elem,tmin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.true.)
+
+    which = 'mu'
+    call findExtremumWithLevel(elem,mumax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.true.)
+    call findExtremumWithLevel(elem,mumin_local,which,'min',n0,hybrid,hvcoord,nets,nete,.true.)
 
     which = 'dp'
     call findExtremumWithLevel(elem,dpmax_local,which,'max',n0,hybrid,hvcoord,nets,nete,.false.)
@@ -388,16 +394,13 @@ contains
        write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
                                    wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
 
-       if (theta_hydrostatic_mode) then
-          write(iulog,109) "T     = ",tmin_local(1)," (",nint(tmin_local(2)),")",&
-                                      tmax_local(1)," (",nint(tmax_local(2)),")",tsum_p
-       else
-          write(iulog,109) "mu    = ",tmin_local(1)," (",nint(tmin_local(2)),")",&
-                                      tmax_local(1)," (",nint(tmax_local(2)),")",tsum_p
-       endif
-
        write(iulog,109) "vTh_dp= ",thetamin_local(1)," (",nint(thetamin_local(2)),")",&
                                    thetamax_local(1)," (",nint(thetamax_local(2)),")",thetasum_p
+
+       write(iulog,109) "T     = ",tmin_local(1)," (",nint(tmin_local(2)),")",&
+                                   tmax_local(1)," (",nint(tmax_local(2)),")",tsum_p
+       write(iulog,109) "mu    = ",mumin_local(1)," (",nint(mumin_local(2)),")",&
+                                   mumax_local(1)," (",nint(mumax_local(2)),")"
 
        write(iulog,109) "dz(m) = ",phimin_local(1)/g," (",nint(phimin_local(2)),")",&
                                    phimax_local(1)/g," (",nint(phimax_local(2)),")",phisum_p/g
@@ -422,6 +425,7 @@ contains
        do q=1,qsize
           write(iulog,102) "qv(",q,")= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
        enddo
+       write(iulog,100) "TBOT= ",TSmin_p,TSmax_p
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,'mb     '
 

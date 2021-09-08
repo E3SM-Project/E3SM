@@ -1,0 +1,17 @@
+
+committed namelists for moist runs 'rain' for nlev=60. precl is very sensitive to anything, including nlev.
+
+
+run ncl like this:
+
+;;; SET fili, tt, shortc, ztop, fff
+;;; as file to read, time frame, shortc name for the plot suffix
+;;; ztop is that same as in the run, fff as field
+
+ncl plot-in-height.ncl fili=\"planar_rising_bubble1.nc\" tt=45 ztop=1500 shortc=\"dry\" fff=\"Th\"
+ncl plot-in-height.ncl fili=\"planar_rising_bubble1.nc\" tt=70 ztop=20000 shortc=\"kessler\" fff=\"Th\"
+ncl plot-in-height.ncl fili=\"planar_rising_bubble1.nc\" tt=70 ztop=20000 shortc=\"rj\" fff=\"Th\"
+
+
+
+

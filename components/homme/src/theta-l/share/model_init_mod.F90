@@ -14,7 +14,7 @@
 module model_init_mod
 
   use element_mod,        only: element_t
-  use derivative_mod,     only: derivative_t,gradient_sphere
+  use derivative_mod,     only: derivative_t,gradient_sphere, laplace_sphere_wk
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
@@ -22,7 +22,8 @@ module model_init_mod
   use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
-  use control_mod,        only: qsplit,theta_hydrostatic_mode
+  use control_mod,        only: qsplit,theta_hydrostatic_mode, hv_ref_profiles, &
+       hv_theta_correction
   use time_mod,           only: timelevel_qdp, timelevel_t
   use physical_constants, only: g, TREF, Rgas, kappa
   use imex_mod,           only: test_imex_jacobian
@@ -71,13 +72,6 @@ contains
       enddo
 
       ! initialize reference states used by hyberviscosity
-#define HV_REFSTATES_V2
-#ifdef HV_REFSTATES_V0
-      elem(ie)%derived%dp_ref=0
-      elem(ie)%derived%phi_ref=0
-      elem(ie)%derived%theta_ref=0
-#endif
-#ifdef HV_REFSTATES_V1
       ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
       do k=1,nlev
          elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -87,21 +81,30 @@ contains
       temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
       call phi_from_eos(hvcoord,elem(ie)%state%phis,&
            temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
-      elem(ie)%derived%theta_ref=0
-#endif
-#ifdef HV_REFSTATES_V2
-      ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
-      do k=1,nlev
-         elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
-      enddo
-      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
-      temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
-      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
-           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
-      elem(ie)%derived%theta_ref=0
-      elem(ie)%derived%dp_ref=0
-#endif
+      if (hv_ref_profiles==0) then
+         ! keep PHI profile, but dont use theta and dp:
+         elem(ie)%derived%theta_ref=0
+         elem(ie)%derived%dp_ref=0
+      endif
+      if (hv_ref_profiles==1) then
+         ! keep all profiles
+      endif
+      if (hv_ref_profiles==2) then
+         ! keep only dp_ref
+         elem(ie)%derived%theta_ref=0
+      endif
+
+      if (hv_theta_correction/=0) then
+         ! compute weak laplace of p_ref
+         do k=1,nlev
+            ! compute lap(p) for z surface correction                                              
+            temp(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_ref(:,:)
+            elem(ie)%derived%lap_p_wk(:,:,k)=laplace_sphere_wk(temp(:,:,k),deriv,elem(ie),&
+                 var_coef=.false.)
+         enddo
+      endif
+
+
     enddo 
 
 

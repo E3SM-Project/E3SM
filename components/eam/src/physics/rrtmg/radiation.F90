@@ -24,8 +24,7 @@ use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
-                           have_clwp,clwpobs,have_tg,tground,swrad_off,&
-                           lwrad_off
+                           have_clwp,clwpobs,have_tg,tground
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
 
@@ -187,14 +186,13 @@ end subroutine radiation_readnl
 
 !================================================================================================
 
-subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
+subroutine radiation_defaultopts(iradsw_out, iradlw_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    logical, intent(out), optional :: use_rad_dt_cosz_out
@@ -203,7 +201,6 @@ subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux
    if ( present(use_rad_dt_cosz_out) ) use_rad_dt_cosz_out = use_rad_dt_cosz
@@ -212,7 +209,7 @@ end subroutine radiation_defaultopts
 
 !================================================================================================
 
-subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
+subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, &
    irad_always_in, spectralflux_in, use_rad_dt_cosz_in)!BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
@@ -226,7 +223,6 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    integer, intent(in)           :: nhtfrq          ! output frequency of primary history file
    integer, intent(in), optional :: iradsw_in
    integer, intent(in), optional :: iradlw_in
-   integer, intent(in), optional :: iradae_in
    integer, intent(in), optional :: irad_always_in
    logical, intent(in), optional :: spectralflux_in
    logical, intent(in), optional :: use_rad_dt_cosz_in
@@ -234,12 +230,10 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    ! Local
    integer :: ntspdy   ! no. timesteps per day
    integer :: nhtfrq1  ! local copy of input arg nhtfrq
-   integer :: iradae   ! not used by RRTMG
 !-----------------------------------------------------------------------
 
    if ( present(iradsw_in) )      iradsw = iradsw_in
    if ( present(iradlw_in) )      iradlw = iradlw_in
-   if ( present(iradae_in) )      iradae = iradae_in
    if ( present(irad_always_in) ) irad_always = irad_always_in
    if ( present(spectralflux_in) ) spectralflux = spectralflux_in
    if ( present(use_rad_dt_cosz_in) ) use_rad_dt_cosz = use_rad_dt_cosz_in
@@ -249,30 +243,23 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    if (iradlw      < 0) iradlw      = nint((-iradlw     *3600._r8)/dtime)
    if (irad_always < 0) irad_always = nint((-irad_always*3600._r8)/dtime)
 
-   ! Has user specified iradae?
-   if (iradae /= -999) then
-      call endrun('radiation_setopts: iradae not used by RRTMG.')
-   end if
-
 end subroutine radiation_setopts
 
 !===============================================================================
 
-subroutine radiation_get(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out)
+subroutine radiation_get(iradsw_out, iradlw_out, irad_always_out, spectralflux_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Provide access to private module data.  (This should be eliminated.)
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    !-----------------------------------------------------------------------
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux_out
 
@@ -316,24 +303,24 @@ function radiation_do(op, timestep)
    end if
 
    select case (op)
-
-   case ('sw') ! do a shortwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradsw == 1                     &
-                    .or. (mod(nstep-1,iradsw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case ('lw') ! do a longwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradlw == 1                     &
-                    .or. (mod(nstep-1,iradlw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case ('aeres') ! write absorptivity/emissivity to restart file this timestep?
-      ! for RRTMG there is no abs/ems restart file
-      radiation_do = .false.
-         
-   case default
-      call endrun('radiation_do: unknown operation:'//op)
-
+      case ('sw') ! do a shortwave heating calc this timestep?
+         if (iradsw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradsw == 1                     &
+                          .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case ('lw') ! do a longwave heating calc this timestep?
+         if (iradlw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradlw == 1                     &
+                          .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case default
+         call endrun('radiation_do: unknown operation:'//op)
    end select
 end function radiation_do
 
@@ -360,18 +347,17 @@ real(r8) function radiation_nextsw_cday()
    nstep  = get_nstep()
    dtime  = get_step_size()
    offset = 0
-   do while (.not. dosw)
-      nstep = nstep + 1
-      offset = offset + dtime
-      if (radiation_do('sw', nstep)) then
-         radiation_nextsw_cday = get_curr_calday(offset=offset) 
-         dosw = .true.
-      end if
-   end do
-   if(radiation_nextsw_cday == -1._r8) then
-      call endrun('error in radiation_nextsw_cday')
+   if (iradsw/=0) then
+      do while (.not. dosw)
+         nstep = nstep + 1
+         offset = offset + dtime
+         if (radiation_do('sw', nstep)) then
+            radiation_nextsw_cday = get_curr_calday(offset=offset) 
+            dosw = .true.
+         end if
+      end do
    end if
-        
+
 end function radiation_nextsw_cday
 
 !================================================================================================
@@ -829,7 +815,7 @@ end function radiation_nextsw_cday
   
   subroutine radiation_tend(state,ptend, pbuf, &
        cam_out, cam_in, &
-       landfrac,landm,icefrac,snowh, &
+       landfrac,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
        fsds, net_flx, is_cmip6_volc, dt)
 
@@ -890,7 +876,6 @@ end function radiation_nextsw_cday
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: dt               ! time step(s)
-    real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
@@ -1127,12 +1112,8 @@ end function radiation_nextsw_cday
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
-    
-    if (swrad_off) then
-       coszrs(:)=0._r8 ! coszrs is only output for zenith
-    endif    
 
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+    call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1480,22 +1461,7 @@ end function radiation_nextsw_cday
                        clm_seed,     lu,           ld                                            )
                   call t_stopf ('rad_rrtmg_lw')
 
-                  if (lwrad_off) then
-                     qrl(:,:) = 0._r8
-                     qrlc(:,:) = 0._r8
-                     flns(:) = 0._r8
-                     flnt(:) = 0._r8
-                     flnsc(:) = 0._r8
-                     flntc(:) = 0._r8
-                     cam_out%flwds(:) = 0._r8
-                     flut(:) = 0._r8
-                     flutc(:) = 0._r8
-                     fnl(:,:) = 0._r8
-                     fcnl(:,:) = 0._r8
-                     fldsc(:) = 0._r8
-                  end if !lwrad_off
-		  
-		  do i=1,ncol
+                  do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
                   end do
 

@@ -124,6 +124,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_effective_pressure_max" type="real"
+	category="velocity_solver" group="velocity_solver">
+An optional maximum limit on effective pressure passed to the velocity solver.
+
+Valid values: Any positive, real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
@@ -144,13 +152,32 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- solidearth -->
+
+<entry id="config_uplift_method" type="char*1024"
+	category="solidearth" group="solidearth">
+Selection of the method for bedrock uplift calculation.
+
+Valid values: 'none', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- calving -->
 
 <entry id="config_calving" type="char*1024"
 	category="calving" group="calving">
-Selection of the method for calving ice (as defined further below).
+Selection of the method for calving ice (as defined below).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_Albany_flowA_eqn_for_vM" type="logical"
+	category="calving" group="calving">
+Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving
+
+Valid values: '.true.', '.false.'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -183,6 +210,22 @@ Default: Defined in namelist_defaults.xml
 Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)
 
 Valid values: any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_specified_source" type="char*1024"
+	category="calving" group="calving">
+method of specified calving velocity
+
+Valid values: 'const' (constant calving velocity), 'data' (calving velocity given by data input)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_velocity_const" type="real"
+	category="calving" group="calving">
+constant calving velocity specified in the namelist
+
+Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -226,6 +269,102 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_grounded_von_Mises_threshold_stress" type="real"
+	category="calving" group="calving">
+Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier.
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floating_von_Mises_threshold_stress" type="real"
+	category="calving" group="calving">
+Threshold von Mises stress value required for calving velocity to exceed ice velocity on floating ice. Generally seems to need to be low (1e5 to 2e5 for Humboldt Glacier) to allow floating ice to retreat. If set to 0.0, floating ice will be removed from dynamic cells each timestep; calvingThickness will be correct, but calvingVelocity will not be correct for those cells. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier.
+
+Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_finalize_damage_after_advection" type="logical"
+	category="calving" group="calving">
+If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_preserve_damage" type="logical"
+	category="calving" group="calving">
+If true, then preserve the value of damage before advection (i.e., do not allow healing of damage to occur).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calculate_damage" type="logical"
+	category="calving" group="calving">
+If .true., then turn on the 'calculate_damage' subroutine. Note that setting this to .true. will evolve damage even if damage-based calving is not being used, which is why it is .false. by default (and thus it should explicitly be set to .true. to use damage based calving).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_preserve_threshold" type="real"
+	category="calving" group="calving">
+It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_preserve_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to a smaller number if non-damaged ice is transported from upstream. If we set config_damage_preserve_threshold to 0 (default), then it will just not play a role in pratical.
+
+Valid values: real value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_calving_threshold" type="real"
+	category="calving" group="calving">
+When config_damage_calving_method==threshold, this is the value of damage above which the cell would be calved away.  When config_damage_calving_method==calving_rate, this is the value above which calving becomes proportional to damage.
+
+Valid values: real value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_stiffness_min" type="real"
+	category="calving" group="calving">
+The minimum value the 'stiffnessFactor' can take due to evolving damage when 'stiffnessFactor' is calculated from damage (i.e., when 'config_damage_rheology_coupling'=.true.). This is used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then 'stiffnessFactor' becomes 1 - damage = 0.1 (a small value that could be challenging for the solver). But if we set 'config_damage_stiffness_min' = 0.5, then 'stiffnessFactor' can only fall as low as 0.5.
+
+Valid values: real value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_rheology_coupling" type="logical"
+	category="calving" group="calving">
+If true, then the value of 'stiffnessFactor' is coupled to damage evolution, i.e. 'stiffnessFactor' = 1-damage.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_gl_setting" type="char*1024"
+	category="calving" group="calving">
+Selection of the method for initializing damage in the first floating grid cells past the grounding line: 'nye' uses Nye's zero stress criteria (Nye, 1957, Proc. R. Soc. A, 239) for defining the damage value, 'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells.
+
+Valid values: 'nye', 'extrapolate'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damage_calving_method" type="char*1024"
+	category="calving" group="calving">
+Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold.
+
+Valid values: 'calving_rate', 'threshold'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_damagecalvingParameter" type="real"
+	category="calving" group="calving">
+A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold').
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- thermal_solver -->
 
@@ -255,7 +394,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermal_thickness" type="real"
 	category="thermal_solver" group="thermal_solver">
-Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver.
+Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver.  Default set to 0 to ensure reasonable values everywhere there is ice, which is needed for realistic behavior when using Albany due to the way temperature is handled in extended cells.
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -461,6 +600,62 @@ Default: Defined in namelist_defaults.xml
 The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization.
 
 Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_front_mass_bal_grounded" type="char*1024"
+	category="iceshelf_melt" group="iceshelf_melt">
+Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology.
+
+Valid values: 'none', 'uniform', 'ismip6'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_beta_ocean_thermal_forcing" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_add_ocean_thermal_forcing" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Adjust ismip6_2dThermalForcing by a scalar value
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_alpha_subglacial_discharge" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subglacial_discharge_coefficient" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Coefficient of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subglacial_discharge_intercept" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Added value B in ISMIP6 grounded ice front melting parameterization
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_uniform_face_melt_rate" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+MISSING DESCRIPTION
+
+Valid values: any non-negative value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -713,7 +908,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_num_halos" type="integer"
 	category="decomposition" group="decomposition">
-Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice).
+Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The extension of the mesh for Albany requires 3 to cover all geometric possibilities.  The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice).
 
 Valid values: Any positive interger value.
 Default: Defined in namelist_defaults.xml
@@ -805,6 +1000,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ocean_connection_N" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+Calculate effective pressure assuming perfect connection with the ocean.  This is an alternative to the subglacial hydrology model and requires that config_SGH=.false.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_SGH_adaptive_timestep_fraction" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
 fraction of adaptive CFL timestep to use
@@ -865,7 +1068,15 @@ Default: Defined in namelist_defaults.xml
 	category="subglacial_hydro" group="subglacial_hydro">
 background subglacial till drainage rate
 
-Valid values: positive real number.  Default value is 0.001 m/yr in SI units.
+Valid values: positive real number.  Disabled by default.  Bueler and van Pelt use 3.1709792e-11 m/s (0.001 m/yr).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_till_max" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+maximum water thickness in subglacial till. Bueler and van Pelt use 2.0 m
+
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -904,14 +1115,6 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_SGH_englacial_porosity" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
 notional englacial porosity
-
-Valid values: positive real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_SGH_till_max" type="real"
-	category="subglacial_hydro" group="subglacial_hydro">
-maximum water thickness in subglacial till
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml

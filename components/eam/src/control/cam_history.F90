@@ -102,7 +102,7 @@ module cam_history
   !
   !   The size of these parameters should match the assignments in restart_vars_setnames and restart_dims_setnames below
   !   
-  integer, parameter :: restartvarcnt              = 37
+  integer, parameter :: restartvarcnt              = 38
   integer, parameter :: restartdimcnt              = 10
   type(rvar_id)      :: restartvars(restartvarcnt)
   type(rdim_id)      :: restartdims(restartdimcnt)
@@ -1056,6 +1056,14 @@ CONTAINS
     restartvars(rvindex)%dims(3) = ptapes_dim_ind
 
     rvindex = rvindex + 1
+    restartvars(rvindex)%name = 'standard_name'
+    restartvars(rvindex)%type = pio_char
+    restartvars(rvindex)%ndims = 3
+    restartvars(rvindex)%dims(1) = max_chars_dim_ind
+    restartvars(rvindex)%dims(2) = maxnflds_dim_ind
+    restartvars(rvindex)%dims(3) = ptapes_dim_ind
+
+    rvindex = rvindex + 1
     restartvars(rvindex)%name = 'units'
     restartvars(rvindex)%type = pio_char
     restartvars(rvindex)%ndims = 3
@@ -1289,6 +1297,7 @@ CONTAINS
     type(var_desc_t), pointer ::  avgflag_desc
     type(var_desc_t), pointer ::  sseq_desc
     type(var_desc_t), pointer ::  longname_desc
+    type(var_desc_t), pointer ::  standardname_desc
     type(var_desc_t), pointer ::  units_desc
     type(var_desc_t), pointer ::  hwrt_prec_desc
     type(var_desc_t), pointer ::  xyfill_desc
@@ -1407,6 +1416,7 @@ CONTAINS
 
     sseq_desc => restartvar_getdesc('sampling_seq')
     longname_desc => restartvar_getdesc('long_name')
+    standardname_desc => restartvar_getdesc('standard_name')
     units_desc => restartvar_getdesc('units')
     avgflag_desc => restartvar_getdesc('avgflag')
     xyfill_desc => restartvar_getdesc('xyfill')
@@ -1445,6 +1455,7 @@ CONTAINS
         ierr = pio_put_var(File, hwrt_prec_desc,start,tape(t)%hlist(f)%hwrt_prec)
         ierr = pio_put_var(File, sseq_desc,startc,tape(t)%hlist(f)%field%sampling_seq)
         ierr = pio_put_var(File, longname_desc,startc,tape(t)%hlist(f)%field%long_name)
+        ierr = pio_put_var(File, standardname_desc,startc,tape(t)%hlist(f)%field%standard_name)
         ierr = pio_put_var(File, units_desc,startc,tape(t)%hlist(f)%field%units)
         ierr = pio_put_var(File, avgflag_desc,start, tape(t)%hlist(f)%avgflag)
 
@@ -1552,6 +1563,7 @@ CONTAINS
 
     type(var_desc_t)                 :: vdesc
     type(var_desc_t)                 :: longname_desc
+    type(var_desc_t)                 :: standardname_desc
     type(var_desc_t)                 :: units_desc
     type(var_desc_t)                 :: avgflag_desc
     type(var_desc_t)                 :: sseq_desc
@@ -1728,6 +1740,7 @@ CONTAINS
     ierr = pio_inq_varid(File, 'avgflag', avgflag_desc)
 
     ierr = pio_inq_varid(File, 'long_name', longname_desc)
+    ierr = pio_inq_varid(File, 'standard_name', standardname_desc)
     ierr = pio_inq_varid(File, 'units', units_desc)
     ierr = pio_inq_varid(File, 'sampling_seq', sseq_desc)
 
@@ -1761,6 +1774,8 @@ CONTAINS
         ierr = pio_get_var(File,zonal_complement_desc, (/f,t/), tape(t)%hlist(f)%field%zonal_complement)
         ierr = pio_get_var(File,avgflag_desc, (/f,t/), tape(t)%hlist(f)%avgflag)
         ierr = pio_get_var(File,longname_desc, (/1,f,t/), tape(t)%hlist(f)%field%long_name)
+        tape(t)%hlist(f)%field%standard_name = ''
+        ierr = pio_get_var(File,standardname_desc, (/1,f,t/), tape(t)%hlist(f)%field%standard_name)
         ierr = pio_get_var(File,units_desc, (/1,f,t/), tape(t)%hlist(f)%field%units)
         tape(t)%hlist(f)%field%sampling_seq(1:max_chars) = ' '
         ierr = pio_get_var(File,sseq_desc, (/1,f,t/), tape(t)%hlist(f)%field%sampling_seq)

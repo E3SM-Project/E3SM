@@ -1,0 +1,214 @@
+	<nml_record name="tracer_forcing_DMSTracers">
+		<nml_option name="config_use_DMSTracers" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'DMSGRP' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, surface restoring source is applied to tracers in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, interior restoring source is applied to tracers in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+			description="if true, exponential decay source is applied to tracers in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, idealAge forcing source is applied to tracers in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, transit time distribution forcing source is applied to tracers in 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_value" type="logical" default_value=".false." units="unitless"
+			description="if true, surface value is computed for 'DMSGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
+			description="if true, couple DMS fields with sea ice"
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="DMSTracersPKG" description="This package includes variables required to include DMSGRP."/>
+		<package name="DMSTracersBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the DMS tracer group."/>
+		<package name="DMSTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the DMS tracer group."/>
+		<package name="DMSTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the DMS tracer group."/>
+		<package name="DMSTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the DMS tracer group."/>
+		<package name="DMSTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the DMS tracer group."/>
+		<package name="DMSTracersTTDPKG" description="This package includes variables required to compute transit-time distribution forcing on the DMS tracer group."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="DMSTracers" dimensions="nVertLevels nCells Time" type="real" packages="DMSTracersPKG" >
+				<!-- Add constituents of tracer group -->
+				<var name="DMS" array_group="DMSGRP" units="mmol m^{-3}"
+			description="Dimethyl Sulfide"
+				/>
+				<var name="DMSP" array_group="DMSGRP" units="mmol m^{-3}"
+			description="Dimethyl Sulfoniopropionate"
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="DMSTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+			description="Dimethyl Sulfide Tendency"
+				/>
+				<var name="DMSPTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+			description="Dimethyl Sulfoniopropionate Tendency"
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="DMSTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFlux" array_group="DMSSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
+			description="Dimethyl Sulfide Surface Flux"
+				/>
+				<var name="DMSPSurfaceFlux" array_group="DMSSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
+			description="Dimethyl Sulfoniopropionate Surface Flux"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFluxRunoff" array_group="DMSSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux Due to Runoff"
+				/>
+				<var name="DMSPSurfaceFluxRunoff" array_group="DMSSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux Due to Runoff"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="DMSSurfaceFluxRemoved" array_group="DMSSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux that is ignored"
+				/>
+				<var name="DMSPSurfaceFluxRemoved" array_group="DMSSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux that is ignored"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="DMSSeaIceCoupling" time_levs="1" packages="DMSTracersPKG">
+			<var name="avgOceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+				description="Ocean Surface DMS concentration"
+			/>
+			<var name="avgOceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+				description="Ocean Surface DMSP concentration"
+			/>
+			<var name="iceFluxDMS" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+				description="Surface DMS flux from sea ice"
+			/>
+			<var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+				description="Surface DMSP flux from sea ice"
+			/>
+		</var_struct>
+		<var_struct name="DMSFluxDiagnostics" time_levs="1" packages="DMSTracersPKG">
+			<var name="dms_flux_diag_ifrac" type="real" dimensions="nCells Time" units="none"
+				description="Ice Fraction used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_xkw" type="real" dimensions="nCells Time" units="none"
+				description="XKW used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_atm_press" type="real" dimensions="nCells Time" units="unknown"
+				description="Atm Pressure used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_pv" type="real" dimensions="nCells Time" units="m s^{-1}"
+				description="Piston Velocity used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_schmidt" type="real" dimensions="nCells Time" units="none"
+				description="Schmidt Number used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_sat" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+				description="DMS Saturation used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_surf" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+				description="Surface DMS Values used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_ws" type="real" dimensions="nCells Time" units="m s^{-1}"
+				description="Wind Speed used in DMS flux calculation"
+			/>
+		</var_struct>
+		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
+			<var_array name="DMSTracersPistonVelocity" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">
+				<var name="DMSPistonVelocity" array_group="DMSPVGRP" units="m s^{-1}"
+			 description="A non-negative field controlling the rate at which DMS is restored to DMSSurfaceRestoringValue"
+				/>
+				<var name="DMSPPistonVelocity" array_group="DMSPVGRP" units="m s^{-1}"
+			 description="A non-negative field controlling the rate at which DMSP is restored to DMSPSurfaceRestoringValue"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">
+				<var name="DMSSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
+			 description="Tracer is restored toward this field at a rate controlled by DMSPistonVelocity."
+				/>
+				<var name="DMSPSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
+			 description="Tracer is restored toward this field at a rate controlled by DMSPPistonVelocity."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
+			<var_array name="DMSTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersInteriorRestoringPKG">
+				<var name="DMSInteriorRestoringRate" array_group="DMSIRRGRP" units="{s}^-1"
+			 description="A non-negative field controlling the rate at which DMS is restored to DMSInteriorRestoringValue"
+				/>
+				<var name="DMSPInteriorRestoringRate" array_group="DMSIRRGRP" units="{s}^-1"
+			 description="A non-negative field controlling the rate at which DMSP is restored to DMSPInteriorRestoringValue"
+				/>
+			</var_array>
+			<var_array name="DMSTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersInteriorRestoringPKG">
+				<var name="DMSInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
+			 description="Tracer is restored toward this field at a rate controlled by DMSInteriorRestoringRate."
+				/>
+				<var name="DMSPInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
+			 description="Tracer is restored toward this field at a rate controlled by DMSPInteriorRestoringRate."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersExponentialDecayFields" time_levs="1">
+			<var_array name="DMSTracersExponentialDecayRate" type="real" dimensions="Time" packages="DMSTracersExponentialDecayPKG">
+				<var name="DMSExponentialDecayRate" array_group="DMSGRP" units="s^{-1}"
+			 description="A non-negative field controlling the exponential decay of DMS"
+				/>
+				<var name="DMSPExponentialDecayRate" array_group="DMSGRP" units="s"
+			 description="A non-negative field controlling the exponential decay of DMSP"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersIdealAgeFields" time_levs="1">
+			<var_array name="DMSTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="DMSTracersIdealAgePKG">
+				<var name="DMSIdealAgeMask" array_group="DMSGRP" units="unitless"
+			 description="In top layer, DMS is reset to DMS * DMSIdealAgeMask, valid values of DMSIdealAgeMask or 0 and 1"
+				/>
+				<var name="DMSPIdealAgeMask" array_group="DMSGRP" units="unitless"
+			 description="In top layer, DMSP is reset to DMSP * DMSPIdealAgeMask, valid values of DMSPIdealAgeMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersTTDFields" time_levs="1">
+			<var_array name="DMSTracersTTDMask" type="real" dimensions="nCells Time" packages="DMSTracersTTDPKG">
+				<var name="DMSTTDMask" array_group="DMSGRP" units="unitless"
+			 description="In top layer, DMS is reset to TTDMask, valid values of DMSTTDMask or 0 and 1"
+				/>
+				<var name="DMSPTTDMask" array_group="DMSGRP" units="unitless"
+			 description="In top layer, DMSP is reset to DMSPTTDMask, valid values of DMSPTTDMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>

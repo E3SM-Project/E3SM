@@ -870,8 +870,7 @@ contains
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
-       call lnd2atm_minimal(bounds_proc, &
-            waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+       call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
 
@@ -887,7 +886,6 @@ contains
           call t_startf('init_lnd2glc')
           call lnd2glc_vars%update_lnd2glc(bounds_clump,       &
                filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,   &
-               temperature_vars, waterflux_vars,               &
                init=.true.)
           call t_stopf('init_lnd2glc')
        end do

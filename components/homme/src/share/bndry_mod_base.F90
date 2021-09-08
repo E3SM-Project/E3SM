@@ -955,7 +955,15 @@ contains
 !  also return num_neigh(ie) = number of neighbors (including onself) for element ie
 !  
 !
-  use kinds, only : real_kind
+#if defined _OPENMP && defined __INTEL_COMPILER
+  ! On Chrysalis in threaded builds, this routine sometimes fails. To be
+  ! clear, this routine is not called in a threaded region, but compiling with
+  ! -qopenmp with optimization somehow emits code that perhaps has a bug. See
+  ! https://github.com/E3SM-Project/E3SM/issues/4198
+  !DIR$ NOOPTIMIZE
+#endif
+
+  use kinds, only : real_kind, iulog
   use dimensions_mod, only: nelemd, np, max_neigh_edges
   use element_mod, only : element_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
@@ -969,97 +977,99 @@ contains
   integer :: nets,nete
   type (ghostBuffer3D_t)   :: ghostbuf_cv
 
-  real (kind=real_kind) :: cin(2,2,4,nets:nete)                    ! 1x1 element input data
-  real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1,nets:nete)   ! 1x1 element output data
+  real (kind=real_kind) :: cin(2,2,4)                      ! 1x1 element input data
+  real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1)   ! 1x1 element output data
   real (kind=real_kind) :: u   (2,2,4)   
   integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
   logical :: fail,fail1,fail2
   real (kind=real_kind) :: tol=.1
+    
+  if (par%masterproc) write(iulog,*) 'creating sorted ghost cell neigbor map...' 
+  if (par%masterproc) write(iulog,*) 'checking ghost cell neighbor buffer sorting...' 
 
-
-  if (par%masterproc) print *,'creating sorted ghost cell neigbor map...' 
-  if (par%masterproc) print *,'checking ghost cell neighbor buffer sorting...' 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! first test on the Gauss Grid with same number of ghost cells:
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   nc=2
   nlev=4
   call initghostbuffer3D(ghostbuf_cv,nlev,nc)
 
   call syncmp(par)
 
+  !  run ghost exchange to get global ID of all neighbors
+
   do ie=nets,nete
-     cin(:,:,nlev,ie)=  elem(ie)%GlobalID
+     cin(:,:,nlev) = elem(ie)%GlobalID
      k=0
      do i=1,nc
-     do j=1,nc
-        k=k+1
-        cin(i,j,1,ie) = elem(ie)%corners3D(k)%x
-        cin(i,j,2,ie) = elem(ie)%corners3D(k)%y
-        cin(i,j,3,ie) = elem(ie)%corners3D(k)%z
+        do j=1,nc
+           k=k+1
+           cin(i,j,1) = elem(ie)%corners3D(k)%x
+           cin(i,j,2) = elem(ie)%corners3D(k)%y
+           cin(i,j,3) = elem(ie)%corners3D(k)%z
+        enddo
      enddo
-     enddo
+     kptr=0
+     call ghostVpack_unoriented(ghostbuf_cv, cin,nc,nlev,kptr,elem(ie)%desc)
   enddo
-  cout=-1
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  run ghost exchange to get global ID of all neighbors
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  do ie=nets,nete
-     kptr=0
-     call ghostVpack_unoriented(ghostbuf_cv, cin(:,:,:,ie),nc,nlev,kptr,elem(ie)%desc)
-  end do
-
-  ! check for array out of bouds overwriting 
-  if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
-     call abortmp('ghost excchange unoriented failure ob1')
-  endif
   call ghost_exchangeVfull(par,0,ghostbuf_cv)
-  if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
-     call abortmp('ghost excchange unoriented failure ob2')
-  endif
 
   do ie=nets,nete
-     kptr=0
+     cin(:,:,nlev) = elem(ie)%GlobalID
+     k=0
+     do i=1,nc
+        do j=1,nc
+           k=k+1
+           cin(i,j,1) = elem(ie)%corners3D(k)%x
+           cin(i,j,2) = elem(ie)%corners3D(k)%y
+           cin(i,j,3) = elem(ie)%corners3D(k)%z
+        enddo
+     enddo
 
-     call ghostVunpack_unoriented(ghostbuf_cv, cout(:,:,:,:,ie),nc,nlev, kptr, elem(ie)%desc, elem(ie)%GlobalId,cin(:,:,:,ie))
+     if (elem(ie)%desc%actual_neigh_edges > max_neigh_edges) then
+        write(iulog,*) 'desc  actual_neigh_edges: ',elem(ie)%desc%actual_neigh_edges
+        write(iulog,*) 'check max_neigh_edges: ',max_neigh_edges
+        call abortmp( 'ghost exchange unoriented failure 0')
+     end if
+
+     cout = -1
+
+     kptr=0
+     call ghostVunpack_unoriented(ghostbuf_cv, cout,nc,nlev, kptr, elem(ie)%desc, elem(ie)%GlobalId,cin)
 
      ! check that we get the count of real neighbors correct
      patch_size=0
-
      do l=1,max_neigh_edges+1
-        if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
+        if (int(cout(1,1,nlev,l)) /= -1 ) then
            patch_size = patch_size + 1
         endif
      enddo
 
      if (elem(ie)%desc%actual_neigh_edges+1 /= patch_size) then
-        print *,'desc  actual_neigh_edges: ',elem(ie)%desc%actual_neigh_edges
-        print *,'check patch_size: ',patch_size
+        write(iulog,*) 'desc  actual_neigh_edges: ',elem(ie)%desc%actual_neigh_edges
+        write(iulog,*) 'check patch_size: ',patch_size
         call abortmp( 'ghost exchange unoriented failure 1')
      endif
 
      ! check that all non-neighbors stayed -1
      do l=patch_size+1,max_neigh_edges+1
-     if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
-        call abortmp( 'ghost exchange unoriented failure 2')
-     endif
+        if (int(cout(1,1,nlev,l)) /= -1 ) then
+           call abortmp( 'ghost exchange unoriented failure 2')
+        endif
      enddo
 
      ! i am too lazy to check if all id's are identical since they are in
      ! different order.  check if there sum is identical
-     sum1 = sum(int(cout(1,1,nlev,1:patch_size,ie)))
+     sum1 = sum(int(cout(1,1,nlev,1:patch_size)))
      sum2 = elem(ie)%globalID
      do l=1,max_neigh_edges
         if (elem(ie)%desc%globalID(l)>0) sum2 = sum2 + elem(ie)%desc%globalID(l)
      enddo
      if (sum1 /= sum2 ) then
-        print *,int(cin(1,1,nlev,ie)),elem(ie)%desc%actual_neigh_edges,patch_size
-        write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:patch_size,ie))
+        write(iulog,*) int(cin(1,1,nlev)),elem(ie)%desc%actual_neigh_edges,patch_size
+        write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:patch_size))
         write(*,'(a,99i5)') 'desc =',elem(ie)%desc%globalID(:)
 
-        print *,'cout sum of all neighbor global ids:',sum1 
-        print *,'desc sum of all neighbor global ids:',sum2  
+        write(iulog,*) 'cout sum of all neighbor global ids:',sum1 
+        write(iulog,*) 'desc sum of all neighbor global ids:',sum2  
         call abortmp( 'ghost exchange unoriented failure 3')        
      endif
 
@@ -1069,20 +1079,20 @@ contains
      do l=1,patch_size
         k=0
         do i=1,nc
-        do j=1,nc
-           k=k+1
-           elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,l,ie) 
-           elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,l,ie) 
-           elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l,ie) 
+           do j=1,nc
+              k=k+1
+              elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,l) 
+              elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,l) 
+              elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l) 
+           enddo
         enddo
-        enddo
-        elem(ie)%desc%globalID_neigh_corners(l) = cout(1,1,nlev,l,ie)
+        elem(ie)%desc%globalID_neigh_corners(l) = cout(1,1,nlev,l)
      enddo
   enddo
 
   call freeghostbuffer3D(ghostbuf_cv)
-  if (par%masterproc) print *,'passed.'
-  end subroutine
+  if (par%masterproc) write(iulog,*) 'passed.'
+end subroutine
 
 
 

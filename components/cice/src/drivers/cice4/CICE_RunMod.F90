@@ -414,6 +414,8 @@
                                    trcrn(:,:,nt_Tsfc,n,iblk),      &
                                    potT(:,:,iblk),                 &
                                    uatm(:,:,iblk), vatm(:,:,iblk), &
+                                   wsresp(:,:,iblk),tau_est(:,:,iblk),&
+                                   ugust(:,:,iblk),                &
                                    wind(:,:,iblk), zlvl(:,:,iblk), &
                                    Qa  (:,:,iblk), rhoa(:,:,iblk), &
                                    strairxn,       strairyn,       &

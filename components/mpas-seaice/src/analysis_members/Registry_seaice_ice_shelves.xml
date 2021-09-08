@@ -1,0 +1,43 @@
+	<nml_record name="AM_iceShelves">
+		<nml_option name="config_AM_iceShelves_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member iceShelves is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_iceShelves_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_iceShelves_output_stream" type="character" default_value="iceShelvesOutput" units="unitless"
+			description="Name of the stream that the iceShelves analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_iceShelves_compute_on_startup" type="logical" default_value="true" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_iceShelves_write_on_startup" type="logical" default_value="true" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="iceShelvesAMPKG" description="This package includes variables required for the iceShelves analysis member."/>
+	</packages>
+	<var_struct name="iceShelvesAM" time_levs="1" packages="iceShelvesAMPKG">
+		<var name="iceAreaOverIceShelves" type="real" dimensions="Time" units="-"
+			description="Total ice area present where ice shelves exist"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="iceShelvesOutput" type="output"
+				filename_template="analysis_members/seaice_iceShelves.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="iceShelvesAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="iceAreaOverIceShelves"/>
+		</stream>
+	</streams>

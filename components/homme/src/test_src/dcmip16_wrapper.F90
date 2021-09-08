@@ -11,7 +11,7 @@ module dcmip16_wrapper
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
-     sub_case
+     sub_case, case_planar_bubble, bubble_prec_type
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -40,7 +40,7 @@ real(rl):: tau
 real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas constant for water vapor (J/kg/K)
                        Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
-real(rl) :: sample_period  = 60.0_rl
+real(rl) :: sample_period  = 2.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 
 type :: PhysgridData_t
@@ -355,7 +355,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
-  sample_period = 60.0 ! sec
+  sample_period = 1 ! 60 orig sec
 end subroutine
 
 !_______________________________________________________________________
@@ -399,7 +399,9 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
-      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)," pmin_ps (Pa)=",pmin_ps
+      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
+      print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
+      print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
 
       open(unit=10,file=w_filename,form="formatted",position="append")
         write(10,'(99E24.15)') pmax_w
@@ -444,8 +446,17 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   integer :: pbl_type, prec_type, qi
   integer, parameter :: test = 1
+  logical :: toy_chemistry_on
 
-  prec_type = dcmip16_prec_type
+  if (case_planar_bubble) then
+    toy_chemistry_on = .false.
+    prec_type = bubble_prec_type
+    if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
+  else
+    toy_chemistry_on = .true.
+    prec_type = dcmip16_prec_type
+  endif
+
   pbl_type  = dcmip16_pbl_type
 
   max_w     = -huge(rl)
@@ -468,8 +479,10 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qi=1;  qv  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=2;  qc  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
     qi=3;  qr  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    if (toy_chemistry_on) then
+      qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+      qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
+    endif
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
@@ -503,6 +516,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       th_c = theta_kess(i,j,nlev:1:-1)
 
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
+      lat=0.0
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
                              precl(i,j,ie), pbl_type, prec_type)
 
@@ -514,12 +528,15 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qr(i,j,:) = qr_c(nlev:1:-1)
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
-      lon = elem(ie)%spherep(i,j)%lon
-      lat = elem(ie)%spherep(i,j)%lat
+      if (toy_chemistry_on) then 
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
 
-      do k=1,nlev
-        call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
-      enddo
+        do k=1,nlev
+          call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
+        enddo
+      endif
+
 
     enddo; enddo;
 
@@ -544,8 +561,12 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
 
+
+    if (toy_chemistry_on) then 
     qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
     qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
+    endif
+
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
@@ -889,6 +910,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
       zi_c = zi (i,j,nlevp:1:-1)
       th_c = theta_kess(i,j,nlev:1:-1)
 
+      lat=0.0
       ! get forced versions of u,v,p,qv,qc,qr. rho is constant
       call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
                              precl(i,j,ie), pbl_type, prec_type)

@@ -28,7 +28,6 @@ use constituents,    only: pcnst, readtrace
 use tracers,         only: tracers_flag
 use time_manager,    only: dtime
 use filenames,       only: ncdata, bnd_topo, &
-                           absems_data, &
                            caseid, &
                            brnch_retain_casename
 use dycore,          only: dycore_is
@@ -63,8 +62,6 @@ character(len=SHR_KIND_CL), private :: nlfilename = 'atm_in' ! Namelist filename
 !
 ! bnd_topo             Path and filename of topography dataset
 ! 
-! absems_data          Dataset with absorption and emissivity factors.
-!
 ! dtime = nnnn,        Model time step in seconds. Default is dycore dependent.
 ! 
 ! nlvdry = nn,         Number of layers over which to do dry
@@ -176,8 +173,6 @@ logical  :: scm_relaxation
 logical  :: scm_diurnal_avg
 logical  :: scm_crm_mode
 logical  :: scm_observed_aero
-logical  :: swrad_off
-logical  :: lwrad_off
 logical  :: precip_off
 
 contains
@@ -303,7 +298,6 @@ contains
    !            it is not supported.
    namelist /cam_inparm/ ncdata, bnd_topo, &
                      cam_branch_file  , &
-                     absems_data, &
                      dtime, &
                      nlvdry,  &
                      pertlim ,&
@@ -330,7 +324,7 @@ contains
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                          scm_relaxation_low, scm_relaxation_high, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero,swrad_off,lwrad_off, precip_off
+                         scm_observed_aero, precip_off
 
 !-----------------------------------------------------------------------
 
@@ -374,8 +368,6 @@ contains
         scm_diurnal_avg_out=scm_diurnal_avg, &
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
-        swrad_off_out=swrad_off, &
-        lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
@@ -453,8 +445,6 @@ contains
                             scm_diurnal_avg_in=scm_diurnal_avg, &
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
-                            swrad_off_in=swrad_off, &
-                            lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
@@ -540,7 +530,6 @@ contains
          write(iulog,*) 'Initial dataset is: ',trim(ncdata)
       end if
       write(iulog,*)'Topography dataset is: ', trim(bnd_topo)
-      write(iulog,*)'Time-invariant (absorption/emissivity) factor dataset is: ', trim(absems_data)
 
       ! Type of run
       write(iulog,*)'Run type flag (NSREST) 0=initial, 1=restart, 3=branch ',nsrest
@@ -640,7 +629,6 @@ subroutine distnl
    call mpibcast (ctitle  ,len(ctitle),mpichar,0,mpicom)
    call mpibcast (ncdata  ,len(ncdata) ,mpichar,0,mpicom)
    call mpibcast (bnd_topo  ,len(bnd_topo) ,mpichar,0,mpicom)
-   call mpibcast (absems_data,len(absems_data),mpichar,0,mpicom)
    call mpibcast (cam_branch_file  ,len(cam_branch_file) ,mpichar,0,mpicom)
 
    call mpibcast (indirect     , 1 ,mpilog, 0,mpicom)

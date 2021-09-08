@@ -5,7 +5,7 @@ module clubb_precision
 
   implicit none
 
-  public :: stat_nknd, stat_rknd, time_precision, dp, core_rknd
+  public :: stat_nknd, stat_rknd, time_precision, dp, sp, core_rknd
 
   private ! Default scope
 
@@ -14,7 +14,8 @@ module clubb_precision
   ! accurate. Otherwise, LAPACK must be recompiled, or some other trickery must
   ! be done.
   integer, parameter :: &
-    dp = selected_real_kind( p=12 )    ! double precision
+    dp = selected_real_kind( p=12 ), &  ! double precision
+    sp = selected_real_kind( p=6 )      ! single precision
 
   ! The precisions below are arbitrary, and could be adjusted as
   ! needed for long simulations or time averaging.  Note that on

@@ -40,7 +40,8 @@ module clip_explicit
   subroutine clip_covars_denom( dt, rtp2, thlp2, up2, vp2, wp2, &
                                 sclrp2, wprtp_cl_num, wpthlp_cl_num, &
                                 wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, &
-                                wprtp, wpthlp, upwp, vpwp, wpsclrp )
+                                wprtp, wpthlp, upwp, vpwp, wpsclrp, &
+                                upwp_pert, vpwp_pert)
 
     ! Description:
     ! Some of the covariances found in the CLUBB model code need to be clipped
@@ -105,6 +106,10 @@ module clip_explicit
 
     real( kind = core_rknd ), dimension(gr%nz,sclr_dim), intent(inout) :: &
       wpsclrp ! w'sclr'         [units m/s]
+
+    real( kind = core_rknd ), dimension(:), intent(inout), pointer :: &
+      upwp_pert,   & ! u'w'          [m^2/s^2]
+      vpwp_pert      ! v'w'          [m^2/s^2]
 
     ! Local Variables
     logical :: & 
@@ -273,11 +278,21 @@ module clip_explicit
       call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, up2, & ! intent(in)
                        upwp, upwp_chnge )              ! intent(inout)
+      if ( associated(upwp_pert) ) then
+         call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
+                          l_last_clip_ts, dt, wp2, up2, & ! intent(in)
+                          upwp_pert, upwp_chnge )         ! intent(inout)
+      end if
     else
       ! In this case, up2 = wp2, and the variable `up2' does not interact
       call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                        upwp, upwp_chnge )              ! intent(inout)
+      if ( associated(upwp_pert) ) then
+         call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
+                          l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
+                          upwp_pert, upwp_chnge )         ! intent(inout)
+      end if
     end if
 
 
@@ -317,11 +332,21 @@ module clip_explicit
       call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, vp2, & ! intent(in)
                        vpwp, vpwp_chnge )              ! intent(inout)
+      if ( associated(vpwp_pert) ) then
+         call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
+                          l_last_clip_ts, dt, wp2, vp2, & ! intent(in)
+                          vpwp_pert, vpwp_chnge )         ! intent(inout)
+      end if
     else
       ! In this case, vp2 = wp2, and the variable `vp2' does not interact
       call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                        vpwp, vpwp_chnge )              ! intent(inout)
+      if ( associated(vpwp_pert) ) then
+         call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
+                          l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
+                          vpwp_pert, vpwp_chnge )              ! intent(inout)
+      end if
     end if
 
 

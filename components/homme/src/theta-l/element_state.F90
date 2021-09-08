@@ -79,7 +79,8 @@ module element_state
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
     real (kind=real_kind) :: dp_ref(np,np,nlev)    ! ref states based on PHIS
     real (kind=real_kind) :: theta_ref(np,np,nlev)
-    real (kind=real_kind) :: phi_ref(np,np,nlevp)  
+    real (kind=real_kind) :: phi_ref(np,np,nlevp)
+    real (kind=real_kind) :: lap_p_wk(np,np,nlevp)  
   end type derived_state_t
   
 

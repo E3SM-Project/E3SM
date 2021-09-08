@@ -154,7 +154,7 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
       !if it can't find dim1name, it means there is a mismacth in model and netcdf 
       !file grid
       call endrun('ERROR: grid mismatch, failed to find '//dim1name//' dimension in file:'//input_file//' '&
-           ' '//errmsg(__FILE__,__LINE__))
+           &' '//errmsg(__FILE__,__LINE__))
    endif
    
    !find if the model and netcdf file has same grid resolution
@@ -172,7 +172,7 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
    elseif( dycore_is('LR')) then
       if(pio_inq_dimid(fh_co2_data_flux, trim(adjustl(dim2name)), dim2id) .ne. pio_noerr) then !obtain lat dimension of model
          call endrun('ERROR: failed while inquiring dimension'//trim(adjustl(dim2name))//' from file:'&
-              ' '//input_file//' '//errmsg(__FILE__,__LINE__))
+              &' '//input_file//' '//errmsg(__FILE__,__LINE__))
       endif
       if(pio_inquire_dimension(fh_co2_data_flux, dim1id, len = dim1len) ==  pio_noerr .and. &
          pio_inquire_dimension(fh_co2_data_flux, dim2id, len = dim2len) ==  pio_noerr) then !compare grid and model's dims

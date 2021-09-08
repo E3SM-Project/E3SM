@@ -444,8 +444,6 @@ my $LID = $ENV{'LID'};
 
 my $ntasks = $NTASKS_OCN / $NINST_OCN; 
 
-if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
-
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 
@@ -641,6 +639,16 @@ add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 
+########################
+# Namelist group: gotm #
+########################
+
+add_default($nl, 'config_use_gotm');
+add_default($nl, 'config_gotm_namelist_file');
+add_default($nl, 'config_gotm_constant_surface_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_drag_coeff');
+
 ###########################
 # Namelist group: forcing #
 ###########################
@@ -745,10 +753,13 @@ add_default($nl, 'config_monotonic');
 
 add_default($nl, 'config_use_implicit_bottom_drag');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_bottom_roughness');
 add_default($nl, 'config_use_implicit_bottom_drag_variable');
 add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
 add_default($nl, 'config_use_explicit_bottom_drag');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
+add_default($nl, 'config_use_topographic_wave_drag');
+add_default($nl, 'config_topographic_wave_drag_coeff');
 
 ###################################
 # Namelist group: ocean_constants #
@@ -762,6 +773,8 @@ add_default($nl, 'config_density0');
 
 add_default($nl, 'config_pressure_gradient_type');
 add_default($nl, 'config_common_level_weight');
+add_default($nl, 'config_zonal_ssh_grad');
+add_default($nl, 'config_meridional_ssh_grad');
 
 #######################
 # Namelist group: eos #
@@ -817,12 +830,12 @@ add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
 ####################################
-# Namelist group: semi_implicit_ts #
+# Namelist group: split_implicit_ts #
 ####################################
 
 add_default($nl, 'config_btr_si_preconditioner');
 add_default($nl, 'config_btr_si_tolerance');
-add_default($nl, 'config_n_btr_si_outer_iter');
+add_default($nl, 'config_n_btr_si_large_iter');
 add_default($nl, 'config_btr_si_partition_match_mode');
 
 #####################################
@@ -870,6 +883,7 @@ add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
 add_default($nl, 'config_disable_vel_surface_stress');
+add_default($nl, 'config_disable_vel_topographic_wave_drag');
 add_default($nl, 'config_disable_vel_explicit_bottom_drag');
 add_default($nl, 'config_disable_vel_vmix');
 add_default($nl, 'config_disable_vel_vadv');
@@ -997,6 +1011,7 @@ if ($ice_bgc eq 'ice_bgc' ) {
 } else {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".false.");
 }
+add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
@@ -1596,6 +1611,7 @@ my @groups = qw(run_modes
                 mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
+                gotm
                 forcing
                 coupling
                 shortwaveradiation
@@ -1611,7 +1627,7 @@ my @groups = qw(run_modes
                 eos_wright
                 split_timestep_share
                 split_explicit_ts
-                semi_implicit_ts
+                split_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug

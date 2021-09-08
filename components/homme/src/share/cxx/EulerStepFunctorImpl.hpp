@@ -90,14 +90,15 @@ class EulerStepFunctorImpl {
 
   using deriv_type = ReferenceElement::deriv_type;
 
-  const ElementsGeometry      m_geometry;
-        Buffers               m_buffers;
-  const ElementsDerivedState  m_derived_state;
-  const Tracers               m_tracers;
-  const deriv_type            m_deriv;
-  const HybridVCoord          m_hvcoord;
-  EulerStepData               m_data;
-  SphereOperators             m_sphere_ops;
+  ElementsGeometry      m_geometry;
+  const int             m_num_elems;
+  Buffers               m_buffers;
+  ElementsDerivedState  m_derived_state;
+  Tracers               m_tracers;
+  deriv_type            m_deriv;
+  HybridVCoord          m_hvcoord;
+  EulerStepData         m_data;
+  SphereOperators       m_sphere_ops;
 
   Kokkos::TeamPolicy<ExecSpace> m_tv_policy;
   TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize;
@@ -117,6 +118,7 @@ public:
 
   EulerStepFunctorImpl ()
    : m_geometry      (Context::singleton().get<ElementsGeometry>())
+   , m_num_elems     (m_geometry.num_elems())
    , m_derived_state (Context::singleton().get<ElementsDerivedState>())
    , m_tracers       (Context::singleton().get<Tracers>())
    , m_deriv         (Context::singleton().get<ReferenceElement>().get_deriv())
@@ -132,6 +134,29 @@ public:
     m_tpref.prefer_larger_team = true;
   }
 
+  EulerStepFunctorImpl (const int num_elems)
+    : m_num_elems     (num_elems)
+    , m_tv_policy     (Homme::get_default_team_policy<ExecSpace>(1))
+    , m_tu_ne         (Homme::get_default_team_policy<ExecSpace>(1))
+    , m_tu_ne_qsize   (Homme::get_default_team_policy<ExecSpace>(1))
+    , m_prev_num_elems(0)
+    , m_prev_qsize    (0)
+  {}
+
+  void setup ()
+  {
+    m_geometry      = Context::singleton().get<ElementsGeometry>();
+    assert(m_num_elems == m_geometry.num_elems()); // Sanity check
+    m_derived_state = Context::singleton().get<ElementsDerivedState>();
+    m_tracers       = Context::singleton().get<Tracers>();
+    m_deriv         = Context::singleton().get<ReferenceElement>().get_deriv();
+    m_hvcoord       = Context::singleton().get<HybridVCoord>();
+    m_sphere_ops    = Context::singleton().get<SphereOperators>();
+
+    m_kernel_will_run_limiters = false;
+    m_tpref.prefer_larger_team = true;
+  }
+
   void reset (const SimulationParams& params) {
     m_data.rhs_viss = 0.0;
     m_data.qsize = params.qsize;
@@ -143,7 +168,7 @@ public:
     if (m_data.limiter_option == 4) {
       std::string msg = "[EulerStepFunctorImpl::reset]:";
       msg += "limiter_option=4 is not yet supported in C++. ";
-      msg += "The program should have errored out earlier though. Plese, investigate.";
+      msg += "The program should have errored out earlier though. Please, investigate.";
       Errors::runtime_abort(msg,Errors::err_not_implemented);
     }
 
@@ -1138,7 +1163,7 @@ KOKKOS_INLINE_FUNCTION void SerialLimiter<ExecSpace>
         }
       }
     }
-    
+
     VECTOR_SIMD_LOOP forlev {
       if (f[lev] != 0)
         f[lev] = addmass[lev] / f[lev];

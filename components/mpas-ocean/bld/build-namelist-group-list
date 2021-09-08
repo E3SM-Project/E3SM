@@ -12,6 +12,7 @@ my @groups = qw(run_modes
                 gm_eddy_parameterization
                 rayleigh_damping
                 cvmix
+                gotm
                 forcing
                 coupling
                 shortwaveradiation
@@ -27,7 +28,7 @@ my @groups = qw(run_modes
                 eos_wright
                 split_timestep_share
                 split_explicit_ts
-                semi_implicit_ts
+                split_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug

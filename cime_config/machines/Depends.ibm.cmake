@@ -7,10 +7,6 @@ foreach(ITEM IN LISTS SSOBJS)
   e3sm_add_flags("${ITEM}" "-qsmallstack")
 endforeach()
 
-if (compile_threaded)
-  e3sm_add_flags("${CIMESRC_PATH}/share/util/shr_reprosum_mod.F90" "-qsmp=noauto:noomp")
-endif()
-
 # These routines benefit from -qnostrict without violating the bfb test
 set(PERFOBJS
   homme/src/share/prim_advection_base.F90
@@ -33,6 +29,10 @@ set(NOINLINE
   eam/src/physics/clubb/advance_xm_wpxp_module.F90
   eam/src/physics/clubb/advance_wp2_wp3_module.F90)
 
+foreach(ITEM IN LISTS NOINLINE)
+  e3sm_add_flags("${ITEM}" "-Q!")
+endforeach()
+
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
     e3sm_add_flags("${ITEM}" "-qnostrict")
@@ -46,9 +46,23 @@ endif()
 
 # These files take long time to compile with default optimization flags.
 # Reducing optimization gives <1min build-times and little impact on model run time.
-# begin
 list(APPEND NOOPT_FILES ${CMAKE_CURRENT_BINARY_DIR}/buffer.F90)
 
-foreach(ITEM IN LISTS NOINLINE)
-  e3sm_add_flags("${ITEM}" "-Q!")
-endforeach()
+# xlf2008_r: qsmp and O0 are incompatible. Option O0 is ignored.
+set(NOQSMP
+  ${CMAKE_CURRENT_BINARY_DIR}/buffer.F90
+  eam/src/dynamics/eul/dyn_comp.F90
+  eam/src/dynamics/fv/dyn_comp.F90
+  eam/src/dynamics/se/dyn_comp.F90
+  eam/src/dynamics/sld/dyn_comp.F90
+  eam/src/physics/cam/microp_aero.F90
+
+  # These take >28min with -qsmp
+  eam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90
+  eam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90
+)
+if (compile_threaded)
+  foreach(ITEM IN LISTS NOQSMP)
+    e3sm_add_flags("${ITEM}" "-qnosmp")
+  endforeach()
+endif()

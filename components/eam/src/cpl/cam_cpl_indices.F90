@@ -13,6 +13,9 @@ module cam_cpl_indices
   integer :: index_a2x_Sa_z            ! bottom atm level height
   integer :: index_a2x_Sa_u            ! bottom atm level zon wind
   integer :: index_a2x_Sa_v            ! bottom atm level mer wind
+  integer :: index_a2x_Sa_wsresp       ! first order response of wind to stress
+  integer :: index_a2x_Sa_tau_est      ! estimated stress in equilibrium with ubot/vbot
+  integer :: index_a2x_Sa_ugust        ! magnitude of gustiness at surface
   integer :: index_a2x_Sa_tbot         ! bottom atm level temp
   integer :: index_a2x_Sa_ptem         ! bottom atm level pot temp
   integer :: index_a2x_Sa_shum         ! bottom atm level spec hum
@@ -76,6 +79,7 @@ module cam_cpl_indices
   integer :: index_x2a_Fall_fco2_lnd   ! co2 flux from land   
   integer :: index_x2a_Faoo_fco2_ocn   ! co2 flux from ocean  
   integer :: index_x2a_Faoo_fdms_ocn   ! dms flux from ocean
+  integer :: index_x2a_Faoo_h2otemp    ! water temperature heat flux from ocean  
   integer :: index_x2a_So_ustar	       ! surface friction velocity in ocean
   integer :: index_x2a_So_re           ! square of atm/ocn exch. coeff 
   integer :: index_x2a_So_ssq          ! surface saturation specific humidity in ocean 
@@ -135,6 +139,7 @@ contains
     index_x2a_Fall_fco2_lnd = mct_avect_indexra(x2a,'Fall_fco2_lnd',perrWith='quiet')
     index_x2a_Faoo_fco2_ocn = mct_avect_indexra(x2a,'Faoo_fco2_ocn',perrWith='quiet')
     index_x2a_Faoo_fdms_ocn = mct_avect_indexra(x2a,'Faoo_fdms_ocn',perrWith='quiet')
+    index_x2a_Faoo_h2otemp  = mct_avect_indexra(x2a,'Faoo_h2otemp',perrWith='quiet')
 
     if (shr_megan_mechcomps_n>0) then
        index_x2a_Fall_flxvoc = mct_avect_indexra(x2a,trim(shr_megan_fields_token))
@@ -151,6 +156,9 @@ contains
     index_a2x_Sa_z          = mct_avect_indexra(a2x,'Sa_z')
     index_a2x_Sa_u          = mct_avect_indexra(a2x,'Sa_u')
     index_a2x_Sa_v          = mct_avect_indexra(a2x,'Sa_v')
+    index_a2x_Sa_wsresp     = mct_avect_indexra(a2x,'Sa_wsresp', perrWith='quiet')
+    index_a2x_Sa_tau_est    = mct_avect_indexra(a2x,'Sa_tau_est', perrWith='quiet')
+    index_a2x_Sa_ugust      = mct_avect_indexra(a2x,'Sa_ugust', perrWith='quiet')
     index_a2x_Sa_tbot       = mct_avect_indexra(a2x,'Sa_tbot')
     index_a2x_Sa_ptem       = mct_avect_indexra(a2x,'Sa_ptem')
     index_a2x_Sa_pbot       = mct_avect_indexra(a2x,'Sa_pbot')

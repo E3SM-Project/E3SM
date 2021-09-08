@@ -7,7 +7,6 @@ module RootDynamicsMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_time_manager    , only : get_step_size
   use elm_varpar          , only : nlevsoi, nlevgrnd
   use elm_varctl          , only : use_vertsoilc
   use decompMod           , only : bounds_type
@@ -22,7 +21,7 @@ module RootDynamicsMod
   use CropType            , only : crop_type
   use SimpleMathMod       , only : array_normalization
   use RootBiophysMod      , only : init_vegrootfr
-  use ColumnType          , only : col_pp 
+  use ColumnType          , only : col_pp
   use VegetationType      , only : veg_pp
   use ColumnDataType      , only : col_ns
   use VegetationDataType  , only : veg_ef, veg_cs, veg_cf
@@ -39,7 +38,7 @@ contains
   !-----------------------------------------------------------------------
   !
   subroutine RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       canopystate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
+       canopystate_vars,  &
        cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars)
     !
     ! !DESCRIPTION:
@@ -52,6 +51,7 @@ contains
 
 
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds             ! bounds
     integer                  , intent(in)    :: num_soilc
     integer                  , intent(in)    :: filter_soilc(:)
@@ -59,9 +59,6 @@ contains
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil pfts
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)    , intent(in)    :: carbonflux_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars !
     type(crop_type)          , intent(in)    :: crop_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
@@ -120,9 +117,6 @@ contains
          altmax_lastyear         => canopystate_vars%altmax_lastyear_col         & ! Input: [real(r8) (:)   ]  maximum annual depth of thaw
          )
 
-      ! set time steps
-      dt = get_step_size()
-
       !initialize to 0
       w_limit(bounds%begp:bounds%endp)              = 0._r8
       sumrswa(bounds%begp:bounds%endp)              = 0._r8
@@ -148,7 +142,7 @@ contains
                end if
             else
                ! this can be changed to any depth (i.e. the maximum soil depth)
-               root_depth(p) = min(altmax_lastyear(c), min(zi(c,nlevsoi), root_dmx(ivt(p))))
+               root_depth(p) = min(altmax_lastyear(c), min(zi(c,nlevbed(c)), root_dmx(ivt(p))))
             end if
          else
             root_depth(p) = 0._r8
@@ -212,7 +206,7 @@ contains
       !--------------------------------------------------------------------
 
       do f = 1, num_soilp
-         p = filter_soilp(f) 
+         p = filter_soilp(f)
          c = pcolumn(p)
          new_growth = 0._r8
          new_croot_growth = 0._r8

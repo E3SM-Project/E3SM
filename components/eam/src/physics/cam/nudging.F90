@@ -1186,7 +1186,7 @@ contains
            end if
       case default
            call endrun('nudging_init error: nudge method should &
-                        be either Step, Linear or IMT...')
+                       &be either Step, Linear or IMT...')
    end select        
 
    ! End Routine

@@ -133,8 +133,8 @@ subroutine scalar_momentum_tend(ncrms)
    do icrm = 1 , ncrms
       factor_xy = 1._crm_rknd/real(nx*ny,crm_rknd)
 
-      call scalar_momentum_pgf(ncrms,icrm,u_esmt(icrm,:,:,:),u_esmt_pgf_3D)
-      call scalar_momentum_pgf(ncrms,icrm,v_esmt(icrm,:,:,:),v_esmt_pgf_3D)
+      call scalar_momentum_pgf(ncrms,icrm,u_esmt(icrm,1:nx,1:ny,1:nzm),u_esmt_pgf_3D)
+      call scalar_momentum_pgf(ncrms,icrm,v_esmt(icrm,1:nx,1:ny,1:nzm),v_esmt_pgf_3D)
 
       ! Add PGF tendency
       do k=1,nzm

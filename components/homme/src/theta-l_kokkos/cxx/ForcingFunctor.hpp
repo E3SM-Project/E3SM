@@ -33,7 +33,16 @@ public:
   struct TagTracersPost {};
 
   ForcingFunctor ()
-   : m_policy_states(1,1)       // Need to init in constructor. Fix sizes in the body.
+   : m_state(Context::singleton().get<ElementsState>())
+   , m_forcing(Context::singleton().get<ElementsForcing>())
+   , m_geometry(Context::singleton().get<ElementsGeometry>())
+   , m_tracers(Context::singleton().get<Tracers>())
+   , m_hvcoord(Context::singleton().get<HybridVCoord>())
+   , m_num_state_elems(m_state.num_elems())
+   , m_num_tracer_elems(m_tracers.num_elems())
+   , m_num_tracers(m_tracers.num_tracers())
+   , is_setup(true)
+   , m_policy_states(1,1)       // Need to init in constructor. Fix sizes in the body.
    , m_policy_tracers_pre(1,1)
    , m_policy_tracers(1,1)
    , m_policy_tracers_post(1,1)
@@ -42,24 +51,6 @@ public:
    , m_tu_tracers(m_policy_tracers)
    , m_tu_tracers_post(m_policy_tracers_post)
   {
-    const auto& c = Context::singleton();
-    const auto& p = c.get<SimulationParams>();
-
-    m_hydrostatic = p.theta_hydrostatic_mode;
-    m_qsize = p.qsize;
-
-    m_state    = c.get<ElementsState>();
-    m_forcing  = c.get<ElementsForcing>();
-    m_geometry = c.get<ElementsGeometry>();
-    m_tracers  = c.get<Tracers>();
-    m_hvcoord  = c.get<HybridVCoord>();
-
-    // TODO: this may change, depending on the simulation params
-    m_adjust_ps = true;
-
-    m_eos.init(m_hydrostatic,m_hvcoord);
-    m_elem_ops.init(m_hvcoord);
-
     // Check everything is init-ed
     assert (m_state.num_elems()>0);
     assert (m_forcing.num_elems()>0);
@@ -67,11 +58,60 @@ public:
     assert (m_geometry.num_elems()>0);
     assert (m_hvcoord.m_inited);
 
+    init_params();
+
     // Create the team policy
-    m_policy_states = Homme::get_default_team_policy<ExecSpace,TagStates>(m_state.num_elems());
-    m_policy_tracers_pre = Homme::get_default_team_policy<ExecSpace,TagTracersPre>(m_tracers.num_elems());
-    m_policy_tracers = Homme::get_default_team_policy<ExecSpace,TagTracers>(m_tracers.num_elems()*m_tracers.num_tracers());
-    m_policy_tracers_post = Homme::get_default_team_policy<ExecSpace,TagTracersPost>(m_tracers.num_elems());
+    init_team_policies();
+  }
+
+  // This constructor is useful for using buffer functionality without
+  // having all other Functor information available.
+  // If this constructor is used, the setup() function must be called
+  // before using any other ForcingFunctor functions.
+  ForcingFunctor (const int num_state_elems, const int num_tracer_elems, const int num_tracers)
+    : m_hvcoord(Context::singleton().get<HybridVCoord>())
+    , m_num_state_elems(num_state_elems)
+    , m_num_tracer_elems(num_tracer_elems)
+    , m_num_tracers(num_tracers)
+    , is_setup(false)
+    , m_policy_states(1,1)       // Need to init in constructor. Fix sizes in the body.
+    , m_policy_tracers_pre(1,1)
+    , m_policy_tracers(1,1)
+    , m_policy_tracers_post(1,1)
+    , m_tu_states(m_policy_states)
+    , m_tu_tracers_pre(m_policy_tracers_pre)
+    , m_tu_tracers(m_policy_tracers)
+    , m_tu_tracers_post(m_policy_tracers_post)
+  {
+    assert (m_hvcoord.m_inited);
+
+    init_params();
+
+    // Create the team policy
+    init_team_policies();
+  }
+
+  void init_params ()
+  {
+    const auto& c = Context::singleton();
+    const auto& p = c.get<SimulationParams>();
+
+    m_hydrostatic = p.theta_hydrostatic_mode;
+    m_qsize = p.qsize;
+
+    // TODO: this may change, depending on the simulation params
+    m_adjust_ps = true;
+
+    m_eos.init(m_hydrostatic,m_hvcoord);
+    m_elem_ops.init(m_hvcoord);
+  }
+
+  void init_team_policies ()
+  {
+    m_policy_states = Homme::get_default_team_policy<ExecSpace,TagStates>(m_num_state_elems);
+    m_policy_tracers_pre = Homme::get_default_team_policy<ExecSpace,TagTracersPre>(m_num_tracer_elems);
+    m_policy_tracers = Homme::get_default_team_policy<ExecSpace,TagTracers>(m_num_tracer_elems*m_num_tracers);
+    m_policy_tracers_post = Homme::get_default_team_policy<ExecSpace,TagTracersPost>(m_num_tracer_elems);
 
     m_tu_states       = TeamUtils<ExecSpace>(m_policy_states);
     m_tu_tracers_pre  = TeamUtils<ExecSpace>(m_policy_tracers_pre);
@@ -79,9 +119,36 @@ public:
     m_tu_tracers_post = TeamUtils<ExecSpace>(m_policy_tracers_post);
   }
 
+  bool setup_needed () { return !is_setup; }
+
+  void setup ()
+  {
+    assert(!is_setup);
+
+    const auto& c = Context::singleton();
+
+    m_state    = c.get<ElementsState>();
+    m_forcing  = c.get<ElementsForcing>();
+    m_geometry = c.get<ElementsGeometry>();
+    m_tracers  = c.get<Tracers>();
+
+    // Check everything is init-ed
+    assert (m_state.num_elems()>0);
+    assert (m_forcing.num_elems()>0);
+    assert (m_tracers.num_elems()>0);
+    assert (m_geometry.num_elems()>0);
+
+    // Sanity checks
+    assert(m_num_state_elems == m_state.num_elems());
+    assert(m_num_tracer_elems == m_tracers.num_elems());
+    assert(m_num_tracers == m_tracers.num_tracers());
+
+    is_setup = true;
+  }
+
   int requested_buffer_size () const {
     const int nslots = m_tu_tracers.get_num_ws_slots();
-    const int nelems = m_state.num_elems();
+    const int nelems = m_num_state_elems;
     constexpr int mid_size = NP*NP*NUM_LEV*VECTOR_SIZE;
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
@@ -91,23 +158,22 @@ public:
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
     const int num_slots = m_tu_tracers.get_num_ws_slots();
-    const int num_elems = m_state.num_elems();
 
     constexpr int mid_size = NP*NP*NUM_LEV;
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
 
-    m_tn1 = decltype(m_tn1)(mem,num_elems);
-    mem += mid_size*num_elems;
+    m_tn1 = decltype(m_tn1)(mem,m_num_state_elems);
+    mem += mid_size*m_num_state_elems;
 
-    m_dp_adj = decltype(m_dp_adj)(mem,num_elems);
-    mem += mid_size*num_elems;
+    m_dp_adj = decltype(m_dp_adj)(mem,m_num_state_elems);
+    mem += mid_size*m_num_state_elems;
 
-    m_pnh = decltype(m_pnh)(mem,num_elems);
-    mem += mid_size*num_elems;
+    m_pnh = decltype(m_pnh)(mem,m_num_state_elems);
+    mem += mid_size*m_num_state_elems;
 
-    m_exner = decltype(m_exner)(mem,num_elems);
-    mem += mid_size*num_elems;
+    m_exner = decltype(m_exner)(mem,m_num_state_elems);
+    mem += mid_size*m_num_state_elems;
 
     m_Rstar = decltype(m_Rstar)(mem,num_slots);
     mem += mid_size*num_slots;
@@ -116,6 +182,9 @@ public:
   }
 
   void states_forcing (const Real dt, const int np1) {
+    // The Functor needs to be fully setup to use this function
+    assert (is_setup);
+
     m_dt = dt;
     m_np1 = np1;
 
@@ -167,6 +236,9 @@ public:
   }
 
   void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const MoistDry moisture) {
+    // The Functor needs to be fully setup to use this function
+    assert (is_setup);
+
     m_dt = dt;
     m_np1 = np1;
     m_np1_qdp = np1_qdp;
@@ -446,6 +518,12 @@ private:
   HybridVCoord      m_hvcoord;
   ElementOps        m_elem_ops;
   EquationOfState   m_eos;
+
+  const int m_num_state_elems;
+  const int m_num_tracer_elems;
+  const int m_num_tracers;
+
+  bool is_setup;
 
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_Rstar;
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_dp_adj;

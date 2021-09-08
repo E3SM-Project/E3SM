@@ -1,0 +1,306 @@
+	<nml_record name="AM_conservationCheck">
+		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member conservationCheck is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput" units="unitless"
+			description="Name of the stream that the conservationCheck analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value="true" units="unitless"
+			description="Logical flag determining if the conservation check is written to the log file."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart" units="unitless"
+			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
+			possible_values="A restart stream with state of the conservation check."
+		/>
+	</nml_record>
+	<packages>
+		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
+	</packages>
+	<var_struct name="conservationCheckAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="performConservationPrecompute" type="integer" dimensions="" units=""
+			description="Perform the conservation precompute" default_value="1"
+		/>
+		<var name="nAccumulate" type="integer" dimensions="" units=""
+			description="Number of time-steps accumulated" default_value="1"
+		/>
+		<var name="cellInHemisphere" type="integer" dimensions="nHemispheres nCells" units=""
+			description="Hemisphere flag"
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckAreaAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="earthArea" type="real" dimensions="" units="m2"
+			description="area of the whole earth"
+		/>
+		<var name="domainArea" type="real" dimensions="nHemispheres" units="m2"
+			description="accumulated domain area"
+		/>
+		<var name="accumulatedSeaIceArea" type="real" dimensions="nHemispheres Time" units="m2"
+			description="accumulated sea ice area"
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckEnergyAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialEnergy" type="real" dimensions="nHemispheres Time" units="J"
+			description="Total initial energy of ice and snow"
+		/>
+		<var name="finalEnergy" type="real" dimensions="nHemispheres Time" units="J"
+			description="Total final energy of ice and snow"
+		/>
+		<var name="energyChange" type="real" dimensions="nHemispheres Time" units="J"
+			description="Total energy change of ice and snow during time step"
+		/>
+		<var name="energyChangeFlux" type="real" dimensions="nHemispheres Time" units="W/m2"
+			description="Total energy change flux of ice and snow during time step"
+		/>
+		<var name="netEnergyFlux" type="real" dimensions="nHemispheres Time" units="W"
+			description="Net energy flux to ice"
+		/>
+		<var name="absoluteEnergyError" type="real" dimensions="nHemispheres Time" units="J"
+			description="Absolute energy conservation error"
+		/>
+		<var name="relativeEnergyError" type="real" dimensions="nHemispheres Time" units="None"
+			description="Relative energy conservation error"
+		/>
+		<var name="energyConsSurfaceHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsAbsorbedShortwaveFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsOceanShortwaveFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsSensibleHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsLongwaveUp" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsLongwaveDown" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsOceanHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsFreezingPotential" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsSnowfallHeat" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsLatentHeat" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckMassAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialMass" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total initial mass of ice and snow"
+		/>
+		<var name="finalMass" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total final mass of ice and snow"
+		/>
+		<var name="massChange" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total mass change of ice and snow during time step"
+		/>
+		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+			description="Total mass change flux of ice and snow during time step"
+		/>
+		<var name="netMassFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Net mass flux to ice"
+		/>
+		<var name="absoluteMassError" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Absolute mass conservation error"
+		/>
+		<var name="relativeMassError" type="real" dimensions="nHemispheres Time" units="None"
+			description="Relative mass conservation error"
+		/>
+		<var name="massConsRainfallRate" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="massConsSnowfallRate" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="massConsEvaporation" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="massConsFreshWater" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="massConsFrazilWater" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckSaltAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialSalt" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total initial salt of ice and snow"
+		/>
+		<var name="finalSalt" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total final salt of ice and snow"
+		/>
+		<var name="saltChange" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total salt change of ice and snow during time step"
+		/>
+		<var name="saltChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+			description="Total salt change flux of ice and snow during time step"
+		/>
+		<var name="netSaltFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Net salt flux to ice"
+		/>
+		<var name="absoluteSaltError" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Absolute salt conservation error"
+		/>
+		<var name="relativeSaltError" type="real" dimensions="nHemispheres Time" units="None"
+			description="Relative salt conservation error"
+		/>
+		<var name="saltConsOceanSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="saltConsFrazilSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialCarbon" type="real" dimensions="nHemispheres Time" units="mmol"
+			description="Total initial carbon of ice and snow"
+		/>
+		<var name="finalCarbon" type="real" dimensions="nHemispheres Time" units="mmol"
+			description="Total final carbon of ice and snow"
+		/>
+		<var name="carbonChange" type="real" dimensions="nHemispheres Time" units="mmol"
+			description="Total carbon change of ice and snow during time step"
+		/>
+		<var name="carbonChangeFlux" type="real" dimensions="nHemispheres Time" units="mmol/m2s"
+			description="Total carbon change flux of ice and snow during time step"
+		/>
+		<var name="netCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
+			description="Net carbon flux to sea ice"
+		/>
+		<var name="absoluteCarbonError" type="real" dimensions="nHemispheres Time" units="mmol"
+			description="Absolute carbon conservation error"
+		/>
+		<var name="relativeCarbonError" type="real" dimensions="nHemispheres Time" units="None"
+			description="Relative carbon conservation error"
+		/>
+		<var name="carbonConsOceanCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
+			description="Total ocean carbon flux, positive into the ocean"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="conservationCheckOutput" type="output"
+				filename_template="analysis_members/conservationCheck.nc"
+				filename_interval="none"
+				output_interval="00-00-00_01:00:00"
+				packages="conservationCheckAMPKG"
+				clobber_mode="replace_files"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="earthArea"/>
+			<var name="domainArea"/>
+			<var name="accumulatedSeaIceArea"/>
+			<var name="initialEnergy"/>
+			<var name="finalEnergy"/>
+			<var name="energyChange"/>
+			<var name="energyChangeFlux"/>
+			<var name="energyConsSurfaceHeatFlux"/>
+			<var name="energyConsAbsorbedShortwaveFlux"/>
+			<var name="energyConsOceanShortwaveFlux"/>
+			<var name="energyConsSensibleHeatFlux"/>
+			<var name="energyConsLongwaveUp"/>
+			<var name="energyConsLongwaveDown"/>
+			<var name="energyConsOceanHeatFlux"/>
+			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsSnowfallHeat"/>
+			<var name="energyConsLatentHeat"/>
+			<var name="netEnergyFlux"/>
+			<var name="absoluteEnergyError"/>
+			<var name="relativeEnergyError"/>
+			<var name="initialMass"/>
+			<var name="finalMass"/>
+			<var name="massChange"/>
+			<var name="massChangeFlux"/>
+			<var name="massConsRainfallRate"/>
+			<var name="massConsSnowfallRate"/>
+			<var name="massConsEvaporation"/>
+			<var name="massConsFreshWater"/>
+			<var name="massConsFrazilWater"/>
+			<var name="netMassFlux"/>
+			<var name="absoluteMassError"/>
+			<var name="relativeMassError"/>
+			<var name="initialSalt"/>
+			<var name="finalSalt"/>
+			<var name="saltChange"/>
+			<var name="saltChangeFlux"/>
+			<var name="saltConsOceanSaltFlux"/>
+			<var name="saltConsFrazilSaltFlux"/>
+			<var name="netSaltFlux"/>
+			<var name="absoluteSaltError"/>
+			<var name="relativeSaltError"/>
+			<var name="initialCarbon"/>
+			<var name="finalCarbon"/>
+			<var name="carbonChange"/>
+			<var name="carbonChangeFlux"/>
+			<var name="carbonConsOceanCarbonFlux"/>
+			<var name="netCarbonFlux"/>
+			<var name="absoluteCarbonError"/>
+			<var name="relativeCarbonError"/>
+		</stream>
+
+		<stream name="conservationCheckRestart_contents"
+				type="none"
+				filename_template="conservationCheckRestart_variables.nc"
+				packages="conservationCheckAMPKG"
+				immutable="true">
+			<var name="performConservationPrecompute"/>
+			<var name="accumulatedSeaIceArea"/>
+			<var name="initialEnergy"/>
+			<var name="energyConsSurfaceHeatFlux"/>
+			<var name="energyConsAbsorbedShortwaveFlux"/>
+			<var name="energyConsOceanShortwaveFlux"/>
+			<var name="energyConsSensibleHeatFlux"/>
+			<var name="energyConsLongwaveUp"/>
+			<var name="energyConsLongwaveDown"/>
+			<var name="energyConsOceanHeatFlux"/>
+			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsSnowfallHeat"/>
+			<var name="energyConsLatentHeat"/>
+			<var name="initialMass"/>
+			<var name="massConsRainfallRate"/>
+			<var name="massConsSnowfallRate"/>
+			<var name="massConsEvaporation"/>
+			<var name="massConsFreshWater"/>
+			<var name="massConsFrazilWater"/>
+			<var name="initialSalt"/>
+			<var name="saltConsOceanSaltFlux"/>
+			<var name="saltConsFrazilSaltFlux"/>
+			<var name="initialCarbon"/>
+			<var name="carbonConsOceanCarbonFlux"/>
+		</stream>
+
+		<stream name="conservationCheckRestart"
+				type="input;output"
+				filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				packages="conservationCheckAMPKG"
+				input_interval="initial_only"
+				output_interval="stream:restart:output_interval"
+				runtime_format="single_file"
+				immutable="true">
+			<stream name="conservationCheckRestart_contents"/>
+		</stream>
+	</streams>
