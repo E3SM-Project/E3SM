@@ -1,5 +1,10 @@
 # Need to add Fortran as a language, since that is what the shr source is in
-enable_language(Fortran)
+check_language(Fortran)
+if(CMAKE_Fortran_COMPILER)
+    enable_language(Fortran)
+else()
+    message(STATUS "No Fortran support")
+endif()
 
 # Set variables needed for processing genf90 templates
 set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
@@ -9,14 +14,6 @@ set(ENABLE_GENF90 True)
 include(genf90_utils)
 include(Sourcelist_utils)
 
-# NOTE: I should be able to do this:
-#    # Note that this sets the share_sources variable to the list of source files we need to build
-#    add_subdirectory(${SCREAM_BASE_DIR}/../../share/util ${CMAKE_CURRENT_BINARY_DIR}/share_util_build)
-# However, that did not seem to add the fortran sources derived from the genf90 templates to the targets.
-# Instead, try explicitly adding sources and process the genf90 templates ourselves.
-# TODO: Figure out why the CMakeLists.txt and the cmake macros there do not handle this correctly.
-# Note also that our E3SM cmake build does not use the CMakeLists.txt in the share/util directory either
-# apparently, opting to do this manually as well.
 # GENF90_SOURCE lists source files we will need to run through the genf90 perl script
 set (GENF90_SOURCE 
     ${SCREAM_BASE_DIR}/../../share/util/shr_infnan_mod.F90.in
