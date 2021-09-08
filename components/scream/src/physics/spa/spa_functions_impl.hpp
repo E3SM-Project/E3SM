@@ -144,7 +144,6 @@ void SPAFunctions<S,D>
     auto t_norm = (t_now-t_beg)/t_len;
     /* Determine PS for the source data at this time */
     auto ps_src = linear_interp(ps_beg_sub,ps_end_sub,t_norm);
-    {
     /* Reconstruct the vertical pressure profile for the data and time interpolation
      * of the data.
      * Note: CCN3 has the same dimensions as pressure so we handle that time interpolation
@@ -160,8 +159,6 @@ void SPAFunctions<S,D>
         ccn3_src_sub(k) = linear_interp(ccn3_beg_sub(k),ccn3_end_sub(k),t_norm);
     });
     team.team_barrier();
-    }
-    {
     /* Loop over all SW variables with nswbands */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
@@ -186,8 +183,6 @@ void SPAFunctions<S,D>
       });
     });
     team.team_barrier();
-    }
-    {
     /* Loop over all LW variables with nlwbands */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
@@ -202,7 +197,6 @@ void SPAFunctions<S,D>
       });
     });
     team.team_barrier();
-    }
   });
   Kokkos::fence();
 
@@ -216,7 +210,7 @@ void SPAFunctions<S,D>
   /* Parallel loop strategy:
    * 1. Loop over all simulation columns (i index)
    * 2. Where applicable, loop over all aerosol bands (n index)
-   */ 
+   */
   const Int most_bands = std::max(nlwbands, nswbands);
   typename LIV::TeamPolicy band_policy(ncols_atm, ekat::OnGpu<typename LIV::ExeSpace>::value ? most_bands : 1, VertInterp.km2_pack());
   Kokkos::parallel_for("vertical-interp-spa",
@@ -224,16 +218,25 @@ void SPAFunctions<S,D>
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
     const int i = team.league_rank();
     /* Setup the linear interpolater for this column. */
-    VertInterp.setup(team,
-                     ekat::subview(p_src,i),
-                     ekat::subview(pressure_state.pmid,i));
+    if (team.team_rank()==0) {
+      const auto tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
+    
+      VertInterp.setup(team,tvr,
+                       ekat::subview(p_src,i),
+                       ekat::subview(pressure_state.pmid,i));
+    }
     team.team_barrier();
     /* Conduct vertical interpolation for the 2D variable CCN3 */
-    VertInterp.lin_interp(team,
-                          ekat::subview(p_src,i),
-                          ekat::subview(pressure_state.pmid,i),
-                          ekat::subview(ccn3_src,i),
-                          ekat::subview(data_out.CCN3,i));
+    if (team.team_rank()==0) {
+      const auto tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
+    
+      VertInterp.lin_interp(team,tvr,
+                            ekat::subview(p_src,i),
+                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(ccn3_src,i),
+                            ekat::subview(data_out.CCN3,i));
+    }
+    team.team_barrier();
     /* Conduct vertical interpolation for the LW banded data - nlwbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {

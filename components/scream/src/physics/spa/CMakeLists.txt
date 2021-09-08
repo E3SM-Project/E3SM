@@ -10,6 +10,4 @@ set(CLDFRAC_HEADERS
 )
 
 add_library(spa ${CLDFRAC_SRCS})
-target_include_directories(spa PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
 target_link_libraries(spa physics_share scream_share)
-target_compile_options(spa PUBLIC)
