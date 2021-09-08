@@ -21,6 +21,9 @@ FortranData::Ptr make_mixed (const Int ncol, const Int nlev) {
     // subsequently modified here. For columns i > 0, introduce some small
     // variations.
 
+    // nccn_presribed for the cases where do_prescribed_CCN=true
+    for (k=0; k < nk; ++k) d.nccn_prescribed(i,k) = (100.0 + i/ncol - k/nk) * 1e6;
+
     // max cld at ~700mb, decreasing to 0 at 900mb.
     for (k = 0; k < 15; ++k) d.qc(i,nk-20+k) = 1e-4*(1 - double(k)/14);
     for (k = 0; k < nk; ++k) d.nc(i,k) = 1e6;
