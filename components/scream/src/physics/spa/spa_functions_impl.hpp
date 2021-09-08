@@ -236,7 +236,6 @@ void SPAFunctions<S,D>
                             ekat::subview(ccn3_src,i),
                             ekat::subview(data_out.CCN3,i));
     }
-    team.team_barrier();
     /* Conduct vertical interpolation for the LW banded data - nlwbands (n index) */
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
