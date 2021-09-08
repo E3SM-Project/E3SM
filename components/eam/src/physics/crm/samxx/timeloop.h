@@ -19,6 +19,8 @@
 #include "advect_all_scalars.h"
 #include "uvw.h"
 #include "microphysics.h"
+#include "micro_p3.h"
+#include "shoc.h"
 #include "accelerate_crm.h"
 #include "diagnose.h"
 #include "post_icycle.h"

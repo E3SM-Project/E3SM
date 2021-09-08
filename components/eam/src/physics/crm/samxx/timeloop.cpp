@@ -161,6 +161,8 @@ void timeloop() {
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
         micro_proc();
+        micro_p3_proc();
+        shoc_proc();
       }
 
       //-----------------------------------------------------------

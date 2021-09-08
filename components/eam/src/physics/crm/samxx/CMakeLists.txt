@@ -7,6 +7,8 @@ file(GLOB F90_SRC   cpp_interface_mod.F90 fft.F90 params.F90 fftpack5.F90 fftpac
 file(GLOB CXX_SRC   *.cpp)
 file(GLOB SAMXX_SRC ${CXX_SRC} ${F90_SRC})
 
+SET( CMAKE_BUILD_TYPE Debug ... FORCE )
+
 # samxx will be a static library
 add_library(samxx STATIC ${SAMXX_SRC})
 if (${USE_CUDA})
@@ -14,7 +16,7 @@ if (${USE_CUDA})
   set_target_properties(samxx PROPERTIES LINKER_LANGUAGE CUDA CUDA_SEPARABLE_COMPILATION OFF CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 # samxx needs to link with the yakl library
-target_link_libraries(samxx yakl)
+target_link_libraries(samxx yakl ekat p3 shoc physics_share scream_share)
 target_compile_features(samxx PUBLIC cxx_std_14)
 
 # Set fortran compiler flags
