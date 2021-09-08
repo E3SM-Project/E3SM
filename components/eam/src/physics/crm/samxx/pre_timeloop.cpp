@@ -1,162 +1,196 @@
 #include "pre_timeloop.h"
 
 void pre_timeloop() {
-  auto &latitude0                = :: latitude0;
-  auto &longitude0               = :: longitude0;
-  auto &lat0                     = :: lat0;
-  auto &long0                    = :: long0;
-  auto &idt_gl                   = :: idt_gl;
-  auto &factor_xy                = :: factor_xy;
-  auto &crm_rad_temperature      = :: crm_rad_temperature;
-  auto &crm_rad_qv               = :: crm_rad_qv;
-  auto &crm_rad_qc               = :: crm_rad_qc;
-  auto &crm_rad_qi               = :: crm_rad_qi;
-  auto &crm_rad_cld              = :: crm_rad_cld;
-  auto &crm_clear_rh             = :: crm_clear_rh;
-  auto &crm_clear_rh_cnt         = :: crm_clear_rh_cnt;
-  auto &bflx                     = :: bflx;
-  auto &wnd                      = :: wnd;
-  auto &crm_input_bflxls         = :: crm_input_bflxls;
-  auto &crm_input_wndls          = :: crm_input_wndls;
-  auto &fcor                     = :: fcor;
-  auto &fcorz                    = :: fcorz;
-  auto &zi                       = :: zi;
-  auto &crm_input_zint           = :: crm_input_zint;
-  auto &presi                    = :: presi;
-  auto &crm_input_pint           = :: crm_input_pint;
-  auto &adzw                     = :: adzw;
-  auto &fcory                    = :: fcory;
-  auto &fcorzy                   = :: fcorzy;
-  auto &latitude                 = :: latitude;
-  auto &longitude                = :: longitude;
-  auto &z                        = :: z;
-  auto &crm_input_zmid           = :: crm_input_zmid;
-  auto &crm_input_pmid           = :: crm_input_pmid;
-  auto &pres                     = :: pres;
-  auto &prespot                  = :: prespot;
-  auto &bet                      = :: bet;
-  auto &crm_input_tl             = :: crm_input_tl;
-  auto &gamaz                    = :: gamaz;
-  auto &dz                       = :: dz;
-  auto &adz                      = :: adz;
-  auto &rho                      = :: rho;
-  auto &crm_input_pdel           = :: crm_input_pdel;
-  auto &u                        = :: u;
-  auto &v                        = :: v;
-  auto &w                        = :: w;
-  auto &tabs                     = :: tabs;
-  auto &crm_state_u_wind         = :: crm_state_u_wind;
-  auto &crm_state_v_wind         = :: crm_state_v_wind;
-  auto &crm_state_w_wind         = :: crm_state_w_wind;
-  auto &crm_state_temperature    = :: crm_state_temperature; 
-  auto &micro_field              = :: micro_field;
-  auto &crm_state_qt             = :: crm_state_qt;
-  auto &crm_state_qp             = :: crm_state_qp;
-  auto &crm_state_qn             = :: crm_state_qn;
-  auto &qn                       = :: qn;
-  auto &colprec                  = :: colprec;
-  auto &colprecs                 = :: colprecs;
-  auto &u0                       = :: u0;
-  auto &v0                       = :: v0;
-  auto &t0                       = :: t0;
-  auto &t00                      = :: t00;
-  auto &tabs0                    = :: tabs0;
-  auto &q0                       = :: q0;
-  auto &qv0                      = :: qv0;
-  auto &qn0                      = :: qn0;
-  auto &qp0                      = :: qp0;
-  auto &tke0                     = :: tke0;
-  auto &t                        = :: t;
-  auto &qcl                      = :: qcl;
-  auto &qci                      = :: qci;
-  auto &qpl                      = :: qpl;
-  auto &qpi                      = :: qpi;
-  auto &sgs_field                = :: sgs_field;
-  auto &uln                      = :: uln;
-  auto &vln                      = :: vln;
+  auto &latitude0                 = :: latitude0;
+  auto &longitude0                = :: longitude0;
+  auto &lat0                      = :: lat0;
+  auto &long0                     = :: long0;
+  auto &idt_gl                    = :: idt_gl;
+  auto &factor_xy                 = :: factor_xy;
+  auto &crm_rad_temperature       = :: crm_rad_temperature;
+  auto &crm_rad_qv                = :: crm_rad_qv;
+  auto &crm_rad_qc                = :: crm_rad_qc;
+  auto &crm_rad_qi                = :: crm_rad_qi;
+  auto &crm_rad_cld               = :: crm_rad_cld;
+  auto &crm_clear_rh              = :: crm_clear_rh;
+  auto &crm_clear_rh_cnt          = :: crm_clear_rh_cnt;
+  auto &bflx                      = :: bflx;
+  auto &wnd                       = :: wnd;
+  auto &crm_input_bflxls          = :: crm_input_bflxls;
+  auto &crm_input_wndls           = :: crm_input_wndls;
+  auto &fcor                      = :: fcor;
+  auto &fcorz                     = :: fcorz;
+  auto &zi                        = :: zi;
+  auto &crm_input_zint            = :: crm_input_zint;
+  auto &presi                     = :: presi;
+  auto &crm_input_pint            = :: crm_input_pint;
+  auto &pdel                      = :: pdel;
+  auto &adzw                      = :: adzw;
+  auto &fcory                     = :: fcory;
+  auto &fcorzy                    = :: fcorzy;
+  auto &latitude                  = :: latitude;
+  auto &longitude                 = :: longitude;
+  auto &z                         = :: z;
+  auto &crm_input_zmid            = :: crm_input_zmid;
+  auto &crm_input_pmid            = :: crm_input_pmid;
+  auto &pres                      = :: pres;
+  auto &prespot                   = :: prespot;
+  auto &bet                       = :: bet;
+  auto &crm_input_tl              = :: crm_input_tl;
+  auto &gamaz                     = :: gamaz;
+  auto &dz                        = :: dz;
+  auto &adz                       = :: adz;
+  auto &rho                       = :: rho;
+  auto &crm_input_pdel            = :: crm_input_pdel;
+  auto &u                         = :: u;
+  auto &v                         = :: v;
+  auto &w                         = :: w;
+  auto &tabs                      = :: tabs;
+  auto &crm_state_u_wind          = :: crm_state_u_wind;
+  auto &crm_state_v_wind          = :: crm_state_v_wind;
+  auto &crm_state_w_wind          = :: crm_state_w_wind;
+  auto &crm_state_temperature     = :: crm_state_temperature; 
+  auto &micro_field               = :: micro_field;
+  auto &microphysics_scheme       = :: microphysics_scheme;
+  auto &relvar                    = :: relvar;
+  auto &nccn_prescribed           = :: nccn_prescribed;
+  auto &zm                        = :: zm;
+  auto &sl                        = :: sl;
+  auto &omega                     = :: omega;
+  auto &crm_input_relvar          = :: crm_input_relvar;
+  auto &crm_input_nccn_prescribed = :: crm_input_nccn_prescribed;
+  auto &crm_input_t_prev          = :: crm_input_t_prev;
+  auto &crm_input_qv_prev         = :: crm_input_qv_prev;
+  auto &crm_input_zm              = :: crm_input_zm;
+  auto &crm_input_sl              = :: crm_input_sl;
+  auto &crm_input_omega           = :: crm_input_omega;
+  auto &crm_input_npccn           = :: crm_input_npccn;
+  auto &crm_input_ni_activated    = :: crm_input_ni_activated;
+  auto &t_prev                    = :: t_prev;
+  auto &qv_prev                   = :: qv_prev;
+  auto &crm_state_qt              = :: crm_state_qt;
+  auto &crm_state_qp              = :: crm_state_qp;
+  auto &crm_state_qn              = :: crm_state_qn;
+  auto &crm_state_qc              = :: crm_state_qc;
+  auto &crm_state_nc              = :: crm_state_nc;
+  auto &crm_state_qr              = :: crm_state_qr;
+  auto &crm_state_nr              = :: crm_state_nr;
+  auto &crm_state_qi              = :: crm_state_qi;
+  auto &crm_state_ni              = :: crm_state_ni;
+  auto &crm_state_qs              = :: crm_state_qs;
+  auto &crm_state_ns              = :: crm_state_ns;
+  auto &crm_state_qg              = :: crm_state_qg;
+  auto &crm_state_ng              = :: crm_state_ng;
+  auto &crm_state_qv              = :: crm_state_qv;
+  auto &crm_state_qm              = :: crm_state_qm;
+  auto &crm_state_bm              = :: crm_state_bm;
+  auto &qn                        = :: qn;
+  auto &colprec                   = :: colprec;
+  auto &colprecs                  = :: colprecs;
+  auto &u0                        = :: u0;
+  auto &v0                        = :: v0;
+  auto &t0                        = :: t0;
+  auto &t00                       = :: t00;
+  auto &tabs0                     = :: tabs0;
+  auto &q0                        = :: q0;
+  auto &qv0                       = :: qv0;
+  auto &qn0                       = :: qn0;
+  auto &qp0                       = :: qp0;
+  auto &tke0                      = :: tke0;
+  auto &t                         = :: t;
+  auto &qcl                       = :: qcl;
+  auto &qci                       = :: qci;
+  auto &qpl                       = :: qpl;
+  auto &qpi                       = :: qpi;
+  auto &sgs_field                 = :: sgs_field;
+  auto &uln                       = :: uln;
+  auto &vln                       = :: vln;
 #ifdef MMF_ESMT
-  auto &u_esmt                   = :: u_esmt;
-  auto &v_esmt                   = :: v_esmt;
-  auto &uln_esmt                 = :: uln_esmt;
-  auto &vln_esmt                 = :: vln_esmt;
+  auto &u_esmt                    = :: u_esmt;
+  auto &v_esmt                    = :: v_esmt;
+  auto &uln_esmt                  = :: uln_esmt;
+  auto &vln_esmt                  = :: vln_esmt;
 #endif
-  auto &ttend                    = :: ttend;
-  auto &qtend                    = :: qtend;
-  auto &crm_input_qccl           = :: crm_input_qccl;
-  auto &crm_input_qiil           = :: crm_input_qiil;
-  auto &utend                    = :: utend;
-  auto &vtend                    = :: vtend;
-  auto &ug0                      = :: ug0;
-  auto &vg0                      = :: vg0;
-  auto &tg0                      = :: tg0;
-  auto &qg0                      = :: qg0;
-  auto &crm_input_ql             = :: crm_input_ql;
-  auto &uhl                      = :: uhl;
-  auto &vhl                      = :: vhl;
-  auto &crm_input_tau00          = :: crm_input_tau00;
-  auto &ustar                    = :: ustar;
-  auto &z0                       = :: z0;
+  auto &ttend                     = :: ttend;
+  auto &qtend                     = :: qtend;
+  auto &crm_input_qccl            = :: crm_input_qccl;
+  auto &crm_input_qiil            = :: crm_input_qiil;
+  auto &utend                     = :: utend;
+  auto &vtend                     = :: vtend;
+  auto &ug0                       = :: ug0;
+  auto &vg0                       = :: vg0;
+  auto &tg0                       = :: tg0;
+  auto &qg0                       = :: qg0;
+  auto &crm_input_ql              = :: crm_input_ql;
+  auto &uhl                       = :: uhl;
+  auto &vhl                       = :: vhl;
+  auto &crm_input_tau00           = :: crm_input_tau00;
+  auto &ustar                     = :: ustar;
+  auto &z0                        = :: z0;
   auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
-  auto &rhow                     = :: rhow;
-  auto &qv                       = :: qv;
-  auto &crm_output_prectend      = :: crm_output_prectend;
-  auto &crm_output_precstend     = :: crm_output_precstend;
-  auto &crm_input_ul             = :: crm_input_ul;
-  auto &crm_input_vl             = :: crm_input_vl;
+  auto &rhow                       = :: rhow;
+  auto &qv                         = :: qv;
+  auto &crm_output_prectend        = :: crm_output_prectend;
+  auto &crm_output_precstend       = :: crm_output_precstend;
+  auto &crm_input_ul               = :: crm_input_ul;
+  auto &crm_input_vl               = :: crm_input_vl;
 #ifdef MMF_ESMT
-  auto &crm_input_ul_esmt        = :: crm_input_ul_esmt;
-  auto &crm_input_vl_esmt        = :: crm_input_vl_esmt;
+  auto &crm_input_ul_esmt          = :: crm_input_ul_esmt;
+  auto &crm_input_vl_esmt          = :: crm_input_vl_esmt;
 #endif
-  auto &crm_output_cld           = :: crm_output_cld; 
-  auto &crm_output_cldtop        = :: crm_output_cldtop; 
-  auto &crm_output_gicewp        = :: crm_output_gicewp; 
-  auto &crm_output_gliqwp        = :: crm_output_gliqwp; 
-  auto &crm_output_mctot         = :: crm_output_mctot; 
-  auto &crm_output_mcup          = :: crm_output_mcup; 
-  auto &crm_output_mcdn          = :: crm_output_mcdn; 
-  auto &crm_output_mcuup         = :: crm_output_mcuup; 
-  auto &crm_output_mcudn         = :: crm_output_mcudn; 
-  auto &crm_output_qc_mean       = :: crm_output_qc_mean; 
-  auto &crm_output_qi_mean       = :: crm_output_qi_mean; 
-  auto &crm_output_qs_mean       = :: crm_output_qs_mean; 
-  auto &crm_output_qg_mean       = :: crm_output_qg_mean; 
-  auto &crm_output_qr_mean       = :: crm_output_qr_mean; 
-  auto &crm_output_mu_crm        = :: crm_output_mu_crm; 
-  auto &crm_output_md_crm        = :: crm_output_md_crm; 
-  auto &crm_output_eu_crm        = :: crm_output_eu_crm; 
-  auto &crm_output_du_crm        = :: crm_output_du_crm; 
-  auto &crm_output_ed_crm        = :: crm_output_ed_crm; 
-  auto &crm_output_flux_qt       = :: crm_output_flux_qt; 
-  auto &crm_output_flux_u        = :: crm_output_flux_u; 
-  auto &crm_output_flux_v        = :: crm_output_flux_v; 
-  auto &crm_output_fluxsgs_qt    = :: crm_output_fluxsgs_qt;
-  auto &crm_output_tkez          = :: crm_output_tkez; 
-  auto &crm_output_tkew          = :: crm_output_tkew; 
-  auto &crm_output_tkesgsz       = :: crm_output_tkesgsz; 
-  auto &crm_output_tkz           = :: crm_output_tkz; 
-  auto &crm_output_flux_qp       = :: crm_output_flux_qp; 
-  auto &crm_output_precflux      = :: crm_output_precflux; 
-  auto &crm_output_qt_trans      = :: crm_output_qt_trans; 
-  auto &crm_output_qp_trans      = :: crm_output_qp_trans; 
-  auto &crm_output_qp_fall       = :: crm_output_qp_fall; 
-  auto &crm_output_qp_evp        = :: crm_output_qp_evp; 
-  auto &crm_output_qp_src        = :: crm_output_qp_src; 
-  auto &crm_output_qt_ls         = :: crm_output_qt_ls; 
-  auto &crm_output_t_ls          = :: crm_output_t_ls; 
-  auto &dd_crm                   = :: dd_crm; 
-  auto &mui_crm                  = :: mui_crm; 
-  auto &mdi_crm                  = :: mdi_crm; 
-  auto &crm_output_jt_crm        = :: crm_output_jt_crm;
-  auto &crm_output_mx_crm        = :: crm_output_mx_crm;
-  auto &ncrms                    = :: ncrms;
-  auto &crm_input_t_vt          = :: crm_input_t_vt;
-  auto &crm_input_q_vt          = :: crm_input_q_vt;
-  auto &t_vt_tend               = :: t_vt_tend;
-  auto &q_vt_tend               = :: q_vt_tend;
-  auto &t_vt                    = :: t_vt;
-  auto &q_vt                    = :: q_vt;
-  auto &use_VT                  = :: use_VT;
-  
+  auto &crm_output_cld             = :: crm_output_cld; 
+  auto &crm_output_cldtop          = :: crm_output_cldtop; 
+  auto &crm_output_gicewp          = :: crm_output_gicewp; 
+  auto &crm_output_gliqwp          = :: crm_output_gliqwp; 
+  auto &crm_output_mctot           = :: crm_output_mctot; 
+  auto &crm_output_mcup            = :: crm_output_mcup; 
+  auto &crm_output_mcdn            = :: crm_output_mcdn; 
+  auto &crm_output_mcuup           = :: crm_output_mcuup; 
+  auto &crm_output_mcudn           = :: crm_output_mcudn; 
+  auto &crm_output_qc_mean         = :: crm_output_qc_mean; 
+  auto &crm_output_qi_mean         = :: crm_output_qi_mean; 
+  auto &crm_output_qs_mean         = :: crm_output_qs_mean; 
+  auto &crm_output_qg_mean         = :: crm_output_qg_mean; 
+  auto &crm_output_qr_mean         = :: crm_output_qr_mean; 
+  auto &crm_output_mu_crm          = :: crm_output_mu_crm; 
+  auto &crm_output_md_crm          = :: crm_output_md_crm; 
+  auto &crm_output_eu_crm          = :: crm_output_eu_crm; 
+  auto &crm_output_du_crm          = :: crm_output_du_crm; 
+  auto &crm_output_ed_crm          = :: crm_output_ed_crm; 
+  auto &crm_output_flux_qt         = :: crm_output_flux_qt; 
+  auto &crm_output_flux_u          = :: crm_output_flux_u; 
+  auto &crm_output_flux_v          = :: crm_output_flux_v; 
+  auto &crm_output_fluxsgs_qt      = :: crm_output_fluxsgs_qt;
+  auto &crm_output_tkez            = :: crm_output_tkez; 
+  auto &crm_output_tkew            = :: crm_output_tkew; 
+  auto &crm_output_tkesgsz         = :: crm_output_tkesgsz; 
+  auto &crm_output_tkz             = :: crm_output_tkz; 
+  auto &crm_output_flux_qp         = :: crm_output_flux_qp; 
+  auto &crm_output_precflux        = :: crm_output_precflux; 
+  auto &crm_output_qt_trans        = :: crm_output_qt_trans; 
+  auto &crm_output_qp_trans        = :: crm_output_qp_trans; 
+  auto &crm_output_qp_fall         = :: crm_output_qp_fall; 
+  auto &crm_output_qp_evp          = :: crm_output_qp_evp; 
+  auto &crm_output_qp_src          = :: crm_output_qp_src; 
+  auto &crm_output_qt_ls           = :: crm_output_qt_ls; 
+  auto &crm_output_t_ls            = :: crm_output_t_ls; 
+  auto &dd_crm                     = :: dd_crm; 
+  auto &mui_crm                    = :: mui_crm; 
+  auto &mdi_crm                    = :: mdi_crm; 
+  auto &crm_output_jt_crm          = :: crm_output_jt_crm;
+  auto &crm_output_mx_crm          = :: crm_output_mx_crm;
+  auto &ncrms                      = :: ncrms;
+  auto &crm_input_t_vt             = :: crm_input_t_vt;
+  auto &crm_input_q_vt             = :: crm_input_q_vt;
+  auto &t_vt_tend                  = :: t_vt_tend;
+  auto &q_vt_tend                  = :: q_vt_tend;
+  auto &t_vt                       = :: t_vt;
+  auto &q_vt                       = :: q_vt;
+  auto &use_VT                     = :: use_VT;
+  auto &crm_input_phis             = :: crm_input_phis;
+  auto &phis                       = :: phis;
+  auto &nc_nuceat_tend             = :: nc_nuceat_tend;
+  auto &ni_activated               = :: ni_activated;
 
   crm_accel_ceaseflag = false;
 
@@ -204,6 +238,7 @@ void pre_timeloop() {
     fcorz(icrm) = sqrt(4.0*pow((2*pi/(3600.*24.)),2)-pow(fcor(icrm),2));
     zi(nz-1,icrm) = crm_input_zint(plev-nz+1,icrm)-crm_input_zint(plev,icrm); //+++mhwang, 2012-02-04
     presi(nz-1,icrm) = crm_input_pint(plev-nz+1,icrm)/100.0;
+    phis(icrm) = crm_input_phis(icrm);
     adzw(0,icrm) = 1.0;
   });
   // for (int j=0; j<ny+1; j++) {
@@ -233,9 +268,12 @@ void pre_timeloop() {
     zi(k,icrm) = crm_input_zint(plev-(k+1)+1,icrm)- crm_input_zint(plev,icrm);
     pres(k,icrm) = crm_input_pmid(plev-(k+1),icrm)/100.0;
     presi(k,icrm) = crm_input_pint(plev-(k+1)+1,icrm)/100.0;
+    pdel(k,icrm) = crm_input_pdel(plev-(k+1), icrm)/100.0;
     prespot(k,icrm)=pow((1000.0/pres(k,icrm)),(rgas/cp));
     bet(k,icrm) = ggr/crm_input_tl(plev-(k+1),icrm);
     gamaz(k,icrm)=ggr/cp*z(k,icrm);
+    nc_nuceat_tend(k,icrm)=crm_input_npccn(plev-(k+1),icrm);
+    ni_activated(k,icrm)=crm_input_ni_activated(plev-(k+1),icrm);
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -311,16 +349,34 @@ void pre_timeloop() {
     }
   });
 
-  // Populate microphysics array from crm_state
-  // for (int k=0; k<nzm; k++) {
-  //   for (int j=0; j<ny; j++) {
-  //     for (int i=0; i<nx; i++) {
-  //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
-    micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
-    qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
-  });
+  if (microphysics_scheme == "sam1mom") {
+    // Populate microphysics array from crm_state
+    // for (int k=0; k<nzm; k++) {
+    //   for (int j=0; j<ny; j++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+      micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
+      qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
+    });
+
+  } else if (microphysics_scheme == "p3") {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm);
+      micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
+      micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
+      micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
+      micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
+      micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm) = crm_state_qr(k,j,i,icrm);
+      micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm) = crm_state_nr(k,j,i,icrm);
+      micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
+      micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
+      qn(k,j,i,icrm)                    = crm_state_qn(k,j,i,icrm);
+      t_prev(k,j+offy_s,i+offx_s,icrm)  = crm_input_t_prev(plev-k-1,icrm);
+      qv_prev(k,j+offy_s,i+offx_s,icrm) = crm_input_qv_prev(plev-k-1,icrm);
+   });
+  }
 
   micro_init();
   sgs_init();
@@ -410,6 +466,13 @@ void pre_timeloop() {
       t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
       q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
     }
+    if (microphysics_scheme == "p3") {
+      relvar(k,icrm) = crm_input_relvar(l,icrm);
+      nccn_prescribed(k,icrm) = crm_input_nccn_prescribed(l,icrm);
+    }
+    zm(k,icrm) = crm_input_zm(l,icrm);
+    sl(k,icrm) = crm_input_sl(l,icrm);
+    omega(k,icrm) = crm_input_omega(l,icrm); 
   });
 
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

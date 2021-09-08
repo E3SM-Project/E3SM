@@ -4,6 +4,8 @@
 #include "YAKL.h"
 #include <iomanip>
 
+#include "share/scream_types.hpp"
+
 using yakl::c::Bounds;
 using yakl::c::SimpleBounds;
 using yakl::min;
@@ -26,7 +28,8 @@ void DEBUG_SCALAR(T var) {
   std::cout << std::setprecision(16) << std::scientific << var << std::endl;
 }
 
-typedef double real;
+//typedef double real;
+using real = typename scream::Real;
 
 int  constexpr crm_nx     = CRM_NX;
 int  constexpr crm_ny     = CRM_NY;
@@ -180,14 +183,15 @@ real constexpr SHR_CONST_VSMOW_T   = 1.85e-6                  ; // 3H/1H in VMSO
 real constexpr SHR_CONST_VSMOW_H   = 0.99984426               ; // 1H/Tot in VMSOW
 real constexpr SHR_CONST_RSTD_H2ODEV   = 1.0                  ; // Rstd Dev Use
 
-real constexpr cp    = SHR_CONST_CPDAIR ;
-real constexpr ggr   = SHR_CONST_G      ;
-real constexpr lcond = SHR_CONST_LATVAP ;
-real constexpr lfus  = SHR_CONST_LATICE ;
-real constexpr lsub  = lcond + lfus     ;
-real constexpr rgas  = SHR_CONST_RDAIR  ;
-real constexpr rv    = SHR_CONST_RGAS/SHR_CONST_MWWV ;
-
+real constexpr cp     = SHR_CONST_CPDAIR ;
+real constexpr ggr    = SHR_CONST_G      ;
+real constexpr lcond  = SHR_CONST_LATVAP ;
+real constexpr lfus   = SHR_CONST_LATICE ;
+real constexpr lsub   = lcond + lfus     ;
+real constexpr rgas   = SHR_CONST_RDAIR  ;
+real constexpr rv     = SHR_CONST_RGAS/SHR_CONST_MWWV ;
+real constexpr latvap = SHR_CONST_LATVAP;  // Latent heat of vaporization (J/kg)
+real constexpr zvir   = (SHR_CONST_RWV/SHR_CONST_RDAIR)-1.0; // (rh2o/rair) - 1
 
 real constexpr diffelq = 2.21e-05 ;    // Diffusivity of water vapor, m2/s
 real constexpr therco  = 2.40e-02 ;    // Thermal conductivity of air, J/m/s/K
@@ -202,7 +206,11 @@ real constexpr pi = 3.141592653589793 ;  // sine, cosine, cosine, sine, 3.14159 
 int  constexpr nsgs_fields = 1;         // total number of prognostic sgs vars
 int  constexpr nsgs_fields_diag = 2;    // total number of diagnostic sgs vars
 bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics fields
-int  constexpr nmicro_fields = 2;
+//#if defined(sam1mom)
+//int  constexpr nmicro_fields = 2;
+//#elif defined(p3)
+int constexpr nmicro_fields = 9;
+//#endif
 int  constexpr index_water_vapor = 0;
 int  constexpr index_cloud_ice = 0;
 
@@ -230,11 +238,15 @@ real constexpr nzeror = 8.e6;   // Intercept coeff. for rain
 real constexpr nzeros = 3.e6;   // Intersept coeff. for snow
 real constexpr nzerog = 4.e6;   // Intersept coeff. for graupel
 real constexpr qp_threshold = 1.e-8; // minimal rain/snow water content
+real constexpr tke_tol = 0.0004;  // minimal turbulence kinetic energy
 
 real constexpr qcw0 = 1.e-3;
 real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
+
+real constexpr mincld = 0.0001;
+real constexpr qsmall = 1.e-14;
 
 real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 

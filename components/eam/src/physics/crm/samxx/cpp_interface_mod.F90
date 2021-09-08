@@ -11,13 +11,19 @@ module cpp_interface_mod
 
     subroutine crm(ncrms_in, pcols_in, dt_gl, plev, crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                    crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
-                   crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
+                   crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, crm_input_phis, &
+                   crm_input_shf, crm_input_cflx, crm_input_wsx, crm_input_wsy, &
 #ifdef MMF_ESMT
                    crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
-                   crm_input_t_vt, crm_input_q_vt, &
+                   crm_input_t_vt, crm_input_q_vt, crm_input_relvar, crm_input_nccn_prescribed, &
+                   crm_input_t_prev, crm_input_qv_prev, crm_input_zm, crm_input_sl, crm_input_omega, &
+                   crm_input_tke_zt, crm_input_wthv, crm_input_tkh, crm_input_tk, crm_input_alst, crm_input_qtracers, &
+                   crm_input_npccn, crm_input_ni_activated, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
-                   crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
+                   crm_state_qt, crm_state_qp, crm_state_qn, crm_state_qc, crm_state_nc, crm_state_qr, &
+                   crm_state_nr, crm_state_qi, crm_state_ni, crm_state_qs, crm_state_ns, crm_state_qg, &
+                   crm_state_ng, crm_state_qv, crm_state_qm, crm_state_bm, crm_rad_qrad, crm_rad_temperature, &
                    crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                    crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                    crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
@@ -41,10 +47,10 @@ module cpp_interface_mod
 #endif
                    crm_clear_rh, &
                    lat0, long0, gcolp, igstep,  &
-                   use_VT, VT_wn_max, &
+                   use_VT, VT_wn_max, microphysics_scheme, &
                    use_crm_accel, crm_accel_factor, crm_accel_uv) bind(C,name="crm")
       use params, only: crm_rknd, crm_iknd, crm_lknd
-      use iso_c_binding, only: c_bool
+      use iso_c_binding, only: c_bool, c_char
       implicit none
       logical(c_bool), value :: use_VT
       integer(crm_iknd), value :: VT_wn_max
@@ -52,15 +58,23 @@ module cpp_interface_mod
       integer(crm_iknd), value :: ncrms_in, pcols_in, plev, igstep
       real(crm_rknd), value :: dt_gl, crm_accel_factor
       integer(crm_iknd), dimension(*) :: gcolp
+      character(kind=c_char) :: microphysics_scheme(*)
+
       real(crm_rknd), dimension(*) :: crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                                       crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
-                                      crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
+                                      crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, crm_input_phis, &
+                                      crm_input_shf, crm_input_cflx, crm_input_wsx, crm_input_wsy, &
 #ifdef MMF_ESMT
                                       crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
-                                      crm_input_t_vt, crm_input_q_vt, &
+                                      crm_input_t_vt, crm_input_q_vt, crm_input_relvar, crm_input_nccn_prescribed,  &
+                                      crm_input_t_prev, crm_input_qv_prev, crm_input_sl, crm_input_zm, crm_input_omega, &
+                                      crm_input_npccn, crm_input_ni_activated, &
+                                      crm_input_tke_zt, crm_input_wthv, crm_input_tkh, crm_input_tk, crm_input_alst, crm_input_qtracers, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
-                                      crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
+                                      crm_state_qt, crm_state_qp, crm_state_qn, crm_state_qc, crm_state_nc, crm_state_qr, &
+                                      crm_state_nr, crm_state_qi, crm_state_ni, crm_state_qs, crm_state_ns, crm_state_qg, &
+                                      crm_state_ng, crm_state_qv, crm_state_qm, crm_state_bm, crm_rad_qrad, crm_rad_temperature, &
                                       crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                                       crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                                       crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
@@ -87,9 +101,15 @@ module cpp_interface_mod
 
 
     subroutine setparm() bind(C,name="setparm")
-    end subroutine
+    end subroutine setparm
 
+    subroutine scream_session_init() bind(C,name="scream_session_init")
+
+    end subroutine scream_session_init
+
+    subroutine scream_session_finalize() bind(C,name="scream_session_finalize")
+
+    end subroutine scream_session_finalize
 
   end interface
-
 end module cpp_interface_mod
