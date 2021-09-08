@@ -212,7 +212,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
   use pio,                 only: file_desc_t
   use ncdio_atm,           only: infld
   use short_lived_species, only: initialize_short_lived_species
-  use comsrf,              only: landm, sgh, sgh30
+  use comsrf,              only: sgh, sgh30
   use cam_control_mod,     only: aqua_planet
   !---------------------------------------------------------------------------
   !---------------------------------------------------------------------------
@@ -249,8 +249,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
   if(aqua_planet) then
     sgh = 0._r8
     sgh30 = 0._r8
-    landm = 0._r8
-    if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
+    if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30 initialized to 0.'
   else    
     if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize sgh, sgh30, land m using data from file.'
     fh_topo=>topo_file_get_id()
@@ -263,9 +262,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
       if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
       sgh30 = sgh
     end if
-
-    call infld('LANDM_COSLAT', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, landm, found, gridname='physgrid')
-    if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
   end if
 
   allocate(tptr(1:pcols,begchunk:endchunk))
@@ -697,7 +693,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use cam_diagnostics,  only: diag_allocate, diag_physvar_ic
   use check_energy,     only: check_energy_gmean
   use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
-  use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
+  use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, fsds
   use flux_avg,               only: flux_avg_init
   use check_energy,           only: check_energy_chng
   use crm_physics,            only: crm_physics_tend
@@ -794,7 +790,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     call tphysbc1(ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), &
                  phys_state(c), phys_tend(c), phys_buffer_chunk, &
-                 fsds(1,c), landm(1,c), sgh(1,c), sgh30(1,c), &
+                 fsds(1,c), sgh(1,c), sgh30(1,c), &
                  cam_out(c), cam_in(c) )
 
     end_count = shr_sys_irtc(irtc_rate)
@@ -845,7 +841,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     call tphysbc2(ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), &
                  phys_state(c), phys_tend(c), phys_buffer_chunk, &
-                 fsds(1,c), landm(1,c), sgh(1,c), sgh30(1,c), &
+                 fsds(1,c), sgh(1,c), sgh30(1,c), &
                  cam_out(c), cam_in(c), crm_ecpp_output(c) )
 
     end_count = shr_sys_irtc(irtc_rate)
@@ -1283,7 +1279,7 @@ end subroutine tphysac
 
 subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
                    state, tend, pbuf, fsds, &
-                   landm, sgh, sgh30, cam_out, cam_in )
+                   sgh, sgh30, cam_out, cam_in )
   !----------------------------------------------------------------------------- 
   ! Purpose: Evaluate physics processes BEFORE coupling to sfc components
   !          Phase 1 - energy fixer and dry adjustment
@@ -1321,7 +1317,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8),            intent(inout) :: flns(pcols)   ! Srf longwave cooling (up-down) flux
   real(r8),            intent(inout) :: flnt(pcols)   ! Net outgoing lw flux at model top
   real(r8),            intent(inout) :: fsds(pcols)   ! Surface solar down flux
-  real(r8),            intent(in   ) :: landm(pcols)  ! land fraction ramp
   real(r8),            intent(in   ) :: sgh(pcols)    ! Std. deviation of orography
   real(r8),            intent(in   ) :: sgh30(pcols)  ! Std. deviation of 30 s orography for tms
   type(physics_state), intent(inout) :: state
@@ -1568,7 +1563,7 @@ end subroutine tphysbc1
 
 subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
                    state, tend, pbuf, fsds, &
-                   landm, sgh, sgh30, cam_out, cam_in, crm_ecpp_output )
+                   sgh, sgh30, cam_out, cam_in, crm_ecpp_output )
   !----------------------------------------------------------------------------- 
   ! Purpose: Evaluate physics processes BEFORE coupling to sfc components
   !          Phase 2 - aerosols, radiation, and diagnostics
@@ -1614,7 +1609,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   real(r8),                  intent(inout) :: flns(pcols)   ! Srf longwave cooling (up-down) flux
   real(r8),                  intent(inout) :: flnt(pcols)   ! Net outgoing lw flux at model top
   real(r8),                  intent(inout) :: fsds(pcols)   ! Surface solar down flux
-  real(r8),                  intent(in   ) :: landm(pcols)  ! land fraction ramp
   real(r8),                  intent(in   ) :: sgh(pcols)    ! Std. deviation of orography
   real(r8),                  intent(in   ) :: sgh30(pcols)  ! Std. deviation of 30 s orography for tms
   type(physics_state),       intent(inout) :: state
@@ -1835,7 +1829,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   if (l_rad) then
     call t_startf('radiation')
     call radiation_tend(state,ptend, pbuf, cam_out, cam_in, &
-                        cam_in%landfrac, landm, cam_in%icefrac, cam_in%snowhland, &
+                        cam_in%landfrac, cam_in%icefrac, cam_in%snowhland, &
                         fsns, fsnt, flns, flnt, fsds, &
                         net_flx, is_cmip6_volc, ztodt, clear_rh=mmf_clear_rh)
     call t_stopf('radiation')
