@@ -199,7 +199,7 @@ TEST_CASE("rrtmgp_test_zenith") {
 
     double dt_avg = 0.; //3600.0000000000000;
     double coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
-    REQUIRE(coszrs == coszrs_ref);
+    REQUIRE(std::abs(coszrs-coszrs_ref)<1e-14);
 
     // Another case, this time WITH dt_avg flag:
     calday = 1.0833333333333333;
@@ -214,6 +214,6 @@ TEST_CASE("rrtmgp_test_zenith") {
     dt_avg = 3600.0000000000000;
     coszrs_ref = 0.14559973262047626;
     coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
-    REQUIRE(coszrs == coszrs_ref);
+    REQUIRE(std::abs(coszrs-coszrs_ref)<1e-14);
 
 }
