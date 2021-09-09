@@ -290,11 +290,16 @@ namespace scream {
         T_mid0.deallocate();
 
         // Make sure fluxes from field manager that were calculated in AD call of RRTMGP match reference fluxes from input file
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_up_ref    , sw_flux_up_test  ));
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_ref    , sw_flux_dn_test    ));
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_dir_ref, sw_flux_dn_dir_test));
-        REQUIRE(rrtmgpTest::all_equals(lw_flux_up_ref    , lw_flux_up_test    ));
-        REQUIRE(rrtmgpTest::all_equals(lw_flux_dn_ref    , lw_flux_dn_test    ));
+        // We use all_close here instead of all_equals because we are only able
+        // to approximate the solar zenith angle used in the RRTMGP clear-sky
+        // test problem with our trial and error lat/lon values, so fluxes will
+        // be slightly off. We just verify that they are all "close" here, within
+        // some tolerance.
+        REQUIRE(rrtmgpTest::all_close(sw_flux_up_ref    , sw_flux_up_test    , 0.1));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_ref    , sw_flux_dn_test    , 0.1));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_ref, sw_flux_dn_dir_test, 0.1));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_up_ref    , lw_flux_up_test    , 0.1));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_ref    , lw_flux_dn_test    , 0.1));
 
         // Deallocate YAKL arrays
         p_lay.deallocate();

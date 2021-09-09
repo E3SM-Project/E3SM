@@ -182,6 +182,9 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // for duration of simulation.
   m_orbital_year = m_rrtmgp_params.get<Int>("Orbital Year",-9999);
 
+  // Determine whether or not we are using a fixed solar zenith angle (positive value)
+  m_fixed_solar_zenith_angle = m_rrtmgp_params.get<Real>("Fixed Solar Zenith Angle", -9999);
+
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
 
@@ -266,27 +269,31 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     //       deep copied to a device view.
     auto d_mu0 = m_buffer.cosine_zenith;
     auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
-    //       copied back to DEVICE.
-    double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
-    double delta, eccf;
-    // First gather the orbital parameters:
-    auto ts = timestamp();
-    auto orbital_year = m_orbital_year;
-    if (orbital_year < 0) {
-        orbital_year = ts.get_years();
-    }
-    shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
-                       &obliqr, &lambm0, &mvelpp);
-    // Use the orbital parameters to calculate the delta value
-    auto calday = ts.get_julian_day();
-    shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
-                     obliqr, &delta, &eccf);
-    // Now assign value to the cosine zenith angle
-    for (int i=0;i<m_ncol;i++) {
-      // Using delta, calculate the zenith angle for all points
-      double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
-      double lon = h_lon(i)*PC::Pi/180.0;
-      h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+    if (m_fixed_solar_zenith_angle > 0) {
+      for (int i=0; i<m_ncol; i++) {
+        h_mu0(i) = m_fixed_solar_zenith_angle;
+      }
+    } else {
+      // First gather the orbital parameters:
+      double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
+      auto ts = timestamp();
+      auto orbital_year = m_orbital_year;
+      if (orbital_year < 0) {
+          orbital_year = ts.get_years();
+      }
+      shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+                         &obliqr, &lambm0, &mvelpp);
+      // Use the orbital parameters to calculate the solar declination
+      double delta, eccf;
+      auto calday = ts.get_julian_day();
+      shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                       obliqr, &delta, &eccf);
+      // Now use solar declination to calculate zenith angle for all points
+      for (int i=0;i<m_ncol;i++) {
+        double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
+        double lon = h_lon(i)*PC::Pi/180.0;
+        h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+      }
     }
     Kokkos::deep_copy(d_mu0,h_mu0);
 

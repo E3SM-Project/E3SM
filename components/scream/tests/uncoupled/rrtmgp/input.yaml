@@ -11,6 +11,7 @@ Atmosphere Processes:
     Grid: Physics
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
+    Fixed Solar Zenith Angle: 0.86
 
 Grids Manager:
   Type: Physics Only

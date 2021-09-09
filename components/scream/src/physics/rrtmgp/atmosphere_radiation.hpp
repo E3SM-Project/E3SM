@@ -69,6 +69,10 @@ public:
   // If < 0, use year from timestamp for orbital parameters
   Int m_orbital_year;
 
+  // Fixed solar zenith angle to use for shortwave calculations
+  // This is only used if a positive value is supplied
+  Real m_fixed_solar_zenith_angle;
+
   // Need to hard-code some dimension sizes for now. 
   // TODO: find a better way of configuring this
   const int m_nswbands = 14;
