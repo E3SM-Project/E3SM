@@ -15,8 +15,8 @@ function download
 download && \
     tar -xzf singularity-${VERSION}.tar.gz && \
     cd singularity/
-#./mconfig && \
-#    make -C ./builddir && \
-#    sudo make -C ./builddir install
-#
-#singularity --version
+./mconfig && \
+    make -C ./builddir && \
+    sudo make -C ./builddir install
+
+singularity --version
