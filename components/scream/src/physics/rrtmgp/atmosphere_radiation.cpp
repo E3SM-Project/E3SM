@@ -176,9 +176,11 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   using PC = scream::physics::Constants<Real>;
-  // Determine orbital year
-  m_orbital_year = m_rrtmgp_params.get<Real>("Orbital Year",1990);
 
+  // Determine orbital year. If Orbital Year is negative, use current year
+  // from timestamp for orbital year; if positive, use provided orbital year
+  // for duration of simulation.
+  m_orbital_year = m_rrtmgp_params.get<Int>("Orbital Year",-9999);
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
@@ -268,10 +270,14 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
     double delta, eccf;
     // First gather the orbital parameters:
-    shr_orb_params_c2f(&m_orbital_year, &eccen, &obliq, &mvelp, 
-                       &obliqr, &lambm0, &mvelpp);
-    // Use the oribtal parameters to calculate the delta value
     auto ts = timestamp();
+    auto orbital_year = m_orbital_year;
+    if (orbital_year < 0) {
+        orbital_year = ts.get_years();
+    }
+    shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+                       &obliqr, &lambm0, &mvelpp);
+    // Use the orbital parameters to calculate the delta value
     auto calday = ts.get_julian_day();
     shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                      obliqr, &delta, &eccf);

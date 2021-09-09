@@ -19,6 +19,7 @@ Atmosphere Processes:
     Process Name: RRTMGP
     Grid: Physics
     active_gases: ["H2O", "CO2", "O3", "N2O", "CO" , "CH4", "O2", "N2"]
+    Orbital Year: 1990
 
 Grids Manager:
   Type: Physics Only

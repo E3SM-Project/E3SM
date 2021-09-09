@@ -63,7 +63,10 @@ public:
   int m_nlay;
   view_1d_real m_lat;
   view_1d_real m_lon;
+
   // The orbital year, used for zenith angle calculations:
+  // If > 0, use constant orbital year for duration of simulation
+  // If < 0, use year from timestamp for orbital parameters
   Int m_orbital_year;
 
   // Need to hard-code some dimension sizes for now. 
