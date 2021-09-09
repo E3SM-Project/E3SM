@@ -65,7 +65,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p, real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
                             real *crm_input_t_prev_p, real *crm_input_qv_prev_p, real *crm_input_zm_p, real *crm_input_sl_p, real *crm_input_omega_p,
                             real *crm_input_tke_zt_p, real *crm_input_wthv_p, real *crm_input_tkh_p, real *crm_input_tk_p, real *crm_input_alst_p,
-                            real *crm_input_qtracers_p, real *crm_input_npccn_p, real *crm_input_ni_activated_p,  
+                            real *crm_input_qtracers_p, real *crm_input_npccn_p, real *crm_input_ni_activated_p, real *crm_input_ast_p, 
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                             real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_state_qc_p, real *crm_state_nc_p,
                             real *crm_state_qr_p, real *crm_state_nr_p, real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p,
@@ -486,6 +486,7 @@ extern real2d crm_input_t_prev;
 extern real2d crm_input_qv_prev;
 extern real2d crm_input_zm;
 extern real2d crm_input_sl;
+extern real2d crm_input_ast;
 extern real2d crm_input_omega;
 extern real2d crm_input_wthv;
 extern real2d crm_input_tke_zt;
@@ -596,6 +597,7 @@ extern real3d crm_output_prec_crm;
 
 extern real2d zm;
 extern real2d sl;
+extern real2d ast;
 extern real2d omega;
 extern real2d nc_nuceat_tend;
 extern real2d nccn_prescribed;

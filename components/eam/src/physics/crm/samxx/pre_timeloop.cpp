@@ -56,6 +56,7 @@ void pre_timeloop() {
   auto &nccn_prescribed           = :: nccn_prescribed;
   auto &zm                        = :: zm;
   auto &sl                        = :: sl;
+  auto &ast                       = :: ast;
   auto &omega                     = :: omega;
   auto &crm_input_relvar          = :: crm_input_relvar;
   auto &crm_input_nccn_prescribed = :: crm_input_nccn_prescribed;
@@ -63,6 +64,7 @@ void pre_timeloop() {
   auto &crm_input_qv_prev         = :: crm_input_qv_prev;
   auto &crm_input_zm              = :: crm_input_zm;
   auto &crm_input_sl              = :: crm_input_sl;
+  auto &crm_input_ast             = :: crm_input_ast;
   auto &crm_input_omega           = :: crm_input_omega;
   auto &crm_input_npccn           = :: crm_input_npccn;
   auto &crm_input_ni_activated    = :: crm_input_ni_activated;
@@ -472,6 +474,7 @@ void pre_timeloop() {
     }
     zm(k,icrm) = crm_input_zm(l,icrm);
     sl(k,icrm) = crm_input_sl(l,icrm);
+    ast(k,icrm) = crm_input_ast(l,icrm);
     omega(k,icrm) = crm_input_omega(l,icrm); 
   });
 
