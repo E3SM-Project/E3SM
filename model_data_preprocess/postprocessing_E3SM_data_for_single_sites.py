@@ -3,6 +3,8 @@ from pathlib import Path
 
 import cdms2
 
+# subprocess.run('source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh', shell=True)
+
 value = 0
 cdms2.setNetcdfShuffleFlag(value)  # where value is either 0 or 1
 cdms2.setNetcdfDeflateFlag(value)  # where value is either 0 or 1
@@ -11,16 +13,34 @@ cdms2.setNetcdfDeflateLevelFlag(
 )  # where value is a integer between 0 and 9 included
 
 # A script to convert high frequency single point E3SM output to per-variable per-site netcdf files as input for ARM diagostics.
-# In this example 3 hourly output at ARM sites are saved on h1 tape using namelist as follows:
+# In this example 3 hourly output at ARM sites are saved on h4 tape using namelist as follows:
 # fincl2 = 'PS', 'Q', 'T', 'Z3', 'CLOUD', 'CONCLD', 'CLDICE', 'CLDLIQ', 'LS_FLXPRC', 'LS_FLXSNW', 'ZMFLXPRC', 'ZMFLXSNW', 'FREQR', 'REI', 'REL', 'CV_REFFICE', 'CV_REFFLIQ', 'LS_REFFRAIN', 'LS_REFFSNOW', 'PRECT', 'TMQ', 'PRECC', 'TREFHT', 'QREFHT', 'OMEGA','CLDTOT', 'LHFLX', 'SHFLX', 'FLDS', 'FSDS', 'FLNS', 'FSNS', 'FLNSC', 'FSDSC', 'FSNSC', 'AODVIS', 'AODABS'
 # fincl2lonlat = '262.5e_36.6n','204.6e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
-data_path = "/Users/zhang40/Documents/ACME/e3sm_arm_diags/data/20200922.F2010SC5.ne30pg2_r05.armsites/"
-out_path = "/Users/zhang40/Documents/ACME/e3sm_arm_diags/data/post-processed/20200922.F2010SC5.ne30pg2_r05.armsites/"
-p = Path(data_path)
-cmd = "ncrcat -h " + data_path + "*h1*nc " + data_path + "armsites_all_time.nc"
-os.popen(cmd).readlines()
 
-filename = data_path + "armsites_all_time.nc"
+data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20210719.PhaseII.F20TR-P3.NGD.ne30pg2.compy/h4/"
+out_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20210719.PhaseII.F20TR-P3.NGD.ne30pg2.compy/arm-diags-data/"
+Path(out_path).mkdir(parents=True, exist_ok=True)
+
+# time_range = "000101_000112"
+time_range = "199601_201012"
+p = Path(data_path)
+# cmd = "ncrcat -h " + data_path + "*h1*nc " + data_path + "armsites_all_time.nc"
+# cmd = "ncrcat -h " + data_path + "*h4*nc " + out_path + "armsites_all_time.nc"
+# Below has not been tested.
+cmd = (
+    "ncrcat -h -d time,'1996-01-01 0:00:0.0','2011-12-31 23:59:0.0' "
+    + data_path
+    + "*h4*nc "
+    + out_path
+    + "armsites_{}.nc".format(time_range)
+)
+print(cmd)
+os.popen(cmd).readlines()
+print("create time-series")
+
+# filename = out_path + "armsites_all_time.nc"
+filename = out_path + "armsites_{}.nc".format(time_range)
+print(filename)
 fin = cdms2.open(filename)
 variables = [
     "CLOUD",
@@ -54,8 +74,6 @@ sites_info = {
     "ena": [331.97, 39.09],
 }
 sites = ["sgp", "nsa", "twpc1", "twpc2", "twpc3"]
-
-time_range = "000101_000112"
 
 
 for site in sites:

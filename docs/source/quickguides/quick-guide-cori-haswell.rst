@@ -136,7 +136,7 @@ Once the session is available, launch E3SM Diagnostics, to activate ``e3sm_unifi
 
     ::
 
-        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh 
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 
@@ -155,12 +155,12 @@ Copy and paste the code below into a file named ``diags.bash``.
         #SBATCH --job-name=diags
         #SBATCH --output=diags.o%j
         #SBATCH --partition=regular
-        #SBATCH --account=acme
+        #SBATCH --account=e3sm
         #SBATCH --nodes=1
         #SBATCH --time=01:00:00
         #SBATCH -C haswell
 
-        source /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh 
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 And then submit it:
