@@ -2385,14 +2385,6 @@ flags should be captured within MPAS CMake files.
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
-<!--
-  <MPICC> cc  </MPICC>
-  <MPICXX> CC </MPICXX>
-  <MPIFC> ftn </MPIFC>
-  <SCC> cc </SCC>
-  <SCXX> CC </SCXX>
-  <SFC> ftn </SFC>
--->
 </compiler>
 
 <compiler MACH="userdefined">
