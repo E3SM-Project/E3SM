@@ -17,7 +17,7 @@ plotSideTitle = {"fontsize": 9.5}
 # Position and sizes of subplot axes in page coordinates (0 to 1)
 panel = [
     (0.1691, 0.55, 0.6465, 0.2758),
-    (0.1691, 0.15, 0.6465, 0.2758),
+    (0.1691, 0.27, 0.6465, 0.2758),
 ]
 # Border padding relative to subplot axes for saving individual panels
 # (left, bottom, right, top) in page coordinates
@@ -219,9 +219,9 @@ def plot(test, ref, parameter, basin_dict):
     width = 0.27
 
     ref_vals = num_ref / np.sum(num_ref)
-    rects1 = ax.bar(ind + width / 2, ref_vals, width, color="darkgrey")
+    rects2 = ax.bar(ind - width / 2, ref_vals, width, color="black")
     test_vals = num_test / np.sum(num_test)
-    rects2 = ax.bar(ind - width / 2, test_vals, width, color="black")
+    rects1 = ax.bar(ind + width / 2, test_vals, width, color="darkgrey")
     print(
         "total number based on 6 basins",
         np.sum(num_test),
@@ -243,8 +243,8 @@ def plot(test, ref, parameter, basin_dict):
     ax.legend(
         (rects2[0], rects1[0]),
         (
-            "{}: (~{})storms per year".format(test_name, int(np.sum(num_test))),
-            "{}: (~{}) storms per year".format(ref_name, int(np.sum(num_ref))),
+            "{}: (~{})storms per year".format(ref_name, int(np.sum(num_ref))),
+            "{}: (~{}) storms per year".format(test_name, int(np.sum(num_test))),
         ),
     )
     ax.set_ylabel("Fraction")
