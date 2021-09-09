@@ -46,12 +46,12 @@ _TESTS = {
     "e3sm_atm_developer" : {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
-            "ERP_Ln9.ne4_ne4.F2010",
-            "SMS_Ln9.ne4_ne4.F2010.eam-outfrq9s",
-            "SMS.ne4_ne4.F2010.eam-cosplite",
+            "ERP_Ln9.ne4_oQU240.F2010",
+            "SMS_Ln9.ne4_oQU240.F2010.eam-outfrq9s",
+            "SMS.ne4_oQU240.F2010.eam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
-            "SMS_D_Ln5.ne4_ne4.F2010",
-            "SMS_Ln5.ne4pg2_ne4pg2.F2010"
+            "SMS_D_Ln5.ne4_oQU240.F2010",
+            "SMS_Ln5.ne4pg2_oQU480.F2010"
             )
         },
 
@@ -61,30 +61,28 @@ _TESTS = {
             "ERP_Ln9.ne4_ne4.F-EAM-AQP1",
             "SMS_Ld1.ne4_ne4.F-EAM-AQP1.eam-clubb_only",
             "ERP_Ln9.ne4_ne4.F-EAM-RCEMIP",
-            "PET_Ln5.ne4_ne4.F2010.allactive-mach-pet",
-            "PEM_Ln5.ne4_ne4.F2010",
-            "SMS_D_Ln5.ne4_ne4.F2010.eam-cosplite_nhtfrq5",
-            "SMS_Ln1.ne4_ne4.F2010.eam-chem_pp",
-            "SMS_D_Ln5.ne4_ne4.F2010.eam-clubb_sp",
-            "ERS_Ld5.ne4_ne4.F2010.eam-rrtmgp",
-            "ERS_Ld5.ne4_ne4.F2010.eam-gust_param",
-            "REP_Ln5.ne4_ne4.F2010",
-            "SMS_Ld9.ne4pg2_ne4pg2.F2010.eam-thetahy_sl_pg2_mass",
+            "PET_Ln5.ne4_oQU240.F2010.allactive-mach-pet",
+            "PEM_Ln5.ne4_oQU240.F2010",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
+            "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
+            "REP_Ln5.ne4_oQU240.F2010",
+            "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             )
         },
 
     #atmopheric tests for extra coverage
     "e3sm_atm_extra_coverage" : {
         "tests" : (
-            "SMS_Lm1.ne4_ne4.F2010",
-            "ERS_Ld31.ne4_ne4.F2010",
-            "ERP_Lm3.ne4_ne4.F2010",
+            "SMS_Lm1.ne4_oQU240.F2010",
+            "ERS_Ld31.ne4_oQU240.F2010",
+            "ERP_Lm3.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne30_ne30.F2010",
             "ERP_Ln7.ne30_ne30.F2010",
-            "SMS_Ly1.ne4_ne4.F2010",
+            "SMS_Ly1.ne4_oQU240.F2010",
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
-            "SMS_Ln5.ne4_ne4.F2010.eam-gust_export",
-            "SMS_D_Ln5.ne4_ne4.F2010.eam-implicit_stress",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-implicit_stress",
             "ERS_Ld5.ne30_ne30.F2010.eam-implicit_stress",
             )
         },
@@ -106,9 +104,9 @@ _TESTS = {
     #atmopheric nbfb tests
     "e3sm_atm_nbfb" : {
         "tests" : (
-            "PGN_P1x1.ne4_ne4.F2010",
-            "TSC.ne4_ne4.F2010",
-            "MVK_PS.ne4_ne4.F2010",
+            "PGN_P1x1.ne4_oQU240.F2010",
+            "TSC.ne4_oQU240.F2010",
+            "MVK_PS.ne4_oQU240.F2010",
             )
         },
 
@@ -134,7 +132,7 @@ _TESTS = {
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
-            "SMS_P12x2.ne4_oQU240.WCYCL1850.allactive-mach_mods",
+            "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
@@ -152,11 +150,11 @@ _TESTS = {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
         "tests"   : (
-            "ERS.ne11_oQU240.WCYCL1850",
+            "ERS.ne11_oQU240.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
-            "ERS_Ln9.ne4_ne4.F2010",
+            "ERS_Ln9.ne4_oQU240.F2010",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
-            "NCK.ne11_oQU240.WCYCL1850",
+            "NCK.ne11_oQU240.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",
@@ -218,7 +216,7 @@ _TESTS = {
             "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             # non-MMF tests with RRTMGP
-            "ERP_Ln9.ne4pg2_ne4pg2.F2010.eam-rrtmgp",
+            "ERP_Ln9.ne4pg2_oQU480.F2010.eam-rrtmgp",
             )
         },
 
@@ -269,35 +267,35 @@ _TESTS = {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.F2010.eam-preqx_ftype0",
-                 "SMS.ne4_ne4.F2010.eam-preqx_ftype1",
-                 "SMS.ne4_ne4.F2010.eam-preqx_ftype4",
+                 "SMS.ne4_oQU240.F2010.eam-preqx_ftype0",
+                 "SMS.ne4_oQU240.F2010.eam-preqx_ftype1",
+                 "SMS.ne4_oQU240.F2010.eam-preqx_ftype4",
                  )
     },
     "eam_theta" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.F2010.eam-thetahy_ftype0",
-                 "SMS.ne4_ne4.F2010.eam-thetahy_ftype1",
-                 "SMS.ne4_ne4.F2010.eam-thetahy_ftype2",
-                 "SMS.ne4_ne4.F2010.eam-thetahy_ftype4",
-                 "SMS.ne4_ne4.F2010.eam-thetanh_ftype0",
-                 "SMS.ne4_ne4.F2010.eam-thetanh_ftype1",
-                 "SMS.ne4_ne4.F2010.eam-thetanh_ftype2",
-                 "SMS.ne4_ne4.F2010.eam-thetanh_ftype4",
-                 "SMS.ne4_ne4.F2010.eam-thetahy_sl",
-                 "ERS.ne4_ne4.F2010.eam-thetahy_ftype2",
-                 "ERS.ne4_ne4.F2010.eam-thetanh_ftype2",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype0",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype1",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype2",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype4",
+                 "SMS.ne4_oQU240.F2010.eam-thetanh_ftype0",
+                 "SMS.ne4_oQU240.F2010.eam-thetanh_ftype1",
+                 "SMS.ne4_oQU240.F2010.eam-thetanh_ftype2",
+                 "SMS.ne4_oQU240.F2010.eam-thetanh_ftype4",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_sl",
+                 "ERS.ne4_oQU240.F2010.eam-thetahy_ftype2",
+                 "ERS.ne4_oQU240.F2010.eam-thetanh_ftype2",
                  )
     },
     "eam_theta_pg2" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
-                 "SMS_Ln5.ne4pg2_ne4pg2.F2010.eam-thetahy_pg2",
-                 "SMS_Ln5.ne4pg2_ne4pg2.F2010.eam-thetahy_sl_pg2",
-                 "ERS_Ln5.ne4pg2_ne4pg2.F2010.eam-thetahy_sl_pg2"
+                 "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_pg2",
+                 "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
+                 "ERS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2"
                  )
     },
     "e3sm_bench_hires_g" : {
@@ -402,34 +400,34 @@ _TESTS = {
 
     "eam_nl" : {
         "tests"    : (
-            "SBN.ne4_ne4.F2010.eam-thetadycore",
-            "SBN.ne11_ne11.F2010.eam-thetadycore",
-            "SBN.ne16_ne16.F2010.eam-thetadycore",
-            "SBN.ne30_ne30.F2010.eam-thetadycore",
-            "SBN.ne45pg2_r05_oECv3.F2010.allactive-thetadycore",
-            "SBN.ne120_ne120.F2010.eam-thetadycore",
-            "SBN.ne240_ne240.F2010.eam-thetadycore",
-            "SBN.ne512np4_360x720cru_ne512np4.F2010.allactive-thetadycore",
-            "SBN.ne1024np4_360x720cru_ne1024np4.F2010.allactive-thetadycore",
-            "SBN.conusx4v1_conusx4v1.F2010.eam-thetadycore",
-            "SBN.enax4v1_enax4v1.F2010.eam-thetadycore",
-            "SBN.northamericax4v1_r0125_northamericax4v1.F2010.eam-thetadycore",
-            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010.allactive-thetadycore",
-            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010.allactive-thetadycore",
-            "SBN.ne4_ne4.F2010.eam-preqxdycore",
-            "SBN.ne11_ne11.F2010.eam-preqxdycore",
-            "SBN.ne16_ne16.F2010.eam-preqxdycore",
-            "SBN.ne30_ne30.F2010.eam-preqxdycore",
-            "SBN.ne45pg2_r05_oECv3.F2010.allactive-preqxdycore",
-            "SBN.ne120_ne120.F2010.eam-preqxdycore",
-            "SBN.ne240_ne240.F2010.eam-preqxdycore",
-            "SBN.ne512np4_360x720cru_ne512np4.F2010.allactive-preqxdycore",
-            "SBN.ne1024np4_360x720cru_ne1024np4.F2010.allactive-preqxdycore",
-            "SBN.conusx4v1_conusx4v1.F2010.eam-preqxdycore",
-            "SBN.enax4v1_enax4v1.F2010.eam-preqxdycore",
-            "SBN.northamericax4v1_r0125_northamericax4v1.F2010.eam-preqxdycore",
-            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010.allactive-preqxdycore",
-            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010.allactive-preqxdycore",
+            "SBN.ne4_oQU240.F2010.eam-thetadycore",
+            "SBN.ne11_ne11.F2010-CICE.eam-thetadycore",
+            "SBN.ne16_ne16.F2010-CICE.eam-thetadycore",
+            "SBN.ne30_ne30.F2010-CICE.eam-thetadycore",
+            "SBN.ne45pg2_r05_oECv3.F2010-CICE.allactive-thetadycore",
+            "SBN.ne120_ne120.F2010-CICE.eam-thetadycore",
+            "SBN.ne240_ne240.F2010-CICE.eam-thetadycore",
+            "SBN.ne512np4_360x720cru_ne512np4.F2010-CICE.allactive-thetadycore",
+            "SBN.ne1024np4_360x720cru_ne1024np4.F2010-CICE.allactive-thetadycore",
+            "SBN.conusx4v1_conusx4v1.F2010-CICE.eam-thetadycore",
+            "SBN.enax4v1_enax4v1.F2010-CICE.eam-thetadycore",
+            "SBN.northamericax4v1_r0125_northamericax4v1.F2010-CICE.eam-thetadycore",
+            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010-CICE.allactive-thetadycore",
+            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010-CICE.allactive-thetadycore",
+            "SBN.ne4_oQU240.F2010.eam-preqxdycore",
+            "SBN.ne11_ne11.F2010-CICE.eam-preqxdycore",
+            "SBN.ne16_ne16.F2010-CICE.eam-preqxdycore",
+            "SBN.ne30_ne30.F2010-CICE.eam-preqxdycore",
+            "SBN.ne45pg2_r05_oECv3.F2010-CICE.allactive-preqxdycore",
+            "SBN.ne120_ne120.F2010-CICE.eam-preqxdycore",
+            "SBN.ne240_ne240.F2010-CICE.eam-preqxdycore",
+            "SBN.ne512np4_360x720cru_ne512np4.F2010-CICE.allactive-preqxdycore",
+            "SBN.ne1024np4_360x720cru_ne1024np4.F2010-CICE.allactive-preqxdycore",
+            "SBN.conusx4v1_conusx4v1.F2010-CICE.eam-preqxdycore",
+            "SBN.enax4v1_enax4v1.F2010-CICE.eam-preqxdycore",
+            "SBN.northamericax4v1_r0125_northamericax4v1.F2010-CICE.eam-preqxdycore",
+            "SBN.antarcticax4v1_r0125_antarcticax4v1.F2010-CICE.allactive-preqxdycore",
+            "SBN.antarcticax4v1pg2_r0125_antarcticax4v1pg2.F2010-CICE.allactive-preqxdycore",
             )
     },
 
