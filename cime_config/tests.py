@@ -152,7 +152,7 @@ _TESTS = {
         "tests"   : (
             "ERS.ne11_oQU240.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
-            "ERS_Ln9.ne4_oQU240.F2010",
+            "ERS_Ld3.ne4_oQU240.F2010",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
             "NCK.ne11_oQU240.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
@@ -295,7 +295,7 @@ _TESTS = {
         "tests"    : (
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_pg2",
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
-                 "ERS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2"
+                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2"
                  )
     },
     "e3sm_bench_hires_g" : {
