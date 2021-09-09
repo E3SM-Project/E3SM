@@ -1388,11 +1388,11 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     if (trim(cime_model) == 'e3sm') then
-       call seq_flds_add(l2x_states,"Sl_wslake")
-       longname = 'Lake water storage'
-       stdname  = 'lake_water_storage'
-       units    = 'kg m-2'
-       attname  = 'Sl_wslake'
+       call seq_flds_add(l2x_states,"Flrl_wslake")
+       longname = 'Lake water storage flux'
+       stdname  = 'lake_water_storage_flux'
+       units    = 'kg m-2 s-1'
+       attname  = 'Flrl_wslake'
        call metadata_set(attname, longname, stdname, units)
     end if
 

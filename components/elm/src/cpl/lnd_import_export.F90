@@ -1355,6 +1355,8 @@ contains
     character(len=*), parameter :: sub = 'lnd_export_mct'
     !---------------------------------------------------------------------------
 
+    dtime = get_step_size()
+
     ! cesm sign convention is that fluxes are positive downward
 
     l2x(:,:) = 0.0_r8
@@ -1427,7 +1429,7 @@ contains
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
        l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
-       l2x(index_l2x_Sl_wslake,i) = lnd2atm_vars%wslake_grc(g)
+       l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
        ! glc coupling
 
        if (create_glacier_mec_landunit) then
