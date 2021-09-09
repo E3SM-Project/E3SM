@@ -3,7 +3,6 @@
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 namespace rrtmgpTest {
     bool file_exists(const char *filename);
-    bool all_equals(real2d &arr1, real2d &arr2);
     bool all_close(real2d &arr1, real2d &arr2, double tolerance);
     void dummy_clouds(
             CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, 

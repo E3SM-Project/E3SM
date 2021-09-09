@@ -20,23 +20,6 @@ namespace rrtmgpTest {
     }
 
     // TODO: use YAKL intrinsics for this to avoid needing to make host copies
-    bool all_equals(real2d &arr1, real2d &arr2) {
-        double tolerance = 0.01;
-        int nx = arr1.dimension[0];
-        int ny = arr2.dimension[1];
-        auto arr1_h = arr1.createHostCopy();
-        auto arr2_h = arr2.createHostCopy();
-        for (int i=1; i<nx+1; i++) {
-            for (int j=1; j<ny+1; j++) {
-                if (abs(arr1_h(i,j) - arr2_h(i,j)) > tolerance || std::isnan(arr1_h(i,j) - arr2_h(i,j))) {
-                    printf("arr1 = %f, arr2 = %f\n", arr1_h(i,j), arr2_h(i,j));
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    // TODO: use YAKL intrinsics for this to avoid needing to make host copies
     bool all_close(real2d &arr1, real2d &arr2, double tolerance) {
         int nx = arr1.dimension[0];
         int ny = arr2.dimension[1];
@@ -171,11 +154,11 @@ namespace rrtmgpTest {
 
         // Check values
         int nerr = 0;
-        if (!rrtmgpTest::all_equals(sw_flux_up_1    , sw_flux_up_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(sw_flux_dn_1    , sw_flux_dn_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(sw_flux_dir_1   , sw_flux_dir_2)) nerr++;
-        if (!rrtmgpTest::all_equals(lw_flux_up_1    , lw_flux_up_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(lw_flux_dn_1    , lw_flux_dn_2 )) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_up_1    , sw_flux_up_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_dn_1    , sw_flux_dn_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_dir_1   , sw_flux_dir_2, 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(lw_flux_up_1    , lw_flux_up_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(lw_flux_dn_1    , lw_flux_dn_2 , 0.001)) nerr++;
         return nerr;
     }
 
