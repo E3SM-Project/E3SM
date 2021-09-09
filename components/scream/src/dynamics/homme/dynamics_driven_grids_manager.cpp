@@ -166,6 +166,18 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
     Kokkos::deep_copy(lat,h_lat);
     Kokkos::deep_copy(lon,h_lon);
 
+#ifndef NDEBUG
+    // Check that latitude and longitude are valid
+    using KT = KokkosTypes<DefaultDevice>;
+    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ndofs,nlev);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+      const Int i = team.league_rank();
+
+      EKAT_ASSERT_MSG(!isnan(lat(i)), "Error! NaN values detected for latitude.");
+      EKAT_ASSERT_MSG(!isnan(lon(i)), "Error! NaN values detected for longitude.");
+    });
+#endif
+
     // Set dofs and geo data in the grid
     dyn_grid->set_dofs (dofs, elgpgp);
     dyn_grid->set_geometry_data ("lat", lat);
@@ -208,6 +220,19 @@ build_physics_grid (const std::string& name) {
     Kokkos::deep_copy(lat, h_lat);
     Kokkos::deep_copy(lon, h_lon);
     Kokkos::deep_copy(area,h_area);
+
+#ifndef NDEBUG
+    // Check that latitude, longitude, and area are valid
+    using KT = KokkosTypes<DefaultDevice>;
+    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nlcols,nlev);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+      const Int i = team.league_rank();
+
+      EKAT_ASSERT_MSG(!isnan(lat(i)),                   "Error! NaN values detected for latitude.");
+      EKAT_ASSERT_MSG(!isnan(lon(i)),                   "Error! NaN values detected for longitude.");
+      EKAT_ASSERT_MSG(area(i) >  0  && !isnan(area(i)), "Error! Non-positve or NaN values detected for area.");
+    });
+#endif
 
     // Set dofs and geo data in the grid
     phys_grid->set_dofs(dofs);
