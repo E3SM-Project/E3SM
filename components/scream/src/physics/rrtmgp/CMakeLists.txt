@@ -1,5 +1,5 @@
 # Add CUDA flags for YAKL
-set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
     set(YAKL_ARCH "CUDA")
     set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
@@ -28,7 +28,7 @@ set(EXTERNAL_SRC
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 target_link_libraries(rrtmgp yakl)
-set_target_properties(rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+target_compile_options(rrtmgp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 target_include_directories(rrtmgp PUBLIC 
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
@@ -52,7 +52,7 @@ set(INTERFACE_SRC
   tests/rrtmgp_test_utils.cpp
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
-set_target_properties(scream_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+target_compile_options(scream_rrtmgp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
 target_link_libraries(scream_rrtmgp ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${NetCDF_C_PATHS}/include)

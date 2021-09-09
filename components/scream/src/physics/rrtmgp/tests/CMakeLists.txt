@@ -1,15 +1,14 @@
 include(ScreamUtils)
 
 # Set flags needed for YAKL
-set(YAKL_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
     set(YAKL_ARCH "CUDA")
     list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
 endif()
 
 # Required libraries
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-set (NEED_LIBS ${NETCDF_C} scream_rrtmgp)
+set (NEED_LIBS scream_rrtmgp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
