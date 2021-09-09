@@ -11,7 +11,6 @@ target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-fno-default-re
 EkatDisableAllWarning(yakl)
 
 # We will need the shr_orb_mod source too; this builds library share_util
-enable_language(Fortran)
 add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
 
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"

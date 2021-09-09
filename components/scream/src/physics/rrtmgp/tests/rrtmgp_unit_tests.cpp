@@ -1,10 +1,9 @@
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-//#include "physics/rrtmgp/zenith.hpp"
 #include "YAKL/YAKL.h"
 #include "physics/share/physics_constants.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod_c.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -182,7 +181,7 @@ TEST_CASE("rrtmgp_test_zenith") {
     double lambm0;
     double mvelpp;
     bool flag_print = false;
-    shr_orb_params_c(&orbital_year, &eccen, &obliq, &mvelp, 
+    shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
                      &obliqr, &lambm0, &mvelpp); //, flag_print); // Note fortran code has optional arg
     REQUIRE(eccen == eccen_ref);
     REQUIRE(obliqr == obliqr_ref);
@@ -193,13 +192,13 @@ TEST_CASE("rrtmgp_test_zenith") {
     // Test shr_orb_decl()
     double delta;
     double eccf;
-    shr_orb_decl_c(calday, eccen, mvelpp, lambm0,
+    shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
     REQUIRE(delta == delta_ref);
     REQUIRE(eccf  == eccf_ref );
 
     double dt_avg = 0.; //3600.0000000000000;
-    double coszrs = shr_orb_cosz_c(calday, lat, lon, delta, dt_avg);
+    double coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
     REQUIRE(coszrs == coszrs_ref);
 
     // Another case, this time WITH dt_avg flag:
@@ -214,7 +213,7 @@ TEST_CASE("rrtmgp_test_zenith") {
     lon = 4.5284876076962712;
     dt_avg = 3600.0000000000000;
     coszrs_ref = 0.14559973262047626;
-    coszrs = shr_orb_cosz_c(calday, lat, lon, delta, dt_avg);
+    coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
     REQUIRE(coszrs == coszrs_ref);
 
 }

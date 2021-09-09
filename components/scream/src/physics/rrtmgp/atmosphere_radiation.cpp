@@ -1,7 +1,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod_c.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
@@ -268,19 +268,19 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
     double delta, eccf;
     // First gather the orbital parameters:
-    shr_orb_params_c(&m_orbital_year, &eccen, &obliq, &mvelp, 
+    shr_orb_params_c2f(&m_orbital_year, &eccen, &obliq, &mvelp, 
                        &obliqr, &lambm0, &mvelpp);
     // Use the oribtal parameters to calculate the delta value
     auto ts = timestamp();
     auto calday = ts.get_julian_day();
-    shr_orb_decl_c(calday, eccen, mvelpp, lambm0,
+    shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                      obliqr, &delta, &eccf);
     // Now assign value to the cosine zenith angle
     for (int i=0;i<m_ncol;i++) {
       // Using delta, calculate the zenith angle for all points
       double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
       double lon = h_lon(i)*PC::Pi/180.0;
-      h_mu0(i) = shr_orb_cosz_c(calday, lat, lon, delta, dt);
+      h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
     }
     Kokkos::deep_copy(d_mu0,h_mu0);
 
