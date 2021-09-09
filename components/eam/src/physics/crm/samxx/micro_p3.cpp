@@ -32,32 +32,26 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
   int ni = ite-its+1;
 
   parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-      int i0 = i+its;
-      int k0 = kte-kts-k;
-
-      cldm(i0,k0)  = max(ast(i0,k0), mincld);
-      cld_frac_i(i0,k0) = max(ast(i0,k0), mincld);
-      cld_frac_l(i0,k0) = max(ast(i0,k0), mincld);
-      cld_frac_r(i0,k0) = cldm(i0,k0);
+      cldm(i,k)  = max(ast(i,k), mincld);
+      cld_frac_i(i,k) = max(ast(i,k), mincld);
+      cld_frac_l(i,k) = max(ast(i,k), mincld);
+      cld_frac_r(i,k) = cldm(i,k);
   });
 
   if (method == "in_cloud") {
 
      parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-       int i0 = i+its;
-       int k0 = kte-kts-k;
-
        // in_cloud means that precip_frac (cld_frac_r) = cloud (cldm) frac when cloud mass
        // is present. Below cloud, precip frac is equal to the cloud
        // fraction from the last layer that had cloud. Since presence or
        // absence of cloud is defined as mass > qsmall, sub-cloud precip
        // frac for the in_cloud method tends to be very small and is
        // very sensitive to tiny changes in condensate near cloud base.
-       if (qc(i0,k0) < qsmall && qi(i0,k0) < qsmall) {
+       if (qc(i,k) < qsmall && qi(i,k) < qsmall && k > 0) {
          // max(cld_frac_r above and cld_frac_r for this layer) is taken here
          // because code is incapable of handling cld_frac_r<cldm for a
          // given grid cell
-         cld_frac_r(i0,k0) = max(cld_frac_r(i0,k0-1),cld_frac_r(i0,k0));
+         cld_frac_r(i,k) = max(cld_frac_r(i,k-1),cld_frac_r(i,k));
        }
      });
 
@@ -71,11 +65,10 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
       // then leave cld_frac_r as cloud fraction at current level
 
       parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-        int i0 = i+its;
-        int k0 = kte-kts-k;
-
-        if (qr(i0,k0-1) >= qsmall || qi(i0,k0-1) >= qsmall) {
-           cld_frac_r(i0,k0) = max(cld_frac_r(i0,k0-1),cld_frac_r(i0,k0));
+        if (k > 0) {
+           if (qr(i,k-1) >= qsmall || qi(i,k-1) >= qsmall) {
+              cld_frac_r(i,k) = max(cld_frac_r(i,k-1),cld_frac_r(i,k));
+           }
         }
       });
  }
@@ -170,7 +163,8 @@ void micro_p3_proc() {
  
  real2d ast_in("ast_in",ncol, nlev);
  real2d cldm_in("cldm_in", ncol, nlev);
- 
+
+ // p3 output variables 
  real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
  real2d precip_liq_surf_in("precip_liq",ncol, nlev);
  real2d precip_ice_surf_in("precip_ice",ncol, nlev);
@@ -188,10 +182,8 @@ void micro_p3_proc() {
  real2d precip_liq_flux_out("precip_liq_flux", ncol, nlev);
  real2d precip_ice_flux_out("precip_ice_flux", ncol, nlev);
 
- real1d precip_liq_surf_out("precip_liq_surf_d", nlev);
- real1d precip_ice_surf_out("precip_ice_surf_d", nlev);
-
-printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,nzm,ncrms,ncol,nlev);
+ real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
+ real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
 
  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
    int icol = i+nx*(j+ny*icrm);
@@ -255,7 +247,7 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
   });
 
   std::string method("in_cloud");
-  get_cloud_fraction(0, ncol, 0, nlev,
+  get_cloud_fraction(0, ncol-1, 0, nlev-1,
                      ast_in, qc_in, qr_in, qi_in, method,
                      cld_frac_i_in, cld_frac_l_in, cld_frac_r_in, cldm_in);
 
@@ -298,8 +290,8 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
           precip_liq_flux_d("precip_liq_flux", ncol, npack),
           precip_ice_flux_d("precip_ice_flux", ncol, npack);
 
-  sview_1d precip_liq_surf_d("precip_liq_surf_d", npack), 
-           precip_ice_surf_d("precip_ice_surf_d", npack);
+  sview_1d precip_liq_surf_d("precip_liq_surf_d", ncol), 
+           precip_ice_surf_d("precip_ice_surf_d", ncol);
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int k, int j) {
      qv2qi_depos_tend_d(k,j)[0] = 0.;
@@ -310,7 +302,7 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
      precip_ice_flux_d(k,j)[0] = 0.;
   });
 
-  Kokkos::parallel_for("precip", nlev, KOKKOS_LAMBDA (const int& i) {
+  Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& i) {
     precip_liq_surf_d(i) = 0.;
     precip_ice_surf_d(i) = 0.;
   });
@@ -368,10 +360,12 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
      int k    = ilev*Spack::n+s;
-     if (k <= nlev) {
-         precsfc(j,i,icrm) = precsfc(j,i,icrm)+(diag_outputs.precip_liq_surf(ilev)+diag_outputs.precip_ice_surf(ilev))*1000.0*dt/dz.myData[icrm];
-         prec_xy(j,i,icrm) = prec_xy(j,i,icrm)+(diag_outputs.precip_liq_surf(ilev)+diag_outputs.precip_ice_surf(ilev))*1000.0*dt/dz.myData[icrm];
-       }
+     if (k < nlev) {
+         auto precsfc_tmp = precsfc(j,i,icrm);
+         auto prec_xy_tmp = prec_xy(j,i,icrm);
+         precsfc(j,i,icrm) = precsfc_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
+         prec_xy(j,i,icrm) = prec_xy_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
+     }
   });
 
   // update microfield
@@ -380,21 +374,16 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
      int k    = ilev*Spack::n + s;
-     if (k <= nlev) {
-        int d1 = micro_field.dimension[1];
-        int d2 = micro_field.dimension[2];
-        int d3 = micro_field.dimension[3];
-        int d4 = micro_field.dimension[4];
-        int d5 = micro_field.dimension[5];
-        micro_field.myData[((((ixcldliq*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.qc(icol,ilev)[s];
-        micro_field.myData[((((ixnumliq*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.nc(icol,ilev)[s];
-        micro_field.myData[((((ixrain*d1    +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.qr(icol,ilev)[s];
-        micro_field.myData[((((ixnumrain*d1 +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.nr(icol,ilev)[s];
-        micro_field.myData[((((ixcldice*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.qi(icol,ilev)[s];
-        micro_field.myData[((((ixcldrim*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.qm(icol,ilev)[s];
-        micro_field.myData[((((ixnumice*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.ni(icol,ilev)[s];
-        micro_field.myData[((((ixrimvol*d1  +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.bm(icol,ilev)[s];
-        micro_field.myData[((((ixqv*d1      +k)*d2+j+offy_s)*d3+i+offx_s)*d4+k)*d5+icrm] = prog_state.qv(icol,ilev)[s];        
+     if (k < nlev) {
+        micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
+        micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
+        micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];
+        micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm) = prog_state.nr(icol,ilev)[s];
+        micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm) = prog_state.qi(icol,ilev)[s];
+        micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
+        micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
+        micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
+        micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s];        
      }
   });
 
@@ -403,7 +392,7 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
      int k    = j*Spack::n + s;
-     if (k <= nlev) {
+     if (k < nlev) {
         qv2qi_depos_tend(k,icrm)   = diag_outputs.qv2qi_depos_tend(icol,ilev)[s];
         diag_eff_radius_qc(k,icrm) = diag_outputs.diag_eff_radius_qc(icol,ilev)[s];
         diag_eff_radius_qi(k,icrm) = diag_outputs.diag_eff_radius_qi(icol,ilev)[s];
@@ -418,7 +407,7 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
      int k    = ilev*Spack::n + s;
-     if (k <= nlev) {
+     if (k < nlev) {
          liq_ice_exchange(k,icrm) = history_only.liq_ice_exchange(icol,ilev)[s];
          vap_liq_exchange(k,icrm) = history_only.vap_liq_exchange(icol,ilev)[s];
          vap_ice_exchange(k,icrm) = history_only.vap_ice_exchange(icol,ilev)[s];
