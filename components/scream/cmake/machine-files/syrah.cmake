@@ -9,3 +9,4 @@ set(CMAKE_CXX_FLAGS "-w -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh" CACHE STRING
 set(CMAKE_EXE_LINKER_FLAGS "-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/ -mkl" CACHE STRING "")
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
 set(SCREAM_MPI_NP_FLAG "-n" CACHE STRING "")
+set(SCREAM_MPI_EXTRA_ARGS "" CACHE STRING "")
