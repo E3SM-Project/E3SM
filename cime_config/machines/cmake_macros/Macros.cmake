@@ -8,6 +8,7 @@ cmake_policy(SET CMP0057 NEW)
 
 set(MACROS_DIR ${CASEROOT}/cmake_macros)
 
+set(UNIVERSAL_MACRO ${MACROS_DIR}/universal.cmake)
 set(COMPILER_MACRO ${MACROS_DIR}/${COMPILER}.cmake)
 set(OS_MACRO ${MACROS_DIR}/${OS}.cmake)
 set(MACHINE_MACRO ${MACROS_DIR}/${MACH}.cmake)
@@ -18,7 +19,7 @@ if (CONVERT_TO_MAKE)
 endif()
 
 # Include order defines precedence
-foreach (MACRO_FILE ${COMPILER_MACRO} ${OS_MACRO} ${MACHINE_MACRO} ${COMPILER_MACHINE_MACRO})
+foreach (MACRO_FILE ${UNIVERSAL_MACRO} ${COMPILER_MACRO} ${OS_MACRO} ${MACHINE_MACRO} ${COMPILER_MACHINE_MACRO})
   if (EXISTS ${MACRO_FILE})
     include(${MACRO_FILE})
   else()
