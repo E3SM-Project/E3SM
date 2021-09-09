@@ -58,6 +58,7 @@ void allocate() {
 
   zm                 = real2d( "zm              " , nzm, ncrms);
   sl                 = real2d( "sl              " , nzm, ncrms);
+  ast                = real2d( "ast             " , nzm, ncrms);
   omega              = real2d( "omega           " , nzm, ncrms); 
   nc_nuceat_tend     = real2d( "nc_nuceat_tend  " , nzm, ncrms);
   nccn_prescribed    = real2d( "nccn_prescribed " , nzm, ncrms);
@@ -281,6 +282,7 @@ void allocate() {
 
   yakl::memset(zm                ,0 );
   yakl::memset(sl                ,0 );
+  yakl::memset(ast               ,0 );
   yakl::memset(omega             ,0 );
   yakl::memset(nc_nuceat_tend    ,0 );
   yakl::memset(nccn_prescribed   ,0 );
@@ -597,6 +599,7 @@ void finalize() {
 
   zm                 = real2d();
   sl                 = real2d();
+  ast                = real2d();
   omega              = real2d();
   nc_nuceat_tend     = real2d();
   nccn_prescribed    = real2d();
@@ -778,7 +781,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p, real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
                             real *crm_input_t_prev_p, real *crm_input_qv_prev_p, real *crm_input_zm_p, real *crm_input_sl_p, real *crm_input_omega_p,
                             real *crm_input_tke_zt_p, real *crm_input_wthv_p, real *crm_input_tkh_p, real *crm_input_tk_p,  real *crm_input_alst_p,
-                            real *crm_input_qtracers_p, real *crm_input_npccn_p, real *crm_input_ni_activated_p,  
+                            real *crm_input_qtracers_p, real *crm_input_npccn_p, real *crm_input_ni_activated_p, real *crm_input_ast_p,  
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                             real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_state_qc_p, real *crm_state_nc_p,
                             real *crm_state_qr_p, real *crm_state_nr_p, real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p,
@@ -821,6 +824,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   realHost2d crm_input_qv_prev         = realHost2d( "crm_input_qv_prev        ",crm_input_qv_prev_p                          , plev       , pcols);
   realHost2d crm_input_zm              = realHost2d( "crm_input_zm             ",crm_input_zm_p                               , plev       , pcols);
   realHost2d crm_input_sl              = realHost2d( "crm_input_sl             ",crm_input_sl_p                               , plev       , pcols);
+  realHost2d crm_input_ast             = realHost2d( "crm_input_ast            ",crm_input_ast_p                              , plev       , pcols);
   realHost2d crm_input_omega           = realHost2d( "crm_input_omega          ",crm_input_omega_p                            , plev       , pcols);
   realHost2d crm_input_tke_zt          = realHost2d( "crm_input_tke_zt         ",crm_input_tke_zt_p                           , plev       , pcols);
   realHost2d crm_input_wthv            = realHost2d( "crm_input_wthv           ",crm_input_wthv_p                             , plev       , pcols);
@@ -894,6 +898,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   ::crm_input_qv_prev         = real2d( "crm_input_qv_prev"                         , plev       , pcols);
   ::crm_input_zm              = real2d( "crm_input_zm"                              , plev       , pcols);
   ::crm_input_sl              = real2d( "crm_input_sl"                              , plev       , pcols);
+  ::crm_input_ast             = real2d( "crm_input_ast"                             , plev       , pcols);
   ::crm_input_omega           = real2d( "crm_input_omega"                           , plev       , pcols);
   ::crm_input_tke_zt          = real2d( "crm_input_tke_zt"                          , plev       , pcols);
   ::crm_input_wthv            = real2d( "crm_input_wthv"                            , plev       , pcols);
@@ -1043,6 +1048,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   crm_input_qv_prev        .deep_copy_to(::crm_input_qv_prev);
   crm_input_zm             .deep_copy_to(::crm_input_zm);
   crm_input_sl             .deep_copy_to(::crm_input_sl);
+  crm_input_ast            .deep_copy_to(::crm_input_ast);
   crm_input_omega          .deep_copy_to(::crm_input_omega);
   crm_input_tke_zt         .deep_copy_to(::crm_input_tke_zt);
   crm_input_wthv           .deep_copy_to(::crm_input_wthv);
@@ -1592,6 +1598,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_qv_prev         = real2d();
   ::crm_input_zm              = real2d();
   ::crm_input_sl              = real2d();
+  ::crm_input_ast             = real2d();
   ::crm_input_omega           = real2d();
   ::crm_input_tke_zt          = real2d();
   ::crm_input_wthv            = real2d();
@@ -2002,6 +2009,7 @@ int3d flag_top         ;
 
 real2d  zm;
 real2d  sl;
+real2d  ast;
 real2d  omega;
 real2d  nc_nuceat_tend    ;
 real2d  nccn_prescribed   ;
@@ -2116,6 +2124,7 @@ real2d crm_input_t_prev;
 real2d crm_input_qv_prev;
 real2d crm_input_zm;
 real2d crm_input_sl;
+real2d crm_input_ast;
 real2d crm_input_omega;
 real2d crm_input_tke_zt;
 real2d crm_input_wthv;

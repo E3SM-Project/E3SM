@@ -19,7 +19,7 @@ module cpp_interface_mod
                    crm_input_t_vt, crm_input_q_vt, crm_input_relvar, crm_input_nccn_prescribed, &
                    crm_input_t_prev, crm_input_qv_prev, crm_input_zm, crm_input_sl, crm_input_omega, &
                    crm_input_tke_zt, crm_input_wthv, crm_input_tkh, crm_input_tk, crm_input_alst, crm_input_qtracers, &
-                   crm_input_npccn, crm_input_ni_activated, &
+                   crm_input_npccn, crm_input_ni_activated, crm_input_ast, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                    crm_state_qt, crm_state_qp, crm_state_qn, crm_state_qc, crm_state_nc, crm_state_qr, &
                    crm_state_nr, crm_state_qi, crm_state_ni, crm_state_qs, crm_state_ns, crm_state_qg, &
@@ -69,7 +69,7 @@ module cpp_interface_mod
 #endif
                                       crm_input_t_vt, crm_input_q_vt, crm_input_relvar, crm_input_nccn_prescribed,  &
                                       crm_input_t_prev, crm_input_qv_prev, crm_input_sl, crm_input_zm, crm_input_omega, &
-                                      crm_input_npccn, crm_input_ni_activated, &
+                                      crm_input_npccn, crm_input_ni_activated, crm_input_ast, &
                                       crm_input_tke_zt, crm_input_wthv, crm_input_tkh, crm_input_tk, crm_input_alst, crm_input_qtracers, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                                       crm_state_qt, crm_state_qp, crm_state_qn, crm_state_qc, crm_state_nc, crm_state_qr, &

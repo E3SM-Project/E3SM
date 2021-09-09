@@ -121,6 +121,8 @@ void micro_p3_proc() {
  auto &t_prev             = :: t_prev;
  auto &qv_prev            = :: qv_prev;
  auto &docloud            = :: docloud;
+ auto &ast                = :: ast;
+
  // output 
  auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
  auto &precip_liq_surf    = :: precip_liq_surf;
@@ -165,7 +167,7 @@ void micro_p3_proc() {
  real2d exner_in("exner",ncol, nlev);
  real2d qv_prev_in("qv_prev",ncol, nlev);
  real2d t_prev_in("t_prev",ncol, nlev);
-
+ 
  real2d ast_in("ast_in",ncol, nlev);
  real2d cldm_in("cldm_in", ncol, nlev);
  
@@ -197,11 +199,6 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
    exner_in(icol, ilev) = 1./std::pow((pres(k,icrm)*1.0e-5), (rgas/cp));
    th_in(icol, ilev) = tabs(k,j,i,icrm)*exner_in(icol, ilev);
  });
-
- std::string method("in_cloud");
- get_cloud_fraction(0, ncol, 0, nlev,
-                    ast_in, qc_in, qr_in, qi_in, method, 
-                    cld_frac_i_in, cld_frac_l_in, cld_frac_r_in, cldm_in);
 
  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
@@ -252,9 +249,15 @@ printf("micro_p3_00: nx=%d, ny=%d, nzm=%d, ncrms=%d, ncol=%d, nlev=%d\n",nx,ny,n
     pres_in(icol,ilev)            = pres(k,icrm);
     dz_in(icol,ilev)              = dz(icrm);
     dpres_in(icol,ilev)           = pdel(k,icrm);
+    ast_in(icol,ilev)             = ast(k,icrm);
     qv_prev_in(icol,ilev)         = qv_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
   });
+
+  std::string method("in_cloud");
+  get_cloud_fraction(0, ncol, 0, nlev,
+                     ast_in, qc_in, qr_in, qi_in, method,
+                     cld_frac_i_in, cld_frac_l_in, cld_frac_r_in, cldm_in);
 
   view_2d nc_nuceat_tend_d("nc_nuceat_tend", ncol, npack),
           nccn_prescribed_d("nccn_prescribed", ncol, npack),
