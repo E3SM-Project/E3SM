@@ -17,10 +17,18 @@ module phys_grid_mod
   integer, public, parameter :: pg_twin_cols = 1  ! Not yet supported in SCREAM!
 
   ! Global geo info
+
+  ! Arrays of size num_global_columns.
+  ! These arrays are ordered contiguously in
+  ! the number of mpi ranks (nprocs), even though elements may have non-contiguous
+  ! ordering. E.g. rank0 has element ids [1,4,6] and rank1 has [2,3,5],
+  ! then g_area orders its elements [1,4,6,2,3,5].
   real (kind=c_double), pointer :: g_lat(:)
   real (kind=c_double), pointer :: g_lon(:)
   real (kind=c_double), pointer :: g_area(:)
   integer (kind=c_int), pointer :: g_dofs(:)
+
+  ! Arrays of size nprocs
   integer (kind=c_int), pointer :: g_ncols(:)
   integer (kind=c_int), pointer :: g_offsets(:)
 
@@ -270,11 +278,12 @@ contains
 
       ncols = get_num_local_columns()
       area_l => area_g(offset+1 : offset+ncols)
+      start = 1
       do ie=1,nelemd
         areaw = 1.0_c_double / elem(ie)%rspheremp(:,:)
         ncols = elem(ie)%idxP%NumUniquePts
-        start = elem(ie)%idxP%UniquePtOffset - offset
         call UniquePoints(elem(ie)%idxP, areaw, area_l(start:start+ncols-1))
+        start = start + ncols
       enddo
 
       ncols = get_num_local_columns()
@@ -319,13 +328,13 @@ contains
       ncols = get_num_local_columns()
       lat_l => lat_g(offset+1 : offset+ncols)
       lon_l => lon_g(offset+1 : offset+ncols)
-
+      start = 1
       do ie=1,nelemd
         ncols = elem(ie)%idxP%NumUniquePts
-        start = elem(ie)%idxP%UniquePtOffset - offset
         call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep, &
                           lat_l(start:start+ncols-1),      &
                           lon_l(start:start+ncols-1))
+        start = start + ncols
       enddo
 
       ncols = get_num_local_columns()
