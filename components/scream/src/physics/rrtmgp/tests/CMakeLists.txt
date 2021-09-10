@@ -1,15 +1,14 @@
 include(ScreamUtils)
 
 # Set flags needed for YAKL
-set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
     set(YAKL_ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
+    list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
 endif()
 
 # Required libraries
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-set (NEED_LIBS ${NETCDF_C} rrtmgp scream_rrtmgp scream_share yakl)
+set (NEED_LIBS scream_rrtmgp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
@@ -19,18 +18,18 @@ if (NOT ${SCREAM_BASELINES_ONLY})
         EXE_ARGS "${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
         EXCLUDE_MAIN_CPP
     )
-    set_target_properties(rrtmgp_tests PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    target_compile_options(rrtmgp_tests PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
     set (SRC rrtmgp_unit_tests.cpp rrtmgp_test_utils.cpp)
     CreateUnitTest(
         rrtmgp_unit_tests "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
     )
-    set_target_properties(rrtmgp_unit_tests PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    target_compile_options(rrtmgp_unit_tests PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 endif()
 
 # Build baseline code
 set (GEN_BASELINE_SRC generate_baseline.cpp rrtmgp_test_utils.cpp)
 add_executable(generate_baseline "${GEN_BASELINE_SRC}")
-set_target_properties(generate_baseline PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+target_compile_options(generate_baseline PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 target_link_libraries(generate_baseline ${NEED_LIBS})
 
 # Copy RRTMGP absorption coefficient lookup tables to local data directory

@@ -3,6 +3,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL/YAKL.h"
 #include "physics/share/physics_constants.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -154,4 +155,65 @@ TEST_CASE("rrtmgp_test_limit_to_bounds") {
     arr.deallocate();
     arr_limited.deallocate();
     yakl::finalize();
+}
+
+TEST_CASE("rrtmgp_test_zenith") {
+
+    // Create some dummy data
+    int orbital_year = 1990;
+    double calday = 1.0000000000000000;
+    double eccen_ref = 1.6707719799280658E-002;
+    double mvelpp_ref = 4.9344679089867318;
+    double lambm0_ref = -3.2503635878519378E-002;
+    double obliqr_ref = 0.40912382465788016;
+    double delta_ref = -0.40302893695478670;
+    double eccf_ref = 1.0342222039093694;
+    double lat = -7.7397590528644963E-002;
+    double lon = 2.2584340271163548;
+    double coszrs_ref = 0.61243613606766745;
+
+    // Test shr_orb_params()
+    // Get orbital parameters based on calendar day
+    double eccen;
+    double obliq;  // obliquity in degrees
+    double mvelp;  // moving vernal equinox long of perihelion; degrees?
+    double obliqr;
+    double lambm0;
+    double mvelpp;
+    bool flag_print = false;
+    shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+                     &obliqr, &lambm0, &mvelpp); //, flag_print); // Note fortran code has optional arg
+    REQUIRE(eccen == eccen_ref);
+    REQUIRE(obliqr == obliqr_ref);
+    REQUIRE(mvelpp == mvelpp_ref);
+    REQUIRE(lambm0 == lambm0_ref);
+    REQUIRE(mvelpp == mvelpp_ref);
+
+    // Test shr_orb_decl()
+    double delta;
+    double eccf;
+    shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                   obliqr, &delta, &eccf);
+    REQUIRE(delta == delta_ref);
+    REQUIRE(eccf  == eccf_ref );
+
+    double dt_avg = 0.; //3600.0000000000000;
+    double coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
+    REQUIRE(std::abs(coszrs-coszrs_ref)<1e-14);
+
+    // Another case, this time WITH dt_avg flag:
+    calday = 1.0833333333333333;
+    eccen = 1.6707719799280658E-002;
+    mvelpp = 4.9344679089867318;
+    lambm0 = -3.2503635878519378E-002;
+    obliqr = 0.40912382465788016;
+    delta = -0.40292121709083456;
+    eccf = 1.0342248931660425;
+    lat = -1.0724153591027763;
+    lon = 4.5284876076962712;
+    dt_avg = 3600.0000000000000;
+    coszrs_ref = 0.14559973262047626;
+    coszrs = shr_orb_cosz_c2f(calday, lat, lon, delta, dt_avg);
+    REQUIRE(std::abs(coszrs-coszrs_ref)<1e-14);
+
 }

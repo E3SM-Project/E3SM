@@ -307,10 +307,10 @@ initialize_fields (const util::TimeStamp& t0)
   // test or run setup code rather than by file.
   bool load_latitude  = false;
   bool load_longitude = false;
-  if (ic_pl.isParameter("I")) {
+  if (ic_pl.isParameter("Load Latitude")) {
     load_latitude = ic_pl.get<bool>("Load Latitude");
   }
-  if (ic_pl.isParameter("load_longitude")) {
+  if (ic_pl.isParameter("Load Longitude")) {
     load_longitude = ic_pl.get<bool>("Load Longitude");
   }
 
@@ -367,6 +367,9 @@ initialize_fields (const util::TimeStamp& t0)
       lat_lon_reader.init(ref_grid,host_views,layouts);
       lat_lon_reader.read_variables();
       lat_lon_reader.finalize();
+      for (auto& fname : fnames) {
+        Kokkos::deep_copy(dev_views[fname],host_views[fname]);
+      }
     }
   }
 
