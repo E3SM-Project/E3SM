@@ -486,6 +486,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use spmd_utils,            only: masterproc
    use openacc_utils,         only: prefetch
 
+   ! use phys_grid, only: get_area_all_p
+
    real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
    type(physics_state),dimension(begchunk:endchunk),intent(in   ) :: state            ! Global model state 
    type(physics_tend), dimension(begchunk:endchunk),intent(in   ) :: tend             ! 
@@ -1103,6 +1105,23 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 #elif defined(MMF_SAMXX)
 
       call t_startf ('crm_call')
+
+      ! real(r8) :: area_tmp(pcols)
+      !-------------------------------------------------------------------------
+      ! Determine scaling for crm_dx
+      !-------------------------------------------------------------------------
+      ! ncol_sum = 0
+      ! do c=begchunk, endchunk
+      !    ncol = state(c)%ncol
+      !    call get_area_all_p(state(c)%lchnk, pcols, area_tmp)
+      !    do i = 1,ncol
+      !       icrm = ncol_sum + i
+      !       area(icrm) = area_tmp(i)
+      !    end do
+      !    ncol_sum = ncol_sum + ncol
+      ! end do ! c=begchunk, endchunk
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
