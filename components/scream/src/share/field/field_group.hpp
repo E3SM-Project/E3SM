@@ -188,6 +188,14 @@ private:
   }
 };
 
+// We use this to find a FieldGroup in a std container.
+// We do NOT allow two entries with same group name and grid name in such containers.
+template<typename RT>
+bool operator== (const FieldGroup<RT>& lhs, const FieldGroup<RT>& rhs) {
+  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+         lhs.grid_name() == rhs.grid_name();
+}
+
 } // namespace scream
 
 #endif // SCREAM_FIELD_GROUP_HPP

@@ -296,6 +296,13 @@ protected:
   std::shared_ptr<property_check_list>    m_prop_checks;
 };
 
+// We use this to find a FieldGroup in a std container.
+// We do NOT allow two entries with same field identifier in such containers.
+template<typename RT1, typename RT2>
+bool operator== (const Field<RT1>& lhs, const Field<RT2>& rhs) {
+  return lhs.get_header().get_identifier() == rhs.get_header().get_identifier();
+}
+
 // ================================= IMPLEMENTATION ================================== //
 
 template<typename RealType>
