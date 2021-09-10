@@ -3355,7 +3355,7 @@ contains
                   WAVID(ewi), component_get_iamroot_compid(wav(ewi)))
           end do
           ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
-          call seq_resume_store_comp('x', drv_resume_file, 1,                      &
+          call seq_resume_store_comp('x', drv_resume_file, 1,                 &
                driver_id, iamroot_CPLID)
           call component_run(Eclock_e, esp, esp_run, infodata,                &
                comp_prognostic=esp_prognostic, comp_num=comp_num_esp,         &
@@ -3422,7 +3422,7 @@ contains
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume_file, infodata,                          &
+             call seq_rest_read(drv_resume_file, infodata,                     &
                   atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx, fractions_zx)
