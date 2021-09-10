@@ -823,7 +823,6 @@ contains
 
   subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
 
-    type(ESMF_Clock)        , intent(in)           :: EClock    
     type(component_type)    , intent(in)           :: lnd    ! component type for instance1
     type(mct_aVect)         , intent(in)           :: frac_l ! frac bundle
     type(seq_infodata_type) , intent(in)           :: infodata
