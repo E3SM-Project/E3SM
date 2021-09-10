@@ -51,6 +51,8 @@ module controlMod
   use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
+  use elm_varctl              , only: ftopdat  ! TOP solar radiation parameterization
+  use SurfaceAlbedoMod        , only: use_top_solar_rad  ! TOP solar radiation parameterization
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -302,6 +304,11 @@ contains
     namelist /elm_inparm/ &
          use_erosion, ero_ccycle
 
+    ! TOP solar radiation parameterization options  !
+    namelist /clm_inparm/  &
+         use_top_solar_rad, ftopdat
+    ! End
+    
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -680,7 +687,8 @@ contains
     call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
-
+    call mpi_bcast (ftopdat , len(ftopdat) , MPI_CHARACTER, 0, mpicom, ier)  ! TOP solar radiation parameterization
+    
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -799,7 +807,8 @@ contains
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    call mpi_bcast (use_top_solar_rad , 1, MPI_LOGICAL, 0, mpicom, ier)  ! TOP solar radiation parameterization
+    
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (maxpatch_glcmec, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -957,6 +966,17 @@ contains
     else
        write(iulog,*) '   atm topographic data = ',trim(fatmtopo)
     end if
+    
+    if (use_top_solar_rad) then  ! TOP solar radiation parameterization
+        if (ftopdat  == ' ') then
+            call endrun(subname//' ERROR: ftopdat  not set while use_top_solar_rad is True')
+        else
+            write(iulog,*) '   Topographic data for TOP solar radiation parameterization = ',trim(ftopdat)
+        end if
+    else
+        write(iulog,*) '   use_top_solar_rad is False, so do not run TOP solar radiation parameterization'
+    end if  ! End
+    
     if (use_cn) then
        if (suplnitro /= suplnNon)then
           write(iulog,*) '   Supplemental Nitrogen mode is set to run over Patches: ', &
@@ -1069,6 +1089,8 @@ contains
     write(iulog,*) '   implicit_stress   = ', implicit_stress
     write(iulog,*) '   atm_gustiness   = ', atm_gustiness
     write(iulog,*) '   more vertical layers = ', more_vertlayers
+    write(iulog,*) '   Sub-grid topographic effects on solar radiation   = ', use_top_solar_rad  ! TOP solar radiation parameterization
+        
     if (nsrest == nsrContinue) then
        write(iulog,*) 'restart warning:'
        write(iulog,*) '   Namelist not checked for agreement with initial run.'
