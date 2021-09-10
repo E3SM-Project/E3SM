@@ -110,7 +110,6 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 
   // 2d packed views
   const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
-  const Int num_int_packs = ekat::npack<Spack>(m_num_levs+1);
 
   m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(s_mem, m_num_cols, num_mid_packs);
   s_mem += m_buffer.p_mid_src.size();
@@ -144,7 +143,7 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const Real dt)
+void SPA::run_impl (const Real /* dt */)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
@@ -158,12 +157,6 @@ void SPA::run_impl (const Real dt)
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
-
-  // Advance current timestamp.
-  ts += dt;
-  for (auto& f : m_fields_out) {
-    f.second.get_header().get_tracking().update_time_stamp(ts);
-  }
 }
 
 // =========================================================================================
