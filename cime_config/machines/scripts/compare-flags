@@ -4,7 +4,7 @@
 Compare two build trees to see if compiler or link flags have changed.
 """
 
-import argparse, sys, os, subprocess, glob, difflib
+import argparse, sys, os, subprocess, glob
 from pathlib import Path
 
 ###############################################################################
@@ -40,34 +40,82 @@ OR
 
     parser.add_argument("case2", help="The path to case2")
 
+    parser.add_argument("-u", "--unordered", action="store_true",
+                        help="Make comparisons no sensitive to token order")
+
+    parser.add_argument("-l", "--limit", dest="limits", action="append", default=[],
+                        help="Limit compared files to files containing this substring. This option can be supplied multiple times")
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print diff details")
+
     args = parser.parse_args(args[1:])
 
     return args
 
 ###############################################################################
-def find_files(builddir_cmake, filename):
+def find_files(builddir_cmake, filename, limits):
 ###############################################################################
-    return list(sorted(glob.glob(f"{builddir_cmake}/**/{filename}", recursive=True)))
+    result = []
+    all_files = list(sorted(glob.glob(f"{builddir_cmake}/**/{filename}", recursive=True)))
+
+    if limits:
+        for curr_file in all_files:
+            matches_limits = True
+            for limit in limits:
+                if limit not in curr_file:
+                    matches_limits = False
+                    print(f"File {curr_file} does not match limit {limit}, skipping")
+                    break
+
+            if matches_limits:
+                result.append(curr_file)
+
+        return result
+
+    else:
+        return all_files
 
 ###############################################################################
-def compare_contents(case1, case2, file1, file2, contents1, contents2):
+def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered, verbose):
 ###############################################################################
+    print("###############################################################################")
+    print(f"COMPARING FILES {file1} AND {file2}")
+
     normalized_contents2 = contents2.replace(case2, case1)
 
-    compare = difflib.ndiff(contents1.splitlines(), normalized_contents2.splitlines())
-    differences = [item for item in compare if item[0] != ' ']
+    lines1 = contents1.splitlines()
+    lines2 = normalized_contents2.splitlines()
 
-    if differences:
-        print(f"File {file1} did not match {file2}, diff:")
-        for a, b in differences:
-            print(f"  {a} {b}")
+    assert len(lines1) == len(lines2), f"{file1} and {file2} are not even the same length!"
 
-            return False
+    files_match = True
+    for line1, line2 in zip(lines1, lines2):
+        tokens1 = line1.split()
+        tokens2 = line2.split()
 
-    return True
+        if unordered:
+            tokens1.sort()
+            tokens2.sort()
+
+        if tokens1 != tokens2:
+            if files_match:
+                print("  did NOT match")
+                files_match = False
+
+            if verbose:
+                for token1, token2 in zip(tokens1, tokens2):
+                    if token1 != token2:
+                        print(f"    {token1} != {token2}")
+            else:
+                break
+
+    if files_match:
+        print("  MATCHED")
+
+    return files_match
 
 ###############################################################################
-def compare_file_lists(case1, case2, files1, files2):
+def compare_file_lists(case1, case2, files1, files2, unordered, verbose):
 ###############################################################################
     result = True
     for file1, file2 in zip(files1, files2):
@@ -79,12 +127,12 @@ def compare_file_lists(case1, case2, files1, files2):
         file1c = file1p.open().read()
         file2c = file2p.open().read()
 
-        result &= compare_contents(case1, case2, file1, file2, file1c, file2c)
+        result &= compare_contents(case1, case2, file1, file2, file1c, file2c, unordered, verbose)
 
     return result
 
 ###############################################################################
-def compare_flags(case1, case2):
+def compare_flags(case1, case2, unordered, limits, verbose):
 ###############################################################################
     result = True
 
@@ -94,6 +142,9 @@ def compare_flags(case1, case2):
     builddir1 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case1)
     builddir2 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case2)
 
+    casename1 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case1)
+    casename2 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case2)
+
     builddir1_cmake = os.path.join(builddir1, "cmake-bld")
     builddir2_cmake = os.path.join(builddir2, "cmake-bld")
 
@@ -102,15 +153,22 @@ def compare_flags(case1, case2):
     assert os.path.isdir(builddir2_cmake), \
         f"{builddir2_cmake} is not an existing directory, you need to run case.build in {case2}"
 
-    flag_files1 = find_files(builddir1_cmake, "flags.make")
-    flag_files2 = find_files(builddir2_cmake, "flags.make")
+    flag_files1 = find_files(builddir1_cmake, "flags.make", limits)
+    flag_files2 = find_files(builddir2_cmake, "flags.make", limits)
 
-    link_files1 = find_files(builddir1_cmake, "link.txt")
-    link_files2 = find_files(builddir2_cmake, "link.txt")
+    link_files1 = find_files(builddir1_cmake, "link.txt", limits)
+    link_files2 = find_files(builddir2_cmake, "link.txt", limits)
 
-    result &= compare_file_lists(case1, case2, flag_files1, flag_files2)
+    print()
 
-    result &= compare_file_lists(case1, case2, link_files1, link_files2)
+    result &= compare_file_lists(casename1, casename2, flag_files1, flag_files2, unordered, verbose)
+
+    result &= compare_file_lists(casename1, casename2, link_files1, link_files2, unordered, verbose)
+
+    if result:
+        print("\nALL FILES MATCHED")
+    else:
+        print("\nALL FILES DID NOT MATCH")
 
     return result
 
