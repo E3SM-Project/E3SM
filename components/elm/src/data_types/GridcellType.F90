@@ -44,7 +44,14 @@ module GridcellType
      integer , pointer :: pfti         (:) => null() ! beginning pft index for each gridcell
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
-
+     !!=== TOP solar radiation parameterization =====
+     real(r8), pointer :: stdev_elev   (:) => null()        ! standard deviation of elevation within a gridcell
+     real(r8), pointer :: sky_view     (:) => null()         ! mean of (sky view factor / cos(slope))
+     real(r8), pointer :: terrain_config (:) => null()    ! mean of (terrain configuration factor / cos(slope))
+     real(r8), pointer :: sinsl_cosas  (:) => null()     ! sin(slope)*cos(aspect) / cos(slope)
+     real(r8), pointer :: sinsl_sinas  (:) => null()     ! sin(slope)*sin(aspect) / cos(slope)
+     !!=== End
+     
      ! Daylength
      real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (s)
      real(r8) , pointer :: dayl        (:) => null() ! daylength (seconds)
@@ -97,7 +104,14 @@ contains
     allocate(this%pfti      (begg:endg)) ; this%pfti      (:) = ispval
     allocate(this%pftf      (begg:endg)) ; this%pftf      (:) = ispval
     allocate(this%npfts     (begg:endg)) ; this%npfts     (:) = ispval
-
+    !!=== TOP solar radiation parameterization =====
+    allocate(this%stdev_elev(begg:endg)) ; this%stdev_elev(:) = ispval        ! standard deviation of elevation within a gridcell
+    allocate(this%sky_view  (begg:endg)) ; this%sky_view  (:) = ispval        ! mean of (sky view factor / cos(slope))
+    allocate(this%terrain_config(begg:endg)) ; this%terrain_config(:) = ispval! mean of (terrain configuration factor / cos(slope))
+    allocate(this%sinsl_cosas(begg:endg)) ; this%sinsl_cosas(:) = ispval      ! sin(slope)*cos(aspect) / cos(slope)
+    allocate(this%sinsl_sinas(begg:endg)) ; this%sinsl_sinas(:) = ispval      ! sin(slope)*sin(aspect) / cos(slope)
+    !!=== End
+    
     ! This is initiailized in module DayLength
     allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = nan
     allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = nan
@@ -136,7 +150,14 @@ contains
     deallocate(this%dayl             )
     deallocate(this%prev_dayl        )
     deallocate(this%landunit_indices )
-
+    !!=== TOP solar radiation parameterization =====
+    deallocate(this%stdev_elev       )! standard deviation of elevation within a gridcell
+    deallocate(this%sky_view         )! mean of (sky view factor / cos(slope))
+    deallocate(this%terrain_config   )! mean of (terrain configuration factor / cos(slope))
+    deallocate(this%sinsl_cosas      )! sin(slope)*cos(aspect) / cos(slope)
+    deallocate(this%sinsl_sinas      )! sin(slope)*sin(aspect) / cos(slope)
+    !!=== End 
+    
   end subroutine grc_pp_clean
 
 end module GridcellType

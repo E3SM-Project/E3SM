@@ -99,7 +99,8 @@ module elm_varctl
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
-
+  character(len=fname_len), public :: ftopdat    = ' '        ! file name for topography parameters for TOP solar radiation parameterization
+  
   !----------------------------------------------------------
   ! Flag to turn on MEGAN VOC's
   !----------------------------------------------------------
