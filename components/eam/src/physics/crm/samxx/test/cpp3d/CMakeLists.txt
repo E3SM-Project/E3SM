@@ -14,6 +14,6 @@ target_link_libraries(cpp3d yakl ${NCFLAGS})
 set_property(TARGET cpp3d APPEND PROPERTY COMPILE_FLAGS ${DEFS3D} )
 
 include(${YAKL_HOME}/yakl_utils.cmake)
-yakl_process_cxx_source_files("${CUDA_SRC}")
-include_directories(${YAKL_BIN})
+yakl_process_target(cpp3d)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../yakl)
 
