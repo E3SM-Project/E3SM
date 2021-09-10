@@ -30,7 +30,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 # Discretization/algorithm settings
 set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
-set (HOMME_TEST_QSIZE 1)
 set (HOMME_TEST_RSPLIT 3)
 set (HOMME_TEST_NMAX 24)
 set (HOMME_TEST_TIME_STEP 300)
