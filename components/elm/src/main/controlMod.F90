@@ -305,7 +305,7 @@ contains
          use_erosion, ero_ccycle
 
     ! === TOP solar radiation parameterization options  !
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          use_top_solar_rad, ftopdat
     ! End
     

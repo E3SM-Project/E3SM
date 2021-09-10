@@ -1634,7 +1634,7 @@ contains
 
 ! !USES:
     use shr_orb_mod
-    use clm_varctl  , only: iulog
+    use elm_varctl  , only: iulog
 
 !
 ! !ARGUMENTS:
@@ -1881,7 +1881,7 @@ contains
 
 ! !USES:
     use shr_orb_mod
-    use clm_varctl  , only: iulog
+    use elm_varctl  , only: iulog
 
 !
 ! !ARGUMENTS:
@@ -2065,7 +2065,7 @@ contains
 
 ! !USES:
     use shr_orb_mod
-    use clm_varctl  , only: iulog
+    use elm_varctl  , only: iulog
 
 !
 ! !ARGUMENTS:
