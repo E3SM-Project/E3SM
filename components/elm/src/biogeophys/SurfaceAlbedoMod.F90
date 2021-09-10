@@ -946,7 +946,8 @@ contains
                coszen_patch(bounds%begp:bounds%endp), &
                rho(bounds%begp:bounds%endp, :), &
                tau(bounds%begp:bounds%endp, :), &
-               canopystate_vars, surfalb_vars)
+               canopystate_vars, surfalb_vars, &
+               , nextsw_cday, declinp1) ! For TOP solar radiation parameterization
 
     endif
 
@@ -1112,7 +1113,8 @@ contains
    subroutine TwoStream(bounds, &
         filter_vegsol, num_vegsol, &
         coszen, rho, tau, &
-        canopystate_vars, surfalb_vars)
+        !canopystate_vars, surfalb_vars)
+        canopystate_vars, surfalb_vars, nextsw_cday, decl) ! For solar radiation parameterization revised by Dalei Hao
      !
      ! !DESCRIPTION:
      ! Two-stream fluxes for canopy radiative transfer
@@ -1140,6 +1142,11 @@ contains
      real(r8), intent(in)  :: tau( bounds%begp: , 1: ) ! leaf/stem tran weighted by fraction LAI and SAI [pft, numrad]
      type(canopystate_type) , intent(in)    :: canopystate_vars
      type(surfalb_type)     , intent(inout) :: surfalb_vars
+     
+    ! TOP solar radiation parameterization revised by Dalei Hao
+	 real(r8), intent(in) :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
+     real(r8), intent(in) :: decl           ! declination angle (radians) for next time step
+     
      !
      ! !LOCAL VARIABLES:
      integer  :: fp,p,c,iv        ! array indices

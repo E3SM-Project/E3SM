@@ -53,6 +53,7 @@ module controlMod
   use elm_varctl              , only: const_climate_hist
   use elm_varctl              , only: ftopdat  ! TOP solar radiation parameterization
   use SurfaceAlbedoMod        , only: use_top_solar_rad  ! TOP solar radiation parameterization
+  
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -305,7 +306,7 @@ contains
          use_erosion, ero_ccycle
 
     ! === TOP solar radiation parameterization options  !
-    namelist /elm_inparm/  &
+    namelist /elm_inparm/ &
          use_top_solar_rad, ftopdat
     ! End
     
