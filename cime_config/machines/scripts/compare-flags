@@ -31,6 +31,15 @@ OR
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare case1 to case2 \033[0m
     > {0} $case1dir $case2dir
+
+    \033[1;32m# same as ^, except with comparisons not sensitive to flag order. This flag is likely to be necessary for the flags.make to match \033[0m
+    > {0} $case1dir $case2dir -u
+
+    \033[1;32m# same as ^, except limit to atm component \033[0m
+    > {0} $case1dir $case2dir -u -l atm.dir
+
+    \033[1;32m# same as ^, except limit to link flags for all components \033[0m
+    > {0} $case1dir $case2dir -u -l link.txt
 """.format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -41,7 +50,7 @@ OR
     parser.add_argument("case2", help="The path to case2")
 
     parser.add_argument("-u", "--unordered", action="store_true",
-                        help="Make comparisons no sensitive to token order")
+                        help="Make comparisons not sensitive to token order")
 
     parser.add_argument("-l", "--limit", dest="limits", action="append", default=[],
                         help="Limit compared files to files containing this substring. This option can be supplied multiple times")
