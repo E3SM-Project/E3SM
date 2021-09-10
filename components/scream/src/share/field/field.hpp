@@ -89,7 +89,6 @@ public:
 
   // Constructor(s)
   Field ();
-  Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v);
   explicit Field (const identifier_type& id);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
@@ -323,18 +322,6 @@ Field (const identifier_type& id)
   // At the very least, the allocation properties need to accommodate this field's real type.
   m_header->get_alloc_properties().request_allocation<RT>();
 
-  // Create an empty host mirror view
-  // Note: this is needed cause 'ensure_host_view' cannot modify this class
-  m_view_h = std::make_shared<HM<view_type<RT*>>>();
-}
-
-template<typename RealType>
-Field<RealType>::
-Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v)
-  : m_header(h)
-  , m_view_d(v)
-  , m_prop_checks(new property_check_list)
-{
   // Create an empty host mirror view
   // Note: this is needed cause 'ensure_host_view' cannot modify this class
   m_view_h = std::make_shared<HM<view_type<RT*>>>();
@@ -609,12 +596,13 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   FieldLayout sf_lt(tags,dims);
   FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
 
-  // Create header
-  auto sv_h = create_subfield_header(sf_id,m_header,idim,k);
-
-  // Create subfield (set host view too)
-  field_type sf(sv_h,m_view_d);
+  // Create empty subfield, then set header and views
+  // Note: we can access protected members, since it's the same type
+  field_type sf;
+  sf.m_header = create_subfield_header(sf_id,m_header,idim,k);
+  sf.m_view_d = m_view_d;
   sf.m_view_h = m_view_h;
+  sf.m_prop_checks = std::make_shared<property_check_list>();
 
   return sf;
 }
@@ -714,7 +702,11 @@ auto Field<RealType>::get_ND_view () const ->
   const auto parent = m_header->get_parent().lock();
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
-    Field<RealType> f(parent,m_view_d);
+    // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
+    // NOTE: we can set protected members, since f is the same type of this class.
+    Field<RealType> f;
+    f.m_header = parent;
+    f.m_view_d = m_view_d;
     f.m_view_h = m_view_h;  // Make sure we share the same host view ptr.
 
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
