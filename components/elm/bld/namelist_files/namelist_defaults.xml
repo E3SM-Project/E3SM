@@ -523,7 +523,7 @@ this mask will have smb calculated over the entire global land surface
 
 <!-- datasets for TOP solar radiation parameterization -->
 <!--  ***********  Resolution dependent:   ***********  -->
-<ftopdat>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</ftopdat>
+<ftopdat>/global/u2/d/daleihao/model/data/UCLA_3D_Topo_Data/topo_3d_0.9x1.25_c150322.nc</ftopdat>
 <use_top_solar_rad>.false.</use_top_solar_rad>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
