@@ -223,7 +223,7 @@ end subroutine domain_init
        deallocate(domain%mask,domain%frac,domain%latc, &
                   domain%lonc,domain%area,domain%firrig,domain%pftm, &
                   domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
-                  domain%xCell,domain%yCell
+                  domain%xCell,domain%yCell, &
                   !,stat=ier)
                   ! === TOP solar radiation parameterization
                   domain%stdev_elev,domain%sky_view,domain%terrain_config, &
