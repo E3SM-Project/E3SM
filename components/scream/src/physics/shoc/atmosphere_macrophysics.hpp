@@ -74,9 +74,6 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // SHOC updates the 'TRACERS' group.
-  void set_updated_group (const FieldGroup<Real>& group);
-
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
@@ -404,6 +401,9 @@ protected:
   void initialize_impl (const util::TimeStamp& t0);
   void run_impl        (const Real dt);
   void finalize_impl   ();
+
+  // SHOC updates the 'tracers' group.
+  void set_updated_group_impl (const FieldGroup<Real>& group);
 
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
