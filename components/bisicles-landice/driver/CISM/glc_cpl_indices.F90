@@ -12,8 +12,8 @@ module glc_cpl_indices
 
   ! drv -> glc
 
-  integer, public :: index_x2g_Sl_tsrf   = 0
-  integer, public :: index_x2g_Flgl_qice = 0
+  integer, public :: index_x2g_Sl_tsrf    = 0
+  integer, public :: index_x2g_Flgl_qice  = 0
 
   ! glc -> drv
 
