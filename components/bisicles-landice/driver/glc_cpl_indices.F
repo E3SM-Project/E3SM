@@ -2,7 +2,7 @@ module glc_cpl_indices
   
   use seq_flds_mod
   use mct_mod
-  use glc_constants, only : glc_smb
+  ! TJL - use glc_constants, only : glc_smb
   use shr_sys_mod  , only : shr_sys_abort
 
   implicit none
@@ -63,7 +63,7 @@ contains
     ! false => use PDD scheme in GLIMMER
     ! For now, we always use true
 
-    glc_smb = .true.
+    ! TJL - glc_smb = .true.
 
   end subroutine glc_cpl_indices_set
 

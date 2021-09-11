@@ -17,15 +17,15 @@ module glc_comp_mct
 
   use glc_import_export
   use glc_cpl_indices
-  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
-  use glc_constants,       only: zero_gcm_fluxes, model_doi_url
-  use glc_InitMod,         only: glc_initialize
-  use glc_RunMod,          only: glc_run
-  use glc_FinalMod,        only: glc_final
-  use glc_io,              only: glc_io_write_restart
-  use glc_communicate,     only: init_communicate, my_task, master_task
-  use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
-  use glc_fields,          only: ice_sheet
+  ! TJL - use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
+  ! TJL - use glc_constants,       only: zero_gcm_fluxes, model_doi_url
+  ! TJL - use glc_InitMod,         only: glc_initialize
+  ! TJL - use glc_RunMod,          only: glc_run
+  ! TJL - use glc_FinalMod,        only: glc_final
+  ! TJL - use glc_io,              only: glc_io_write_restart
+  ! TJL - use glc_communicate,     only: init_communicate, my_task, master_task
+  ! TJL - use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
+  ! TJL - use glc_fields,          only: ice_sheet
 
   ! Public types:
   implicit none
@@ -61,10 +61,10 @@ CONTAINS
 
     ! uses:
 
-    use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
-    use glc_files          , only : set_filenames, ionml_filename
-    use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
-    use glc_indexing  , only : nx_tot, ny_tot, npts
+    ! TJL - use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
+    ! TJL - use glc_files          , only : set_filenames, ionml_filename
+    ! TJL - use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
+    ! TJL - use glc_indexing  , only : nx_tot, ny_tot, npts
     
     ! input/output parameters:
 
@@ -388,7 +388,7 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
 
 ! !USES:
 
-    use glc_ensemble, only : get_inst_name
+    ! TJL - use glc_ensemble, only : get_inst_name
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -447,7 +447,7 @@ subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
   
   ! Initialize MCT global seg map
   
-  use glc_indexing, only : local_to_global_indices
+  ! TJL - use glc_indexing, only : local_to_global_indices
 
   integer        , intent(in)  :: mpicom_g
   integer        , intent(in)  :: GLCID
@@ -470,8 +470,8 @@ end subroutine glc_SetgsMap_mct
 
   subroutine glc_domain_mct( gsMap_g, dom_g )
 
-    use glc_indexing, only : npts, nx, ny, spatial_to_vector
-    use glad_main, only : glad_get_lat_lon, glad_get_areas
+    ! TJL - use glc_indexing, only : npts, nx, ny, spatial_to_vector
+    ! TJL - use glad_main, only : glad_get_lat_lon, glad_get_areas
     
     !-------------------------------------------------------------------
     type(mct_gsMap), intent(inout) :: gsMap_g
