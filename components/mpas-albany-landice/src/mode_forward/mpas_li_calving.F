@@ -1533,9 +1533,11 @@ module li_calving
                                         velocityPool, scratchPool, thermalPool
       real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
                                     config_floating_von_Mises_threshold_stress, &
-                                    config_flowLawExponent, config_calving_speed_limit
+                                    config_flowLawExponent, config_calving_speed_limit, &
+                                    config_damage_calving_threshold
       character (len=StrKIND), pointer :: config_grounded_von_Mises_threshold_stress_source, &
-                            config_floating_von_Mises_threshold_stress_source
+                                          config_floating_von_Mises_threshold_stress_source
+      character (len=StrKIND), pointer :: config_damage_calving_method
       logical, pointer :: config_use_Albany_flowA_eqn_for_vM
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, &
                                         calvingVelocity, thickness, &
@@ -1547,7 +1549,7 @@ module li_calving
       real (kind=RKIND), pointer :: config_default_flowParamA
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
-      real (kind=RKIND), dimension(:), pointer :: vonMisesStress
+      real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
 
       err = 0
@@ -1562,6 +1564,8 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_calving_speed_limit', config_calving_speed_limit)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
@@ -1635,7 +1639,7 @@ module li_calving
           endif
 
           vonMisesStress(:) = 0.0_RKIND
-
+          
           ! get flowParamA from MPAS or use Albany-like equation
           if ( config_use_Albany_flowA_eqn_for_vM ) then
           !calculate Albany-type flowParamA
@@ -1645,11 +1649,16 @@ module li_calving
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
           endif
 
-         !Using a depth-averaged ice viscosity parameter B_depthAvg
-         !=sum(layerThickness(:,iCell) *
-         !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
-         !thickness(iCell)
-         ! Calculate effective von  Mises stress.
+
+          ! update mask
+          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+          err = ior(err, err_tmp)
+
+          !Using a depth-averaged ice viscosity parameter B_depthAvg
+          !=sum(layerThickness(:,iCell) *
+          !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
+          !thickness(iCell)
+          ! Calculate effective von  Mises stress.
           calvingVelocity(:) = 0.0_RKIND
 
           do iCell = 1,nCells
@@ -1719,6 +1728,15 @@ module li_calving
              enddo
           endif
 
+          if ( trim(config_damage_calving_method) == 'threshold' ) then
+             ! remove ice exceeding damage threshold
+             call mpas_log_write('config_use_damage_calving_multiplier == .true.; &
+                                  config_damage_calving_method == threshold; &
+                                  removing ice with damage > $r', realArgs=(/config_damage_calving_threshold/))
+            
+             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err_tmp)
+             err = ior(err, err_tmp)
+          endif
 
           ! === apply calving ===
           thickness(:) = thickness(:) - calvingThickness(:)
@@ -1728,7 +1746,7 @@ module li_calving
           err = ior(err, err_tmp)
 
           call remove_small_islands(meshPool, geometryPool)
-
+          
           block => block % next
 
       enddo ! associated(block)
