@@ -46,6 +46,7 @@ module SurfaceAlbedoMod
   private :: Albedo_TOP_Adjustment_vegsol_diffuse     ! TOP solar radiation parameterization for diffuse radiation over non-vegetation
   ! ! PUBLICA Variable
   logical, public :: use_top_solar_rad = .false.  ! sub-grid topographic effect on surface solar radiation
+  !$acc declare copyin(use_top_solar_rad)
   !
   !
   ! Coefficient for calculating ice "fraction" for lake surface albedo
@@ -1144,7 +1145,7 @@ contains
      type(surfalb_type)     , intent(inout) :: surfalb_vars
      
     ! TOP solar radiation parameterization revised by Dalei Hao
-	 real(r8), intent(in) :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
+	 real(r8), intent(in) :: nextsw_cday    ! calendar day at Greenwich (1.00, ..., days/year)
      real(r8), intent(in) :: decl           ! declination angle (radians) for next time step
      
      !
@@ -1202,8 +1203,8 @@ contains
           albgrd       =>    surfalb_vars%albgrd_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level)
           albgri       =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level)
           
-          fd_top_adjust =>    surfalb_vars%fd_top_adjust           , & ! Input: TOP adjusted factor for direct radiation 
-		  fi_top_adjust =>    surfalb_vars%fi_top_adjust           , & ! Input: TOP adjusted factor for diffuse radiation 
+          fd_top_adjust =>   surfalb_vars%fd_top_adjust          , & ! Input: TOP adjusted factor for direct radiation 
+		  fi_top_adjust =>   surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation 
           
           fsun_z       =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer
           vcmaxcintsun =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
@@ -1746,9 +1747,8 @@ contains
           ftdd          =>    surfalb_vars%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
           ftid          =>    surfalb_vars%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
           ftii          =>    surfalb_vars%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           , & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
-          fi_top_adjust  =>    surfalb_vars%fi_top_adjust             & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
-
+          fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
+          fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
  )
 
 
