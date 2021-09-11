@@ -106,6 +106,9 @@ module chemistry
   character(len=shr_kind_cl) :: fstrat_file = 'fstrat_file'
   character(len=16)  :: fstrat_list(pcnst)  = ''
 
+  !30 day efold in stratosphere for chemUCI (following the logic of fstrat_list for programming !!!)
+    character(len=16)  :: fstrat_efold_list(gas_pcnst)  = ''
+
   ! stratospheric aerosols
 
   character(len=shr_kind_cl) :: sad_file = 'sad_file'
@@ -501,7 +504,7 @@ end function chem_is
          lght_no_prd_factor, xactive_prates, do_cloudj_photolysis, &
          depvel_lnd_file, clim_soilw_file, season_wes_file, drydep_srf_file, &
          srf_emis_type, srf_emis_cycle_yr, srf_emis_fixed_ymd, srf_emis_fixed_tod, srf_emis_specifier,  &
-         fstrat_file, fstrat_list, &
+         fstrat_file, fstrat_list, fstrat_efold_list, &
          ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod
 
     namelist /chem_inparm/ chem_rad_passive
@@ -677,6 +680,8 @@ end function chem_is
 
     call mpibcast (fstrat_file,       len(fstrat_file),                mpichar, 0, mpicom)
     call mpibcast (fstrat_list,       len(fstrat_list(1))*pcnst,       mpichar, 0, mpicom)
+    ! species with 30-day efold decay in stratosphere
+    call mpibcast (fstrat_efold_list,       len(fstrat_efold_list(1))*gas_pcnst, mpichar, 0, mpicom)
 
     ! stratospheric aerosols
 
@@ -1001,6 +1006,7 @@ end function chem_is_active
        , rsf_file &
        , fstrat_file &
        , fstrat_list &
+       , fstrat_efold_list &
        , srf_emis_specifier &
        , srf_emis_type &
        , srf_emis_cycle_yr &

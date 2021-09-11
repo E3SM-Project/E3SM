@@ -4482,6 +4482,12 @@ List of species that are constrained in the stratosphere.
 Default: set by build-namelist.
 </entry>
 
+<entry id="fstrat_efold_list" type="char*16(1000)" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+List of species from ChemUCI that e-fold decay in 30 days in the stratosphere.
+Default: set by build-namelist.
+</entry>
+
 <entry id="lght_landmask_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of dataset for land mask applied to the lighting NOx production  
@@ -5221,6 +5227,8 @@ Tunable Linoz PSC ozone loss temperature (K) threshold
 Default: 193.0
 </entry>
 
+
+
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of the directory that contains the files specified in
@@ -5350,13 +5358,7 @@ Default: 0 seconds
 <entry id="xactive_prates" type="logical" category="cam_chem"
        group="chem_inparm" valid_values="" >
 If TRUE then use the FTUV method to calculate the photolysis reactions rates,
-otherwise use the lookup table method.
-Default: FALSE
-
-<entry id="do_cloudj_photolysis" type="logical" category="cam_chem"
-       group="chem_inparm" valid_values="" >
-If TRUE then use the FAST-J method to calculate the photolysis reactions rates,
-otherwise use the lookup table method.
+otherwise use the look up table method.
 Default: FALSE
 </entry>
 

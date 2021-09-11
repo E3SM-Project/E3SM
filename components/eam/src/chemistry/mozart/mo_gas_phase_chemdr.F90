@@ -255,7 +255,7 @@ contains
 !
 ! LINOZ
 !
-    use lin_strat_chem,    only : do_lin_strat_chem,linoz_v2, linoz_v3, linv2_strat_chem_solve, linv3_strat_chem_solve, lin_strat_sfcsink
+    use lin_strat_chem,    only : do_lin_strat_chem,linoz_v2, linoz_v3, linv2_strat_chem_solve, linv3_strat_chem_solve, lin_strat_sfcsink, fstrat_efold_decay 
     use linoz_data,        only : has_linoz_data
 !
 ! for aqueous chemistry and aerosol growth
@@ -973,6 +973,7 @@ contains
        endif
        
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
+       call fstrat_efold_decay(ncol, vmr, delt, troplev) !if chemuci is on
     end if
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
@@ -1113,7 +1114,7 @@ contains
     !         ... Dry deposition
     !----------------------------------------------------------------------- 
     tvs(:ncol) = tfld(:ncol,pver) * (1._r8 + qh2o(:ncol,pver))
-
+n
     sflx(:,:) = 0._r8
     call get_ref_date(yr, mon, day, sec)
     ncdate = yr*10000 + mon*100 + day

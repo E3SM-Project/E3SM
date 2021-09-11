@@ -1,5 +1,5 @@
 !--------------------------------------------------------------------
-module lin_strat_chem
+      module lin_strat_chem
 !     24 Oct 2008 -- Francis Vitt
 !      9 Dec 2008 -- Philip Cameron-Smith, LLNL, -- added ltrop
 !      4 Jul 2019 -- Qi Tang (LLNL), Juno Hsu (UCI), -- added sfcsink
@@ -7,13 +7,18 @@ module lin_strat_chem
 !        --new linoz v3 subroutine linv3_strat_chem_solve (linoz_v3 if O3LNZ, N2OLNZ, NOYLNZ and CH4LNZ are defined)
 !        --modified lin_strat_chem_solve is now linv2_strat_chem_solve (linoz_v2 if only O3LNZ is defined; use only O3LNZ part of Linoz v3 netcdf file)
 !        --modified sfcsink working for v2 or v3 depending on species
+!       Spring 2021 -- Juno Hsu
+!       --added H2OLNZ, saves H2O water vapor from CH4 oxidation
+!       --added prescribed O3LBS in netcdf file (prescribed CMIP6 historical surface ozone below 925 mb). And Linoz surface ozone are relaxed to this profile in 2-days within the last 9 surface layers
+!      added 30-day e-fold decay subroutine (lin_strat_efold_decay) for ChemUCI tropospheric species assigned to the namelist, fstrat_efold_list   
+
   use shr_kind_mod , only : r8 => shr_kind_r8
   use ppgrid       , only : begchunk, endchunk
   use physics_types, only : physics_state
   use cam_logfile  , only : iulog
   use cam_abortutils,   only : endrun
   use spmd_utils,       only : masterproc
-  
+  use chem_mods,        only: gas_pcnst
   !
   implicit none
   !
@@ -23,9 +28,11 @@ module lin_strat_chem
   !
   ! define public components of module
   !
-  public :: lin_strat_chem_inti, linv2_strat_chem_solve, linv3_strat_chem_solve, lin_strat_sfcsink
-  public :: do_lin_strat_chem, linoz_v2, linoz_v3
-  public :: linoz_readnl   ! read linoz_nl namelist
+   public :: lin_strat_chem_inti, linv2_strat_chem_solve, linv3_strat_chem_solve
+   public :: lin_strat_sfcsink
+   public :: do_lin_strat_chem, linoz_v2, linoz_v3
+   public :: linoz_readnl   ! read linoz_nl namelist
+   public :: has_fstrat_efold, fstrat_efold_inti, fstrat_efold_decay
 
   integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx, h2olnz_ndx
   integer :: o3_ndx, n2o_ndx, ch4_ndx, no_ndx, no2_ndx, hno3_ndx 
@@ -38,11 +45,13 @@ module lin_strat_chem
   real(r8) :: linoz_sfc = unset_r8  ! boundary layer concentration (ppb) to which Linoz ozone e-fold
   real(r8) :: linoz_tau = unset_r8  ! Linoz e-fold time scale (in seconds) in the boundary layer
   real(r8) :: linoz_psc_T = unset_r8  ! PSC ozone loss T (K) threshold
-
+ 
   integer  :: o3_lbl ! set from namelist input linoz_lbl
   real(r8) :: o3_sfc ! set from namelist input linoz_sfc
   real(r8) :: o3_tau ! set from namelist input linoz_tau
   real(r8) :: psc_T  ! set from namelist input linoz_psc_T
+  
+  logical :: has_fstrat_efold(gas_pcnst) 
 
 contains
 
@@ -160,6 +169,13 @@ end subroutine linoz_readnl
     no_ndx   =   get_spc_ndx('NO')
     no2_ndx  =   get_spc_ndx('NO2')
     hno3_ndx =   get_spc_ndx('HNO3')
+
+!   if(masterproc)then
+!    write(iulog,*)'in subroutine lin_strat_chem_inti'
+!    write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
+!    write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
+!   end if
+    
 !     
 !   initialize the linoz data
 
@@ -808,12 +824,13 @@ end subroutine linoz_readnl
     use physconst,     only : mw_air => mwdry
    
     use mo_constants, only : pi, rgrav, rearth
-
+ 
     use phys_grid,    only : get_area_all_p
 
     use cam_history,   only : outfld
 
     use chem_mods,             only: gas_pcnst, adv_mass
+
     implicit none 
 
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
@@ -903,6 +920,83 @@ end subroutine linoz_readnl
     return     
 
   end subroutine lin_strat_sfcsink
+
+
+   subroutine fstrat_efold_inti(fstrat_efold_list)
+    use cam_abortutils,       only : endrun
+    use chem_mods,            only : gas_pcnst
+    use mo_chem_utls,         only : get_spc_ndx   
+    implicit none
+
+    character(len=*), intent(in) :: fstrat_efold_list(:)    
+    integer i,j
+    has_fstrat_efold(:) = .false.
+
+    do i = 1, gas_pcnst
+
+       if ( len_trim(fstrat_efold_list(i))==0 ) exit
+
+       j = get_spc_ndx(fstrat_efold_list(i))
+
+       if ( j > 0 ) then
+          has_fstrat_efold(j) = .true.
+       else
+          write(iulog,*) 'fstrat_efold_inti: '//trim(fstrat_efold_list(i))//' is not included in species set'
+          call endrun('fstrat_inti: invalid stratosphere decaying species')
+       endif
+
+    enddo
+
+    return
+
+   end subroutine fstrat_efold_inti
+
+
+   subroutine fstrat_efold_decay(ncol, xvmr, delta_t, ltrop)
+
+ !   use namelist_utils,       only : fstrat_efold_list
+    use mo_chem_utls,         only : get_spc_ndx
+    use cam_abortutils,       only : endrun
+    use chem_mods,            only : gas_pcnst
+    use ppgrid,               only : pcols, pver
+
+   
+    implicit none
+
+    
+    integer,  intent(in)                           :: ncol                ! number of columns in chunk
+    real(r8), intent(inout), dimension(ncol ,pver ,gas_pcnst) :: xvmr     ! volume mixing ratio for all
+    real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
+    integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index
+
+    integer :: ispc, i, k
+    real(r8):: efactor, dx
+
+    real(r8), parameter :: tau_30d = 1._r8/(30._r8*86400._r8)      ! inverse of (30 days*86400 sec/day)
+    integer , parameter :: ms = 18      ! 
+    
+     efactor  = 1._r8 - exp(-delta_t/tau_30d)
+   
+     LOOP_SPC: do ispc = 1, gas_pcnst
+          
+        if (has_fstrat_efold(ispc)) then
+ !         write(iulog,*)'ispc= ', ispc
+           LOOP_COL: do i=1, ncol
+
+              LOOP_STRAT: do k= 1, ltrop(i)
+                   
+                 dx   = xvmr(i,k,ispc) *efactor
+                 xvmr(i,k,ispc) = xvmr(i,k,ispc) - dx
+
+              end do LOOP_STRAT ! loop from top to tropopause
+
+           End do  LOOP_COL    !loop-col
+        endif
+     END DO  LOOP_SPC
+
+  return
+    
+  end subroutine fstrat_efold_decay
 
 
 
