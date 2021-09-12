@@ -5362,6 +5362,13 @@ otherwise use the look up table method.
 Default: FALSE
 </entry>
 
+<entry id="do_cloudj_photolysis" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use the FAST-J method to calculate the photolysis reactions rates,
+otherwise use the lookup table method.
+Default: FALSE
+</entry>
+
 <entry id="xs_coef_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of dataset for  Chebyshev polynomial Coeff data used for photolysis
