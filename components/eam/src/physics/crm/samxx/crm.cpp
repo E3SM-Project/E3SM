@@ -15,6 +15,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif 
                     real *crm_input_t_vt_p, real *crm_input_q_vt_p,
+                    real *parent_dx_p,
                     real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, 
                     real *crm_state_temperature_p, 
                     real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, 
@@ -73,6 +74,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                          crm_input_ul_esmt_p, crm_input_vl_esmt_p,
 #endif 
                          crm_input_t_vt_p, crm_input_q_vt_p,
+                         parent_dx_p,
                          crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
                          crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_qrad_p, crm_output_subcycle_factor_p, 
                          lat0_p, long0_p, gcolp_p, crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, 

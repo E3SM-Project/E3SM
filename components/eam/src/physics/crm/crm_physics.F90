@@ -486,7 +486,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use spmd_utils,            only: masterproc
    use openacc_utils,         only: prefetch
 
-   ! use phys_grid, only: get_area_all_p
+   use phys_grid, only: get_area_all_p
 
    real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
    type(physics_state),dimension(begchunk:endchunk),intent(in   ) :: state            ! Global model state 
@@ -625,6 +625,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_qg(:,:,:,:) ! 2-mom number concentration of snow
    real(crm_rknd), pointer :: crm_ng(:,:,:,:) ! 2-mom mass mixing ratio of graupel
    real(crm_rknd), pointer :: crm_qc(:,:,:,:) ! 2-mom number concentration of graupel
+
+   ! variables for dx scaling experiment
+   real(r8), dimension(pcols) :: area_tmp
+   real(r8), allocatable      :: parent_dx(:)
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -1103,20 +1107,23 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call t_startf ('crm_call')
 
-      ! real(r8) :: area_tmp(pcols)
       !-------------------------------------------------------------------------
       ! Determine scaling for crm_dx
       !-------------------------------------------------------------------------
-      ! ncol_sum = 0
-      ! do c=begchunk, endchunk
-      !    ncol = state(c)%ncol
-      !    call get_area_all_p(state(c)%lchnk, pcols, area_tmp)
-      !    do i = 1,ncol
-      !       icrm = ncol_sum + i
-      !       area(icrm) = area_tmp(i)
-      !    end do
-      !    ncol_sum = ncol_sum + ncol
-      ! end do ! c=begchunk, endchunk
+      if (.not.allocated(parent_dx)) allocate(parent_dx(ncrms))
+      ncol_sum = 0
+      do c=begchunk, endchunk
+         ncol = state(c)%ncol
+         call get_area_all_p(state(c)%lchnk, pcols, area_tmp)
+         do i = 1,ncol
+            icrm = ncol_sum + i
+            parent_dx(icrm) = sqrt( area_tmp(i) )
+            write(iulog,777) parent_dx(icrm)
+            call shr_sys_flush(iulog)
+777 format('WHDEBUG - parent_dx: ',f12.8)
+         end do
+         ncol_sum = ncol_sum + ncol
+      end do ! c=begchunk, endchunk
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
 
@@ -1129,6 +1136,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_input%ul_esmt, crm_input%vl_esmt,                                        &
 #endif
                crm_input%t_vt, crm_input%q_vt, &
+               parent_dx, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
                crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
                crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
@@ -1164,6 +1172,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       deallocate(longitude0)
       deallocate(latitude0 )
       deallocate(gcolp     )
+
+      if (allocated(parent_dx)) deallocate(parent_dx)
 
       !---------------------------------------------------------------------------------------------
       ! Deal with CRM outputs
