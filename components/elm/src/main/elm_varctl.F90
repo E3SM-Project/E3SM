@@ -354,7 +354,7 @@ module elm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
-
+  logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------

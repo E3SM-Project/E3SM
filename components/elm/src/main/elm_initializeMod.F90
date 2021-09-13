@@ -80,7 +80,7 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
-    use SurfaceAlbedoMod		  , only: use_top_solar_rad  !  TOP solar radiation parameterization 
+    use elm_varctl      		  , only: use_top_solar_rad  !  TOP solar radiation parameterization 
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status

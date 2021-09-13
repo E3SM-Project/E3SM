@@ -14,7 +14,7 @@ module SurfaceAlbedoMod
   use landunit_varcon   , only : istsoil, istcrop, istdlak
   use elm_varcon        , only : grlnd, namep
   use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
+  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad ! TOP
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, SNICAR_AD_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
@@ -44,9 +44,7 @@ module SurfaceAlbedoMod
   private :: Albedo_TOP_Adjustment_novegsol     ! TOP solar radiation parameterization for non-vegetation
   private :: Albedo_TOP_Adjustment_vegsol_direct     ! TOP solar radiation parameterization for direct radiation over non-vegetation
   private :: Albedo_TOP_Adjustment_vegsol_diffuse     ! TOP solar radiation parameterization for diffuse radiation over non-vegetation
-  ! ! PUBLICA Variable
-  logical, public :: use_top_solar_rad = .false.  ! sub-grid topographic effect on surface solar radiation
-  !$acc declare copyin(use_top_solar_rad)
+
   !
   !
   ! Coefficient for calculating ice "fraction" for lake surface albedo
@@ -1288,7 +1286,8 @@ contains
           ! because the product omega*betai, omega*betad is used in solution.
           ! Also, the transmittances and reflectances (tau, rho) are linear
           ! weights of leaf and stem values.
-
+          cosz = max(0.001_r8, coszen(p)) ! add by Dalei Hao
+          
           omegal = rho(p,ib) + tau(p,ib)
           asu = 0.5_r8*omegal*gdir(p)/temp0(p) *temp2(p)
           betadl = (1._r8+avmu(p)*twostext(p))/(omegal*avmu(p)*twostext(p))*asu
