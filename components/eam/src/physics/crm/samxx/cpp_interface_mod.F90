@@ -16,6 +16,7 @@ module cpp_interface_mod
                    crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
                    crm_input_t_vt, crm_input_q_vt, &
+                   parent_dx, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                    crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
                    crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
@@ -59,6 +60,7 @@ module cpp_interface_mod
                                       crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
                                       crm_input_t_vt, crm_input_q_vt, &
+                                      parent_dx, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                                       crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
                                       crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
