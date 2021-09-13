@@ -118,8 +118,8 @@ contains
           elgpgp(3,idof) = ip-1
 
           gids(idof) = INT(elem(ie)%gdofP(ip,jp),kind=c_int)
-          lat(idof)  = elem(ie)%spherep(ip,jp)%lat
-          lon(idof)  = elem(ie)%spherep(ip,jp)%lon
+          lat(idof)  = elem(ie)%spherep(ip,jp)%lat * 180.0/3.14
+          lon(idof)  = elem(ie)%spherep(ip,jp)%lon * 180.0/3.14
 
           idof = idof + 1
         enddo

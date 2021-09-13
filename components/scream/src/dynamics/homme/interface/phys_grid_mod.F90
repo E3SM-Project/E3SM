@@ -198,8 +198,8 @@ contains
       ndofs = get_num_local_columns ()
       do idof=1,ndofs
         gids(idof) = g_dofs(g_offsets(iam+1) + idof)
-        lat(idof)  = g_lat(g_offsets(iam+1) + idof)
-        lon(idof)  = g_lon(g_offsets(iam+1) + idof)
+        lat(idof)  = g_lat(g_offsets(iam+1) + idof) * 180.0/3.14
+        lon(idof)  = g_lon(g_offsets(iam+1) + idof) * 180.0/3.14
         area(idof) = g_area(g_offsets(iam+1) + idof)
       enddo
 
