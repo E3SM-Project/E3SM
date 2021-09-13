@@ -157,6 +157,7 @@ contains
   subroutine get_my_phys_data (gids, lat, lon, area, pg_type)
     use homme_context_mod, only: elem, iam
     use dimensions_mod,    only: nelemd
+    use shr_const_mod,     only: pi=>SHR_CONST_PI
     !
     ! Input(s)
     !
@@ -198,8 +199,8 @@ contains
       ndofs = get_num_local_columns ()
       do idof=1,ndofs
         gids(idof) = g_dofs(g_offsets(iam+1) + idof)
-        lat(idof)  = g_lat(g_offsets(iam+1) + idof) * 180.0/3.14
-        lon(idof)  = g_lon(g_offsets(iam+1) + idof) * 180.0/3.14
+        lat(idof)  = g_lat(g_offsets(iam+1) + idof) * 180.0/pi
+        lon(idof)  = g_lon(g_offsets(iam+1) + idof) * 180.0/pi
         area(idof) = g_area(g_offsets(iam+1) + idof)
       enddo
 

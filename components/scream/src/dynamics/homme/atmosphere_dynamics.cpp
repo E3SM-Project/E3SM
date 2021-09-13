@@ -818,29 +818,6 @@ void HommeDynamics::import_initial_conditions () {
 // =========================================================================================
 void HommeDynamics::
 check_computed_fields_impl () {
-//ASD  using KT = KokkosTypes<DefaultDevice>;
-//ASD  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
-//ASD  using Pack = ekat::Pack<Real,N>;
-//ASD  using ColOps = ColumnOps<DefaultDevice,Real>;
-//ASD
-//ASD  const auto ncols = m_ref_grid->get_num_local_dofs();
-//ASD  const auto nlevs = m_ref_grid->get_num_vertical_levels();
-//ASD  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
-//ASD
-//ASD  const auto& Q_view  = m_ref_grid_fields.at("Q").get_view<Pack***>();
-//ASD
-//ASD  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-//ASD  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,Q_view.extent(1));
-//ASD
-//ASD  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-//ASD    const int& icol = team.league_rank();
-//ASD    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,Q_view.extent(1)),
-//ASD                         [&](const int qidx) {
-//ASD      auto q_chk  = ekat::subview(Q_view,icol,qidx);
-//ASD      
-//ASD    });
-//ASD    team.team_barrier();
-//ASD  });
     auto& field = m_fields_out["Q"];
     for (auto& pc : field.get_property_checks()) {
       if (!pc.check(field) and pc.can_repair()) {
