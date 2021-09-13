@@ -522,7 +522,7 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</flndtopo>
 
 <!-- datasets for TOP solar radiation parameterization -->
-<!--  ***********  Resolution dependent:   ***********  -->
+<!--  ***********  Resolution dependent:   *********** -->
 <ftopdat>/global/u2/d/daleihao/model/data/UCLA_3D_Topo_Data/topo_3d_0.9x1.25_c150322.nc</ftopdat>
 <use_top_solar_rad>.false.</use_top_solar_rad>
 
