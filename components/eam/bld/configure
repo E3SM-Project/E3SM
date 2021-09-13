@@ -272,6 +272,7 @@ OPTIONS
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
      -crm_dx <n>        CRM's horizontal grid spacing.
+     -crm_dx_scale <n>  CRM's horizontal grid spacing scaling
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
