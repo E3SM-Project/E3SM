@@ -164,7 +164,7 @@ TEST_CASE("forcing", "forcing") {
 
           // Reset state, tracers, and forcing to the original random values
           state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
-          tracers.randomize(seed);
+          tracers.randomize(seed,-1e-3,1e-3);
           forcing.randomize(seed);
 
           // Sync views
