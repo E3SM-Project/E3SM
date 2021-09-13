@@ -244,14 +244,14 @@ contains
               x = abs(latCell(iCell))
               trans_start = pii/180.0_RKIND*latTransitionStart
               trans_width = pii/180.0_RKIND*latTransitionWidth
-              w1 = 0.5_RKIND*(tanh((x - trans_start - .5 * trans_width) / (.2 *trans_width)) + 1.0)
+              w1 = 0.5_RKIND*(tanh((x - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
               w2 = 1.0_RKIND - w1
 
               ssh(iCell) =  sinlat_highres*w2 + sinlat_lowres*w1 + sinlon_highres*w2 + sinlon_lowres*w1
 
               trans_start = pii/180.0_RKIND*40.0_RKIND
               trans_width = pii/180.0_RKIND*latTransitionWidth
-              w1 = 0.5_RKIND*(tanh((x - trans_start - .5 * trans_width) / (.2 *trans_width)) + 1.0)
+              w1 = 0.5_RKIND*(tanh((x - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
               w2 = 1.0_RKIND - w1
               ssh(iCell) = w1*sinlat_lowres + w2*ssh(iCell)
 

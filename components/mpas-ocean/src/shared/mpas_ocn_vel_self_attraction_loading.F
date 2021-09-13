@@ -97,11 +97,14 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND), dimension(:,:), allocatable :: complexExpRe, complexExpIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm, SnmRe, SnmIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
+    real(kind=RKIND), dimension(:),   allocatable :: sshSmoothed
     integer, pointer :: nCellsOwned
     integer, pointer :: nCellsAll
     real(kind=RKIND), dimension(:), pointer :: latCell
     real(kind=RKIND), dimension(:), pointer :: lonCell
     real(kind=RKIND), dimension(:), pointer :: areaCell
+    real(kind=RKIND), dimension(:), pointer :: distanceToCoast
+    real(kind=RKIND), dimension(:), pointer :: coastalSmoothingFactor
     real(kind=RKIND), pointer :: sphere_radius
     integer, dimension(:,:), allocatable :: blockIdxForward
     integer, dimension(:,:), allocatable :: blockIdxInverse
@@ -177,6 +180,10 @@ contains
             return
         endif
 
+        do iCell = 1,nCellsAll
+          sshSmoothed(iCell) = coastalSmoothingFactor(iCell)*ssh(iCell)
+        enddo
+
         if (.not. config_use_parallel_self_attraction_loading) then
 
             call mpas_timer_start('Serial SAL: Gather')
@@ -187,7 +194,7 @@ contains
             endif
     
             ! Gather only the nCellsOwned from ssh (does not include Halos)
-            call MPI_GATHERV(ssh, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
+            call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
                             nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err)
             call mpas_timer_stop('Serial SAL: Gather')
     
@@ -278,8 +285,8 @@ contains
 
                     ! Compute local integral contribution
                     do iCell = endIdx, startIdx, -1 
-                        SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                        SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                        SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                        SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                     enddo
 
                     !------------
@@ -293,8 +300,8 @@ contains
 
                         ! Compute local integral contribution
                         do iCell = endIdx, startIdx, -1 
-                            SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                            SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                            SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                            SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                         enddo
 
                     endif
@@ -317,8 +324,8 @@ contains
 
                         ! Compute local integral contribution
                         do iCell = endIdx, startIdx, -1 
-                            SnmRe_local(l) = SnmRe_local(l) + ssh(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                            SnmIm_local(l) = SnmIm_local(l) + ssh(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                            SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                            SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                         enddo
 
 
@@ -490,6 +497,9 @@ contains
         integer :: iCell
         integer :: nl
         integer :: nCellBlock
+
+        real(kind=RKIND) :: d
+        real(kind=RKIND) :: trans_start, trans_width
         
         call mpas_timer_start('SAL Init')
 
@@ -513,17 +523,29 @@ contains
 
         block_ptr => domain % blocklist
         do while(associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh',meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve',nCellsOwned)
+          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll) 
-          call mpas_pool_get_array(meshPool, 'latCell',latCell)
-          call mpas_pool_get_array(meshPool, 'lonCell',lonCell)
-          call mpas_pool_get_array(meshPool, 'areaCell',areaCell)
+          call mpas_pool_get_array(meshPool, 'latCell', latCell)
+          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+          call mpas_pool_get_array(meshPool, 'distanceToCoast', distanceToCoast)
           call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+          call mpas_pool_get_array(forcingPool, 'coastalSmoothingFactor', coastalSmoothingFactor)
 
           block_ptr => block_ptr % next
         end do
+
+        ! Set up coastal ssh smoothing
+        allocate(sshSmoothed(nCellsAll))
+        trans_width = config_self_attraction_loading_smoothing_width*1000.0_RKIND
+        trans_start = 0.0_RKIND
+        do iCell = 1,nCellsAll
+            d = distanceToCoast(iCell)
+            coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh((d - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
+        enddo
 
         if (.not. config_use_parallel_self_attraction_loading) then
 
@@ -804,8 +826,8 @@ contains
         integer, parameter :: lmax=1440
 
         allocate(LoveDat(4,lmax+1))
-
-        LoveDat(1:4,1) = (/ 0.0_RKIND, 0.0000000000_RKIND, 0.0000000000_RKIND, -1.0000000000_RKIND /)
+      
+        LoveDat(1:4,1) = (/ 0.0_RKIND, 0.0000000000_RKIND, 0.0000000000_RKIND, -1.0000000000_RKIND /) !{{{
         LoveDat(1:4,2) = (/ 1.0_RKIND, -1.2858777580_RKIND, -8.9608179370e-1_RKIND, -1.0000000000_RKIND /)
         LoveDat(1:4,3) = (/ 2.0_RKIND, -9.9079949000e-1_RKIND, 2.3286695000e-2_RKIND, -3.0516104000e-1_RKIND /)
         LoveDat(1:4,4) = (/ 3.0_RKIND, -1.0499631000_RKIND, 6.9892136000e-2_RKIND, -1.9585733000e-1_RKIND /)
@@ -2244,7 +2266,7 @@ contains
         LoveDat(1:4,1437) = (/ 1436.0_RKIND, -6.1355685000_RKIND, 1.2776168000e-3_RKIND, -1.8369666000e-3_RKIND /)
         LoveDat(1:4,1438) = (/ 1437.0_RKIND, -6.1358290000_RKIND, 1.2768562000e-3_RKIND, -1.8357928000e-3_RKIND /)
         LoveDat(1:4,1439) = (/ 1438.0_RKIND, -6.1360887000_RKIND, 1.2760962000e-3_RKIND, -1.8346203000e-3_RKIND /)
-        LoveDat(1:4,1440) = (/ 1439.0_RKIND, -6.1363475000_RKIND, 1.2753368000e-3_RKIND, -1.8334492000e-3_RKIND /)
+        LoveDat(1:4,1440) = (/ 1439.0_RKIND, -6.1363475000_RKIND, 1.2753368000e-3_RKIND, -1.8334492000e-3_RKIND /) !}}}
         LoveDat(1:4,1441) = (/ 1440.0_RKIND, -6.1366054000_RKIND, 1.2745781000e-3_RKIND, -1.8322792000e-3_RKIND /)
 
 

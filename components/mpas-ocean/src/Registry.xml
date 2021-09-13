@@ -763,6 +763,10 @@
 					description="Controls if self-attraction and loading is applied to ssh"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="800.0" units="km"
+					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
+					possible_values="Any positive real number."
+		/>
 		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
 					description="Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid."
 					possible_values="Any file name string"
@@ -2374,6 +2378,9 @@
 			 description="Array to hold integers that represent logicals determining if a cell should be culled or not by the MpasCellCuller tool."
 			 packages="cullCells"
 		/>
+		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
+			 description="Distance of each cell to nearest coastline cell."
+		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"
@@ -3507,6 +3514,10 @@
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="unitless"
+			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
+			 packages="tidalPotentialForcingPKG"
 		/>
 		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^{-1}"
 			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
