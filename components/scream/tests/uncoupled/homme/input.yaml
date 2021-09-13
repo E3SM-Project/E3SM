@@ -5,7 +5,7 @@ Debug:
 
 Initial Conditions:
   Physics GLL:
-    Initial Conditions File: homme_standalone_ne4np4.nc
+    Filename: homme_standalone_ne4np4.nc
     # Set X_prev = X
     T_mid_prev: T_mid
     horiz_winds_prev: horiz_winds

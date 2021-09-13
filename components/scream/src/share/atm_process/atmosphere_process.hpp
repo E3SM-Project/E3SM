@@ -119,7 +119,7 @@ public:
   // Derived classes can perform additional checks (or repairs) by overriding the
   // corresponding check_xyz_fields_impl method(s).
   // Note: We don't want inputs to be 'repaired', since they might break assumptions
-  //       in other atm procs (e.g., some atm procs might haave a "backup" copy).
+  //       in other atm procs (e.g., some atm procs might have a "backup" copy).
   //       However, we allow computed fields to be repaired, so check_computed_fields
   //       is not a const method.  If a process wants to repair computed fields
   //       it can do so by overriding the "check_computed_fields_impl" routine.
@@ -302,7 +302,7 @@ protected:
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
   // Note: these methods do *not* create a copy of the field/group. Also, notice that
-  //       these methors need to be created *after* set_fields_and_groups_pointers().
+  //       these methods need to be created *after* set_fields_and_groups_pointers().
   void alias_field_in (const std::string& field_name,
                        const std::string& grid_name,
                        const std::string& alias_name);

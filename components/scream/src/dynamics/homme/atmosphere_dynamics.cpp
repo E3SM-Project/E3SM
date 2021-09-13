@@ -164,7 +164,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   create_internal_field("FM",{COL,CMP,LEV},{ncols,3,NVL},m_ref_grid->name());
   create_internal_field("FT",{COL,    LEV},{ncols,  NVL},m_ref_grid->name());
 
-  // Dynamics backs out tendencies from the states, and pass those to Homme.
+  // Dynamics backs out tendencies from the states, and passes those to Homme.
   // After Homme completes, we remap the updates state to the ref grid.
   // Thus, is more convenient to use two different remappers: the pd remapper
   // will remap into Homme's forcing views, while the dp remapper will remap
@@ -182,7 +182,6 @@ void HommeDynamics::
 set_updated_group_impl (const FieldGroup<Real>& group)
 {
   const auto& name = group.m_info->m_group_name;
-  // const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(name=="tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 

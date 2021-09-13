@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_REQUEST_HPP
 
 #include "share/field//field_identifier.hpp"
-#include "share/util//scream_utils.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream {
 

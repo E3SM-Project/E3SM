@@ -401,7 +401,7 @@ initialize_fields (const util::TimeStamp& t0)
         // There are fields to read from the nc file. We must have a valid nc file then.
         ekat::ParameterList ic_reader_params;
         ic_reader_params.set("Fields",ic_fields_names[grid_name]);
-        ic_reader_params.set("Filename",ic_pl_grid.get<std::string>("Initial Conditions File"));
+        ic_reader_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
 
         const auto& field_mgr = it.second;
         AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,field_mgr);
@@ -443,7 +443,7 @@ initialize_fields (const util::TimeStamp& t0)
 
         ekat::ParameterList lat_lon_params;
         lat_lon_params.set("Fields",fnames);
-        lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Initial Conditions File"));
+        lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
 
         AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params);
         lat_lon_reader.init(grid,host_views,layouts);
