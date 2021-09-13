@@ -1293,17 +1293,14 @@ contains
       integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
-
       integer :: nameLength, err_tmp
-      call MPAS_log_write("ocn_precompute_analysis_members")
-      iErr = 0
 
+      iErr = 0
       err_tmp = 0 ! needed since time series stats is commented out
 
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call MPAS_log_write("do ocn_precompute_analysis_members")
          call ocn_precompute_conservation_check(domain, timeLevel, err_tmp)
       end if
 

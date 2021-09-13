@@ -79,11 +79,20 @@
 		<var name="accumulatedMeltingIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
 			description="This is iceRunoffFlux * latent_heat_fusion_mks. Positive into the ocean."
 		/>
+		<var name="accumulatedRemovedIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="This is iceRunoffFlux * latent_heat_fusion_mks. Positive into the ocean."
+		/>
 		<var name="accumulatedIcebergHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
 			description="Iceberg heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
+		<var name="accumulatedFrazilHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="Heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
+		/>
 		<var name="accumulatedLandIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
 			description="Land ice heat flux, integrated in space and time. Positive into the ocean."
+		/>
+		<var name="accumulatedLandIceFrazilHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+			description="Land ice heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
 		/>
 		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
 			 description="Heat flux associated with rain. Positive into the ocean."
@@ -99,9 +108,6 @@
 		/>
 		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
 			 description="Heat flux associated with iceberg melt. Positive into the ocean."
-		/>
-		<var name="accumulatedTotalFreshWaterTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
-			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 	</var_struct>
 	<var_struct name="conservationCheckMassAM" time_levs="1" packages="conservationCheckAMPKG">
@@ -153,8 +159,14 @@
 		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from iceberg melt from coupler. Positive into the ocean."
 		/>
+		<var name="accumulatedFrazilFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from frazil freezing under sea ice. Positive into the ocean."
+		/>
 		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from land ice melt from coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedLandIceFrazilFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from frazil freezing under land ice. Positive into the ocean."
 		/>
 	</var_struct>
 	<var_struct name="conservationCheckSaltAM" time_levs="1" packages="conservationCheckAMPKG">
@@ -179,6 +191,12 @@
 		<var name="accumulatedSeaIceSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
 			 description="Sea ice salinity flux from coupler. Positive into the ocean."
 		/>
+		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Salinity flux from frazil to sea ice, given to coupler. Positive into the ocean."
+		/>
+		<var name="accumulatedLandIceFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+			 description="Salinity flux from frazil to Land Ice, given to coupler. Positive into the ocean."
+		/>
 	</var_struct>
 	<streams>
 		<stream name="conservationCheckOutput" type="output"
@@ -192,36 +210,54 @@
 			<var name="initialEnergy"/>
 			<var name="finalEnergy"/>
 			<var name="energyChange"/>
-			<var name="accumulatedLatentHeatFlux"/>
-			<var name="accumulatedSensibleHeatFlux"/>
-			<var name="accumulatedLongWaveHeatFluxUp"/>
-			<var name="accumulatedLongWaveHeatFluxDown"/>
-			<var name="accumulatedSeaIceHeatFlux"/>
-			<var name="accumulatedShortWaveHeatFlux"/>
-			<var name="accumulatedMeltingSnowHeatFlux"/>
-			<var name="accumulatedMeltingIceRunoffHeatFlux"/>
 			<var name="netEnergyFlux"/>
 			<var name="absoluteEnergyError"/>
 			<var name="relativeEnergyError"/>
 			<var name="initialMass"/>
 			<var name="finalMass"/>
 			<var name="massChange"/>
-			<var name="accumulatedEvaporationFlux"/>
-			<var name="accumulatedSnowFlux"/>
-			<var name="accumulatedSeaIceFlux"/>
-			<var name="accumulatedRiverRunoffFlux"/>
-			<var name="accumulatedIceRunoffFlux"/>
-			<var name="accumulatedRainFlux"/>
 			<var name="netMassFlux"/>
 			<var name="absoluteMassError"/>
 			<var name="relativeMassError"/>
 			<var name="initialSalt"/>
 			<var name="finalSalt"/>
 			<var name="saltChange"/>
-			<var name="accumulatedSeaIceSalinityFlux"/>
 			<var name="netSaltFlux"/>
 			<var name="absoluteSaltError"/>
 			<var name="relativeSaltError"/>
+            <var name="accumulatedLatentHeatFlux"/>
+            <var name="accumulatedSensibleHeatFlux"/>
+            <var name="accumulatedLongWaveHeatFluxUp"/>
+            <var name="accumulatedLongWaveHeatFluxDown"/>
+            <var name="accumulatedShortWaveHeatFlux"/>
+            <var name="accumulatedSeaIceHeatFlux"/>
+            <var name="accumulatedMeltingSnowHeatFlux"/>
+            <var name="accumulatedMeltingIceRunoffHeatFlux"/>
+            <var name="accumulatedRemovedIceRunoffHeatFlux"/>
+            <var name="accumulatedIcebergHeatFlux"/>
+            <var name="accumulatedFrazilHeatFlux"/>
+            <var name="accumulatedLandIceHeatFlux"/>
+            <var name="accumulatedLandIceFrazilHeatFlux"/>
+            <var name="accumulatedRainTemperatureFlux"/>
+            <var name="accumulatedEvapTemperatureFlux"/>
+            <var name="accumulatedSeaIceTemperatureFlux"/>
+            <var name="accumulatedRiverRunoffTemperatureFlux"/>
+            <var name="accumulatedIcebergTemperatureFlux"/>
+            <var name="accumulatedRainFlux"/>
+            <var name="accumulatedSnowFlux"/>
+            <var name="accumulatedEvaporationFlux"/>
+            <var name="accumulatedSeaIceFlux"/>
+            <var name="accumulatedRiverRunoffFlux"/>
+            <var name="accumulatedIceRunoffFlux"/>
+            <var name="accumulatedRemovedRiverRunoffFlux"/>
+            <var name="accumulatedRemovedIceRunoffFlux"/>
+            <var name="accumulatedIcebergFlux"/>
+            <var name="accumulatedFrazilFlux"/>
+            <var name="accumulatedLandIceFlux"/>
+            <var name="accumulatedLandIceFrazilFlux"/>
+            <var name="accumulatedSeaIceSalinityFlux"/>
+            <var name="accumulatedFrazilSalinityFlux"/>
+            <var name="accumulatedLandIceFrazilSalinityFlux"/>
 		</stream>
 
 		<stream name="conservationCheckRestart"
@@ -236,6 +272,8 @@
 				immutable="true">
 			<var name="performConservationPrecompute"/>
 			<var name="initialEnergy"/>
+			<var name="initialMass"/>
+			<var name="initialSalt"/>
             <var name="accumulatedLatentHeatFlux"/>
             <var name="accumulatedSensibleHeatFlux"/>
             <var name="accumulatedLongWaveHeatFluxUp"/>
@@ -244,14 +282,16 @@
             <var name="accumulatedSeaIceHeatFlux"/>
             <var name="accumulatedMeltingSnowHeatFlux"/>
             <var name="accumulatedMeltingIceRunoffHeatFlux"/>
+            <var name="accumulatedRemovedIceRunoffHeatFlux"/>
             <var name="accumulatedIcebergHeatFlux"/>
+            <var name="accumulatedFrazilHeatFlux"/>
             <var name="accumulatedLandIceHeatFlux"/>
+            <var name="accumulatedLandIceFrazilHeatFlux"/>
             <var name="accumulatedRainTemperatureFlux"/>
             <var name="accumulatedEvapTemperatureFlux"/>
             <var name="accumulatedSeaIceTemperatureFlux"/>
             <var name="accumulatedRiverRunoffTemperatureFlux"/>
             <var name="accumulatedIcebergTemperatureFlux"/>
-			<var name="initialMass"/>
             <var name="accumulatedRainFlux"/>
             <var name="accumulatedSnowFlux"/>
             <var name="accumulatedEvaporationFlux"/>
@@ -261,8 +301,11 @@
             <var name="accumulatedRemovedRiverRunoffFlux"/>
             <var name="accumulatedRemovedIceRunoffFlux"/>
             <var name="accumulatedIcebergFlux"/>
+            <var name="accumulatedFrazilFlux"/>
             <var name="accumulatedLandIceFlux"/>
-			<var name="initialSalt"/>
-			<var name="accumulatedSeaIceSalinityFlux"/>
+            <var name="accumulatedLandIceFrazilFlux"/>
+            <var name="accumulatedSeaIceSalinityFlux"/>
+            <var name="accumulatedFrazilSalinityFlux"/>
+            <var name="accumulatedLandIceFrazilSalinityFlux"/>
 		</stream>
 	</streams>
