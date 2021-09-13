@@ -65,11 +65,11 @@
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{PSCRATCH}/e3sm_scratch/perlmutter</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{PSCRATCH}/e3sm_scratch/perlmutter/mfaddpm</CIME_OUTPUT_ROOT>
     <CIME_HTML_ROOT>/global/cfs/cdirs/e3sm/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/e3sm/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>$ENV{PSCRATCH}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{PSCRATCH}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
@@ -141,11 +141,11 @@
 
       <modules>
 	<command name="load">cray-libsci/21.08.1.2</command>
-	<command name="load">craype/2.7.9</command>
-	<command name="load">cray-mpich/8.1.8</command>
-	<command name="load">cray-hdf5-parallel/1.12.0.6</command>
-	<command name="load">cray-netcdf-hdf5parallel/4.7.4.6</command>
-	<command name="load">cray-parallel-netcdf/1.12.1.6</command>
+	<command name="load">craype</command>
+	<command name="load">cray-mpich/8.1.9</command>
+	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
 	<command name="load">cmake</command>
       </modules>
 
