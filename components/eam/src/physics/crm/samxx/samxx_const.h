@@ -37,6 +37,8 @@ real constexpr crm_dx     = CRM_DX;
 real constexpr crm_dy     = crm_dx;
 real constexpr crm_dt     = CRM_DT;
 
+real constexpr crm_dx_scale = CRM_DX_SCALE;
+
 int  constexpr YES3D = YES3DVAL  ; // Domain dimensionality: 1 - 3D, 0 - 2D
 int  constexpr nx_gl = crm_nx    ; // Number of grid points in X
 int  constexpr ny_gl = crm_ny    ; // Number of grid points in Y

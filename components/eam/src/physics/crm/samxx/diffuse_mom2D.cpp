@@ -30,8 +30,8 @@ void diffuse_mom2D(real5d &tk) {
   real4d fv("fv",nz,1,nx+1,ncrms);
   real4d fw("fw",nz,1,nx+1,ncrms);
 
-  real rdx2=1.0/dx/dx;
-  real rdx25=0.25*rdx2;
+  // real rdx2=1.0/dx/dx;
+  // real rdx25=0.25*rdx2;
   int  constexpr j = 0;
 
   if (!docolumn) {
@@ -39,9 +39,11 @@ void diffuse_mom2D(real5d &tk) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      real rdx2=1.0/dx(icrm)/dx(icrm);
+      real rdx25=0.25*rdx2;
       int kc=k+1;
       int kcu=min(kc,nzm-1);
-      real dxz=dx/(dz(icrm)*adzw(kc,icrm));
+      real dxz=dx(icrm)/(dz(icrm)*adzw(kc,icrm));
       real rdx21=rdx2    * grdf_x(k,icrm);
       real rdx251=rdx25  * grdf_x(k,icrm);
       int ic=i+1;
@@ -81,7 +83,7 @@ void diffuse_mom2D(real5d &tk) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(k,icrm);
     real rdz25 = 0.25*rdz2;
-    real dzx=dz(icrm)/dx;
+    real dzx=dz(icrm)/dx(icrm);
     real iadz = 1.0/adz(k,icrm);
     real iadzw= 1.0/adzw(kc,icrm);
     int ib=i-1;

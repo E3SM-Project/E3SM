@@ -3,6 +3,8 @@
 
 void press_grad() {
   auto &dz            = :: dz;
+  auto &dx            = :: dx;
+  auto &dy            = :: dy;
   auto &adzw          = :: adzw;
   auto &p             = :: p;
   auto &na            = :: na;
@@ -12,14 +14,16 @@ void press_grad() {
   auto &rho           = :: rho;
   auto &ncrms         = :: ncrms;
 
-  real rdx=1.0/dx;
-  real rdy=1.0/dy;
+  // real rdx=1.0/dx;
+  // real rdy=1.0/dy;
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real rdx=1.0/dx(icrm);
+    real rdy=1.0/dy(icrm);
     int kb=max(0,k-1);
     real rdz = 1.0/(dz(icrm)*adzw(k,icrm));
     int jb=j-YES3D;

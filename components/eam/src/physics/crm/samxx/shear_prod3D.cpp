@@ -19,8 +19,8 @@ void shear_prod3D(real4d &def2) {
   //      for (int i=0; i<nx; i++) {
   //        for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    real rdx0 = 1.0/dx;
-    real rdy0 = 1.0/dy;
+    real rdx0 = 1.0/dx(icrm);
+    real rdy0 = 1.0/dy(icrm);
     real rdz, rdzw_up, rdzw_dn, rdx, rdx_up, rdx_dn, rdy, rdy_up, rdy_dn;
     int kb, kc, ib, ic, jb, jc;
 
@@ -31,12 +31,12 @@ void shear_prod3D(real4d &def2) {
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_up = 1.0/(dz(icrm)*adzw(kc,icrm));
       rdzw_dn = 1.0/(dz(icrm)*adzw(k,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdy = rdy0*sqrt(dy*rdz);
-      rdx_up = rdx0 *sqrt(dx*rdzw_up);
-      rdy_up = rdy0 *sqrt(dy*rdzw_up);
-      rdx_dn = rdx0 *sqrt(dx*rdzw_dn);
-      rdy_dn = rdy0 *sqrt(dy*rdzw_dn);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdy = rdy0*sqrt(dy(icrm)*rdz);
+      rdx_up = rdx0 *sqrt(dx(icrm)*rdzw_up);
+      rdy_up = rdy0 *sqrt(dy(icrm)*rdzw_up);
+      rdx_dn = rdx0 *sqrt(dx(icrm)*rdzw_dn);
+      rdy_dn = rdy0 *sqrt(dy(icrm)*rdzw_dn);
       jb = j-YES3D;
       jc = j+YES3D;
       ib = i-1;
@@ -80,10 +80,10 @@ void shear_prod3D(real4d &def2) {
       kc = k+1;
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_up = 1.0/(dz(icrm)*adzw(kc,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdy = rdy0*sqrt(dy*rdz);
-      rdx_up = rdx0 *sqrt(dx*rdzw_up);
-      rdy_up = rdy0 *sqrt(dy*rdzw_up);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdy = rdy0*sqrt(dy(icrm)*rdz);
+      rdx_up = rdx0 *sqrt(dx(icrm)*rdzw_up);
+      rdy_up = rdy0 *sqrt(dy(icrm)*rdzw_up);
       jb = j-YES3D;
       jc = j+YES3D;
       ib = i-1;
@@ -119,10 +119,10 @@ void shear_prod3D(real4d &def2) {
       kb = k-1;
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_dn = 1.0/(dz(icrm)*adzw(k,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdx = rdy0*sqrt(dy*rdz);
-      rdx_dn = rdx0 *sqrt(dx*rdzw_dn);
-      rdy_dn = rdy0 *sqrt(dy*rdzw_dn);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdx = rdy0*sqrt(dy(icrm)*rdz);
+      rdx_dn = rdx0 *sqrt(dx(icrm)*rdzw_dn);
+      rdy_dn = rdy0 *sqrt(dy(icrm)*rdzw_dn);
       jb = j-1*YES3D;
       jc = j+1*YES3D;
       ib = i-1;

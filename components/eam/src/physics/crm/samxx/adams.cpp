@@ -25,8 +25,8 @@ void adams() {
   auto &ncrms  = ::ncrms ;
 
   // Adams-Bashforth scheme
-  real dtdx = dtn/dx;
-  real dtdy = dtn/dy;
+  // real dtdx = dtn/dx;
+  // real dtdy = dtn/dy;
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -34,8 +34,8 @@ void adams() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real dtdz = dtn/dz(icrm);
-    real rhox = rho (k,icrm)*dtdx;
-    real rhoy = rho (k,icrm)*dtdy;
+    real rhox = rho (k,icrm)*dtn/dx(icrm);
+    real rhoy = rho (k,icrm)*dtn/dy(icrm);
     real rhoz = rhow(k,icrm)*dtdz;
     real utend = ( at*dudt(na-1,k,j,i,icrm) + bt*dudt(nb-1,k,j,i,icrm) + ct*dudt(nc-1,k,j,i,icrm) );
     real vtend = ( at*dvdt(na-1,k,j,i,icrm) + bt*dvdt(nb-1,k,j,i,icrm) + ct*dvdt(nc-1,k,j,i,icrm) );

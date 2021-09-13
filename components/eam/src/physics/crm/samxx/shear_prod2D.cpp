@@ -17,7 +17,7 @@ void shear_prod2D(real4d &def2) {
   //    for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-    real rdx0 = 1.0/dx;
+    real rdx0 = 1.0/dx(icrm);
     int j = 0;
     int kb, kc, ib, ic;
     real rdz, rdzw_up, rdzw_dn, rdx, rdx_up, rdx_dn;
@@ -29,9 +29,9 @@ void shear_prod2D(real4d &def2) {
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_up = 1.0/(dz(icrm)*adzw(kc,icrm));
       rdzw_dn = 1.0/(dz(icrm)*adzw(k,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdx_up = rdx0 *sqrt(dx*rdzw_up);
-      rdx_dn = rdx0 *sqrt(dx*rdzw_dn);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdx_up = rdx0 *sqrt(dx(icrm)*rdzw_up);
+      rdx_dn = rdx0 *sqrt(dx(icrm)*rdzw_dn);
       ib = i-1;
       ic = i+1;
       real tmp1 = ((u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx);
@@ -56,8 +56,8 @@ void shear_prod2D(real4d &def2) {
       kc = k+1;
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_up = 1.0/(dz(icrm)*adzw(kc,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdx_up = rdx0 *sqrt(dx*rdzw_up);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdx_up = rdx0 *sqrt(dx(icrm)*rdzw_up);
       ib = i-1;
       ic = i+1;
       real tmp1 = ((u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx);
@@ -78,8 +78,8 @@ void shear_prod2D(real4d &def2) {
       kb = k-1;
       rdz = 1.0/(dz(icrm)*adz(k,icrm));
       rdzw_dn = 1.0/(dz(icrm)*adzw(k,icrm));
-      rdx = rdx0*sqrt(dx*rdz);
-      rdx_dn = rdx0 *sqrt(dx*rdzw_dn);
+      rdx = rdx0*sqrt(dx(icrm)*rdz);
+      rdx_dn = rdx0 *sqrt(dx(icrm)*rdzw_dn);
       ib = i-1;
       ic = i+1;
       real tmp1 = ( (u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx);

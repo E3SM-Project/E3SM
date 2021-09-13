@@ -15,7 +15,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
   auto &ncrms  = ::ncrms;
 
   if (dosgs || docolumn) {
-    real rdx2=1.0/(dx*dx);
+    // real rdx2=1.0/(dx*dx);
     int constexpr j=0;
     int constexpr offx_flx = 1;
     int constexpr offz_flx = 1;
@@ -35,6 +35,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+        real rdx2=1.0/(dx(icrm)*dx(icrm));
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
@@ -104,7 +105,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
   auto &ncrms  = ::ncrms;
 
   if (dosgs || docolumn) {
-    real rdx2=1.0/(dx*dx);
+    // real rdx2=1.0/(dx*dx);
     int constexpr j=0;
     int constexpr offx_flx = 1;
     int constexpr offz_flx = 1;
@@ -124,6 +125,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+        real rdx2=1.0/(dx(icrm)*dx(icrm));
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
@@ -193,7 +195,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
   auto &ncrms         = :: ncrms;
 
   if (dosgs || docolumn) {
-    real rdx2=1.0/(dx*dx);
+    // real rdx2=1.0/(dx*dx);
     int constexpr j=0;
     int constexpr offx_flx = 1;
     int constexpr offz_flx = 1;
@@ -213,6 +215,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+        real rdx2=1.0/(dx(icrm)*dx(icrm));
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));

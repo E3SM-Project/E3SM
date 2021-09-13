@@ -11,14 +11,26 @@ extern "C" void setparm() {
 #endif
   dodamping = true;
   dt        = crm_dt;
-  dx        = crm_dx;
-  dy        = crm_dy;
+  // dx        = crm_dx;
+  // dy        = crm_dy;
   docloud   = true;
   rank      = 0;   // in MMF model, rank = 0
 
-  if (RUN2D) {
-    dy=dx;
-  }
+  // if (crm_dx_scale>0){
+  //   parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {
+  //     dx(icrm) = crm_dx;
+  //     dy(icrm) = crm_dy;
+  //   });
+  // } else {
+  //   parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {
+  //     dx(icrm) = crm_dx;
+  //     dy(icrm) = crm_dy;
+  //   });
+  // }
+
+  // if (RUN2D) {
+  //   dy=dx;
+  // }
 
   if (RUN2D && YES3D) {
     std::cout << "Error: 2D run and YES3D is set to 1. Exitting...";
@@ -28,9 +40,9 @@ extern "C" void setparm() {
     std::cout << "Error: 3D run and YES3D is set to 0. Exitting...";
     exit(-1);
   }
-  if (ny == 1) {
-    dy=dx;
-  }
+  // if (ny == 1) {
+  //   dy=dx;
+  // }
 
   dtn = dt;
 

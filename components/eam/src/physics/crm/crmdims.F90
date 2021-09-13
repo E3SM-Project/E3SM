@@ -15,4 +15,6 @@ module crmdims
     real(crm_rknd), parameter :: crm_dy=crm_dx
     real(crm_rknd), parameter :: crm_dt=CRM_DT
 
+    real(crm_rknd), parameter :: crm_dx_scale=CRM_DX_SCALE
+
 end module crmdims

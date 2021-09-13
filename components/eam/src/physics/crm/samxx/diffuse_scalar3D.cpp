@@ -25,10 +25,10 @@ void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     int constexpr offy_flx = 1;
     int constexpr offz_flx = 1;
 
-    real rdx2=1.0/(dx*dx);
-    real rdy2=1.0/(dy*dy);
-    real dxy=dx/dy;
-    real dyx=dy/dx;
+    // real rdx2=1.0/(dx*dx);
+    // real rdy2=1.0/(dy*dy);
+    // real dxy=dx/dy;
+    // real dyx=dy/dx;
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -44,6 +44,10 @@ void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real rdx2=1.0/(dx(icrm)*dx(icrm));
+      real rdy2=1.0/(dy(icrm)*dy(icrm));
+      real dxy=dx(icrm)/dy(icrm);
+      real dyx=dy(icrm)/dx(icrm);
       if (j >= 1) {
         int ic=i+1;
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
@@ -141,10 +145,10 @@ void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     int constexpr offy_flx = 1;
     int constexpr offz_flx = 1;
 
-    real rdx2=1.0/(dx*dx);
-    real rdy2=1.0/(dy*dy);
-    real dxy=dx/dy;
-    real dyx=dy/dx;
+    // real rdx2=1.0/(dx*dx);
+    // real rdy2=1.0/(dy*dy);
+    // real dxy=dx/dy;
+    // real dyx=dy/dx;
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -160,6 +164,10 @@ void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real rdx2=1.0/(dx(icrm)*dx(icrm));
+      real rdy2=1.0/(dy(icrm)*dy(icrm));
+      real dxy=dx(icrm)/dy(icrm);
+      real dyx=dy(icrm)/dx(icrm);
       if (j >= 1) {
         int ic=i+1;
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
@@ -259,10 +267,10 @@ void diffuse_scalar3D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     int constexpr offy_flx = 1;
     int constexpr offz_flx = 1;
 
-    real rdx2=1.0/(dx*dx);
-    real rdy2=1.0/(dy*dy);
-    real dxy=dx/dy;
-    real dyx=dy/dx;
+    // real rdx2=1.0/(dx*dx);
+    // real rdy2=1.0/(dy*dy);
+    // real dxy=dx/dy;
+    // real dyx=dy/dx;
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -278,6 +286,10 @@ void diffuse_scalar3D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real rdx2=1.0/(dx(icrm)*dx(icrm));
+      real rdy2=1.0/(dy(icrm)*dy(icrm));
+      real dxy=dx(icrm)/dy(icrm);
+      real dyx=dy(icrm)/dx(icrm);
       if (j >= 1) {
         int ic=i+1;
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);

@@ -46,7 +46,7 @@ void kurant () {
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
-    real tmp1 = uhm(k,icrm)*dt*sqrt(1.0/(dx*dx) + YES3D*1.0/(dy*dy));
+    real tmp1 = uhm(k,icrm)*dt*sqrt(1.0/(dx(icrm)*dx(icrm)) + YES3D*1.0/(dy(icrm)*dy(icrm)));
     real dztemp = dz(icrm)*adzw(k,icrm);
     real tmp2 = wm(k,icrm)*dt/dztemp;
     real tmp3 = wm(k+1,icrm)*dt/dztemp;
