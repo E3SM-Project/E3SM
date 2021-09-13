@@ -724,7 +724,7 @@ void HommeDynamics::import_initial_conditions () {
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto dp3d      = get_internal_field("dp3d",dgn).get_view<Pack*****>();
-  const auto ps        = get_internal_field("ps",dgn).get_view<Pack****>();
+  const auto ps        = get_internal_field("ps",dgn).get_view<Real****>();
   const auto v         = get_internal_field("v",dgn).get_view<Pack******>();
   const auto w_i       = get_internal_field("w_i",dgn).get_view<Pack*****>();
   const auto phinh_i   = get_internal_field("phinh_i",dgn).get_view<Pack*****>();
