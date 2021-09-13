@@ -30,23 +30,28 @@ void diffuse_mom3D(real5d &tk) {
   real4d fv("fv",nz,ny+1,nx+1,ncrms);
   real4d fw("fw",nz,ny+1,nx+1,ncrms);
 
-  real rdx2=1.0/(dx*dx);
-  real rdy2=1.0/(dy*dy);
-  real rdx25=0.25*rdx2;
-  real rdy25=0.25*rdy2;
-  real dxy=dx/dy;
-  real dyx=dy/dx;
+  // real rdx2=1.0/(dx*dx);
+  // real rdy2=1.0/(dy*dy);
+  // real rdx25=0.25*rdx2;
+  // real rdy25=0.25*rdy2;
+  // real dxy=dx/dy;
+  // real dyx=dy/dx;
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx+1; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real rdx2=1.0/(dx(icrm)*dx(icrm));
+    real rdy2=1.0/(dy(icrm)*dy(icrm));
+    real rdx25=0.25*rdx2;
+    real rdy25=0.25*rdy2;
+    real dxy=dx(icrm)/dy(icrm);
     int jb=j-1;
     int kc=k+1;
     int kcu=min(kc,nzm-1);
     int ic=i+1;
-    real dxz=dx/(dz(icrm)*adzw(kc,icrm));
+    real dxz=dx(icrm)/(dz(icrm)*adzw(kc,icrm));
     real rdx21=rdx2    * grdf_x(k,icrm);
     real rdx251=rdx25  * grdf_x(k,icrm);
     real tkx=rdx21*tk(0,k,j+offy_d,i-1+offx_d,icrm);
@@ -82,7 +87,12 @@ void diffuse_mom3D(real5d &tk) {
     int kc=k+1;
     int kcu=min(kc,nzm-1);
     int ib=i-1;
-    real dyz=dy/(dz(icrm)*adzw(kc,icrm));
+    real dyx=dy(icrm)/dx(icrm);
+    real rdx2=1.0/(dx(icrm)*dx(icrm));
+    real rdy2=1.0/(dy(icrm)*dy(icrm));
+    real rdx25=0.25*rdx2;
+    real rdy25=0.25*rdy2;
+    real dyz=dy(icrm)/(dz(icrm)*adzw(kc,icrm));
     real rdy21=rdy2    * grdf_y(k,icrm);
     real rdy251=rdy25  * grdf_y(k,icrm);
     real tky=rdy21*tk(0,k,j-1+offy_d,i+offx_d,icrm);
@@ -130,8 +140,8 @@ void diffuse_mom3D(real5d &tk) {
     real rdz25 = 0.25*rdz2;
     real iadz = 1.0/adz(k,icrm);
     real iadzw= 1.0/adzw(kc,icrm);
-    real dzx=dz(icrm)/dx;
-    real dzy=dz(icrm)/dy;
+    real dzx=dz(icrm)/dx(icrm);
+    real dzy=dz(icrm)/dy(icrm);
     real tkz=rdz2*tk(0,k,j+offy_d,i+offx_d,icrm);
     fw(kc,j+1,i+1,icrm)=-2.0*tkz*(w(kc,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rho(k,icrm)*iadz;
     tkz=rdz25*(tk(0,k,j+offy_d,i+offx_d,icrm)+tk(0,k,j+offy_d,ib+offx_d,icrm)+tk(0,kc,j+offy_d,i+offx_d,icrm)+

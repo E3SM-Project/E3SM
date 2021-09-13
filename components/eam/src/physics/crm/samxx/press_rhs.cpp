@@ -43,8 +43,8 @@ void press_rhs() {
 
   bound_duvdt();
 
-  real rdx=1.0/dx;
-  real rdy=1.0/dy;
+  // real rdx=1.0/dx(icrm);
+  // real rdy=1.0/dy(icrm);
   real btat=bt/at;
   real ctat=ct/at;
 
@@ -62,6 +62,8 @@ void press_rhs() {
       int jc=j+1;
       int ic=i+1;
       real dta=1.0/dt3(na-1)/at;
+      real rdx=1.0/dx(icrm);
+      real rdy=1.0/dy(icrm);
       p(k,j+offy_p,i+offx_p,icrm)=( rdx*(u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))+
                                   rdy*(v(k,jc+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))+
                                   (w(kc,j+offy_w,i+offx_w,icrm)*rup-w(k,j+offy_w,i+offx_w,icrm)*rdn) )*dta +
@@ -90,6 +92,8 @@ void press_rhs() {
       real rdn = rhow(k,icrm)/rho(k,icrm)*rdz;
       int ic=i+1;
       real dta=1.0/dt3(na-1)/at;
+      real rdx=1.0/dx(icrm);
+      real rdy=1.0/dy(icrm);
 
       p(k,j+offy_p,i+offx_p,icrm)=(rdx*(u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))+
                                   (w(kc,j+offy_w,i+offx_w,icrm)*rup-w(k,j+offy_w,i+offx_w,icrm)*rdn) )*dta +

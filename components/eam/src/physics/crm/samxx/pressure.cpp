@@ -35,7 +35,7 @@ void pressure() {
     nypp = ny+2;
   }
 
-  real2d eign("eign",nypp,nx+1);
+  real3d eign("eign",nypp,nx+1,ncrms);
 
   press_rhs();
 
@@ -141,12 +141,12 @@ void pressure() {
 
   //   for (int j=0; j<nypp; j++) {
   //     for (int i=0; i<nx+1; i++) {
-  parallel_for( SimpleBounds<2>(nypp,nx+1) , YAKL_LAMBDA (int j, int i) {
+  parallel_for( SimpleBounds<3>(nypp,nx+1,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     int jt = 0;
     int it = 0;
 
-    real ddx2=1.0/(dx*dx);
-    real ddy2=1.0/(dy*dy);
+    real ddx2=1.0/(dx(icrm)*dx(icrm));
+    real ddy2=1.0/(dy(icrm)*dy(icrm));
     real pii = 3.14159265358979323846;
     real xnx=pii/nx;
     real xny=pii/ny;
@@ -156,7 +156,7 @@ void pressure() {
     int id=((i+1)+it-0.1)/2.0;
     real factx = 2.0;
     real xi=id;
-    eign(j,i)=(2.0*cos(factx*xnx*xi)-2.0)*ddx2+(2.0*cos(facty*xny*xj)-2.0)*ddy2;
+    eign(j,i,icrm)=(2.0*cos(factx*xnx*xi)-2.0)*ddx2+(2.0*cos(facty*xny*xj)-2.0)*ddy2;
   });
 
   // for (int j=0; j<nypp; j++) {
@@ -172,24 +172,24 @@ void pressure() {
     int id=((i+1)+it-0.1)/2.0;
     real b;
     if(id+jd == 0) {
-      b=1.0/(eign(j,i)*rho(0,icrm)-a(0,icrm)-c(0,icrm));
+      b=1.0/(eign(j,i,icrm)*rho(0,icrm)-a(0,icrm)-c(0,icrm));
       alfa(0)=-c(0,icrm)*b;
       beta(0)=ff(0,j,i,icrm)*b;
     }
     else {
-      b=1.0/(eign(j,i)*rho(0,icrm)-c(0,icrm));
+      b=1.0/(eign(j,i,icrm)*rho(0,icrm)-c(0,icrm));
       alfa(0)=-c(0,icrm)*b;
       beta(0)=ff(0,j,i,icrm)*b;
     }
 
     real e;
     for(int k=1; k<nzm-1; k++) {
-      e=1.0/(eign(j,i)*rho(k,icrm)-a(k,icrm)-c(k,icrm)+a(k,icrm)*alfa(k-1));
+      e=1.0/(eign(j,i,icrm)*rho(k,icrm)-a(k,icrm)-c(k,icrm)+a(k,icrm)*alfa(k-1));
       alfa(k)=-c(k,icrm)*e;
       beta(k)=(ff(k,j,i,icrm)-a(k,icrm)*beta(k-1))*e;
     }
     ff(nzm-1,j,i,icrm)=(ff(nzm-1,j,i,icrm)-a(nzm-1,icrm)*beta(nzm-2))/
-                       (eign(j,i)*rho(nzm-1,icrm)-a(nzm-1,icrm)+a(nzm-1,icrm)*alfa(nzm-2));
+                       (eign(j,i,icrm)*rho(nzm-1,icrm)-a(nzm-1,icrm)+a(nzm-1,icrm)*alfa(nzm-2));
     for(int k=nzm-2; k>=0; k--) {
       ff(k,j,i,icrm)=alfa(k)*ff(k+1,j,i,icrm)+beta(k);
     }

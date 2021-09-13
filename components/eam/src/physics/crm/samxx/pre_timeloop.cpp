@@ -151,11 +151,15 @@ void pre_timeloop() {
   auto &ncrms                    = :: ncrms;
   auto &crm_input_t_vt          = :: crm_input_t_vt;
   auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &parent_dx               = :: parent_dx;
   auto &t_vt_tend               = :: t_vt_tend;
   auto &q_vt_tend               = :: q_vt_tend;
   auto &t_vt                    = :: t_vt;
   auto &q_vt                    = :: q_vt;
   auto &use_VT                  = :: use_VT;
+  auto &crm_dx_scale            = :: crm_dx_scale;
+  auto &dx                      = :: dx;
+  auto &dy                      = :: dy;
   
 
   crm_accel_ceaseflag = false;
@@ -197,6 +201,19 @@ void pre_timeloop() {
 
   task_init();
   setparm();
+
+
+  if (crm_dx_scale>0){
+    parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {
+      dx(icrm) = parent_dx(icrm)*crm_dx_scale;
+      dy(icrm) = parent_dx(icrm)*crm_dx_scale;
+    });
+  } else {
+    parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {
+      dx(icrm) = crm_dx;
+      dy(icrm) = crm_dy;
+    });
+  }
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

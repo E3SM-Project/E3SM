@@ -202,8 +202,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     Ce1 = Ce/0.7*0.19;
     Ce2 = Ce/0.7*0.51;
     // compute correction factors for eddy visc/cond not to acceed 3D stability
-    cx = dx*dx/dt/grdf_x(k,icrm);
-    cy = dy*dy/dt/grdf_y(k,icrm);
+    cx = dx(icrm)*dx(icrm)/dt/grdf_x(k,icrm);
+    cy = dy(icrm)*dy(icrm)/dt/grdf_y(k,icrm);
     real tmp1 = dz(icrm)*min(adzw(k,icrm),adzw(k+1,icrm));
     cz = tmp1*tmp1/dt/grdf_z(k,icrm);
     // maximum value of eddy visc/cond

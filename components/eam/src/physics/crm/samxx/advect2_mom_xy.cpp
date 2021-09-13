@@ -16,8 +16,8 @@ void advect2_mom_xy() {
   auto &na            = :: na;
   auto &ncrms         = :: ncrms;
 
-  real dx25 = 0.25 / dx;
-  real dy25 = 0.25 / dy;
+  // real dx25 = 0.25 / dx;
+  // real dy25 = 0.25 / dy;
 
   if (RUN3D) {
 
@@ -31,40 +31,40 @@ void advect2_mom_xy() {
       real irho = 1.0/(rhow(kc,icrm)*adzw(kc,icrm));
       int jb = j-1;
       int ic = i+1;
-      real fu1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
+      real fu1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
                       (u(k,j+offy_u,i-1+offx_u,icrm)+u(k,j+offy_u,ic-1+offx_u,icrm));
-      real fu2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
+      real fu2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
                       (u(k,j+offy_u,i+offx_u,icrm)+u(k,j+offy_u,ic+offx_u,icrm));
       dudt(na-1,k,j,i,icrm)  = dudt(na-1,k,j,i,icrm)  - (fu2-fu1);
-      real fv1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,jb+offy_u,ic-1+offx_u,icrm))*
+      real fv1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,jb+offy_u,ic-1+offx_u,icrm))*
                        (v(k,j+offy_v,i-1+offx_v,icrm)+v(k,j+offy_v,ic-1+offx_v,icrm));
-      real fv2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,jb+offy_u,ic+offx_u,icrm))*
+      real fv2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,jb+offy_u,ic+offx_u,icrm))*
                       (v(k,j+offy_v,i+offx_v,icrm)+v(k,j+offy_v,ic+offx_v,icrm));
       dvdt(na-1,k,j,i,icrm)  = dvdt(na-1,k,j,i,icrm)  - (fv2-fv1);
-      real fw1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+
+      real fw1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+
                        u(kcu,j+offy_u,ic-1+offx_u,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*
                        (w(kc,j+offy_w,i-1+offx_w,icrm)+w(kc,j+offy_w,ic-1+offx_w,icrm));
-      real fw2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+
+      real fw2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+
                        u(kcu,j+offy_u,ic+offx_u,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*
                        (w(kc,j+offy_w,i+offx_w,icrm)+w(kc,j+offy_w,ic+offx_w,icrm));
       dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm)-irho*(fw2-fw1);
 
       int jc = j+1;
       int ib = i-1;
-      fu1 = dy25*(v(k,jc-1+offy_v,i+offx_v,icrm)+v(k,jc-1+offy_v,ib+offx_v,icrm))*
+      fu1 = (0.25/dy(icrm))*(v(k,jc-1+offy_v,i+offx_v,icrm)+v(k,jc-1+offy_v,ib+offx_v,icrm))*
                  (u(k,j-1+offy_u,i+offx_u,icrm)+u(k,jc-1+offy_u,i+offx_u,icrm));
-      fu2 = dy25*(v(k,jc+offy_v,i+offx_v,icrm)+v(k,jc+offy_v,ib+offx_v,icrm))*
+      fu2 = (0.25/dy(icrm))*(v(k,jc+offy_v,i+offx_v,icrm)+v(k,jc+offy_v,ib+offx_v,icrm))*
                  (u(k,j+offy_u,i+offx_u,icrm)+u(k,jc+offy_u,i+offx_u,icrm));
       dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - (fu2-fu1);
-      fv1 = dy25*(v(k,jc-1+offy_v,i+offx_v,icrm)+v(k,j-1+offy_v,i+offx_v,icrm))*
+      fv1 = (0.25/dy(icrm))*(v(k,jc-1+offy_v,i+offx_v,icrm)+v(k,j-1+offy_v,i+offx_v,icrm))*
                  (v(k,j-1+offy_v,i+offx_v,icrm)+v(k,jc-1+offy_v,i+offx_v,icrm));
-      fv2 = dy25*(v(k,jc+offy_v,i+offx_v,icrm)+v(k,j+offy_v,i+offx_v,icrm))*
+      fv2 = (0.25/dy(icrm))*(v(k,jc+offy_v,i+offx_v,icrm)+v(k,j+offy_v,i+offx_v,icrm))*
                  (v(k,j+offy_v,i+offx_v,icrm)+v(k,jc+offy_v,i+offx_v,icrm));
       dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - (fv2-fv1);
-      fw1 = dy25*(v(k,jc-1+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+
+      fw1 = (0.25/dy(icrm))*(v(k,jc-1+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+
                   v(kcu,jc-1+offy_v,i+offx_v,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*
                   (w(kc,j-1+offy_w,i+offx_w,icrm)+w(kc,jc-1+offy_w,i+offx_w,icrm));
-      fw2 = dy25*(v(k,jc+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+
+      fw2 = (0.25/dy(icrm))*(v(k,jc+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+
                   v(kcu,jc+offy_v,i+offx_v,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*
                   (w(kc,j+offy_w,i+offx_w,icrm)+w(kc,jc+offy_w,i+offx_w,icrm));
       dwdt(na-1,kc,j,i,icrm)= dwdt(na-1,kc,j,i,icrm)-irho*(fw2-fw1);
@@ -81,19 +81,19 @@ void advect2_mom_xy() {
       int kcu =min(kc, nzm-1);
       real irho = 1.0/(rhow(kc,icrm)*adzw(kc,icrm));
       int ic = i+1;
-      real fu1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
+      real fu1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
                       (u(k,j+offy_u,i-1+offx_u,icrm)+u(k,j+offy_u,ic-1+offx_u,icrm));
-      real fu2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
+      real fu2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
                       (u(k,j+offy_u,i+offx_u,icrm)+u(k,j+offy_u,ic+offx_u,icrm));
       dudt(na-1,k,j,i,icrm)  = dudt(na-1,k,j,i,icrm)  - (fu2-fu1);
-      real fv1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
+      real fv1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)+u(k,j+offy_u,i-1+offx_u,icrm))*
                       (v(k,j+offy_v,i-1+offx_v,icrm)+v(k,j+offy_v,ic-1+offx_v,icrm));
-      real fv2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
+      real fv2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)+u(k,j+offy_u,i+offx_u,icrm))*
                       (v(k,j+offy_v,i+offx_v,icrm)+v(k,j+offy_v,ic+offx_v,icrm));
       dvdt(na-1,k,j,i,icrm)  = dvdt(na-1,k,j,i,icrm)  - (fv2-fv1);
-      real fw1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic-1+offx_u,icrm)*
+      real fw1 = (0.25/dx(icrm))*(u(k,j+offy_u,ic-1+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic-1+offx_u,icrm)*
                        rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j+offy_w,i-1+offx_w,icrm)+w(kc,j+offy_w,ic-1+offx_w,icrm));
-      real fw2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic+offx_u,icrm)*
+      real fw2 = (0.25/dx(icrm))*(u(k,j+offy_u,ic+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic+offx_u,icrm)*
                        rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j+offy_w,i+offx_w,icrm)+w(kc,j+offy_w,ic+offx_w,icrm));
       dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm)-irho*(fw2-fw1);
     });

@@ -33,8 +33,8 @@ void kurant_sgs(real &cfl) {
   //   for (int icrm=0; icrm < ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     real dztmp = dz(icrm)*adzw(k,icrm);
-    real xdir = 0.5*tkhmax(k,icrm)*grdf_x(k,icrm)*dt/(dx*dx);
-    real ydir = 0.5*tkhmax(k,icrm)*grdf_y(k,icrm)*dt/(dy*dy)*YES3D;
+    real xdir = 0.5*tkhmax(k,icrm)*grdf_x(k,icrm)*dt/(dx(icrm)*dx(icrm));
+    real ydir = 0.5*tkhmax(k,icrm)*grdf_y(k,icrm)*dt/(dy(icrm)*dy(icrm))*YES3D;
     real zdir = 0.5*tkhmax(k,icrm)*grdf_z(k,icrm)*dt/(dztmp*dztmp);
     tkhmax(k,icrm) = max( max( xdir , ydir ) , zdir );
   });
@@ -142,8 +142,8 @@ void sgs_init() {
     parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
-      grdf_x(k,icrm) = dx*dx/(tmp1*tmp1);
-      grdf_y(k,icrm) = dy*dy/(tmp2*tmp2);
+      grdf_x(k,icrm) = dx(icrm)*dx(icrm)/(tmp1*tmp1);
+      grdf_y(k,icrm) = dy(icrm)*dy(icrm)/(tmp2*tmp2);
       grdf_z(k,icrm) = 1.0;
     });
   } else {
@@ -152,8 +152,8 @@ void sgs_init() {
     parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
-      grdf_x(k,icrm) = min( 16.0, dx*dx/(tmp1*tmp1));
-      grdf_y(k,icrm) = min( 16.0, dy*dy/(tmp2*tmp2));
+      grdf_x(k,icrm) = min( 16.0, dx(icrm)*dx(icrm)/(tmp1*tmp1));
+      grdf_y(k,icrm) = min( 16.0, dy(icrm)*dy(icrm)/(tmp2*tmp2));
       grdf_z(k,icrm) = 1.0;
     });
   }
