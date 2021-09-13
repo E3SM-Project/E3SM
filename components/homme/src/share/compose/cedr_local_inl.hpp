@@ -14,7 +14,7 @@ KOKKOS_INLINE_FUNCTION
 Real calc_r_tol (const Real b, const Real* a, const Real* y, const Int n) {
   Real ab = std::abs(b);
   for (Int i = 0; i < n; ++i) ab = cedr::impl::max(ab, std::abs(a[i]*y[i]));
-  return 1e1*std::numeric_limits<Real>::epsilon()*std::abs(ab);
+  return 1e1*cedr::impl::TypeTraits<Real>::epsilon*std::abs(ab);
 }
 
 // Eval r at end points to check for feasibility, and also possibly a quick exit

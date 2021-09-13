@@ -139,6 +139,18 @@ const T& max (const T& a, const T& b) { return a > b ? a : b; }
 template <typename T> KOKKOS_INLINE_FUNCTION
 void swap (T& a, T& b) { const T tmp = a; a = b; b = tmp; }
 
+template <typename Real> struct TypeTraits {};
+
+template <> struct TypeTraits<double> {
+  static constexpr double epsilon = 2.2204460492503131e-16;
+  static constexpr double infinity = 1e308;
+};
+
+template <> struct TypeTraits<float> {
+  static constexpr double epsilon = 1.1920928955078125e-07;
+  static constexpr double infinity = 1e38;
+};
+
 } // namespace impl
 } // namespace cedr
 

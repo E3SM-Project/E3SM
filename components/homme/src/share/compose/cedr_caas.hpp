@@ -73,7 +73,7 @@ public:
     KOKKOS_INLINE_FUNCTION
     void set_Qm(const Int& lclcellidx, const Int& tracer_idx,
                 const Real& Qm, const Real& Qm_min, const Real& Qm_max,
-                const Real Qm_prev = std::numeric_limits<Real>::infinity()) const override;
+                const Real Qm_prev = cedr::impl::TypeTraits<Real>::infinity) const override;
 
     KOKKOS_INLINE_FUNCTION
     Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
