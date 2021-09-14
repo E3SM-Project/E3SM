@@ -547,16 +547,16 @@ contains
             coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh((d - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
         enddo
 
+        ! Setup Alarm for SAL
+        alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err)
+        call mpas_set_timeInterval(alarmTimeStep, timeString = &
+              config_self_attraction_loading_compute_interval, ierr = err)
+        call mpas_add_clock_alarm(domain % clock, 'salComputeAlarm', alarmTime, &
+              alarmTimeInterval=alarmTimeStep, ierr=err)
+
         if (.not. config_use_parallel_self_attraction_loading) then
 
             call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-    
-            ! Setup Alarm for SAL
-            alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err)
-            call mpas_set_timeInterval(alarmTimeStep, timeString = &
-                  config_self_attraction_loading_compute_interval, ierr = err)
-            call mpas_add_clock_alarm(domain % clock, 'salComputeAlarm', alarmTime, &
-                  alarmTimeInterval=alarmTimeStep, ierr=err)
     
             ! Begin MPI portion
             call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
