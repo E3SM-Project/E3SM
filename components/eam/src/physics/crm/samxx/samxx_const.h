@@ -242,7 +242,7 @@ real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 
 int constexpr plev = PLEV;
 
-real constexpr UMAX = 0.5*crm_dx/crm_dt;
+// real constexpr UMAX = 0.5*crm_dx/crm_dt;
 real constexpr wmin = 2.0;
 real constexpr cwp_threshold = .001;
 int  constexpr perturb_seed_scale = 1000;

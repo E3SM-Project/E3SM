@@ -323,6 +323,7 @@ void pre_timeloop() {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (u(0,offy_u,offx_u,0) == u(0,offy_u,1+offx_u,0) && u(1,offy_u,2+offx_u,0) == u(1,offy_u,3+offx_u,0)) {
+      real UMAX = 0.5*dx(icrm)/crm_dt;
       u(k,j+offy_u,i+offx_u,icrm) = min( UMAX, max(-UMAX,u(k,j+offy_u,i+offx_u,icrm)) );
       v(k,j+offy_v,i+offx_v,icrm) = min( UMAX, max(-UMAX,v(k,j+offy_v,i+offx_v,icrm)) )*YES3D;
     }
@@ -411,6 +412,7 @@ void pre_timeloop() {
     qp0  (k,icrm) = qp0  (k,icrm) * factor_xy;
     tke0 (k,icrm) = tke0 (k,icrm) * factor_xy;
     int l = plev-(k+1);
+    real UMAX = 0.5*dx(icrm)/crm_dt;
     uln  (l,icrm) = min( UMAX, max(-UMAX,crm_input_ul(l,icrm)) );
     vln  (l,icrm) = min( UMAX, max(-UMAX,crm_input_vl(l,icrm)) )*YES3D;
     ttend(k,icrm) = (crm_input_tl(l,icrm)+gamaz(k,icrm)- fac_cond*(crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm))-
