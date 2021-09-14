@@ -48,33 +48,30 @@ public:
   // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
-  // Dynamics updates 'TRACERS'.
-  void set_updated_group (const FieldGroup<Real>& group);
-
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
   void homme_pre_process (const Real dt);
   void homme_post_process ();
-  // These are the three main interfaces:
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
+  // Sets the scream-allocated views inside the Homme c++ structures
+  void init_homme_views ();
+
+  // Propagates initial conditions to homme
+  void import_initial_conditions ();
+
   void initialize_impl (const util::TimeStamp& t0);
 protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Setting the fields in the atmosphere process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
-  void create_dyn_field (const std::string& name,
-                         const std::vector<FieldTag>& tags,
-                         const std::vector<int>& dims);
+  // Dynamics updates the "tracers" group, and needs to do some extra checks on the group.
+  void set_updated_group_impl (const FieldGroup<Real>& group);
 
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
@@ -83,17 +80,24 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  // Fields on reference and dynamics grid
-  // NOTE: the dyn grid fields are *NOT* in the FieldManager. We still use
-  //       scream Field's (rather than, e.g., raw views) cause we want to use
-  //       the remapper infrastructure to remap from/to ref grid to/from dyn grid.
-  std::map<std::string,field_type>  m_ref_grid_fields;
-  std::map<std::string,field_type>  m_dyn_grid_fields;
+  // Creates an internal field, not to be shared with the AD's FieldManager
+  void create_internal_field (const std::string& name,
+                              const std::vector<FieldTag>& tags,
+                              const std::vector<int>& dims,
+                              const std::string& grid);
+
+  // Retrieves an internal field, given field name and grid name.
+  Field<Real>& get_internal_field (const std::string& name, const std::string& grid);
+
+
+  // Some helper fields. WARNING: only one copy for each internal field!
+  std::map<std::string,field_type>  m_internal_fields;
 
   // Remapper for inputs and outputs, plus a special one for initial conditions
   std::shared_ptr<AbstractRemapper<Real>>   m_p2d_remapper;
   std::shared_ptr<AbstractRemapper<Real>>   m_d2p_remapper;
-  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper;
+  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper_fwd;
+  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper_bwd;
 
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;

@@ -2,12 +2,6 @@ include (ScreamUtils)
 
 # Needed for RRTMGP
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-## Add CUDA flags for YAKL
-if (CUDA_BUILD)
-    set(ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr ${CUDA_FLAGS} ${YAKL_CXX_FLAGS}")
-endif()
-
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)
@@ -18,7 +12,6 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 if (NOT SCREAM_AUTOTESTER) # TODO: This test should be reinstated once the homme+physics test is fixed.
   CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-  set_target_properties(homme_shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 endif()
 
 # Copy yaml input file to run directory
@@ -30,7 +23,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 # Discretization/algorithm settings
 set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
-set (HOMME_TEST_QSIZE 1)
 set (HOMME_TEST_RSPLIT 3)
 set (HOMME_TEST_NMAX 24)
 set (HOMME_TEST_TIME_STEP 300)

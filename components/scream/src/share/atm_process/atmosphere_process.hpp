@@ -10,17 +10,15 @@
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
 
-#include "ekat/ekat_assert.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
 
 #include <string>
 #include <set>
-#include <type_traits>
+#include <list>
 
 namespace scream
 {
@@ -66,6 +64,13 @@ class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess
 public:
   using TimeStamp      = util::TimeStamp;
   using ci_string      = ekat::CaseInsensitiveString;
+  using       field_type = Field<      Real>;
+  using const_field_type = Field<const Real>;
+  using       group_type = FieldGroup<      Real>;
+  using const_group_type = FieldGroup<const Real>;
+
+  template<typename T>
+  using str_map = std::map<std::string,T>;
 
   virtual ~AtmosphereProcess () = default;
 
@@ -82,192 +87,67 @@ public:
   virtual const ekat::Comm& get_comm () const = 0;
 
   // Give the grids manager to the process, so it can grab its grid
-  // IMPORTANT: the process is *expected* to have valid field ids for
-  //            required/computed fields once this method returns.
-  //            This means that all tags/dims must be set upon return.
+  // Upon return, the atm proc should have a valid and complete list
+  // of in/out/inout FieldRequest and GroupRequest.
   virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
-  //   - the initialize method sets up all the stuff the process needs to run,
+  //   - the initialize method sets up all the stuff the process needs in order to run,
   //     including arrays/views, parameters, and precomputed stuff.
   //   - the run method time-advances the process by one time step.
-  //     We could decide whether we want to assume that other process may
-  //     be running at the same time, or whether each process can assume
-  //     that no other process is currently inside a call to 'run'.
   //   - the finalize method makes sure, if necessary, that all resources are freed.
-  // NOTE: You don't override these methods. Override the protected methods
-  // NOTE: initialize_impl, run_impl, and finalize_impl instead.
-  // The initialize/finalize method should be called just once per simulation (should
-  // we enforce that? It depends on what resources we init/free, and how), while the
-  // run method can (and usually will) be called multiple times.
-  // We should put asserts to verify that the process has been init-ed, when
-  // run/finalize is called.
-  void initialize (const TimeStamp& t0) {
-    t_ = t0;
-    initialize_impl(t_);
-  }
-  void run        (const Real dt) {
-    // Make sure required fields are valid
-    check_required_fields();
-    // Call the subclass's run method and update it afterward.
-    run_impl(dt);
-    t_ += dt;
-    // Make sure computed fields are valid
-    check_computed_fields();
-  }
-  void finalize   (/* what inputs? */) {
-    finalize_impl(/* what inputs? */);
-  }
+  // TODO: should we check that initialize/finalize are called once per simulation?
+  //       Whether it's a needed check depends on what resources we init/free, and how.
+  // TODO: should we check that initialize has been called, when calling run/finalize?
+  void initialize (const TimeStamp& t0);
+  void run (const Real dt);
+  void finalize   (/* what inputs? */);
 
-  // These methods set fields in the atm process. Fields live on the default
-  // device and they are all 1d.
-  // If the process *needs* to store the field as n-dimensional field, use the
-  // template function 'get_view' (see field.hpp for details).
+  // These methods set fields/groups in the atm process. The fields/groups are stored
+  // in a list (with some helpers maps that can be used to quickly retrieve them).
+  // If derived class need additional bookkeping/checks, they can override the
+  // corresponding set_xyz_impl method(s).
   // Note: this method will be called *after* set_grids, but *before* initialize.
-  //       You are *guaranteed* that the view in the Field f is allocated by now.
-  // Note: it would be tempting to add this process as provider/customer right here.
-  //       However, if this process is of type Group, we don't really want to add it
-  //       as provider/customer. The group is just a 'design layer', and the stored
-  //       processes are the actuall providers/customers.
-  void set_required_field (const Field<const Real>& f) {
-    EKAT_REQUIRE_MSG (requires_field(f.get_header().get_identifier()),
-        "Error! This atmosphere process does not require\n  " +
-        f.get_header().get_identifier().get_id_string() +
-        "\nSomething is wrong up the call stack. Please, contact developers.\n");
-  
-    const auto& name = f.get_header().get_identifier().name();
-    m_fields_in.emplace(name,f);
-  
-    // Add myself as customer to the field
-    if (this->type()!=AtmosphereProcessType::Group) {
-      add_me_as_customer(f);
-    }
+  //       You are *guaranteed* that the views in the field/group are allocated by now.
+  void set_required_field (const Field<const Real>& f);
+  void set_computed_field (const Field<Real>& f);
+  void set_required_group (const FieldGroup<const Real>& group);
+  void set_updated_group (const FieldGroup<Real>& group);
 
-    set_required_field_impl (f);
-  }
-  void set_computed_field (const Field<Real>& f) {
-    EKAT_REQUIRE_MSG (computes_field(f.get_header().get_identifier()),
-        "Error! This atmosphere process does not compute\n  " +
-        f.get_header().get_identifier().get_id_string() +
-        "\nSomething is wrong up the call stack. Please, contact developers.\n");
-
-    const auto& name = f.get_header().get_identifier().name();
-    m_fields_out.emplace(name,f);
-  
-    // Add myself as provider for the field
-    if (this->type()!=AtmosphereProcessType::Group) {
-      add_me_as_provider(f);
-    }
-
-    set_computed_field_impl (f);
-  }
-
-  // These methods check all the fields coming into and out of a process to make sure
-  // they are still valid.  To do this, the routines cycles through all of the
-  // required and computed fields, respectively, and run whatever property checks have
-  // been assigned to them.
-  // Note: We do want to encourage repairing fields that are being passed to a specific
-  //       process, so we set the "check_required_fields" routine to be const.
-  //       On the other hand, we may want to allow computed fields to be repaired, so
-  //       we leave that one non-const.  If a process wants to repair computed fields
+  // These methods checks that all the in/out fields of this atm process are valid.
+  // For each field, these routines run all the property checks stored in the field.
+  // Derived classes can perform additional checks (or repairs) by overriding the
+  // corresponding check_xyz_fields_impl method(s).
+  // Note: We don't want inputs to be 'repaired', since they might break assumptions
+  //       in other atm procs (e.g., some atm procs might have a "backup" copy).
+  //       However, we allow computed fields to be repaired, so check_computed_fields
+  //       is not a const method.  If a process wants to repair computed fields
   //       it can do so by overriding the "check_computed_fields_impl" routine.
-  void check_required_fields () const { 
-    // First run any process specific checks.
-    check_required_fields_impl();
-    // Now run all field property checks on all fields
-    for (auto& f : m_fields_in) {
-      auto& field = f.second;
-      for (auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      before process: " << this->name());
-      }
-    }
-  }
-  void check_computed_fields () {
-    // First run any process specific checks.  If a process wants to repair any computed fields
-    // here is where that is done.
-    check_computed_fields_impl();
-    // Now run all field property checks on all fields
-    for (auto& f : m_fields_out) {
-      auto& field = f.second;
-      for (auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Field Property Check Fail: " << pc.name() << ",\n      field: " << f.first << ",\n      after process: " << this->name());
-      }
-    }
-  }
+  void check_required_fields () const;
+  void check_computed_fields ();
 
-  // Note: for the following (unlike set_required/computed_field, we do provide an
-  //       implementation, since requiring a group is "rare".
-  // Note: from the group, derived class can extract individual fields, and,
-  //       if needed, they can check that the group was allocated as a bundle,
-  //       and if so, and if desired, they can access the bundled field directly.
-  //       See field_group.hpp for more details.
-  virtual void set_required_group (const FieldGroup<const Real>& /* group */) {
-    EKAT_ERROR_MSG (
-      "Error! This atmosphere process does not require a group of fields, meaning\n"
-      "       that 'get_required_group_requests' was not overridden in this class, or that\n"
-      "       its override returns an empty set.\n"
-      "       If you override 'get_required_group_requests' to return a non-empty set,\n"
-      "       then you must also override 'set_required_group_request' in your derived class.\n"
-    );
-  }
-  virtual void set_updated_group (const FieldGroup<Real>& /* group */) {
-    EKAT_ERROR_MSG (
-      "Error! This atmosphere process does not update a group of fields, meaning\n"
-      "       that 'get_updated_group_requests' was not overridden in this class, or that\n"
-      "       its override returns an empty set.\n"
-      "       If you override 'get_updated_group_requests' to return a non-empty set,\n"
-      "       then you must also override 'set_updated_group_request' in your derived class.\n"
-    );
-  }
-
-  // These two methods allow the driver to figure out what process need
-  // a given field and what process updates a given field.
+  // These methods allow the AD to figure out what each process needs, with very fine
+  // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
+  // are, and field_group.hpp for what groups of fields are.
   const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
   const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-
-  // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
-  // a priori how many they are, or even what they are. Each entry of the returned set is a pair
-  // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
-  // needed on multiple grids, two separate entries are needed.
   const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
   const std::set<GroupRequest>& get_updated_group_requests  () const { return m_updated_group_requests; }
 
-  // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_required_field_requests) {
-      if (it.fid==id) {
-        return true;
-      }
-    }
-    return false;
-  }
-  bool computes_field (const FieldIdentifier& id) const {
-    for (const auto& it : m_computed_field_requests) {
-      if (it.fid==id) {
-        return true;
-      }
-    }
-    return false;
-  }
+  // These sets allow to get all the actual in/out fields stored by the atm proc
+  // Note: if an atm proc requires a group, then all the fields in the group, as well as
+  //       the bundled field (if present) will be added as required fields for this atm proc.
+  //       See field_group.hpp for more info about groups of fields.
+  const std::list<const_field_type>& get_fields_in  () const { return m_fields_in;  }
+  const std::list<      field_type>& get_fields_out () const { return m_fields_out; }
+  const std::list<const_group_type>& get_groups_in  () const { return m_groups_in;  }
+  const std::list<      group_type>& get_groups_out () const { return m_groups_out; }
 
-  bool requires_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_required_group_requests) {
-      if (it.name==name && it.grid==grid) {
-        return true;
-      }
-    }
-    return false;
-  }
-  bool updates_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : m_updated_group_requests) {
-      if (it.name==name && it.grid==grid) {
-        return true;
-      }
-    }
-    return false;
-  }
+  // Whether this atm proc requested the field/group as in/out/inout, via a FieldRequest/GroupRequest.
+  bool requires_field (const FieldIdentifier& id) const;
+  bool computes_field (const FieldIdentifier& id) const;
+  bool requires_group (const std::string& name, const std::string& grid) const;
+  bool updates_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }
@@ -285,12 +165,13 @@ protected:
   };
 
   // Derived classes can used these method, so that if we change how fields/groups
-  // requirement are stored (e.g., std::set -> std::list), they don't need to change
+  // requirement are stored (e.g., change the std container), they don't need to change
   // their implementation.
-
-  // Field requests. Provide plenty of overloads to make it simple to add field request.
+  // We provide plenty of overloads to make it simple to add field request.
   // E.g., provide a FID directly vs provide its ctor args; or provide groups list and
   // no pack size vs single group and pack size.
+
+  // Field requests
   template<RequestType RT>
   void add_field (const std::string& name, const FieldLayout& layout,
                   const ekat::units::Units& u, const std::string& grid_name,
@@ -344,8 +225,9 @@ protected:
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const GroupRequest* p, const Relationship t, const std::list<std::string>& excl)
-  { add_group<RT>(GroupRequest(name,grid,ps,b,p,t,excl)); }
+                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
+                  const std::list<std::string>& excl)
+  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
@@ -366,64 +248,105 @@ protected:
     groups.emplace(req);
   }
 
-  // Override this method to initialize your subclass.
+  // Override this method to initialize the derived
   virtual void initialize_impl(const TimeStamp& t0) = 0;
 
-  // Override this method to define how your subclass runs forward one step
+  // Override this method to define how the derived runs forward one step
   // (of size dt). This method is called before the timestamp is updated.
   virtual void run_impl(const Real dt) = 0;
 
-  // Override this method to finalize your subclass.
+  // Override this method to finalize the derived class
   virtual void finalize_impl(/* what inputs? */) = 0;
 
   // This provides access to this process's timestamp.
-  const TimeStamp& timestamp() const {
-    return t_;
-  }
+  const TimeStamp& timestamp() const { return m_time_stamp; }
 
-  void add_me_as_provider (const Field<Real>& f) {
-    f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
-  }
+  // These three methods modify the FieldTracking of the input field (see field_tracking.hpp)
+  void update_time_stamps ();
+  void add_me_as_provider (const Field<Real>& f);
+  void add_me_as_customer (const Field<const Real>& f);
 
-  void add_me_as_customer (const Field<const Real>& f) {
-    f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
-  }
-
-  // The base class already registers the required and computed fields in
-  // the set_required/computed_field main routines.  These impl definitions
-  // provide a way for subclasses to define extra field bookkeeping that
-  // is not already covered by the `set_required/computed_field`.  It is
-  // not essential for subclasses to overwrite these two routines, but it
-  // is possible.
-  virtual void set_required_field_impl (const Field<const Real>& f) {};
-  virtual void set_computed_field_impl (const Field<      Real>& f) {};
+  // The base class already registers the required/computed/updated fields/groups in
+  // the set_required/computed_field and set_required/updated_group routines.
+  // These impl methods provide a way for derived classes to add more specialized
+  // actions, such as extra fields bookkeeping, extra checks, or create copies.
+  // Since most derived classes do not need to perform additional actions,
+  // we provide empty implementations.
+  virtual void set_required_field_impl (const Field<const Real>& /* f */) {}
+  virtual void set_computed_field_impl (const Field<      Real>& /* f */) {}
+  virtual void set_required_group_impl (const FieldGroup<const Real>& /* group */) {}
+  virtual void set_updated_group_impl  (const FieldGroup<      Real>& /* group */) {}
 
   // The Base class already runs all registered field checks for all fields.
   // Similar to the set_required/computed_field_impl comment above, it is
-  // not necessary for a subclass to overwrite these two routines, but it
-  // is possible.  A subclass may want to add extra checks or controls
-  // that occur before or after a process is run that could be included
-  // in an override of these two routine.  An example of an extra check 
-  // that a subclass may want to add would include field repair if a 
-  // field check fails.
+  // not necessary for a derived class to overwrite these two routines.
+  // An example of a case where a derived class may want to override these is
+  // if the derived class is able to 'repair' a field in case the check fails.
+  // See field_property_check.hpp for more info on check/repair.
   virtual void check_required_fields_impl () const {}
   virtual void check_computed_fields_impl () {}
 
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-  std::map<std::string,const_field_type>  m_fields_in;
-  std::map<std::string,field_type>        m_fields_out;
+  // Convenience function to retrieve input/output fields from the field/group (and grid) name.
+  // Note: the version without grid name only works if there is only one copy of the field/group.
+  //       In that case, the single copy is returned, regardless of the associated grid name.
+  Field<const Real>& get_field_in(const std::string& field_name, const std::string& grid_name);
+  Field<const Real>& get_field_in(const std::string& field_name);
+  Field<Real>& get_field_out(const std::string& field_name, const std::string& grid_name);
+  Field<Real>& get_field_out(const std::string& field_name);
+
+  FieldGroup<const Real>& get_group_in(const std::string& group_name, const std::string& grid_name);
+  FieldGroup<const Real>& get_group_in(const std::string& group_name);
+  FieldGroup<Real>& get_group_out(const std::string& group_name, const std::string& grid_name);
+  FieldGroup<Real>& get_group_out(const std::string& group_name);
+
+  // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
+  // for convenience of use (e.g., use a short name for a field/group).
+  // Note: these methods do *not* create a copy of the field/group. Also, notice that
+  //       these methods need to be created *after* set_fields_and_groups_pointers().
+  void alias_field_in (const std::string& field_name,
+                       const std::string& grid_name,
+                       const std::string& alias_name);
+
+  void alias_field_out (const std::string& field_name,
+                        const std::string& grid_name,
+                        const std::string& alias_name);
+
+  void alias_group_in (const std::string& group_name,
+                       const std::string& grid_name,
+                       const std::string& alias_name);
+
+  void alias_group_out (const std::string& group_name,
+                        const std::string& grid_name,
+                        const std::string& alias_name);
 
 private:
+  // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
+  // maps, which are used inside the get_[field|group]_[in|out] methods.
+  void set_fields_and_groups_pointers ();
+
+  // Store input/output fields and groups.
+  std::list<const_group_type>  m_groups_in;
+  std::list<      group_type>  m_groups_out;
+  std::list<const_field_type>  m_fields_in;
+  std::list<      field_type>  m_fields_out;
+
+  // These maps help to retrieve a field/group stored in the lists above. E.g.,
+  //   auto ptr = m_field_in_pointers[field_name][grid_name];
+  // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
+  str_map<str_map< const_group_type* >> m_groups_in_pointers;
+  str_map<str_map<       group_type* >> m_groups_out_pointers;
+  str_map<str_map< const_field_type* >> m_fields_in_pointers;
+  str_map<str_map<       field_type* >> m_fields_out_pointers;
+
+  // The list of in/out/inout field/group requests.
   std::set<FieldRequest>   m_required_field_requests;
   std::set<FieldRequest>   m_computed_field_requests;
-
   std::set<GroupRequest>   m_required_group_requests;
   std::set<GroupRequest>   m_updated_group_requests;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
-  TimeStamp t_;
+  TimeStamp m_time_stamp;
 };
 
 // A short name for the factory for atmosphere processes
@@ -432,7 +355,7 @@ private:
 //          atmosphere process class name as templated argument. If you roll your own creator function, you
 //          *MUST* ensure that it correctly sets up the self pointer after creating the shared_ptr.
 //          This is *necessary* until we can safely switch to std::enable_shared_from_this.
-//          For more details, see the comments at the top of util/scream_std_enable_shared_from_this.hpp.
+//          For more details, see the comments at the top of ekat_std_enable_shared_from_this.hpp.
 using AtmosphereProcessFactory =
     ekat::Factory<AtmosphereProcess,
                   ekat::CaseInsensitiveString,

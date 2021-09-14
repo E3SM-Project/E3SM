@@ -451,8 +451,8 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(Q.get_internal_view_data<Host>(),Q_size,engine,pdf);
 
     // Fill import_raw_data with random values
-    for (int i=0; i<ncols*num_cpl_imports; ++i) {
-      import_raw_data[i] = pdf(engine);
+    for (int icol=0; icol<ncols*num_cpl_imports; ++icol) {
+      import_raw_data[icol] = pdf(engine);
     }
 
     // Set all export_raw_data to -1 (might be helpful for debugging)

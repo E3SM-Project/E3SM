@@ -7,7 +7,6 @@ test_case              = "jw_baroclinic"
 u_perturb              = 1
 rotate_grid            = 0
 ne                     = ${HOMME_TEST_NE}
-qsize                  = ${HOMME_TEST_QSIZE}
 ndays                  = ${HOMME_TEST_NDAYS}
 statefreq              = 9999
 restartfreq            = 43200

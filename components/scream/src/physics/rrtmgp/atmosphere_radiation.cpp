@@ -216,26 +216,26 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   Kokkos::deep_copy(h_lon,m_lon);
 
   // Get data from the FieldManager
-  auto d_pmid = m_fields_in.at("p_mid").get_view<const Real**>();
-  auto d_pint = m_fields_in.at("p_int").get_view<const Real**>();
-  auto d_pdel = m_fields_in.at("pseudo_density").get_view<const Real**>();
-  auto d_tint = m_fields_in.at("t_int").get_view<const Real**>();
-  auto d_sfc_alb_dir_vis = m_fields_in.at("sfc_alb_dir_vis").get_view<const Real*>();
-  auto d_sfc_alb_dir_nir = m_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
-  auto d_sfc_alb_dif_vis = m_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
-  auto d_sfc_alb_dif_nir = m_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
-  auto d_qv = m_fields_in.at("qv").get_view<const Real**>();
-  auto d_qc = m_fields_in.at("qc").get_view<const Real**>();
-  auto d_qi = m_fields_in.at("qi").get_view<const Real**>();
-  auto d_cldfrac_tot = m_fields_in.at("cldfrac_tot").get_view<const Real**>();
-  auto d_rel = m_fields_in.at("eff_radius_qc").get_view<const Real**>();
-  auto d_rei = m_fields_in.at("eff_radius_qi").get_view<const Real**>();
-  auto d_tmid = m_fields_out.at("T_mid").get_view<Real**>();
-  auto d_sw_flux_up = m_fields_out.at("SW_flux_up").get_view<Real**>();
-  auto d_sw_flux_dn = m_fields_out.at("SW_flux_dn").get_view<Real**>();
-  auto d_sw_flux_dn_dir = m_fields_out.at("SW_flux_dn_dir").get_view<Real**>();
-  auto d_lw_flux_up = m_fields_out.at("LW_flux_up").get_view<Real**>();
-  auto d_lw_flux_dn = m_fields_out.at("LW_flux_dn").get_view<Real**>();
+  auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
+  auto d_pint = get_field_in("p_int").get_view<const Real**>();
+  auto d_pdel = get_field_in("pseudo_density").get_view<const Real**>();
+  auto d_tint = get_field_in("t_int").get_view<const Real**>();
+  auto d_sfc_alb_dir_vis = get_field_in("sfc_alb_dir_vis").get_view<const Real*>();
+  auto d_sfc_alb_dir_nir = get_field_in("sfc_alb_dir_nir").get_view<const Real*>();
+  auto d_sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real*>();
+  auto d_sfc_alb_dif_nir = get_field_in("sfc_alb_dif_nir").get_view<const Real*>();
+  auto d_qv = get_field_in("qv").get_view<const Real**>();
+  auto d_qc = get_field_in("qc").get_view<const Real**>();
+  auto d_qi = get_field_in("qi").get_view<const Real**>();
+  auto d_cldfrac_tot = get_field_in("cldfrac_tot").get_view<const Real**>();
+  auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
+  auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
+  auto d_tmid = get_field_out("T_mid").get_view<Real**>();
+  auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
+  auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
+  auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
+  auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
+  auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -300,6 +300,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
+
       mu0(i+1) = d_mu0(i);
       sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);
       sfc_alb_dir_nir(i+1) = d_sfc_alb_dir_nir(i);
@@ -330,7 +331,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
-    auto d_temp  = m_fields_in.at(fm_name).get_view<const Real**>();
+    auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
