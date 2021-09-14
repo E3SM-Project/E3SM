@@ -141,7 +141,7 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
-                real2d &lw_flux_up, real2d &lw_flux_dn) {
+                real2d &lw_flux_up, real2d &lw_flux_dn, ekat::Comm comm) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesBroadband fluxes_sw;
@@ -162,7 +162,8 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw
+                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw,
+                comm
             );
 
             // Do longwave
@@ -229,13 +230,12 @@ namespace scream {
         }
 
 
-        void rrtmgp_sw(
-                const int ncol, const int nlay,
+        void rrtmgp_sw(const int ncol, const int nlay,
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes) {
+                FluxesBroadband &fluxes, ekat::Comm comm) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
@@ -269,7 +269,7 @@ namespace scream {
             // Copy data back to the device
             dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
-                std::cout << "WARNING: no daytime columns found for this chunk!\n";
+                if (comm.am_i_root()) std::cout << "WARNING: no daytime columns found for this chunk!\n";
                 return;
             }
 
