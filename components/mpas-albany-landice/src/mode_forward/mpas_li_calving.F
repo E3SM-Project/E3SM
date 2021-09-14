@@ -138,6 +138,7 @@ module li_calving
       integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
@@ -975,7 +976,7 @@ module li_calving
             elseif (nIceNeighbors == 1) then
                ! check if this neighbor has any additional neighbors with ice
                nIceNeighbors2 = 0
-               nOpenOceanNeighbors = 0
+               nOpenOceanNeighbors2 = 0
                do n = 1, nEdgesOnCell(neighborWithIce)
                   jCell = cellsOnCell(n, neighborWithIce)
                   if (li_mask_is_ice(cellMask(jCell))) then
