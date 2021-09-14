@@ -539,11 +539,11 @@ TEST_CASE("multiple_bundles") {
 
   GroupRequest g1_req ("group1",grid_name,Bundling::Required);
   GroupRequest g2_req ("group2",grid_name,Bundling::Required);
-  // group3 += group2
+  // Include all group2 in group3
   GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,DerivationType::Superset,g2_req.name,g2_req.grid);
-  // group4 = group2
+  // Create group4 as a copy of group2
   GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,DerivationType::Copy,g2_req.name,g2_req.grid);
-  // group5 += (group1 - {c,d})
+  // Extend group5 by adding all fields in group1 *except* 'c' and 'd'.
   GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,DerivationType::Subset,g1_req.name,g1_req.grid,SL{"c","d"});
 
   // The above group specs should give the following groups:
