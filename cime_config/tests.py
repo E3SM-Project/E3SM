@@ -160,7 +160,7 @@ _TESTS = {
             "PET_Ln9_PS.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-mach-pet",
             "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
             "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
-            "SMS_D_Ln5.conusx4v1_conusx4v1.F2010",
+            "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
@@ -195,9 +195,9 @@ _TESTS = {
     #e3sm tests for RRM grids
     "e3sm_rrm" : {
         "tests" : (
-            "SMS_D_Ln5.conusx4v1_conusx4v1.F2010",
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010",
+            "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
+            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
+            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 
