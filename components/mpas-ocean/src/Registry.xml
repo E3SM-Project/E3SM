@@ -2518,6 +2518,10 @@
 			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="sfcParcelDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+			 description="density of surface layer averaged parcel displaced to a given layer"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="inSituThermalExpansionCoeff"
 			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."

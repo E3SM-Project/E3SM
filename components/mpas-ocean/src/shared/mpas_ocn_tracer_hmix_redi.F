@@ -524,7 +524,6 @@ contains
             ! read RediKappa in from input
             if(associated(rediAbernatheyMap)) then
               rediKappa(:) = rediAbernatheyMap(:)
-              print *, maxval(rediAbernatheyMap),minval(rediAbernatheyMap)
             else
               call mpas_log_write('rediAbernatheyMap field was not read in from data, check input data stream', MPAS_LOG_CRIT)
             endif
