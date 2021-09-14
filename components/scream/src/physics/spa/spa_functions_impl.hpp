@@ -5,8 +5,8 @@
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
 
-/*-----------------------------------------------------------------*/
-/* The main SPA routines used to convert SPA data into a format that
+/*-----------------------------------------------------------------
+ * The main SPA routines used to convert SPA data into a format that
  * is usable by the rest of the atmosphere processes.
  *
  * SPA or Simple Prescribed Aerosols provides a way to prescribe
@@ -52,7 +52,7 @@
  * that are used in EAM to construct the physics pressure profiles.
  * The SPA data is then projected onto the simulation pressure profile (pmid)
  * using EKAT linear interpolation. 
-/*-----------------------------------------------------------------*/
+-----------------------------------------------------------------*/
 
 namespace scream {
 namespace spa {

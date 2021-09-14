@@ -128,6 +128,8 @@ struct FieldGroup {
   FieldGroup<RealType>& operator= (const FieldGroup<RT>& src) {
     m_info = src.m_info;
     copy_fields<RT> (src);
+
+    return *this;
   }
 
   const std::string& grid_name () const {

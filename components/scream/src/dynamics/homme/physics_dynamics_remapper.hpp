@@ -176,44 +176,54 @@ public:
   reshape (Pointer& p, const Dims& dims) const {
     using uview_nd = Unmanaged<typename KokkosTypes<device_type>::template view_ND<ScalarT,N>>;
 
+    uview_nd ret_view;
+
     switch (dims.size) {
       case 1:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0]);
+        break;
       case 2:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0],
-                        dims.dims[1]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0],
+                            dims.dims[1]);
+        break;
       case 3:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0],
-                        dims.dims[1],
-                        dims.dims[2]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0],
+                            dims.dims[1],
+                            dims.dims[2]);
+        break;
       case 4:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0],
-                        dims.dims[1],
-                        dims.dims[2],
-                        dims.dims[3]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0],
+                            dims.dims[1],
+                            dims.dims[2],
+                            dims.dims[3]);
+        break;
       case 5:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0],
-                        dims.dims[1],
-                        dims.dims[2],
-                        dims.dims[3],
-                        dims.dims[4]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0],
+                            dims.dims[1],
+                            dims.dims[2],
+                            dims.dims[3],
+                            dims.dims[4]);
+        break;
       case 6:
-        return uview_nd(reinterpret_cast<ScalarT*>(p.get()),
-                        dims.dims[0],
-                        dims.dims[1],
-                        dims.dims[2],
-                        dims.dims[3],
-                        dims.dims[4],
-                        dims.dims[5]);
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+                            dims.dims[0],
+                            dims.dims[1],
+                            dims.dims[2],
+                            dims.dims[3],
+                            dims.dims[4],
+                            dims.dims[5]);
+        break;
       default:
         EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
 
     }
+
+    return ret_view;
   }
 };
 
