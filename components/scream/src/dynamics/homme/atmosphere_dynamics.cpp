@@ -27,6 +27,7 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
+#include "share/field/field_property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -818,12 +819,27 @@ void HommeDynamics::import_initial_conditions () {
 // =========================================================================================
 void HommeDynamics::
 check_computed_fields_impl () {
-    auto& field = m_fields_out["Q"];
-    for (auto& pc : field.get_property_checks()) {
-      if (!pc.check(field) and pc.can_repair()) {
-        pc.repair(field);
-      }
-    }
+    // Note: We are seeing near epsilon negative values in a handful of places,
+    // The strategy is to 
+    // 1. First check that no values are sufficiently negative as to require an error.
+    //    i.e. below some tolerance.
+    // 2. Clip all negative values to zero.
+    // TODO: Construct a more robust check that compares the value of Q against an
+    // average value or maximum value over each column.  That way we can use a relative
+    // error as our threshold, rather than an arbitrary tolerance.
+   
+    // Grab the pointer to the tracer group. 
+    const auto& rgn = m_ref_grid->name();
+          auto& Q   = *get_group_out("Q",rgn).m_bundle;
+    // Create a local copy of a lower bound check to ensure we are not encountering truly
+    // bad negative tracer values.
+    Real tol = -1e-20;
+    auto lower_bound_check = FieldLowerBoundCheck<Real>(tol);
+    lower_bound_check.check(Q);
+    // Now repair negative tracers using a lower bounds check at 0.0
+    auto lower_bound_repair = FieldLowerBoundCheck<Real>(0.0);
+    lower_bound_repair.repair(Q);
+
   
 }
 // =========================================================================================
