@@ -172,8 +172,13 @@ contains
 
       if (trim(displacementType) == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, tracersSurfaceLayerValue)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -186,13 +191,20 @@ contains
                                 ocnEqStateLinearSref)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else  ! all other displacement types
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, tracers)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -205,8 +217,10 @@ contains
                                 ocnEqStateLinearSref)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 
@@ -310,8 +324,16 @@ contains
 
       if (trim(displacementType) == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, &
+         !$acc&         tracersSurfaceLayerValue, &
+         !$acc&         salineContractionCoeff, &
+         !$acc&         thermalExpansionCoeff)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -330,13 +352,23 @@ contains
                                               density(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else  ! all other displacement types
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, &
+         !$acc&         tracers, &
+         !$acc&         salineContractionCoeff, &
+         !$acc&         thermalExpansionCoeff)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -355,8 +387,10 @@ contains
                                               density(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 

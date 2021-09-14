@@ -43,8 +43,6 @@
       <value compset=""               >-mach $MACH</value>
       <value compset="_EAM"          >-phys default</value>
       <value compset="_EAM%MAM4"     >-chem trop_mam4</value>
-      <value compset="_EAM%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
-      <value compset="_EAM%AV1C-H01A">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%CMIP6"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value>
@@ -61,22 +59,22 @@
       <value compset="_EAM%MMF[12]"           >-crm sam</value>
       <value compset="_EAM%MMFXX"             >-crm samxx</value>
       <value compset="_EAM%MMFOMP"            >-crm samomp</value>
-      <value compset="_EAM%MMF"               >-cppdefs ' -DMMF_DIR_NS ' </value>
       <value compset="_EAM%MMF"               >-rad rrtmgp </value>
       <value compset="_EAM%MMF[1XO]"          >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%MMF2"              >-MMF_microphysics_scheme m2005 </value>
       <value compset="_EAM%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_EAM%MMF2-ECPP"         >-use_ECPP </value>
       <value compset="_EAM%MMF[12XO]"         >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF*-AQUA"         >-aquaplanet </value>
-      <value compset="_EAM%MMF*-RCE"          >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF.*-AQUA"        >-aquaplanet </value>
+      <value compset="_EAM%MMF.*-RCE"         >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF.*-SCM"         >-scam </value>
 
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
       <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
-      <value compset="AR97_EAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
+      <value compset="AR97_EAM%SCAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_EAM.%L60"      >-nlev 60</value>
       <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
@@ -116,20 +114,13 @@
       <value compset="2000(?:SOI)?_EAM%MOZM"   >2000_cam5_trop_moz_mam3</value>
       <value compset="1850(?:SOI)?_EAM%PM"     >1850_cam5_pm</value>
       <value compset="2000(?:SOI)?_EAM.*PLMOD" >2000_cam5_plmod</value>
-      <value compset="1850(?:SOI)?_EAM.*AV1C-L" >1850_cam5_av1c-04p2</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6"  >1850_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6-1pctCO2</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"  >1950_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
-      <value compset="2010S_EAM.*CMIP6"  >2010S_cam5_CMIP6</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"  >2010_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-L" >2000_cam5_av1c-04p2</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-L.*_BGC%B" >2000_cam5_av1c-04p2_bgc</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-H01A">2000_cam5_av1c-h01a</value>
-      <value compset="20TR(?:SOI)?_EAM.*AV1C-L">20TR_cam5_av1c-04p2</value>
-      <value compset="20TR(?:SOI)?_EAM.*AV1C-L.*_BGC%B">20TR_cam5_av1c-04p2_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"  >20TR_eam_CMIP6</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_cam5_CMIP6</value>
@@ -150,10 +141,12 @@
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_EAM%RCE"      >RCEMIP_EAMv1</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="2000(?:SOI)?_EAM%MMF[1XO]">2000_cam5_av1c-04p2-MMF-1mom</value>
-      <value compset="2000(?:SOI)?_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF*-RCE"    >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF*-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF[1XO]">2010_mmf_1mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF2"    >2010_mmf_2mom</value>
+      <value compset="_EAM%MMF.*-RCE"    >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="AR97_EAM%MMF.*-SCM"   >scam_arm97_MMF-1mom</value>
+      <value compset="RICO_EAM%MMF.*-SCM"   >scam_rico_MMF-1mom</value>
     </values>
 
     <group>run_component_cam</group>
@@ -215,8 +208,9 @@
     <desc compset="_EAM%SMA7">EAM trop_strat_mam7 chemistry:</desc>
     <desc compset="_EAM%SSOA">EAM trop_strat_soa chemistry: </desc>
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
-    <desc compset="AR95_EAM%SCAM">stand-alone single column EAM ARM95 IOP test case:</desc>
-    <desc compset="AR97_EAM%SCAM">stand-alone single column EAM ARM97 IOP test case:</desc>
+    <desc compset="AR95_EAM%">stand-alone single column EAM ARM95 IOP test case:</desc>
+    <desc compset="AR97_EAM%">stand-alone single column EAM ARM97 IOP test case:</desc>
+    <desc compset="RICO_EAM%">stand-alone single column RICO IOP test case:</desc>
     <desc compset="GEOS_EAM%([^W]|W[^C])" >EAM winds and temperature driven by GEOS5 meteorology:</desc>
     <desc compset="GEOS_EAM%WC" >EAM WACCM winds and temperature nudged toward GEOS5 meteorology each time step:</desc>
     <desc compset="_EAM.%L60"    >EAM 60 layers and full gravity wave spectrum:</desc>
@@ -242,7 +236,9 @@
     <value compset="DOCN%AQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="EAM%MMF.*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="EAM%MMF.*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
+    <value compset="EAM%SCAM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>

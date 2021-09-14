@@ -12,8 +12,13 @@
   </compset>
 
   <compset>
-    <alias>F1850</alias>
+    <alias>F1850-CICE</alias>
     <lname>1850_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F1850</alias>
+    <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -27,58 +32,38 @@
   </compset>
 
   <compset>
-    <alias>F1950</alias>
+    <alias>F1950-CICE</alias>
     <lname>1950_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>FC5AV1C-L</alias>
-    <lname>2000_EAM%AV1C-L_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F1950</alias>
+    <lname>1950_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>FC5AV1C-H01A</alias>
-    <lname>2000_EAM%AV1C-H01A_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-L</alias>
-   <lname>20TR_EAM%AV1C-L_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F20TRC5-CMIP6</alias>
-    <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F20TR-CICE</alias>
+    <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F20TR</alias>
-    <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>F2010SC5-CMIP6</alias>
-    <lname>2010S_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F2010-CICE</alias>
+    <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F2010</alias>
-    <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM5A97</alias>
     <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F2010SC5-CMIP6-MPASSI</alias>
-    <lname>2010S_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-L-MPASSI</alias>
-    <lname>2000_EAM%AV1C-L_ELM%SPBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
@@ -245,19 +230,38 @@
   <!-- ********** F compsets ********** -->
   <compset>
     <alias>F-MMF1</alias>
-    <lname>2000_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-MMFXX</alias>
-    <lname>2000_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-MMFOMP</alias>
-    <lname>2000_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-MMF2-ECPP</alias>
-    <lname>2000_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>2010_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <!-- MMF compsets for stand-alone single column mode of EAM -->
+  <compset>
+    <alias>F-MMF1-SCM-ARM97</alias>
+    <lname>AR97_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-SCM-ARM97</alias>
+    <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F-MMF1-SCM-RICO</alias>
+    <lname>RICO_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX-SCM-RICO</alias>
+    <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
@@ -286,12 +290,15 @@
 	<value  compset="C2R4_EAM">2004-01-01</value>
 	<value  compset="AR95_EAM">1995-07-18</value>
 	<value  compset="AR97_EAM">1997-06-19</value>
+	<value  compset="RICO_EAM">2004-12-16</value>
       </values>
     </entry>
 
     <entry id="CALENDAR">
       <values>
 	<value  compset="GEOS_">GREGORIAN</value>
+	<value  compset="EAM%SCAM">GREGORIAN</value>
+	<value  compset="EAM%MMF.*-SCM">GREGORIAN</value>
       </values>
     </entry>
 
@@ -299,6 +306,7 @@
       <values>
 	<value  compset="AR95_EAM">19800</value>
 	<value  compset="AR97_EAM">84585</value>
+	<value  compset="RICO_EAM">0</value>
       </values>
     </entry>
 
@@ -306,6 +314,7 @@
       <values>
 	<value compset="AR95_EAM">ndays</value>
 	<value compset="AR97_EAM">ndays</value>
+	<value compset="RICO_EAM">ndays</value>
       </values>
     </entry>
 
@@ -313,12 +322,14 @@
       <values>
 	<value compset="AR95_EAM">2</value>
 	<value compset="AR97_EAM">29</value>
+	<value compset="RICO_EAM">1</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
 	<value compset="AR97_EAM">USGS</value>
+	<value compset="RICO_EAM">USGS</value>
       </values>
     </entry>
 
@@ -328,15 +339,23 @@
       </values>
     </entry>
 
+    <entry id="PTS_MODE">
+      <values>
+        <value compset="EAM%MMF.*-SCM">TRUE</value>
+      </values>
+    </entry>
+    
     <entry id="PTS_LAT">
       <values>
         <value compset="AR9[57]_EAM">36.6</value>
+        <value compset="RICO_EAM">17.97</value>
       </values>
     </entry>
 
     <entry id="PTS_LON">
       <values>
         <value compset="AR9[57]_EAM">262.5</value>
+        <value compset="RICO_EAM">298.54</value>
       </values>
     </entry>
 

@@ -587,6 +587,17 @@ contains
     integer, save :: index_a2x_Faxa_rainl
     integer, save :: index_r2x_Forr_rofl
     integer, save :: index_r2x_Forr_rofi
+    integer, save :: index_r2x_Forr_rofDIN
+    integer, save :: index_r2x_Forr_rofDIP
+    integer, save :: index_r2x_Forr_rofDON
+    integer, save :: index_r2x_Forr_rofDOP
+    integer, save :: index_r2x_Forr_rofDOC
+    integer, save :: index_r2x_Forr_rofPP
+    integer, save :: index_r2x_Forr_rofDSi
+    integer, save :: index_r2x_Forr_rofPOC
+    integer, save :: index_r2x_Forr_rofPN
+    integer, save :: index_r2x_Forr_rofDIC
+    integer, save :: index_r2x_Forr_rofFe
     integer, save :: index_r2x_Forr_rofl_16O
     integer, save :: index_r2x_Forr_rofi_16O
     integer, save :: index_r2x_Forr_rofl_18O
@@ -602,6 +613,17 @@ contains
     integer, save :: index_x2o_Faxa_prec
     integer, save :: index_x2o_Foxx_rofl
     integer, save :: index_x2o_Foxx_rofi
+    integer, save :: index_x2o_Foxx_rofDIN
+    integer, save :: index_x2o_Foxx_rofDIP
+    integer, save :: index_x2o_Foxx_rofDON
+    integer, save :: index_x2o_Foxx_rofDOP
+    integer, save :: index_x2o_Foxx_rofDOC
+    integer, save :: index_x2o_Foxx_rofPP
+    integer, save :: index_x2o_Foxx_rofDSi
+    integer, save :: index_x2o_Foxx_rofPOC
+    integer, save :: index_x2o_Foxx_rofPN
+    integer, save :: index_x2o_Foxx_rofDIC
+    integer, save :: index_x2o_Foxx_rofFe
     integer, save :: index_x2o_Sf_afrac
     integer, save :: index_x2o_Sf_afracr
     integer, save :: index_x2o_Foxx_swnet_afracr
@@ -674,6 +696,19 @@ contains
        index_a2x_Faxa_rainl     = mct_aVect_indexRA(a2x_o,'Faxa_rainl')
        index_r2x_Forr_rofl      = mct_aVect_indexRA(r2x_o,'Forr_rofl')
        index_r2x_Forr_rofi      = mct_aVect_indexRA(r2x_o,'Forr_rofi')
+       if (rof2ocn_nutrients) then
+          index_r2x_Forr_rofDIN    = mct_aVect_indexRA(r2x_o,'Forr_rofDIN')
+          index_r2x_Forr_rofDIP    = mct_aVect_indexRA(r2x_o,'Forr_rofDIP')
+          index_r2x_Forr_rofDON    = mct_aVect_indexRA(r2x_o,'Forr_rofDON')
+          index_r2x_Forr_rofDOP    = mct_aVect_indexRA(r2x_o,'Forr_rofDOP')
+          index_r2x_Forr_rofDOC    = mct_aVect_indexRA(r2x_o,'Forr_rofDOC')
+          index_r2x_Forr_rofPP     = mct_aVect_indexRA(r2x_o,'Forr_rofPP')
+          index_r2x_Forr_rofDSi    = mct_aVect_indexRA(r2x_o,'Forr_rofDSi')
+          index_r2x_Forr_rofPOC    = mct_aVect_indexRA(r2x_o,'Forr_rofPOC')
+          index_r2x_Forr_rofPN     = mct_aVect_indexRA(r2x_o,'Forr_rofPN')
+          index_r2x_Forr_rofDIC    = mct_aVect_indexRA(r2x_o,'Forr_rofDIC')
+          index_r2x_Forr_rofFe     = mct_aVect_indexRA(r2x_o,'Forr_rofFe')
+       endif
        index_r2x_Flrr_flood     = mct_aVect_indexRA(r2x_o,'Flrr_flood')
        index_g2x_Fogg_rofl      = mct_aVect_indexRA(g2x_o,'Fogg_rofl')
        index_g2x_Fogg_rofi      = mct_aVect_indexRA(g2x_o,'Fogg_rofi')
@@ -682,6 +717,19 @@ contains
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec')
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
        index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
+       if (rof2ocn_nutrients) then
+          index_x2o_Foxx_rofDIN    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIN')
+          index_x2o_Foxx_rofDIP    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIP')
+          index_x2o_Foxx_rofDON    = mct_aVect_indexRA(x2o_o,'Foxx_rofDON')
+          index_x2o_Foxx_rofDOP    = mct_aVect_indexRA(x2o_o,'Foxx_rofDOP')
+          index_x2o_Foxx_rofDOC    = mct_aVect_indexRA(x2o_o,'Foxx_rofDOC')
+          index_x2o_Foxx_rofPP     = mct_aVect_indexRA(x2o_o,'Foxx_rofPP')
+          index_x2o_Foxx_rofDSi    = mct_aVect_indexRA(x2o_o,'Foxx_rofDSi')
+          index_x2o_Foxx_rofPOC    = mct_aVect_indexRA(x2o_o,'Foxx_rofPOC')
+          index_x2o_Foxx_rofPN     = mct_aVect_indexRA(x2o_o,'Foxx_rofPN')
+          index_x2o_Foxx_rofDIC    = mct_aVect_indexRA(x2o_o,'Foxx_rofDIC')
+          index_x2o_Foxx_rofFe     = mct_aVect_indexRA(x2o_o,'Foxx_rofFe')
+       endif
 
        if (seq_flds_i2o_per_cat) then
           index_x2o_Sf_afrac          = mct_aVect_indexRA(x2o_o,'Sf_afrac')
@@ -958,6 +1006,33 @@ contains
             '(r2x%Forr_rofl + r2x%Flrr_flood + g2x%Fogg_rofl)*flux_epbalfact'
        mrgstr(index_x2o_Foxx_rofi) = trim(mrgstr(index_x2o_Foxx_rofi))//' = '// &
             '(r2x%Forr_rofi + g2x%Fogg_rofi)*flux_epbalfact'
+
+       ! river nutrients
+       if (rof2ocn_nutrients) then
+          mrgstr(index_x2o_Foxx_rofDIN) = trim(mrgstr(index_x2o_Foxx_rofDIN))//' = '// &
+             'r2x%Forr_rofDIN'
+          mrgstr(index_x2o_Foxx_rofDIP) = trim(mrgstr(index_x2o_Foxx_rofDIP))//' = '// &
+             'r2x%Forr_rofDIP'
+          mrgstr(index_x2o_Foxx_rofDON) = trim(mrgstr(index_x2o_Foxx_rofDON))//' = '// &
+             'r2x%Forr_rofDON'
+          mrgstr(index_x2o_Foxx_rofDOP) = trim(mrgstr(index_x2o_Foxx_rofDOP))//' = '// &
+             'r2x%Forr_rofDOP'
+          mrgstr(index_x2o_Foxx_rofDOC) = trim(mrgstr(index_x2o_Foxx_rofDOC))//' = '// &
+             'r2x%Forr_rofDOC'
+          mrgstr(index_x2o_Foxx_rofPP) = trim(mrgstr(index_x2o_Foxx_rofPP))//' = '// &
+             'r2x%Forr_rofPP'
+          mrgstr(index_x2o_Foxx_rofDSi) = trim(mrgstr(index_x2o_Foxx_rofDSi))//' = '// &
+             'r2x%Forr_rofDSi'
+          mrgstr(index_x2o_Foxx_rofPOC) = trim(mrgstr(index_x2o_Foxx_rofPOC))//' = '// &
+             'r2x%Forr_rofPOC'
+          mrgstr(index_x2o_Foxx_rofPN) = trim(mrgstr(index_x2o_Foxx_rofPN))//' = '// &
+             'r2x%Forr_rofPN'
+          mrgstr(index_x2o_Foxx_rofDIC) = trim(mrgstr(index_x2o_Foxx_rofDIC))//' = '// &
+             'r2x%Forr_rofDIC'
+          mrgstr(index_x2o_Foxx_rofFe) = trim(mrgstr(index_x2o_Foxx_rofFe))//' = '// &
+             'r2x%Forr_rofFe'
+       endif
+
        ! water isotope snow, rain prec
        if ( index_x2o_Faxa_snow_16O /= 0 )then
           mrgstr(index_x2o_Faxa_snow_16O) = trim(mrgstr(index_x2o_Faxa_snow_16O))//' = '// &
@@ -1050,6 +1125,19 @@ contains
        x2o_o%rAttr(index_x2o_Foxx_rofi, n) = (r2x_o%rAttr(index_r2x_Forr_rofi , n) + &
             g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
 
+       if (rof2ocn_nutrients) then
+          x2o_o%rAttr(index_x2o_Foxx_rofDIN, n) = r2x_o%rAttr(index_r2x_Forr_rofDIN , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDIP, n) = r2x_o%rAttr(index_r2x_Forr_rofDIP , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDON, n) = r2x_o%rAttr(index_r2x_Forr_rofDON , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDOP, n) = r2x_o%rAttr(index_r2x_Forr_rofDOP , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDOC, n) = r2x_o%rAttr(index_r2x_Forr_rofDOC , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofPP , n) = r2x_o%rAttr(index_r2x_Forr_rofPP  , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDSi, n) = r2x_o%rAttr(index_r2x_Forr_rofDSi , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofPOC, n) = r2x_o%rAttr(index_r2x_Forr_rofPOC , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofPN , n) = r2x_o%rAttr(index_r2x_Forr_rofPN  , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofDIC, n) = r2x_o%rAttr(index_r2x_Forr_rofDIC , n)
+          x2o_o%rAttr(index_x2o_Foxx_rofFe, n)  = r2x_o%rAttr(index_r2x_Forr_rofFe  , n)
+       endif
 
        if ( index_x2o_Foxx_rofl_16O /= 0 ) then
           x2o_o%rAttr(index_x2o_Foxx_rofl_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_16O, n) + &

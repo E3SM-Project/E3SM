@@ -9,17 +9,11 @@
 <config_dt ice_grid="oQU240">7200.0</config_dt>
 <config_dt ice_grid="oQU240wLI">7200.0</config_dt>
 <config_dt ice_grid="oQU120">3600.0</config_dt>
-<config_dt ice_grid="mpas120">3600.0</config_dt>
-<config_dt ice_grid="oEC60to30">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30v3">1800.0</config_dt>
-<config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30v3wLI">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E1r2">1800.0</config_dt>
-<config_dt ice_grid="oRRS30to10">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10v3">900.0</config_dt>
-<config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10v3wLI">900.0</config_dt>
-<config_dt ice_grid="oRRS18to6">900.0</config_dt>
 <config_dt ice_grid="oRRS18to6v3">900.0</config_dt>
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_dt ice_grid="oARRM60to10">900.0</config_dt>
@@ -120,16 +114,11 @@
 <config_dynamics_subcycle_number ice_grid="oQU480">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30v3wLI">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="ECwISC30to60E1r2">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10v3">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="oRRS30to10wLI">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10v3wLI">1</config_dynamics_subcycle_number>
-<config_dynamics_subcycle_number ice_grid="oRRS18to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS18to6v3">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
@@ -395,13 +384,9 @@
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
-<config_use_high_frequency_coupling ice_grid="WCAtl12to45E2r4">false</config_use_high_frequency_coupling>
-<config_use_high_frequency_coupling ice_grid="SOwISC12to60E2r4">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="ECwISC30to60E2r1">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="EC30to60E2r2">false</config_use_high_frequency_coupling>
 <config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
-<config_boundary_layer_iteration_number ice_grid="WCAtl12to45E2r4">5</config_boundary_layer_iteration_number>
-<config_boundary_layer_iteration_number ice_grid="SOwISC12to60E2r4">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="ECwISC30to60E2r1">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="EC30to60E2r2">5</config_boundary_layer_iteration_number>
 

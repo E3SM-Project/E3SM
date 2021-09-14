@@ -40,11 +40,6 @@
 <!-- E3SM CMIP6 COMPSETS science compsets -->
 
 <compset>
-  <alias>A_WCYCL1850S_CMIP6</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
   <alias>WCYCL1850</alias>
   <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
@@ -59,14 +54,15 @@
   <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- WCYCL1850NS uses no spun-up ICs for mpaso and mpassi. It is only being used for nigthly tests on small grids such as ne11_oQU480-->
 <compset>
-  <alias>WCYCL1950</alias>
-  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <alias>WCYCL1850NS</alias>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
-  <alias>A_WCYCL20TRS_CMIP6</alias>
-  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <alias>WCYCL1950</alias>
+  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
@@ -75,7 +71,7 @@
 </compset>
 
 <compset>
-  <alias>A_WCYCLSSP585_CMIP6</alias>
+  <alias>WCYCLSSP585</alias>
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
@@ -89,74 +85,6 @@
 <compset>
   <alias>A_WCYCL20TR_AR5emis_superfast</alias>
   <lname>20TRSOI_EAM%AR5sf_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL2000</alias>
-  <lname>2000_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL2000S</alias>
-  <lname>2000SOI_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850</alias>
-  <lname>1850_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850S</alias>
-  <lname>1850SOI_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL20TR</alias>
-  <lname>20TR_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL20TRS</alias>
-  <lname>20TRSOI_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_CRYO</alias>
-  <lname>2000_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
-</compset>
-
-<!-- E3SM v1 science compsets (hires) -->
-
-<compset>
-  <alias>A_WCYCL2000_H01A</alias>
-  <lname>2000_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL2000_H01AS</alias>
-  <lname>2000SOI_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850_H01A</alias>
-  <lname>1850_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850_H01AS</alias>
-  <lname>1850SOI_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-
-<compset>
-  <alias>A_WCYCL20TR_H01A</alias>
-  <lname>20TR_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL20TR_H01AS</alias>
-  <lname>20TRSOI_EAM%AV1C-H01A_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM V1 BGC experiment compsets -->
@@ -350,23 +278,8 @@
 </compset>
 
 <compset>
-  <alias>A_WCYCL1850-DIB</alias>
-  <lname>1850_EAM%AV1C-L_ELM%SPBC_MPASSI%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850-DIB-ISMF</alias>
-  <lname>1850_EAM%AV1C-L_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850-DIB_CMIP6</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IB_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1850-DIB-ISMF_CMIP6</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <alias>CRYO1950</alias>
+  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
@@ -384,38 +297,16 @@
   <lname>SSP585SOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
-<!-- E3SM backup compsets -->
-<compset>
- <alias>A_WCYCL1850_v0atm</alias> 
- <lname>1850_EAM_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
- <alias>A_WCYCL2000_v0atm</alias>
- <lname>2000_EAM_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAVi</lname>
-</compset>
-
-<compset>
- <alias>A_WCYCL1850S_v0atm</alias> 
- <lname>1850SOI_EAM_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
- <alias>A_WCYCL2000S_v0atm</alias>
- <lname>2000SOI_EAM_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAVi</lname>
-</compset>
-
-
 <!-- E3SM BG compsets -->
 
 <compset>
-  <alias>A_BG1850CN</alias>
+  <alias>BG1850CN</alias>
   <lname>1850_EAM_ELM%CN_MPASSI_MPASO_MOSART_MALI%SIA_SWAV</lname>
 </compset>
 
 <compset>
-  <alias>A_BGWCYCL1850</alias>
-  <lname>1850_EAM%AV1C-L_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
+  <alias>BGWCYCL1850</alias>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
 </compset>
 
 <!-- OCN + CICE + GLC Only Compsets -->

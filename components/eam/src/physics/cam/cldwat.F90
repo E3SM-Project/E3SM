@@ -262,7 +262,7 @@ subroutine pcond (lchnk   ,ncol    , &
                   cme     ,prodprec,prodsnow,evapprec,evapsnow,evapheat, prfzheat, &     
                   meltheat,precip  ,snowab  ,deltat  ,fwaut   , &
                   fsaut   ,fracw   ,fsacw   ,fsaci   ,lctend  , &
-                  rhdfda  ,rhu00   ,seaicef, zi      ,ice2pr, liq2pr, &
+                  rhdfda  ,rhu00   ,landfrac,seaicef ,zi      ,ice2pr, liq2pr, &
                   liq2snow, snowh, rkflxprc, rkflxsnw, pracwo, psacwo, psacio)
 !----------------------------------------------------------------------- 
 ! 
@@ -308,9 +308,10 @@ subroutine pcond (lchnk   ,ncol    , &
    real(r8), intent(in) :: lctend(pcols,pver)   ! cloud liquid water tendencies   ====wlin
    real(r8), intent(in) :: rhdfda(pcols,pver)   ! dG(a)/da, rh=G(a), when rh>u00  ====wlin
    real(r8), intent(in) :: rhu00 (pcols,pver)   ! Rhlim for cloud                 ====wlin
+   real(r8), intent(in) :: landfrac(pcols)      ! land fraction  (fraction)
    real(r8), intent(in) :: seaicef(pcols)       ! sea ice fraction  (fraction)
    real(r8), intent(in) :: zi(pcols,pverp)      ! layer interfaces (m)
-    real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
+   real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
 !
 ! Output Arguments
 !
@@ -660,7 +661,7 @@ subroutine pcond (lchnk   ,ncol    , &
                          k       ,prprov  ,snowab,  t       ,p        , &
                          cwm     ,cldm    ,cldmax  ,fice(1,k),coef    , &
                          fwaut(1,k),fsaut(1,k),fracw(1,k),fsacw(1,k),fsaci(1,k), &
-                         seaicef, snowh, pracwo(1,k), psacwo(1,k), psacio(1,k))
+                         landfrac, seaicef, snowh, pracwo(1,k), psacwo(1,k), psacio(1,k))
 
 !
 ! calculate the precip rate
@@ -911,7 +912,7 @@ subroutine findmcnew (lchnk   ,ncol    , &
                       k       ,precab  ,snowab,  t       ,p       , &
                       cwm     ,cldm    ,cldmax  ,fice    ,coef    , &
                       fwaut   ,fsaut   ,fracw   ,fsacw   ,fsaci   , &
-                      seaicef ,snowh,  pracwo, psacwo, psacio )
+                      landfrac,seaicef ,snowh   ,pracwo  ,psacwo  , psacio )
  
 !----------------------------------------------------------------------- 
 ! 
@@ -928,7 +929,6 @@ subroutine findmcnew (lchnk   ,ncol    , &
 ! 
 !-----------------------------------------------------------------------
    use phys_grid, only: get_rlat_all_p
-   use comsrf,        only: landm
 !
 ! input args
 !
@@ -943,9 +943,10 @@ subroutine findmcnew (lchnk   ,ncol    , &
    real(r8), intent(in) :: cldmax(pcols)        ! max cloud fraction above this level
    real(r8), intent(in) :: cwm(pcols)           ! condensate mixing ratio (kg/kg)
    real(r8), intent(in) :: fice(pcols)          ! fraction of cwat that is ice
+   real(r8), intent(in) :: landfrac(pcols)      ! land fraction 
    real(r8), intent(in) :: seaicef(pcols)       ! sea ice fraction 
    real(r8), intent(in) :: snowab(pcols)        ! rate of snow from above (kg / (m**2 * s))
-    real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
+   real(r8), intent(in) :: snowh(pcols)         ! Snow depth over land, water equivalent (m)
 
 ! output arguments
    real(r8), intent(out) :: coef(pcols)          ! conversion rate (1/s)
@@ -1130,7 +1131,7 @@ subroutine findmcnew (lchnk   ,ncol    , &
       ! Modify for snow depth over land
       capn = capn + (capnc-capn) * min(1.0_r8,max(0.0_r8,snowh(i)*10._r8))
       ! Ramp between polluted value over land to clean value over ocean.
-      capn = capn + (capnc-capn) * min(1.0_r8,max(0.0_r8,1.0_r8-landm(i,lchnk)))
+      capn = capn + (capnc-capn) * min(1.0_r8,max(0.0_r8,1.0_r8-landfrac(i)))
       ! Ramp between the resultant value and a sea ice value in the presence of ice.
       capn = capn + (capnsi-capn) * min(1.0_r8,max(0.0_r8,seaicef(i)))
 ! end jrm
@@ -1138,8 +1139,8 @@ subroutine findmcnew (lchnk   ,ncol    , &
 #ifdef DEBUG2
       if ( (lat(i) == latlook(1)) .or. (lat(i) == latlook(2)) ) then
          if (i == ilook(1)) then
-            write(iulog,*) ' findmcnew: lat, k, seaicef, landm, wp, capnoice, capn ', &
-                 lat(i), k, seaicef(i), landm(i,lat(i)), wp, capnoice, capn
+            write(iulog,*) ' findmcnew: lat, k, seaicef, landfrac, wp, capnoice, capn ', &
+                 lat(i), k, seaicef(i), landfrac(i), wp, capnoice, capn
          endif
       endif
 #endif
