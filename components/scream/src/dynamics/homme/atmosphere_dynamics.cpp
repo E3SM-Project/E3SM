@@ -834,12 +834,11 @@ check_computed_fields_impl () {
     // Create a local copy of a lower bound check to ensure we are not encountering truly
     // bad negative tracer values.
     Real tol = -1e-20;
-    auto lower_bound_check = FieldLowerBoundCheck<Real>(tol);
-    lower_bound_check.check(Q);
+    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol);
+    lower_bound_check->check(Q);
     // Now repair negative tracers using a lower bounds check at 0.0
-    auto lower_bound_repair = FieldLowerBoundCheck<Real>(0.0);
-    lower_bound_repair.repair(Q);
-
+    auto lower_bound_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0);
+    lower_bound_repair->repair(Q);
   
 }
 // =========================================================================================
