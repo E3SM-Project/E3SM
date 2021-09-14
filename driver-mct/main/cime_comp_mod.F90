@@ -1377,6 +1377,7 @@ contains
 
   subroutine cime_init()
 
+103 format( 5A )
 104 format( A, i10.8, i8)
 
   !-----------------------------------------------------------------------------
@@ -2316,6 +2317,10 @@ contains
 
     call seq_diag_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
+       if (iamroot_CPLID) then
+          write(logunit,103) subname,' Reading restart file ',trim(rest_file)
+          call shr_sys_flush(logunit)
+       end if
        call seq_rest_read(rest_file, infodata, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
@@ -2416,7 +2421,8 @@ contains
     integer               :: hashint(hashcnt)
                                                   ! Driver pause/resume
     logical               :: drv_pause            ! Driver writes pause restart file
-    character(len=CL)     :: drv_resume           ! Driver resets state from restart file
+    logical               :: drv_resume           ! Driver resets state from restart file
+    character(len=CL)     :: drv_resume_file      ! The restart (resume) file
     character(len=CL), pointer :: resume_files(:) ! Component resume files
 
     type(ESMF_Time)       :: etime_curr           ! Current model time
@@ -2441,6 +2447,7 @@ contains
 
     call t_startf ('CPL:cime_run_init')
     hashint = 0
+    drv_resume=.FALSE.
 
     call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
     call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
@@ -3116,7 +3123,7 @@ contains
        !----------------------------------------------------------
        !| Write driver restart file
        !----------------------------------------------------------
-       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume)
+       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume_file)
 
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
@@ -3348,7 +3355,7 @@ contains
                   WAVID(ewi), component_get_iamroot_compid(wav(ewi)))
           end do
           ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
-          call seq_resume_store_comp('x', drv_resume, 1,                      &
+          call seq_resume_store_comp('x', drv_resume_file, 1,                 &
                driver_id, iamroot_CPLID)
           call component_run(Eclock_e, esp, esp_run, infodata,                &
                comp_prognostic=esp_prognostic, comp_num=comp_num_esp,         &
@@ -3402,26 +3409,27 @@ contains
           end if
           call seq_resume_get_files('x', resume_files)
           if (associated(resume_files)) then
-             drv_resume = resume_files(driver_id)
+             drv_resume_file = resume_files(driver_id)
           end if
        end if
 
        !----------------------------------------------------------
        !| RESUME (read restart) if signaled
        !----------------------------------------------------------
-       if (len_trim(drv_resume) > 0) then
+       if (drv_resume)  then
           if (iamroot_CPLID) then
-             write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
+             write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume_file)
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume, infodata,                          &
+             call seq_rest_read(drv_resume_file, infodata,                     &
                   atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx, fractions_zx)
           end if
           ! Clear the resume file so we don't try to read it again
-          drv_resume = ' '
+          drv_resume = .FALSE.
+          drv_resume_file = ' '
        end if
 
        !----------------------------------------------------------
@@ -4914,7 +4922,7 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume)
+  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume_file)
 
     !----------------------------------------------------------
     ! Write driver restart file
@@ -4922,7 +4930,7 @@ contains
 
     logical         , intent(in)    :: drv_pause
     logical         , intent(in)    :: write_restart
-    character(len=*), intent(inout) :: drv_resume ! Driver resets state from restart file
+    character(len=*), intent(inout) :: drv_resume_file ! Driver resets state from restart file
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -4941,17 +4949,17 @@ contains
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
                fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
-               trim(cpl_inst_tag), drv_resume)
+               trim(cpl_inst_tag), drv_resume_file)
 
           if (iamroot_CPLID) then
-             write(logunit,103) ' Restart filename: ',trim(drv_resume)
+             write(logunit,103) ' Restart filename: ',trim(drv_resume_file)
              call shr_sys_flush(logunit)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
        else
-          drv_resume = ''
+          drv_resume_file = ' '
        endif
     end if
 
