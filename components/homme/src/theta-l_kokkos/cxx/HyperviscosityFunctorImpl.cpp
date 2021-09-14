@@ -22,7 +22,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+ : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		 params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
  , m_num_elems(state.num_elems())
  , m_state   (state)
  , m_derived (derived)
@@ -42,7 +43,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
-  : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+  : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		  params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
   , m_num_elems(num_elems)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
@@ -240,9 +242,10 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     biharmonic_wk_theta ();
     GPTLstop("hvf-bhwk");
 
+    //this corresponds to the case hv_subcycling_tom==0 and nu_top>0, ignore it for now
     // dispatch parallel_for for first kernel
-    Kokkos::parallel_for(m_policy_pre_exchange, *this);
-    Kokkos::fence();
+    //Kokkos::parallel_for(m_policy_pre_exchange, *this);
+    //Kokkos::fence();
 
     // Exchange
     assert (m_be->is_registration_completed());
@@ -255,7 +258,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     Kokkos::fence();
   }
 
-  // Finally, convert theta back to vtheta, and adjust w at surface
+  // Convert theta back to vtheta, and adjust w at surface
   auto geo = m_geometry;
   Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
                        KOKKOS_LAMBDA(const TeamMember& team) {
@@ -297,6 +300,29 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       }
     });
   });
+
+//sponge layer  
+  for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
+    GPTLstart("hvf-laplace-tom");
+    biharmonic_wk_theta ();
+    GPTLstop("hvf-laplace-tom");
+
+    // dispatch parallel_for for first kernel
+    Kokkos::parallel_for(m_policy_pre_exchange, *this);
+    Kokkos::fence();
+
+    ///? do another timer or the same for all mpi in HV?
+    assert (m_be->is_registration_completed());
+    GPTLstart("hvf-bexch");
+    m_be->exchange();
+    GPTLstop("hvf-bexch");
+
+    // Update states
+    Kokkos::parallel_for(m_policy_update_states, *this);
+    Kokkos::fence();
+  }
+
+
 }
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
