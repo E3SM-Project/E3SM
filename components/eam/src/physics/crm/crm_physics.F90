@@ -456,7 +456,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use camsrfexch,            only: cam_in_t, cam_out_t
    use time_manager,          only: is_first_step, get_nstep
    use crmdims,               only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
-   use physconst,             only: cpair, latvap, latice, gravit, cappa, pi
+   use physconst,             only: cpair, latvap, latice, gravit, cappa, pi, rearth
    use constituents,          only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,     only: crm
@@ -1117,13 +1117,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          call get_area_all_p(state(c)%lchnk, pcols, area_tmp)
          do i = 1,ncol
             icrm = ncol_sum + i
-            parent_dx(icrm) = sqrt( area_tmp(i) )
-            write(iulog,777) parent_dx(icrm)
-            call shr_sys_flush(iulog)
-777 format('WHDEBUG - parent_dx: ',f12.8)
+            parent_dx(icrm) = sqrt( area_tmp(i) ) * rearth ! multiply by radius [m] to get approxing cell width
+            ! if (nstep==1) then
+            !    write(iulog,*) 'WHDEBUG - parent_dx: ',parent_dx(icrm)
+            !    call shr_sys_flush(iulog)
+            ! end if
          end do
          ncol_sum = ncol_sum + ncol
       end do ! c=begchunk, endchunk
+
+      ! call endrun('crm_physics')
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
 
@@ -1166,14 +1169,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
+
+      if (allocated(parent_dx)) deallocate(parent_dx)
       
 #endif
 
       deallocate(longitude0)
       deallocate(latitude0 )
       deallocate(gcolp     )
-
-      if (allocated(parent_dx)) deallocate(parent_dx)
 
       !---------------------------------------------------------------------------------------------
       ! Deal with CRM outputs
