@@ -109,6 +109,7 @@ module li_time_integration_fe
       logical, pointer :: config_finalize_damage_after_advection
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
