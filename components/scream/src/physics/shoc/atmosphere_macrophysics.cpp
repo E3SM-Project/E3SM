@@ -347,11 +347,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& /* t0 */)
   auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
   auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
   get_field_out("T_mid").add_property_check(T_interval_check);
-  // get_field_out("qv").add_property_check(positivity_check);
-  // get_field_out("qc").add_property_check(positivity_check);
   get_field_out("tke").add_property_check(positivity_check);
-  // get_group_out("tracers").m_bundle->add_property_check(positivity_check);
-
 }
 
 // =========================================================================================

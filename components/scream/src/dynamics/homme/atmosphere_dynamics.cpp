@@ -27,7 +27,6 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
-#include "share/field/field_property_checks/field_positivity_check.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -315,10 +314,6 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   // Complete homme model initialization
   prim_init_model_f90 ();
-
-  // Set positivity check on the tracers
-  // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
-  // get_group_out("Q",m_ref_grid->name()).m_bundle->add_property_check(positivity_check);
 }
 
 void HommeDynamics::run_impl (const Real dt)
