@@ -1873,15 +1873,6 @@ module ocn_time_integration_split
 
          call mpas_timer_stop('se loop fini')
          call mpas_timer_stop('se loop')
-         !LPV test if updating forcing matters
-         call ocn_tend_tracer(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, &
-                              dt, activeTracersOnly, 2)
-
-          !add call to recompute GM bolus (will likely break restarts)
-          if (config_use_Redi.or.config_use_GM) then
-             call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=2)
-          end if!
       end do  ! outer timestep loop (splitExplicitStep)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1908,8 +1899,6 @@ module ocn_time_integration_split
       !   call ocn_gm_compute_Bolus_velocity(statePool, &
       !             meshPool, scratchPool, timeLevelIn=2)
       !end if
-
-      call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, 2)!
 
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, &
                              scratchPool, err, 2)
