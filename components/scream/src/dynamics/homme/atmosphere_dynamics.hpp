@@ -54,12 +54,17 @@ protected:
 #endif
   void homme_pre_process (const Real dt);
   void homme_post_process ();
-  // These are the three main interfaces:
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
+  // Sets the scream-allocated views inside the Homme c++ structures
+  void init_homme_views ();
+
+  // Propagates initial conditions to homme
+  void import_initial_conditions ();
+
   void initialize_impl (const util::TimeStamp& t0);
 protected:
   void run_impl        (const Real dt);
@@ -83,12 +88,6 @@ protected:
 
   // Retrieves an internal field, given field name and grid name.
   Field<Real>& get_internal_field (const std::string& name, const std::string& grid);
-
-  // Sets the scream-allocated views inside the Homme c++ structures
-  void init_homme_views ();
-
-  // Propagates initial conditions to homme
-  void import_initial_conditions ();
 
 
   // Some helper fields. WARNING: only one copy for each internal field!
