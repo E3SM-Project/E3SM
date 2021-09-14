@@ -157,7 +157,6 @@ void pre_timeloop() {
   auto &t_vt                    = :: t_vt;
   auto &q_vt                    = :: q_vt;
   auto &use_VT                  = :: use_VT;
-  auto &crm_dx_scale            = :: crm_dx_scale;
   auto &dx                      = :: dx;
   auto &dy                      = :: dy;
   

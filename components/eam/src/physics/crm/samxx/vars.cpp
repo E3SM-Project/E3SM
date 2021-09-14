@@ -91,6 +91,8 @@ void allocate() {
   adz              = real2d( "adz             "                        , nzm    , ncrms ); 
   adzw             = real2d( "adzw            "                        , nz     , ncrms ); 
   dz               = real1d( "dz              "                                 , ncrms ); 
+  dx               = real1d( "dx              "                                 , ncrms ); 
+  dy               = real1d( "dy              "                                 , ncrms ); 
   dt3              = real1d( "dt3             " , 3                                     ); 
   u                = real4d( "u               "     , nzm , dimy_u     , dimx_u , ncrms ); 
   v                = real4d( "v               "     , nzm , dimy_v     , dimx_v , ncrms ); 
@@ -271,6 +273,8 @@ void allocate() {
   yakl::memset(adz               ,0.);
   yakl::memset(adzw              ,0.);
   yakl::memset(dz                ,0.);
+  yakl::memset(dx                ,0.);
+  yakl::memset(dy                ,0.);
   yakl::memset(dt3               ,0.);
   yakl::memset(u                 ,0.);
   yakl::memset(v                 ,0.);
@@ -436,8 +440,6 @@ void init_values() {
   nstep = 0                             ;
   compute_reffc = false                 ;
   compute_reffi = false                 ;
-  // dx = 0.                               ;
-  // dy = 0.                               ;
   doconstdz = false                     ;
   nstop =0                              ;
   nelapse =999999999                    ;
@@ -1913,8 +1915,6 @@ bool compute_reffi            ;
 bool notopened2D              ;
 bool notopened3D              ;
 bool notopenedmom             ;
-// real dx                       ;
-// real dy                       ;
 bool doconstdz                ;
 int  nstop                    ;
 int  nelapse                  ;
