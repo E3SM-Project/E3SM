@@ -38,8 +38,7 @@ void RefStates::compute(const bool hydrostatic,
   ElementOps elem_ops;
   elem_ops.init(hvcoord);
 
-  const int num_elems = dp_ref.extent_int(0);
-  assert(num_elems==m_num_elems);
+  assert(dp_ref.extent_int(0)==m_num_elems);
 
   // Local copies, to avoid cuda issues with *this
   auto l_dp_ref = dp_ref;
