@@ -732,6 +732,8 @@ contains
            do iEdge=1,nEdges
               RediKappa(iEdge) = gmBolusKappa(iEdge)
            end do
+           !$omp end do
+           !$omp end parallel
          end if 
 
          !!$omp parallel
