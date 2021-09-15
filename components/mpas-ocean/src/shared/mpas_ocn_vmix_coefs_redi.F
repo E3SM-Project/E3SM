@@ -204,7 +204,8 @@ contains
          rediKappaCell = 0.0_RKIND
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            rediKappaCell = rediKappaCell + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
+            rediKappaCell = rediKappaCell + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * &
+                              gmResolutionTaper(iEdge) * dcEdge(iEdge)
          enddo
 
          vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + rediKappaCell * k33(:, iCell) &

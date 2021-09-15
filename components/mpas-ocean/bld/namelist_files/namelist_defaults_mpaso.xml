@@ -140,12 +140,12 @@
 <config_Redi_closure>'constant'</config_Redi_closure>
 <config_Redi_constant_kappa>400.0</config_Redi_constant_kappa>
 <config_Redi_constant_kappa ocn_forcing="datm_forced_restoring">400.0</config_Redi_constant_kappa>
-<config_Redi_maximum_slope>0.01</config_Redi_maximum_slope>
+<config_Redi_maximum_slope>0.3</config_Redi_maximum_slope>
 <config_Redi_use_slope_taper>.true.</config_Redi_use_slope_taper>
 <config_Redi_use_surface_taper>.true.</config_Redi_use_surface_taper>
 <config_Redi_N2_based_taper_enable>.true.</config_Redi_N2_based_taper_enable>
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
-<config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
+<config_Redi_N2_based_taper_limit_term1>.false.</config_Redi_N2_based_taper_limit_term1>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
