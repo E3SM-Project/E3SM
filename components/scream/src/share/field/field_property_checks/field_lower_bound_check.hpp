@@ -29,8 +29,7 @@ public:
   // apply repairs to the field.
   explicit FieldLowerBoundCheck (const_RT lower_bound,
                                  bool can_repair = true) : 
-    FieldWithinIntervalCheck<RealType>(lower_bound, std::numeric_limits<RealType>::max(), can_repair),
-    m_lower_bound(lower_bound)
+    FieldWithinIntervalCheck<RealType>(lower_bound, std::numeric_limits<RealType>::max(), can_repair)
     {
       // Do Nothing
     }
@@ -38,12 +37,7 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const override { return "Lower Bound Check of " + std::to_string(m_lower_bound); }
-
-  protected:
-
-  // Lower bound
-  RealType m_lower_bound;
+  std::string name () const override { return "Lower Bound Check of " + std::to_string(this->m_lower_bound); }
 
 };
 

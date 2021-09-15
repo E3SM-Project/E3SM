@@ -37,12 +37,8 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const override { return "Upper Bound Check of " + std::to_string(m_upper_bound); }
+  std::string name () const override { return "Upper Bound Check of " + std::to_string(this->m_upper_bound); }
 
-protected:
-
-  // Upper bound
-  RealType m_upper_bound;
 };
 
 } // namespace scream
