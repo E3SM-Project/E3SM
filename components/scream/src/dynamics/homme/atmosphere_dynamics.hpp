@@ -106,7 +106,7 @@ protected:
   // Homme dyn parameters
   ekat::ParameterList     m_params;
 
-  // The MPI communicator associated witht his atm process
+  // The MPI communicator associated witht this atm process
   ekat::Comm              m_dynamics_comm;
 };
 

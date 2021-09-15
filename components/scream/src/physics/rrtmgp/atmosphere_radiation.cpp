@@ -379,7 +379,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     sfc_alb_dir, sfc_alb_dif, mu0,
     lwp, iwp, rel, rei,
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-    lw_flux_up, lw_flux_dn
+    lw_flux_up, lw_flux_dn, get_comm().am_i_root()
   );
 
   // Compute and apply heating rates
