@@ -73,6 +73,9 @@ protected:
   // Dynamics updates the "tracers" group, and needs to do some extra checks on the group.
   void set_updated_group_impl (const FieldGroup<Real>& group);
 
+  // Override the check computed fields impl so we can repair slightly negative tracer values.
+  void check_computed_fields_impl ();
+
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
