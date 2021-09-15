@@ -87,9 +87,8 @@ contains
   end subroutine finalize_geometry_f90
 
   subroutine get_dyn_grid_data_f90 (gids_ptr, elgpgp_ptr, lat_ptr, lon_ptr) bind(c)
-    use homme_context_mod, only: elem
     use dimensions_mod,    only: nelemd, np
-    use shr_const_mod,     only: pi=>SHR_CONST_PI
+    use dyn_grid_mod,      only: get_my_dyn_data
     !
     ! Input(s)
     !
@@ -99,7 +98,6 @@ contains
     !
     real(kind=c_double), pointer :: lat (:), lon(:)
     integer(kind=c_int), pointer :: gids (:), elgpgp(:,:)
-    integer :: idof, ip,jp, ie
 
     ! Sanity check
     call check_grids_inited(.true.)
@@ -109,28 +107,10 @@ contains
     call c_f_pointer (lat_ptr,    lat,    [nelemd*np*np])
     call c_f_pointer (lon_ptr,    lon,    [nelemd*np*np])
 
-    ! Get the gids
-    idof = 1
-    do ie=1,nelemd
-      do jp=1,4
-        do ip=1,4
-          elgpgp(1,idof) = ie-1
-          elgpgp(2,idof) = jp-1
-          elgpgp(3,idof) = ip-1
-
-          gids(idof) = INT(elem(ie)%gdofP(ip,jp),kind=c_int)
-          lat(idof)  = elem(ie)%spherep(ip,jp)%lat * 180.0/pi
-          lon(idof)  = elem(ie)%spherep(ip,jp)%lon * 180.0/pi
-
-          idof = idof + 1
-        enddo
-      enddo
-    enddo
-
+    call get_my_dyn_data (gids, elgpgp, lat, lon)
   end subroutine get_dyn_grid_data_f90
 
   subroutine get_phys_grid_data_f90 (pg_type, gids_ptr, lat_ptr, lon_ptr, area_ptr) bind(c)
-    use parallel_mod,  only: abortmp
     use phys_grid_mod, only: get_my_phys_data
     !
     ! Input(s)
