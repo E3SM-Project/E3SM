@@ -7,7 +7,8 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 set (NEED_LIBS ${dynLibName} scream_control scream_share)
 
 # Test Homme stand alone
-CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
+               LABELS "dynamics;driver")
 
 # Copy yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
