@@ -44,13 +44,15 @@ namespace scream {
         /*
          * Main driver code to run RRTMGP
          */
-        extern void rrtmgp_main(const int ncol, const int nlay,
+        extern void rrtmgp_main(
+                const int ncol, const int nlay,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
-                real2d &lw_flux_up, real2d &lw_flux_dn, ekat::Comm &comm);
+                real2d &lw_flux_up, real2d &lw_flux_dn,
+                const ekat::Comm &comm = ekat::Comm(MPI_COMM_WORLD));
         /*
          * Perform any clean-up tasks
          */
@@ -63,7 +65,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes, ekat::Comm &comm);
+                FluxesBroadband &fluxes, const ekat::Comm &comm);
         /*
          * Longwave driver (called by rrtmgp_main)
          */

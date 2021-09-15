@@ -136,12 +136,13 @@ namespace scream {
 
         void rrtmgp_main(
                 const int ncol, const int nlay,
-                real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 
+                real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
-                real2d &lw_flux_up, real2d &lw_flux_dn, ekat::Comm &comm) {
+                real2d &lw_flux_up, real2d &lw_flux_dn,
+                const ekat::Comm &comm) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesBroadband fluxes_sw;
@@ -230,12 +231,14 @@ namespace scream {
         }
 
 
-        void rrtmgp_sw(const int ncol, const int nlay,
+        void rrtmgp_sw(
+                const int ncol, const int nlay,
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes, ekat::Comm &comm) {
+                FluxesBroadband &fluxes,
+                const ekat::Comm &comm) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
