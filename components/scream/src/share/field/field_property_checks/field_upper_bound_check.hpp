@@ -17,7 +17,6 @@ namespace scream
 template<typename RealType>
 class FieldUpperBoundCheck: public FieldWithinIntervalCheck<RealType> {
 public:
-  using non_const_RT = typename FieldPropertyCheck<RealType>::non_const_RT;
   using const_RT     = typename FieldPropertyCheck<RealType>::const_RT;
 
   // No default constructor -- we need an upper bound.
