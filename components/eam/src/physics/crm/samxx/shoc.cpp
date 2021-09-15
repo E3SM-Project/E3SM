@@ -220,7 +220,7 @@ void shoc_proc() {
           pdel_2d("pdel", ncol, npack),
           thv_2d("thv", ncol, npack),
           w_field_2d("w_field", ncol, npack),  // wm_zt
-          wtracer_sfc_2d("wtracer", ncol, npack),
+          wtracer_sfc_2d("wtracer", ncol, 10),
           inv_exner_2d("inv_exner", ncol, npack);
 
   array_to_view(zt_g.myData, ncol, nlev, zt_grid_2d);
@@ -232,7 +232,7 @@ void shoc_proc() {
   array_to_view(thv.myData, ncol, nlev, thv_2d);
   array_to_view(wm_zt.myData, ncol, nlev, w_field_2d);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int k, int j) {
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, 10}), KOKKOS_LAMBDA(int k, int j) {
     wtracer_sfc_2d(j,k) = 0.;
   });
 
@@ -318,9 +318,9 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    sgs_field(1,k,offy_s+j,offx_s+i,icrm)      = tke(icol,ilev);
-    sgs_field(2,k,offy_s+j,offx_s+i,icrm)      = tk(icol,ilev);
-    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tke(icol,ilev);
-    sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = tk(icol,ilev);
+    sgs_field(1,k,offy_s+j,offx_s+i,icrm)      = tke(icol,nlev-(ilev+1));
+    sgs_field(2,k,offy_s+j,offx_s+i,icrm)      = tk(icol,nlev-(ilev+1));
+    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tke(icol,nlev-(ilev+1));
+    sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
   });
 }
