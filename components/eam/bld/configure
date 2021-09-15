@@ -2759,7 +2759,7 @@ sub write_cppdefs
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
-        print $fh " -DKOKKOS_TARGET "
+        print $fh " -DKOKKOS_TARGET -DHOMME_ENABLE_COMPOSE "
     }
 
     print $fh "\n";
