@@ -180,7 +180,7 @@ void scream_init_atm (const int& start_ymd,
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)
     ad.initialize_fields (t0);
-    ad.initialize_output_manager ();
+    ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
   });
 }
