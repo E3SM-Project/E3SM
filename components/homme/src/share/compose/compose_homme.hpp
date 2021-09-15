@@ -45,7 +45,7 @@ typename VT::value_type& idx_qext (const VT& qe, int ie, int q, int g, int lev) 
 
 template <typename T, int rank_>
 struct HommeFormatSubArray {
-  enum { type_tag_HommeFormatSubArray = 41 };
+  enum : bool { type_tag_HommeFormatSubArray = true };
   enum : int { rank = rank_ };
   typedef T value_type;
 
