@@ -516,6 +516,7 @@ void HommeDynamics::homme_post_process () {
     auto p_int = ekat::subview(p_int_view,icol);
 
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
 
@@ -748,6 +749,7 @@ void HommeDynamics::import_initial_conditions () {
     auto p_int = ws.take("p_int");
     auto p_mid = ws.take("p_mid");
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
     
