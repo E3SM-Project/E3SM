@@ -287,7 +287,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   const auto& Q_dyn_track = get_group_out("Q",dgn).m_bundle->get_header().get_tracking();
   for (auto wp : Q_dyn_track.get_providers()) { 
     auto sp = wp.lock();
-    printf("Q is provided by: %s\n",sp->name().c_str());
+    if (get_comm().am_i_root()) printf("Q is provided by: %s\n",sp->name().c_str());
   }
   EKAT_REQUIRE_MSG (
       rho_track.get_providers().size()==1,
@@ -597,7 +597,7 @@ void HommeDynamics::init_homme_views () {
   const int qsize = get_group_out("Q",dgn).m_info->size();
 
   // Print homme's parameters, so user can see whether something wasn't set right.
-  c.get<Homme::SimulationParams>().print();
+  if (get_comm().am_i_root()) c.get<Homme::SimulationParams>().print();
 
   // ------------ Set views in Homme ------------- //
   // Velocity
