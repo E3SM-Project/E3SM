@@ -15,15 +15,11 @@ void shoc_proc() {
   using MemberType = typename SHOC::MemberType;
   auto &u                  = :: u;
   auto &v                  = :: v;
-  auto &w                  = :: w;
-  auto &rho                = :: rho;
   auto &dtime              = :: dt;
-  auto &tabs               = :: tabs;
   auto &ncrms              = :: ncrms;
   auto &dx                 = :: dx;
   auto &dy                 = :: dy;
   auto &dz                 = :: dz;
-  auto &z0                 = :: z0;
   auto &zi                 = :: zi;
   auto &zm                 = :: zm;
   auto &z                  = :: z;
@@ -96,7 +92,6 @@ void shoc_proc() {
   real2d tk("tk", ncol, nlev);
   real2d tkh("tkh", ncol, nlev);
   real2d wthv("wthv", ncol, nlev);
-  real2d alst("alst", ncol, nlev);
   real2d qv("qv", ncol, nlev);
   real2d qc("qc", ncol, nlev);
   real2d qi("qi", ncol, nlev);
@@ -105,7 +100,7 @@ void shoc_proc() {
   real2d pres("pres", ncol, nlev);
   real2d pdels("pdel", ncol, nlev);
   real2d presi("presi", ncol, nlevi);
-  real3d qtracers("qtracers", ncol, 10, nlev);
+  real3d qtracers("qtracers", ncol, num_tracers, nlev);
 
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
@@ -124,18 +119,21 @@ void shoc_proc() {
     rvm(icol,ilev) = crm_input_ql(plev-nzm+k,icrm);
     rcm(icol,ilev) = crm_input_qccl(plev-nzm+k,icrm);
     rtm(icol,ilev) = rvm(icol,ilev) + rcm(icol,ilev);
+
     um(icol,ilev)  = crm_input_ul(plev-nzm+k,icrm);
     vm(icol,ilev)  = crm_input_vl(plev-nzm+k,icrm);
 
-    thlm(icol,ilev)  = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)-(latvap/cp)*crm_state_qc(k,j,i,icrm);
+//    um(icol,ilev)  = u(nzm-(k+1),j+offy_u,i+offx_u,icrm);
+//    vm(icol,ilev)  = v(nzm-(k+1),j+offy_v,i+offx_v,icrm);
+
+    thlm(icol,ilev)  = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)-(latvap/cp)*crm_state_qc(nzm-(k+1),j,i,icrm);
     thv(icol,ilev)   = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)
-                       *(1.0+zvir*crm_state_qv(k,j,i,icrm)-crm_state_qc(k,j,i,icrm));
+                       *(1.0+zvir*crm_state_qv(nzm-(k+1),j,i,icrm)-crm_state_qc(nzm-(k+1),j,i,icrm));
 
     tke(icol,ilev)   = crm_input_tke(plev-nzm+k,icrm);
     tkh(icol,ilev)   = crm_input_tkh(plev-nzm+k,icrm);
     tk (icol,ilev)   = crm_input_tk(plev-nzm+k,icrm);
     wthv(icol,ilev)  = crm_input_wthv(plev-nzm+k,icrm);
-    alst(icol,ilev)  = crm_input_alst(plev-nzm+k,icrm);
     pres(icol,ilev)  = crm_input_pmid(plev-nzm+k,icrm);
     pdels(icol,ilev) = crm_input_pdel(plev-nzm+k,icrm);
 
@@ -143,7 +141,7 @@ void shoc_proc() {
     // PBL height calculation call
     cloud_frac(icol,ilev) = crm_input_alst(plev-nzm+k,icrm);
 
-    for (auto q=0; q<10; ++q)  {
+    for (auto q=0; q<num_tracers; ++q)  {
        qtracers(icol,q,ilev) = crm_input_qtracers(plev-nzm+k+1,icrm,q);
     }
   });
@@ -220,7 +218,7 @@ void shoc_proc() {
           pdel_2d("pdel", ncol, npack),
           thv_2d("thv", ncol, npack),
           w_field_2d("w_field", ncol, npack),  // wm_zt
-          wtracer_sfc_2d("wtracer", ncol, 10),
+          wtracer_sfc_2d("wtracer", ncol, num_tracers),
           inv_exner_2d("inv_exner", ncol, npack);
 
   array_to_view(zt_g.myData, ncol, nlev, zt_grid_2d);
@@ -232,8 +230,8 @@ void shoc_proc() {
   array_to_view(thv.myData, ncol, nlev, thv_2d);
   array_to_view(wm_zt.myData, ncol, nlev, w_field_2d);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, 10}), KOKKOS_LAMBDA(int k, int j) {
-    wtracer_sfc_2d(j,k) = 0.;
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, num_tracers}), KOKKOS_LAMBDA(int k, int j) {
+    wtracer_sfc_2d(k,j) = 0.;
   });
 
   SHOC::SHOCInput shoc_input{host_dx_1d, host_dy_1d, zt_grid_2d, zi_grid_2d,
@@ -263,17 +261,19 @@ void shoc_proc() {
   array_to_view(um.myData, ncol, nlev, u_wind_2d);
   array_to_view(vm.myData, ncol, nlev, v_wind_2d);
 
-  int num_qtracers {10};
   view_3d horiz_wind_3d("horiz_wind",ncol,2,npack);
-  view_3d qtracers_3d("qtracers",ncol,num_qtracers,npack);
+  view_3d qtracers_3d("qtracers",ncol,num_tracers,npack);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int k, int j) {
-     horiz_wind_3d(k,0,j) = u_wind_2d(k,j);
-     horiz_wind_3d(k,1,j) = v_wind_2d(k,j);
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int icol, int ilev) {
+     horiz_wind_3d(icol,0,ilev) = u_wind_2d(icol,ilev);
+     horiz_wind_3d(icol,1,ilev) = v_wind_2d(icol,ilev);
   });
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, num_qtracers, npack}), KOKKOS_LAMBDA(int k, int j, int i) {
-    qtracers_3d(k,j,i)[0] = qtracers.myData[(k*qtracers.dimension[1]+j)*qtracers.dimension[2]+i];   
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {ncol, num_tracers, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int q, int ilev, int s) {
+     int k = ilev*Spack::n + s;
+     if (k < nlev) {
+      qtracers_3d(icol,q,ilev)[s] = qtracers.myData[(icol*qtracers.dimension[1]+q)*qtracers.dimension[2]+k];   
+     }
   });
 
   SHOC::SHOCInputOutput shoc_input_output{host_dse_2d, tke_2d, thetal_2d, qw_2d,
@@ -304,11 +304,11 @@ void shoc_proc() {
                                               uw_sec_2d, vw_sec_2d, w3_2d, wqls_sec_2d, brunt_2d, isotropy_2d};
 
   const int nwind = ekat::npack<Spack>(2)*Spack::n;
-  const int ntrac = ekat::npack<Spack>(num_qtracers+3)*Spack::n;
+  const int ntrac = ekat::npack<Spack>(num_tracers+3)*Spack::n;
   const auto policy = ekat::ExeSpaceUtils<SHOC::KT::ExeSpace>::get_default_team_policy(ncol, npack);
   ekat::WorkspaceManager<Spack, SHOC::KT::Device> workspace_mgr(nipack, 23+(nwind+ntrac), policy);
 
-  const auto elapsed_microsec = SHOC::shoc_main(ncol, nlev, nlevi, nlev, 1, num_qtracers, dtime, workspace_mgr,
+  const auto elapsed_microsec = SHOC::shoc_main(ncol, nlev, nlevi, nlev, 1, num_tracers, dtime, workspace_mgr,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
 
   // get SHOC output back to CRM 
@@ -322,5 +322,9 @@ void shoc_proc() {
     sgs_field(2,k,offy_s+j,offx_s+i,icrm)      = tk(icol,nlev-(ilev+1));
     sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tke(icol,nlev-(ilev+1));
     sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
+printf("SHOC: %d, %d, %d, %d, %13.6f, %13.6f\n",k,j,i,icrm,tke(icol,nlev-(ilev+1)),tk(icol,nlev-(ilev+1)));
   });
+
+  printf("");
+  printf("");
 }

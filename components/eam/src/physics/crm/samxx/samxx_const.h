@@ -213,6 +213,7 @@ int constexpr nmicro_fields = 9;
 //#endif
 int  constexpr index_water_vapor = 0;
 int  constexpr index_cloud_ice = 0;
+int  constexpr num_tracers = 10;
 
 real constexpr rhor = 1000.; // Density of water, kg/m3
 real constexpr rhos = 100.;  // Density of snow, kg/m3

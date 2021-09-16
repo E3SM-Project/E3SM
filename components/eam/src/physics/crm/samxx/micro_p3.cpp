@@ -383,8 +383,8 @@ void micro_p3_proc() {
         micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
         micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
         micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
-        micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s];        
-     }
+        micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s];      
+     } 
   });
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
