@@ -96,8 +96,10 @@ namespace scream {
         // Get dimension sizes from the field manager
         const auto& grid = ad.get_grids_manager()->get_grid("Physics");
         const auto& field_mgr = *ad.get_field_mgr(grid->name());
-        int ncol = grid->get_num_local_dofs();
-        int nlay = grid->get_num_vertical_levels();
+        int ncol  = grid->get_num_local_dofs();
+        int nlay  = grid->get_num_vertical_levels();
+        auto& lat = grid->get_geometry_data("lat");
+        auto& lon = grid->get_geometry_data("lon");
 
         // Get number of shortwave bands and number of gases from RRTMGP
         int ngas     =   8;  // TODO: get this intelligently
@@ -185,7 +187,6 @@ namespace scream {
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
         auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_view<Real*>();  //TODO: once we can calculate this on the fly we will need to set lat/lon here instead.
 
         auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
         auto d_co2 = field_mgr.get_field("co2").get_view<Real**>();
@@ -210,7 +211,13 @@ namespace scream {
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const int i = team.league_rank();
 
-            d_mu0(i) = mu0(i+1);
+            // Set lat and lon to single value for just this test:
+            // Note, these values will ensure that the cosine zenith
+            // angle will end up matching the constant velue meant for
+            // the test, which is 0.86
+            lat(i) = 5.224000000000;
+            lon(i) = 167.282000000000; 
+
             d_sfc_alb_dir_vis(i) = sfc_alb_dir_vis(i+1);
             d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);
             d_sfc_alb_dif_vis(i) = sfc_alb_dif_vis(i+1);
@@ -283,11 +290,16 @@ namespace scream {
         T_mid0.deallocate();
 
         // Make sure fluxes from field manager that were calculated in AD call of RRTMGP match reference fluxes from input file
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_up_ref    , sw_flux_up_test  ));
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_ref    , sw_flux_dn_test    ));
-        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_dir_ref, sw_flux_dn_dir_test));
-        REQUIRE(rrtmgpTest::all_equals(lw_flux_up_ref    , lw_flux_up_test    ));
-        REQUIRE(rrtmgpTest::all_equals(lw_flux_dn_ref    , lw_flux_dn_test    ));
+        // We use all_close here instead of all_equals because we are only able
+        // to approximate the solar zenith angle used in the RRTMGP clear-sky
+        // test problem with our trial and error lat/lon values, so fluxes will
+        // be slightly off. We just verify that they are all "close" here, within
+        // some tolerance.
+        REQUIRE(rrtmgpTest::all_close(sw_flux_up_ref    , sw_flux_up_test    , 0.001));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_ref    , sw_flux_dn_test    , 0.001));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_ref, sw_flux_dn_dir_test, 0.001));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_up_ref    , lw_flux_up_test    , 0.001));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_ref    , lw_flux_dn_test    , 0.001));
 
         // Deallocate YAKL arrays
         p_lay.deallocate();

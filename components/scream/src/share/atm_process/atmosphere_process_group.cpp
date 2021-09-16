@@ -144,7 +144,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_group (const FieldGroup<const Real>& group)
+set_required_group_impl (const FieldGroup<const Real>& group)
 {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
@@ -156,7 +156,7 @@ set_required_group (const FieldGroup<const Real>& group)
 }
 
 void AtmosphereProcessGroup::
-set_updated_group (const FieldGroup<Real>& group)
+set_updated_group_impl (const FieldGroup<Real>& group)
 {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];

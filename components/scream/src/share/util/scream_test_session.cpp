@@ -14,8 +14,8 @@
  * of these routines).
  */
 
-void ekat_initialize_test_session (int argc, char** argv) {
-  scream::initialize_scream_session (argc,argv);
+void ekat_initialize_test_session (int argc, char** argv, const bool print_config) {
+  scream::initialize_scream_session (argc,argv,print_config);
 }
 
 void ekat_finalize_test_session () {

@@ -1,11 +1,5 @@
 INCLUDE (ScreamUtils)
 
-# Add CUDA flags for YAKL
-set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-if (CUDA_BUILD)
-    set(YAKL_ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
-endif()
 # Test atmosphere processes
 if (NOT ${SCREAM_BASELINES_ONLY})
 
@@ -20,8 +14,6 @@ if (NOT ${SCREAM_BASELINES_ONLY})
         rrtmgp_standalone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
     )
-    message(STATUS "rrtmgp_standalone YAKL_CXX_FLAGS: ${YAKL_CXX_FLAGS}")
-    set_target_properties(rrtmgp_standalone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
     target_include_directories(rrtmgp_standalone PUBLIC
           ${SCREAM_BASE_DIR}/src/physics/rrtmgp
           ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests

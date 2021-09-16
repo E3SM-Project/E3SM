@@ -2,12 +2,6 @@
 
 namespace scream {
 
-FieldTracking::FieldTracking (const std::string& name)
- : m_name (name)
-{
-  // Nothing to do here
-}
-
 void FieldTracking::add_provider (const std::weak_ptr<AtmosphereProcess>& provider) {
   m_providers.insert(provider);
 }

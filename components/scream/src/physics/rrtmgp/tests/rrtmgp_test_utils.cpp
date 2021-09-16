@@ -20,8 +20,7 @@ namespace rrtmgpTest {
     }
 
     // TODO: use YAKL intrinsics for this to avoid needing to make host copies
-    bool all_equals(real2d &arr1, real2d &arr2) {
-        double tolerance = 0.01;
+    bool all_close(real2d &arr1, real2d &arr2, double tolerance) {
         int nx = arr1.dimension[0];
         int ny = arr2.dimension[1];
         auto arr1_h = arr1.createHostCopy();
@@ -36,6 +35,7 @@ namespace rrtmgpTest {
         }
         return true;
     }
+
 
     void dummy_atmos(
             std::string inputfile, 
@@ -154,11 +154,11 @@ namespace rrtmgpTest {
 
         // Check values
         int nerr = 0;
-        if (!rrtmgpTest::all_equals(sw_flux_up_1    , sw_flux_up_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(sw_flux_dn_1    , sw_flux_dn_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(sw_flux_dir_1   , sw_flux_dir_2)) nerr++;
-        if (!rrtmgpTest::all_equals(lw_flux_up_1    , lw_flux_up_2 )) nerr++;
-        if (!rrtmgpTest::all_equals(lw_flux_dn_1    , lw_flux_dn_2 )) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_up_1    , sw_flux_up_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_dn_1    , sw_flux_dn_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(sw_flux_dir_1   , sw_flux_dir_2, 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(lw_flux_up_1    , lw_flux_up_2 , 0.001)) nerr++;
+        if (!rrtmgpTest::all_close(lw_flux_dn_1    , lw_flux_dn_2 , 0.001)) nerr++;
         return nerr;
     }
 

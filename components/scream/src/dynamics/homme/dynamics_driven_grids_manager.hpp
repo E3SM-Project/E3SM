@@ -27,6 +27,13 @@ public:
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
+#ifndef KOKKOS_ENABLE_CUDA
+protected:
+#endif
+
+  void build_dynamics_grid ();
+  void build_physics_grid  (const std::string& name);
+
 protected:
 
   std::string get_reference_grid_name () const {
@@ -36,9 +43,6 @@ protected:
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
-
-  void build_dynamics_grid ();
-  void build_physics_grid  (const std::string& name);
 
   void build_grid_codes ();
 

@@ -185,10 +185,11 @@ void Functions<S,D>
       // prescribe that value
 
       if (do_prescribed_CCN) {
-         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)*1.0e6*inv_rho(k)));
+         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)));
       } else if (predictNc) {
          nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {
+         // nccnst is in units of #/m3 so needs to be converted.
          nc(k).set(not_drymass, nccnst*inv_rho(k));
       }
 

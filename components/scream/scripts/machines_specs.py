@@ -57,7 +57,7 @@ MACHINE_METADATA = {
                   16,
                   16,
                   ""),
-    "summit" : (["module purge", "module load cmake/3.15.2 gcc/6.4.0 spectrum-mpi/10.3.0.1-20190611 cuda/10.1.168 python/3.6.6-anaconda3-5.3.0 netcdf/4.6.1 netcdf-fortran/4.4.4 openblas/0.3.9-nothreads","unset OMPI_CXX"],
+    "summit" : (["module purge", "module load cmake/3.18.4 gcc/7.5.0 spectrum-mpi/10.4.0.3-20210112 cuda/10.1.168 python/3.7-anaconda3 netcdf-c/4.8.0 netcdf-fortran/4.4.5 openblas/0.3.5","unset OMPI_CXX", "export OMP_COMM_WORLD_RANK=0"],
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 44,

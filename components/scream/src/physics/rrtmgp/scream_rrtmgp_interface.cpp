@@ -136,12 +136,13 @@ namespace scream {
 
         void rrtmgp_main(
                 const int ncol, const int nlay,
-                real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 
+                real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
-                real2d &lw_flux_up, real2d &lw_flux_dn) {
+                real2d &lw_flux_up, real2d &lw_flux_dn,
+                const bool i_am_root) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesBroadband fluxes_sw;
@@ -162,7 +163,8 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw
+                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw,
+                i_am_root
             );
 
             // Do longwave
@@ -235,13 +237,24 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes) {
+                FluxesBroadband &fluxes,
+                const bool i_am_root) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
             int ngpt = k_dist.get_ngpt();
             int ngas = gas_concs.get_num_gases();
 
+            // Reset fluxes
+            auto &flux_up = fluxes.flux_up;
+            auto &flux_dn = fluxes.flux_dn;
+            auto &flux_dn_dir = fluxes.flux_dn_dir;
+            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
+                flux_up    (icol,ilev) = 0;
+                flux_dn    (icol,ilev) = 0;
+                flux_dn_dir(icol,ilev) = 0;
+            });
+ 
             // Get daytime indices
             auto dayIndices = int1d("dayIndices", ncol);
             memset(dayIndices, -1);
@@ -259,7 +272,7 @@ namespace scream {
             // Copy data back to the device
             dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
-                std::cout << "WARNING: no daytime columns found for this chunk!\n";
+                if (i_am_root) std::cout << "WARNING: no daytime columns found for this chunk!\n";
                 return;
             }
 
@@ -342,16 +355,7 @@ namespace scream {
             fluxes_day.flux_dn_dir = flux_dn_dir_day; //real2d("flux_dn_dir", nday,nlay+1);
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
 
-            // Zero out all fluxes before expanding daytime fluxes
-            auto &flux_up = fluxes.flux_up;
-            auto &flux_dn = fluxes.flux_dn;
-            auto &flux_dn_dir = fluxes.flux_dn_dir;
-            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
-                flux_up    (icol,ilev) = 0;
-                flux_dn    (icol,ilev) = 0;
-                flux_dn_dir(icol,ilev) = 0;
-            });
-            
+           
             // Expand daytime fluxes to all columns
             parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);

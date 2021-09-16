@@ -7,6 +7,7 @@
 
 #include <list>
 #include <map>
+#include <type_traits>
 
 namespace scream {
 
@@ -92,6 +93,7 @@ class Field;
 template<typename RealType>
 struct FieldGroup {
   using field_type = Field<RealType>;
+  using const_field_type = typename field_type::const_field_type;
   using ci_string = FieldGroupInfo::ci_string;
 
   FieldGroup (const std::string& name)
@@ -102,12 +104,45 @@ struct FieldGroup {
 
   FieldGroup (const FieldGroup&) = default;
 
+  // Allows to copy a non-const group into a const one.
+  template<typename RT,
+           typename = typename std::enable_if<
+               not std::is_same<RT,RealType>::value
+               and std::is_const<RealType>::value
+             >::type
+           >
+  FieldGroup (const FieldGroup<RT>& src) {
+    *this = src;
+  }
+
+  FieldGroup<typename const_field_type::RT> get_const () const {
+    return FieldGroup<typename const_field_type::RT>(*this);
+  }
+
+  template<typename RT,
+           typename = typename std::enable_if<
+               not std::is_same<RT,RealType>::value
+               and std::is_const<RealType>::value
+             >::type
+           >
+  FieldGroup<RealType>& operator= (const FieldGroup<RT>& src) {
+    m_info = src.m_info;
+    copy_fields<RT> (src);
+
+    return *this;
+  }
+
   const std::string& grid_name () const {
-    EKAT_REQUIRE_MSG(m_fields.size()>0,
+    EKAT_REQUIRE_MSG(m_fields.size()>0 || m_bundle,
         "Error! Cannot establish the group grid name until fields have been added.\n");
 
-    const auto& id = m_fields.begin()->second->get_header().get_identifier();
-    return id.get_grid_name();
+    if (m_bundle) {
+      const auto& id = m_bundle->get_header().get_identifier();
+      return id.get_grid_name();
+    } else {
+      const auto& id = m_fields.begin()->second->get_header().get_identifier();
+      return id.get_grid_name();
+    }
   }
 
   // The fields in this group
@@ -119,7 +154,49 @@ struct FieldGroup {
 
   // The info of this group.
   std::shared_ptr<FieldGroupInfo>  m_info;
+
+private:
+
+  // Only used inside this class;
+  FieldGroup () = default;
+
+  // Make non-const version friend of const version, and viceversa
+  template<typename RT>
+  friend struct FieldGroup;
+
+  template<typename RT>
+  typename std::enable_if<
+    std::is_same<RT,RealType>::value
+  >::type
+  copy_fields (const FieldGroup<RT>& src) {
+    m_bundle = src.m_bundle;
+    for (auto it : src.m_fields) {
+      m_fields[it.first] = it.second;
+    }
+  }
+
+  template<typename RT>
+  typename std::enable_if<
+    not std::is_same<RT,RealType>::value
+    and std::is_const<RealType>::value
+  >::type
+  copy_fields (const FieldGroup<RT>& src) {
+    if (src.m_bundle) {
+      m_bundle = std::make_shared<const_field_type>(src.m_bundle->get_const());
+    }
+    for (const auto& it : src.m_fields) {
+      m_fields[it.first] = std::make_shared<const_field_type>(it.second->get_const());
+    }
+  }
 };
+
+// We use this to find a FieldGroup in a std container.
+// We do NOT allow two entries with same group name and grid name in such containers.
+template<typename RT>
+bool operator== (const FieldGroup<RT>& lhs, const FieldGroup<RT>& rhs) {
+  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+         lhs.grid_name() == rhs.grid_name();
+}
 
 } // namespace scream
 

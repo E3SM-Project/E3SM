@@ -1,6 +1,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
@@ -64,7 +65,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
   add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
@@ -117,6 +117,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_alb_dif_vis.totElems();
   m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_ncol);
   mem += m_buffer.sfc_alb_dif_nir.totElems();
+  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_ncol);
+  mem += m_buffer.cosine_zenith.size();
 
   // 2d arrays
   m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_ncol, m_nlay);
@@ -175,6 +177,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   using PC = scream::physics::Constants<Real>;
 
+  // Determine orbital year. If Orbital Year is negative, use current year
+  // from timestamp for orbital year; if positive, use provided orbital year
+  // for duration of simulation.
+  m_orbital_year = m_rrtmgp_params.get<Int>("Orbital Year",-9999);
+
+  // Determine whether or not we are using a fixed solar zenith angle (positive value)
+  m_fixed_solar_zenith_angle = m_rrtmgp_params.get<Real>("Fixed Solar Zenith Angle", -9999);
+
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
 
@@ -198,28 +208,34 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 
 void RRTMGPRadiation::run_impl (const Real dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
+  using PC = scream::physics::Constants<Real>;
+  // get a host copy of lat/lon 
+  auto h_lat  = Kokkos::create_mirror_view(m_lat);
+  auto h_lon  = Kokkos::create_mirror_view(m_lon);
+  Kokkos::deep_copy(h_lat,m_lat);
+  Kokkos::deep_copy(h_lon,m_lon);
+
   // Get data from the FieldManager
-  auto d_pmid = m_fields_in.at("p_mid").get_view<const Real**>();
-  auto d_pint = m_fields_in.at("p_int").get_view<const Real**>();
-  auto d_pdel = m_fields_in.at("pseudo_density").get_view<const Real**>();
-  auto d_tint = m_fields_in.at("t_int").get_view<const Real**>();
-  auto d_sfc_alb_dir_vis = m_fields_in.at("sfc_alb_dir_vis").get_view<const Real*>();
-  auto d_sfc_alb_dir_nir = m_fields_in.at("sfc_alb_dir_nir").get_view<const Real*>();
-  auto d_sfc_alb_dif_vis = m_fields_in.at("sfc_alb_dif_vis").get_view<const Real*>();
-  auto d_sfc_alb_dif_nir = m_fields_in.at("sfc_alb_dif_nir").get_view<const Real*>();
-  auto d_mu0 = m_fields_in.at("cos_zenith").get_view<const Real*>();
-  auto d_qv = m_fields_in.at("qv").get_view<const Real**>();
-  auto d_qc = m_fields_in.at("qc").get_view<const Real**>();
-  auto d_qi = m_fields_in.at("qi").get_view<const Real**>();
-  auto d_cldfrac_tot = m_fields_in.at("cldfrac_tot").get_view<const Real**>();
-  auto d_rel = m_fields_in.at("eff_radius_qc").get_view<const Real**>();
-  auto d_rei = m_fields_in.at("eff_radius_qi").get_view<const Real**>();
-  auto d_tmid = m_fields_out.at("T_mid").get_view<Real**>();
-  auto d_sw_flux_up = m_fields_out.at("SW_flux_up").get_view<Real**>();
-  auto d_sw_flux_dn = m_fields_out.at("SW_flux_dn").get_view<Real**>();
-  auto d_sw_flux_dn_dir = m_fields_out.at("SW_flux_dn_dir").get_view<Real**>();
-  auto d_lw_flux_up = m_fields_out.at("LW_flux_up").get_view<Real**>();
-  auto d_lw_flux_dn = m_fields_out.at("LW_flux_dn").get_view<Real**>();
+  auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
+  auto d_pint = get_field_in("p_int").get_view<const Real**>();
+  auto d_pdel = get_field_in("pseudo_density").get_view<const Real**>();
+  auto d_tint = get_field_in("t_int").get_view<const Real**>();
+  auto d_sfc_alb_dir_vis = get_field_in("sfc_alb_dir_vis").get_view<const Real*>();
+  auto d_sfc_alb_dir_nir = get_field_in("sfc_alb_dir_nir").get_view<const Real*>();
+  auto d_sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real*>();
+  auto d_sfc_alb_dif_nir = get_field_in("sfc_alb_dif_nir").get_view<const Real*>();
+  auto d_qv = get_field_in("qv").get_view<const Real**>();
+  auto d_qc = get_field_in("qc").get_view<const Real**>();
+  auto d_qi = get_field_in("qi").get_view<const Real**>();
+  auto d_cldfrac_tot = get_field_in("cldfrac_tot").get_view<const Real**>();
+  auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
+  auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
+  auto d_tmid = get_field_out("T_mid").get_view<Real**>();
+  auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
+  auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
+  auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
+  auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
+  auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -248,6 +264,39 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
   // Copy data from the FieldManager to the YAKL arrays
   {
+    // Determine the cosine zenith angle
+    // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
+    //       deep copied to a device view.
+    auto d_mu0 = m_buffer.cosine_zenith;
+    auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
+    if (m_fixed_solar_zenith_angle > 0) {
+      for (int i=0; i<m_ncol; i++) {
+        h_mu0(i) = m_fixed_solar_zenith_angle;
+      }
+    } else {
+      // First gather the orbital parameters:
+      double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
+      auto ts = timestamp();
+      auto orbital_year = m_orbital_year;
+      if (orbital_year < 0) {
+          orbital_year = ts.get_years();
+      }
+      shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+                         &obliqr, &lambm0, &mvelpp);
+      // Use the orbital parameters to calculate the solar declination
+      double delta, eccf;
+      auto calday = ts.get_julian_day();
+      shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                       obliqr, &delta, &eccf);
+      // Now use solar declination to calculate zenith angle for all points
+      for (int i=0;i<m_ncol;i++) {
+        double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
+        double lon = h_lon(i)*PC::Pi/180.0;
+        h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+      }
+    }
+    Kokkos::deep_copy(d_mu0,h_mu0);
+
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
@@ -282,7 +331,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
-    auto d_temp  = m_fields_in.at(fm_name).get_view<const Real**>();
+    auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
@@ -330,7 +379,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     sfc_alb_dir, sfc_alb_dif, mu0,
     lwp, iwp, rel, rei,
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-    lw_flux_up, lw_flux_dn
+    lw_flux_up, lw_flux_dn, get_comm().am_i_root()
   );
 
   // Compute and apply heating rates

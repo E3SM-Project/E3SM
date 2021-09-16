@@ -57,8 +57,8 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 {
   // Set property checks for fields in this process
   auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
-  m_fields_out["cldfrac_ice"].add_property_check(frac_interval_check);
-  m_fields_out["cldfrac_tot"].add_property_check(frac_interval_check);
+  get_field_out("cldfrac_ice").add_property_check(frac_interval_check);
+  get_field_out("cldfrac_tot").add_property_check(frac_interval_check);
 }
 
 // =========================================================================================
@@ -66,20 +66,12 @@ void CldFraction::run_impl (const Real dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
-  auto qi   = m_fields_in["qi"].get_view<const Pack**>();
-  auto liq_cld_frac = m_fields_in["cldfrac_liq"].get_view<const Pack**>();
-  auto ice_cld_frac = m_fields_out["cldfrac_ice"].get_view<Pack**>();
-  auto tot_cld_frac = m_fields_out["cldfrac_tot"].get_view<Pack**>();
+  auto qi   = get_field_in("qi").get_view<const Pack**>();
+  auto liq_cld_frac = get_field_in("cldfrac_liq").get_view<const Pack**>();
+  auto ice_cld_frac = get_field_out("cldfrac_ice").get_view<Pack**>();
+  auto tot_cld_frac = get_field_out("cldfrac_tot").get_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
-
-  // Get a copy of the current timestamp (at the beginning of the step) and
-  // advance it,
-  auto ts = timestamp();
-  ts += dt;
-  for (auto& f : m_fields_out) {
-    f.second.get_header().get_tracking().update_time_stamp(ts);
-  }
 }
 
 // =========================================================================================

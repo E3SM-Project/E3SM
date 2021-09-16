@@ -1,12 +1,5 @@
 INCLUDE (ScreamUtils)
 
-## Add CUDA flags for YAKL
-set(YAKL_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-if (CUDA_BUILD)
-    set(YAKL_ARCH "CUDA")
-    set(YAKL_CXX_FLAGS "-DYAKL_ARCH_CUDA--expt-extended-lambda --expt-relaxed-constexpr ${YAKL_CXX_FLAGS}")
-endif()
-
 ## Create test
 # Required libraries
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
@@ -17,7 +10,6 @@ set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtm
 
 # Test atmosphere processes.
 CreateUnitTest(shoc_cld_p3_rrtmgp "${SRC}" "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
-set_target_properties(shoc_cld_p3_rrtmgp PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests

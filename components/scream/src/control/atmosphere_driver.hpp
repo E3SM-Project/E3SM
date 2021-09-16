@@ -114,7 +114,7 @@ public:
 
 protected:
 
-  void initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl);
+  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
   void register_groups ();
 
   std::map<std::string,field_mgr_ptr>    m_field_mgrs;

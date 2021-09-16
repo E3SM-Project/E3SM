@@ -1,13 +1,14 @@
 #ifndef SCREAM_FIELD_ALLOC_PROP_HPP
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
-#include "share/field/field_identifier.hpp"
+#include "share/field/field_layout.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <vector>
+#include <memory>
 
 namespace scream
 {
@@ -55,7 +56,7 @@ namespace scream
  *
  *  Note: at every request for a new value_type, this class checks the
  *        underlying scalar_type. We ASSUME that the dimensions in the
- *        field identifier refer to that scalar_type.
+ *        field layout refer to that scalar_type.
  */
 
 class FieldAllocProp {
