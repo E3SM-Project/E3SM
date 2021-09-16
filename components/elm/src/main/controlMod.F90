@@ -51,8 +51,7 @@ module controlMod
   use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
-  use elm_varctl              , only: ftopdat, use_top_solar_rad  ! TOP solar radiation parameterization
-  !use SurfaceAlbedoMod        , only: use_top_solar_rad  ! TOP solar radiation parameterization
+  use elm_varctl              , only: use_top_solar_rad  ! TOP solar radiation parameterization
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -306,7 +305,7 @@ contains
 
     ! === TOP solar radiation parameterization options  !
     namelist /elm_inparm/ &
-         use_top_solar_rad, ftopdat
+         use_top_solar_rad
     ! End
     
     ! ----------------------------------------------------------------------
@@ -687,8 +686,7 @@ contains
     call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (ftopdat , len(ftopdat) , MPI_CHARACTER, 0, mpicom, ier)  ! TOP solar radiation parameterization
-    
+   
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -968,11 +966,7 @@ contains
     end if
     
     if (use_top_solar_rad) then  ! TOP solar radiation parameterization
-        if (ftopdat  == ' ') then
-            call endrun(msg=' ERROR: ftopdat  not set while use_top_solar_rad is True')
-        else
-            write(iulog,*) '   Topographic data for TOP solar radiation parameterization = ',trim(ftopdat)
-        end if
+        write(iulog,*) '  use TOP solar radiation parameterization instead of PP'
     else
         write(iulog,*) '   use_top_solar_rad is False, so do not run TOP solar radiation parameterization'
     end if  ! End

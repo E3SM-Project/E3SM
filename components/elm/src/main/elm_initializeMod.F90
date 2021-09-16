@@ -58,7 +58,7 @@ contains
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version, ftopdat  ! TOP solar radiation parameterization 
+    use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
@@ -223,12 +223,12 @@ contains
     endif
     
      ! === Get topography parameters for TOP solar radiation parameterization
-    if (ftopdat /= " " .and. use_top_solar_rad) then
+    if (fsurdat /= " " .and. use_top_solar_rad) then
        if (masterproc) then
-          write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(ftopdat)
+          write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo_for_solar_rad(ldomain, ftopdat)  
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
     endif
     ! === end 
     
