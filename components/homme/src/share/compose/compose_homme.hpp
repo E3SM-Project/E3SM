@@ -114,7 +114,7 @@ private:
 
 template <typename T, int rank_>
 struct HommeFormatArray {
-  enum { type_tag_HommeFormatArray = 42 };
+  enum : bool { type_tag_HommeFormatArray = 42 };
   enum : int { rank = rank_ };
   typedef T value_type;
   typedef HommeFormatSubArray<T,rank_-1> subview_type;
