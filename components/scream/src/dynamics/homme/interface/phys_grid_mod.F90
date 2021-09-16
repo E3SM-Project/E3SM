@@ -137,7 +137,14 @@ contains
 
   subroutine cleanup_grid_init_data ()
     if (is_phys_grid_inited) then
-      ! deallocate(g_ncols)
+      ! nprocs-sized arrays
+      deallocate(g_dofs_per_rank)
+      deallocate(g_elem_per_rank)
+      deallocate(g_elem_offsets)
+
+      ! nelem-sized arrays
+      deallocate(g_dofs_per_elem)
+      deallocate(g_elem_gids)
     endif
   end subroutine cleanup_grid_init_data
 
@@ -153,12 +160,7 @@ contains
     deallocate(g_lon)
     deallocate(g_dofs)
 
-    deallocate(g_dofs_per_rank)
-    deallocate(g_elem_per_rank)
-    deallocate(g_elem_offsets)
-
     deallocate(g_elem_gids)
-    deallocate(g_dofs_per_elem)
 
     is_phys_grid_inited = .false.
   end subroutine finalize_phys_grid
