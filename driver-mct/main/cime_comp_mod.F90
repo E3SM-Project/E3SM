@@ -2419,8 +2419,6 @@ contains
     character(len=CL)     :: drv_resume           ! Driver resets state from restart file
     character(len=CL), pointer :: resume_files(:) ! Component resume files
 
-    type(ESMF_Time)       :: etime_curr           ! Current model time
-    real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
     integer               :: i, nodeId
@@ -3121,188 +3119,8 @@ contains
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
        !----------------------------------------------------------
-       call cime_run_write_history()
+       call cime_run_write_history(lnd2glc_averaged_now)
 
-       if (iamin_CPLID) then
-
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:HISTORY_BARRIER')
-          call t_drvstartf ('CPL:HISTORY',cplrun=.true.,barrier=mpicom_CPLID)
-          if ( history_alarm) then
-             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-             if (iamroot_CPLID) then
-                write(logunit,104) ' Write history file at ',ymd,tod
-                call shr_sys_flush(logunit)
-             endif
-
-             call seq_hist_write(infodata, EClock_d, &
-                  atm, lnd, ice, ocn, rof, glc, wav, iac, &
-                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-                  fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
-
-             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          endif
-
-          if (do_histavg) then
-             call seq_hist_writeavg(infodata, EClock_d, &
-                  atm, lnd, ice, ocn, rof, glc, wav, iac, histavg_alarm, &
-                  trim(cpl_inst_tag))
-          endif
-
-          if (do_hist_a2x) then
-             do eai = 1,num_inst_atm
-                inst_suffix =  component_get_suffix(atm(eai))
-                if (trim(hist_a2x_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
-                        nx=atm_nx, ny=atm_ny, nt=ncpl)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
-                        nx=atm_nx, ny=atm_ny, nt=ncpl, flds=hist_a2x_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_a2x1hri .and. t1hr_alarm) then
-             do eai = 1,num_inst_atm
-                inst_suffix =  component_get_suffix(atm(eai))
-                if (trim(hist_a2x1hri_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=24)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=24, flds=hist_a2x1hri_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_a2x1hr) then
-             do eai = 1,num_inst_atm
-                inst_suffix =  component_get_suffix(atm(eai))
-                if (trim(hist_a2x1hr_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm, flds=hist_a2x1hr_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_a2x3hr) then
-             do eai = 1,num_inst_atm
-                inst_suffix =  component_get_suffix(atm(eai))
-                if (trim(hist_a2x3hr_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hr_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_a2x3hrp) then
-             do eai = 1,num_inst_atm
-                inst_suffix = component_get_suffix(atm(eai))
-                if (trim(hist_a2x3hrp_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hrp_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_a2x24hr) then
-             do eai = 1,num_inst_atm
-                inst_suffix = component_get_suffix(atm(eai))
-                if (trim(hist_a2x24hr_flds) == 'all') then
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
-                else
-                   call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
-                        aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
-                        nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm, flds=hist_a2x24hr_flds)
-                endif
-             enddo
-          endif
-
-          if (do_hist_l2x1yrg) then
-             ! We use a different approach here than for other aux hist files: For other
-             ! files, we let seq_hist_writeaux accumulate fields in time. However, if we
-             ! stop in the middle of an accumulation period, these accumulated fields get
-             ! reset (because they aren't written to the cpl restart file); this is
-             ! potentially a problem for this year-long accumulation. Thus, here, we use
-             ! the existing accumulated fields from prep_glc_mod, because those *do*
-             ! continue properly through a restart.
-
-             ! The logic here assumes that we average the lnd2glc fields exactly at the
-             ! year boundary - no more and no less. If that's not the case, we're likely
-             ! to be writing the wrong thing to these aux files, so we check that
-             ! assumption here.
-             if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
-                write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
-                write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
-                call shr_sys_abort(subname// &
-                     ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
-             end if
-             if (lnd2glc_averaged_now .and. .not. t1yr_alarm) then
-                ! If we're averaging more frequently than yearly, then just writing the
-                ! current values of the averaged fields once per year won't give the true
-                ! annual averages.
-                write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
-                write(logunit,*) 'lnd2glc fields were averaged this time step, but it is not the year boundary.'
-                write(logunit,*) '(It only works to request histaux_l2x1yrg if GLC_AVG_PERIOD is yearly.)'
-                call shr_sys_abort(subname// &
-                     ' do_hist_l2x1yrg and lnd2glc_averaged_now are true, but t1yr_alarm is false')
-             end if
-
-             if (t1yr_alarm) then
-                call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
-                ! We need to pass in tbnds1_offset because (unlike with most
-                ! seq_hist_writeaux calls) here we don't call seq_hist_writeaux every time
-                ! step, so the automatically determined lower time bound can be wrong. For
-                ! typical runs with a noleap calendar, we want tbnds1_offset =
-                ! -365. However, to determine this more generally, based on the calendar
-                ! we're using, we call this shr_cal routine.
-                call shr_cal_ymds2rday_offset(etime=etime_curr, &
-                     rdays_offset = tbnds1_offset, &
-                     years_offset = -1)
-                do eli = 1,num_inst_lnd
-                   inst_suffix = component_get_suffix(lnd(eli))
-                   ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
-                   ! 0001-01-01 rather than 0002-01-01, etc.
-                   call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                        aname='l2x1yr_glc',dname='doml',inst_suffix=trim(inst_suffix),  &
-                        nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
-                        tbnds1_offset = tbnds1_offset, yr_offset=-1, &
-                        av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
-                enddo
-             endif
-          endif
-
-          if (do_hist_l2x) then
-             do eli = 1,num_inst_lnd
-                inst_suffix =  component_get_suffix(lnd(eli))
-                call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
-                     aname='l2x',dname='doml',inst_suffix=trim(inst_suffix),  &
-                     nx=lnd_nx, ny=lnd_ny, nt=ncpl)
-             enddo
-          endif
-          call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
-
-       endif
        !----------------------------------------------------------
        !| RUN ESP MODEL
        !----------------------------------------------------------
@@ -4874,11 +4692,16 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_write_history()
+  subroutine cime_run_write_history(lnd2glc_averaged_now)
 
     !----------------------------------------------------------
     ! Write history file, only AVs on CPLID
     !----------------------------------------------------------
+
+    logical,intent(in)    :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
+
+    type(ESMF_Time)       :: etime_curr           ! Current model time
+    real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
 
     if (iamin_CPLID) then
 
@@ -4903,6 +4726,159 @@ contains
           call seq_hist_writeavg(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, histavg_alarm, &
                trim(cpl_inst_tag))
+       endif
+
+       if (do_hist_a2x) then
+          do eai = 1,num_inst_atm
+             inst_suffix =  component_get_suffix(atm(eai))
+             if (trim(hist_a2x_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
+                     nx=atm_nx, ny=atm_ny, nt=ncpl)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x',dname='doma', inst_suffix=trim(inst_suffix), &
+                     nx=atm_nx, ny=atm_ny, nt=ncpl, flds=hist_a2x_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_a2x1hri .and. t1hr_alarm) then
+          do eai = 1,num_inst_atm
+             inst_suffix =  component_get_suffix(atm(eai))
+             if (trim(hist_a2x1hri_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=24)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1hi',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=24, flds=hist_a2x1hri_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_a2x1hr) then
+          do eai = 1,num_inst_atm
+             inst_suffix =  component_get_suffix(atm(eai))
+             if (trim(hist_a2x1hr_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1h',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=24, write_now=t1hr_alarm, flds=hist_a2x1hr_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_a2x3hr) then
+          do eai = 1,num_inst_atm
+             inst_suffix =  component_get_suffix(atm(eai))
+             if (trim(hist_a2x3hr_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x3h',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hr_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_a2x3hrp) then
+          do eai = 1,num_inst_atm
+             inst_suffix = component_get_suffix(atm(eai))
+             if (trim(hist_a2x3hrp_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x3h_prec',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=8, write_now=t3hr_alarm, flds=hist_a2x3hrp_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_a2x24hr) then
+          do eai = 1,num_inst_atm
+             inst_suffix = component_get_suffix(atm(eai))
+             if (trim(hist_a2x24hr_flds) == 'all') then
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm)
+             else
+                call seq_hist_writeaux(infodata, EClock_d, atm(eai), flow='c2x', &
+                     aname='a2x1d',dname='doma',inst_suffix=trim(inst_suffix),  &
+                     nx=atm_nx, ny=atm_ny, nt=1, write_now=t24hr_alarm, flds=hist_a2x24hr_flds)
+             endif
+          enddo
+       endif
+
+       if (do_hist_l2x1yrg) then
+          ! We use a different approach here than for other aux hist files: For other
+          ! files, we let seq_hist_writeaux accumulate fields in time. However, if we
+          ! stop in the middle of an accumulation period, these accumulated fields get
+          ! reset (because they aren't written to the cpl restart file); this is
+          ! potentially a problem for this year-long accumulation. Thus, here, we use
+          ! the existing accumulated fields from prep_glc_mod, because those *do*
+          ! continue properly through a restart.
+
+          ! The logic here assumes that we average the lnd2glc fields exactly at the
+          ! year boundary - no more and no less. If that's not the case, we're likely
+          ! to be writing the wrong thing to these aux files, so we check that
+          ! assumption here.
+          if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
+             write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+             write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
+             call shr_sys_abort(subname// &
+                  ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
+          end if
+          if (lnd2glc_averaged_now .and. .not. t1yr_alarm) then
+             ! If we're averaging more frequently than yearly, then just writing the
+             ! current values of the averaged fields once per year won't give the true
+             ! annual averages.
+             write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
+             write(logunit,*) 'lnd2glc fields were averaged this time step, but it is not the year boundary.'
+             write(logunit,*) '(It only works to request histaux_l2x1yrg if GLC_AVG_PERIOD is yearly.)'
+             call shr_sys_abort(subname// &
+                  ' do_hist_l2x1yrg and lnd2glc_averaged_now are true, but t1yr_alarm is false')
+          end if
+
+          if (t1yr_alarm) then
+             call seq_timemgr_EClockGetData( EClock_d, ECurrTime = etime_curr)
+             ! We need to pass in tbnds1_offset because (unlike with most
+             ! seq_hist_writeaux calls) here we don't call seq_hist_writeaux every time
+             ! step, so the automatically determined lower time bound can be wrong. For
+             ! typical runs with a noleap calendar, we want tbnds1_offset =
+             ! -365. However, to determine this more generally, based on the calendar
+             ! we're using, we call this shr_cal routine.
+             call shr_cal_ymds2rday_offset(etime=etime_curr, &
+                  rdays_offset = tbnds1_offset, &
+                  years_offset = -1)
+             do eli = 1,num_inst_lnd
+                inst_suffix = component_get_suffix(lnd(eli))
+                ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
+                ! 0001-01-01 rather than 0002-01-01, etc.
+                call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                     aname='l2x1yr_glc',dname='doml',inst_suffix=trim(inst_suffix),  &
+                     nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
+                     tbnds1_offset = tbnds1_offset, yr_offset=-1, &
+                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
+             enddo
+          endif
+       endif
+
+       if (do_hist_l2x) then
+          do eli = 1,num_inst_lnd
+             inst_suffix =  component_get_suffix(lnd(eli))
+             call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
+                  aname='l2x',dname='doml',inst_suffix=trim(inst_suffix),  &
+                  nx=lnd_nx, ny=lnd_ny, nt=ncpl)
+          enddo
        endif
 
        call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
