@@ -15,6 +15,11 @@
 #include "Cuda/Kokkos_Cuda_Instance.hpp"
 #endif
 
+extern "C" {
+ void scream_session_init();
+ void scream_session_finalize();
+}
+
 // convert YAKL multidimensional array to Kokkos view on GPU
 template <typename SizeT, typename ViewT>
 void array_to_view(const typename ViewT::value_type::scalar const* data,

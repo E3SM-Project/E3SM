@@ -370,21 +370,50 @@ void post_timeloop() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    crm_state_u_wind(k,j,i,icrm) = u(k,j+offy_u,i+offx_u,icrm);
-    crm_state_v_wind(k,j,i,icrm) = v(k,j+offy_v,i+offx_v,icrm);
-    crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
-    crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
-    crm_state_qt(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
-    crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
-    crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
-    crm_output_tk(k,j,i,icrm) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
-    crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
-    crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
-    crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
-    crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
-    crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
+  if (microphysics_scheme == "sam1mom") {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      crm_state_u_wind(k,j,i,icrm) = u(k,j+offy_u,i+offx_u,icrm);
+      crm_state_v_wind(k,j,i,icrm) = v(k,j+offy_v,i+offx_v,icrm);
+      crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
+      crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
+      crm_state_qt(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
+
+      crm_output_tk(k,j,i,icrm) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+      crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+      crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
+      crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
+      crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
+      crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
   });
+
+  } else if (microphysics_scheme == "p3") {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      crm_state_qv(k,j,i,icrm) = micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm);
+      crm_state_qi(k,j,i,icrm) = micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm);
+      crm_state_qi(k,j,i,icrm) = micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm);
+      crm_state_nc(k,j,i,icrm) = micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm);
+      crm_state_ni(k,j,i,icrm) = micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm);
+      crm_state_qr(k,j,i,icrm) = micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm);
+      crm_state_nr(k,j,i,icrm) = micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qm(k,j,i,icrm) = micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm);
+      crm_state_bm(k,j,i,icrm) = micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm);
+
+      crm_state_u_wind(k,j,i,icrm) = u(k,j+offy_u,i+offx_u,icrm);
+      crm_state_v_wind(k,j,i,icrm) = v(k,j+offy_v,i+offx_v,icrm);
+      crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
+      crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
+      crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
+
+      crm_output_tk(k,j,i,icrm) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+      crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+      crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
+      crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
+      crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
+      crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
+   });
+  }
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

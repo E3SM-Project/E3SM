@@ -96,11 +96,11 @@ void timeloop() {
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
-#if defined(shoc)
+//#if defined(shoc)
         shoc_proc();
-#else
-        sgs_proc();
-#endif
+//#else
+//        sgs_proc();
+//#endif
       }
 
       //----------------------------------------------------------
@@ -114,9 +114,9 @@ void timeloop() {
       //----------------------------------------------------------
       //  SGS effects on momentum:
       if (dosgs) {
-#if !defined(shoc) 
+//#if !defined(shoc) 
         sgs_mom();
-#endif
+//#endif
       }
 
 #if defined(MMF_ESMT)
@@ -157,9 +157,9 @@ void timeloop() {
       //---------------------------------------------------------
       //      SGS effects on scalars :
       if (dosgs) { 
-#if !defined(shoc)
+//#if !defined(shoc)
         sgs_scalars();
-#endif
+//#endif
       }
 
       //-----------------------------------------------------------
@@ -168,11 +168,11 @@ void timeloop() {
       //-----------------------------------------------------------
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
-#if defined(p3)
+//#if defined(p3)
         micro_p3_proc();
-#else 
-        micro_proc();
-#endif
+//#else 
+//        micro_proc();
+//#endif
       }
 
       //-----------------------------------------------------------
