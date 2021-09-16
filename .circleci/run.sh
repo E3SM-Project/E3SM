@@ -1,7 +1,7 @@
 #!/bin/bash
 
-case="master.A_WCYCL1850.ne4_oQU240.baseline"
-compset="A_WCYCL1850"
+case="master.WCYCL1850.ne4_oQU240.baseline"
+compset="WCYCL1850"
 res="ne4_oQU240"
 
 log_dir="${HOME}/projects/e3sm/scratch/$case"

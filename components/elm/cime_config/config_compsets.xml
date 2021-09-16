@@ -312,6 +312,11 @@
   </compset>
 
   <compset>
+    <alias>I2010CRUELM</alias>
+    <lname>2010_DATM%CRU_ELM_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>I1850CRUELMCN</alias>
     <lname>1850_DATM%CRU_ELM%CN_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
