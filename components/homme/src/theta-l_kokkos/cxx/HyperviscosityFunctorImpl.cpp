@@ -22,7 +22,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+ : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		 params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
 		 params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
  , m_num_elems(state.num_elems())
  , m_state   (state)
@@ -43,7 +44,8 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
-  : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+  : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		  params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
 		  params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
   , m_num_elems(num_elems)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
