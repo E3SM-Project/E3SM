@@ -61,6 +61,9 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   // Sanity check
   assert(params.params_set);
 
+
+//here
+
   if (m_data.nu_top>0) {
 
     m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
@@ -212,6 +215,9 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
 
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
 {
+
+	//scaling dt, so no scaling of nu, still add tests
+
   m_data.np1 = np1;
   m_data.dt = dt/m_data.hypervis_subcycle;
   m_data.eta_ave_w = eta_ave_w;
@@ -242,10 +248,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     biharmonic_wk_theta ();
     GPTLstop("hvf-bhwk");
 
-    //this corresponds to the case hv_subcycling_tom==0 and nu_top>0, ignore it for now
-    // dispatch parallel_for for first kernel
-    //Kokkos::parallel_for(m_policy_pre_exchange, *this);
-    //Kokkos::fence();
+    Kokkos::parallel_for(m_policy_pre_exchange, *this);
+    Kokkos::fence();
 
     // Exchange
     assert (m_be->is_registration_completed());
@@ -303,22 +307,26 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
 //sponge layer  
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
-    GPTLstart("hvf-laplace-tom");
-    biharmonic_wk_theta ();
-    GPTLstop("hvf-laplace-tom");
 
-    // dispatch parallel_for for first kernel
-    Kokkos::parallel_for(m_policy_pre_exchange, *this);
+//m_policy_first_laplace has ref states, so cannot be reused now
+//  Kokkos::parallel_for(m_policy_first_laplace, *this);
+//
+//  laplace(fields) --> ttens, etc.
+    Kokkos::parallel_for(m_policy_nutop_laplace, *this);
     Kokkos::fence();
 
+//exchange is done on ttens, dptens, vtens, etc.
     ///? do another timer or the same for all mpi in HV?
+///exchange on a subset of levels in future? is it possible?    
     assert (m_be->is_registration_completed());
     GPTLstart("hvf-bexch");
     m_be->exchange();
     GPTLstop("hvf-bexch");
 
-    // Update states
-    Kokkos::parallel_for(m_policy_update_states, *this);
+    // Update states, m_policy_update_states cannot be reused?
+    // it uses dt := dt/hv_subcycle, use dt and a mask as input, is it faster or slower?
+    // use a dummy for now
+    Kokkos::parallel_for(m_policy_update_states2, *this);
     Kokkos::fence();
   }
 
@@ -349,6 +357,6 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
     Kokkos::parallel_for(policy, *this);
   }
   Kokkos::fence();
-}
+}//biharmonic
 
 } // namespace Homme

@@ -175,7 +175,70 @@ public:
     m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
-  }
+  }//TagFirstLaplaceHV
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // Laplace for nu_top
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const TagNutopLaplace&, const TeamMember& team) const {
+//
+//what is m_tu -- teamUtils
+//
+    KernelVariables kv(team, m_tu);
+    // Subtract the reference states from the states
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+///these are done for now for all levels
+//
+//otherwise         m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV,NUM_LEV_P>...
+//
+    // Laplacian of layer thickness
+    m_sphere_ops.laplace_simple(kv,
+                   Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
+                   Homme::subview(m_buffers.dptens,kv.ie));
+    // Laplacian of theta
+    m_sphere_ops.laplace_simple(kv,
+                   Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1),
+                   Homme::subview(m_buffers.ttens,kv.ie));
+
+    if (m_process_nh_vars) {
+      // Laplacian of vertical velocity (do not compute last interface)
+      m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
+                     Homme::subview(m_state.m_w_i,kv.ie,m_data.np1),
+                     Homme::subview(m_buffers.wtens,kv.ie));
+      // Laplacian of geopotential (do not compute last interface)
+      m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
+                     Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1),
+                     Homme::subview(m_buffers.phitens,kv.ie));
+    }
+
+    // Laplacian of velocity
+    m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
+                              Homme::subview(m_state.m_v,kv.ie,m_data.np1),
+                              Homme::subview(m_buffers.vtens,kv.ie));
+  }; //TagNutopLaplace
+
+
+
+
+
+
+
+
 
 
   //second iter of laplace, const hv
@@ -241,7 +304,7 @@ public:
                    Homme::subview(m_geometry.m_vec_sph2cart,kv.ie),
                    Homme::subview(m_buffers.vtens,kv.ie),
                    Homme::subview(m_buffers.vtens,kv.ie));
-  }
+  }//SecondLaplaceTensorHV
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagUpdateStates&, const TeamMember& team) const {
@@ -296,7 +359,7 @@ public:
         }
       });
     });
-  }
+  }//tagupdatestates
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagHyperPreExchange, const TeamMember &team) const {
@@ -347,8 +410,13 @@ public:
         });
       }
 #endif
-    });
+    });//teamthreadrange loop
     kv.team_barrier();
+
+
+#if 0  
+
+//notice different buffer names, does it mean we can shrink the buffer? check
 
     // laplace subfunctors cannot be called from a TeamThreadRange or
     // ThreadVectorRange
@@ -379,6 +447,8 @@ public:
                      Homme::subview(m_buffers.lapl_v, kv.team_idx));
     }//if nu_top>0
     kv.team_barrier();
+#endif
+
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &point_idx) {
@@ -386,6 +456,7 @@ public:
       const int jgp = point_idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&](const int &lev) {
+//nu / hv_subcycling below? no tests with hv_sub >1
         m_buffers.vtens(kv.ie, 0, igp, jgp, lev) *= -m_data.nu;
         m_buffers.vtens(kv.ie, 1, igp, jgp, lev) *= -m_data.nu;
         m_buffers.ttens(kv.ie, igp, jgp, lev) *= -m_data.nu;
@@ -396,6 +467,7 @@ public:
         }
       });
 
+#if 0      
       if (m_data.nu_top > 0) {
         // Need to loop on the actual number of levels, not packs, to avoid adding more sponge layers
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, int(NUM_BIHARMONIC_PHYSICAL_LEVELS)),
@@ -429,9 +501,11 @@ public:
                 m_buffers.lapl_phi(kv.team_idx, igp, jgp, ilev)[ivec];
           }
         });
-      }
+      }/// end if nu_top>0
+#endif
+
     });
-  }
+  }//taghyperpreexchange
 
 protected:
 
@@ -452,6 +526,8 @@ protected:
   Kokkos::TeamPolicy<ExecSpace,TagUpdateStates>     m_policy_update_states;
   Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
+
+  Kokkos::TeamPolicy<ExecSpace,TagNutopLaplace>     m_policy_nutop_laplace;
 
   TeamUtils<ExecSpace> m_tu; // If the policies only differ by tag, just need one tu
 

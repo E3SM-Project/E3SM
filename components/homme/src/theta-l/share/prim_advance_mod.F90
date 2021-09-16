@@ -660,7 +660,8 @@ contains
            stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
         enddo
 
-!!! case hv_subcycle == hv_subcycle_tom?        
+!!! case hv_subcycle == hv_subcycle_tom?
+!!!! tested? if not, remove?
         if (nu_top>0 .and. hypervis_subcycle_tom==0) then
            do k=1,nlev_tom
               !vtheta_dp(:,:)=elem(ie)%state%vtheta_dp(:,:,k,nt)*elem(ie)%state%dp3d(:,:,k,nt)/hvcoord%dp0(k)
