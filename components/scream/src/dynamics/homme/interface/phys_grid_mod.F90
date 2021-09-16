@@ -287,7 +287,7 @@ contains
       do proc=2,par%nprocs
         g_dofs_offsets(proc) = g_dofs_offsets(proc-1) + g_dofs_per_rank(proc-1)
       enddo
-      
+
       idof = 1
       do proc=1,par%nprocs
         elem_offset = g_elem_offsets(proc)
