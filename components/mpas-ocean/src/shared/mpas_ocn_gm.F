@@ -576,6 +576,7 @@ contains
                end do
 
                c_min = max(0.01_RKIND,sumN2/ltsum*(0.5*(lt1+lt2)))
+               c_min = config_gm_constant_gravwavespeed
                cGMphaseSpeed(iEdge) = max(c_min,                          &
                                           sumN2/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
 

@@ -691,6 +691,12 @@ contains
             ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
             ! both of these operations are done in ocn_tracer_nonlocalflux_tend routine
             vertNonLocalFlux(index_vertNonLocalFluxTemp,:,iCell) = cvmix_variables % kpp_Tnonlocal_iface(:)
+            ! overwrite with a parabolic non local function
+
+            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
+               sigma = min(1.0_RKIND, abs(zw_iface(k,iCell)) / boundaryLayerDepth(icell))
+               vertNonLocalFlux(index_vertNonLocalFluxTemp,k,iCell) = (1.0_RKIND - sigma)**2.0
+            end do
 
     endif ! kpp stage 2
          endif !if (config_use_cvmix_kpp)
