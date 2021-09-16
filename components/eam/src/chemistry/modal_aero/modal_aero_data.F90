@@ -37,6 +37,7 @@
     integer, parameter :: nsoag = 7  ! number of differently tagged secondary-organic gas     species
 #else
     integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
+#endif
 
 #if ( defined MOSAIC_SPECIES )
     ! when mosaic_aqchem_optaa <= 0, aqueous chem calcs do not affect hclg, cl_ax, no3_ax, and co3_ax species

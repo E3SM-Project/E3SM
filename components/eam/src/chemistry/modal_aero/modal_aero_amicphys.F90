@@ -5903,10 +5903,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             'modal_aero_amicphys_init ERROR - bad soa_mech_type, nsoa, nsoag =', soa_mech_type, nsoa, nsoag
          call endrun( msg )
       end if
-      ngas = nsoa
-      naer = nsoa
-      igas_soa = 1
-      iaer_soa = 1
 
       if (igas_soag < 1 .or. iaer_soa < 1) then
          ! code currently requires that igas_soag = iaer_soa = 1
@@ -6423,6 +6419,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
  
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+#if ( defined MOSAIC_SPECIES )
       subroutine mam_amicphys_set_mosaic_hygro
 
       use modal_aero_data,  only:  nspec_amode
@@ -6453,9 +6450,11 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       return
       end subroutine mam_amicphys_set_mosaic_hygro
 
+#endif
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
+#if ( defined MOSAIC_SPECIES )
       subroutine mam_amicphys_check_mosaic_mw
 
       use spmd_utils,  only:  masterproc
@@ -6562,8 +6561,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
       return
       end subroutine mam_amicphys_check_mosaic_mw      
-#endif 
-
+#endif
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
@@ -6596,8 +6594,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       if (nsoa == 1) then
          jsoa = 1
          call cnst_get_ind( 'SOAG', l1, .false. )
-         if (l1 < 1 .or. l1 > pcnst) &
-            call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - no SOAG' )
+!         if (l1 < 1 .or. l1 > pcnst) &
+!            call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - no SOAG' )  !commented by MS since it is SOAG0 in the interactive VBS SOA code
          lptr2_soa_g_amode(jsoa) = l1
          do n = 1, ntot_amode
             lptr2_soa_a_amode(n,jsoa) = lptr_soa_a_amode(n)

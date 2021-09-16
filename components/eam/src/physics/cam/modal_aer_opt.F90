@@ -342,6 +342,7 @@ subroutine modal_aer_opt_init()
       call add_default ('EXTINCT'      , 1, ' ')
   end if
   if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or. &
+       cam_chempkg_is('linoz_mam4_resus_soa_mom_soag_vbs').or.&
        cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam4_resus_mom').or. &
        cam_chempkg_is('trop_mam4_resus_soag').or.cam_chempkg_is('trop_mam7').or. &
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
