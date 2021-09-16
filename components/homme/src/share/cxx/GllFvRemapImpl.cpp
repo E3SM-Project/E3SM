@@ -5,10 +5,11 @@
  *******************************************************************************/
 
 #include "GllFvRemapImpl.hpp"
-#include "EquationOfState.hpp"
 #ifdef MODEL_THETA_L
 // GllFvRemap can't run with preqx_kokkos because preqx_kokkos does not provide
-// ElementOps. But we need this to build for use in the eam-hommexx test.
+// EquationOfState or ElementOps. But we need this to build for use in the
+// eam-hommexx test.
+# include "EquationOfState.hpp"
 # include "ElementOps.hpp"
 #endif
 
@@ -328,6 +329,8 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
                       const Phys2T& omegas, const Phys3T& uvs, const Phys3T& qs) {
+  // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
+#ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
   const int np2 = GllFvRemapImpl::np2;
@@ -378,9 +381,7 @@ void GllFvRemapImpl
   const bool use_moisture = m_data.use_moisture;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
-#ifdef MODEL_THETA_L
   ElementOps ops; ops.init(hvcoord);
-#endif
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
     KernelVariables kv(team, m_tu_ne);
@@ -435,9 +436,7 @@ void GllFvRemapImpl
         const auto dp3d_ij = Homme::subview(dp3d,ie,timeidx,i,j);
         const auto p_g_ij = Homme::subview(p_g,i,j);
         // p_g
-#ifdef MODEL_THETA_L
         ops.compute_hydrostatic_p(kv, dp3d_ij, Homme::subview(w1gp,i,j), p_g_ij);
-#endif
       };
       parallel_for(ttrg, f1);
       kv.team_barrier(); // w3 in use
@@ -457,10 +456,8 @@ void GllFvRemapImpl
           eos.compute_pnh_and_exner(kv, vthdp_ij, Homme::subview(phi_i,ie,timeidx,i,j),
                                     wrk_ij, exner_ij);
         // theta_g
-#ifdef MODEL_THETA_L
         ops.get_temperature(kv, eos, use_moisture, dp3d_ij, exner_ij, vthdp_ij,
                             Homme::subview(q_g,ie,0,i,j), wrk_ij, th_g_ij);
-#endif
         const auto& rexner_ij = exner_ij;
         parallel_for(tvr, [&] (int k) { // could avoid this in H case but then would lose BFB
           rexner_ij(k) = p_g_ij(k);
@@ -525,11 +522,13 @@ void GllFvRemapImpl
   };
   Kokkos::fence();
   Kokkos::parallel_for(m_tp_ne_qsize, feq);
+#endif
 }
 
 void GllFvRemapImpl::
 run_fv_phys_to_dyn (const int timeidx, const Real dt,
                     const CPhys2T& Ts, const CPhys3T& uvs, const CPhys3T& qs) {
+#ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
   const int np2 = GllFvRemapImpl::np2;
@@ -571,9 +570,7 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const auto dp3d = m_state.m_dp3d;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
-#ifdef MODEL_THETA_L
   ElementOps ops; ops.init(hvcoord);
-#endif
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
     KernelVariables kv(team, m_tu_ne);
@@ -620,9 +617,7 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
         const auto i = ij / NP, j = ij % NP;
         const auto dp3d_ij = Homme::subview(dp3d,ie,timeidx,i,j);
         const auto p_g_ij = Homme::subview(p_g,i,j);
-#ifdef MODEL_THETA_L
         ops.compute_hydrostatic_p(kv, dp3d_ij, Homme::subview(w1gp,i,j), p_g_ij);
-#endif
       };
       parallel_for(ttrg, f1);
       kv.team_barrier(); // w4 in use
@@ -775,6 +770,7 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   };
   Kokkos::fence();
   parallel_for(m_tp_ne_qsize, geq);
+#endif
 }
 
 void GllFvRemapImpl::run_fv_phys_to_dyn_dss () {
