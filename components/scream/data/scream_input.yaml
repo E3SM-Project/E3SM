@@ -20,7 +20,7 @@ Atmosphere Driver:
       Dynamics Namelist File Name: ./data/theta.nl
 
   Initial Conditions:
-    Initial Conditions File: ./data/scream_aquaplanet_ne4np4_L72.nc
+    Filename: ./data/scream_aquaplanet_ne4np4_L72.nc
     T_mid_prev: T_mid
     horiz_winds_prev: horiz_winds
     w_int: 0.0
