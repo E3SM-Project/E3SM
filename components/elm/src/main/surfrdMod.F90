@@ -118,7 +118,7 @@ contains
        end if
        deallocate(idata2d)
     else
-       call ncd_io(ncid=ncid, varname='LANDMASK', data=mask, flag='read', readvar=readvar)
+        call ncd_io(ncid=ncid, varname='LANDMASK', data=mask, flag='read', readvar=readvar)
        if (.not. readvar) then
           call ncd_io(ncid=ncid, varname='mask', data=mask, flag='read', readvar=readvar)
        end if
@@ -1342,7 +1342,7 @@ contains
           write(iulog,*) trim(subname),' ERROR: filename must be specified '
           call endrun()
        else
-          write(iulog,*) 'Attempting to read topography parameters from ftopdat ',trim(filename)
+          write(iulog,*) 'Attempting to read topography parameters from fsurdat ',trim(filename)
        endif
     end if
 
@@ -1351,7 +1351,7 @@ contains
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
 
     if (domain%ns /= ns) then
-       write(iulog,*) trim(subname),' ERROR: ftopdat file mismatch ns',&
+       write(iulog,*) trim(subname),' ERROR: fsurdat file mismatch ns',&
             domain%ns,ns
        call endrun()
     endif
@@ -1363,16 +1363,16 @@ contains
 
     call ncd_io(ncid=ncid, varname='LONGXY', flag='read', data=lonc, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: LONGXY  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: LONGXY  NOT on fsurdat file' )
 
     call ncd_io(ncid=ncid, varname='LATIXY', flag='read', data=latc, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: LATIXY  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: LATIXY  NOT on fsurdat file' )
 
     do n = beg,end
        if (abs(latc(n)-domain%latc(n)) > eps .or. &
            abs(lonc(n)-domain%lonc(n)) > eps) then
-          write(iulog,*) trim(subname),' ERROR: ftopdat file mismatch lat,lon',latc(n),&
+          write(iulog,*) trim(subname),' ERROR: fsurdat file mismatch lat,lon',latc(n),&
                domain%latc(n),lonc(n),domain%lonc(n),eps
           call endrun()
        endif
@@ -1380,19 +1380,19 @@ contains
 
     call ncd_io(ncid=ncid, varname='STDEV_ELEV', flag='read', data=domain%stdev_elev, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: STDEV_ELEV  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: STDEV_ELEV  NOT on fsurdat file' )
     call ncd_io(ncid=ncid, varname='SKY_VIEW', flag='read', data=domain%sky_view, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: SKY_VIEW  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: SKY_VIEW  NOT on fsurdat file' )
     call ncd_io(ncid=ncid, varname='TERRAIN_CONFIG', flag='read', data=domain%terrain_config, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: TERRAIN_CONFIG  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: TERRAIN_CONFIG  NOT on fsurdat file' )
     call ncd_io(ncid=ncid, varname='SINSL_COSAS', flag='read', data=domain%sinsl_cosas, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_COSAS  NOT on ftopdat file' )
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_COSAS  NOT on fsurdat file' )
     call ncd_io(ncid=ncid, varname='SINSL_SINAS', flag='read', data=domain%sinsl_sinas, &
          dim1name=grlnd, readvar=readvar)
-    If (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_SINAS  NOT on ftopdat file' )
+    If (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_SINAS  NOT on fsurdat file' )
 
     deallocate(latc,lonc)
 
