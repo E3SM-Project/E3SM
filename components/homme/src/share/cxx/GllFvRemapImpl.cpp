@@ -6,7 +6,11 @@
 
 #include "GllFvRemapImpl.hpp"
 #include "EquationOfState.hpp"
-#include "ElementOps.hpp"
+#ifdef MODEL_THETA_L
+// GllFvRemap can't run with preqx_kokkos because preqx_kokkos does not provide
+// ElementOps. But we need this to build for use in the eam-hommexx test.
+# include "ElementOps.hpp"
+#endif
 
 namespace Homme {
 
@@ -374,7 +378,9 @@ void GllFvRemapImpl
   const bool use_moisture = m_data.use_moisture;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
+#ifdef MODEL_THETA_L
   ElementOps ops; ops.init(hvcoord);
+#endif
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
     KernelVariables kv(team, m_tu_ne);
@@ -429,7 +435,9 @@ void GllFvRemapImpl
         const auto dp3d_ij = Homme::subview(dp3d,ie,timeidx,i,j);
         const auto p_g_ij = Homme::subview(p_g,i,j);
         // p_g
+#ifdef MODEL_THETA_L
         ops.compute_hydrostatic_p(kv, dp3d_ij, Homme::subview(w1gp,i,j), p_g_ij);
+#endif
       };
       parallel_for(ttrg, f1);
       kv.team_barrier(); // w3 in use
@@ -449,8 +457,10 @@ void GllFvRemapImpl
           eos.compute_pnh_and_exner(kv, vthdp_ij, Homme::subview(phi_i,ie,timeidx,i,j),
                                     wrk_ij, exner_ij);
         // theta_g
+#ifdef MODEL_THETA_L
         ops.get_temperature(kv, eos, use_moisture, dp3d_ij, exner_ij, vthdp_ij,
                             Homme::subview(q_g,ie,0,i,j), wrk_ij, th_g_ij);
+#endif
         const auto& rexner_ij = exner_ij;
         parallel_for(tvr, [&] (int k) { // could avoid this in H case but then would lose BFB
           rexner_ij(k) = p_g_ij(k);
@@ -561,7 +571,9 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const auto dp3d = m_state.m_dp3d;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
+#ifdef MODEL_THETA_L
   ElementOps ops; ops.init(hvcoord);
+#endif
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
     KernelVariables kv(team, m_tu_ne);
@@ -608,7 +620,9 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
         const auto i = ij / NP, j = ij % NP;
         const auto dp3d_ij = Homme::subview(dp3d,ie,timeidx,i,j);
         const auto p_g_ij = Homme::subview(p_g,i,j);
+#ifdef MODEL_THETA_L
         ops.compute_hydrostatic_p(kv, dp3d_ij, Homme::subview(w1gp,i,j), p_g_ij);
+#endif
       };
       parallel_for(ttrg, f1);
       kv.team_barrier(); // w4 in use
