@@ -60,6 +60,8 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
+                real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw,
+                real3d &aer_tau_lw,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
@@ -76,7 +78,8 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
-                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
+                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
+                OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes, const bool i_am_root);
         /*
          * Longwave driver (called by rrtmgp_main)
@@ -86,7 +89,7 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
-                OpticalProps1scl &clouds,
+                OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
                 FluxesByband &fluxes);
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area

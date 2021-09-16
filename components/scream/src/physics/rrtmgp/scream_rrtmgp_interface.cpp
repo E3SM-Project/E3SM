@@ -195,6 +195,8 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
+                real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw,
+                real3d &aer_tau_lw,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
@@ -217,6 +219,25 @@ namespace scream {
             fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
             fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
 
+            auto nswbands = k_dist_sw.get_nband();
+            auto nlwbands = k_dist_lw.get_nband();
+
+            // Setup aerosol optical properties
+            OpticalProps2str aerosol_sw;
+            OpticalProps1scl aerosol_lw;
+            aerosol_sw.init(k_dist_sw.get_band_lims_wavenumber());
+            aerosol_sw.alloc_2str(ncol, nlay);
+            parallel_for(Bounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+                aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
+                aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
+                aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
+            });
+            aerosol_lw.init(k_dist_lw.get_band_lims_wavenumber());
+            aerosol_lw.alloc_1scl(ncol, nlay);
+            parallel_for(Bounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+                aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
+            });
+
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, p_lay, t_lay, lwp, iwp, rel, rei);
             OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, p_lay, t_lay, lwp, iwp, rel, rei);        
@@ -225,7 +246,7 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw,
+                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
                 i_am_root
             );
 
@@ -233,7 +254,7 @@ namespace scream {
             rrtmgp_lw(
                 ncol, nlay,
                 k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs,
-                clouds_lw, fluxes_lw
+                aerosol_lw, clouds_lw, fluxes_lw
             );
             
             // Calculate heating rates
@@ -298,7 +319,8 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
-                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
+                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
+                OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes,
                 const bool i_am_root) {
 
@@ -382,6 +404,16 @@ namespace scream {
                 gas_concs_day.set_vmr(gas_names(igas), vmr_day);
             }
 
+            // Subset aerosol optics
+            OpticalProps2str aerosol_day;
+            aerosol_day.init(k_dist.get_band_lims_wavenumber());
+            aerosol_day.alloc_2str(nday, nlay);
+            parallel_for(Bounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
+                aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
+                aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
+                aerosol_day.g  (iday,ilay,ibnd) = aerosol.g  (dayIndices(iday),ilay,ibnd);
+            });
+
             // Subset cloud optics
             OpticalProps2str clouds_day;
             clouds_day.init(k_dist.get_band_lims_wavenumber());
@@ -412,6 +444,10 @@ namespace scream {
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
 
             k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
+
+            // Combine gas and aerosol optics
+            aerosol_day.delta_scale();
+            aerosol_day.increment(optics);
 
             // Combine gas and cloud optics
             clouds_day.delta_scale();
@@ -453,6 +489,7 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
+                OpticalProps1scl &aerosol,
                 OpticalProps1scl &clouds,
                 FluxesByband &fluxes) {
 
@@ -479,6 +516,9 @@ namespace scream {
 
             // Do gas optics
             k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
+
+            // Combine gas and aerosol optics
+            aerosol.increment(optics);
 
             // Combine gas and cloud optics
             clouds.increment(optics);

@@ -490,6 +490,21 @@ void RRTMGPRadiation::run_impl (const int dt) {
     sfc_alb_dif_vis, sfc_alb_dif_nir,
     sfc_alb_dir, sfc_alb_dif);
 
+  // Dummy aerosol optics
+  // Setup some dummy aerosol optical properties
+  auto aer_tau_sw = real3d("aer_tau_sw", m_ncol, m_nlay, m_nswbands);
+  auto aer_ssa_sw = real3d("aer_ssa_sw", m_ncol, m_nlay, m_nswbands);
+  auto aer_asm_sw = real3d("aer_asm_sw", m_ncol, m_nlay, m_nswbands);
+  auto aer_tau_lw = real3d("aer_tau_lw", m_ncol, m_nlay, m_nlwbands);
+  parallel_for(Bounds<3>(m_nswbands,m_nlay,m_ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+      aer_tau_sw(icol,ilay,ibnd) = 0;
+      aer_ssa_sw(icol,ilay,ibnd) = 0;
+      aer_asm_sw(icol,ilay,ibnd) = 0;
+  });
+  parallel_for(Bounds<3>(m_nlwbands,m_nlay,m_ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+      aer_tau_lw(icol,ilay,ibnd) = 0;
+  });
+
   // Run RRTMGP driver
   rrtmgp::rrtmgp_main(
     m_ncol, m_nlay,
@@ -497,6 +512,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
     gas_concs,
     sfc_alb_dir, sfc_alb_dif, mu0,
     lwp, iwp, rel, rei,
+    aer_tau_sw, aer_ssa_sw, aer_asm_sw,
+    aer_tau_lw,
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
     lw_flux_up, lw_flux_dn, 
     sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,

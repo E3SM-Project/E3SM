@@ -141,6 +141,21 @@ int main(int argc, char** argv) {
       sfc_alb_dif_vis, sfc_alb_dif_nir,
       sfc_alb_dir, sfc_alb_dif);
 
+    // Setup some dummy aerosol optical properties
+    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
+    auto aer_tau_sw = real3d("aer_tau_sw", ncol, nlay, nswbands);
+    auto aer_ssa_sw = real3d("aer_ssa_sw", ncol, nlay, nswbands);
+    auto aer_asm_sw = real3d("aer_asm_sw", ncol, nlay, nswbands);
+    auto aer_tau_lw = real3d("aer_tau_lw", ncol, nlay, nlwbands);
+    parallel_for(Bounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        aer_tau_sw(icol,ilay,ibnd) = 0;
+        aer_ssa_sw(icol,ilay,ibnd) = 0;
+        aer_asm_sw(icol,ilay,ibnd) = 0;
+    });
+    parallel_for(Bounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        aer_tau_lw(icol,ilay,ibnd) = 0;
+    });
+
     // Run RRTMGP code on dummy atmosphere
     std::cout << "Run RRTMGP...\n";
     scream::rrtmgp::rrtmgp_main(
@@ -148,6 +163,8 @@ int main(int argc, char** argv) {
             p_lay, t_lay, p_lev, t_lev, gas_concs,
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei,
+            aer_tau_sw, aer_ssa_sw, aer_asm_sw,
+            aer_tau_lw,
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
@@ -201,6 +218,10 @@ int main(int argc, char** argv) {
     rel.deallocate();
     rei.deallocate();
     cld.deallocate();
+    aer_tau_sw.deallocate();
+    aer_ssa_sw.deallocate();
+    aer_asm_sw.deallocate();
+    aer_tau_lw.deallocate();
     yakl::finalize();
 
     return nerr != 0 ? 1 : 0;
