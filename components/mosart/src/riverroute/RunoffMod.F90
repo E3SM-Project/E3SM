@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval, heatflag
+  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -77,6 +77,17 @@ module RunoffMod
      real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
      real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
      real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit)
+     real(r8), pointer :: concDIN(:)       ! Concentration of river outflow DIN (kg-N/kg-water)
+     real(r8), pointer :: concDIP(:)       ! Concentration of river outflow DIP (kg-P/kg-water)
+     real(r8), pointer :: concDON(:)       ! Concentration of river outflow DON (kg-N/kg-water)
+     real(r8), pointer :: concDOP(:)       ! Concentration of river outflow DOP (kg-P/kg-water)
+     real(r8), pointer :: concDOC(:)       ! Concentration of river outflow DOC (kg-C/kg-water)
+     real(r8), pointer :: concPP(:)        ! Concentration of river outflow PP (kg-P/kg-water)
+     real(r8), pointer :: concDSi(:)       ! Concentration of river outflow DSi (kg-Si/kg-water)
+     real(r8), pointer :: concPOC(:)       ! Concentration of river outflow POC (kg-C/kg-water)
+     real(r8), pointer :: concPN(:)        ! Concentration of river outflow PN (kg-N/kg-water)
+     real(r8), pointer :: concDIC(:)       ! Concentration of river outflow DIC (kg-C/kg-water)
+     real(r8), pointer :: concFe(:)        ! Concentration of river outflow Fe (kg-Fe/kg-water)
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
@@ -570,6 +581,25 @@ contains
        call shr_sys_abort
     end if
 
+    if (data_bgc_fluxes_to_ocean_flag) then
+      allocate(rtmCTL%concDIN(begr:endr),           &
+               rtmCTL%concDIP(begr:endr),           &
+               rtmCTL%concDON(begr:endr),           &
+               rtmCTL%concDOP(begr:endr),           &
+               rtmCTL%concDOC(begr:endr),           &
+               rtmCTL%concPP(begr:endr),            &
+               rtmCTL%concDSi(begr:endr),           &
+               rtmCTL%concPOC(begr:endr),           &
+               rtmCTL%concPN(begr:endr),            &
+               rtmCTL%concDIC(begr:endr),           &
+               rtmCTL%concFe(begr:endr),            &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of BGC local arrays'
+         call shr_sys_abort
+      end if
+    end if
+
     rtmCTL%iDown(:) = 0
     rtmCTL%iUp(:,:) = 0
     rtmCTL%nUp(:) = 0
@@ -594,6 +624,19 @@ contains
     rtmCTL%qgwl(:,:)       = 0._r8
     rtmCTL%qdto(:,:)       = 0._r8
     rtmCTL%qdem(:,:)       = 0._r8
+    if (data_bgc_fluxes_to_ocean_flag) then
+      rtmCTL%concDIN(:)      = 0._r8
+      rtmCTL%concDIP(:)      = 0._r8
+      rtmCTL%concDON(:)      = 0._r8
+      rtmCTL%concDOP(:)      = 0._r8
+      rtmCTL%concDOC(:)      = 0._r8
+      rtmCTL%concPP(:)       = 0._r8
+      rtmCTL%concDSi(:)      = 0._r8
+      rtmCTL%concPOC(:)      = 0._r8
+      rtmCTL%concPN(:)       = 0._r8
+      rtmCTL%concDIC(:)      = 0._r8
+      rtmCTL%concFe(:)       = 0._r8
+    end if
     
     if (heatflag) then
       allocate(rtmCTL%Tqsur(begr:endr),                 &

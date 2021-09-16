@@ -66,6 +66,8 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_advection.F
   core_ocean/shared/mpas_ocn_tracer_advection_mono.F
   core_ocean/shared/mpas_ocn_tracer_advection_std.F
+  core_ocean/shared/mpas_ocn_tracer_advection_vert.F
+  core_ocean/shared/mpas_ocn_tracer_advection_shared.F
   core_ocean/shared/mpas_ocn_tracer_nonlocalflux.F
   core_ocean/shared/mpas_ocn_tracer_short_wave_absorption.F
   core_ocean/shared/mpas_ocn_tracer_short_wave_absorption_jerlov.F

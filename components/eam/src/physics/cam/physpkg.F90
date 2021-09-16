@@ -354,7 +354,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     use dycore,              only: dycore_is
     use polar_avg,           only: polar_average
     use short_lived_species, only: initialize_short_lived_species
-    use comsrf,              only: landm, sgh, sgh30
+    use comsrf,              only: sgh, sgh30
     use cam_control_mod,     only: aqua_planet
 
     type(cam_out_t),     intent(inout) :: cam_out(begchunk:endchunk)
@@ -390,8 +390,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     if(aqua_planet) then
        sgh = 0._r8
        sgh30 = 0._r8
-       landm = 0._r8
-       if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
+       if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30 initialized to 0.'
     else
        if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
                                       &sgh, sgh30, land m using data from file.'
@@ -407,11 +406,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
           if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
           sgh30 = sgh
        end if
-
-       call infld('LANDM_COSLAT', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-            landm, found, gridname='physgrid')
-
-       if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
     end if
 
     allocate(tptr(1:pcols,begchunk:endchunk))
@@ -942,7 +936,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (defined E3SM_SCM_REPLAY )
     use cam_history,    only: outfld
 #endif
-    use comsrf,         only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
+    use comsrf,         only: fsns, fsnt, flns, sgh, sgh30, flnt, fsds
     use cam_abortutils,     only: endrun
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
@@ -1051,8 +1045,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
 
-          call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
-                       phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
+          call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c), &
+                       phys_tend(c), phys_buffer_chunk,  fsds(1,c),                       &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
           call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
@@ -1835,9 +1829,9 @@ end if ! l_ac_energy_chk
 
 end subroutine tphysac
 
-subroutine tphysbc (ztodt,               &
+subroutine tphysbc (ztodt,                          &
        fsns,    fsnt,    flns,    flnt,    state,   &
-       tend,    pbuf,     fsds,    landm,            &
+       tend,    pbuf,     fsds,                     &
        sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
@@ -1918,7 +1912,6 @@ subroutine tphysbc (ztodt,               &
     real(r8), intent(inout) :: flns(pcols)                   ! Srf longwave cooling (up-down) flux
     real(r8), intent(inout) :: flnt(pcols)                   ! Net outgoing lw flux at model top
     real(r8), intent(inout) :: fsds(pcols)                   ! Surface solar down flux
-    real(r8), intent(in) :: landm(pcols)                     ! land fraction ramp
     real(r8), intent(in) :: sgh(pcols)                       ! Std. deviation of orography
     real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
 
@@ -2387,7 +2380,7 @@ end if
 
        call stratiform_tend(state, ptend, pbuf, ztodt, &
             cam_in%icefrac, cam_in%landfrac, cam_in%ocnfrac, &
-            landm, cam_in%snowhland, & ! sediment
+            cam_in%snowhland, & ! sediment
             dlf, dlf2, & ! detrain
             rliq  , & ! check energy after detrain
             cmfmc,   cmfmc2, &
@@ -2692,7 +2685,7 @@ if (l_rad) then
 
     call radiation_tend(state,ptend, pbuf, &
          cam_out, cam_in, &
-         cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
+         cam_in%landfrac, cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
          fsds, net_flx,is_cmip6_volc, ztodt)
 
