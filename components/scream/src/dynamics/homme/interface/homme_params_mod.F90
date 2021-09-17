@@ -21,6 +21,7 @@ module homme_params_mod
   use dimensions_mod, only: &
     ne,                     &
     np,                     &
+    qsize_d,                &
     npart
 
   use cube_mod, only: rotate_grid
