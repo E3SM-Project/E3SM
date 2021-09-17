@@ -784,6 +784,7 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'temperature')
       call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
+      call mpas_dmpar_field_halo_exch(domain, 'damage')
 
       call mpas_timer_stop("halo updates")
 
