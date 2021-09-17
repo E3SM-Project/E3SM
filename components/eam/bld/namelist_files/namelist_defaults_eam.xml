@@ -71,6 +71,11 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/eam_i_rcemip_ne30np4_L60_c20210917.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="60"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/eam_i_rcemip_ne45np4_L60_c20210917.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne30x3"  nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne4x6"   nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne4x5"   nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+
+
 <!-- E3SM L72 Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
@@ -701,6 +706,8 @@
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
 
 <drydep_srf_file hgrid="ne0np4_cubeface_grad_ne30x3">DUMMY</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_cubeface_grad_ne4x6">DUMMY</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_cubeface_grad_ne4x5">DUMMY</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
@@ -1238,6 +1245,8 @@
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 <se_ne hgrid="ne0np4_cubeface_grad_ne30x3" > 0 </se_ne>
+<se_ne hgrid="ne0np4_cubeface_grad_ne4x6" > 0 </se_ne>
+<se_ne hgrid="ne0np4_cubeface_grad_ne4x5" > 0 </se_ne>
 
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
@@ -1250,6 +1259,8 @@
 <mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
 
 <mesh_file hgrid="ne0np4_cubeface_grad_ne30x3" >atm/cam/inic/homme/ne0np4_cubeface_grad_ne30x3.g</mesh_file>
+<mesh_file hgrid="ne0np4_cubeface_grad_ne4x6"  >atm/cam/inic/homme/ne0np4_cubeface_grad_ne4x6.g</mesh_file>
+<mesh_file hgrid="ne0np4_cubeface_grad_ne4x5"  >atm/cam/inic/homme/ne0np4_cubeface_grad_ne4x5.g</mesh_file>
 
 <!-- viscosity  -->
 
@@ -1267,6 +1278,8 @@
 <nu_top dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 1e5 </nu_top>
 
 +<nu_top hgrid="ne0np4_cubeface_grad_ne30x3">1e5</nu_top>
++<nu_top hgrid="ne0np4_cubeface_grad_ne4x6" >1e5</nu_top>
++<nu_top hgrid="ne0np4_cubeface_grad_ne4x5" >1e5</nu_top>
 
 
 <!-- tensor hyperviscsoity -->
@@ -1311,7 +1324,9 @@
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 75 </se_tstep>
 
-<se_tstep hgrid="ne0np4_cubeface_grad_ne30x3"> 75 </se_tstep>
+<se_tstep hgrid="ne0np4_cubeface_grad_ne30x3"> 60 </se_tstep>
+<se_tstep hgrid="ne0np4_cubeface_grad_ne4x6" > 60 </se_tstep>
+<se_tstep hgrid="ne0np4_cubeface_grad_ne4x5" > 60 </se_tstep>
 
 
 <se_tstep            dyn_target="theta-l" hgrid="ne240np4"> 37.5 </se_tstep>
@@ -1337,7 +1352,9 @@
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_exan4v1"      > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_twpx4v1"      > 3 </hypervis_subcycle_tom>
 
-<hypervis_subcycle_tom hgrid="ne0np4_cubeface_grad_ne30x3" > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom hgrid="ne0np4_cubeface_grad_ne30x3" > 1 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom hgrid="ne0np4_cubeface_grad_ne4x6"  > 1 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom hgrid="ne0np4_cubeface_grad_ne4x5"  > 1 </hypervis_subcycle_tom>
 
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
@@ -1345,7 +1362,9 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
-<hypervis_subcycle hgrid="ne0np4_cubeface_grad_ne30x3" > 2 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_cubeface_grad_ne30x3" > 1 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_cubeface_grad_ne4x6"  > 1 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_cubeface_grad_ne4x5"  > 1 </hypervis_subcycle>
 
 
 <!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
@@ -1354,6 +1373,19 @@
 
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
+
+
+<dt_remap_factor     hgrid="ne0np4_cubeface_grad_ne30x3"> 1 </dt_remap_factor>
+<dt_tracer_factor    hgrid="ne0np4_cubeface_grad_ne30x3"> 5 </dt_tracer_factor>
+<hypervis_subcycle_q hgrid="ne0np4_cubeface_grad_ne30x3"> 5 </hypervis_subcycle_q>
+
+<dt_remap_factor     hgrid="ne0np4_cubeface_grad_ne4x6"> 1 </dt_remap_factor>
+<dt_tracer_factor    hgrid="ne0np4_cubeface_grad_ne4x6"> 5 </dt_tracer_factor>
+<hypervis_subcycle_q hgrid="ne0np4_cubeface_grad_ne4x6"> 5 </hypervis_subcycle_q>
+
+<dt_remap_factor     hgrid="ne0np4_cubeface_grad_ne4x5"> 1 </dt_remap_factor>
+<dt_tracer_factor    hgrid="ne0np4_cubeface_grad_ne4x5"> 5 </dt_tracer_factor>
+<hypervis_subcycle_q hgrid="ne0np4_cubeface_grad_ne4x5"> 5 </hypervis_subcycle_q>
 
 
 <!-- ================================================================== -->

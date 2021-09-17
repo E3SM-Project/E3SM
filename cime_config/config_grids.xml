@@ -954,6 +954,26 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne0_cubeface_grad_ne4x6pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_cubeface_grad_ne4x6.pg2</grid>
+      <grid name="lnd">ne0np4_cubeface_grad_ne4x6.pg2</grid>
+      <grid name="ocnice">ne0np4_cubeface_grad_ne4x6.pg2</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne0_cubeface_grad_ne4x5pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_cubeface_grad_ne4x5.pg2</grid>
+      <grid name="lnd">ne0np4_cubeface_grad_ne4x5.pg2</grid>
+      <grid name="ocnice">ne0np4_cubeface_grad_ne4x5.pg2</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1_r0125_oRRS15to5">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
@@ -2733,6 +2753,26 @@
       <!-- <file grid="ice|ocn" mask="oEC60to30v3">/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne30x3pg2_gx1v6.210907.nc</file> -->
       <file grid="atm|lnd" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.lnd.RRM_cubeface_grad_ne30x3pg2_gx1v6.210907.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne30x3pg2_gx1v6.210907.nc</file>
+      <desc>regional refined cube face:</desc>
+    </domain>
+
+    <domain name="ne0np4_cubeface_grad_ne4x6.pg2">
+      <nx>31304</nx>
+      <ny>1</ny>
+      <!-- <file grid="atm|lnd" mask="oEC60to30v3">/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files/domain.lnd.RRM_cubeface_grad_ne4x6pg2_gx1v6.210916.nc</file> -->
+      <!-- <file grid="ice|ocn" mask="oEC60to30v3">/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne4x6pg2_gx1v6.210916.nc</file> -->
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.lnd.RRM_cubeface_grad_ne4x6pg2_gx1v6.210916.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne4x6pg2_gx1v6.210916.nc</file>
+      <desc>regional refined cube face:</desc>
+    </domain>
+
+    <domain name="ne0np4_cubeface_grad_ne4x5.pg2">
+      <nx>12944</nx>
+      <ny>1</ny>
+      <!-- <file grid="atm|lnd" mask="oEC60to30v3">/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files/domain.lnd.RRM_cubeface_grad_ne4x5pg2_gx1v6.210916.nc</file> -->
+      <!-- <file grid="ice|ocn" mask="oEC60to30v3">/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne4x5pg2_gx1v6.210916.nc</file> -->
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.lnd.RRM_cubeface_grad_ne4x5pg2_gx1v6.210916.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cscratch1/sd/whannah/e3sm_scratch/init_files/domain.ocn.RRM_cubeface_grad_ne4x5pg2_gx1v6.210916.nc</file>
       <desc>regional refined cube face:</desc>
     </domain>
 

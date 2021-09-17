@@ -204,8 +204,13 @@ void pre_timeloop() {
 
   if (crm_dx_scale>0){
     parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {
-      dx(icrm) = parent_dx(icrm)*crm_dx_scale;
-      dy(icrm) = parent_dx(icrm)*crm_dx_scale;
+      real scaled_dx = parent_dx(icrm)*crm_dx_scale;
+      // enforce max grid spacing
+      if (scaled_dx>2000) { scaled_dx = 2000.; }
+      // if (scaled_dx< 200) { scaled_dx = 200.; }
+      dx(icrm) = scaled_dx;
+      dy(icrm) = scaled_dx;
+
     });
   } else {
     parallel_for( SimpleBounds<1>(ncrms) , YAKL_LAMBDA (int icrm) {

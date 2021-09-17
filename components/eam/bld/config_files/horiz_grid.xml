@@ -81,5 +81,7 @@
 <horiz_grid dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" ncol="105707" csne="0" csnp="4" npg="0" />
 
 <horiz_grid dyn="se" hgrid="ne0np4_cubeface_grad_ne30x3.pg2"    ncol="72628"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_cubeface_grad_ne4x6.pg2"     ncol="31304"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_cubeface_grad_ne4x5.pg2"     ncol="12944"  csne="0" csnp="4" npg="2" />
 
 </config_horiz_grid>
