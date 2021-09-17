@@ -2921,6 +2921,15 @@ module li_calving
             ! always set the damage at the first floating cells to the Nye value
         endif
 
+        ! Limit range of values again after doing extrapolation
+        where (damage < 0.0_RKIND)
+            damage = 0.0_RKIND
+        end where
+
+        where (damage > 1.0_RKIND)
+            damage = 1.0_RKIND
+        end where
+
         if (config_damage_rheology_coupling) then
             do iCell = 1, nCells
                 if (li_mask_is_floating_ice(cellMask(iCell))) then
