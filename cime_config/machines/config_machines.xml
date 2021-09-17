@@ -3055,7 +3055,7 @@
         <command name="load">nvhpc/21.3</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">cuda/10.1.243</command>
+        <command name="load">cuda/11.0.3</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">cuda/11.0.3</command>

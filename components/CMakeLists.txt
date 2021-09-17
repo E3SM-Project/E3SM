@@ -66,11 +66,14 @@ endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_scream.cmake)
 
+SET( CMAKE_BUILD_TYPE Debug ... FORCE )
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
 # Do any MPAS builds first since they manage their own flags
 build_mpas_models()
+build_scream()
 
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
@@ -96,3 +99,4 @@ foreach(COMP_NAME IN LISTS COMP_NAMES)
 endforeach()
 
 add_subdirectory(cmake/cpl)
+

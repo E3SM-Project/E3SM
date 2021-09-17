@@ -1768,6 +1768,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
   <CPPDEFS>
+    <append> -DTHRUST_IGNORE_CUB_VERSION_CHECK  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
     <append > -DTHRUST_IGNORE_CUB_VERSION_CHECK </append>
   </CPPDEFS>
