@@ -2605,7 +2605,7 @@ module li_calving
          call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
          call mpas_pool_get_array(velocityPool, 'principalStrainRateRatio', principalStrainRateRatio)
 
-         where (thickness == 0.0_RKIND)
+         where ( thickness == 0.0_RKIND .or. tauMax == 0.0_RKIND )
              principalStrainRateRatio = 0.0_RKIND
              s0 = 0.0_RKIND
              nstar = 0.0_RKIND
