@@ -226,11 +226,10 @@ if __name__ == "__main__":
     # Change <username>
 
     # Results will be at https://compy-dtn.pnl.gov/<username>/v2_5_0_all_sets/viewer/
-    # run_compy('/compyfs/www/<username>/')
+    # run_compy("/compyfs/www/<username>/")
 
     # Results will be at https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/<username>/v2_5_0_all_sets/viewer/
-    # run_lcrc('/lcrc/group/e3sm/public_html/diagnostic_output/<username>/')
+    run_lcrc("/lcrc/group/e3sm/public_html/diagnostic_output/<username>/")
 
     # Results will be at https://portal.nersc.gov/project/e3sm/<username>/v2_5_0_all_sets/viewer/
     # run_nersc("/global/cfs/cdirs/e3sm/www/<username>/")
-    run_nersc("/global/cfs/cdirs/e3sm/www/chengzhu/v2_5_0")

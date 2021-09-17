@@ -31,6 +31,7 @@ requirements:
     - netcdf4
     - matplotlib
     - cartopy
+    - cartopy_offlinedata
     - beautifulsoup4
     - lxml
     - dask
