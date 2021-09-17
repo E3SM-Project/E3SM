@@ -81,7 +81,7 @@ contains
     logical                 , intent(in)    :: lnd_c2_iac ! .true.  => lnd to iac coupling on
     !
     ! Local Variables
-    integer                  :: lsize_z, lsize_l
+    integer                  :: lsize_z
     integer                  :: eli,erl
     logical                  :: samegrid_lz   ! samegrid land and iac
     logical                  :: lnd_present   ! .true. => land is present
@@ -90,7 +90,7 @@ contains
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: iac_gnam      ! iac grid
-    type(mct_avect), pointer :: x2z_zx, l2x_lx
+    type(mct_avect), pointer :: z2x_zx
     character(*), parameter  :: subname = '(prep_iac_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -100,26 +100,40 @@ contains
          lnd_gnam=lnd_gnam,             &
          iac_gnam=iac_gnam)
 
-    allocate(mapper_Sl2z)
+
+    if (iac_present) then
+       allocate(mapper_Sl2z)
+
+       z2x_zx => component_get_c2x_cx(iac(1))
+       lsize_z = mct_aVect_lsize(z2x_zx)
+
+       allocate(l2x_zx(num_inst_lnd))
+       do eli = 1,num_inst_lnd
+          call mct_avect_init(l2x_zx(eli), rList=seq_flds_l2x_fields, lsize=lsize_z)
+          call mct_avect_zero(l2x_zx(eli))
+       end do
+    end if
+
     if (iac_present .and. lnd_present) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
        ! iac imports
-       x2z_zx => component_get_x2c_cx(iac(1))
-       lsize_z = mct_aVect_lsize(x2z_zx)
+!       x2z_zx => component_get_x2c_cx(iac(1))
+!       lsize_z = mct_aVect_lsize(x2z_zx)
 
        ! lnd exports
-       l2x_lx => component_get_c2x_cx(lnd(1))
-       lsize_l = mct_aVect_lsize(l2x_lx)
+!       l2x_lx => component_get_c2x_cx(lnd(1))
+!       lsize_l = mct_aVect_lsize(l2x_lx)
 
        ! Now create into our accumulator avect (on the land grid,
        ! still), using shared fields in both import and export avects
-       allocate(l2zacc_lx(num_inst_lnd))
-       do erl = 1,num_inst_lnd
-          call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zacc_lx(erl), lsize=lsize_l)
-          call mct_aVect_zero(l2zacc_lx(erl))       
-       end do
+!       allocate(l2zacc_lx(num_inst_lnd))
+
+ !      do erl = 1,num_inst_lnd
+ !         call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zacc_lx(erl), lsize=lsize_l)
+ !         call mct_aVect_zero(l2zacc_lx(erl))       
+  !     end do
 
        samegrid_lz = .true.
        if (trim(lnd_gnam) /= trim(iac_gnam)) samegrid_lz = .false.       
@@ -129,6 +143,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sl2z'
           end if
+
           call seq_map_init_rcfile(mapper_Sl2z, lnd(1), iac(1), &
                'seq_maps.rc','lnd2iac_smapname:','lnd2iac_smaptype:',samegrid_lz, &
                string='mapper_Sl2z initialization',esmf_map=esmf_map_flag)
@@ -219,11 +234,9 @@ contains
     call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     do ezi = 1,num_inst_iac
        x2z_zx => component_get_x2c_cx(iac(ezi))  ! This is actually modifying x2z_zx
-       ! KVC: Temporarily disabling because of errors
-       ! call prep_iac_merge(l2x_zx(ezi), x2z_zx)
+       call prep_iac_merge(l2x_zx(ezi), x2z_zx)
     end do
     call t_drvstopf (trim(timer_mrg))
-
 
   end subroutine prep_iac_mrg
 
@@ -259,14 +272,11 @@ contains
     mdx=1
 
     do i = 1, nflds
-
        ! Field i name
        call seq_flds_getField(field,i,seq_flds_x2z_states)
-
        ! Field i indices in input and output avects
        index_l2x = mct_aVect_indexRA(l2x_z, trim(field))
        index_x2z = mct_aVect_indexRA(x2z_z, trim(field))
-
        if (first_time) then
           mrgstr(mdx) = subname//'x2z%'//trim(field)//' =' //&
                ' = l2z%'//trim(field)
@@ -277,7 +287,6 @@ contains
        do n = 1, lsize
           x2z_z%rAttr(index_x2z,n) = l2x_z%rAttr(index_l2x,n)
        end do
-
        mdx = mdx+1
     end do
 
@@ -316,7 +325,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
        l2x_lx => component_get_c2x_cx(lnd(eli))
-       call seq_map_map(mapper_Sl2z, l2x_lx, l2x_zx(eli), norm=.true.)
+       call seq_map_map(mapper_Sl2z, l2x_lx, l2x_zx(eli), fldlist=seq_flds_l2x_states, norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
 

@@ -120,6 +120,7 @@ contains
          ocn_present=ocn_present,       &
          ice_present=ice_present,       &
          lnd_present=lnd_present,       &
+         iac_present=iac_present,       &
          atm_gnam=atm_gnam,             &
          ocn_gnam=ocn_gnam,             &
          lnd_gnam=lnd_gnam,             &
@@ -241,6 +242,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fz2a'
           end if
+
           call seq_map_init_rcfile(mapper_Fz2a, iac(1), atm(1), &
                'seq_maps.rc','iac2atm_fmapname:','iac2atm_fmaptype:',samegrid_az, &
                'mapper_Fo2a initialization',esmf_map_flag)

@@ -107,13 +107,14 @@ contains
     !
     ! Local Variables
     integer                  :: lsize_l
-    integer                  :: eai, eri, egi
+    integer                  :: eai, eri, egi, ezi
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
     logical                  :: samegrid_lg   ! samegrid land and glc
     logical                  :: samegrid_lz   ! samegrid land and iac
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
+    logical                  :: iac_present   ! .true. => iac is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
@@ -128,6 +129,7 @@ contains
     call seq_infodata_getData(infodata, &
          esmf_map_flag=esmf_map_flag,   &
          lnd_present=lnd_present,       &
+         iac_present=iac_present,       &
          atm_gnam=atm_gnam,             &
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
@@ -164,6 +166,14 @@ contains
           call mct_aVect_init(g2x_lx(egi), rList=seq_flds_x2l_fields_from_glc, lsize=lsize_l)
           call mct_aVect_zero(g2x_lx(egi))
        end do
+
+       if (iac_present) then
+          allocate(z2x_lx(num_inst_iac))
+          do ezi = 1,num_inst_iac
+             call mct_avect_init(z2x_lx(ezi), rList=seq_flds_z2x_fields, lsize=lsize_l)
+             call mct_avect_zero(z2x_lx(ezi))
+          end do
+       end if
 
        samegrid_al = .true.
        samegrid_lr = .true.
