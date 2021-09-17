@@ -937,8 +937,14 @@ module li_advection
       character (len=StrKIND), pointer :: &
            config_thermal_solver
 
+      logical, pointer :: &
+           config_damage_advection
+
       integer, pointer :: &
            nCells                     ! number of cells
+
+      integer, pointer :: &
+           nVertLevels      ! number of vertical layers
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
@@ -955,19 +961,24 @@ module li_advection
       real (kind=RKIND), dimension(:), pointer :: &
            thickness                  ! ice thickness
 
+      real (kind=RKIND), dimension(:), pointer :: &
+           damage ! damage
+
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
 
-      integer :: iCell, iTracer
+      integer :: iCell, iTracer, k
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -978,6 +989,7 @@ module li_advection
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_damage_advection', config_damage_advection)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       ! initialize
@@ -1037,7 +1049,23 @@ module li_advection
 
       endif
 
-      ! Note: Other tracers (e.g., ice age or damage) can be added here as needed.
+      if (config_damage_advection) then
+
+         ! increment the tracer index
+         iTracer = iTracer + 1
+
+         ! copy 2d damage to all vertical levels in the tracer array
+         do k = 1, nVertLevels
+            advectedTracers(iTracer,k,:) = damage(:)
+         enddo
+
+         ! set damage of new ice at upper and lower surfaces to 0
+         surfaceTracers(iTracer,:) = 0.0_RKIND
+         basalTracers(iTracer,:) = 0.0_RKIND
+
+      endif
+
+      ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
 
     end subroutine tracer_setup
@@ -1097,6 +1125,9 @@ module li_advection
       character (len=StrKIND), pointer :: &
            config_thermal_solver
 
+      logical, pointer :: &
+           config_damage_advection
+
       integer, pointer :: &
            nCellsSolve                ! number of locally owned cells
 
@@ -1106,10 +1137,15 @@ module li_advection
       real (kind=RKIND), dimension(:), pointer :: &
            thickness                  ! ice thickness
 
+      real (kind=RKIND), dimension(:), pointer :: &
+           damage ! damage
+
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
            waterFrac,               & ! water fraction
            enthalpy                   ! interior ice enthalpy
+
+      real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
 
       integer :: iCell, iTracer
 
@@ -1118,9 +1154,11 @@ module li_advection
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1129,6 +1167,7 @@ module li_advection
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_damage_advection', config_damage_advection)
 
       iTracer = 1
 
@@ -1157,7 +1196,14 @@ module li_advection
 
       endif
 
-      ! Note: Other tracers (e.g., ice age or damage) can be added here as needed.
+      if (config_damage_advection) then
+         iTracer = iTracer + 1
+         do iCell = 1, nCellsSolve
+            damage(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
+         enddo
+      endif
+
+      ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
 
     end subroutine tracer_finish
