@@ -67,7 +67,6 @@
       <value compset="_EAM%MMF.*-AQUA" >-aquaplanet </value>
       <value compset="_EAM%MMF.*-RCE"  >-aquaplanet -rce </value>
       <value compset="_EAM%MMF.*-SCM"  >-scam </value>
-
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>

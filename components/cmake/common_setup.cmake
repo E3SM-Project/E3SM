@@ -32,7 +32,7 @@ endif()
 string(FIND "${CAM_CONFIG_OPTS}" "-crm samxx" HAS_SAMXX)
 if (NOT HAS_SAMXX EQUAL -1)
   # The following is for the SAMXX code:
-  set(USE_SAMXX TRUE)
+  set(USE_SAMXX TRUE CACHE INTERNAL "use samxx")
 endif()
 
 string(FIND "${CAM_CONFIG_OPTS}" "-rrtmgpxx" HAS_RRTMGPXX)
