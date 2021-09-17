@@ -498,13 +498,13 @@
        <directive>-P {{ project }}</directive>
      </directives>
      <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$ENV{SMT_MODE}</directive>
+       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
      </directives>
      <directives compiler=".*gpu">
-       <directive>-alloc_flags "gpumps smt$ENV{SMT_MODE}"</directive>
+       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" default="true">batch</queue>
+       <queue walltimemax="02:00" strict="true" default="true">batch</queue>
      </queues>
    </batch_system>
 
@@ -513,13 +513,14 @@
        <directive>-P {{ project }}</directive>
      </directives>
      <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$ENV{SMT_MODE}</directive>
+       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
      </directives>
      <directives compiler=".*gpu">
-       <directive>-alloc_flags "gpumps smt$ENV{SMT_MODE}"</directive>
+       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" default="true" strict="true">batch</queue>
+       <queue walltimemax="02:00" default="true" strict="true" nodemin="1" nodemax="2">batch</queue>
+       <queue walltimemax="01:00" strict="true" nodemin="3" nodemax="16">batch</queue>
      </queues>
    </batch_system>
 

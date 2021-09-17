@@ -1111,7 +1111,7 @@ contains
    ! a lot more GPU-friendly, but we still need to refactor the aerosol optics
    ! code to accomplish this, which is a big task.
    subroutine radiation_tend(state_in,ptend,    pbuf,          cam_out, cam_in,  &
-                             landfrac,landm,    icefrac,       snowh,            &
+                             landfrac,icefrac,  snowh,                           &
                              fsns,    fsnt,     flns,          flnt,             &
                              fsds,    net_flux, is_cmip6_volc, dt,               &
                              clear_rh                                            )
@@ -1198,7 +1198,6 @@ contains
       ! These are not used anymore and exist only because the radiation call is
       ! inflexible
       real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
-      real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
       real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
       real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
 
@@ -1438,7 +1437,7 @@ contains
 
                ! Calculate effective radius for optics used with single-moment microphysics
                if (use_MMF .and. (trim(MMF_microphysics_scheme) .eq. 'sam1mom')) then 
-                  call cldefr(state%lchnk, ncol, landfrac, state%t, rel, rei, state%ps, state%pmid, landm, icefrac, snowh)
+                  call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
                end if
 
                ! Get albedo. This uses CAM routines internally and just provides a

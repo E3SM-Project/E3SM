@@ -673,6 +673,8 @@ ifneq (, $(shell ls $(LAPACK)/liblapack.*))
 	LIBS += -L$(LAPACK)
 else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
 	LIBS += -L$(LAPACK)/lib
+else ifneq (, $(shell ls $(LAPACK)/lib64/liblapack.*))
+	LIBS += -L$(LAPACK)/lib64
 else
 $(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)
 endif
