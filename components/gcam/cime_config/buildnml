@@ -54,7 +54,7 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     # Have to update this when we build grids more
-    iac_grid_supported = ("null")
+    iac_grid_supported = ("0.9x1.25", "1.9x2.5", "null")
     expect(iac_grid in iac_grid_supported, "IAC_GRID '{}' is not supported in GCAM. Choose from: {}".format(iac_grid,iac_grid_supported))
 
     #--------------------------------------------------------------------
