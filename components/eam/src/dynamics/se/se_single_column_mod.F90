@@ -360,15 +360,13 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
       ! If running in a doubly periodic CRM mode, then nudge the domain
       !   based on the domain mean and observed quantities of T, Q, u, and v
-      call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
-                                 nelemd_todo,np_todo,dt)
+      call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
     endif
 
 end subroutine apply_SC_forcing
 
 
-subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
-                                 nelemd_todo,np_todo,dt)
+subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
 
   ! Subroutine intended to nudge a uniformly forced grid with heterogenous
   !   surface (i.e. doubly-periodic SCREAM).
@@ -389,12 +387,12 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
   type(hybrid_t),             intent(in) :: hybrid
   integer, intent(in) :: nelemd_todo, np_todo, t1
   real (kind=real_kind), intent(in):: dt
-  real (kind=real_kind), intent(in):: dp(np,np,nlev), exner(np,np,nlev)
 
   ! Local variables
+  real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
   real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
   real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
-  real (kind=real_kind) :: temperature(np,np,nlev), Rstar(np,np,nlev)
+  real (kind=real_kind), dimension(np,np,nlev) :: temperature, Rstar, pnh, exner, dp
   integer :: ie, i, j, k
 
   ! Compute pressure for IOP observations
@@ -466,9 +464,14 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
   ! Now apply the nudging tendency for each variable
   do ie=1,nelemd_todo
 #ifdef MODEL_THETA_L
+    dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
     ! Get updated Rstar to convert to density weighted potential temperature
     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+    ! Get updated exner
+    call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
+           dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
 #endif
+    call get_temperature(elem(ie),temperature,hvcoord,t1)
     do j=1,np_todo
       do i=1,np_todo
         do k=1,nlev
