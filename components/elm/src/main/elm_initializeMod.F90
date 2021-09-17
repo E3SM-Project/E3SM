@@ -220,9 +220,10 @@ contains
           call shr_sys_flush(iulog)
        endif
        call surfrd_get_topo(ldomain, flndtopo)  
-    endif
+    endif    
     
-     ! === Get topography parameters for TOP solar radiation parameterization
+    
+    ! === Get topography parameters for TOP solar radiation parameterization
     if (fsurdat /= " " .and. use_top_solar_rad) then
        if (masterproc) then
           write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
@@ -231,7 +232,6 @@ contains
        call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
     endif
     ! === end 
-    
 
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
@@ -271,6 +271,7 @@ contains
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
+    
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     ! 

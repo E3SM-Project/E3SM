@@ -221,7 +221,7 @@ contains
        
        call ncd_io(ncid=ncid, varname= 'xc', flag='read', data=ldomain%lonc, &
             dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) call endrun( msg=' ERROR: xc NOT on file'//errMsg(__FILE__, __LINE__))
+            if (.not. readvar) call endrun( msg=' ERROR: xc NOT on file'//errMsg(__FILE__, __LINE__))
        
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
@@ -1294,6 +1294,7 @@ contains
     call ncd_pio_closefile(ncid)
 
   end subroutine surfrd_get_grid_conn
+
 
 !-----------------------------------------------------------------------
 !!! TOP solar radiation parameterization

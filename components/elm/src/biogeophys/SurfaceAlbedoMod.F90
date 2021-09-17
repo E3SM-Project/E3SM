@@ -1286,7 +1286,7 @@ contains
           ! because the product omega*betai, omega*betad is used in solution.
           ! Also, the transmittances and reflectances (tau, rho) are linear
           ! weights of leaf and stem values.
-          cosz = max(0.001_r8, coszen(p)) ! add by Dalei Hao
+          cosz = max(0.001_r8, coszen(p)) ! add by Dalei Hao for TOP
           
           omegal = rho(p,ib) + tau(p,ib)
           asu = 0.5_r8*omegal*gdir(p)/temp0(p) *temp2(p)
