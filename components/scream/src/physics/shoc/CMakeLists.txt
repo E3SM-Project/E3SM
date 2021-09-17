@@ -1,11 +1,3 @@
-set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
-list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-
-set(GENF90 ${CIMEROOT}/src/externals/genf90/genf90.pl)
-set(ENABLE_GENF90 True)
-include(genf90_utils)
-include(Sourcelist_utils)
-
 set(SHOC_SRCS
   shoc_f90.cpp
   shoc_functions_f90.cpp
@@ -72,7 +64,6 @@ endif()
 
 add_library(shoc ${SHOC_SRCS})
 target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-target_include_directories(shoc SYSTEM PUBLIC ${CIMEROOT}/src/share/include)
 set_target_properties(shoc PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(shoc physics_share scream_share)
 target_compile_options(shoc PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)

@@ -1,11 +1,3 @@
-set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
-list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-
-set(GENF90 ${CIMEROOT}/src/externals/genf90/genf90.pl)
-set(ENABLE_GENF90 True)
-include(genf90_utils)
-include(Sourcelist_utils)
-
 set(PHYSICS_SHARE_SRCS
   physics_share_f2c.F90
   physics_share.cpp
@@ -25,7 +17,6 @@ if (NOT CUDA_BUILD)
 endif()
 
 add_library(physics_share ${PHYSICS_SHARE_SRCS})
-target_include_directories(physics_share SYSTEM PUBLIC ${CIMEROOT}/src/share/include)
 set_target_properties(physics_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(physics_share scream_share)
 target_compile_options(physics_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
