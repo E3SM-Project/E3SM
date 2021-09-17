@@ -158,7 +158,7 @@ contains
          zStar, zC, zGamma,&! z coordinate combination for Jacobian
          rhoL, rhoR,       &! density neighbors for Jacobian
          TL, TR,           &! temperature neighbors for Jacobian
-         SL, SR             ! salinity neighbors for Jacobian
+         SL, SR, dqdza      ! salinity neighbors for Jacobian
 
       real (kind=RKIND), dimension(:), allocatable :: dqdz
 
@@ -254,7 +254,7 @@ contains
            allocate(dqdz(nVertLevels))
             !$omp parallel
             !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, dqdz)
-            do iEdge=1,nEdges
+            do iEdge=1,nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -331,7 +331,7 @@ contains
 
          !$omp parallel
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-         do iEdge=1,nEdges
+         do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -477,7 +477,7 @@ contains
          if(config_enable_nonhydrostatic_mode) then
             !$omp parallel
             !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-            do iEdge=1,nEdges
+            do iEdge=1,nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -643,7 +643,7 @@ contains
          if(config_enable_nonhydrostatic_mode) then
             !$omp parallel
             !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-            do iEdge=1,nEdges
+            do iEdge=1,nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                invdcEdge = 1.0_RKIND / dcEdge(iEdge)
@@ -714,7 +714,7 @@ contains
       if(config_use_constant_forced_pgf) then
          !$omp parallel
          !$omp do schedule(runtime) private(pGrad, k)
-         do iEdge=1,nEdges
+         do iEdge=1,nEdgesOwned
             pGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad

@@ -67,7 +67,7 @@ module ocn_vvel_advection
 
    subroutine ocn_vvel_advection_tend(verticalVelocity, normalThicknessFlux,       &
                                         layerThickness, layerThicknessEdge, dt, meshPool,          &
-                                        scratchPool, diagnosticsPool, tend)!{{{
+                                        tend)!{{{
 
       !*** Input/Output parameters
 
@@ -87,10 +87,6 @@ module ocn_vvel_advection
          dt                  !< [in] Time step
       type (mpas_pool_type), intent(in) :: &
          meshPool            !< [in] Mesh information
-      type (mpas_pool_type), intent(in) :: &
-         scratchPool         !< [in] Scratch fields
-      type (mpas_pool_type), intent(in) :: &
-         diagnosticsPool     !< [in] Diagnostic fields
 
       !*** Local variables
 

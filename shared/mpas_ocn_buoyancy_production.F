@@ -115,8 +115,8 @@ contains
       do iCell = 1, nCellsOwned
          do k=1,maxLevelCell(iCell)
             diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
-            buoyancyProduction = gravity*inSituThermalExpansionCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
-                                 gravity*inSituSalineContractionCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid
+            buoyancyProduction = gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
+                                 gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid
 
             tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction
             glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND)* &

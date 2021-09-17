@@ -26,6 +26,7 @@ module ocn_vvel_pgrad
    use mpas_pool_routines
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -72,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vvel_pgf_tend(meshPool, diagnosticsPool, pressure, tend, err)!{{{
+   subroutine ocn_vvel_pgf_tend(meshPool, pressure, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +85,7 @@ contains
          pressure    !< Input: pressure (hydrostatic + nonhydrostatic)
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool, diagnosticsPool          !< Input: mesh information
+         meshPool           !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -124,7 +125,6 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
       nCells = nCellsArray( 2 )
 

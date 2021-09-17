@@ -130,7 +130,7 @@ contains
 
       num_tracers = size(tracers, dim=1)
 
-     nCells = nCellsArray( 1 )
+     nCells = nCellsHalo( 1 )
       nEdges = nEdgesHalo(1)
 
       allocate(eddyDiff(nVertLevels,nEdges))

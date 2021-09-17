@@ -80,7 +80,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_tend(div, relVort, tend, err)!{{{
+   subroutine ocn_vel_hmix_tend(div, relVort, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -95,7 +95,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend            !< [inout] accumulated velocity tendency
+         tend,          &!< [inout] accumulated velocity tendency
+         viscosity
 
       !-----------------------------------------------------------------
       ! output variables

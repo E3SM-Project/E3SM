@@ -146,7 +146,7 @@ contains
                                      vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))
 
              ! div(h \kappa_2 \nabla \phi) at cell center
-             flux = eddyDiff2 * layerThicknessEdge(k, iEdge) * tke_turb_flux * r_tmp
+             flux = eddyDiff2 * layerThickEdge(k, iEdge) * tke_turb_flux * r_tmp
 
              tkeTend(k, iCell) = tkeTend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
@@ -173,7 +173,7 @@ contains
                         eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCell) + vertDiffTopOfCell(k+1,iCell))
                         tke_turb_flux = -tke(k,iCell) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
-                        flux = eddyDiff2 * layerThicknessEdge(k, iEdge) * tke_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
+                        flux = eddyDiff2 * layerThickEdge(k, iEdge) * tke_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
                         tkeTend(k, iCell) = tkeTend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
                      end if
@@ -333,7 +333,7 @@ contains
                                      vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))
 
              ! div(h \kappa_2 \nabla \phi) at cell center
-             flux = eddyDiff2 * layerThicknessEdge(k, iEdge) * glsPsi_turb_flux * r_tmp
+             flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * r_tmp
 
              glsPsiTend(k, iCell) = glsPsiTend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
@@ -361,7 +361,7 @@ contains
                         bcValue = 60.0*dynamicViscosity(k,iCell)/rho_sw/(c_psi2*distanceToBoundary(k,iCell))
                         glsPsi_turb_flux = -glsPsi(k,iCell) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
-                        flux = eddyDiff2 * layerThicknessEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
+                        flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
                         glsPsiTend(k, iCell) = glsPsiTend(k, iCell) - flux * invAreaCell
                      end if
@@ -383,7 +383,7 @@ contains
                         eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCell) + vertDiffTopOfCell(k+1,iCell))
                         glsPsi_turb_flux = -glsPsi(k,iCell) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
-                        flux = eddyDiff2 * layerThicknessEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
+                        flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
                         glsPsiTend(k, iCell) = glsPsiTend(k, iCell) - flux * invAreaCell
                      end if

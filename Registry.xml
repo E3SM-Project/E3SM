@@ -1147,14 +1147,6 @@
 		 description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
 		 possible_values=".true. or .false."
 	/>
-	<nml_option name="config_zonal_ssh_grad" type="real" default_value="0.0" units="m s^{-2}"
-	  description="constant zonal pressure gradient"
-	  possible_values="small in magnitude real numbers"
-	/>
-	<nml_option name="config_meridional_ssh_grad" type="real" default_value="0.0" units="m s^{-2}"
-	  description="constant meridional pressure gradient"
-	  possible_values="small in magnitude real numbers"
-	/>
 	</nml_record>
 	<nml_record name="eos">
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"

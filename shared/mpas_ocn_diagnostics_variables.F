@@ -211,6 +211,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: CGvec_z0,CGvec_z1 ,CGvec_zh0,CGvec_zh1
    real (kind=RKIND), dimension(:,:), pointer :: dynamicViscosity, uStar, yPlus
 
+   real (kind=RKIND), dimension(:,:), pointer :: nhPressureCorrection
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -496,6 +498,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
       call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
       call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
+
+      call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
 
     end subroutine ocn_diagnostics_variables_init!}}}
 

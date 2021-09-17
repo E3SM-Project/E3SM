@@ -86,13 +86,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          div,           &!< [in] velocity divergence
-         relVort,       &!< [in] relative vorticity
-         viscosity
+         relVort         !< [in] relative vorticity
       ! input /output variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend            !< [inout] accumulated velocity tendency
+         tend,          &!< [inout] accumulated velocity tendency
+         viscosity
 
       !-----------------------------------------------------------------
       ! output variables
@@ -135,12 +135,11 @@ contains
       !$acc    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
 #else
-      nEdges = nEdgesOwned
 
       if(config_use_two_equation_turbulence_model) then
          !$omp parallel
          !$omp do schedule(runtime) private(cell1, cell2, k)
-         do iEdge = 1, nEdges
+         do iEdge = 1, nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k = 1, maxLevelEdgeTop(iEdge)
@@ -152,7 +151,7 @@ contains
       else
          !$omp prallel
          !$omp do schedule(runtime) private(k)
-         do iEdge = 1, nEdges
+         do iEdge = 1, nEdgesOwned
             do k = 1, maxLevelEdgeTop(iEdge)
                viscosity(k,iEdge) = viscDel2 * meshScalingDel2(iEdge)
             end do

@@ -162,7 +162,7 @@ contains
      allocate(normalThicknessFlux(nVertLevels,nEdges))
      do iEdge=1,nEdges
         do k=1,nVertLevels
-           normalThicknessFlux(k,iEdge) = normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+           normalThicknessFlux(k,iEdge) = normalVelocity(k,iEdge)*layerThickEdge(k,iEdge)
         end do
      end do
 

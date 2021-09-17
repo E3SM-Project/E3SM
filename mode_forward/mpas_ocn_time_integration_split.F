@@ -209,7 +209,7 @@ module ocn_time_integration_split
          highFreqThicknessCur,        &! high frq thick at current time
          highFreqThicknessNew,        &! high frq thick at new     time
          lowFreqDivergenceCur,        &! low frq div    at current time
-         lowFreqDivergenceNew         &! low frq div    at new     time
+         lowFreqDivergenceNew,        &! low frq div    at new     time
          verticalVelocityCur,         &! vertical velocity at current time
          verticalVelocityNew,         &! vertical velocity at new time
          nonhydrostaticPressure,      &! nonhydro pressure at new time
@@ -249,7 +249,7 @@ module ocn_time_integration_split
          lowFreqDivergenceTend, &! thickness tendency for low freq
          layerThicknessTend,    &! main thickness tendency
          verticalVelocityTend,  &! vertical velocity tendency
-         tendglsPsiTend,        &! glsPsi tendency
+         tendglsPsi,        &! glsPsi tendency
          tendTKE                 ! tke tendency
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -259,6 +259,7 @@ module ocn_time_integration_split
       ! Forcing pool
       real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
 
+      type (dm_info) :: dminfo
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
@@ -1539,7 +1540,7 @@ module ocn_time_integration_split
          call mpas_timer_stop('se tracer tend')
 
          if(config_enable_nonhydrostatic_mode) call ocn_tend_vvel(tendPool, statePool, &
-                          forcingPool, diagnosticsPool, meshPool, 2, dt)
+                          forcingPool, meshPool, 2, dt)
 
 
          if(config_use_two_equation_turbulence_model) then
@@ -1999,15 +2000,15 @@ module ocn_time_integration_split
       ! add call to new nonhydro solve
       if(config_enable_nonhydrostatic_mode) then
          call ocn_nonhydrostatic_pressure_tend(normalVelocityNew, &
-              verticalVelocityNew, layerThicknessNew, layerThicknessEdge, &
+              verticalVelocityNew, layerThicknessNew, layerThickEdge, &
               nonHydrostaticPressure, dminfo % comm, dt)
          
          call mpas_timer_start('se NHpressure tend halo pressure')
          call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
          call mpas_timer_stop('se NHpressure tend halo pressure')
 
-         call ocn_nonhydrostatic_pressue_update_velocity(normalVelocityNew, &
-              verticalVelocityNew, layerThicknessNew, layerThicknessEdge, &
+         call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, &
+              verticalVelocityNew, layerThicknessNew, layerThickEdge, &
               nonhydrostaticPressure, nonhydrostaticPressureOld, &
               nhPressureCorrection, dt)
       end if

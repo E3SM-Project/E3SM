@@ -122,7 +122,8 @@ contains
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
          invLength,    &! temp variable for 1/dcedge
-         edgeWeight     ! weight for summing over edges
+         edgeWeight,   &! weight for summing over edges
+         wav
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
          qArr,         &! temporary vorticity array
@@ -255,7 +256,7 @@ contains
         !$omp parallel
         !$omp do schedule(runtime) &
         !$omp private(cell1, cell2, wav)
-        do iEdge = 1, nEdges
+        do iEdge = 1, nEdgesAll
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
 

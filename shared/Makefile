@@ -155,7 +155,7 @@ mpas_ocn_vel_hadv_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vvel_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vvel_pgf.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vvel_pgf.o: mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vvel_vert_advection.o: mpas_ocn_constants.o mpas_ocn_config.o
 
@@ -188,11 +188,11 @@ mpas_ocn_tracer_nonlocalflux.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_tracer_shortwave.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o mpas_ocn_tracer_short_wave_absorption_variable.o mpas_ocn_constants.o mpas_ocn_config.o
-
 mpas_ocn_tracer_short_wave_absorption_variable.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o: mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o mpas_ocn_tracer_short_wave_absorption_variable.o mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vmix.o: mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_vmix_gotm.o
 

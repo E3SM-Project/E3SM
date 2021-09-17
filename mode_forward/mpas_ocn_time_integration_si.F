@@ -262,7 +262,6 @@ module ocn_time_integration_si
          if(config_enable_nonhydrostatic_mode) then
             call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
             call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityCur, 1)
-            call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
          end if
 
          call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThicknessCur, 1)
@@ -2592,7 +2591,7 @@ module ocn_time_integration_si
                call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThickEdge, normalTransportVelocity, &
                  verticalVelocity, sshCur, dt, vertAleTransportTop, &
-                 nhPresssureCorrection, err, highFreqThicknessNew)
+                 nhPressureCorrection, err, highFreqThicknessNew)
             else
                call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThickEdge, normalTransportVelocity, &
@@ -2629,13 +2628,11 @@ module ocn_time_integration_si
                     dt, activeTracersOnly, 2)
 
             if(config_enable_nonhydrostatic_mode) call ocn_tend_vvel(tendPool, statePool, &
-                          forcingPool, diagnosticsPool, meshPool, scratchPool, 2, dt)
+                          forcingPool, meshPool, 2, dt)
 
             if(config_use_two_equation_turbulence_model) then
                call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
                call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
-               call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-               call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
                call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
                call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
                call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
@@ -3068,21 +3065,18 @@ module ocn_time_integration_si
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
    ! pull out the variables needed!!
             call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
             call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
             call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
             call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityCur, 1)
-            call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
             call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
             call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure,2)
             call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld,1)
-            call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
 
             dminfo = domain % dminfo
             call ocn_nonhydrostatic_pressure_tend(normalVelocityNew, verticalVelocityNew, &
-              layerThicknessNew, layerThicknessEdge, nhPressureCorrection, dminfo % comm, dt)
+              layerThicknessNew, layerThickEdge, nhPressureCorrection, dminfo % comm, dt)
 
             call mpas_timer_start('se NHpressure tend halo pressure')
             call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
@@ -3091,7 +3085,7 @@ module ocn_time_integration_si
             call mpas_timer_stop('se NHpressure tend halo pressure')
 
             call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, verticalVelocityNew, &
-              layerThicknessNew, layerThicknessEdge, nonhydrostaticPressure, nonhydrostaticPressureOld, &
+              layerThicknessNew, layerThickEdge, nonhydrostaticPressure, nonhydrostaticPressureOld, &
               nhPressureCorrection, dt)
 
             block => block % next

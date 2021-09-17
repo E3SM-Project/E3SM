@@ -170,7 +170,7 @@ contains
 
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdge, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
+             normalGMBolusVelocity, verticalVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
 
@@ -228,8 +228,7 @@ contains
       ! This section must be placed in the code after computing the density.
       !
       call ocn_diagnostic_solve_pressure(forcingPool, layerThickness, density, &
-                surfacePressure, montgomeryPotential, pressure, &
-                nonhydrostaticPressure, zMid, zTop, ssh)
+                surfacePressure, montgomeryPotential, pressure)
 
       nCells = nCellsAll
 
@@ -1416,8 +1415,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_pressure(forcingPool, layerThickness, density, &
-                surfacePressure, montgomeryPotential, pressure, &
-                nonHydrostaticPressure, zMid, zTop, ssh)!{{{
+                surfacePressure, montgomeryPotential, pressure)!{{{
 
       use ocn_mesh     ! debug, mdt :: this should be module-level
 
@@ -1436,8 +1434,6 @@ contains
          density
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfacePressure
-      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
-         nonhydrostaticPressure
 
       !-----------------------------------------------------------------
       !
@@ -1798,7 +1794,7 @@ contains
         end do
         !$omp end do
         !$omp end parallel
-
+      end if
       deallocate(div_hu, &
                  projectedSSH, &
                  ALE_Thickness)
