@@ -160,8 +160,6 @@ contains
     deallocate(g_lon)
     deallocate(g_dofs)
 
-    deallocate(g_elem_gids)
-
     is_phys_grid_inited = .false.
   end subroutine finalize_phys_grid
 
