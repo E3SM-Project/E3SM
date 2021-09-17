@@ -3104,6 +3104,10 @@
 			description="sea surface height perturbation from self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
 		/>
+		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
+			description="gradient of sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************

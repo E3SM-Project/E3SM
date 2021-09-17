@@ -102,30 +102,34 @@ libgotm:
 	fi
 
 libshtns: libfftw
+	if [ "$(USE_SHTNS)" == "true" ]; then \
 	if [ -e SHTNS/.git ]; then \
         if [ ! -e SHTNS/libshtns.a ]; then \
-    		if [ $(OPENMP) -eq "true" ]; then \
+    		if [ "$(OPENMP)" == "true" ]; then \
     			(echo "Compiling shtns with OPENMP"; cd SHTNS; export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
     		else \
     			(echo "Compiling shtns without OPENMP"; cd SHTNS; export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
     		fi \
         fi \
-    else \
+        else \
     		(echo "Missing SHTNS/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
+	fi \
 	fi
 
 libfftw:
+	if [ "$(USE_SHTNS)" == "true" ]; then \
 	if [ -e FFTW/.git ]; then \
         if [ ! -e SHTNS/lib/libfftw3.a ]; then \
-    		if [ $(OPENMP) -eq "true" ]; then \
+    		if [ "$(OPENMP)" == "true" ]; then \
     			(echo "Compiling fftw with OPENMP"; cd FFTW; export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
     		else \
     			(echo "Compiling fftw without OPENMP"; cd FFTW; export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
     		fi \
         fi \
 	else \
-		(echo "Missing SHTNS/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
-    fi
+		(echo "Missing FFTW/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
+	fi \
+	fi
 
 shared: libcvmix libBGC libMARBL libgotm libshtns libfftw
 	(cd shared; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")

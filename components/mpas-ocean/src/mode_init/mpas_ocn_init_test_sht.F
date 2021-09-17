@@ -89,8 +89,8 @@ contains
       integer, pointer :: nCellsSolve
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
-      real (kind=RKIND), dimension(:), pointer :: ssh, ssh_sal
-      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: ssh, ssh_sal, ssh_sal_grad
+      real (kind=RKIND), dimension(:), pointer :: areaCell, dcEdge
       real (kind=RKIND), pointer :: config_test_sht_cosine_bell_lat_center, &
                                     config_test_sht_cosine_bell_lon_center, &
                                     config_test_sht_cosine_bell_psi0, &
@@ -99,12 +99,15 @@ contains
       integer, pointer :: config_test_sht_n_iterations
       integer, pointer :: config_parallel_self_attraction_loading_order 
       integer, pointer :: config_parallel_self_attraction_loading_n_cells_per_block
+      integer, dimension(:), pointer :: nEdgesArray
+      integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), pointer :: sphere_radius
       real (kind=RKIND), pointer :: cellWidthEq, cellWidthMidLat 
       real (kind=RKIND), pointer :: latTransitionStart, latTransitionWidth 
 
       integer :: i                                                  
-      integer :: iCell
+      integer :: iCell,iEdge
+      integer :: cell1, cell2
       integer :: err
       integer :: nCells
       integer :: nt
@@ -165,6 +168,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics',diagnosticsPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve',nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nEdgesArray',nEdgesArray)
         call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
 
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -173,9 +177,12 @@ contains
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
         call mpas_pool_get_array(meshPool, 'zCell', zCell)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+        call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+        call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
         call mpas_pool_get_array(statePool, 'ssh', ssh)
         call mpas_pool_get_array(diagnosticsPool, 'ssh_sal', ssh_sal)
+        call mpas_pool_get_array(diagnosticsPool, 'ssh_sal_grad', ssh_sal_grad)
 
         
         ! Setup function to approximate
@@ -264,11 +271,19 @@ contains
 
         endif
 
+
         ! Call the forward/inverse transformation, SAL scaling factors are 1.0 for init mode
         call ocn_vel_self_attraction_loading_init(domain,err)
         do i = 1,config_test_sht_n_iterations
           call mpas_log_write('Iteration = $i',intArgs=(/i/))
           call ocn_compute_self_attraction_loading(domain, forcingPool, domain % dminfo, ssh, err)
+        enddo
+
+        ! Compute gradient
+        do iEdge = 1,nEdgesArray(1)
+          cell1 = cellsOnEdge(1,iEdge)
+          cell2 = cellsOnEdge(2,iEdge)
+          ssh_sal_grad(iEdge) = (ssh_sal(cell2) - ssh_sal(cell1))/dcEdge(iEdge) 
         enddo
 
         ! Compute RMS Error

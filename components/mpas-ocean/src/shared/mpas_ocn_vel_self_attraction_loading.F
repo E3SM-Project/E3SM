@@ -43,8 +43,10 @@ module ocn_vel_self_attraction_loading
     implicit none
     private
     save
-    
+
+#ifdef USE_SHTNS    
     include 'shtns.f03'
+#endif
     
     !--------------------------------------------------------------------
     !
@@ -186,6 +188,7 @@ contains
 
         if (.not. config_use_parallel_self_attraction_loading) then
 
+
             call mpas_timer_start('Serial SAL: Gather')
             ! Allocate globalArray and gatheredArray only on process 0
             call MPI_COMM_RANK( dminfo % comm, curProc, err)
@@ -213,7 +216,9 @@ contains
                 ! Interpolate ssh onto Gaussian Grid
                 call interpolate( toColValues, toRowValues, toSValues, globalArray, ssh_gg)
                 ! Perform spherical harmonic transform
+#ifdef USE_SHTNS
                 call Spat_to_SH(shtns_c, ssh_gg, Slm)
+#endif
                 call mpas_timer_stop('Serial SAL: Forward')
                 call mpas_timer_start('Serial SAL: Inverse')
                 ! Multiply each harmonic coefficient by the scaling factor
@@ -221,7 +226,9 @@ contains
                     Slm(ilm) = Slm(ilm) * scaling(ilm)
                 enddo
                 ! Perform inverse spherical harmonic transform
+#ifdef USE_SHTNS
                 call SH_to_spat(shtns_c, Slm, ssh_gg)
+#endif
                 ! Interpolate back to MPAS mesh
                 call interpolate( fromColValues, fromRowValues, fromSValues, ssh_gg, globalArray)
     
@@ -556,6 +563,10 @@ contains
 
         if (.not. config_use_parallel_self_attraction_loading) then
 
+#ifndef USE_SHTNS
+            call mpas_log_write('MPAS-Ocean must be compiled with USE_SHTNS=true for serial SAL option.', MPAS_LOG_CRIT)
+#endif
+
             call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
     
             ! Begin MPI portion
@@ -639,6 +650,7 @@ contains
                 mmax = lmax
                 mres = 1
                 eps_polar = 1.0e-10_dp
+#ifdef USE_SHTNS
                 norm = SHT_ORTHONORMAL + SHT_NO_CS_PHASE
                 layout = SHT_GAUSS + SHT_PHI_CONTIGUOUS
                 call shtns_verbose(0)
@@ -647,6 +659,7 @@ contains
                 call c_f_pointer(cptr=shtns_c, fptr=shtns)
                 call c_f_pointer(cptr=shtns%ct, fptr=cosTheta, shape=[shtns%nlat])
                 call c_f_pointer(cptr=shtns%st, fptr=sinTheta, shape=[shtns%nlat])
+#endif
                 allocate( Slm(1:shtns%nlm), scaling(1:shtns%nlm), lvec(1:shtns%nlm) )
                 
                 ! List l values in lvec (for use in reading load Love numbers)
