@@ -24,7 +24,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsDerivedState& derived)
  : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
 		 params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		 params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
+		 params.nu_p,params.nu_s,params.hypervis_scaling)
  , m_num_elems(state.num_elems())
  , m_state   (state)
  , m_derived (derived)
@@ -32,8 +32,10 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
  , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+ , m_policy_update_states2 (Homme::get_default_team_policy<ExecSpace,TagUpdateStates2>(m_num_elems))
  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
+ , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
  , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -46,12 +48,14 @@ HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
 		  params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		  params.nu_p,params.nu_s,params.hypervis_scaling,params.hypervis_scaling_tom)
+		  params.nu_p,params.nu_s,params.hypervis_scaling)
   , m_num_elems(num_elems)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+  , m_policy_update_states2 (Homme::get_default_team_policy<ExecSpace,TagUpdateStates2>(m_num_elems))
   , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
   , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
+  , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
   , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -218,7 +222,7 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
 {
 
-	//scaling dt, so no scaling of nu, still add tests
+	//scaling dt, so no need to scale  nu, still add tests for hv_sub>1
 
   m_data.np1 = np1;
   m_data.dt = dt/m_data.hypervis_subcycle;
@@ -330,7 +334,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // use a dummy for now
     Kokkos::parallel_for(m_policy_update_states2, *this);
     Kokkos::fence();
-  }
+  } 
+  //for for sponge layer
 
 
 }
@@ -359,6 +364,7 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
     Kokkos::parallel_for(policy, *this);
   }
   Kokkos::fence();
-}//biharmonic
+} 
+//biharmonic
 
 } // namespace Homme
