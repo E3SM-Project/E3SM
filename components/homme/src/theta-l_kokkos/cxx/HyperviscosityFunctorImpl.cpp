@@ -217,7 +217,7 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   }
   m_be->register_field(m_buffers.vtens, 2, 0);
   m_be->registration_completed();
-}
+}//initBE
 
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
 {
@@ -225,6 +225,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 	//scaling dt, so no need to scale  nu, still add tests for hv_sub>1
 
   m_data.np1 = np1;
+
+//move this from here  
   m_data.dt = dt/m_data.hypervis_subcycle;
   m_data.eta_ave_w = eta_ave_w;
 
@@ -334,11 +336,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // use a dummy for now
     Kokkos::parallel_for(m_policy_update_states2, *this);
     Kokkos::fence();
-  } 
-  //for for sponge layer
-
-
-}
+  } //for for sponge layer
+} //run()
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
 {
@@ -364,7 +363,6 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
     Kokkos::parallel_for(policy, *this);
   }
   Kokkos::fence();
-} 
-//biharmonic
+} //biharmonic
 
 } // namespace Homme

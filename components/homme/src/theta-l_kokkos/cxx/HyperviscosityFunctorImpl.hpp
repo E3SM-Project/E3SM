@@ -120,7 +120,6 @@ public:
   // first iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagFirstLaplaceHV&, const TeamMember& team) const {
-#if 0
      using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
     KernelVariables kv(team, m_tu);
@@ -188,18 +187,14 @@ public:
     m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
-#endif
-  }
-  //TagFirstLaplaceHV
+  }//TagFirstLaplaceHV
 
 
 
   // Laplace for nu_top
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagNutopLaplace&, const TeamMember& team) const {
-#if 1
   
-	  //
 //what is m_tu -- teamUtils
 //
     KernelVariables kv(team, m_tu);
@@ -231,16 +226,13 @@ public:
     m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
-#endif    
-  }
-    //TagNutopLaplace
+  } //TagNutopLaplace
 
 
 
   //second iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagSecondLaplaceConstHV&, const TeamMember& team) const {
-#if 0	  
     KernelVariables kv(team, m_tu);
     // Laplacian of layers thickness
     m_sphere_ops.laplace_simple(kv,
@@ -265,14 +257,11 @@ public:
     m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio2,
                               Homme::subview(m_buffers.vtens,kv.ie),
                               Homme::subview(m_buffers.vtens,kv.ie));
-#endif
-  }
-  //tag second laplace const hv
+  } //tag second laplace const hv
 
   //second iter of laplace, tensor hv
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagSecondLaplaceTensorHV&, const TeamMember& team) const {
-#if 0
     KernelVariables kv(team, m_tu);
     // Laplacian of layers thickness
     m_sphere_ops.laplace_tensor(kv,
@@ -304,13 +293,10 @@ public:
                    Homme::subview(m_geometry.m_vec_sph2cart,kv.ie),
                    Homme::subview(m_buffers.vtens,kv.ie),
                    Homme::subview(m_buffers.vtens,kv.ie));
-#endif    
-  }
-  //SecondLaplaceTensorHV
+  } //SecondLaplaceTensorHV
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagUpdateStates&, const TeamMember& team) const {
-#if 0	  
     KernelVariables kv(team, m_tu);
 
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
@@ -362,23 +348,21 @@ public:
         }
       });
     });
-#endif    
-  }
-  //tagupdatestates
+  }  //tagupdatestates
 
 
 
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagUpdateStates2&, const TeamMember& team) const {
-#if 0     
     KernelVariables kv(team, m_tu);
 
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
 //need mask]]]]]]]]
-//'''=============================
+//define another dt
+//    m_data.dt_top = 
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -427,15 +411,11 @@ public:
         }
       });
     });
-#endif
-  }
-  //tagupdatestates2
-
+  }//tagUpdateStates2
 
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagHyperPreExchange, const TeamMember &team) const {
-#if 0	  
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
     KernelVariables kv(team, m_tu);
@@ -510,14 +490,8 @@ public:
         }
       });//thread vector
 
-#if 0     
-     //old nu_top 
-#endif
-
     });//parallel 4
-#endif    
-  }
-  //taghyperpreexchange
+  } //taghyperpreexchange
 
 protected:
 
@@ -547,7 +521,7 @@ protected:
   std::shared_ptr<BoundaryExchange> m_be;
 
   ExecViewManaged<Scalar[NUM_LEV]> m_nu_scale_top;
-};
+}; //HVfunctorImpl
 
 } // namespace Homme
 
