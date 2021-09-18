@@ -895,7 +895,11 @@ contains
           n = map2chm( m )
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
-                vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
+               if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
+                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
+                   !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
+                   vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
+               endif
              endif
           endif
        enddo
