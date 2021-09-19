@@ -79,8 +79,10 @@ module ocn_vel_self_attraction_loading
     
     ! SHTns routine variables
     integer, parameter :: dp=real64
+#ifdef USE_SHTNS
     type(c_ptr) :: shtns_c
     type(shtns_info), pointer :: shtns
+#endif
     real(kind=RKIND), dimension(:), pointer :: scaling
     complex(dp), allocatable :: Slm(:)
     complex(dp), allocatable :: Slm_local(:)
@@ -218,7 +220,6 @@ contains
                 ! Perform spherical harmonic transform
 #ifdef USE_SHTNS
                 call Spat_to_SH(shtns_c, ssh_gg, Slm)
-#endif
                 call mpas_timer_stop('Serial SAL: Forward')
                 call mpas_timer_start('Serial SAL: Inverse')
                 ! Multiply each harmonic coefficient by the scaling factor
@@ -226,7 +227,6 @@ contains
                     Slm(ilm) = Slm(ilm) * scaling(ilm)
                 enddo
                 ! Perform inverse spherical harmonic transform
-#ifdef USE_SHTNS
                 call SH_to_spat(shtns_c, Slm, ssh_gg)
 #endif
                 ! Interpolate back to MPAS mesh
@@ -659,7 +659,6 @@ contains
                 call c_f_pointer(cptr=shtns_c, fptr=shtns)
                 call c_f_pointer(cptr=shtns%ct, fptr=cosTheta, shape=[shtns%nlat])
                 call c_f_pointer(cptr=shtns%st, fptr=sinTheta, shape=[shtns%nlat])
-#endif
                 allocate( Slm(1:shtns%nlm), scaling(1:shtns%nlm), lvec(1:shtns%nlm) )
                 
                 ! List l values in lvec (for use in reading load Love numbers)
@@ -670,6 +669,7 @@ contains
                 enddo
                 
                 call getloadLoveNums(shtns%nlm, lvec, scaling)
+#endif
             endif
 
         else
