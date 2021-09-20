@@ -259,6 +259,7 @@ contains
    use prescribed_ozone,    only: prescribed_ozone_readnl
    use prescribed_cloud,    only: prescribed_cloud_readnl
    use prescribed_sfc_flux, only: presc_sfc_flux_readnl
+   use prescribed_radheat,  only: presc_radheat_readnl
    use prescribed_aero,     only: prescribed_aero_readnl
    use prescribed_ghg,      only: prescribed_ghg_readnl
    use aircraft_emit,       only: aircraft_emit_readnl
@@ -525,6 +526,7 @@ contains
    call prescribed_ozone_readnl(nlfilename)
    call prescribed_cloud_readnl(nlfilename)
    call presc_sfc_flux_readnl(nlfilename)
+   call presc_radheat_readnl(nlfilename)
    call prescribed_aero_readnl(nlfilename)
    call prescribed_ghg_readnl(nlfilename)
    call co2_cycle_readnl(nlfilename)

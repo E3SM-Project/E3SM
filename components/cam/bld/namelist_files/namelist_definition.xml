@@ -5155,6 +5155,45 @@ The atm physics timestep for the run that produced the prescribed surface flux d
 Default: 0.0
 </entry>
 
+<!-- presc_radheat : we add the prescribed radheat definitions here because
+                        they follow the model of prescribed ozone.           -->
+<entry id="presc_radheat_datapath" type="char*256" input_pathname="abs"
+       category="cam_chem" group="presc_radheat_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>presc_radheat_filelist</varname>.
+Default: None, do not prescribe radiative heating by default.
+</entry>
+
+<entry id="presc_radheat_file" type="char*256"
+       input_pathname="rel:presc_radheat_datapath" category="cam_chem"
+       group="presc_radheat_nl" valid_values="" >
+Filename of dataset for prescribed radiative heating.
+Default: None, do not radiative heating by default.
+</entry>
+
+<entry id="presc_radheat_type" type="char*32" category="cam_chem"
+       group="presc_radheat_nl"
+       valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in prescribed radiative heating files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'SERIAL'
+</entry>
+
+<entry id="presc_radheat_num_file_years" type="real" category="cam_chem"
+       group="presc_radheat_nl" valid_values="" >
+The number of years in the prescribed radiative heating data file
+if <varname>presc_radheat_type</varname>  is 'CYCLICAL'.
+Default: 0.0
+</entry>
+
+<entry id="presc_radheat_input_dtime" type="real" category="cam_chem"
+       group="presc_radheat_nl" valid_values="" >
+The atm physics timestep for the run that produced the prescribed radiative heating data file (in seconds)
+Default: 0.0
+</entry>
+
+<!-- prescribed_volcaero   -->
+
 <entry id="prescribed_volcaero_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="prescribed_volcaero_nl" valid_values="" >
 Full pathname of the directory that contains the files specified in

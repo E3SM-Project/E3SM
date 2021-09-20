@@ -33,7 +33,7 @@ module prescribed_radheat
   public presc_radheat_register
   public presc_radheat_init
   public presc_radheat_adv
-  public presc_radheat_overwrite
+  public conserve_radiant_energy
   public has_presc_radheat
 
   logical :: has_presc_radheat = .false.
@@ -50,7 +50,6 @@ module prescribed_radheat
    character(len=16), parameter :: rflx_pname(nflds)  = (/ 'p_QRS', 'p_QRL', 'p_FSNT', 'p_FLNT', 'p_FSNS', 'p_FLNS' /)
    logical, parameter           :: rflx_dtimes(nflds) = (/ .true., .true., .true., .true., .true., .true. /)
    character(len=256)           :: filename           = ' '
-   character(len=256)           :: filelist           = ' '
    character(len=256)           :: datapath           = ' '
    character(len=32)            :: data_type          = 'CYCLICAL'
    real(r8)                     :: num_file_years     = 0._r8
@@ -120,7 +119,6 @@ subroutine presc_radheat_readnl(nlfile)
    character(len=*), parameter :: subname = 'presc_radheat_readnl'
 
    character(len=256) :: presc_radheat_file
-   character(len=256) :: presc_radheat_filelist
    character(len=256) :: presc_radheat_datapath
    character(len=32)  :: presc_radheat_type
    real(r8)           :: presc_radheat_num_file_years
@@ -128,7 +126,6 @@ subroutine presc_radheat_readnl(nlfile)
 
    namelist /presc_radheat_nl/ &
       presc_radheat_file,      &
-      presc_radheat_filelist,  &
       presc_radheat_datapath,  &
       presc_radheat_type,      &
       presc_radheat_num_file_years, &
@@ -137,7 +134,6 @@ subroutine presc_radheat_readnl(nlfile)
 
    ! Initialize namelist variables from local module variables.
    presc_radheat_file      = filename
-   presc_radheat_filelist  = filelist
    presc_radheat_datapath  = datapath
    presc_radheat_type      = data_type
    presc_radheat_num_file_years = num_file_years
@@ -161,7 +157,6 @@ subroutine presc_radheat_readnl(nlfile)
 #ifdef SPMD
    ! Broadcast namelist variables
    call mpibcast(presc_radheat_file,     len(presc_radheat_file),     mpichar, 0, mpicom)
-   call mpibcast(presc_radheat_filelist, len(presc_radheat_filelist), mpichar, 0, mpicom)
    call mpibcast(presc_radheat_datapath, len(presc_radheat_datapath), mpichar, 0, mpicom)
    call mpibcast(presc_radheat_type,     len(presc_radheat_type),     mpichar, 0, mpicom)
    call mpibcast(presc_radheat_num_file_years, 1, mpir8, 0, mpicom)
@@ -170,7 +165,6 @@ subroutine presc_radheat_readnl(nlfile)
 
    ! Update module variables with user settings.
    filename   = presc_radheat_file
-   filelist   = presc_radheat_filelist
    datapath   = presc_radheat_datapath
    data_type  = presc_radheat_type
    num_file_years = presc_radheat_num_file_years
@@ -434,8 +428,18 @@ subroutine presc_radheat_init()
          call endrun(err_str)
       endif
 
-      call addfld( 'INFLX_'//trim(spc_name), horiz_only, 'A',  'W/m2',     &
-            'Input flux for '//trim(spc_name) )
+!Bx      call addfld( 'INFLX_'//trim(spc_name), horiz_only, 'A',  'W/m2',     &
+!Bx            'Input flux for '//trim(spc_name) )
+
+      if (trim(spc_name) == 'QRL' .OR. trim(spc_name) == 'QRS') then
+         call addfld( 'INFLX_'//trim(spc_name), (/ 'lev' /), 'A',  'W/m2',     &
+              'Input flux for '//trim(spc_name) )
+      else
+         call addfld( 'INFLX_'//trim(spc_name), (/ 'lev' /), 'A',  'W/m2',     &
+              'Input flux for '//trim(spc_name) )
+!Bx         call addfld( 'INFLX_'//trim(spc_name), horiz_only, 'A',  'W/m2',     &
+!Bx              'Input flux for '//trim(spc_name) )
+      endif
 
    end do flux_loop
 
@@ -535,8 +539,12 @@ subroutine presc_radheat_adv(state, pbuf2d)
 
 !B3          call outfld( 'INFLX_'//trim(spc_name), tmpptr_native_grid(:ncol), &
 !B3                       ncol, state(c)%lchnk )
-          call outfld( 'INFLX_'//trim(spc_name), tmpptr_native_grid(:ncol, natgrid_radheat_in(m)%lev_frc), &
-                       ncol, state(c)%lchnk )
+!Bx          call outfld( 'INFLX_'//trim(spc_name), tmpptr_native_grid(:ncol, natgrid_radheat_in(m)%lev_frc), &
+!Bx                       ncol, state(c)%lchnk )
+!Bx          if (trim(spc_name) .NE. 'QRL' .AND. trim(spc_name) .NE. 'QRS') then
+!Bx             call outfld( 'INFLX_'//trim(spc_name), tmpptr_native_grid(:ncol, natgrid_radheat_in(m)%lev_frc), &
+!Bx                          ncol, state(c)%lchnk )
+!Bx          endif
        enddo
 
     enddo
@@ -681,13 +689,15 @@ end subroutine advance_native_grid_data
 
 
     !args
-    type(physics_state), intent(in)        :: state(begchunk:endchunk)
-    type(physics_buffer_desc), pointer     :: pbuf2d(:,:)
+!    type(physics_state), intent(in)        :: state(begchunk:endchunk)
+!    type(physics_buffer_desc), pointer     :: pbuf2d(:,:)
+    type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
+    type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
 
     !local vars
     type(physics_buffer_desc), pointer     :: pbuf_chnk(:)
 
-    integer  :: ic, ncol, icol, kver
+    integer  :: ichnk, ncol, icol, kver, lchnk
 
     real(r8) :: sw_net,    lw_net
     real(r8) :: sw_vrtint, lw_vrtint
@@ -697,8 +707,9 @@ end subroutine advance_native_grid_data
     integer  :: index_qrs, index_qrl
     integer  :: index_fsnt, index_flnt, index_fsns, index_flns
 
-    real(r8), pointer, dimension(:,:) :: qrs, qrl
-    real(r8), pointer, dimension(:)   :: fsnt, flnt, fsns, flns
+!Bx    real(r8), pointer, dimension(:,:) :: qrs, qrl
+!Bx    real(r8), pointer, dimension(:)   :: fsnt, flnt, fsns, flns
+    real(r8), pointer, dimension(:,:) :: qrs, qrl, fsnt, flnt, fsns, flns
 
     ! Read in the prescribed radiative fluxes from pbuf
     ! Compute scaling factor such that QRS and QRL integrate
@@ -708,10 +719,13 @@ end subroutine advance_native_grid_data
 
     if ( .not. has_presc_radheat ) return
 
+    if ( masterproc ) then
+        write(iulog,*) 'Beginning to do conserve_radiant_energy routine'
+    endif
 
-    do ic = begchunk, endchunk
-       ncol        = state(ic)%ncol
-       pbuf_chnk  => pbuf_get_chunk(pbuf2d, ic)
+    do ichnk = begchunk, endchunk
+       ncol        = state(ichnk)%ncol
+       pbuf_chnk  => pbuf_get_chunk(pbuf2d, ichnk)
 
        index_qrs   = pbuf_get_index('p_QRS')
        index_qrl   = pbuf_get_index('p_QRL')
@@ -727,7 +741,7 @@ end subroutine advance_native_grid_data
        call pbuf_get_field(pbuf_chnk, index_fsns, fsns)
        call pbuf_get_field(pbuf_chnk, index_flns, flns)
 
-       do i = 1, ncol
+       do icol = 1, ncol
           ! Zero out all the temp fields
           sw_net    = 0._r8
           lw_net    = 0._r8
@@ -737,16 +751,22 @@ end subroutine advance_native_grid_data
           lw_ratio  = 0._r8
 
           ! For each column do the scaling
-          sw_net = fsnt(icol) - fsns(icol)
-          lw_net = flns(icol) - flnt(icol)
+!Bx          sw_net = fsnt(icol) - fsns(icol)
+!Bx          lw_net = flns(icol) - flnt(icol)
+          sw_net = fsnt(icol,1) - fsns(icol,1)
+          lw_net = flns(icol,1) - flnt(icol,1)
           do kver = 1, pver
              sw_vrtint = sw_vrtint + (qrs(icol, kver) * &
-                  state(ic)%pdel(icol, kver) * rga)
+                  state(ichnk)%pdel(icol, kver) * rga)
              lw_vrtint = lw_vrtint + (qrl(icol, kver) * &
-                  state(ic)%pdel(icol, kver) * rga)
+                  state(ichnk)%pdel(icol, kver) * rga)
           end do ! kver = 1, pver
-          sw_ratio = sw_net / vrtint_sw
-          lw_ratio = lw_net / vrtint_lw
+          if (sw_vrtint == 0.) then
+             sw_ratio = 0. ! Need to prevent NaNs during polar night
+          else
+             sw_ratio = sw_net / sw_vrtint
+          end if
+          lw_ratio = lw_net / lw_vrtint
 
           do kver = 1, pver
              qrs_scaled(icol, kver) = qrs(icol, kver) * sw_ratio
@@ -754,18 +774,18 @@ end subroutine advance_native_grid_data
           end do ! kver = 1, pver
        end do ! icol = 1, ncol
 
-       lchnk = state(ic)%lchnk
-       call outfld('INFLX_QRS',  qrs_scaled(:ncol,:,ic), ncol, lchnk)
-       call outfld('INFLX_QRL',  qrl_scaled(:ncol,:,ic), ncol, lchnk)
-       call outfld('INFLX_FSNT', fsnt(:ncol, ic), ncol, lchnk)
-       call outfld('INFLX_FLNT', flnt(:ncol, ic), ncol, lchnk)
-       call outfld('INFLX_FSNS', fsns(:ncol, ic), ncol, lchnk)
-       call outfld('INFLX_FLNS', flns(:ncol, ic), ncol, lchnk)
+       lchnk = state(ichnk)%lchnk
+       call outfld('INFLX_QRS',  qrs_scaled(:ncol,:), ncol, lchnk)
+       call outfld('INFLX_QRL',  qrl_scaled(:ncol,:), ncol, lchnk)
+       call outfld('INFLX_FSNT', fsnt(:ncol,:), ncol, lchnk)
+       call outfld('INFLX_FLNT', flnt(:ncol,:), ncol, lchnk)
+       call outfld('INFLX_FSNS', fsns(:ncol,:), ncol, lchnk)
+       call outfld('INFLX_FLNS', flns(:ncol,:), ncol, lchnk)
 
        qrs(:ncol, :) = qrs_scaled(:ncol, :)
        qrl(:ncol, :) = qrl_scaled(:ncol, :)
 
-    end do ! ic = begchunk, endchunk
+    end do ! ichnk = begchunk, endchunk
 
 
   end subroutine conserve_radiant_energy
