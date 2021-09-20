@@ -266,11 +266,10 @@ contains
             ! Forward Transform
             !!!!!!!!!!!!!!!!!!!!!
             
-            l = 0
             !$omp do schedule(runtime) private(l)
             do m = 0,nOrder
                 do n = m,nOrder
-                    l = l + 1
+                    l = SHOrderDegreeToIndex(n,m)
                     SnmRe_local(l) = 0.0_RKIND
                     SnmIm_local(l) = 0.0_RKIND
                     SnmRe(l) = 0.0_RKIND
@@ -370,14 +369,15 @@ contains
             call mpas_timer_stop('Parallel SAL: Communication')
 
             call mpas_timer_start('Parallel SAL: Inverse Transform')
+
             !!!!!!!!!!!!!!!!!!!!!
             ! Apply SAL scaling
             !!!!!!!!!!!!!!!!!!!!!
-            l = 0
+
             !$omp do schedule(runtime) private(l) 
             do m = 0,nOrder
                 do n = m,nOrder
-                    l = l + 1 
+                    l = SHOrderDegreeToIndex(n,m)
                     SnmRe(l) = SnmRe(l)*LoveScaling(l)
                     SnmIm(l) = SnmIm(l)*LoveScaling(l)
                 enddo
@@ -2339,10 +2339,9 @@ contains
                     LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) / ((2*j)+1)
                 enddo
             else
-                i = 0
                 do m = 0,nlm
                     do n = m,nlm
-                        i = i + 1
+                        i = SHOrderDegreeToIndex(n,m)
                         LoveScaling(i) = (1.0_RKIND + K(n+1) - H(n+1))/real(2*n+1,RKIND)
                     enddo
                 enddo
@@ -2387,7 +2386,7 @@ contains
         integer :: iCell, i
         real(kind=RKIND) :: sqrt3
 
-        l = (nOrder+1)*m - m*(m+1)/2 + n+1
+        l = SHOrderDegreeToIndex(n,m)
 
         if (n == m) then
 
@@ -2414,6 +2413,28 @@ contains
         endif
 
     end subroutine!}}}
+
+!***********************************************************************
+!
+!  function SHOrderDegreeToIndex 
+!
+!> \brief   Compute array index from shperical order n and degree m 
+!> \author  Steven Brus
+!> \date    September 2021
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+    function SHOrderDegreeToIndex(n,m) result(l)!{{{
+
+        integer :: l
+        integer :: n
+        integer :: m
+
+        l = (nOrder+1)*m - m*(m+1)/2 + n+1
+
+    end function SHOrderDegreeToIndex
 
 end module ocn_vel_self_attraction_loading!}}}
 
