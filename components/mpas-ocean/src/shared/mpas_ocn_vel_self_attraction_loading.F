@@ -259,12 +259,15 @@ contains
 
         else
 
+            !$omp parallel
+
             call mpas_timer_start('Parallel SAL: Forward Transform')
             !!!!!!!!!!!!!!!!!!!!!
             ! Forward Transform
             !!!!!!!!!!!!!!!!!!!!!
             
             l = 0
+            !$omp do schedule(runtime) private(l)
             do m = 0,nOrder
                 do n = m,nOrder
                     l = l + 1
@@ -274,7 +277,9 @@ contains
                     SnmIm(l) = 0.0_RKIND
                 enddo
             enddo
+            !$omp end do
 
+            !$omp do schedule(runtime) private(startIdx,endIdx,n,l)
             do m = 0,nOrder
 
                 do blk = 1,nBlocks
@@ -338,21 +343,30 @@ contains
                     enddo ! n loop
                 enddo ! blocks loop
             enddo ! m loop
+            !$omp end do
+
             call mpas_timer_stop('Parallel SAL: Forward Transform')
 
             call mpas_timer_start('Parallel SAL: Communication')
+            !$omp do schedule(runtime) 
             do m = 1,lmax
                 Snm_local(m) = SnmRe_local(m)
                 Snm_local(lmax+m) = SnmIm_local(m)
             enddo
+            !$omp end do
+            !$omp end parallel
 
             ! Compute global integral by summing local contributions
             CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
 
+            !$ omp parallel
+            !$omp do schedule(runtime) 
             do m = 1,lmax
                 SnmRe(m) = Snm(m)
                 SnmIm(m) = Snm(lmax+m)
             enddo
+            !$omp end do
+
             call mpas_timer_stop('Parallel SAL: Communication')
 
             call mpas_timer_start('Parallel SAL: Inverse Transform')
@@ -360,6 +374,7 @@ contains
             ! Apply SAL scaling
             !!!!!!!!!!!!!!!!!!!!!
             l = 0
+            !$omp do schedule(runtime) private(l) 
             do m = 0,nOrder
                 do n = m,nOrder
                     l = l + 1 
@@ -367,13 +382,20 @@ contains
                     SnmIm(l) = SnmIm(l)*LoveScaling(l)
                 enddo
             enddo 
+            !$omp end do
 
             !!!!!!!!!!!!!!!!!!!!
             ! Inverse transform
             !!!!!!!!!!!!!!!!!!!!
 
-            
-            ssh_sal(:) = 0.0_RKIND
+            !$omp do schedule(runtime) 
+            do iCell = 1,nCellsAll 
+               ssh_sal(iCell) = 0.0_RKIND
+            enddo
+            !$omp end do
+
+
+            !$omp do schedule(runtime) private(mFac,startIcx,endIdx,n,l)
             do m = 0,nOrder
 
                 if (m>0) then
@@ -439,8 +461,11 @@ contains
                     enddo ! n loop
                 enddo ! block loop
             enddo ! m loop
+            !$omp end do
 
             call mpas_timer_stop('Parallel SAL: Inverse Transform')
+
+            !omp end parallel
 
         endif
         
