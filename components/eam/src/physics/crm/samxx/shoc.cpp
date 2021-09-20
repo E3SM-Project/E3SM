@@ -142,7 +142,7 @@ void shoc_proc() {
     cloud_frac(icol,ilev) = crm_input_alst(plev-nzm+k,icrm);
 
     for (auto q=0; q<num_tracers; ++q)  {
-       qtracers(icol,q,ilev) = crm_input_qtracers(plev-nzm+k+1,icrm,q);
+       qtracers(icol,q,ilev) = crm_input_qtracers(plev-nzm+k,icrm,q);
     }
   });
 
@@ -173,7 +173,7 @@ void shoc_proc() {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
 //    zt_g(icol,ilev)   = z(k,icrm);
-    zt_g(icol,ilev)   = crm_input_zmid(plev-nzm+k,icrm)-crm_input_zint(plev+1,icrm);
+    zt_g(icol,ilev)   = crm_input_zmid(plev-nzm+k,icrm)-crm_input_zint(plev,icrm);
     rrho(icol,ilev)   = (1./ggr)*(pdels(icol,ilev)/dz_g(icol,ilev));
     wm_zt(icol,ilev)  = -1.*crm_input_omega(plev-nzm+k,i)/(rrho(icol,ilev)*ggr);
     shoc_s(icol,ilev) = crm_input_sl(plev-nzm+k,icrm);
@@ -185,7 +185,7 @@ void shoc_proc() {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
 //    zi_g(icol,ilev) = zi(k,icrm);
-    zi_g(icol,ilev) = crm_input_zint(plev+1-nz+k,icrm)-crm_input_zint(plev+1,icrm);
+    zi_g(icol,ilev) = crm_input_zint(plev+1-nz+k,icrm)-crm_input_zint(plev,icrm);
   });
 
   view_1d host_dx_1d("host_dx", ncol),
@@ -269,12 +269,14 @@ void shoc_proc() {
      horiz_wind_3d(icol,1,ilev) = v_wind_2d(icol,ilev);
   });
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {ncol, num_tracers, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int q, int ilev, int s) {
-     int k = ilev*Spack::n + s;
-     if (k < nlev) {
-      qtracers_3d(icol,q,ilev)[s] = qtracers.myData[(icol*qtracers.dimension[1]+q)*qtracers.dimension[2]+k];   
-     }
-  });
+//  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {ncol, num_tracers, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int q, int ilev, int s) {
+//     int k = ilev*Spack::n + s;
+//     if (k < nlev) {
+//      qtracers_3d(icol,q,ilev)[s] = qtracers.myData[(icol*qtracers.dimension[1]+q)*qtracers.dimension[2]+k];   
+//     }
+//  });
+
+  array_to_view(qtracers.myData, ncol, num_tracers, npack, qtracers_3d);
 
   SHOC::SHOCInputOutput shoc_input_output{host_dse_2d, tke_2d, thetal_2d, qw_2d,
                                          horiz_wind_3d, wthv_sec_2d, qtracers_3d,
@@ -309,7 +311,7 @@ void shoc_proc() {
   ekat::WorkspaceManager<Spack, SHOC::KT::Device> workspace_mgr(nipack, 23+(nwind+ntrac), policy);
 
   const auto elapsed_microsec = SHOC::shoc_main(ncol, nlev, nlevi, nlev, 1, num_tracers, dtime, workspace_mgr,
-                                               shoc_input, shoc_input_output, shoc_output, shoc_history_output);
+                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
 
   // get SHOC output back to CRM 
   view_to_array(shoc_input_output.tke, ncol, nlev, tke);
@@ -318,13 +320,8 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    sgs_field(1,k,offy_s+j,offx_s+i,icrm)      = tke(icol,nlev-(ilev+1));
-    sgs_field(2,k,offy_s+j,offx_s+i,icrm)      = tk(icol,nlev-(ilev+1));
-    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tke(icol,nlev-(ilev+1));
-    sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
-printf("SHOC: %d, %d, %d, %d, %13.6f, %13.6f\n",k,j,i,icrm,tke(icol,nlev-(ilev+1)),tk(icol,nlev-(ilev+1)));
+    sgs_field(0,k,offy_s+j,offx_s+i,icrm)      = tke(icol,nlev-(ilev+1));
+    sgs_field_diag(0,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
+//    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
   });
-
-  printf("");
-  printf("");
 }

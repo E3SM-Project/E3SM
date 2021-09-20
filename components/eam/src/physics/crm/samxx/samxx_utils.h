@@ -22,7 +22,7 @@ extern "C" {
 
 // convert YAKL multidimensional array to Kokkos view on GPU
 template <typename SizeT, typename ViewT>
-void array_to_view(const typename ViewT::value_type::scalar const* data,
+void array_to_view(const typename ViewT::value_type::scalar* const data,
                    const SizeT& size,
                    ViewT& view)
 {
@@ -42,7 +42,7 @@ void array_to_view(const typename ViewT::value_type::scalar const* data,
 
 // 2D YAKL array to Kokkos view
 template <typename SizeT, typename ViewT>
-void array_to_view(const typename ViewT::value_type::scalar const* data,
+void array_to_view(const typename ViewT::value_type::scalar* const data,
                    const SizeT& dim1_size,
                    const SizeT& dim2_size,
                    ViewT& view)
@@ -60,6 +60,30 @@ void array_to_view(const typename ViewT::value_type::scalar const* data,
      const int num_scalars = k*pack_size;
      const int scalar_offset = i*dim2_size+num_scalars;
      if (num_scalars+s<dim2_size)  view(i,k)[s] = data[scalar_offset+s];
+  });
+}
+
+// 3D YAKL to Kokkos views
+template <typename SizeT, typename ViewT>
+void array_to_view(const typename ViewT::value_type::scalar* const data,
+                   const SizeT& dim1_size,
+                   const SizeT& dim2_size,
+                   const SizeT& dim3_size,
+                   ViewT& view)
+{
+  using PackT = typename ViewT::value_type;
+  EKAT_ASSERT(PackT::n >= 1);
+
+  const int pack_size = static_cast<int>(PackT::n);
+  const int npack     = (dim3_size+pack_size-1)/pack_size;
+
+#if defined(DEBUG)
+  kokkos_impl_cuda_set_serial_execution(true);
+#endif
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {dim1_size, dim2_size, npack, pack_size}), KOKKOS_LAMBDA(int i, int j, int k, int s) {
+     const int num_scalars = k*pack_size;
+     const int scalar_offset = (i*dim2_size+j)*dim3_size+num_scalars;
+     if (num_scalars+s<dim3_size) view(i,j,k)[s] = data[scalar_offset+s];
   });
 }
 
