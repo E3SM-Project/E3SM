@@ -149,7 +149,7 @@ contains
 
      integer :: iCell, k, nCells, nEdges, iEdge
 
-     nCells = nCellsAll
+     nCells = nCellsHalo(2)
 
      do iCell=1,nCells
         do k=1,nVertLevels
@@ -224,6 +224,7 @@ contains
      !compute new diffusivity based on older values
      call ocn_canuto_structure_function_compute(Sm, Sh, tke, glsPsi, c_p, c_m, c_n, c_mu)
      nCells = nCellsHalo(1)
+
      !$omp parallel
      !$omp do schedule(runtime) private(k)
      do iCell=1,nCells

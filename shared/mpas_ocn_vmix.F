@@ -1275,6 +1275,8 @@ contains
          !$omp end do
          call mpas_timer_stop('GOTM avg')
       endif
+
+      nEdges = nEdgesArray(1)
       do iEdge=1,nEdges
          do k=1,nVertLevels
             velocityVmixtend(k,iEdge) = normalVelocity(k,iEdge)

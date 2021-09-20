@@ -380,7 +380,8 @@ module ocn_time_integration_split
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-
+      call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
+      call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.
 
@@ -1544,12 +1545,13 @@ module ocn_time_integration_split
 
 
          if(config_use_two_equation_turbulence_model) then
+            call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
+            call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)!
             call ocn_compute_two_equation_tendency(tendTKE, tendglsPsi, tkeNew, glsPsiNew, velocityZonal, &
                        velocityMeridional, normalVelocityNew, verticalVelocityNew, layerThicknessNew, &
                        tracersGroupNew, dt, err)
          end if
 
-         call mpas_timer_stop('se tracer tend')
 
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers")
@@ -1650,10 +1652,10 @@ module ocn_time_integration_split
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
                      temp_h = tkeCur(k,iCell) + dt * tendTKE(k,iCell)
-                     tkeNew(k,iCell) = 0.5_RKIND*(tkeCur(k,iCell) + temp_h)
+                     tkeNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(tkeCur(k,iCell) + temp_h))
 
                      temp_h = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)
-                     glsPsiNew(k,iCell) = 0.5_RKIND*(glsPsiCur(k,iCell) + temp_h)
+                     glsPsiNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(glsPsiCur(k,iCell) + temp_h))
                   end do
                end do
                !$omp end do
@@ -1730,8 +1732,6 @@ module ocn_time_integration_split
             !$omp end do
             !$omp end parallel
 
-            if (config_compute_active_tracer_budgets) then
-
                if(config_enable_nonhydrostatic_mode) then
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
@@ -1748,14 +1748,16 @@ module ocn_time_integration_split
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
-                        tkeNew(k,iCell) = tkeCur(k,iCell) + dt * tendTKE(k,iCell)
-                        glsPsiNew(k,iCell) = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)
+                        tkeNew(k,iCell) = max(0.0_RKIND, tkeCur(k,iCell) + dt * tendTKE(k,iCell))
+                        glsPsiNew(k,iCell) = max(0.0_RKIND, glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell))
                      end do
                   end do
                   !$omp end do
                   !$omp end parallel
                end if
-               !$omp parallel
+ 
+               if (config_compute_active_tracer_budgets) then
+              !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdgesAll
                do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)

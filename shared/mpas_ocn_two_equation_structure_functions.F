@@ -126,6 +126,9 @@ contains
       s2 = -3.0_RKIND/8.0_RKIND*lambda1*(lambda6**2.0 - lambda7**2.0)
       s4 = 2.0_RKIND*lambda5
       s5 = 2.0_RKIND*lambda4
+      s6 = 2.0_RKIND/3.0_RKIND*lambda5*(3.0_RKIND*lambda3**2.0 - lambda2**2.0) - &
+            0.5_RKIND*lambda5*lambda1*(3.0_RKIND*lambda3 - lambda2) + &
+            3.0_RKIND/4.0_RKIND*lambda1*(lambda6 - lambda7)
 
       do iCell=1,nCellsOwned
          do k=1,maxLevelCell(iCell)-1
