@@ -138,7 +138,7 @@ subroutine phys_register
   call check_energy_register()
 
   ! register fluxes for saving across time
-  if (phys_do_flux_avg()) call flux_avg_register()
+!  if (phys_do_flux_avg()) call flux_avg_register()
 
   call conv_water_register()
 
@@ -749,7 +749,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   ! The following initialization depends on the import state (cam_in)
   ! being initialized.  This isn't true when cam_init is called, so need
   ! to postpone this initialization to here.
-  if (nstep == 0 .and. phys_do_flux_avg()) call flux_avg_init(cam_in,  pbuf2d)
+!  if (nstep == 0 .and. phys_do_flux_avg()) call flux_avg_init(cam_in,  pbuf2d)
 
   ! Compute total energy of input state and previous output state
   call t_startf ('chk_en_gmean')
@@ -1117,7 +1117,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
                     ,l_gw_drag_out          = l_gw_drag          )
 
   ! Adjust the surface fluxes to reduce instabilities in near sfc layer
-  if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
+!  if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
 
   ! Validate the physics state.
   if (state_debug_checks) call physics_state_check(state, name="before tphysac")

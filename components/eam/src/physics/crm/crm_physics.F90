@@ -123,8 +123,6 @@ subroutine crm_physics_register()
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
    call phys_getopts( prog_modal_aero_out = prog_modal_aero )
 
-   ! MMF_microphysics_scheme = "p3"
-
    if(masterproc) then
       print*,'_____________________________________________________________'
       print*,'____ Multi-Scale Modelling Framework (MMF) Configuration ____'
@@ -154,10 +152,10 @@ subroutine crm_physics_register()
                     longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
 
-!#if defined(shoc)
+#if defined(shoc)
    ! TKE is prognostic in SHOC and should be advected by dynamics
    call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
-!#endif
+#endif
 
    !----------------------------------------------------------------------------
    ! constituents
@@ -170,10 +168,10 @@ subroutine crm_physics_register()
    call cnst_add(cnst_names(6),  mwh2o, cpair, 0._r8, ixsnow,   longname='Grid box averaged snow amount',      is_convtran1=.true.)
    call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixnumrain,longname='Grid box averaged rain number',      is_convtran1=.true.)
    call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixnumsnow,longname='Grid box averaged snow number',      is_convtran1=.true.)
-!#if defined(p3)
+#if defined(p3)
    call cnst_add(cnst_names(9),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged riming amount',  is_convtran1=.true.)
    call cnst_add(cnst_names(10), mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged riming volume',  is_convtran1=.true.)
-!#endif
+#endif
    !----------------------------------------------------------------------------
    ! Register MMF history variables
    !----------------------------------------------------------------------------
@@ -394,14 +392,14 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain, ixnumsnow /)) ) then
          ! number concentrations
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', cnst_longname(mm))
-!#if defined(p3)
+#if defined(micro_p3)
        else if ( mm == ixcldrim ) then
           ! mass mixing ratios
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm) )
        else if ( mm == ixrimvol ) then
           ! number concentrations
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'm3/kg', cnst_longname(mm) )
-!#endif
+#endif
       else
          call endrun( "crm_physics_init: Could not call addfld for constituent with unknown units.")
       endif
@@ -415,10 +413,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    call addfld(apcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' after physics'  )
    call addfld(bpcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
    call addfld(bpcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
-!#if defined(p3)
+#if defined(micro_p3)
     call addfld(apcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' after physics'  )
     call addfld(bpcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' before physics' )
-!#endif
+#endif
 
    if (use_MMF_VT) then
       ! initialize variance transport tracers
@@ -448,7 +446,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
-      else if (MMF_microphysics_scheme .eq. 'p3') then
+      else if (MMF_microphysics_scheme .eq. 'micro_p3') then
          call pbuf_set_field(pbuf2d, crm_nc_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
@@ -1019,7 +1017,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_ns(i,:,:,k) = 0.0_r8
                crm_qg(i,:,:,k) = 0.0_r8
                crm_ng(i,:,:,k) = 0.0_r8
-            else if (MMF_microphysics_scheme .eq. 'p3') then
+            else if (MMF_microphysics_scheme .eq. 'micro_p3') then
                crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
                crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
                crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
