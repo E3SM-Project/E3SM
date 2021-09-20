@@ -15,6 +15,21 @@ include(EkatUtils)
 #  - One test will be created per combination of valid mpi-rank and thread value
 #  - compiler defs/flags can also be providedd on a per-language basis via COMPILER_[C|CXX|F]_[FLAGS|DEFS]
 
+macro (SetVarDependingOnTestProfile var_name val_short val_medium val_long)
+  string (TOUPPER ${SCREAM_TEST_PROFILE} profile)
+  if (profile STREQUAL "SHORT")
+    set (${var_name} ${val_short})
+  elseif(profile STREQUAL "MEDIUM")
+    set (${var_name} ${val_medium})
+  elseif(profile STREQUAL "LONG")
+    set (${var_name} ${val_long})
+  else()
+    message("Error! Unrecognized testing profile '${profile}'.")
+    message("  Valid test profile options: ${SCREAM_TEST_VALID_PROFILES}")
+    message(FATAL_ERROR "Aborting.")
+  endif()
+endmacro()
+
 function(CreateUnitTest target_name target_srcs scream_libs)
   set(options EXCLUDE_MAIN_CPP SERIAL)
   set(oneValueArgs EXE_ARGS DEP)
