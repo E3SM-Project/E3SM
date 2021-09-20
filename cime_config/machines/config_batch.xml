@@ -58,9 +58,9 @@
 
    <batch_system MACH="spock" type="slurm">
      <queues>
-       <queue walltimemax="03:00:00" default="true">ecp</queue>
-       <queue walltimemax="03:00:00">caar</queue>
-       <queue walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00" default="true">ecp</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00">caar</queue>
+       <queue strict="true" nodemin="5" nodemax="16" walltimemax="01:00:00">caar</queue>
      </queues>
    </batch_system>
 
