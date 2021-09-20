@@ -22,7 +22,7 @@ TEST_CASE("shoc-stand-alone", "") {
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
   // run params:
-  const auto& num_iters = ad_params.get<int>("Number of Iterations",5);
+  const auto& num_iters = ad_params.get<int>("Number of Iterations");
   const auto& dt        = ad_params.get<Real>("dt",300.0);
 
   // Create a comm
@@ -43,11 +43,18 @@ TEST_CASE("shoc-stand-alone", "") {
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
 
+  if (atm_comm.am_i_root()) {
+    printf("Run iteration: ");
+    fflush(stdout);
+  }
   for (int i=0; i<num_iters; ++i) {
-    if (i % 10 == 0) {
-      printf("  -  %5.2f%%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
-    } else {
-      printf("%d, ",i);
+    if (atm_comm.am_i_root()) {
+      if ((i+1) % 10 == 0) {
+        printf("  -  %5.2f%%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
+      } else {
+        printf("%d, ",i+1);
+      }
+      fflush(stdout);
     }
     ad.run(dt);
   }

@@ -3,6 +3,8 @@
 Debug:
   Atmosphere DAG Verbosity Level: 5
 
+Number of Iterations: ${SCREAM_TEST_NUM_TIME_STEPS}
+
 Atmosphere Processes:
   Number of Entries: 4
   Schedule Type: Sequential
