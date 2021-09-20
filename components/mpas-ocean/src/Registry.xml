@@ -763,7 +763,7 @@
 					description="Controls if self-attraction and loading is applied to ssh"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="800.0" units="km"
+		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="1.0" units="km"
 					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
 					possible_values="Any positive real number."
 		/>

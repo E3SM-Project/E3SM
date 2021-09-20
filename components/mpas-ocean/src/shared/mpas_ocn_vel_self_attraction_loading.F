@@ -547,12 +547,17 @@ contains
 
         ! Set up coastal ssh smoothing
         allocate(sshSmoothed(nCellsAll))
-        trans_width = config_self_attraction_loading_smoothing_width*1000.0_RKIND
-        trans_start = 0.0_RKIND
-        do iCell = 1,nCellsAll
-            d = distanceToCoast(iCell)
-            coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh((d - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
-        enddo
+
+        if (config_self_attraction_loading_smoothing_width > 2.0_RKIND) then
+           trans_width = config_self_attraction_loading_smoothing_width*1000.0_RKIND
+           trans_start = 0.0_RKIND
+           do iCell = 1,nCellsAll
+               d = distanceToCoast(iCell)
+               coastalSmoothingFactor(iCell) = 0.5_RKIND*(tanh((d - trans_start - 0.5_RKIND * trans_width) / (0.2_RKIND *trans_width)) + 1.0_RKIND)
+           enddo
+        else
+           coastalSmoothingFactor(:) = 1.0_RKIND
+        endif
 
         ! Setup Alarm for SAL
         alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err)
