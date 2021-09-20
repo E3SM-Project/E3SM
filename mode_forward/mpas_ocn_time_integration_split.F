@@ -1589,7 +1589,12 @@ module ocn_time_integration_split
             call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
                                                 verticalVelocityTend)
          end if
- 
+
+         if(config_use_two_equation_turbulence_model) then
+            call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
+            call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
+         end if
+
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !  If iterating, reset variables for next iteration
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
