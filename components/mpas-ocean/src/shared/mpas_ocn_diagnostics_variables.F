@@ -234,7 +234,6 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
-
       if (config_use_topographic_wave_drag) then
          call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
       end if

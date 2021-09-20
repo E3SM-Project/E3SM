@@ -58,6 +58,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vmix_coefs_redi.F
   core_ocean/shared/mpas_ocn_vmix_cvmix.F
   core_ocean/shared/mpas_ocn_vmix_gotm.F
+  core_ocean/shared/mpas_ocn_vel_self_attraction_loading.F
   core_ocean/shared/mpas_ocn_tendency.F
   core_ocean/shared/mpas_ocn_tracer_hmix.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del2.F

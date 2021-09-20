@@ -843,7 +843,7 @@ contains
         integer, parameter :: lmax=1440
 
         allocate(LoveDat(4,lmax+1))
-      
+
         LoveDat(1:4,1) = (/ 0.0_RKIND, 0.0000000000_RKIND, 0.0000000000_RKIND, -1.0000000000_RKIND /) !{{{
         LoveDat(1:4,2) = (/ 1.0_RKIND, -1.2858777580_RKIND, -8.9608179370e-1_RKIND, -1.0000000000_RKIND /)
         LoveDat(1:4,3) = (/ 2.0_RKIND, -9.9079949000e-1_RKIND, 2.3286695000e-2_RKIND, -3.0516104000e-1_RKIND /)
@@ -2287,7 +2287,7 @@ contains
         LoveDat(1:4,1441) = (/ 1440.0_RKIND, -6.1366054000_RKIND, 1.2745781000e-3_RKIND, -1.8322792000e-3_RKIND /)
 
 
-        if (trim(config_ocean_run_mode) .eq. 'init') then 
+        if (trim(config_ocean_run_mode) .eq. 'init') then
 
             LoveScaling(:) = 1.0_RKIND
 
@@ -2307,7 +2307,7 @@ contains
             L(2) = -1.0_RKIND/3.0_RKIND*(H1 - L1)
             K(2) = -1.0_RKIND/3.0_RKIND*H1 - 2.0_RKIND/3.0_RKIND*L1 - 1.0_RKIND
 
-            ! Get scaling factors from load Love numbers 
+            ! Get scaling factors from load Love numbers
             if (.not. config_use_parallel_self_attraction_loading) then
                 do i=1,nlm
                     j = lvec(i)

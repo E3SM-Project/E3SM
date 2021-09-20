@@ -825,6 +825,7 @@ module ocn_time_integration_rk4
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
+
       call ocn_tend_vel(domain, tendPool, provisStatePool, forcingPool, 1, dminfo, dt)
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}

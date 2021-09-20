@@ -1025,6 +1025,7 @@ module ocn_time_integration_split
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: VELOCITY CORRECTOR STEP
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                do BtrCorIter = 1, config_n_btr_cor_iter
                   uPerpTime = newBtrSubcycleTime
 
