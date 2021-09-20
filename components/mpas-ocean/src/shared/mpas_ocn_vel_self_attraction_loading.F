@@ -83,7 +83,6 @@ module ocn_vel_self_attraction_loading
     type(c_ptr) :: shtns_c
     type(shtns_info), pointer :: shtns
 #endif
-    real(kind=RKIND), dimension(:), pointer :: scaling
     complex(dp), allocatable :: Slm(:)
     complex(dp), allocatable :: Slm_local(:)
     
@@ -96,7 +95,7 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND),    dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff
     real(kind=RKIND),    dimension(:),   allocatable :: pmnm2, pmnm1, pmn
     real(kind=RKIND),    dimension(:),   allocatable :: sinLatCell, cosLatCell
-    real(kind=RKIND),    dimension(:),   allocatable :: sal_scaling
+    real(kind=RKIND),    dimension(:),   allocatable :: LoveScaling
     real(kind=RKIND), dimension(:,:), allocatable :: complexFactorRe, complexFactorIm
     real(kind=RKIND), dimension(:,:), allocatable :: complexExpRe, complexExpIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm, SnmRe, SnmIm
@@ -224,7 +223,7 @@ contains
                 call mpas_timer_start('Serial SAL: Inverse')
                 ! Multiply each harmonic coefficient by the scaling factor
                 do ilm = 1,shtns%nlm
-                    Slm(ilm) = Slm(ilm) * scaling(ilm)
+                    Slm(ilm) = Slm(ilm) * LoveScaling(ilm)
                 enddo
                 ! Perform inverse spherical harmonic transform
                 call SH_to_spat(shtns_c, Slm, ssh_gg)
@@ -364,8 +363,8 @@ contains
             do m = 0,nOrder
                 do n = m,nOrder
                     l = l + 1 
-                    SnmRe(l) = SnmRe(l)*sal_scaling(l)
-                    SnmIm(l) = SnmIm(l)*sal_scaling(l)
+                    SnmRe(l) = SnmRe(l)*LoveScaling(l)
+                    SnmIm(l) = SnmIm(l)*LoveScaling(l)
                 enddo
             enddo 
 
@@ -664,7 +663,7 @@ contains
                 call c_f_pointer(cptr=shtns_c, fptr=shtns)
                 call c_f_pointer(cptr=shtns%ct, fptr=cosTheta, shape=[shtns%nlat])
                 call c_f_pointer(cptr=shtns%st, fptr=sinTheta, shape=[shtns%nlat])
-                allocate( Slm(1:shtns%nlm), scaling(1:shtns%nlm), lvec(1:shtns%nlm) )
+                allocate( Slm(1:shtns%nlm), LoveScaling(1:shtns%nlm), lvec(1:shtns%nlm) )
                 
                 ! List l values in lvec (for use in reading load Love numbers)
                 lvec = 0
@@ -673,7 +672,7 @@ contains
                     lvec(ilm) = l
                 enddo
                 
-                call getloadLoveNums(shtns%nlm, lvec, scaling)
+                call getloadLoveNums(shtns%nlm, lvec, LoveScaling)
 #endif
             endif
 
@@ -713,8 +712,8 @@ contains
            
             ! Get SAL scaling factors
             allocate(lvec(lmax))
-            allocate(sal_scaling(lmax))
-            call getloadLoveNums(nOrder, lvec, sal_scaling)
+            allocate(LoveScaling(lmax))
+            call getloadLoveNums(nOrder, lvec, LoveScaling)
 
             ! Pre-compute sin and cos of latCell (co-latitude) values 
             allocate(sinLatCell(nCellsAll), cosLatCell(nCellsAll))
@@ -829,11 +828,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine getloadLoveNums(nlm, lvec, scaling) !{{{
+    subroutine getloadLoveNums(nlm, lvec, LoveScaling) !{{{
 
         integer, intent(in) :: nlm
         integer, dimension(:), intent(in) :: lvec
-        real(kind=RKIND), dimension(:), intent(out) :: scaling
+        real(kind=RKIND), dimension(:), intent(out) :: LoveScaling
 
         real(kind=RKIND), dimension(:), allocatable :: H, L, K
         real(kind=RKIND), dimension(:,:), allocatable :: LoveDat
@@ -2288,10 +2287,9 @@ contains
         LoveDat(1:4,1441) = (/ 1440.0_RKIND, -6.1366054000_RKIND, 1.2745781000e-3_RKIND, -1.8322792000e-3_RKIND /)
 
 
-        if ((trim(config_ocean_run_mode) .eq. 'init') .and. & 
-            (trim(config_init_configuration) .eq. 'test_sht')) then
+        if (trim(config_ocean_run_mode) .eq. 'init') then 
 
-            scaling(:) = 1.0_RKIND
+            LoveScaling(:) = 1.0_RKIND
 
         else
 
@@ -2313,18 +2311,18 @@ contains
             if (.not. config_use_parallel_self_attraction_loading) then
                 do i=1,nlm
                     j = lvec(i)
-                    scaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) / ((2*j)+1)
+                    LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) / ((2*j)+1)
                 enddo
             else
                 i = 0
                 do m = 0,nlm
                     do n = m,nlm
                         i = i + 1
-                        scaling(i) = (1.0_RKIND + K(n+1) - H(n+1))/real(2*n+1,RKIND)
+                        LoveScaling(i) = (1.0_RKIND + K(n+1) - H(n+1))/real(2*n+1,RKIND)
                     enddo
                 enddo
             endif
-            scaling = scaling * 3.0_RKIND * rhoW / rhoE
+            LoveScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
 
         endif
 
