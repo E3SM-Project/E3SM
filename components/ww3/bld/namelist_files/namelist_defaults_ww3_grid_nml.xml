@@ -165,8 +165,8 @@ attributes to express the dependency.
  
 <!-- MISC -->
  
-<cice0>0.500</cice0>
-<cicen>0.500</cicen>
+<cice0>0.25</cice0>
+<cicen>0.75</cicen>
 <lice>0.0</lice>
 <pmove>0.500</pmove>
 <xseed>1.000</xseed>
