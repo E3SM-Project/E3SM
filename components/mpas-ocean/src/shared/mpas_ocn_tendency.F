@@ -989,9 +989,9 @@ contains
          !
          if (config_use_tracerGroup_idealAge_forcing) then
             call mpas_timer_start("ideal age " // groupName)
-            call mpas_log_write( &
-                        "WARNING: ideal age not fully tested", &
-                        MPAS_LOG_WARN)
+            if (trim(groupName) /= 'idealAgeTracers') call mpas_log_write( &
+                                                      "WARNING: ideal age not fully tested", &
+                                                      MPAS_LOG_WARN)
 
             call mpas_pool_get_subpool(forcingPool, &
                                        'tracersIdealAgeFields', &

@@ -9,9 +9,9 @@
 !
 !  ocn_tracer_ideal_age
 !
-!> \brief MPAS ocean restoring
-!> \author Todd Ringler
-!> \date   06/08/2015
+!> \brief MPAS ideal age tracer routines
+!> \author Mathew Maltrud
+!> \date   08/19/2021
 !> \details
 !>  This module contains routines for computing the tracer tendency due to restoring
 !
@@ -23,6 +23,7 @@ module ocn_tracer_ideal_age
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -58,8 +59,8 @@ contains
 !  routine ocn_tracer_ideal_age_compute
 !
 !> \brief   computes a tracer tendency to approximate ideal age
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    08/19/2021
 !> \details
 !>  This routine computes a tracer tendency to approximate ideal age
 !
@@ -112,25 +113,30 @@ contains
 
       integer :: iCell, iLevel, iTracer
 
-      !move to ocean constants
-      real (kind=RKIND), parameter :: c0 = 0.0_RKIND
-      real (kind=RKIND), parameter :: c1 = 1.0_RKIND
-
       err = 0
 
+      ! add a tendency increment equivalent to "dt" to entire domain below top level
       !$omp parallel
       !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
-        do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
+        do iLevel=minLevelCell(iCell) + 1, maxLevelCell(iCell)
           do iTracer=1,nTracers
-             ! zero tracers at surface to zero where idealAgeMask == zero
-             ! idealAgeMask should be equal to 1.0 elsewhere
-             tracers(iTracer, iLevel, iCell) = idealAgeMask(iTracer, iCell) * tracers(iTracer, iLevel, iCell)
-
-             ! add a tendency increment equivalent to "dt" to entire domain
-             tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell) +  &
-                                                     layerThickness(iLevel,iCell) * c1
+             tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell) +  &
+                layerThickness(iLevel,iCell)
           enddo
+        enddo
+      enddo
+      !$omp end do
+      !$omp end parallel
+
+      ! zero surface tendency where mask == 0
+      !$omp parallel
+      !$omp do schedule(runtime) private(iLevel, iTracer)
+      do iCell=1,nCellsSolve
+        iLevel = minLevelCell(iCell)
+        do iTracer=1,nTracers
+           tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell) +  &
+              idealAgeMask(iTracer, iCell)*layerThickness(iLevel,iCell)
         enddo
       enddo
       !$omp end do
@@ -145,20 +151,50 @@ contains
 !  routine ocn_tracer_ideal_age_init
 !
 !> \brief   Initializes ocean ideal age
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    08/19/2021
 !> \details
 !>  This routine initializes fields required for tracer ideal age
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_ideal_age_init(err)!{{{
+   subroutine ocn_tracer_ideal_age_init(domain,err)!{{{
+
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain information
 
       integer, intent(out) :: err !< Output: error flag
 
+      type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: tracersIdealAgeFieldsPool
+
+      integer, dimension(:), pointer :: &
+         landIceMask
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         idealAgeMask
+
       err = 0
 
-   !--------------------------------------------------------------------
+      if (.not. config_use_idealAgeTracers) return
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(forcingPool, &
+                                 'tracersIdealAgeFields', &
+                                  tracersIdealAgeFieldsPool)
+      call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
+                               'idealAgeTracersIdealAgeMask', &
+                                idealAgeMask)
+
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
+      if (config_use_idealAgeTracers_idealAge_forcing) then
+         ! set mask = 0 for open ocean
+         ! set mask = 1 under ice shelves
+         idealAgeMask = 0.0_RKIND
+         if (associated(landIceMask)) then
+            where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
+         end if
+      end if
 
    end subroutine ocn_tracer_ideal_age_init!}}}
 
