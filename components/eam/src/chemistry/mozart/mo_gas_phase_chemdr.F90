@@ -195,7 +195,7 @@ contains
                               delt, ps, xactive_prates, do_cloudj_photolysis, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
-                              chem_name, drydepflx, cflx, qtend, pbuf, ixcldliq, ixcldice)
+                              chem_name, drydepflx, cflx, qtend, pbuf, ixcldliq, ixcldice, tropFlag)
 
     !-----------------------------------------------------------------------
     !     ... Chem_solver advances the volumetric mixing ratio
@@ -308,6 +308,8 @@ contains
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     integer,        intent(in)    :: ixcldliq, ixcldice                     ! indicies of liquid and ice cloud water
+    logical, optional, intent(in) :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+                                                               ! true: tropospheric box
 
     
     !-----------------------------------------------------------------------
@@ -822,9 +824,23 @@ contains
     !-----------------------------------------------------------------------
     !	... Solve for "Explicit" species
     !-----------------------------------------------------------------------
+    if (uci1_ndx > 0) then
+       vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
     call t_stopf('exp_sol')
+
+    ! reset vmr to pre-exp_sol values for stratospheric boxes
+    if (uci1_ndx > 0) then
+       do i = 1,ncol
+          do k = 1,pver
+             if ( .not. tropFlag(i,k) ) then
+                vmr(i,k,:) = vmr_old2(i,k,:)
+             endif
+          enddo
+       enddo
+    endif
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
        if ( history_gaschmbudget ) then
@@ -843,10 +859,24 @@ contains
     !-----------------------------------------------------------------------
     if ( has_strato_chem ) wrk(:,:) = vmr(:,:,h2o_ndx)
     !
+    if (uci1_ndx > 0) then
+       vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
     call t_startf('imp_sol')
     call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) )
     call t_stopf('imp_sol')
+
+    ! reset vmr to pre-imp_sol values for stratospheric boxes
+    if (uci1_ndx > 0) then
+       do i = 1,ncol
+          do k = 1,pver
+             if ( .not. tropFlag(i,k) ) then
+                vmr(i,k,:) = vmr_old2(i,k,:)
+             endif
+          enddo
+       enddo
+    endif
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
        if ( history_gaschmbudget ) then
@@ -970,14 +1000,22 @@ contains
     
     xsfc(:,:)=0    
     if ( do_lin_strat_chem ) then
-       if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,                col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
-       if(linoz_v3) then
-                    call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                    call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )
+       if (uci1_ndx <= 0) then
+          if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
+          if(linoz_v3) then
+                       call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )
+          endif
+        else
+          if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )                  
+          if(linoz_v3) then
+                       call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )
+          endif
+          call fstrat_efold_decay(ncol, vmr, delt, troplev, tropFlag=tropFlag) !if chemuci is on
        endif
        
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
-       call fstrat_efold_decay(ncol, vmr, delt, troplev) !if chemuci is on
     end if
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
@@ -1016,7 +1054,7 @@ contains
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
     !-----------------------------------------------------------------------      
-    if(.not. linoz_v3) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
+    if(.not. do_lin_strat_chem) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
        if ( history_gaschmbudget ) then

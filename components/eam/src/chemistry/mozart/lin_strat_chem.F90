@@ -1,16 +1,17 @@
-!--------------------------------------------------------------------
-      module lin_strat_chem
+--------------------------------------------------------------------
+module lin_strat_chem
 !     24 Oct 2008 -- Francis Vitt
 !      9 Dec 2008 -- Philip Cameron-Smith, LLNL, -- added ltrop
 !      4 Jul 2019 -- Qi Tang (LLNL), Juno Hsu (UCI), -- added sfcsink
-!     20 Jan 2021 -- Juno Hsu(UCI) added Linoz v3 
+!      20 Jan 2021 -- Juno Hsu(UCI) added Linoz v3 
 !        --new linoz v3 subroutine linv3_strat_chem_solve (linoz_v3 if O3LNZ, N2OLNZ, NOYLNZ and CH4LNZ are defined)
 !        --modified lin_strat_chem_solve is now linv2_strat_chem_solve (linoz_v2 if only O3LNZ is defined; use only O3LNZ part of Linoz v3 netcdf file)
 !        --modified sfcsink working for v2 or v3 depending on species
-!       Spring 2021 -- Juno Hsu
+!      Spring 2021 -- Juno Hsu
 !       --added H2OLNZ, saves H2O water vapor from CH4 oxidation
 !       --added prescribed O3LBS in netcdf file (prescribed CMIP6 historical surface ozone below 925 mb). And Linoz surface ozone are relaxed to this profile in 2-days within the last 9 surface layers
 !      added 30-day e-fold decay subroutine (lin_strat_efold_decay) for ChemUCI tropospheric species assigned to the namelist, fstrat_efold_list   
+!     20 Sep 2021 -- Qi Tang (LLNL), -- added 3D tropopause
 
   use shr_kind_mod , only : r8 => shr_kind_r8
   use ppgrid       , only : begchunk, endchunk
@@ -28,11 +29,11 @@
   !
   ! define public components of module
   !
-   public :: lin_strat_chem_inti, linv2_strat_chem_solve, linv3_strat_chem_solve
-   public :: lin_strat_sfcsink
-   public :: do_lin_strat_chem, linoz_v2, linoz_v3
-   public :: linoz_readnl   ! read linoz_nl namelist
-   public :: has_fstrat_efold, fstrat_efold_inti, fstrat_efold_decay
+  public :: lin_strat_chem_inti, linv2_strat_chem_solve, linv3_strat_chem_solve
+  public :: lin_strat_sfcsink
+  public :: do_lin_strat_chem, linoz_v2, linoz_v3
+  public :: linoz_readnl   ! read linoz_nl namelist
+  public :: has_fstrat_efold, fstrat_efold_inti, fstrat_efold_decay
 
   integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx, h2olnz_ndx
   integer :: o3_ndx, n2o_ndx, ch4_ndx, no_ndx, no2_ndx, hno3_ndx 
@@ -45,7 +46,7 @@
   real(r8) :: linoz_sfc = unset_r8  ! boundary layer concentration (ppb) to which Linoz ozone e-fold
   real(r8) :: linoz_tau = unset_r8  ! Linoz e-fold time scale (in seconds) in the boundary layer
   real(r8) :: linoz_psc_T = unset_r8  ! PSC ozone loss T (K) threshold
- 
+
   integer  :: o3_lbl ! set from namelist input linoz_lbl
   real(r8) :: o3_sfc ! set from namelist input linoz_sfc
   real(r8) :: o3_tau ! set from namelist input linoz_tau
@@ -214,7 +215,7 @@ end subroutine linoz_readnl
 
 !--------------------------------------------------------------------
 !--------------------------------------------------------------------
-  subroutine linv3_strat_chem_solve(ncol, lchnk, xvmr, h2ovmr, xsfc, o3col, temp, sza, pmid, delta_t, rlats, ltrop)
+  subroutine linv3_strat_chem_solve(ncol, lchnk, xvmr, h2ovmr, xsfc, o3col, temp, sza, pmid, delta_t, rlats, ltrop, tropFlag )
 
 !--------------------------------------------------------------------
 ! linearized ozone chemistry linoz-v3 (o3-n2o-noy-ch4 prognostic equations, h2o diagnosed from ch4) 
@@ -261,8 +262,10 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index    
+    logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
     !
     integer  :: i,k,n,ll,lt0,lt, n_dl !,index_lat,index_month
+    integer :: kmax
     real(r8) :: o3col_du,delta_temp,delta_o3col    
     real(r8) ::o3_old,   n2o_old,  noy_old,  ch4_old,  h2o_old
     real(r8) ::o3_new,   n2o_new,  noy_new,  ch4_new,  h2o_new
@@ -479,16 +482,24 @@ end subroutine linoz_readnl
        lats = rlats * radians_to_degrees
 
        LOOP_COL: do i=1,ncol
-           lt0= ltrop(i)
-           lt=  ltrop(i)
-           n_dl=0
-           do ll= lt0,1,-1
-              if ( pmid(i,ll) > pressure_threshold ) THEN            
-                 lt= ll-1
-              endif
-           enddo
-           n_dl= lt -lt0          
-          LOOP_LEV: do k=1, ltrop(i) + n_dl
+          if (.not. present(tropFlag)) then
+             lt0= ltrop(i)
+             lt=  ltrop(i)
+             n_dl=0
+             do ll= lt0,1,-1
+                if ( pmid(i,ll) > pressure_threshold ) THEN            
+                   lt= ll-1
+                endif
+             enddo
+             n_dl= lt -lt0          
+             kmax = ltrop(i)+ n_dl
+          else
+             kmax = pver
+          endif
+          LOOP_LEV: do k=1, kmax
+             if (present(tropFlag)) then
+                 if (tropFlag(i,k) .or. pmid(i,k)>pressure_threshold) cycle
+             endif
           ! current mixing ratio
              o3_old =   o3_vmr(i,k)
              n2o_old=   n2o_vmr(i,k)
@@ -578,10 +589,17 @@ end subroutine linoz_readnl
         end do LOOP_LEV
 
        !use tropospheric specific humidity
-        LOOP_TROPLEV: do k= ltrop(i)+ n_dl, pver
-          xvmr(i,k, h2olnz_ndx)   = h2ovmr(i,k)
-        end do LOOP_TROPLEV
-
+        if (.not. present(tropFlag)) then
+          LOOP_TROPLEV: do k= ltrop(i)+ n_dl, pver
+            xvmr(i,k, h2olnz_ndx)   = h2ovmr(i,k)
+          end do LOOP_TROPLEV
+        else
+          do k= 1, pver
+            if (tropFlag(i,k)) then
+              xvmr(i,k, h2olnz_ndx)   = h2ovmr(i,k)
+            endif
+          end do
+        endif
         
      end do LOOP_COL
 !    save the passed-in o3col for all layers rather than just the stratosphere
@@ -601,7 +619,7 @@ end subroutine linoz_readnl
 
  !--------------------------------------------------------------------
 !--------------------------------------------------------------------
-  subroutine linv2_strat_chem_solve( ncol, lchnk, xvmr, o3col, temp, sza, pmid, delta_t, rlats, ltrop )
+  subroutine linv2_strat_chem_solve( ncol, lchnk, xvmr, o3col, temp, sza, pmid, delta_t, rlats, ltrop, tropFlag )
 !  modified from Linoz v2 written by   
     use chlorine_loading_data, only: chlorine_loading
     use chem_mods,             only: gas_pcnst
@@ -632,10 +650,12 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index
+    logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
     !
     ! local
     !
     integer :: i,k,n, ll, lt0, lt, n_dl !,index_lat,index_month
+    integer :: kmax
     real(r8) :: o3col_du,delta_temp,delta_o3col,o3_old,o3_new,delta_o3
     real(r8) :: max_sza, psc_loss
     real(r8) :: o3_clim
@@ -701,16 +721,25 @@ end subroutine linoz_readnl
     lats = rlats * radians_to_degrees
 
     LOOP_COL: do i=1,ncol
-            lt0= ltrop(i)
-            lt = ltrop(i)
-            n_dl=0
-            do ll= lt0,1,-1
-              if ( pmid(i,ll) > pressure_threshold ) THEN            
-                 lt= ll-1
-              endif
-           enddo
-           n_dl = lt - lt0
-       LOOP_LEV: do k=1, ltrop(i)+ n_dl
+       if (.not. present(tropFlag)) then
+          lt0= ltrop(i)
+          lt = ltrop(i)
+          n_dl=0
+          do ll= lt0,1,-1
+             if ( pmid(i,ll) > pressure_threshold ) THEN            
+                lt= ll-1
+             endif
+          enddo
+          n_dl = lt - lt0
+          kmax = ltrop(i)+ n_dl
+       else
+          kmax = pver
+       endif
+       LOOP_LEV: do k=1, kmax
+          if (present(tropFlag)) then
+            ! skip Linoz if in the troposphere or pressure exceeds threshold
+            if (tropFlag(i,k) .or. pmid(i,k)>pressure_threshold) cycle
+          endif
           !
           ! climatological ozone
           !
@@ -824,7 +853,7 @@ end subroutine linoz_readnl
     use physconst,     only : mw_air => mwdry
    
     use mo_constants, only : pi, rgrav, rearth
- 
+
     use phys_grid,    only : get_area_all_p
 
     use cam_history,   only : outfld
@@ -952,7 +981,7 @@ end subroutine linoz_readnl
    end subroutine fstrat_efold_inti
 
 
-   subroutine fstrat_efold_decay(ncol, xvmr, delta_t, ltrop)
+   subroutine fstrat_efold_decay(ncol, xvmr, delta_t, ltrop, tropFlag)
 
  !   use namelist_utils,       only : fstrat_efold_list
     use mo_chem_utls,         only : get_spc_ndx
@@ -968,8 +997,9 @@ end subroutine linoz_readnl
     real(r8), intent(inout), dimension(ncol ,pver ,gas_pcnst) :: xvmr     ! volume mixing ratio for all
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index
+    logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
 
-    integer :: ispc, i, k
+    integer :: ispc, i, k, kmax
     real(r8):: efactor, dx
 
     real(r8), parameter :: tau_30d = 1._r8/(30._r8*86400._r8)      ! inverse of (30 days*86400 sec/day)
@@ -982,8 +1012,17 @@ end subroutine linoz_readnl
         if (has_fstrat_efold(ispc)) then
  !         write(iulog,*)'ispc= ', ispc
            LOOP_COL: do i=1, ncol
+              if (.not. present(tropFlag)) then
+                kmax = ltrop(i)
+              else
+                kmax = pver
+              endif
 
-              LOOP_STRAT: do k= 1, ltrop(i)
+              LOOP_STRAT: do k= 1, kmax
+                 if (present(tropFlag)) then
+                    ! skip if in the troposphere
+                    if (tropFlag(i,k)) cycle
+                 endif
                    
                  dx   = xvmr(i,k,ispc) *efactor
                  xvmr(i,k,ispc) = xvmr(i,k,ispc) - dx

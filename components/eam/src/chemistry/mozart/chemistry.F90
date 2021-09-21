@@ -1367,7 +1367,7 @@ end function chem_is_active
     use spmd_utils,          only : iam
     use camsrfexch,          only : cam_in_t, cam_out_t     
     use perf_mod,            only : t_startf, t_stopf
-    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE, TROP_ALG_E90
+    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE, TROP_ALG_E90, tropopause_e90_3d
     use mo_drydep,           only : drydep_update
     use mo_neu_wetdep,       only : neu_wetdep_tend, do_neu_wetdep
     use aerodep_flx,         only : aerodep_flx_prescribed
@@ -1375,6 +1375,7 @@ end function chem_is_active
     use mo_tracname,         only : solsym
     use physconst,           only : rga
     use phys_control,        only : phys_getopts
+    use mo_chem_utls,        only : get_rxt_ndx
     
     implicit none
 
@@ -1403,6 +1404,8 @@ end function chem_is_active
     real(r8) :: chem_dt              ! time step
     real(r8) :: drydepflx(pcols,pcnst)             ! dry deposition fluxes (kg/m2/s)
     integer  :: tropLev(pcols)
+    integer  :: tmp_tropLev(pcols)
+    logical  :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
     real(r8) :: ncldwtr(pcols,pver)                ! droplet number concentration (#/kg)
     real(r8), pointer :: pblh(:)
     real(r8), pointer :: prain(:,:)
@@ -1420,6 +1423,7 @@ end function chem_is_active
     integer :: nstep
 
     integer :: tim_ndx
+    integer :: uci1_ndx
 
     logical :: lq(pcnst)
 
@@ -1456,7 +1460,12 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
-    call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    uci1_ndx = get_rxt_ndx('uci1')
+    if (uci1_ndx <= 0) then
+      call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    else
+      call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag)
+    end if
 
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_pblh,       pblh)
@@ -1538,7 +1547,7 @@ end function chem_is_active
                           chem_dt, state%ps, xactive_prates, do_cloudj_photolysis, &
                           fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice)
+                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag)
 
     call t_stopf( 'chemdr' )
 
