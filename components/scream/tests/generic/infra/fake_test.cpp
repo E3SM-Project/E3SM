@@ -52,4 +52,10 @@ TEST_CASE("pass", "[fake_infra_test]")
   REQUIRE(true);
 }
 
+TEST_CASE("rank_and_thread_spread", "[fake_infra_test]")
+{
+  // TODO
+  REQUIRE(true);
+}
+
 } // empty namespace
