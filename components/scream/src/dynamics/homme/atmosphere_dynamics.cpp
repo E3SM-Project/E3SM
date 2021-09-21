@@ -285,10 +285,6 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   const auto& rho_track = get_field_out("pseudo_density").get_header().get_tracking();
   const auto& w_i_track = get_field_out("w_int").get_header().get_tracking();
   const auto& Q_dyn_track = get_group_out("Q",dgn).m_bundle->get_header().get_tracking();
-  for (auto wp : Q_dyn_track.get_providers()) { 
-    auto sp = wp.lock();
-    if (get_comm().am_i_root()) printf("Q is provided by: %s\n",sp->name().c_str());
-  }
   EKAT_REQUIRE_MSG (
       rho_track.get_providers().size()==1,
       "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
