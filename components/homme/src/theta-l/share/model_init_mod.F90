@@ -120,6 +120,7 @@ contains
     !
     nlev_tom=0
     if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
+#if 0
     do k=1,nlev
        !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
        !ptop  = hvcoord%hyai(1)*hvcoord%ps0
@@ -157,6 +158,10 @@ contains
           if (nu_scale_top(k)>0) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
     end do
+#endif
+nlev_tom=nlev
+nu_scale_top(1:nlev) = 1.0
+
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom
     end if

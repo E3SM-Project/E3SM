@@ -810,7 +810,13 @@ contains
            lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            lap_v=vlaplace_sphere_wk(elem(ie)%state%v            (:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            
-           xfac=dt*nu_scale_top(k)*nu_top
+           !xfac=dt*nu_scale_top(k)*nu_top
+!for bfb?
+!ignore subcycle, DT2!!!!
+           xfac=(dt2*nu_top)/hypervis_subcycle_tom
+
+!print *, 'xfac ==', xfac
+
 
            vtens(:,:,:,k,ie)=xfac*lap_v(:,:,:)
            stens(:,:,k,1,ie)=xfac*lap_s(:,:,1)  ! dp3d

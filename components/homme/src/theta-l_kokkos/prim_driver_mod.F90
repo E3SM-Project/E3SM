@@ -63,12 +63,13 @@ contains
                               init_time_level_c, init_hvcoord_c, init_elements_c
     use time_mod,      only : TimeLevel_t
     use hybvcoord_mod, only : hvcoord_t
-    use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
-                              nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
-                              hypervis_order, hypervis_subcycle, hypervis_scaling,    &
-                              ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                              use_cpstar, transport_alg, theta_hydrostatic_mode,      &
-                              dcmip16_mu, theta_advect_form, test_case,               &
+    use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,   &
+                              nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg,  &
+                              hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,&
+                              hypervis_scaling,                                        &
+                              ftype, prescribed_wind, moisture, disable_diagnostics,   &
+                              use_cpstar, transport_alg, theta_hydrostatic_mode,       &
+                              dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor
     !
     ! Input(s)
@@ -93,7 +94,8 @@ contains
     test_name = TRIM(test_case) // C_NULL_CHAR
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
-                                   hypervis_order, hypervis_subcycle, hypervis_scaling,           &
+                                   hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,      &
+                                   hypervis_scaling,                                              &
                                    dcmip16_mu, ftype, theta_advect_form,                          &
                                    LOGICAL(prescribed_wind==1,c_bool),                            &
                                    LOGICAL(moisture/="dry",c_bool),                               &

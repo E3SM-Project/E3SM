@@ -393,18 +393,22 @@ public:
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        utens(ilev)   *= m_data.dt*rspheremp;
-        vtens(ilev)   *= m_data.dt*rspheremp;
-        ttens(ilev)   *= m_data.dt*rspheremp;
-        dptens(ilev)  *= m_data.dt*rspheremp;
+
+//ignore subcycle
+        const auto xf =( m_data.dt*m_data.nu_top) / m_data.hypervis_subcycle_tom;
+
+        utens(ilev)   *= xf*rspheremp;
+        vtens(ilev)   *= xf*rspheremp;
+        ttens(ilev)   *= xf*rspheremp;
+        dptens(ilev)  *= xf*rspheremp;
 
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
         vtheta(ilev) += ttens(ilev);
         dp(ilev)     += dptens(ilev);
         if (m_process_nh_vars) {
-          wtens(ilev)   *= m_data.dt*rspheremp;
-          phitens(ilev) *= m_data.dt*rspheremp;
+          wtens(ilev)   *= xf*rspheremp;
+          phitens(ilev) *= xf*rspheremp;
 
           w(ilev)      += wtens(ilev);
           phi_i(ilev)  += phitens(ilev);
