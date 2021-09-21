@@ -26,7 +26,7 @@ from machines_specs import is_machine_supported, is_cuda_machine, get_all_suppor
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
 
-import unittest, argparse, sys, difflib, shutil
+import unittest, argparse, sys, difflib, shutil, os
 from pathlib import Path
 
 # Globals
@@ -520,6 +520,8 @@ OR
 ###############################################################################
 def scripts_tests(machine=None, generate=False, compare=False, full=False, jenkins=False):
 ###############################################################################
+    os.environ["SCREAM_FAKE_ONLY"] = "True"
+
     # Store test params in environment
     if machine:
         expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
