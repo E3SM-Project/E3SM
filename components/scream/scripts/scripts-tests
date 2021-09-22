@@ -412,7 +412,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
     def test_mpirank_and_thread_spreading(self):
         pass
 
-    def test_jenkins_process(self):
+    def test_jenkins_process_at(self):
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
@@ -423,10 +423,20 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping jenkins test")
 
-    def test_jenkins_process_config_fail_captured(self):
+    def test_jenkins_process_nightly(self):
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
+            cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
+                               self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
+        else:
+            self.skipTest("Skipping jenkins test")
+
+    def test_jenkins_process_fail_captured_at(self):
+        if self._jenkins:
+            # Any fail will do, we already checked test-all-scream captures all the fail types
             cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
@@ -434,22 +444,10 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping jenkins test")
 
-    def test_jenkins_process_build_fail_captured(self):
+    def test_jenkins_process_fail_captured_nightly(self):
         if self._jenkins:
-            # We set PULLREQUESTNUM to block dashboard submission
-            # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("SCREAM_FORCE_BUILD_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
-                               self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
-
-        else:
-            self.skipTest("Skipping jenkins test")
-
-    def test_jenkins_process_run_fail_captured(self):
-        if self._jenkins:
-            # We set PULLREQUESTNUM to block dashboard submission
-            # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("SCREAM_FORCE_RUN_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+            # Any fail will do, we already checked test-all-scream captures all the fail types
+            cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
