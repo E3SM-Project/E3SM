@@ -371,9 +371,9 @@ _TESTS = {
     "e3sm_bench_lores_f" : {
         "time"     : "01:00:00",
         "tests"    : (
-                 "PFS_P1350.ne30_ne30.F2010.eam-bench-noio",
-                 "PFS_P2700.ne30_ne30.F2010.eam-bench-noio",
-                 "PFS_P5400.ne30_ne30.F2010.eam-bench-noio",
+                 "PFS_P1350.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P2700.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P5400.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_lores" : {
