@@ -225,9 +225,29 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 ### <Scream configuration options
 
 # Scream test configuration options
-set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
+set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads per rank for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
 set(SCREAM_TEST_MAX_RANKS ${DEFAULT_MAX_RANKS} CACHE STRING "Upper limit on ranks for mpi tests")
+math(EXPR DEFAULT_MAX_TOTAL_THREADS "${SCREAM_TEST_MAX_RANKS}*${SCREAM_TEST_MAX_THREADS}")
+set(SCREAM_TEST_MAX_TOTAL_THREADS ${DEFAULT_MAX_TOTAL_THREADS} CACHE STRING "Upper limit on nranks*threads for threaded tests")
+
+# Make sure SCREAM_TEST_MAX_RANKS and SCREAM_TEST_MAX_THREADS do not individually exceed SCREAM_TEST_MAX_TOTAL_THREADS
+if (SCREAM_TEST_MAX_THREADS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max threads/rank (${SCREAM_TEST_MAX_THREADS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_THREADS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_THREADS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
+if (SCREAM_TEST_MAX_RANKS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max ranks (${SCREAM_TEST_MAX_RANKS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_RANKS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_RANKS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
