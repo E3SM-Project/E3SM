@@ -124,6 +124,8 @@ team_num_threads_vectors_for_gpu (
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
+#if 0
+
   int num_warps;
   if (tp.prefer_larger_team) {
     const int num_warps_usable =
@@ -162,10 +164,8 @@ team_num_threads_vectors_for_gpu (
 //TP(16,64)    for 16*32, 16
 //
 //printf("tp. prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
-//    return std::make_pair( num_threads,
-//                           prevpow2(num_device_threads / num_threads) );
-
-return std::make_pair( 32, 32);
+    return std::make_pair( num_threads,
+                           prevpow2(num_device_threads / num_threads) );
 
 
   } else {
@@ -179,6 +179,11 @@ return std::make_pair( 32, 32);
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
+#endif
+  
+return std::make_pair( 16,4 );
+
+
 }
 
 } // namespace Parallel
@@ -191,7 +196,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
   // fewer than 4 warps/thread block limits the thread occupancy to that
   // number/4. That seems to be in Cuda specs, but I don't know of a function
   // that provides this number. Use a configuration option that defaults to 4.
-  const int min_num_warps = HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
+  const int min_num_warps = 4; //HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
 #ifdef KOKKOS_ENABLE_CUDA
   const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
@@ -218,12 +223,20 @@ team_num_threads_vectors (const int num_parallel_iterations,
 
   //use 64 wavefronts per CU and 120 CUs
   const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
-  const int max_num_warps = 64;   //cores per CU, SM  ///HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
+  const int max_num_warps = 40;   //cores per CU, SM  ///HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
   const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
 
 //warpsize is 64 for hip
 //printf(" warpsize----------: %4d \n",num_threads_warp);
 //printf("        on GPU? %d  \n", OnGpu<ExecSpace>::value);
+
+//shows host
+//#if __HIP_DEVICE_COMPILE__ == 1
+//  printf("DEVICEEEEEEEEEEEEEEE \n");
+//#endif
+//#ifndef __HIP_DEVICE_COMPILE__
+//  printf("HOSTTTTT \n");
+//#endif
 
 #else
 

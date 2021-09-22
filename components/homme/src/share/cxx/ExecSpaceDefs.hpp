@@ -146,7 +146,7 @@ struct DefaultThreadsDistribution {
 #ifdef KOKKOS_ENABLE_DEPRECATED_CODE
       ExecSpaceType::thread_pool_size()
 #else
-      1 //ExecSpaceType::impl_thread_pool_size()
+      ExecSpaceType::impl_thread_pool_size()
 #endif
       , num_parallel_iterations, tp);
   }

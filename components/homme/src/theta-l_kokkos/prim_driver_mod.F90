@@ -371,10 +371,13 @@ contains
 #ifndef SCREAM
     ! Scream already computes all forcing using the same pointers
     ! stored in Hommexx, so the forcing is already up to date
+
+    if(.false.) then
     call t_startf('push_to_cxx')
     call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                            elem_derived_FPHI, elem_derived_FQ)
     call t_stopf('push_to_cxx')
+    endif
 #endif
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)

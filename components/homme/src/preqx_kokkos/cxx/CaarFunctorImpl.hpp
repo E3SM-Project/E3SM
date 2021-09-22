@@ -218,6 +218,14 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
+//#if __HIP_DEVICE_COMPILE__ == 1
+//  printf("DEVICEEEEEEEEEEEEEEE \n");
+//#endif
+//#ifndef __HIP_DEVICE_COMPILE__
+//  printf("HOSTTTTT \n");
+//#endif
+
+
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV), [&] (const int& ilev) {
         // pre-fill energy_grad with the pressure(_grad)-temperature part
         m_buffers.energy_grad(kv.team_idx, 0, igp, jgp, ilev) =

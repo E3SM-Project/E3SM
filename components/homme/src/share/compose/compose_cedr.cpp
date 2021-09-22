@@ -131,10 +131,12 @@ struct ExeSpaceUtils {
 }
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
+#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
 template <>
-struct ExeSpaceUtils<Kokkos::Cuda> {
-  using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
+//struct ExeSpaceUtils<Kokkos::Cuda> {
+//  using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
+struct ExeSpaceUtils<Hommexx_Cuda> {
+  using TeamPolicy = Kokkos::TeamPolicy<Hommexx_Cuda>;
   using Member = typename TeamPolicy::member_type;
   static TeamPolicy get_default_team_policy (int outer, int inner) {
     return TeamPolicy(outer, std::min(128, 32*((inner + 31)/32)), 1);
@@ -3744,8 +3746,9 @@ template class cedr::qlt::QLT<Kokkos::Serial>;
 #ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::qlt::QLT<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_ENABLE_CUDA
-template class cedr::qlt::QLT<Kokkos::Cuda>;
+#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+//template class cedr::qlt::QLT<Kokkos::Cuda>;
+template class cedr::qlt::QLT<Hommexx_Cuda>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
 template class cedr::qlt::QLT<Kokkos::Threads>;
@@ -4155,8 +4158,9 @@ template class cedr::caas::CAAS<Kokkos::Serial>;
 #ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::caas::CAAS<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_ENABLE_CUDA
-template class cedr::caas::CAAS<Kokkos::Cuda>;
+#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+//template class cedr::caas::CAAS<Kokkos::Cuda>;
+template class cedr::caas::CAAS<Hommexx_Cuda>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
 template class cedr::caas::CAAS<Kokkos::Threads>;
