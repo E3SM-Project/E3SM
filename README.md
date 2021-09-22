@@ -23,7 +23,7 @@
 - [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
 - [Sample Output, Model vs Observations](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/all_sets_v250_20210608_1878984/viewer/)
 - Quick Start Guides:
-  - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-cori.html)
+  - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-cori-haswell.html)
   - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-compy.html)
   - [Quick Start Guide for LCRC-Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-anvil.html)
   - [Quick Start Guide for LCRC-Chrysalis](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-chrysalis.html)
@@ -41,13 +41,12 @@ This diagnostics package is constructed for supporting the diagnostics task of D
 
 - fully integrates the functionality of NCAR's AMWG diagnostics package.
 - utilizes most updated observational datasets, including remote sensing, reanalysis and in-situ datasets.
-- interfaces with diagnostics developed from different E3SM focus groups: atmosphere group, coupled simulation group, land group.
-- interacts effectively with the PCMDI's metrics package and the ARM diagnostics package through a unifying framework: [Community Diagnostics Package (CDP)](https://github.com/CDAT/cdp).
+- interfaces with diagnostics developed from different E3SM science groups
 - is flexible for user specified diagnostics and being configured for use by other climate models.
 
 ## Current State <a name="current-state"></a>
 
-Algorithm and visualization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented.
+Algorithm and visualization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented as core sets of this diagnostics package. More diagnostics harvested from E3SM v1 and v2 development are also supported.
 
 The package features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension.
 
