@@ -11,8 +11,7 @@ namespace scream
   using namespace cld_fraction;
 // =========================================================================================
 CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_cldfraction_comm (comm)
- , m_cld_fraction_params (params)
+  : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
 }
@@ -29,7 +28,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   Q.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

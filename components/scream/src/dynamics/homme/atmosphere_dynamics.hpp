@@ -38,9 +38,6 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Dynamics"; }
 
-  // The communicator used by the dynamics
-  const ekat::Comm& get_comm () const { return m_dynamics_comm; }
-
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
@@ -105,12 +102,6 @@ protected:
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
   std::shared_ptr<const AbstractGrid>  m_ref_grid;
-
-  // Homme dyn parameters
-  ekat::ParameterList     m_params;
-
-  // The MPI communicator associated witht this atm process
-  ekat::Comm              m_dynamics_comm;
 };
 
 } // namespace scream

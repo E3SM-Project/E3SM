@@ -14,7 +14,9 @@ namespace scream {
   using MemberType = KT::MemberType;
 
 RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
-  : AtmosphereProcess::AtmosphereProcess(), m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
+  : AtmosphereProcess(comm, params)
+{
+  // Nothing to do here
 }  // RRTMGPRadiation::RRTMGPRadiation
 
 // =========================================================================================
@@ -23,7 +25,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   using namespace ekat::units;
 
   // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
-  auto active_gases = m_rrtmgp_params.get<std::vector<std::string>>("active_gases");
+  auto active_gases = m_params.get<std::vector<std::string>>("active_gases");
   for (auto& it : active_gases) {
     // Make sure only unique names are added
     if (std::find(m_gas_names.begin(), m_gas_names.end(), it) == m_gas_names.end()) {
@@ -43,7 +45,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   using namespace ShortFieldTagsNames;
 
-  const auto& grid_name = m_rrtmgp_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
   m_ncol = grid->get_num_local_dofs();
   m_nlay = grid->get_num_vertical_levels();
@@ -180,10 +182,10 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Determine orbital year. If Orbital Year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
-  m_orbital_year = m_rrtmgp_params.get<Int>("Orbital Year",-9999);
+  m_orbital_year = m_params.get<Int>("Orbital Year",-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
-  m_fixed_solar_zenith_angle = m_rrtmgp_params.get<Real>("Fixed Solar Zenith Angle", -9999);
+  m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }

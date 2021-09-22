@@ -23,8 +23,7 @@ namespace scream
 
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_p3_comm (comm)
- , m_p3_params (params)
+  : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
 }
@@ -41,7 +40,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   Units nondim(0,0,0,0,0,0,0);
   auto micron = m / 1000000;
 
-  const auto& grid_name = m_p3_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

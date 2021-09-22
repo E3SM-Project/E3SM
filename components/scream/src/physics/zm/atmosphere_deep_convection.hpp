@@ -32,9 +32,6 @@ public:
   // The name of the subcomponent
   std::string name () const { return "DeepConvection"; }
 
-  // The communicator used by subcomponent
-  const ekat::Comm& get_comm () const { return m_zm_comm; }
-
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
@@ -70,10 +67,6 @@ protected:
 
   std::map<std::string,host_view_in_type>   m_zm_host_views_in;
   std::map<std::string,host_view_out_type>  m_zm_host_views_out;
-
-  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
-  ekat::Comm              m_zm_comm;
-  ekat::ParameterList     m_zm_params;
   
   std::map<std::string,const Real*>  m_raw_ptrs_in;
   std::map<std::string,Real*>        m_raw_ptrs_out;

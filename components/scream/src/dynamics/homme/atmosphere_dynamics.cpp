@@ -37,8 +37,7 @@ namespace scream
 {
 
 HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_params        (params)
- , m_dynamics_comm (comm)
+  : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
 }

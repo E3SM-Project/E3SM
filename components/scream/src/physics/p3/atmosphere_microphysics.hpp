@@ -54,13 +54,10 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Microphysics"; }
 
-  // The communicator used by subcomponent
-  const ekat::Comm& get_comm () const { return m_p3_comm; }
-
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert(m_p3_params.get<std::string>("Grid"));
+    s.insert(m_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -248,10 +245,6 @@ protected:
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
-
-  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
-  ekat::Comm          m_p3_comm;
-  ekat::ParameterList m_p3_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols;

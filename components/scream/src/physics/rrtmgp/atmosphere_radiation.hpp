@@ -34,13 +34,10 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Radiation"; }
 
-  // The communicator used by the subcomponent
-  const ekat::Comm& get_comm () const { return m_rrtmgp_comm; }
-
   // Required grid for the subcomponent (??)
   std::set<std::string> get_required_grids () const {
       static std::set<std::string> s;
-      s.insert(m_rrtmgp_params.get<std::string>("Grid"));
+      s.insert(m_params.get<std::string>("Grid"));
       return s;
   }
 
@@ -53,10 +50,6 @@ public:
   void initialize_impl (const util::TimeStamp& t0);
   void run_impl        (const Real dt);
   void finalize_impl   ();
-
-  // TODO: store comm and params in the base class. It's pointless to have all subclasses store this stuff.
-  ekat::Comm            m_rrtmgp_comm;
-  ekat::ParameterList   m_rrtmgp_params;
 
   // Keep track of number of columns and levels
   int m_ncol;
