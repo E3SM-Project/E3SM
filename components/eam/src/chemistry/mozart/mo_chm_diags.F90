@@ -414,8 +414,14 @@ contains
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
+
+    ! tropospheric air mass diagnostics based on 3D tropopause flag
     call addfld( 'TROPMASS', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column' )
+    call addfld( 'TROPMASSB', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (lowest tropopause)' )
+    call addfld( 'TROPMASST', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (highest tropopause)' )
     call add_default( 'TROPMASS', 1, ' ' )
+    call add_default( 'TROPMASSB', 1, ' ' )
+    call add_default( 'TROPMASST', 1, ' ' )
 
     if (history_gaschmbudget .or. history_gaschmbudget_2D) then
        call add_default( 'AREA', 1, ' ' )
@@ -619,8 +625,9 @@ contains
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
     call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
-    ! tropospheric air mass with 3D tropopause
+    ! tropospheric air mass when 3D tropopause is available
     if (present(tropFlag)) then
+      ! 3D tropopause
       wrk1d(:) = 0._r8
       do i = 1,ncol
          do k = 1,pver
@@ -630,6 +637,32 @@ contains
          end do
       end do
       call outfld( 'TROPMASS', wrk1d, ncol, lchnk )
+      ! lowest tropopause based on the 3D definition
+      wrk1d(:) = 0._r8
+      do i = 1,ncol
+         ! from surface to top
+         do k = pver,1,-1
+            if (.not. tropFlag(i,k)) exit
+            wrk1d(i) = wrk1d(i) + mass(i,k)
+         end do
+      end do
+      call outfld( 'TROPMASSB', wrk1d, ncol, lchnk )
+      ! highest tropopause based on the 3D definition
+      wrk1d(:) = 0._r8
+      do i = 1,ncol
+         ! from top to surface
+         do k = 1,pver
+            if (tropFlag(i,k)) then
+               j = k ! index of highest tropospheric box
+               exit
+            end if
+         end do
+         ! from surface to top
+         do k = pver,j,-1
+            wrk1d(i) = wrk1d(i) + mass(i,k)
+         end do
+      end do
+      call outfld( 'TROPMASST', wrk1d, ncol, lchnk )
     end if
 
     ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
