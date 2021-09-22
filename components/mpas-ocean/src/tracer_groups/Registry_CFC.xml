@@ -51,10 +51,10 @@
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="CFCTracers" dimensions="nVertLevels nCells Time" type="real" packages="CFCTracersPKG"  default_value="0.0">
 				<!-- Add constituents of tracer group -->
-				<var name="CFC11" array_group="CFCGRP" units="mmol m^{-3}"
+				<var name="CFC11" array_group="CFCGRP" units="mol m^{-3}"
 			description="CFC11"
 				/>
-				<var name="CFC12" array_group="CFCGRP" units="mmol m^{-3}"
+				<var name="CFC12" array_group="CFCGRP" units="mol m^{-3}"
 			description="CFC12"
 				/>
 			</var_array>
@@ -65,10 +65,10 @@
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="CFCTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="CFCTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="CFC11Tend" array_group="CFCGRP" units="mmol m^{-3} s^{-1}"
+				<var name="CFC11Tend" array_group="CFCGRP" units="mol m^{-3} s^{-1}"
 			description="CFC11 Tendency"
 				/>
-				<var name="CFC12Tend" array_group="CFCGRP" units="mmol m^{-3} s^{-1}"
+				<var name="CFC12Tend" array_group="CFCGRP" units="mol m^{-3} s^{-1}"
 			description="CFC12 Tendency"
 				/>
 			</var_array>
@@ -79,28 +79,28 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="CFCTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="CFCTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="CFC11SurfaceFlux" array_group="CFCSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFC11SurfaceFlux" array_group="CFCSurfaceFluxGRP" units="mol m^{-3} m s^{-1}"
 			description="CFC11 Surface Flux"
 				/>
-				<var name="CFC12SurfaceFlux" array_group="CFCSurfaceFluxGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFC12SurfaceFlux" array_group="CFCSurfaceFluxGRP" units="mol m^{-3} m s^{-1}"
 			description="CFC12 Surface Flux"
 				/>
 			</var_array>
 			<var_array name="CFCTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="CFCTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="CFCSurfaceFluxRunoff" array_group="CFCSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFCSurfaceFluxRunoff" array_group="CFCSurfaceFluxRunoffGRP" units="mol m^{-3} m s^{-1}"
 					description="CFC11 Surface Flux Due to Runoff"
 				/>
-				<var name="CFC12SurfaceFluxRunoff" array_group="CFCSurfaceFluxRunoffGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFC12SurfaceFluxRunoff" array_group="CFCSurfaceFluxRunoffGRP" units="mol m^{-3} m s^{-1}"
 					description="CFC12 Surface Flux Due to Runoff"
 				/>
 			</var_array>
 			<var_array name="CFCTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="CFCTracersPKG">
 				<!-- Add constituents of tracer group -->
-				<var name="CFCSurfaceFluxRemoved" array_group="CFCSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFCSurfaceFluxRemoved" array_group="CFCSurfaceFluxRemovedGRP" units="mol m^{-3} m s^{-1}"
 					description="CFC11 Surface Flux that is ignored"
 				/>
-				<var name="CFC12SurfaceFluxRemoved" array_group="CFCSurfaceFluxRemovedGRP" units="mmol m^{-3} m s^{-1}"
+				<var name="CFC12SurfaceFluxRemoved" array_group="CFCSurfaceFluxRemovedGRP" units="mol m^{-3} m s^{-1}"
 					description="CFC12 Surface Flux that is ignored"
 				/>
 			</var_array>
@@ -122,10 +122,10 @@
                         <var name="CFC11_flux_schmidt" type="real" dimensions="nCells Time" units="none"
                                 description="Schmidt Number used in CFC11 flux calculation"
                         />
-                        <var name="CFC11_flux_sat" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                        <var name="CFC11_flux_sat" type="real" dimensions="nCells Time" units="mol m^{3}"
                                 description="CFC11 Saturation used in CFC11 flux calculation"
                         />
-                        <var name="CFC11_flux_surf" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                        <var name="CFC11_flux_surf" type="real" dimensions="nCells Time" units="mol m^{3}"
                                 description="Surface CFC11 Values used in CFC11 flux calculation"
                         />
                         <var name="CFC11_flux_ws" type="real" dimensions="nCells Time" units="m s^{-1}"
@@ -148,10 +148,10 @@
                         <var name="CFC12_flux_schmidt" type="real" dimensions="nCells Time" units="none"
                                 description="Schmidt Number used in CFC12 flux calculation"
                         />
-                        <var name="CFC12_flux_sat" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                        <var name="CFC12_flux_sat" type="real" dimensions="nCells Time" units="mol m^{3}"
                                 description="CFC12 Saturation used in CFC12 flux calculation"
                         />
-                        <var name="CFC12_flux_surf" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                        <var name="CFC12_flux_surf" type="real" dimensions="nCells Time" units="mol m^{3}"
                                 description="Surface CFC12 Values used in CFC12 flux calculation"
                         />
                         <var name="CFC12_flux_ws" type="real" dimensions="nCells Time" units="m s^{-1}"
@@ -169,10 +169,10 @@
 				/>
 			</var_array>
 			<var_array name="CFCTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="CFCTracersSurfaceRestoringPKG">
-				<var name="CFC11SurfaceRestoringValue" array_group="CFCSRVGRP" units="mmol m^{3}"
+				<var name="CFC11SurfaceRestoringValue" array_group="CFCSRVGRP" units="mol m^{3}"
 			 description="Tracer is restored toward this field at a rate controlled by CFC11PistonVelocity."
 				/>
-				<var name="CFC12SurfaceRestoringValue" array_group="CFCSRVGRP" units="mmol m^{3}"
+				<var name="CFC12SurfaceRestoringValue" array_group="CFCSRVGRP" units="mol m^{3}"
 			 description="Tracer is restored toward this field at a rate controlled by CFC12PistonVelocity."
 				/>
 			</var_array>
@@ -187,10 +187,10 @@
 				/>
 			</var_array>
 			<var_array name="CFCTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="CFCTracersInteriorRestoringPKG">
-				<var name="CFC11InteriorRestoringValue" array_group="CFCIRVGRP" units="mmol m^{3}"
+				<var name="CFC11InteriorRestoringValue" array_group="CFCIRVGRP" units="mol m^{3}"
 			 description="Tracer is restored toward this field at a rate controlled by CFC11InteriorRestoringRate."
 				/>
-				<var name="CFC12InteriorRestoringValue" array_group="CFCIRVGRP" units="mmol m^{3}"
+				<var name="CFC12InteriorRestoringValue" array_group="CFCIRVGRP" units="mol m^{3}"
 			 description="Tracer is restored toward this field at a rate controlled by CFC12InteriorRestoringRate."
 				/>
 			</var_array>
