@@ -624,7 +624,7 @@ contains
       wrk1d(:) = 0._r8
       do i = 1,ncol
          do k = 1,pver
-            if (.not. tropFlag(i,k)) then
+            if (tropFlag(i,k)) then
                wrk1d(i) = wrk1d(i) + mass(i,k)
             end if
          end do
@@ -643,26 +643,46 @@ contains
 
     ! stratospheric column ozone
     wrk1d(:) = 0._r8
-    do i = 1,ncol
-       do k = 1,pver
-          if (k > ltrop(i)) then
-            exit
-          end if
-          wrk1d(i) = wrk1d(i) + wrk(i,k)
+    if (.not. present(tropFlag)) then
+       do i = 1,ncol
+          do k = 1,pver
+             if (k > ltrop(i)) then
+               exit
+             end if
+             wrk1d(i) = wrk1d(i) + wrk(i,k)
+          end do
        end do
-    end do
+    else
+       do i = 1,ncol
+          do k = 1,pver
+             if (.not. tropFlag(i,k)) then
+                wrk1d(i) = wrk1d(i) + wrk(i,k)
+             end if
+          end do
+       end do
+    end if
     call outfld( 'SCO', wrk1d,   ncol, lchnk )
 
     ! tropospheric column ozone
     wrk1d(:) = 0._r8
-    do i = 1,ncol
-       do k = 1,pver
-          if (k <= ltrop(i)) then
-            cycle
-          end if
-          wrk1d(i) = wrk1d(i) + wrk(i,k)
+    if (.not. present(tropFlag)) then
+       do i = 1,ncol
+          do k = 1,pver
+             if (k <= ltrop(i)) then
+               cycle
+             end if
+             wrk1d(i) = wrk1d(i) + wrk(i,k)
+          end do
        end do
-    end do
+    else
+       do i = 1,ncol
+          do k = 1,pver
+             if (tropFlag(i,k)) then
+                wrk1d(i) = wrk1d(i) + wrk(i,k)
+             end if
+          end do
+       end do
+    end if
     call outfld( 'TCO', wrk1d,   ncol, lchnk )
 
     do m = 1,gas_pcnst
