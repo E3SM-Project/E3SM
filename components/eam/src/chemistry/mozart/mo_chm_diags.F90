@@ -414,6 +414,8 @@ contains
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
+    call addfld( 'TROPMASS', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column' )
+    call add_default( 'TROPMASS', 1, ' ' )
 
     if (history_gaschmbudget .or. history_gaschmbudget_2D) then
        call add_default( 'AREA', 1, ' ' )
@@ -498,7 +500,7 @@ contains
 
   end subroutine chm_diags_inti_ac
 
-  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop )
+  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop, tropFlag )
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -536,6 +538,7 @@ contains
     real(r8), intent(in)  :: pdel(ncol,pver)
     real(r8), intent(in)  :: pdeldry(ncol,pver)
     integer,  intent(in)  :: ltrop(pcols)  ! index of the lowest stratospheric level
+    logical, optional, intent(in) :: tropFlag(pcols,pver)! 3D tropospheric level flag
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     !--------------------------------------------------------------------
@@ -550,7 +553,7 @@ contains
     real(r8), dimension(ncol,pver) :: mmr_noy, mmr_sox, mmr_nhx, net_chem
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
-    real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver)
+    real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver), tropmass(ncol)
     real(r8) :: wrk1d(ncol)
     real(r8) :: wgt
     character(len=16) :: spc_name
@@ -615,6 +618,19 @@ contains
     call outfld( 'AREA', area(:ncol),   ncol, lchnk )
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
     call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
+
+    ! tropospheric air mass with 3D tropopause
+    if (present(tropFlag)) then
+      wrk1d(:) = 0._r8
+      do i = 1,ncol
+         do k = 1,pver
+            if (.not. tropFlag(i,k)) then
+               wrk1d(i) = wrk1d(i) + mass(i,k)
+            end if
+         end do
+      end do
+      call outfld( 'TROPMASS', wrk1d, ncol, lchnk )
+    end if
 
     ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
     wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8

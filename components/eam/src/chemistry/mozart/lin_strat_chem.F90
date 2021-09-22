@@ -1,4 +1,3 @@
---------------------------------------------------------------------
 module lin_strat_chem
 !     24 Oct 2008 -- Francis Vitt
 !      9 Dec 2008 -- Philip Cameron-Smith, LLNL, -- added ltrop
