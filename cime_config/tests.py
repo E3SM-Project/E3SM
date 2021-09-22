@@ -339,13 +339,13 @@ _TESTS = {
     "e3sm_bench_hires_f" : {
         "time"     : "01:00:00",
         "tests"    : (
-                 "PFS_P7200.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P8640.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P10800.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P14400.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P21600.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P43200.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P86400.ne120_ne120.F2010.eam-bench-noio",
+                 "PFS_P7200.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P8640.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P10800.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P14400.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P21600.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P43200.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
+                 "PFS_P86400.ne120pg2_r05_oECv3.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_hires" : {
