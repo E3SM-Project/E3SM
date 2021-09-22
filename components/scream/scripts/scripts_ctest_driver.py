@@ -52,9 +52,9 @@ class ScriptsCtestDriver(object):
     ###############################################################################
     def generate_ctest_config(self, extra_configs):
     ###############################################################################
-        result = "CIME_MACHINE={} ".format(self._machine)
+        result = "CTEST_PARALLEL_LEVEL=1 CIME_MACHINE={} ".format(self._machine)
 
-        result += "ctest -V --output-on-failure "
+        result += "ctest -j1 -V --output-on-failure "
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
