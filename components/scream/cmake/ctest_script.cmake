@@ -29,7 +29,7 @@ else ()
   if (DEFINED ENV{SCREAM_BUILD_PARALLEL_LEVEL})
     ctest_build(FLAGS "-j$ENV{SCREAM_BUILD_PARALLEL_LEVEL}" RETURN_VALUE BUILD_ERROR_CODE)
   else()
-    ctest_build(FLAGS "-j4" RETURN_VALUE BUILD_SUCCESS)
+    ctest_build(FLAGS "-j4" RETURN_VALUE BUILD_ERROR_CODE)
   endif()
 
   # Need this code so that build errors don't get buried
