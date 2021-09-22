@@ -380,9 +380,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
         "time"    : "01:00:00",
         "tests"   : (
-                 "PFS_PS.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PM.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PL.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PM.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PL.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
                  )
     },
     "e3sm_bench_all" : {
