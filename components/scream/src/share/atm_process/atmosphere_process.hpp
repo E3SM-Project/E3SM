@@ -72,9 +72,6 @@ public:
   template<typename T>
   using str_map = std::map<std::string,T>;
 
-  // Default base constructor
-  AtmosphereProcess () = default;
-
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
 
