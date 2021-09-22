@@ -31,6 +31,8 @@ module prep_atm_mod
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use dimensions_mod, only : np     ! for atmosphere
 
+  use iso_c_binding
+
 
   implicit none
   save

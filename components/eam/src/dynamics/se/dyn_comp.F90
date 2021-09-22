@@ -108,6 +108,7 @@ CONTAINS
     use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
     use prim_driver_base,  only: prim_init_moab_mesh ! insertion point for MOAB; after phys grid init
     use iMOAB, only : iMOAB_RegisterApplication
+    use iso_c_binding 
 #endif
 
     ! PARAMETERS:

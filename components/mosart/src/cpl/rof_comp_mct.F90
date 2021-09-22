@@ -53,6 +53,7 @@ module rof_comp_mct
   use ESMF
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
+  use iso_c_binding
 #endif
 !
 ! PUBLIC MEMBER FUNCTIONS:

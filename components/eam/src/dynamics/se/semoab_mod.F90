@@ -5,6 +5,7 @@
 
 module semoab_mod    
 #ifdef HAVE_MOAB
+  use iso_c_binding
   use kinds, only : real_kind, iulog, long_kind, int_kind
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
@@ -812,11 +813,11 @@ contains
 
   subroutine moab_export_data(elem)
 
+    use iMOAB, only:  iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     type(element_t),    pointer :: elem(:)
 
     integer num_elem, ierr
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-    integer, external :: iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
 
     real(kind=real_kind), allocatable :: valuesTag(:)

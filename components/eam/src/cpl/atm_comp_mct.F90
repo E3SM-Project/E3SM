@@ -59,6 +59,7 @@ module atm_comp_mct
 
 #ifdef HAVE_MOAB
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
+  use iso_c_binding 
 #endif
 !
 ! !PUBLIC TYPES:
@@ -1032,7 +1033,7 @@ CONTAINS
 
     appname="ATM_PHYS"//C_NULL_CHAR
     ATM_PHYS = 200 + ATMID !
-    ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_atm, ATM_PHYS, mphaid)
+    ierr = iMOAB_RegisterApplication(appname, mpicom_atm, ATM_PHYS, mphaid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app for atm physics')
     if(masterproc) then

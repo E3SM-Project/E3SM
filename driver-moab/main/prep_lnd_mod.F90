@@ -22,6 +22,7 @@ module prep_lnd_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
+  use iso_c_binding
 
   implicit none
   save
@@ -579,7 +580,7 @@ contains
     character*32             :: dm1, dm2
     character*50             :: tagName
     character*32             :: outfile, wopts, lnum
-    integer                  :: orderLND, orderATM, volumetric, noConserve, validate
+    integer                  :: orderLND, orderATM, volumetric, noConserve, validate 
 
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &

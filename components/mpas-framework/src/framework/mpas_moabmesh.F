@@ -25,7 +25,7 @@ module mpas_moabmesh
   end subroutine
   
   subroutine mpas_moab_instance(domain, ext_comp_id, pidmoab)
-    use iMOAB, only : iMOAB_RegisterApplicationFortran, &
+    use iMOAB, only : iMOAB_RegisterApplication, &
      iMOAB_CreateVertices, iMOAB_CreateElements, &
      iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
      iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
@@ -61,7 +61,7 @@ module mpas_moabmesh
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
     appname = 'MPAS_MB_'//trim(lnum)//C_NULL_CHAR
-    ierr = iMOAB_RegisterApplicationFortran(appname, c_comm, ext_comp_id, pid)
+    ierr = iMOAB_RegisterApplication(appname, c_comm, ext_comp_id, pid)
     pidmoab = pid ! this is exported, need for send to work
     call errorout(ierr, 'fail to register MPAS_MOAB mesh')
     proc_id = domain % dminfo % my_proc_id

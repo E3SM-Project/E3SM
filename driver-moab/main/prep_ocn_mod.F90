@@ -24,6 +24,7 @@ module prep_ocn_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
+  use iso_c_binding
 
   implicit none
   save
@@ -1475,6 +1476,7 @@ contains
 
   ! exposed method to migrate projected tag from coupler pes to ocean pes
   subroutine prep_ocn_migrate_moab(infodata)
+   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
   !---------------------------------------------------------------
     ! Description
     ! After a2oTbot_proj, a2oVbot_proj, a2oUbot_proj were computed on ocn mesh on coupler, they need
@@ -1497,9 +1499,6 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
-    integer, external :: iMOAB_WriteMesh
-
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          ocn_present=ocn_present)
@@ -1519,13 +1518,13 @@ contains
 
       ! basically, use the initial partitioning
       context_id = ocnid1
-      ierr = iMOAB_SendElementTagFortran(mboxid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTag(mboxid, tagName, mpicom_join, context_id)
 
     endif
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       ! receive on ocean pes, a tag that was computed on coupler pes
        context_id = id_join
-       ierr = iMOAB_ReceiveElementTagFortran(mpoid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTag(mpoid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 

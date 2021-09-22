@@ -22,6 +22,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
+  use iso_c_binding
 
   implicit none
   private  ! except
