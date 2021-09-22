@@ -21,7 +21,7 @@
 ## Documentation <a name="doc"></a>
 
 - [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
-- [Sample Output, Model vs Observations](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/all_sets_v250_20210608_1878984/viewer/)
+- [Sample Output, Model vs Observations](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/viewer/)
 - Quick Start Guides:
   - [Quick Start Guide for NERSC Cori](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-cori-haswell.html)
   - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-compy.html)
