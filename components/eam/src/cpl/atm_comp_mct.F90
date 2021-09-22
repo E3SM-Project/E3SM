@@ -992,6 +992,9 @@ CONTAINS
     use shr_const_mod, only: SHR_CONST_PI
 !-------------------------------------------------------------------
     use phys_grid, only : get_nlcols_p ! used to det local size ?
+    use iMOAB, only : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+      iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+      iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
 
     type(seq_cdata), intent(in)              :: cdata_a
 
@@ -1001,9 +1004,6 @@ CONTAINS
 
     integer :: ATM_PHYS ! our numbering
 
-    integer , external :: iMOAB_RegisterApplicationFortran, iMOAB_CreateVertices, iMOAB_WriteMesh, &
-         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from mct
@@ -1030,7 +1030,7 @@ CONTAINS
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
          infodata=infodata)
 
-    appname="ATM_PHYS"//CHAR(0)
+    appname="ATM_PHYS"//C_NULL_CHAR
     ATM_PHYS = 200 + ATMID !
     ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_atm, ATM_PHYS, mphaid)
     if (ierr > 0 )  &
@@ -1075,7 +1075,7 @@ CONTAINS
 
     tagtype = 0  ! dense, integer
     numco = 1
-    tagname='GLOBAL_ID'//CHAR(0)
+    tagname='GLOBAL_ID'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to retrieve GLOBAL_ID tag ')
@@ -1091,7 +1091,7 @@ CONTAINS
 
     !there are no shared entities, but we will set a special partition tag, in order to see the
     ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-    tagname='partition'//CHAR(0)
+    tagname='partition'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create new partition tag ')
@@ -1102,7 +1102,7 @@ CONTAINS
       call endrun('Error: fail to set partition tag ')
 
     ! chunk_index ; it will be visible with a Pseudocolor plot in VisIt
-    tagname='chunk_id'//CHAR(0)
+    tagname='chunk_id'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create new chunk index tag ')
@@ -1113,7 +1113,7 @@ CONTAINS
 
     ! use areavals for areas
 
-    tagname='area'//CHAR(0)
+    tagname='area'//C_NULL_CHAR
     tagtype = 1 ! dense, double
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
@@ -1126,15 +1126,15 @@ CONTAINS
 
     ! create some tags for T, u, v bottoms
 
-    tagname='T_ph'//CHAR(0)
+    tagname='T_ph'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create temp on phys tag ')
-    tagname='u_ph'//CHAR(0)
+    tagname='u_ph'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create u velo on phys tag ')
-    tagname='v_ph'//CHAR(0)
+    tagname='v_ph'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create v velo on phys tag ')
@@ -1143,7 +1143,7 @@ CONTAINS
     !  this call will set the point_cloud to true inside iMOAB appData structure
     ierr = iMOAB_UpdateMeshInfo(mphaid)
 
-!    tagname='area'//CHAR(0)
+!    tagname='area'//C_NULL_CHAR
 !    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
 !    if (ierr > 0 )  &
 !      call endrun('Error: fail to create area tag ')
@@ -1157,8 +1157,8 @@ CONTAINS
 
     !     write out the mesh file to disk, in parallel
 #ifdef MOABDEBUG
-    outfile = 'AtmPhys.h5m'//CHAR(0)
-    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    outfile = 'AtmPhys.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the atm phys mesh file')

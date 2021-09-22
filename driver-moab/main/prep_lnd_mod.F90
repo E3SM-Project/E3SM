@@ -557,6 +557,9 @@ contains
 
   ! exposed method to migrate projected tag from coupler pes back to land pes
   subroutine prep_lnd_migrate_moab(infodata)
+
+   use iMOAB, only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, &
+      iMOAB_WriteMesh
   !---------------------------------------------------------------
     ! Description
     ! After a2lTbot_proj, a2lVbot_proj, a2lUbot_proj were computed on lnd mesh on coupler, they need
@@ -578,9 +581,6 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
-    integer, external :: iMOAB_WriteMesh
-
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          lnd_present=lnd_present)
@@ -594,19 +594,19 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
+    tagName = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
     if (mblxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
        context_id = lndid1
-       ierr = iMOAB_SendElementTagFortran(mblxid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
 
     endif
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       ! receive on land pes, a tag that was computed on coupler pes
        context_id = id_join
-       ierr = iMOAB_ReceiveElementTagFortran(mlnid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
@@ -621,8 +621,8 @@ contains
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       number_calls = number_calls + 1
       write(lnum,"(I0.2)") number_calls
-      outfile = 'wholeLND_proj'//trim(lnum)//'.h5m'//CHAR(0)
-      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      outfile = 'wholeLND_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mlnid, trim(outfile), trim(wopts))
     endif
 #endif

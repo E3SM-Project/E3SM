@@ -1513,7 +1513,7 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
+    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
@@ -1540,8 +1540,8 @@ contains
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") number_proj
-      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//CHAR(0)
-      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
 
     !CHECKRC(ierr, "cannot receive tag values")
