@@ -22,6 +22,8 @@
 
 #include <memory>
 
+#include "profiling.hpp"
+
 namespace Homme
 {
 
@@ -287,7 +289,6 @@ public:
                      Homme::subview(m_buffers.phitens,kv.ie));
     }
 
-    // Laplacian of velocity
     m_sphere_ops.vlaplace_sphere_wk_cartesian(kv, 
                    Homme::subview(m_geometry.m_tensorvisc,kv.ie),
                    Homme::subview(m_geometry.m_vec_sph2cart,kv.ie),
@@ -381,6 +382,7 @@ public:
       auto dptens  = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
       const auto& rspheremp = m_geometry.m_rspheremp(kv.ie,igp,jgp);
 
+#if 0  //why have these types here? but above is auto?     
       MidColumn wtens, phitens;
       IntColumn w, phi_i;
 
@@ -390,7 +392,30 @@ public:
         w       = Homme::subview(m_state.m_w_i,kv.ie,m_data.np1,igp,jgp);
         phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       }
+#endif
 
+
+        const auto xf =( m_data.dt*m_data.nu_top) / m_data.hypervis_subcycle_tom;
+
+#if 0	
+        utens(0)[0]   *= xf*rspheremp;
+        vtens(0)[0]   *= xf*rspheremp;
+        ttens(0)[0]   *= xf*rspheremp;
+        dptens(0)[0]  *= xf*rspheremp;
+#endif
+
+        utens(0)[0]   = utens(0)[0] *rspheremp;
+        vtens(0)[0]   = vtens(0)[0] *rspheremp;
+        ttens(0)[0]   = ttens(0)[0] *rspheremp;
+        dptens(0)[0]  = dptens(0)[0]*rspheremp;
+
+        u(0)[0]      += utens(0)[0];
+        v(0)[0]      += vtens(0)[0];
+        vtheta(0)[0] += ttens(0)[0];
+        dp(0)[0]     += dptens(0)[0];
+
+
+#if 0
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
@@ -413,7 +438,9 @@ public:
           w(ilev)      += wtens(ilev);
           phi_i(ilev)  += phitens(ilev);
         }
-      });
+      });//threadvectorrange
+#endif
+
     });
   }//tagUpdateStates2
 

@@ -159,8 +159,9 @@ contains
        end if
     end do
 #endif
-nlev_tom=nlev
-nu_scale_top(1:nlev) = 1.0
+nlev_tom=1
+nu_scale_top(1:nlev) = 0.0
+nu_scale_top(1) = 1.0
 
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom

@@ -567,6 +567,7 @@ contains
   integer :: k2,k,kptr,i,j,ie,ic,nt,nlyr_tot,nlyr_tom,ssize
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,4,nets:nete)      :: stens  ! dp3d,theta,w,phi
+!  real (kind=real_kind), dimension(4,4,30,4,24)      :: stens  ! dp3d,theta,w,phi
 
 
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -817,12 +818,20 @@ contains
 
 !print *, 'xfac ==', xfac
 
-
+#if 0
            vtens(:,:,:,k,ie)=xfac*lap_v(:,:,:)
            stens(:,:,k,1,ie)=xfac*lap_s(:,:,1)  ! dp3d
            stens(:,:,k,2,ie)=xfac*lap_s(:,:,2)  ! vtheta_dp
            stens(:,:,k,3,ie)=xfac*lap_s(:,:,3)  ! w_i
            stens(:,:,k,4,ie)=xfac*lap_s(:,:,4)  ! phi_i
+#endif
+           vtens(:,:,:,k,ie)=lap_v(:,:,:)
+           stens(:,:,k,1,ie)=lap_s(:,:,1)  ! dp3d
+           stens(:,:,k,2,ie)=lap_s(:,:,2)  ! vtheta_dp
+           stens(:,:,k,3,ie)=lap_s(:,:,3)  ! w_i
+           stens(:,:,k,4,ie)=lap_s(:,:,4)  ! phi_i
+
+
         enddo
         
         kptr=0;      
@@ -861,20 +870,51 @@ contains
         
         ! apply inverse mass matrix, add tendency
         do k=1,nlev_tom
+
+
+130 format (A,e38.30e3) !e23.18)
+
+
+vtens(:,:,1,k,ie) = vtens(:,:,1,k,ie) * elem(ie)%rspheremp(:,:)
+vtens(:,:,2,k,ie) = vtens(:,:,2,k,ie) * elem(ie)%rspheremp(:,:)
+stens(:,:,k,1,ie) = stens(:,:,k,1,ie) * elem(ie)%rspheremp(:,:)
+stens(:,:,k,2,ie) = stens(:,:,k,2,ie) * elem(ie)%rspheremp(:,:)
+stens(:,:,k,3,ie) = stens(:,:,k,3,ie) * elem(ie)%rspheremp(:,:)
+stens(:,:,k,4,ie) = stens(:,:,k,4,ie) * elem(ie)%rspheremp(:,:)
+
            elem(ie)%state%v(:,:,1,k,nt)=elem(ie)%state%v(:,:,1,k,nt) + &
-                vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
+                vtens(:,:,1,k,ie)
            elem(ie)%state%v(:,:,2,k,nt)=elem(ie)%state%v(:,:,2,k,nt) + &
-                vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
+                vtens(:,:,2,k,ie)
            elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
-                +stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)
-           
+                +stens(:,:,k,3,ie)
+
            elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
-                +stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)
+                +stens(:,:,k,1,ie)
            elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
-                +stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)
+                +stens(:,:,k,4,ie)
 
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)
+                +stens(:,:,k,2,ie)
+
+
+#if 0
+           elem(ie)%state%v(:,:,1,k,nt)=elem(ie)%state%v(:,:,1,k,nt) + &
+           (     vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:))
+           elem(ie)%state%v(:,:,2,k,nt)=elem(ie)%state%v(:,:,2,k,nt) + &
+           (     vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:))
+           elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
+                +(stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:))
+           
+           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
+                +(stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:))
+           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
+                +(stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:))
+
+           elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
+                +(stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:))
+
+#endif
         enddo
      enddo ! ie
   enddo  ! subcycle
