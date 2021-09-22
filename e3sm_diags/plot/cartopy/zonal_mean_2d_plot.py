@@ -103,7 +103,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         plt.yticks(plev_ticks, plev_ticks)
     if not parameters.plot_log_plevs and not parameters.plot_plevs:
         # Below 4 lines are to specify the pressure axis and show the 50 mb tick at the top, given default plevs np.linspace(50, 1000, 20)
-        if parameters.plevs.sort() == np.linspace(50, 1000, 20).tolist().sort():
+        if parameters.plevs == np.linspace(50, 1000, 20).tolist():
             plev_ticks = parameters.plevs
             new_ticks = [plev_ticks[0]] + plev_ticks[1::2]
             new_ticks = [int(x) for x in new_ticks]
