@@ -25,7 +25,7 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len) :: gas_ac_name(gas_pcnst)
   character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
-  integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
+  integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
 !  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
@@ -81,6 +81,7 @@ contains
     hno3_ndx = get_spc_ndx('HNO3')
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
+    e90_ndx  = get_spc_ndx('E90')
 !    o3lnz_ndx =   get_spc_ndx('O3LNZ')
 !    n2olnz_ndx =  get_spc_ndx('N2OLNZ')
 !    noylnz_ndx =  get_spc_ndx('NOYLNZ')
@@ -833,6 +834,8 @@ contains
 
     ! reset vmr to pre-exp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
+       ! exclude E90 from resetting
+       vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1299,7 +1302,7 @@ contains
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
-                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol)  )
+                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol), tropFlag=tropFlag )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk )
     call t_stopf('chemdr_diags')
