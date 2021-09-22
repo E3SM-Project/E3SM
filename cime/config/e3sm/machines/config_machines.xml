@@ -174,7 +174,7 @@
 
       <modules>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.14.4</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -326,7 +326,7 @@
       </modules>
       <modules>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.14.4</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
 
