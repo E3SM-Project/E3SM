@@ -64,11 +64,6 @@ const scream::control::AtmosphereDriver& get_ad () {
   return c.get<scream::control::AtmosphereDriver>();
 }
 
-const ekat::Comm& get_ekat_comm () {
-  const auto& c = scream::ScreamContext::singleton();
-  return c.get<ekat::Comm>();
-}
-
 } // anonymous namespace
 
 extern "C"
@@ -173,7 +168,7 @@ void scream_init_atm (const int& start_ymd,
     auto& ad = get_ad_nonconst();
 
     // Get the ekat comm
-    auto& atm_comm = get_ekat_comm();
+    auto& atm_comm = ad.get_comm();
 
     // Recall that e3sm uses the int YYYYMMDD to store a date
     if (atm_comm.am_i_root()) std::cout << "start_ymd: " << start_ymd << "\n";
