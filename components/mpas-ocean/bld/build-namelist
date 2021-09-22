@@ -1061,6 +1061,20 @@ add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
 add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
 add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
 
+###############################################
+# Namelist group: tracer_forcing_CFCTracers #
+###############################################
+
+add_default($nl, 'config_use_CFCTracers');
+add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_CFCTracers_surface_restoring');
+add_default($nl, 'config_use_CFCTracers_interior_restoring');
+add_default($nl, 'config_use_CFCTracers_exponential_decay');
+add_default($nl, 'config_use_CFCTracers_idealAge_forcing');
+add_default($nl, 'config_use_CFCTracers_ttd_forcing');
+add_default($nl, 'config_use_CFC11');
+add_default($nl, 'config_use_CFC12');
+
 ##################################
 # Namelist group: AM_globalStats #
 ##################################
@@ -1651,6 +1665,7 @@ my @groups = qw(run_modes
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
                 tracer_forcing_idealagetracers
+                tracer_forcing_cfctracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus

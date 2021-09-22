@@ -543,6 +543,17 @@
 <config_use_idealAgeTracers_idealAge_forcing>.true.</config_use_idealAgeTracers_idealAge_forcing>
 <config_use_idealAgeTracers_ttd_forcing>.false.</config_use_idealAgeTracers_ttd_forcing>
 
+<!-- tracer_forcing_CFCTracers -->
+<config_use_CFCTracers>.false.</config_use_CFCTracers>
+<config_use_CFCTracers_surface_bulk_forcing>.false.</config_use_CFCTracers_surface_bulk_forcing>
+<config_use_CFCTracers_surface_restoring>.false.</config_use_CFCTracers_surface_restoring>
+<config_use_CFCTracers_interior_restoring>.false.</config_use_CFCTracers_interior_restoring>
+<config_use_CFCTracers_exponential_decay>.false.</config_use_CFCTracers_exponential_decay>
+<config_use_CFCTracers_idealAge_forcing>.false.</config_use_CFCTracers_idealAge_forcing>
+<config_use_CFCTracers_ttd_forcing>.false.</config_use_CFCTracers_ttd_forcing>
+<config_use_CFC11>.true.</config_use_CFC11>
+<config_use_CFC12>.true.</config_use_CFC12>
+
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>

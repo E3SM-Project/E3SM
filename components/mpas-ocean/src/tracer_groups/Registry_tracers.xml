@@ -4,4 +4,5 @@
 #include "Registry_DMS.xml"
 #include "Registry_MacroMolecules.xml"
 #include "Registry_idealAge.xml"
+#include "Registry_CFC.xml"
 //#include "Registry_TEMPLATEGRP.xml"
