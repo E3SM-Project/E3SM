@@ -16,7 +16,7 @@ from utils import expect, get_cpu_core_count, run_cmd_no_fail
 import os, sys, pathlib
 
 MACHINE_METADATA = {
-    "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.12.3 python/3.7.3",
+    "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.19.3 python/3.7.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/pnetcdf-/install/blake/bin:$PATH",
@@ -33,7 +33,7 @@ MACHINE_METADATA = {
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-env sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
+    "mappy"   : (["module purge", "module load sems-env sems-gcc/9.2.0 sems-cmake/3.19.1 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   64,
