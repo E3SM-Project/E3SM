@@ -12,8 +12,7 @@ namespace scream
   using namespace spa;
 // =========================================================================================
 SPA::SPA (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_spa_comm (comm)
- , m_spa_params (params)
+  : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
 }
@@ -30,7 +29,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
-  const auto& grid_name = m_spa_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

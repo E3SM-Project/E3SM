@@ -43,9 +43,6 @@ public:
   // The name of the block
   std::string name () const { return m_group_name; }
 
-  // The communicator associated with this atm process
-  const ekat::Comm& get_comm () const { return m_comm; }
-
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
@@ -82,10 +79,6 @@ protected:
   void set_updated_group_impl (const FieldGroup<Real>& group);
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-
-  // The communicator that each process in this group uses
-  ekat::Comm        m_comm;
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
   std::string       m_group_name;

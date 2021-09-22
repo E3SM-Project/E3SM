@@ -18,7 +18,7 @@ class DummyProcess : public scream::AtmosphereProcess {
 public:
 
   DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
-   : m_comm(comm)
+    : AtmosphereProcess(comm, params)
   {
     m_name = params.get<std::string> ("Process Name");
     m_grid_name = params.get<std::string> ("Grid Name");
@@ -36,9 +36,6 @@ public:
 
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
-
-  // The communicator associated with this atm process
-  const ekat::Comm& get_comm () const { return m_comm; }
 
   // Register all fields in the given field manager(s)
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& /* field_mgrs */) const {}
@@ -58,8 +55,6 @@ protected:
 
   std::string m_name;
   std::string m_grid_name;
-
-  ekat::Comm    m_comm;
 };
 
 class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>

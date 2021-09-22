@@ -21,10 +21,9 @@ namespace scream
 {
 
 ZMDeepConvection::ZMDeepConvection (const ekat::Comm& comm,const ekat::ParameterList& params )
-  : m_zm_comm (comm)
-  , m_zm_params(params)
+  : AtmosphereProcess(comm, params)
 {
-  // Nothing toww/ do here
+  // Nothing to do here
 }
 
 void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids_manager)

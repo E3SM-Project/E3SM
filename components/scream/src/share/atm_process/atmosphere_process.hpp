@@ -72,6 +72,9 @@ public:
   template<typename T>
   using str_map = std::map<std::string,T>;
 
+  // Base constructor to set MPI communicator and params
+  AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
+
   virtual ~AtmosphereProcess () = default;
 
   // The type of the process (e.g., dynamics or physics)
@@ -82,9 +85,6 @@ public:
 
   // The name of the process
   virtual std::string name () const = 0;
-
-  // The communicator associated with this atm process
-  virtual const ekat::Comm& get_comm () const = 0;
 
   // Give the grids manager to the process, so it can grab its grid
   // Upon return, the atm proc should have a valid and complete list
@@ -102,6 +102,12 @@ public:
   void initialize (const TimeStamp& t0);
   void run (const Real dt);
   void finalize   (/* what inputs? */);
+
+  // Return the MPI communicator
+  const ekat::Comm& get_comm () const { return m_comm; }
+
+  // Return the parameter list
+  const ekat::ParameterList& get_params () const { return m_params; }
 
   // These methods set fields/groups in the atm process. The fields/groups are stored
   // in a list (with some helpers maps that can be used to quickly retrieve them).
@@ -318,6 +324,12 @@ protected:
   void alias_group_out (const std::string& group_name,
                         const std::string& grid_name,
                         const std::string& alias_name);
+
+  // MPI communicator
+  ekat::Comm m_comm;
+
+  // Parameter list
+  ekat::ParameterList m_params;
 
 private:
   // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers

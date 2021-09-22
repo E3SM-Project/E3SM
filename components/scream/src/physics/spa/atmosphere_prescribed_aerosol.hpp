@@ -49,13 +49,10 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Simple Prescribed Aerosols (SPA)"; }
 
-  // The communicator used by subcomponent
-  const ekat::Comm& get_comm () const { return m_spa_comm; }
-
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert(m_spa_params.get<std::string>("Grid"));
+    s.insert(m_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -90,9 +87,6 @@ protected:
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
-
-  ekat::Comm          m_spa_comm;
-  ekat::ParameterList m_spa_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 

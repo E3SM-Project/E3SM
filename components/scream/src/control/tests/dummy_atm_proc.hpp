@@ -19,9 +19,8 @@ public:
   };
 
   DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
-   : m_comm(comm)
+    : AtmosphereProcess(comm, params)
   {
-    m_params = params;
     m_name = m_params.get<std::string>("Sub Name");
     if (m_name=="Group to Group") {
       m_dummy_type = G2G;
@@ -39,9 +38,6 @@ public:
 
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
-
-  // The communicator associated with this atm process
-  const ekat::Comm& get_comm () const { return m_comm; }
 
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     using namespace ShortFieldTagsNames;
@@ -132,10 +128,7 @@ protected:
 
   std::string m_name;
 
-  ekat::ParameterList m_params;
   DummyType     m_dummy_type; 
-
-  ekat::Comm    m_comm;
 };
 
 } // namespace scream

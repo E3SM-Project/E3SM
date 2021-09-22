@@ -78,8 +78,6 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
   using namespace scream::control;
 
   fpe_guard_wrapper([&](){
-    // First of all, initialize the scream session
-    scream::initialize_scream_session();
 
     // Create the context
     auto& c = ScreamContext::singleton();
@@ -88,8 +86,13 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     MPI_Comm mpi_comm_c = MPI_Comm_f2c(f_comm);
     auto& atm_comm = c.create<ekat::Comm>(mpi_comm_c);
 
+    // Initialize the scream session.
+    scream::initialize_scream_session(atm_comm.am_i_root());
+
     // Create a parameter list for inputs
-    printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
+    if (atm_comm.am_i_root()) {
+      printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
+    }
     ekat::ParameterList scream_params("Scream Parameters");
     parse_yaml_file (input_yaml_file, scream_params);
 
@@ -164,8 +167,11 @@ void scream_init_atm (const int& start_ymd,
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
 
+    // Get the ekat comm
+    auto& atm_comm = ad.get_comm();
+
     // Recall that e3sm uses the int YYYYMMDD to store a date
-    std::cout << "start_ymd: " << start_ymd << "\n";
+    if (atm_comm.am_i_root()) std::cout << "start_ymd: " << start_ymd << "\n";
     const int dd = start_ymd % 100;
     const int mm = (start_ymd / 100) % 100;
     const int yy = start_ymd / 10000;

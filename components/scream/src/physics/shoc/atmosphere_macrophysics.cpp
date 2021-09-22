@@ -8,12 +8,11 @@ namespace scream
 
 // =========================================================================================
 SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::ParameterList& params)
-  : m_shoc_comm   (comm)
-  , m_shoc_params (params)
+  : AtmosphereProcess(comm, params)
 {
-/* Anything that can be initialized without grid information can be initialized here.
- * Like universal constants, shoc options.
-*/
+  /* Anything that can be initialized without grid information can be initialized here.
+   * Like universal constants, shoc options.
+   */
 }
 
 // =========================================================================================
@@ -27,7 +26,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   Qunit.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_shoc_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
 
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank

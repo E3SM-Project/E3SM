@@ -55,6 +55,9 @@ public:
   // Set comm for the whole atmosphere
   void set_comm (const ekat::Comm& atm_comm);
 
+  // Return comm for the whole atmosphere
+  const ekat::Comm& get_comm () const { return m_atm_comm; }
+
   // Set AD params
   void set_params (const ekat::ParameterList& params);
 

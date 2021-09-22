@@ -8,16 +8,16 @@ namespace scream {
 
 AtmosphereProcessGroup::
 AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_comm(comm)
+  : AtmosphereProcess(comm, params)
 {
   // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
   m_group_size = params.get<int>("Number of Entries");
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (params.get<std::string>("Schedule Type") == "Sequential") {
+    if (m_params.get<std::string>("Schedule Type") == "Sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (params.get<std::string>("Schedule Type") == "Parallel") {
+    } else if (m_params.get<std::string>("Schedule Type") == "Parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
@@ -53,7 +53,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = params.sublist(ekat::strint("Process",i));
+    const auto& params_i = m_params.sublist(ekat::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
 

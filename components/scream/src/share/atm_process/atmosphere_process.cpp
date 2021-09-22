@@ -8,6 +8,11 @@
 namespace scream
 {
 
+AtmosphereProcess::AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
+  : m_comm  (comm)
+  , m_params(params)
+{}
+
 void AtmosphereProcess::initialize (const TimeStamp& t0) {
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
