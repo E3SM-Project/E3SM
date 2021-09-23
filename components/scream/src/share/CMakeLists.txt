@@ -1,4 +1,4 @@
-if ($ENV{SCREAM_FAKE_ONLY})
+if (DEFINED ENV{SCREAM_FAKE_ONLY})
   set(SHARE_SRC
     scream_config.cpp
     scream_session.cpp
@@ -31,7 +31,7 @@ target_link_libraries(scream_share PUBLIC ekat)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
-if (NOT $ENV{SCREAM_FAKE_ONLY})
+if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # The "build_cf_dictionary" target downloads an XML file containing valid field
   # names and aliases based on the CF conventions, and transforms it into a YAML
   # file that we use to validate our own fields against it. This target is only
