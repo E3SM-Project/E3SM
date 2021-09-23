@@ -34,6 +34,11 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   SUBMIT="--submit"
+  # We never want to submit a scripts-test run
+  if [ -n "$SCREAM_FAKE_ONLY" ]; then
+      SUBMIT=""
+  fi
+
   AUTOTESTER_CMAKE=""
   # If this is a nightly run, we do NOT want this script to stop on the first failed command
   # since that will prevent subsequent dashboard submissions
@@ -44,15 +49,18 @@ if [ $skip_testing -eq 0 ]; then
       set -e # This is an AT run, not nightly, so it's OK to stop on first fail
   fi
 
+  declare -i fails=0
   # The special string "AUTO" makes test-all-scream look for a baseline dir in the machine_specs.py file.
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
   ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  if [[ $? != 0 ]]; then fails=$fails+1; fi
 
   # Add a valgrind and coverage tests for mappy for nightlies
   if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
     ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
   # scripts-tests is pretty expensive, so we limit this testing to mappy
@@ -60,14 +68,22 @@ if [ $skip_testing -eq 0 ]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
     # since we aren't changing HEADs
     ./scripts/scripts-tests -g
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
     ./scripts/scripts-tests -c
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
 
     ./scripts/scripts-tests -f -m $SCREAM_MACHINE
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
   # Run SCREAM CIME suite
   if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream -c -b master
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
+  fi
+
+  if [[ $fails > 0 ]]; then
+      exit 1
   fi
 
 else
