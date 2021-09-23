@@ -403,6 +403,7 @@ end function shoc_implements_cnst
     call addfld('VW_SEC',(/'ilev'/), 'A', 'm2/s2', 'Momentum flux')
     call addfld('W3',(/'ilev'/), 'A', 'm3/s3', 'Third moment vertical velocity')
     call addfld('WQL_SEC',(/'lev'/),'A', 'W/m2', 'Liquid water flux')
+    call addfld('SHOC_QL',(/'lev'/),'A','kg/kg','SHOC Cloud liquid water mixing ratio')
     call addfld('ISOTROPY',(/'lev'/),'A', 's', 'timescale')
     call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
     call addfld('BRUNT',(/'lev'/), 'A', 's-1', 'Brunt frequency')
@@ -425,6 +426,7 @@ end function shoc_implements_cnst
     call add_default('W3', 1, ' ')
     call add_default('WQL_SEC', 1, ' ')
     call add_default('ISOTROPY',1,' ')
+    call add_default('SHOC_QL',1,' ')
     call add_default('CONCLD',1,' ')
     call add_default('BRUNT',1,' ')
     call add_default('RELVAR',1,' ')
@@ -1115,6 +1117,7 @@ end function shoc_implements_cnst
     call outfld('CONCLD',concld,pcols,lchnk)
     call outfld('BRUNT',brunt_out,pcols,lchnk)
     call outfld('RELVAR',relvar,pcols,lchnk)
+    call outfld('SHOC_QL',rcm,pcols,lchnk)
 
 #endif    
     return         
