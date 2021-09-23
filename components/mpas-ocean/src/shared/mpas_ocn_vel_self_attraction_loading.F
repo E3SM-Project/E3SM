@@ -549,7 +549,6 @@ contains
         call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_loading_compute_interval', config_self_attraction_loading_compute_interval)
         call mpas_pool_get_config(ocnConfigs, 'config_nLatitude', nlat)
         call mpas_pool_get_config(ocnConfigs, 'config_nLongitude', nphi)
-        call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
         call mpas_pool_get_config(ocnConfigs, 'config_ocean_run_mode', config_ocean_run_mode)
 
         block_ptr => domain % blocklist
