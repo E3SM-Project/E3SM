@@ -1001,7 +1001,7 @@
 <config_AM_harmonicAnalysis_use_P1>.true.</config_AM_harmonicAnalysis_use_P1>
 
 <!-- AM_conservationCheck -->
-<config_AM_conservationCheck_enable>.true.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
 <config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
 <config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
 <config_AM_conservationCheck_compute_on_startup>.false.</config_AM_conservationCheck_compute_on_startup>
