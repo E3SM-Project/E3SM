@@ -227,7 +227,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.np1 = np1;
 
 //move this from here  
-  m_data.dt = dt/m_data.hypervis_subcycle;
+//  m_data.dt = dt/m_data.hypervis_subcycle;
+  m_data.dt = dt;
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
@@ -268,7 +269,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // Update states
     Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
-  }
+  } //subcycle
 
   // Convert theta back to vtheta, and adjust w at surface
   auto geo = m_geometry;
@@ -315,10 +316,13 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
         });
       }
     });
-  });
+  });//conversion back to vtheta
 
 //sponge layer  
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
+
+
+	  std::cout << "HEREEEEEEEEEEEEEEEEEEEEEE in tom sub \n";
 
 //m_policy_first_laplace has ref states, so cannot be reused now
 //  Kokkos::parallel_for(m_policy_first_laplace, *this);

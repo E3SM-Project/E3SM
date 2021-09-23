@@ -196,14 +196,23 @@ public:
   // Laplace for nu_top
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagNutopLaplace&, const TeamMember& team) const {
-  
 //what is m_tu -- teamUtils
-//
     KernelVariables kv(team, m_tu);
 ///these are done for now for all levels
 //
 //otherwise         m_sphere_ops.laplace_simple<NUM_BIHARMONIC_LEV,NUM_LEV_P>...
 //
+//
+
+
+if(kv.ie == 0){    
+for(int ii=0; ii< 1; ++ii)
+	for (int jj=0; jj<1; ++jj){
+
+      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,ii,jj);
+printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
+	}}
+
     // Laplacian of layer thickness
     m_sphere_ops.laplace_simple(kv,
                    Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
@@ -228,6 +237,32 @@ public:
     m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
+
+    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_data.nu_top;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      auto utens   = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
+      auto vtens   = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
+      auto ttens   = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
+      auto dptens  = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
+     
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+
+      utens(ilev) *= xf;
+      vtens(ilev) *= xf;
+      ttens(ilev) *= xf;
+      dptens(ilev) *= xf;
+      });//threadvectorrange
+
+//do w, phi here
+//
+    });//teamthreadrange
+
   } //TagNutopLaplace
 
 
@@ -331,18 +366,18 @@ public:
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        utens(ilev)   *= m_data.dt*rspheremp;
-        vtens(ilev)   *= m_data.dt*rspheremp;
-        ttens(ilev)   *= m_data.dt*rspheremp;
-        dptens(ilev)  *= m_data.dt*rspheremp;
+        utens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+        vtens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+        ttens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+        dptens(ilev)  *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
 
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
         vtheta(ilev) += ttens(ilev);
         dp(ilev)     += dptens(ilev);
         if (m_process_nh_vars) {
-          wtens(ilev)   *= m_data.dt*rspheremp;
-          phitens(ilev) *= m_data.dt*rspheremp;
+          wtens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+          phitens(ilev) *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
 
           w(ilev)      += wtens(ilev);
           phi_i(ilev)  += phitens(ilev);
@@ -361,7 +396,6 @@ public:
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
-//need mask]]]]]]]]
 //define another dt
 //    m_data.dt_top = 
 
@@ -393,40 +427,31 @@ public:
         phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       }
 #endif
-
-
-        const auto xf =( m_data.dt*m_data.nu_top) / m_data.hypervis_subcycle_tom;
-
-#if 0	
-        utens(0)[0]   *= xf*rspheremp;
-        vtens(0)[0]   *= xf*rspheremp;
-        ttens(0)[0]   *= xf*rspheremp;
-        dptens(0)[0]  *= xf*rspheremp;
+#if 1	
+        utens(0)[0]   *= rspheremp;
+        vtens(0)[0]   *= rspheremp;
+        ttens(0)[0]   *= rspheremp;
+        dptens(0)[0]  *= rspheremp;
 #endif
-
-        utens(0)[0]   = utens(0)[0] *rspheremp;
-        vtens(0)[0]   = vtens(0)[0] *rspheremp;
-        ttens(0)[0]   = ttens(0)[0] *rspheremp;
-        dptens(0)[0]  = dptens(0)[0]*rspheremp;
-
+#if 0
+        utens(0)[0]   *=rspheremp;
+        vtens(0)[0]   *=rspheremp;
+        ttens(0)[0]   *=rspheremp;
+        dptens(0)[0]  *=rspheremp;
+#endif
         u(0)[0]      += utens(0)[0];
         v(0)[0]      += vtens(0)[0];
         vtheta(0)[0] += ttens(0)[0];
         dp(0)[0]     += dptens(0)[0];
 
-
 #if 0
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-
-//ignore subcycle
         const auto xf =( m_data.dt*m_data.nu_top) / m_data.hypervis_subcycle_tom;
-
         utens(ilev)   *= xf*rspheremp;
         vtens(ilev)   *= xf*rspheremp;
         ttens(ilev)   *= xf*rspheremp;
         dptens(ilev)  *= xf*rspheremp;
-
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
         vtheta(ilev) += ttens(ilev);
@@ -440,8 +465,15 @@ public:
         }
       });//threadvectorrange
 #endif
+    });//threadteamrange
+if(kv.ie == 0){
+for(int ii=0; ii< 4; ++ii)
+        for (int jj=0; jj<4; ++jj){
 
-    });
+      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,ii,jj);
+printf("i %d,j %d,u after subcycle is %1.29e \n",ii,jj, u(0)[0]);
+        }}
+
   }//tagUpdateStates2
 
 
