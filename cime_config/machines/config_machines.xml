@@ -179,7 +179,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.20.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -332,7 +332,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.20.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
 
@@ -2015,12 +2015,12 @@
       <modules>
         <command name="load">perl/5.20.0</command>
         <!--command name="load">cmake/3.3.0</command-->
-        <command name="load">cmake/3.12.3</command>
-        <command name="load">python/2.7.8</command>
+        <command name="load">cmake/3.17.1</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/15.0.1</command>
-        <command name="load">mkl/15.0.1</command>
+        <command name="load">gcc/8.1.0</command>
+        <command name="load">intel/19.0.5</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/14.10</command>
@@ -2033,7 +2033,7 @@
         <command name="load">mvapich2/2.1</command>
       </modules>
       <modules mpilib="mvapich2" compiler="intel">
-        <command name="load">mvapich2/2.1</command>
+        <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="mvapich2" compiler="pgi">
         <command name="load">mvapich2/2.1</command>
@@ -2048,7 +2048,7 @@
         <command name="load">openmpi/1.8.3</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">netcdf/4.3.2</command>
+        <command name="load">netcdf/4.6.3</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">netcdf/4.3.2</command>
@@ -2057,17 +2057,20 @@
         <command name="load">netcdf/4.4.1.1</command>
       </modules>
     </module_system>
-    <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$USER/csmruns/$CASE/bld</EXEROOT>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables compiler="intel">
+      <env name="LD_LIBRARY_PATH">/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_HOME">$ENV{NETCDF_LIB}/../</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
     <environment_variables compiler="nag">
-      <env name="MKL_PATH">$ENV{MLIB_LIB}</env>
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
   </machine>
 

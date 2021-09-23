@@ -162,7 +162,8 @@ module ocn_time_integration_si
          tracersTendPool,   &! structure holding tracer tendencies
          forcingPool,       &! structure holding forcing variables
          scratchPool,       &! structure holding temporary variables
-         swForcingPool       ! structure holding short-wave forcing vars
+         swForcingPool,     &! structure holding short-wave forcing vars
+         tracersIdealAgeFieldsPool     ! structure holding idealAge-related fields
 
       logical :: &
          activeTracersOnly   ! only compute tendencies for active tracers
@@ -245,7 +246,8 @@ module ocn_time_integration_si
          highFreqThicknessCur,        &! high frq thick at current time
          highFreqThicknessNew,        &! high frq thick at new     time
          lowFreqDivergenceCur,        &! low frq div    at current time
-         lowFreqDivergenceNew          ! low frq div    at new     time
+         lowFreqDivergenceNew,        &! low frq div    at new     time
+         tracerGroupIdealAgeMask       ! mask for resetting surface ideal age
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
@@ -3021,10 +3023,34 @@ module ocn_time_integration_si
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if (groupItr%memberType == MPAS_POOL_FIELD) then
-            call mpas_dmpar_field_halo_exch(domain, &
-                         groupItr%memberName, timeLevel=2)
+
+            ! Reset iAge to zero where mask == 0
+            if (config_use_idealAgeTracers.and.trim(groupItr%memberName) == 'idealAgeTracers') then
+                call mpas_pool_get_array(tracersPool, &
+                                         groupItr%memberName, &
+                                         tracersGroupNew, 2)
+                call mpas_pool_get_subpool(forcingPool, &
+                                           'tracersIdealAgeFields', &
+                                            tracersIdealAgeFieldsPool)
+                call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
+                                         'idealAgeTracersIdealAgeMask', &
+                                          tracerGroupIdealAgeMask)
+
+                !$omp parallel
+                !$omp do schedule(runtime)
+                do iCell = 1, nCellsOwned
+                   tracersGroupNew(1,1,iCell) = tracerGroupIdealAgeMask(1,iCell)*tracersGroupNew(1,1,iCell)
+                end do ! cells
+                !$omp end do
+                !$omp end parallel
+             endif
+
+            ! Halo update on all tracer groups
+            call mpas_dmpar_field_halo_exch(domain, groupItr%memberName, timeLevel=2)
+
          end if
       end do
+
       call mpas_timer_stop('si vmix halos')
 
       call mpas_timer_stop("si implicit vert mix")
