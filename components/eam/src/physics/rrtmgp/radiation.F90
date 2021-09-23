@@ -1492,7 +1492,7 @@ contains
       end if  ! dosw
 
       ! Do longwave stuff...
-      if (radiation_do('lw') .and. .not. lwrad_off) then
+      if (radiation_do('lw')) then
 
          ! Allocate longwave outputs; why is this not part of the
          ! ty_fluxes_byband object?
