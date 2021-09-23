@@ -8,7 +8,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     set (SRC rrtmgp_tests.cpp rrtmgp_test_utils.cpp)
     CreateUnitTest(
         rrtmgp_tests "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
-        EXE_ARGS "${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+        EXE_ARGS "-i ${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
         EXCLUDE_MAIN_CPP
     )
     set (SRC rrtmgp_unit_tests.cpp rrtmgp_test_utils.cpp)
