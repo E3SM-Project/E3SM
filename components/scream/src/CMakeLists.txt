@@ -1,6 +1,6 @@
 add_subdirectory(share)
 
-if (NOT $ENV{SCREAM_FAKE_ONLY})
+if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   add_subdirectory(dynamics)
   add_subdirectory(physics)
   add_subdirectory(control)

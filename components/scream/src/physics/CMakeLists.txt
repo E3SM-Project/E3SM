@@ -1,6 +1,6 @@
 add_subdirectory(share)
 add_subdirectory(p3)
-if (NOT $ENV{SCREAM_FAKE_ONLY})
+if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   if (SCREAM_DOUBLE_PRECISION)
     add_subdirectory(rrtmgp)
   else()

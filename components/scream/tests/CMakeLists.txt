@@ -1,4 +1,4 @@
-if (NOT $ENV{SCREAM_FAKE_ONLY})
+if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # Testing individual atm processes
   add_subdirectory(uncoupled)
 
