@@ -110,6 +110,7 @@ module ocn_core_interface
       integer :: err_tmp
 
       logical, pointer :: forwardModeActive
+      logical, pointer :: nonHydrostaticModeActive
       logical, pointer :: analysisModeActive
       logical, pointer :: initModeActive
       logical, pointer :: thicknessFilterActive
@@ -160,6 +161,7 @@ module ocn_core_interface
       logical, pointer :: config_use_topographic_wave_drag
       logical, pointer :: config_use_GM
       logical, pointer :: config_use_Redi
+      logical, pointer :: config_enable_nonhydrostatic_mode
       logical, pointer :: config_use_vegetation_drag
       logical, pointer :: config_use_time_varying_atmospheric_forcing
       logical, pointer :: config_use_time_varying_land_ice_forcing
@@ -340,6 +342,23 @@ module ocn_core_interface
          topographicWaveDragPKGActive = .true.
       end if
 
+      !
+      ! test for use of topographic wave drag, topographicWaveDragPKG
+      !
+      call mpas_pool_get_package(packagePool, 'topographicWaveDragPKGActive', topographicWaveDragPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_topographic_wave_drag', config_use_topographic_wave_drag)
+      if (config_use_topographic_wave_drag) then
+         topographicWaveDragPKGActive = .true.
+      end if
+
+      ! test for nonHydrostatic pressure
+      !
+      call mpas_pool_get_package(packagePool, 'nonHydrostaticModeActive', nonHydrostaticModeActive)
+      call mpas_pool_get_config(configPool, 'config_enable_nonhydrostatic_mode', config_enable_nonhydrostatic_mode)
+      if (config_enable_nonhydrostatic_mode) then
+        nonHydrostaticModeActive = .true.
+      end if
+      
       !
       ! test for use of gm
       !
@@ -691,4 +710,3 @@ module ocn_core_interface
 #include "../inc/namelist_defines.inc"
 
 end module ocn_core_interface
-

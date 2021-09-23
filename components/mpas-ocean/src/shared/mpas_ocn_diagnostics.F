@@ -111,7 +111,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, normalVelocity
+        layerThickness, normalVelocity, verticalVelocity, nonhydrostaticPressure
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -144,8 +144,11 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
+      call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocity, timeLevel)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
@@ -225,7 +228,7 @@ contains
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdge, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
+             normalGMBolusVelocity, verticalVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
 
@@ -1427,9 +1430,12 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdge, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-                vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-                kineticEnergyCell, tangentialVelocity)!{{{
+                normalGMBolusVelocity, verticalVelocity, vertVelocityTop,     &
+                vertTransportVelocityTop, vertGMBolusVelocityTop,             &
+                relativeVorticityCell, divergence, kineticEnergyCell,         &
+                tangentialVelocity)!{{{
+
+      use ocn_mesh
 
       implicit none
 
@@ -1457,7 +1463,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         vertVelocityTop
+         vertVelocityTop, verticalVelocity
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          vertTransportVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1587,6 +1593,20 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      !LVR: 20201204 -- add in new vertical velocity prognostic variable
+      if(.not. config_enable_nonhydrostatic_mode .or. config_enable_vertMomentum_disable_nonHydro) then
+        !$omp parallel
+        !$omp do schedule(runtime) &
+        !$omp private(k)
+        do iCell=1,nCells
+          do k=1,maxLevelCell(iCell)+1
+            verticalVelocity(k,iCell) = vertVelocityTop(k,iCell)
+          enddo
+        enddo
+        !$omp end do
+        !$omp end parallel
+      endif
 
       deallocate(div_hu,div_huTransport,div_huGMBolus)
 
@@ -2038,7 +2058,8 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdge, &
-     normalVelocity, oldSSH, dt, vertAleTransportTop, err, newHighFreqThickness)!{{{
+     normalVelocity, verticalVelocity, oldSSH, dt, vertAleTransportTop, nhPressureCorrection, err, &
+     newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -2064,8 +2085,16 @@ contains
       real (kind=RKIND), dimension(:), intent(in) :: &
          oldSSH     !< Input: sea surface height at old time
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        verticalVelocity !predicted velocity, ale is motion relative to grid
+                         !this is needed since nonhydrostatic predicts velocity
+                         ! in hydrostatic mode this is set to vertVelocityTop from diagnostic_solve
+
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         nhPressureCorrection
 
       real (kind=RKIND), intent(in) :: &
          dt     !< Input: time step
@@ -2087,7 +2116,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, kmin, kmax
+      integer :: iEdge, iCell, k, i, nCells, cell1, cell2, kmin, kmax
 
       real (kind=RKIND) :: flux, invAreaCell1, div_hu_btr
       integer, dimension(:,:), pointer :: edgeSignOnCell
@@ -2210,6 +2239,25 @@ contains
       !$omp end parallel
 #endif
 
+      if(config_enable_nonhydrostatic_mode) then
+        !FIXME - need to add vertGMBolusVelocity here
+        !$omp parallel
+        !$omp do schedule(runtime) private(k)
+        do iCell = 1,nCells
+           vertAleTransportTop(1,iCell) = 0.0_RKIND
+           vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
+           do k = maxLevelCell(iCell),2,-1
+             vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
+                - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
+           end do
+           if(config_disable_ALE) then
+              k=1
+              vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell)
+           end if
+        end do
+        !$omp end do
+        !$omp end parallel
+      end if
       deallocate(div_hu, &
                  projectedSSH, &
                  ALE_Thickness)
