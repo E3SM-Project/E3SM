@@ -1,5 +1,5 @@
 from utils import run_cmd, expect, check_minimum_python_version
-from machines_specs import is_machine_supported
+from machines_specs import is_machine_supported, setup_mach_env
 
 check_minimum_python_version(3, 4)
 
@@ -48,6 +48,8 @@ class ScriptsCtestDriver(object):
             shutil.rmtree(str(self._work_dir))
 
         self._work_dir.mkdir(parents=True)
+
+        setup_mach_env(self._machine)
 
     ###############################################################################
     def generate_ctest_config(self, extra_configs):
