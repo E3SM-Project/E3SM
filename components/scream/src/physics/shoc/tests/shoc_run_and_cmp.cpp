@@ -65,7 +65,7 @@ static Int compare (const std::string& label, const Scalar* a,
 
   if (nerr2) {
     std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
-	      << " normalized by ref impl val=" << den << ".\n";
+              << " normalized by ref impl val=" << den << ".\n";
 
   }
 
@@ -262,9 +262,16 @@ int main (int argc, char** argv) {
   Int num_qtracers = 3;
   Int nadv = 15;
   Int repeat = 0;
+  std::string baseline_fn;
+  std::string device;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
     if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
+    if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
+      expect_another_arg(i, argc);
+      ++i;
+      baseline_fn = argv[i];
+    }
     if (ekat::argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
@@ -308,13 +315,42 @@ int main (int argc, char** argv) {
         generate = true;
       }
     }
+    if (std::string(argv[i])=="--ekat-kokkos-device") {
+      expect_another_arg(i, argc);
+      ++i;
+      device = argv[i];
+    }
   }
 
   // Decorate baseline name with precision.
-  std::string baseline_fn(argv[argc-1]);
   baseline_fn += std::to_string(sizeof(scream::Real));
 
-  scream::initialize_scream_session(argc, argv); {
+  std::vector<char*> args;
+  for (int i=0; i<argc; ++i) {
+    args.push_back(argv[i]);
+  }
+
+  // If "--ekat-kokkos-device <N>" was specified, add kokkos
+  // initialization flag to argv
+  // Create it outside the if, so its c_str pointer survives
+  std::string dev_arg;
+  if (device!="") {
+    auto is_int = [] (const std::string& s)->bool {
+      std::istringstream is(s);
+      int d;
+      is >> d;
+      return !is.fail() && is.eof();
+    };
+
+    EKAT_REQUIRE_MSG (is_int(device), "Error! Invalid device specification.\n");
+
+    if (std::stoi(device) != -1) {
+      dev_arg = "--kokkos-device-id=" + device;
+      args.push_back(const_cast<char*>(dev_arg.c_str()));
+    }
+  }
+
+  scream::initialize_scream_session(args.size(), args.data()); {
     Baseline bln(nsteps, static_cast<Real>(dt), ncol, nlev, num_qtracers, nadv, repeat);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
