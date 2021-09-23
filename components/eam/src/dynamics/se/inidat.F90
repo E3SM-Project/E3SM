@@ -259,8 +259,9 @@ contains
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     else
+      tmp_point = 0.0_r8
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
-           1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+           1, nlev, tmp_point, found, gridname=grid_name)
     endif
     call t_stopf('read_inidat_infld')
 
@@ -327,8 +328,9 @@ contains
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
             else
+              tmp_point = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, 1,          &
-                            1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+                            1, nlev, tmp_point, found, gridname=grid_name)
             endif
             call t_stopf('read_inidat_infld')
     
