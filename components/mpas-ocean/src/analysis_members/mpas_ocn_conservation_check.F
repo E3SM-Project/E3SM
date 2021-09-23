@@ -494,7 +494,7 @@ contains
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedFrazilHeatFlux",                 accumulatedFrazilHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceHeatFlux",                accumulatedLandIceHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceFrazilHeatFlux",          accumulatedLandIceFrazilHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRainTemperatureFlux",            accumulatedRainTemperatureFlux)           
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRainTemperatureFlux",            accumulatedRainTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedEvapTemperatureFlux",            accumulatedEvapTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceTemperatureFlux",          accumulatedSeaIceTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRiverRunoffTemperatureFlux",     accumulatedRiverRunoffTemperatureFlux)
@@ -635,22 +635,22 @@ contains
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
 
          ! Average the fluxes
-         accumulatedLatentHeatFlux                 = accumulatedLatentHeatFlux                /accumulatedFluxCounter 
-         accumulatedSensibleHeatFlux               = accumulatedSensibleHeatFlux              /accumulatedFluxCounter 
-         accumulatedLongWaveHeatFluxUp             = accumulatedLongWaveHeatFluxUp            /accumulatedFluxCounter 
-         accumulatedLongWaveHeatFluxDown           = accumulatedLongWaveHeatFluxDown          /accumulatedFluxCounter 
-         accumulatedSeaIceHeatFlux                 = accumulatedSeaIceHeatFlux                /accumulatedFluxCounter 
-         accumulatedShortWaveHeatFlux              = accumulatedShortWaveHeatFlux             /accumulatedFluxCounter 
-         accumulatedMeltingSnowHeatFlux            = accumulatedMeltingSnowHeatFlux           /accumulatedFluxCounter 
-         accumulatedMeltingIceRunoffHeatFlux       = accumulatedMeltingIceRunoffHeatFlux      /accumulatedFluxCounter 
-         accumulatedIcebergHeatFlux                = accumulatedIcebergHeatFlux               /accumulatedFluxCounter 
+         accumulatedLatentHeatFlux                 = accumulatedLatentHeatFlux                /accumulatedFluxCounter
+         accumulatedSensibleHeatFlux               = accumulatedSensibleHeatFlux              /accumulatedFluxCounter
+         accumulatedLongWaveHeatFluxUp             = accumulatedLongWaveHeatFluxUp            /accumulatedFluxCounter
+         accumulatedLongWaveHeatFluxDown           = accumulatedLongWaveHeatFluxDown          /accumulatedFluxCounter
+         accumulatedSeaIceHeatFlux                 = accumulatedSeaIceHeatFlux                /accumulatedFluxCounter
+         accumulatedShortWaveHeatFlux              = accumulatedShortWaveHeatFlux             /accumulatedFluxCounter
+         accumulatedMeltingSnowHeatFlux            = accumulatedMeltingSnowHeatFlux           /accumulatedFluxCounter
+         accumulatedMeltingIceRunoffHeatFlux       = accumulatedMeltingIceRunoffHeatFlux      /accumulatedFluxCounter
+         accumulatedIcebergHeatFlux                = accumulatedIcebergHeatFlux               /accumulatedFluxCounter
          accumulatedFrazilHeatFlux                 = accumulatedFrazilHeatFlux                /accumulatedFluxCounter
-         accumulatedLandIceHeatFlux                = accumulatedLandIceHeatFlux               /accumulatedFluxCounter 
-         accumulatedRainTemperatureFlux            = accumulatedRainTemperatureFlux           /accumulatedFluxCounter 
-         accumulatedEvapTemperatureFlux            = accumulatedEvapTemperatureFlux           /accumulatedFluxCounter 
-         accumulatedSeaIceTemperatureFlux          = accumulatedSeaIceTemperatureFlux         /accumulatedFluxCounter 
-         accumulatedRiverRunoffTemperatureFlux     = accumulatedRiverRunoffTemperatureFlux    /accumulatedFluxCounter 
-         accumulatedIcebergTemperatureFlux         = accumulatedIcebergTemperatureFlux        /accumulatedFluxCounter 
+         accumulatedLandIceHeatFlux                = accumulatedLandIceHeatFlux               /accumulatedFluxCounter
+         accumulatedRainTemperatureFlux            = accumulatedRainTemperatureFlux           /accumulatedFluxCounter
+         accumulatedEvapTemperatureFlux            = accumulatedEvapTemperatureFlux           /accumulatedFluxCounter
+         accumulatedSeaIceTemperatureFlux          = accumulatedSeaIceTemperatureFlux         /accumulatedFluxCounter
+         accumulatedRiverRunoffTemperatureFlux     = accumulatedRiverRunoffTemperatureFlux    /accumulatedFluxCounter
+         accumulatedIcebergTemperatureFlux         = accumulatedIcebergTemperatureFlux        /accumulatedFluxCounter
          accumulatedLandIceFrazilHeatFlux          = accumulatedLandIceFrazilHeatFlux         /accumulatedFluxCounter
          accumulatedRemovedIceRunoffHeatFlux       = accumulatedRemovedIceRunoffHeatFlux      /accumulatedFluxCounter
 
@@ -669,17 +669,17 @@ contains
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "netEnergyFlux", netEnergyFlux)
 
          netEnergyFlux = &
-                accumulatedSeaIceHeatFlux           & 
-              + accumulatedShortWaveHeatFlux        & 
-              + accumulatedLongWaveHeatFluxUp       & 
-              + accumulatedLongWaveHeatFluxDown     & 
-              + accumulatedLatentHeatFlux           & 
-              + accumulatedSensibleHeatFlux         & 
-              + accumulatedMeltingSnowHeatFlux      & 
-              + accumulatedMeltingIceRunoffHeatFlux & 
-              + accumulatedIcebergHeatFlux          & 
-              + accumulatedFrazilHeatFlux           & 
-              + accumulatedLandIceHeatFlux          & 
+                accumulatedSeaIceHeatFlux           &
+              + accumulatedShortWaveHeatFlux        &
+              + accumulatedLongWaveHeatFluxUp       &
+              + accumulatedLongWaveHeatFluxDown     &
+              + accumulatedLatentHeatFlux           &
+              + accumulatedSensibleHeatFlux         &
+              + accumulatedMeltingSnowHeatFlux      &
+              + accumulatedMeltingIceRunoffHeatFlux &
+              + accumulatedIcebergHeatFlux          &
+              + accumulatedFrazilHeatFlux           &
+              + accumulatedLandIceHeatFlux          &
               + accumulatedRainTemperatureFlux   *rho_sw*cp_sw &
               + accumulatedEvapTemperatureFlux   *rho_sw*cp_sw &
               + accumulatedSeaIceTemperatureFlux *rho_sw*cp_sw &
@@ -736,7 +736,7 @@ v=accumulatedLandIceHeatFlux         ; write(m,"('landIceHeatFlux          ',es1
             if (landIceFreshwaterFluxesOn &
                .and.config_use_frazil_ice_formation &
                .and.config_frazil_under_land_ice) then
-v=accumulatedLandIceFrazilHeatFlux   ; write(m,"('   landIceFrazilHeatFlux ',es16.8,' (already in hfreeze, do not sum)',f16.8)") v,v/A; call mpas_log_write(m); ! no sum: s=s+v
+v=accumulatedLandIceFrazilHeatFlux   ; write(m,"('   landIceFrazilHeatFlux ',es16.8,' (already in hfreeze, do not sum                )',f16.8)") v,v/A; call mpas_log_write(m); ! no sum: s=s+v
             end if
                                        write(m,"('SUM EXPLICIT HEAT FLUXES ',es16.8,'                                 ',f16.8)") s, s/A; call mpas_log_write(m)
             explicitHeatFluxSum = s
@@ -745,14 +745,14 @@ v=accumulatedLandIceFrazilHeatFlux   ; write(m,"('   landIceFrazilHeatFlux ',es1
             call mpas_log_write('')
             call mpas_log_write('HEAT FLUXES: implicit through temperature contributions of mass fluxes')
             call mpas_log_write('MPAS-Ocean name            W (sum*rho*cp) coupler name    short name        W/m^2 (flux/A) ')
-v=accumulatedRainTemperatureFlux   *rho_sw*cp_sw; write(m,"('RainTemperatureFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v 
-v=accumulatedEvapTemperatureFlux   *rho_sw*cp_sw; write(m,"('EvapTemperatureFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v 
-v=accumulatedSeaIceTemperatureFlux *rho_sw*cp_sw; write(m,"('SeaIceTemperatureFlux    ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v 
-v=accumulatedRiverRunoffTemperatureFlux*rho_sw*cp_sw; write(m,"('RiverRunoffTempFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v 
-v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureFlux   ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v 
+v=accumulatedRainTemperatureFlux   *rho_sw*cp_sw; write(m,"('RainTemperatureFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedEvapTemperatureFlux   *rho_sw*cp_sw; write(m,"('EvapTemperatureFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedSeaIceTemperatureFlux *rho_sw*cp_sw; write(m,"('SeaIceTemperatureFlux    ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedRiverRunoffTemperatureFlux*rho_sw*cp_sw; write(m,"('RiverRunoffTempFlux      ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureFlux   ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
             write(m,"('SUM IMPLICIT HEAT FLUXES ',es16.8,'                 hh20temp        ',f16.8,es16.8)") s, s/A; call mpas_log_write(m)
             s = s + explicitHeatFluxSum
-            write(m,"('SUM IMP+EXP  HEAT FLUXES ',es16.8,'                                 ',f16.8,es16.8)") s, s/A; call mpas_log_write(m) 
+            write(m,"('SUM IMP+EXP  HEAT FLUXES ',es16.8,'                                 ',f16.8,es16.8)") s, s/A; call mpas_log_write(m)
 
             call mpas_log_write(' ')
             call mpas_log_write('CHANGE IN HEAT CONTENT: computed from ocean domain')
@@ -988,7 +988,7 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
          accumulatedRiverRunoffFlux        = accumulatedRiverRunoffFlux        + sumArrayOut( 5)
          accumulatedIceRunoffFlux          = accumulatedIceRunoffFlux          + sumArrayOut( 6)
          accumulatedRemovedRiverRunoffFlux = accumulatedRemovedRiverRunoffFlux + sumArrayOut( 7)
-         accumulatedRemovedIceRunoffFlux   = accumulatedRemovedIceRunoffFlux   + sumArrayOut( 8) 
+         accumulatedRemovedIceRunoffFlux   = accumulatedRemovedIceRunoffFlux   + sumArrayOut( 8)
          accumulatedIcebergFlux            = accumulatedIcebergFlux            + sumArrayOut( 9)
          accumulatedFrazilFlux             = accumulatedFrazilFlux             + sumArrayOut(10)
          accumulatedLandIceFlux            = accumulatedLandIceFlux            + sumArrayOut(11)
@@ -1076,20 +1076,20 @@ v=accumulatedEvaporationFlux       ; write(m,"('evaporationFlux        ',es16.8,
 v=accumulatedRiverRunoffFlux       ; write(m,"('riverRunoffFlux        ',es16.8,' x2o_Foxx_rofl    wrunoff        ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
             if (landIceFreshwaterFluxesOn) then
 v=accumulatedRemovedRiverRunoffFlux; write(m,"('removedRiverRunoffFlux ',es16.8,'                  wrunoff                        ',f16.8)") v,v*c; call mpas_log_write(m);
-v=accumulatedRiverRunoffFlux+accumulatedRemovedRiverRunoffFlux; 
+v=accumulatedRiverRunoffFlux+accumulatedRemovedRiverRunoffFlux;
                                      write(m,"('      SUM: river runoff',es16.8,' x2o_Foxx_rofl    wrunoff SUM                    ',f16.8)") v,v*c; call mpas_log_write(m)
             endif
 v=accumulatedIceRunoffFlux         ; write(m,"('iceRunoffFlux          ',es16.8,' x2o_Foxx_rofi    wfrzrof        ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
             if (landIceFreshwaterFluxesOn) then
 v=accumulatedRemovedIceRunoffFlux  ; write(m,"('removedIceRunoffFlux   ',es16.8,'                  wfrzrof                        ',f16.8)") v,v*c; call mpas_log_write(m);
-v=accumulatedIceRunoffFlux+accumulatedRemovedIceRunoffFlux; 
+v=accumulatedIceRunoffFlux+accumulatedRemovedIceRunoffFlux;
                                      write(m,"('      SUM: ice runoff  ',es16.8,' x2o_Foxx_rofi    wfrzrof SUM                    ',f16.8)") v,v*c; call mpas_log_write(m)
 v=accumulatedLandIceFlux           ; write(m,"('landIceFreshwaterFlux  ',es16.8,'                                 ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
             endif
             if (landIceFreshwaterFluxesOn &
                .and.config_use_frazil_ice_formation &
                .and.config_frazil_under_land_ice) then
-v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,' (already in wfreeze, do not sum)',f16.8)") v,v*c; call mpas_log_write(m); ! no sum: s=s+v
+v=accumulatedLandIceFrazilFlux     ; write(m,"('  landIceFrazilFlux    ',es16.8,' (already in wfreeze, do not sum                )',f16.8)") v,v*c; call mpas_log_write(m); ! no sum: s=s+v
             endif
                                      write(m,"('SUM VOLUME FLUXES      ',es16.8,'                                 ',f16.8,es16.8)") s, s*c; call mpas_log_write(m)
 
@@ -1326,7 +1326,7 @@ v=accumulatedSeaIceSalinityFlux    ; write(m,"('seaIceSalinityFlux     ',es16.8,
             if (landIceFreshwaterFluxesOn &
                .and.config_use_frazil_ice_formation &
                .and.config_frazil_under_land_ice) then
-v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es16.8,' (already in wmelt, do not sum)  ',f16.8)") v,v*c; call mpas_log_write(m); !no sum: s=s+v
+v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es16.8,' (already in wmelt, do not sum)                  ',f16.8)") v,v*c; call mpas_log_write(m); !no sum: s=s+v
             end if
 
                                      write(m,"('SUM VOLUME FLUXES      ',es16.8,'                                 ',f16.8,es16.8)") s, s*c; call mpas_log_write(m)
@@ -1704,31 +1704,31 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedFrazilHeatFlux",                 accumulatedFrazilHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceHeatFlux",                accumulatedLandIceHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedLandIceFrazilHeatFlux",          accumulatedLandIceFrazilHeatFlux)
-      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRainTemperatureFlux",            accumulatedRainTemperatureFlux)           
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRainTemperatureFlux",            accumulatedRainTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedEvapTemperatureFlux",            accumulatedEvapTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedSeaIceTemperatureFlux",          accumulatedSeaIceTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedRiverRunoffTemperatureFlux",     accumulatedRiverRunoffTemperatureFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "accumulatedIcebergTemperatureFlux",         accumulatedIcebergTemperatureFlux)
 
       accumulatedFluxCounter = 0
-      accumulatedLatentHeatFlux                = 0.0_RKIND 
-      accumulatedSensibleHeatFlux              = 0.0_RKIND 
-      accumulatedLongWaveHeatFluxUp            = 0.0_RKIND 
-      accumulatedLongWaveHeatFluxDown          = 0.0_RKIND 
-      accumulatedSeaIceHeatFlux                = 0.0_RKIND 
-      accumulatedShortWaveHeatFlux             = 0.0_RKIND 
-      accumulatedMeltingSnowHeatFlux           = 0.0_RKIND 
-      accumulatedMeltingIceRunoffHeatFlux      = 0.0_RKIND 
-      accumulatedIcebergHeatFlux               = 0.0_RKIND 
-      accumulatedFrazilHeatFlux                = 0.0_RKIND 
-      accumulatedLandIceHeatFlux               = 0.0_RKIND 
-      accumulatedRainTemperatureFlux           = 0.0_RKIND 
-      accumulatedEvapTemperatureFlux           = 0.0_RKIND 
-      accumulatedSeaIceTemperatureFlux         = 0.0_RKIND 
-      accumulatedRiverRunoffTemperatureFlux    = 0.0_RKIND 
-      accumulatedIcebergTemperatureFlux        = 0.0_RKIND 
-      accumulatedLandIceFrazilHeatFlux         = 0.0_RKIND 
-      accumulatedRemovedIceRunoffHeatFlux      = 0.0_RKIND 
+      accumulatedLatentHeatFlux                = 0.0_RKIND
+      accumulatedSensibleHeatFlux              = 0.0_RKIND
+      accumulatedLongWaveHeatFluxUp            = 0.0_RKIND
+      accumulatedLongWaveHeatFluxDown          = 0.0_RKIND
+      accumulatedSeaIceHeatFlux                = 0.0_RKIND
+      accumulatedShortWaveHeatFlux             = 0.0_RKIND
+      accumulatedMeltingSnowHeatFlux           = 0.0_RKIND
+      accumulatedMeltingIceRunoffHeatFlux      = 0.0_RKIND
+      accumulatedIcebergHeatFlux               = 0.0_RKIND
+      accumulatedFrazilHeatFlux                = 0.0_RKIND
+      accumulatedLandIceHeatFlux               = 0.0_RKIND
+      accumulatedRainTemperatureFlux           = 0.0_RKIND
+      accumulatedEvapTemperatureFlux           = 0.0_RKIND
+      accumulatedSeaIceTemperatureFlux         = 0.0_RKIND
+      accumulatedRiverRunoffTemperatureFlux    = 0.0_RKIND
+      accumulatedIcebergTemperatureFlux        = 0.0_RKIND
+      accumulatedLandIceFrazilHeatFlux         = 0.0_RKIND
+      accumulatedRemovedIceRunoffHeatFlux      = 0.0_RKIND
 
       ! mass
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckMassAM", conservationCheckMassAMPool)
