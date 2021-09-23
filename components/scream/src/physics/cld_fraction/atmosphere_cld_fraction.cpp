@@ -1,4 +1,5 @@
 #include "atmosphere_cld_fraction.hpp"
+#include "share/field/field_property_checks/field_within_interval_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -10,8 +11,7 @@ namespace scream
   using namespace cld_fraction;
 // =========================================================================================
 CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_cldfraction_comm (comm)
- , m_cld_fraction_params (params)
+  : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
 }
@@ -28,7 +28,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   Q.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
+  const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
@@ -54,6 +54,10 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 // =========================================================================================
 void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 {
+  // Set property checks for fields in this process
+  auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
+  get_field_out("cldfrac_ice").add_property_check(frac_interval_check);
+  get_field_out("cldfrac_tot").add_property_check(frac_interval_check);
 }
 
 // =========================================================================================
@@ -61,20 +65,12 @@ void CldFraction::run_impl (const Real dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
-  auto qi   = m_cld_fraction_fields_in["qi"].get_view<const Pack**>();
-  auto liq_cld_frac = m_cld_fraction_fields_in["cldfrac_liq"].get_view<const Pack**>();
-  auto ice_cld_frac = m_cld_fraction_fields_out["cldfrac_ice"].get_view<Pack**>();
-  auto tot_cld_frac = m_cld_fraction_fields_out["cldfrac_tot"].get_view<Pack**>();
+  auto qi   = get_field_in("qi").get_view<const Pack**>();
+  auto liq_cld_frac = get_field_in("cldfrac_liq").get_view<const Pack**>();
+  auto ice_cld_frac = get_field_out("cldfrac_ice").get_view<Pack**>();
+  auto tot_cld_frac = get_field_out("cldfrac_tot").get_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
-
-  // Get a copy of the current timestamp (at the beginning of the step) and
-  // advance it,
-  auto ts = timestamp();
-  ts += dt;
-  for (auto& f : m_cld_fraction_fields_out) {
-    f.second.get_header().get_tracking().update_time_stamp(ts);
-  }
 }
 
 // =========================================================================================
@@ -82,23 +78,6 @@ void CldFraction::finalize_impl()
 {
   // Do nothing
 }
-
-void CldFraction::set_required_field_impl (const Field<const Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_cld_fraction_fields_in.emplace(name,f);
-
-  // Add myself as customer to the field
-  add_me_as_customer(f);
-}
-
-void CldFraction::set_computed_field_impl (const Field<      Real>& f) {
-
-  const auto& name = f.get_header().get_identifier().name();
-  m_cld_fraction_fields_out.emplace(name,f);
-
-  // Add myself as provider for the field
-  add_me_as_provider(f);
-}
+// =========================================================================================
 
 } // namespace scream

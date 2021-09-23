@@ -21,9 +21,7 @@ module homme_params_mod
   use dimensions_mod, only: &
     ne,                     &
     np,                     &
-    npart,                  &
-    qsize,                  &   ! number of SE tracers
-    qsize_d                     ! Compile time upper bound for qsize
+    npart
 
   use cube_mod, only: rotate_grid
   use time_mod, only: tstep, nEndStep, secpday, ndays, nmax, &
@@ -132,7 +130,6 @@ contains
       tstep_type,               &
       tstep,                    &
       qsplit,                   &
-      qsize,                    &         ! number of SE tracers
       rsplit,                   &
       omega,                    &
       rearth,                   &
@@ -261,7 +258,6 @@ contains
 
     ! Case config params
     call MPI_bcast(disable_diagnostics, 1, MPIlogical_t, par%root, par%comm, ierr)
-    call MPI_bcast(qsize,               1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq,           1, MPIinteger_t, par%root, par%comm, ierr)
 
     call MPI_bcast(test_case, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
@@ -358,11 +354,6 @@ contains
     if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
     if(dcmip16_mu_q<0)    dcmip16_mu_q  = dcmip16_mu_s
 
-    if (qsize>qsize_d) then
-      print *, "qsize, qsize_d:", qsize, qsize_d
-      call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
-    endif
-
     !-----------------------------!
     !       Print parameters      !
     !-----------------------------!
@@ -370,31 +361,31 @@ contains
     if (par%masterproc) then
        write(iulog,*)"done reading namelist..."
 
-       write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
+       write(iulog,*)"homme namelist: topology      = ",TRIM( TOPOLOGY )
 
-       write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
-       write(iulog,*)"readnl: omega         = ",omega
-       write(iulog,*)"readnl: ndays         = ",ndays
-       write(iulog,*)"readnl: nmax          = ",nmax
+       write(iulog,*)"homme namelist: test_case     = ",TRIM(test_case)
+       write(iulog,*)"homme namelist: omega         = ",omega
+       write(iulog,*)"homme namelist: ndays         = ",ndays
+       write(iulog,*)"homme namelist: nmax          = ",nmax
 
-       write(iulog,*)"readnl: qsize,qsize_d = ",qsize,qsize_d
+       write(iulog,*)"homme namelist: qsize_d = ",qsize_d
 
-       write(iulog,*)"readnl: ne,np         = ",NE,np
-       write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
-       write(iulog,*)"readnl: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
+       write(iulog,*)"homme namelist: ne,np         = ",NE,np
+       write(iulog,*)"homme namelist: partmethod    = ",PARTMETHOD
+       write(iulog,*)"homme namelist: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
 
-       write(iulog,*)"readnl: theta_hydrostatic_mode = ",theta_hydrostatic_mode
-       write(iulog,*)"readnl: transport_alg   = ",transport_alg
-       write(iulog,*)"readnl: tstep_type    = ",tstep_type
-       write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
-       write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
-       write(iulog,*)"readnl: tstep          = ",tstep
-       write(iulog,*)"readnl: ftype          = ",ftype
-       write(iulog,*)"readnl: limiter_option = ",limiter_option
-       write(iulog,*)"readnl: dt_tracer_factor = ",dt_tracer_factor
-       write(iulog,*)"readnl: vertical remap frequency dt_remap_factor (0=disabled): ",dt_remap_factor
+       write(iulog,*)"homme namelist: theta_hydrostatic_mode = ",theta_hydrostatic_mode
+       write(iulog,*)"homme namelist: transport_alg   = ",transport_alg
+       write(iulog,*)"homme namelist: tstep_type    = ",tstep_type
+       write(iulog,*)"homme namelist: theta_advect_form = ",theta_advect_form
+       write(iulog,*)"homme namelist: vert_remap_q_alg  = ",vert_remap_q_alg
+       write(iulog,*)"homme namelist: tstep          = ",tstep
+       write(iulog,*)"homme namelist: ftype          = ",ftype
+       write(iulog,*)"homme namelist: limiter_option = ",limiter_option
+       write(iulog,*)"homme namelist: dt_tracer_factor = ",dt_tracer_factor
+       write(iulog,*)"homme namelist: vertical remap frequency dt_remap_factor (0=disabled): ",dt_remap_factor
 
-       write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
+       write(iulog,*)"homme namelist: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
@@ -530,7 +521,7 @@ contains
   end function get_homme_bool_param_f90
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
-    use dimensions_mod,    only: qsize, nlev, np
+    use dimensions_mod,    only: qsize, qsize_d, nlev, np
     use control_mod,       only: ftype, use_moisture
     use time_mod,          only: nmax
     !
@@ -551,6 +542,10 @@ contains
         ftype = param_value
       case("qsize")
         qsize = param_value
+        if (qsize>qsize_d) then
+          print *, "qsize, qsize_d:", qsize, qsize_d
+          call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
+        endif
         if (qsize<1) use_moisture = .false.
       case("nmax")
         nmax = param_value

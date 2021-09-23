@@ -26,7 +26,7 @@ from machines_specs import is_machine_supported, is_cuda_machine, get_all_suppor
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
 
-import unittest, argparse, sys, difflib, shutil
+import unittest, argparse, sys, difflib, shutil, os
 from pathlib import Path
 
 # Globals
@@ -409,13 +409,47 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
-    def test_jenkins_process(self):
+    def test_mpirank_and_thread_spreading(self):
+        pass
+
+    def test_jenkins_process_at(self):
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
             cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
+        else:
+            self.skipTest("Skipping jenkins test")
+
+    def test_jenkins_process_nightly(self):
+        if self._jenkins:
+            # We set PULLREQUESTNUM to block dashboard submission
+            # We set SCREAM_FAKE_AUTO to not interere with real baselines
+            cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
+                               self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
+        else:
+            self.skipTest("Skipping jenkins test")
+
+    def test_jenkins_process_fail_captured_at(self):
+        if self._jenkins:
+            # Any fail will do, we already checked test-all-scream captures all the fail types
+            cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+                               self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+
+        else:
+            self.skipTest("Skipping jenkins test")
+
+    def test_jenkins_process_fail_captured_nightly(self):
+        if self._jenkins:
+            # Any fail will do, we already checked test-all-scream captures all the fail types
+            cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
+                               self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
         else:
             self.skipTest("Skipping jenkins test")
@@ -520,6 +554,8 @@ OR
 ###############################################################################
 def scripts_tests(machine=None, generate=False, compare=False, full=False, jenkins=False):
 ###############################################################################
+    os.environ["SCREAM_FAKE_ONLY"] = "True"
+
     # Store test params in environment
     if machine:
         expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))

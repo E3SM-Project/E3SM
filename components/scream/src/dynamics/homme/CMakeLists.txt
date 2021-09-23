@@ -158,7 +158,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details
     if(${CMAKE_VERSION} VERSION_GREATER "3.17.0")
-      target_link_options(${hommeLibName} PRIVATE "${HOMME_LINKER_FLAGS}")
+      target_link_options(${hommeLibName} PUBLIC "${HOMME_LINKER_FLAGS}")
     else ()
       target_link_libraries(${hommeLibName} "${HOMME_LINKER_FLAGS}")
     endif ()

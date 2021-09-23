@@ -15,15 +15,6 @@ from utils import expect, get_cpu_core_count, run_cmd_no_fail
 
 import os, sys, pathlib
 
-def get_weaver_queue():
-    out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
-    if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
-        queue = "rhel7W"
-    else:
-        queue = "dev"
-
-    return queue
-
 MACHINE_METADATA = {
     "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.12.3 python/3.7.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
@@ -38,15 +29,15 @@ MACHINE_METADATA = {
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
     "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0", "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/bin:$PATH"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -I -q {} -n 4".format(get_weaver_queue()),
+                  "bsub -I -q rhel7W -n 4",
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "mappy"   : (["module purge", "module load sems-env sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
-                  46,
-                  46,
+                  64,
+                  64,
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.16.8 spectrum-mpi lapack python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                  ["mpicxx","mpifort","mpicc"],
@@ -66,7 +57,7 @@ MACHINE_METADATA = {
                   16,
                   16,
                   ""),
-    "summit" : (["module purge", "module load cmake/3.15.2 gcc/6.4.0 spectrum-mpi/10.3.0.1-20190611 cuda/10.1.168 python/3.6.6-anaconda3-5.3.0 netcdf/4.6.1 netcdf-fortran/4.4.4 openblas/0.3.9-nothreads","unset OMPI_CXX"],
+    "summit" : (["module purge", "module load cmake/3.18.4 gcc/7.5.0 spectrum-mpi/10.4.0.3-20210112 cuda/10.1.168 python/3.7-anaconda3 netcdf-c/4.8.0 netcdf-fortran/4.4.5 openblas/0.3.5","unset OMPI_CXX", "export OMP_COMM_WORLD_RANK=0"],
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 44,

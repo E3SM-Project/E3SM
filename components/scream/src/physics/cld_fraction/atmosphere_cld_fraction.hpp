@@ -37,13 +37,10 @@ public:
   // The name of the subcomponent
   std::string name () const { return "CldFraction"; }
 
-  // The communicator used by subcomponent
-  const ekat::Comm& get_comm () const { return m_cldfraction_comm; }
-
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert(m_cld_fraction_params.get<std::string>("Grid"));
+    s.insert(m_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -56,16 +53,6 @@ protected:
   void initialize_impl (const util::TimeStamp& t0);
   void run_impl        (const Real dt);
   void finalize_impl   ();
-
-  // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
-
-  std::map<std::string,const_field_type>  m_cld_fraction_fields_in;
-  std::map<std::string,field_type>        m_cld_fraction_fields_out;
-
-  ekat::Comm          m_cldfraction_comm;
-  ekat::ParameterList m_cld_fraction_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 

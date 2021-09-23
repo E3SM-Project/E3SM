@@ -55,6 +55,17 @@ module rof_cpl_indices
 
   integer, public :: index_r2x_Forr_rofl  = 0   ! rof->ocn liquid runoff to ocean
   integer, public :: index_r2x_Forr_rofi  = 0   ! rof->ocn ice runoff to ocean
+  integer, public :: index_r2x_Forr_rofDIN = 0  ! rof->ocn DIN runoff to ocean
+  integer, public :: index_r2x_Forr_rofDIP = 0  ! rof->ocn DIP runoff to ocean
+  integer, public :: index_r2x_Forr_rofDON = 0  ! rof->ocn DON runoff to ocean
+  integer, public :: index_r2x_Forr_rofDOP = 0  ! rof->ocn DOP runoff to ocean
+  integer, public :: index_r2x_Forr_rofDOC = 0  ! rof->ocn DOC runoff to ocean
+  integer, public :: index_r2x_Forr_rofPP  = 0  ! rof->ocn PP  runoff to ocean
+  integer, public :: index_r2x_Forr_rofDSi = 0  ! rof->ocn DSi runoff to ocean
+  integer, public :: index_r2x_Forr_rofPOC = 0  ! rof->ocn POC runoff to ocean
+  integer, public :: index_r2x_Forr_rofPN  = 0  ! rof->ocn PN  runoff to ocean
+  integer, public :: index_r2x_Forr_rofDIC = 0  ! rof->ocn DIC runoff to ocean
+  integer, public :: index_r2x_Forr_rofFe  = 0  ! rof->ocn Fe  runoff to ocean
   integer, public :: index_r2x_Flrr_flood = 0   ! rof->lnd flood runoff (>fthresh) back to land
   integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
@@ -77,7 +88,8 @@ contains
     ! runoff - (rof -> ocn) and (rof->lnd)
     !
     ! !USES:
-    use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat
+    use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
+                              rof2ocn_nutrients
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -129,6 +141,19 @@ contains
 
     index_r2x_Forr_rofl  = mct_avect_indexra(avtmp,'Forr_rofl')
     index_r2x_Forr_rofi  = mct_avect_indexra(avtmp,'Forr_rofi')
+    if (rof2ocn_nutrients) then
+       index_r2x_Forr_rofDIN = mct_avect_indexra(avtmp,'Forr_rofDIN')
+       index_r2x_Forr_rofDIP = mct_avect_indexra(avtmp,'Forr_rofDIP')
+       index_r2x_Forr_rofDON = mct_avect_indexra(avtmp,'Forr_rofDON')
+       index_r2x_Forr_rofDOP = mct_avect_indexra(avtmp,'Forr_rofDOP')
+       index_r2x_Forr_rofDOC = mct_avect_indexra(avtmp,'Forr_rofDOC')
+       index_r2x_Forr_rofPP  = mct_avect_indexra(avtmp,'Forr_rofPP')
+       index_r2x_Forr_rofDSi = mct_avect_indexra(avtmp,'Forr_rofDSi')
+       index_r2x_Forr_rofPOC = mct_avect_indexra(avtmp,'Forr_rofPOC')
+       index_r2x_Forr_rofPN  = mct_avect_indexra(avtmp,'Forr_rofPN')
+       index_r2x_Forr_rofDIC = mct_avect_indexra(avtmp,'Forr_rofDIC')
+       index_r2x_Forr_rofFe  = mct_avect_indexra(avtmp,'Forr_rofFe')
+    endif
     index_r2x_Flrr_flood = mct_avect_indexra(avtmp,'Flrr_flood')
     index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')

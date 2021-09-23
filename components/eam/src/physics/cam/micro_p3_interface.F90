@@ -744,7 +744,7 @@ end subroutine micro_p3_readnl
                               rho_h2os, &
                               qsmall, &
                               mincld, & 
-                              inv_cp 
+                              inv_cp
 
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state

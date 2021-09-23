@@ -1745,7 +1745,7 @@ contains
     call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
@@ -1847,7 +1847,7 @@ contains
   !===============================================================================
   !BOP ===========================================================================
   !
-  ! !IROUTINE: seq_io_read_avs - read AV from netcdf file
+  ! !IROUTINE: seq_io_read_avscomp - read AV from netcdf file
   !
   ! !DESCRIPTION:
   !    Read AV from netcdf file
@@ -1890,7 +1890,7 @@ contains
     character(CL)            :: lversion
     character(CL)            :: name1
     character(CL)            :: lpre
-    character(*),parameter   :: subName = '(seq_io_read_avs) '
+    character(*),parameter   :: subName = '(seq_io_read_avscomp) '
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1915,10 +1915,10 @@ contains
     ng = mct_gsmap_gsize(gsmap)
 
     if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
+    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avscomp exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)

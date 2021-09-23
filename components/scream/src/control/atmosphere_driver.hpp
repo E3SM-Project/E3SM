@@ -7,7 +7,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
-#include "share/io/output_manager.hpp"
+#include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
@@ -55,6 +55,9 @@ public:
   // Set comm for the whole atmosphere
   void set_comm (const ekat::Comm& atm_comm);
 
+  // Return comm for the whole atmosphere
+  const ekat::Comm& get_comm () const { return m_atm_comm; }
+
   // Set AD params
   void set_params (const ekat::ParameterList& params);
 
@@ -74,7 +77,7 @@ public:
   void initialize_fields (const util::TimeStamp& t0);
 
   // Initialie I/O structures for output
-  void initialize_output_manager ();
+  void initialize_output_managers (const bool restarted_run = false);
 
   // Call 'initialize' on all atm procs
   void initialize_atm_procs ();
@@ -83,9 +86,14 @@ public:
 
   // A wrapper of all of the above (except setting SurfaceCoupling),
   // which is handy for scream standalone tests.
+  //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
+  //  - params: parameter list with all atm options (organized in sublists)
+  //  - t0: the time stamp where the simulation starts
+  //  - restarted_run: whether this run is restarting from the output of a previous run
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0);
+                   const util::TimeStamp& t0,
+                   const bool restarted_run = false);
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -109,7 +117,7 @@ public:
 
 protected:
 
-  void initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl);
+  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
   void register_groups ();
 
   std::map<std::string,field_mgr_ptr>    m_field_mgrs;
@@ -120,7 +128,7 @@ protected:
 
   ekat::ParameterList                                 m_atm_params;
 
-  OutputManager                                       m_output_manager;
+  std::map<std::string,OutputManager>                 m_output_managers;
 
   ATMBufferManager                                    m_memory_buffer;
 

@@ -89,16 +89,23 @@ public:
 
   // Constructor(s)
   Field ();
-  Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v);
   explicit Field (const identifier_type& id);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
   Field (const Field<SrcDT>& src);
 
-  // Assignment: allows const->const, nonconst->nonconst, and nonconst->const copies
-  template<typename SrcDT>
-  Field& operator= (const Field<SrcDT>& src);
+  Field& operator= (const Field& src) = default;
+
+  // Assignment overload to allow nonconst->const assignment
+  template<typename SrcRT>
+  typename std::enable_if<
+    !std::is_const<SrcRT>::value &&
+     std::is_const<RT>::value,
+    Field
+  >::type&
+  operator= (const Field<SrcRT>& src);
+
 
   // ---- Getters and const methods---- //
   const header_type& get_header () const { return *m_header; }
@@ -288,6 +295,13 @@ protected:
   std::shared_ptr<property_check_list>    m_prop_checks;
 };
 
+// We use this to find a FieldGroup in a std container.
+// We do NOT allow two entries with same field identifier in such containers.
+template<typename RT1, typename RT2>
+bool operator== (const Field<RT1>& lhs, const Field<RT2>& rhs) {
+  return lhs.get_header().get_identifier() == rhs.get_header().get_identifier();
+}
+
 // ================================= IMPLEMENTATION ================================== //
 
 template<typename RealType>
@@ -308,18 +322,6 @@ Field (const identifier_type& id)
   // At the very least, the allocation properties need to accommodate this field's real type.
   m_header->get_alloc_properties().request_allocation<RT>();
 
-  // Create an empty host mirror view
-  // Note: this is needed cause 'ensure_host_view' cannot modify this class
-  m_view_h = std::make_shared<HM<view_type<RT*>>>();
-}
-
-template<typename RealType>
-Field<RealType>::
-Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v)
-  : m_header(h)
-  , m_view_d(v)
-  , m_prop_checks(new property_check_list)
-{
   // Create an empty host mirror view
   // Note: this is needed cause 'ensure_host_view' cannot modify this class
   m_view_h = std::make_shared<HM<view_type<RT*>>>();
@@ -350,23 +352,22 @@ Field (const Field<SrcRealType>& src)
 }
 
 template<typename RealType>
-template<typename SrcRealType>
-Field<RealType>&
+template<typename SrcRT>
+typename std::enable_if<
+  !std::is_const<SrcRT>::value &&
+  std::is_const<RealType>::value,
+  Field<RealType>
+>::type&
 Field<RealType>::
-operator= (const Field<SrcRealType>& src) {
+operator= (const Field<SrcRT>& src) {
   using src_field_type = typename std::remove_reference<decltype(src)>::type;
 
-  // NOTE: the following checks might be redundant, since Kokkos::View copy
+  // Check that the underlying value type is the same
+  // NOTE: the check might be redundant, since Kokkos::View copy
   //       constructor might already perform analogue checks in order to
   //       assign pointers.
-
-  // Check that the underlying value type is the same
   static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
                 "Error! Cannot use copy constructor if the underlying real type is different.\n");
-  // Check that destination is const or source is nonconst
-  static_assert( std::is_const<RT>::value ||
-                !std::is_const<typename src_field_type::RT>::value,
-                "Error! Cannot create a nonconst field from a const field.\n");
 
   // If the field has a valid header (i.e., m_header!=nullptr), then
   // we only allow assignment of fields with the *same* identifier,
@@ -595,12 +596,13 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   FieldLayout sf_lt(tags,dims);
   FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
 
-  // Create header
-  auto sv_h = create_header(sf_id,m_header,idim,k);
-
-  // Create subfield (set host view too)
-  field_type sf(sv_h,m_view_d);
+  // Create empty subfield, then set header and views
+  // Note: we can access protected members, since it's the same type
+  field_type sf;
+  sf.m_header = create_subfield_header(sf_id,m_header,idim,k);
+  sf.m_view_d = m_view_d;
   sf.m_view_h = m_view_h;
+  sf.m_prop_checks = std::make_shared<property_check_list>();
 
   return sf;
 }
@@ -700,7 +702,11 @@ auto Field<RealType>::get_ND_view () const ->
   const auto parent = m_header->get_parent().lock();
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
-    Field<RealType> f(parent,m_view_d);
+    // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
+    // NOTE: we can set protected members, since f is the same type of this class.
+    Field<RealType> f;
+    f.m_header = parent;
+    f.m_view_d = m_view_d;
     f.m_view_h = m_view_h;  // Make sure we share the same host view ptr.
 
     auto v_np1 = f.get_ND_view<HD,T,N+1>();

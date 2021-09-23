@@ -1011,6 +1011,7 @@ if ($ice_bgc eq 'ice_bgc' ) {
 } else {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".false.");
 }
+add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #

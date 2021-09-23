@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_REQUEST_HPP
 
 #include "share/field//field_identifier.hpp"
+#include "share/util/scream_utils.hpp"
 
 namespace scream {
 
@@ -12,20 +13,31 @@ enum class Bundling : int {
   NotNeeded
 };
 
-// Whether two groups (see below) are related.
-enum class Relationship : int {
+// What's the relation of group A and group B. In particular, if group A is 'derived'
+// from group B, this enum explains how it is derived.
+//  - None: not a "derived" request
+//  - Import: group B is on a different grid than group A. This derivation type makes
+//            sure that there is a replica of B on the grid associated with A.
+//  - Copy: a hard copy of the group B is created, with only the "bundled" field being
+//          allocated, to avoid creating two copies of the samae field.
+//          This derivation type requires group A and group B to be on the *same* grid.
+//  - Superset: all fields in A also appear in B (the *same* fields)
+//  - Subset: all fields in B also appear in A (the *same* fields)
+enum class DerivationType : int {
   None,
-  Alias,
-  Parent,
-  Child
+  Import,
+  Copy,
+  Superset,
+  Subset
 };
 
-inline std::string e2str (const Relationship rt) {
+inline std::string e2str (const DerivationType rt) {
   switch (rt) {
-    case Relationship::None:    return "None";
-    case Relationship::Alias:   return "Alias";
-    case Relationship::Child:   return "Child";
-    case Relationship::Parent:  return "Parent";
+    case DerivationType::None:      return "None";
+    case DerivationType::Import:    return "Import";
+    case DerivationType::Copy:      return "Copy";
+    case DerivationType::Subset:    return "Subset";
+    case DerivationType::Superset:  return "Superset";
   }
   return "INVALID";
 }
@@ -54,35 +66,34 @@ struct GroupRequest {
   //  - bundling: whether the group should be bundled (see field_group.hpp)
   //  - r: allows to specify specs of this request in terms of another.
   //  - t: the relationshipt of group in request r compared to this one.
-  //       E.g.: t=Parent means r->name is a superset of group this->name.
-  //  - excl: if t=Parent, this group contains all field in r, *except* those in this list.
+  //       E.g.: t=Superset means r->name is a superset of group this->name.
+  //  - exclude: if t=Superset/Subset, this group contains all field in r, *except/plus* those in this list.
   GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b,
-                const GroupRequest* r, const Relationship t, const std::list<std::string>& excl = {})
-   : name(name_), grid(grid_), pack_size(ps), bundling(b)
+                const DerivationType rt, const std::string& src_name_, const std::string& src_grid_,
+                const std::list<std::string>& exclude_ = {})
+   : name(name_), grid(grid_), pack_size(ps), bundling(b), derived_type(rt)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
-    if (r!=nullptr) {
-      relative = std::make_shared<GroupRequest>(*r);
-      relative_type = t;
-      EKAT_REQUIRE_MSG (t!=Relationship::None,
-          "Error! RelativType cannot be None if the relative pointer is not null.\n");
-      EKAT_REQUIRE_MSG (excl.size()==0 || t==Relationship::Parent,
-          "Error! You can only exclude fields from a relative group if the input GroupRequest ptr is a Parent.\n");
-      exclude = excl;
+    if (rt!=DerivationType::None) {
+      src_name = src_name_;
+      src_grid = src_grid_;
 
-      // TODO: should we relax this? Not allowing multiple levels of nested
-      //       relativeing makes it easier for the AD and FM to correctly allocated
-      //       fields...
-      EKAT_REQUIRE_MSG (r->relative==nullptr,
-          "Error! We cannot handle multiple levels of nested groups.\n");
+      EKAT_REQUIRE_MSG (src_grid==grid || rt==DerivationType::Import,
+          "Error! We only allow cross-grid group derivation if the derivation type is 'Import'.");
+
+      EKAT_REQUIRE_MSG (exclude_.size()==0 || rt==DerivationType::Subset,
+          "Error! You can only exclude fields when deriving a group from another if this group\n"
+          "       is a subset of the source group.\n");
+      exclude = exclude_;
     }
   }
 
-  // Convenience overloads of the ctor
+  // Convenience ctors when some features are not needed
   GroupRequest (const std::string& name_, const std::string& grid_,
                 const int ps, const Bundling b = Bundling::NotNeeded)
-   : GroupRequest(name_,grid_,ps,b,nullptr,Relationship::None,{})
+   : GroupRequest(name_,grid_,ps,b,DerivationType::None,"","",{})
   { /* Nothing to do here */ }
+
   GroupRequest (const std::string& name_, const std::string& grid_,
                 const Bundling b = Bundling::NotNeeded)
    : GroupRequest(name_,grid_,1,b)
@@ -90,26 +101,27 @@ struct GroupRequest {
 
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
-
   
+  // Main parts of a group request
   std::string name;   // Group name
   std::string grid;   // Grid name
   int pack_size;      // Request an allocation that can accomodate Pack<Real,pack_size>
+  Bundling bundling;  // Whether the group should be allocated as a single n+1 dimensional field
 
   // The following members allow to specify a request in terms of another group.
   // A possible use of this is when an atm proc wants to create G1 "excluding"
   // some fields from G2, and have the remaining ones still contiguous in mem (i.e.,
   // accessible with a bundled array). This will inform the FM to rearrange the fields
   // in G2 so that the subset of fields that are in G1 appear contiguously.
+  // Another use is to create group G2 on grid B to contain the same fields of
+  // group G1 on grid A, without knowing what's in G1 a priori.
   // See comments in FieldManager::registration_ends() for more details
-  std::shared_ptr<GroupRequest>   relative;
-
-  Bundling bundling;
-
-  // Note: relative_type is what the group relative->name is *to me*. So, if relative_type=Child,
-  //       then the group relative->name contains a subset of the fields in the group this->name;
-  Relationship relative_type;
-  std::list<std::string> exclude;
+  // Note: derived_type is what *this group* is for $src_name. So, if derived_type=Subset,
+  //       then this group is a subset of the group $src_name.
+  DerivationType derived_type;
+  std::string src_name;
+  std::string src_grid;
+  std::list<std::string> exclude;  // Only for derived_type=Subset
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -117,30 +129,57 @@ struct GroupRequest {
 inline bool operator< (const GroupRequest& lhs,
                        const GroupRequest& rhs)
 {
+  // Order by group name first
   if (lhs.name<rhs.name) {
     return true;
-  } else if (lhs.name==rhs.name) {
-    if (lhs.grid<rhs.grid) {
-      return true;
-    } else if (lhs.grid==rhs.grid) {
-      if (lhs.pack_size < rhs.pack_size) {
-        return true;
-      } else if (lhs.pack_size==rhs.pack_size) {
-        if (lhs.relative==nullptr) {
-          return rhs.relative!=nullptr;
-        } else if (rhs.relative!=nullptr) {
-          if ( (*lhs.relative) < (*rhs.relative) ) {
-            return true;
-          } else if ( ! ( (*rhs.relative)<(*lhs.relative)) ) {
-            return etoi(lhs.bundling) < etoi(rhs.bundling) ||
-                   (etoi(lhs.bundling) == etoi(rhs.bundling) &&
-                    etoi(lhs.relative_type) < etoi(rhs.relative_type));
-          }
-        }
-      }
-    }
+  } else if (lhs.name>rhs.name) {
+    return false;
   }
-  return false;
+
+  // Same group name, order by grid
+  if (lhs.grid<rhs.grid) {
+    return true;
+  } else if (lhs.grid>rhs.grid) {
+    return false;
+  }
+
+  // Same grid name, order by pack size
+  if (lhs.pack_size < rhs.pack_size) {
+    return true;
+  } else if (lhs.pack_size>rhs.pack_size) {
+    return false;
+  }
+
+  // Same pack size, order by bundling
+  if (etoi(lhs.bundling)<etoi(rhs.bundling)) {
+    return true;
+  } else if (etoi(lhs.bundling)>etoi(rhs.bundling)) {
+    return false;
+  }
+
+  // Same bundling, order by derivation type
+  if (etoi(lhs.derived_type)<etoi(rhs.derived_type)) {
+    return true;
+  } else if (etoi(lhs.derived_type)<etoi(rhs.derived_type)) {
+    return false;
+  }
+
+  // Same derivation type, order by source group name
+  if (lhs.src_name<rhs.src_name) {
+    return true;
+  } else if (lhs.src_name>rhs.src_name) {
+    return false;
+  }
+
+  // Same souce group name, order by source group grid
+  if (lhs.src_grid<rhs.src_grid) {
+    return true;
+  } else if (lhs.src_grid>rhs.src_grid) {
+    return false;
+  }
+
+  // Same source group grid, order by exclude fields
+  return (lhs.exclude<rhs.exclude);
 }
 
 /*

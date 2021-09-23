@@ -8,16 +8,16 @@ namespace scream {
 
 AtmosphereProcessGroup::
 AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
- : m_comm(comm)
+  : AtmosphereProcess(comm, params)
 {
   // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
   m_group_size = params.get<int>("Number of Entries");
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (params.get<std::string>("Schedule Type") == "Sequential") {
+    if (m_params.get<std::string>("Schedule Type") == "Sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (params.get<std::string>("Schedule Type") == "Parallel") {
+    } else if (m_params.get<std::string>("Schedule Type") == "Parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
@@ -53,7 +53,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = params.sublist(ekat::strint("Process",i));
+    const auto& params_i = m_params.sublist(ekat::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
 
@@ -93,16 +93,16 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     atm_proc->set_grids(grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
-    for (const auto& req : atm_proc->get_required_fields()) {
+    for (const auto& req : atm_proc->get_required_field_requests()) {
       process_required_field(req);
     }
-    for (const auto& req : atm_proc->get_computed_fields()) {
+    for (const auto& req : atm_proc->get_computed_field_requests()) {
       add_field<Computed>(req);
     }
-    for (const auto& req : atm_proc->get_required_groups()) {
+    for (const auto& req : atm_proc->get_required_group_requests()) {
       add_group<Required>(req);
     }
-    for (const auto& req : atm_proc->get_updated_groups()) {
+    for (const auto& req : atm_proc->get_updated_group_requests()) {
       add_group<Updated>(req);
     }
   }
@@ -144,7 +144,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_group (const FieldGroup<const Real>& group)
+set_required_group_impl (const FieldGroup<const Real>& group)
 {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
@@ -156,7 +156,7 @@ set_required_group (const FieldGroup<const Real>& group)
 }
 
 void AtmosphereProcessGroup::
-set_updated_group (const FieldGroup<Real>& group)
+set_updated_group_impl (const FieldGroup<Real>& group)
 {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];

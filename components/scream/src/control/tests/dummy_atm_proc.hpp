@@ -19,14 +19,13 @@ public:
   };
 
   DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
-   : m_comm(comm)
+    : AtmosphereProcess(comm, params)
   {
-    m_params = params;
     m_name = m_params.get<std::string>("Sub Name");
     if (m_name=="Group to Group") {
       m_dummy_type = G2G;
     } else {
-      m_dummy_type = (m_name=="A to BC") ? A2G : G2A;
+      m_dummy_type = (m_name=="A to Group") ? A2G : G2A;
     }
   }
 
@@ -39,9 +38,6 @@ public:
 
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
-
-  // The communicator associated with this atm process
-  const ekat::Comm& get_comm () const { return m_comm; }
 
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     using namespace ShortFieldTagsNames;
@@ -69,32 +65,6 @@ public:
     }
   }
 
-  void set_required_group (const FieldGroup<const Real>& field_group) {
-    EKAT_REQUIRE_MSG (m_dummy_type==G2A,
-                      "Error! This atmosphere process does not require a group of fields.\n");
-
-    for (const auto& it : field_group.m_fields) {
-      const auto& f = it.second;
-      const auto& fid = f->get_header().get_identifier();
-      m_inputs.emplace(fid.name(),*f);
-      add_field<Required>(fid);
-    }
-  }
-  void set_updated_group (const FieldGroup<Real>& field_group) {
-    EKAT_REQUIRE_MSG (m_dummy_type==G2G,
-                      "Error! This atmosphere process does not require a group of fields.\n");
-
-    for (const auto& it : field_group.m_fields) {
-      const auto& f = it.second;
-      const auto& fid = f->get_header().get_identifier();
-      add_field<Required>(fid);
-      add_field<Computed>(fid);
-
-      m_inputs.emplace(fid.name(),f->get_const());
-      m_outputs.emplace(fid.name(),*f);
-    }
-  }
-
 protected:
 
   void initialize_impl (const util::TimeStamp&) {
@@ -109,10 +79,10 @@ public:
     const int ncols = m_grid->get_num_local_dofs();
     const int nlevs = m_grid->get_num_vertical_levels();
     auto policy = KokkosTypes<exec_space>::RangePolicy(0,ncols*nlevs);
-    if (m_name=="A to BC") {
-      const auto view_A = m_inputs["A"].get_view<const Real**>();
-      const auto view_B = m_outputs["B"].get_view<Real**>();
-      const auto view_C = m_outputs["C"].get_view<Real**>();
+    if (m_name=="A to Group") {
+      const auto view_A = get_field_in("A").get_view<const Real**>();
+      const auto view_B = get_field_out("B").get_view<Real**>();
+      const auto view_C = get_field_out("C").get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -122,9 +92,9 @@ public:
         view_C(icol,ilev) = view_A(icol,ilev) / 2;
       });
     } else if (m_name=="Group to Group") {
-      const auto& fB = m_outputs["B"];
-      const auto view_B = fB.get_view<Real**>();
-      const auto view_C = m_outputs["C"].get_view<Real**>();
+      const auto& g = get_group_out("The Group");
+      const auto view_B = g.m_fields.at("B")->get_view<Real**>();
+      const auto view_C = g.m_fields.at("C")->get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -134,9 +104,10 @@ public:
         view_C(icol,ilev) = view_C(icol,ilev) / 2;
       });
     } else {
-      const auto view_B = m_inputs["B"].get_view<const Real**>();
-      const auto view_C = m_inputs["C"].get_view<const Real**>();
-      const auto view_A = m_outputs["A"].get_view<Real**>();
+      const auto& g = get_group_in("The Group");
+      const auto view_B = g.m_fields.at("B")->get_view<const Real**>();
+      const auto view_C = g.m_fields.at("C")->get_view<const Real**>();
+      const auto view_A = get_field_out("A").get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -153,25 +124,11 @@ protected:
     // Do nothing
   }
 
-  // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real>& f) {
-    m_inputs[f.get_header().get_identifier().name()] = f;
-  }
-  void set_computed_field_impl (const Field<Real>& f) {
-    m_outputs[f.get_header().get_identifier().name()] = f;
-  }
-
-  std::map<std::string,Field<const Real>>   m_inputs;
-  std::map<std::string,Field<      Real>>   m_outputs;
-
   std::shared_ptr<const AbstractGrid>   m_grid;
 
   std::string m_name;
 
-  ekat::ParameterList m_params;
   DummyType     m_dummy_type; 
-
-  ekat::Comm    m_comm;
 };
 
 } // namespace scream

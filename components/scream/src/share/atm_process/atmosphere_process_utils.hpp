@@ -8,7 +8,6 @@
 namespace scream {
 
 enum class AtmosphereProcessType {
-  Coupling,   // Process responsible of interfacing with the component coupler
   Dynamics,   // Process responsible of handling the dynamics
   Physics,    // Process handling a physics parametrization
   Group       // Process that groups a bunch of processes (so they look as a single process)
@@ -16,7 +15,6 @@ enum class AtmosphereProcessType {
 
 inline std::string e2str (const AtmosphereProcessType ap_type) {
   switch (ap_type) {
-    case AtmosphereProcessType::Coupling:  return "Surface Coupling";
     case AtmosphereProcessType::Dynamics:  return "Atmosphere Dynamics";
     case AtmosphereProcessType::Physics:   return "Atmosphere Physics Parametrization";
     case AtmosphereProcessType::Group:     return "Atmosphere Process Group";

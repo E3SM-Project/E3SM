@@ -82,6 +82,7 @@ void run(std::mt19937_64& engine)
   using rview_1d   = typename KT::template view_1d<RealType>;
 
   static constexpr auto Rd       = PC::RD;
+  static constexpr auto cp       = PC::CP;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
   static constexpr auto test_tol = PC::macheps*1e3;
@@ -111,6 +112,7 @@ void run(std::mt19937_64& engine)
           Tv("T_virtual",num_mid_packs),
           T_from_Tv("T_from_T_virtual",num_mid_packs),
           dse("dse",num_mid_packs),
+          T_from_dse("T_from_dse",num_mid_packs),
           dz("dz",num_mid_packs),
           z_int("z_int",num_int_packs),
           vmr("volume_mixing_ratio",num_mid_packs),
@@ -135,7 +137,8 @@ void run(std::mt19937_64& engine)
        pdf_height(0.0,1e5),
        pdf_dz(1.0,1e5),
        pdf_surface(100.0,400.0),
-       pdf_mmr(0,0.99);
+       pdf_mmr(0,0.99),
+       pdf_dse(1e5,5e5);
 
   //contruct random integers
   using IPDF = std::uniform_int_distribution<int>;
@@ -163,7 +166,7 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
   RealType surf_height;
 
   // calculate density property tests:
@@ -235,9 +238,21 @@ void run(std::mt19937_64& engine)
   // DSE property tests:
   //  - calculate_dse(T=0.0, z=0.0) = surf_height
   //  - calculate_dse(T=1/cp, z=1/gravity) = surf_height+2
+  //  - calculate_temperature_from_dse(dse=cp, z=cp/gravity) = -1.0*surf_height/cp (up to roundoff errors)
+  //  - calculate_dse and calculate_temperature_from_dse are one the inverse of the other (up to roundoff errors)
   surf_height = pdf_surface(engine);
+  z0          = pdf_height(engine);
+  dse0        = pdf_dse(engine);
+  T0          = pdf_temp(engine);
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
+  REQUIRE( Check::approx_equal(PF::calculate_temperature_from_dse(ScalarT(cp),ScalarT(cp/g),surf_height),
+                               ScalarT(-1.0*surf_height/cp), test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_dse(PF::calculate_temperature_from_dse(dse0,z0,surf_height),
+                               z0,surf_height),dse0,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_temperature_from_dse(PF::calculate_dse(T0,z0,surf_height),
+                               z0,surf_height),T0,test_tol) );
+
 
   // WETMMR to DRYMMR (and vice versa) property tests
   wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
@@ -326,6 +341,9 @@ void run(std::mt19937_64& engine)
     // Compute dse(T,z,z_surf)
     PF::calculate_dse(team,temperature,height,surf_height,dse);
 
+    // Compute temperature from dse (dse,z,z_surf)
+    PF::calculate_temperature_from_dse(team,dse,height,surf_height,T_from_dse);
+
     // Compute dz(dp,p,T,qv)
     PF::calculate_dz(team,pseudo_density,pressure,temperature,qv,dz);
 
@@ -357,6 +375,7 @@ void run(std::mt19937_64& engine)
   auto Tv_host              = cmvdc(Tv);
   auto T_from_Tv_host       = cmvdc(T_from_Tv);
   auto dse_host             = cmvdc(dse);
+  auto T_from_dse_host      = cmvdc(T_from_dse);
   auto z_int_host           = cmvdc(z_int);
   auto dz_host              = cmvdc(dz);
   auto vmr_host             = cmvdc(vmr);
@@ -378,7 +397,7 @@ void run(std::mt19937_64& engine)
     REQUIRE( Check::is_non_negative(dz_host(k),k) );
     REQUIRE( Check::is_non_negative(z_int_host(k),k) );
     REQUIRE( Check::is_non_negative(dse_host(k),k) );
-    REQUIRE( Check::is_non_negative(dse_host(k),k) );
+    REQUIRE( Check::is_non_negative(T_from_dse_host(k),k) );
     REQUIRE( Check::is_non_negative(vmr_host(k),k) );
     REQUIRE( Check::is_non_negative(mmr_host(k),k) );
     REQUIRE( Check::is_non_negative(wetmmr_host(k),k) );

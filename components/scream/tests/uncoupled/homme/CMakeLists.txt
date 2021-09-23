@@ -6,8 +6,8 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
 set (NEED_LIBS ${dynLibName} scream_control scream_share)
 
-# Test Homme standalone
-CreateUnitTest(homme_stand_alone "homme_stand_alone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+# Test Homme stand alone
+CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
 
 # Copy yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
@@ -24,6 +24,7 @@ set (HOMME_TEST_NMAX 24)
 set (HOMME_TEST_TIME_STEP 600)
 SET (HOMME_THETA_FORM 1)
 SET (HOMME_TTYPE 5)
+SET (HOMME_SE_FTYPE 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)

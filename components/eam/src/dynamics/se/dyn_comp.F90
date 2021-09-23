@@ -225,7 +225,7 @@ CONTAINS
     use time_mod,         only: time_at
     use control_mod,      only: runtype
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
-    use comsrf,           only: landm, sgh, sgh30
+    use comsrf,           only: sgh, sgh30
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
 
@@ -284,7 +284,6 @@ CONTAINS
           do ie=nets,nete
              elem(ie)%state%phis(:,:)=0.0_r8
           end do
-          if(allocated(landm)) landm=0.0_r8
           if(allocated(sgh)) sgh=0.0_r8
           if(allocated(sgh30)) sgh30=0.0_r8
        end if

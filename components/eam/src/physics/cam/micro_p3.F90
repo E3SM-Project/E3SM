@@ -411,10 +411,11 @@ contains
 
           if (do_prescribed_CCN) then
              !nccn_prescribed is an in-cloud value so make it grid average in this assignment
-             nc(k) = max(nc(k),nccn_prescribed(k)*1.0e6*inv_rho(k))
+             nc(k) = max(nc(k),nccn_prescribed(k))
           else if (do_predict_nc) then
              nc(k) = max(nc(k) + nc_nuceat_tend(k) * dt,0.0_rtype)
           else
+             ! nccnst is in units of #/m3 so needs to be converted.
              nc(k) = nccnst*inv_rho(k)
           endif
        endif

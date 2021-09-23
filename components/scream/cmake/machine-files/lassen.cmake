@@ -9,3 +9,4 @@ set(BLAS_LIBRARIES /usr/tcetmp/packages/lapack/lapack-3.9.0-gcc-7.3.1/lib/libbla
 set(LAPACK_LIBRARIES /usr/tcetmp/packages/lapack/lapack-3.9.0-gcc-7.3.1/lib/liblapack.so CACHE STRING "")
 set(SCREAM_MPIRUN_EXE "jsrun" CACHE STRING "")
 set(SCREAM_MPI_NP_FLAG "--np" CACHE STRING "")
+set(SCREAM_MPI_EXTRA_ARGS "" CACHE STRING "")

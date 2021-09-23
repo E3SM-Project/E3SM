@@ -10,6 +10,8 @@ Atmosphere Processes:
     Process Name: RRTMGP
     Grid: Physics
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    Orbital Year: 1990
+    Fixed Solar Zenith Angle: 0.86
 
 Grids Manager:
   Type: Physics Only
@@ -18,29 +20,30 @@ Grids Manager:
     Number of global columns: 128
     Number of vertical levels: 42
 
-# The name of the file containing the initial conditions for this test.
+# Specifications for setting initial conditions
 Initial Conditions:
-  p_mid: 0.0
-  p_int: 0.0
-  pseudo_density: 0.0
-  T_mid: 0.0
-  t_int: 0.0
-  sfc_alb_dir_vis: 0.0
-  sfc_alb_dir_nir: 0.0
-  sfc_alb_dif_vis: 0.0
-  sfc_alb_dif_nir: 0.0
-  cos_zenith: 0.0
-  qc: 0.0
-  qi: 0.0
-  cldfrac_tot: 0.0
-  eff_radius_qc: 0.0
-  eff_radius_qi: 0.0
-  qv: 0.0
-  co2: 0.0
-  o3: 0.0
-  n2o: 0.0
-  co: 0.0
-  ch4: 0.0
-  o2: 0.0
-  n2: 0.0
+  Physics:
+    p_mid: 0.0
+    p_int: 0.0
+    pseudo_density: 0.0
+    T_mid: 0.0
+    t_int: 0.0
+    sfc_alb_dir_vis: 0.0
+    sfc_alb_dir_nir: 0.0
+    sfc_alb_dif_vis: 0.0
+    sfc_alb_dif_nir: 0.0
+    cos_zenith: 0.0
+    qc: 0.0
+    qi: 0.0
+    cldfrac_tot: 0.0
+    eff_radius_qc: 0.0
+    eff_radius_qi: 0.0
+    qv: 0.0
+    co2: 0.0
+    o3: 0.0
+    n2o: 0.0
+    co: 0.0
+    ch4: 0.0
+    o2: 0.0
+    n2: 0.0
 ...

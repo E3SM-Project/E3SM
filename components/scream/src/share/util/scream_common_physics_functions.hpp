@@ -28,6 +28,7 @@ struct PhysicsFunctions
   // Determines the density given the definition of pseudo_density passed by the dycore
   //   rho = pseudo_density/dz/g
   // where,
+  //   rho            is the density of air, [kg/m3]
   //   pseudo_density is the pressure level thickness given a shallow atmosphere, [Pa]
   //   dz             is the geopotential thickness of the layer, [m]
   //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
@@ -119,6 +120,21 @@ struct PhysicsFunctions
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Compute temperature from dry static energy (DSE).
+  //   temperature = (DSE - g*z - surf_geopotential)/Cp
+  // where
+  //   Cp                is the heat constant of air at constant pressure [J/kg]
+  //   g                 is the gravitational constant [m s-2]
+  //   DSE               is the dry static energy.  Units in [J/kg]
+  //   z                 is the geopotential height above surface at midpoints. Units in [m].
+  //   surf_geopotential is the surface geopotential height. Units in [m].
+  //   temperature       is the atmospheric temperature. Units in [K].
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
@@ -277,6 +293,14 @@ struct PhysicsFunctions
                              const InputProviderZ& z,
                              const Real surf_geopotential,
                              const view_1d<ScalarT>& dse);
+
+  template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_temperature_from_dse (const MemberType& team,
+                                              const InputProviderT& dse,
+                                              const InputProviderZ& z,
+                                              const Real surf_geopotential,
+                                              const view_1d<ScalarT>& temperature);
 
   template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION

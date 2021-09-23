@@ -8,6 +8,8 @@
 #include "share/field/field_manager.hpp"
 #include "share/field/field_property_checks/field_positivity_check.hpp"
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/field/field_property_checks/field_lower_bound_check.hpp"
+#include "share/field/field_property_checks/field_upper_bound_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
@@ -70,7 +72,7 @@ TEST_CASE("field_identifier", "") {
 TEST_CASE("field_tracking", "") {
   using namespace scream;
 
-  FieldTracking track("track");
+  FieldTracking track;
   util::TimeStamp time1(0,0,0,10.0);
   util::TimeStamp time2(0,0,0,20.0);
   REQUIRE_NOTHROW (track.update_time_stamp(time2));
@@ -88,12 +90,7 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
-  std::random_device rd;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  rngAlg engine(seed);
+  auto engine = setup_random_test ();
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
 
@@ -446,8 +443,8 @@ TEST_CASE("tracers_bundle", "") {
   auto qc = field_mgr.get_field(qc_id.name());
   auto qr = field_mgr.get_field(qr_id.name());
 
-  auto group = field_mgr.get_field_group("tracers");
   // The field_mgr should have allocated the group bundled
+  auto group = field_mgr.get_field_group("tracers");
   REQUIRE (group.m_info->m_bundled);
 
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
@@ -535,33 +532,33 @@ TEST_CASE("multiple_bundles") {
   FieldIdentifier e_id("e", {tags, dims}, nondim, grid_name);
   FieldIdentifier f_id("f", {tags, dims}, nondim, grid_name);
 
-  FieldRequest a_req(a_id,"group1");
+  FieldRequest a_req(a_id,SL{"group1","group3"});
   FieldRequest b_req(b_id,SL{"group1"});
   FieldRequest c_req(c_id,SL{"group1","group2"});
   FieldRequest d_req(d_id,SL{"group1","group3"});
   FieldRequest e_req(e_id,SL{"group1","group2"});
-  FieldRequest f_req(f_id,SL{"group1","group3"});
+  FieldRequest f_req(f_id,SL{"group1"});
 
   GroupRequest g1_req ("group1",grid_name,Bundling::Required);
   GroupRequest g2_req ("group2",grid_name,Bundling::Required);
-  // group3 = group3 + group2
-  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,&g2_req,Relationship::Child);
-  // group4 = group2
-  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,&g2_req,Relationship::Alias);
-  // group5 = group1 - {c,d}
-  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,&g1_req,Relationship::Parent,SL{"c","d"});
+  // Include all group2 in group3
+  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,DerivationType::Superset,g2_req.name,g2_req.grid);
+  // Create group4 as a copy of group2
+  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,DerivationType::Copy,g2_req.name,g2_req.grid);
+  // Extend group5 by adding all fields in group1 *except* 'c' and 'd'.
+  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,DerivationType::Subset,g1_req.name,g1_req.grid,SL{"c","d"});
 
-  // The above group specs give the following groups:
+  // The above group specs should give the following groups:
   // g1: [a,b,c,d,e,f]
   // g2: [c,e]
-  // g3: [d,f,c,e]
+  // g3: [a,c,d,e]
   // g4: [c,e]
   // g5: [a,b,e,f]
-  // The bundling requests can be accommodated for g1-g4, but not g5.
+  // The bundling requests can be accommodated for g1,g2,g3,g4, but not g5.
   // But g5 request is only 'Preferred', so the FM won't error out.
-  // The order of fields in the 'encompassing' group is {[c,e][d,f][a,b]},
-  // where [c,e] means that the order of those two fields can be anything.
-  // The 'block'-reverse of that list is also possible: {[a,b][d,f][c,e]}
+  // The order of fields in the 'encompassing' group is {[c,e],[a,d],[b,f]},
+  // where [f1,..,fn] means that the order of those two fields can be anything.
+  // The 'block'-reverse of that list is also possible: {[b,f],[a,d],[c,e]}
 
   FieldManager<Real> field_mgr(pg);
   field_mgr.registration_begins();
@@ -604,14 +601,14 @@ TEST_CASE("multiple_bundles") {
   const auto& f4 = *std::next(fnames.begin(),3);
   const auto& f5 = *std::next(fnames.begin(),4);
   const auto& f6 = *std::next(fnames.begin(),5);
-  if (f1=="a" || f1=="b") {
-    REQUIRE ( ((f1=="a" && f2=="b") || (f1=="b" && f2=="a")) );
-    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+  if (f1=="b" || f1=="f") {
+    REQUIRE ( ((f1=="b" && f2=="f") || (f1=="f" && f2=="b")) );
+    REQUIRE ( ((f3=="a" && f4=="d") || (f3=="d" && f4=="a")) );
     REQUIRE ( ((f5=="c" && f6=="e") || (f5=="e" && f6=="c")) );
   } else {
     REQUIRE ( ((f1=="c" && f2=="e") || (f1=="e" && f2=="c")) );
-    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
-    REQUIRE ( ((f5=="a" && f6=="b") || (f5=="b" && f6=="a")) );
+    REQUIRE ( ((f3=="a" && f4=="d") || (f3=="d" && f4=="a")) );
+    REQUIRE ( ((f5=="b" && f6=="f") || (f5=="f" && f6=="b")) );
   }
 }
 
@@ -626,22 +623,19 @@ TEST_CASE("field_property_check", "") {
 
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
 
-  std::random_device rd;
-  using rngAlg = std::mt19937_64;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-  rngAlg engine(seed);
+  auto engine = setup_random_test();
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pos_pdf(0.01,0.99);
   RPDF neg_pdf(-0.99, -0.01);
-
 
   // Check positivity.
   SECTION ("field_positivity_check") {
     Field<Real> f1(fid);
     auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
     REQUIRE(not positivity_check->can_repair());
+    // Note: Here we will test the ability to add a check to a field and then
+    //       access it using get_property_checks.  Subsequent tests will use
+    //       the checker directly on the field.
     f1.add_property_check(positivity_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
@@ -668,7 +662,6 @@ TEST_CASE("field_property_check", "") {
     Field<Real> f1(fid);
     auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
     REQUIRE(positivity_check->can_repair());
-    f1.add_property_check(positivity_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -677,18 +670,15 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
-    for (auto& p : f1.get_property_checks()) {
-      REQUIRE(not p.check(f1));
-      p.repair(f1);
-      REQUIRE(p.check(f1));
-    }
+    REQUIRE(not positivity_check->check(f1));
+    positivity_check->repair(f1);
+    REQUIRE(positivity_check->check(f1));
   }
 
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
     Field<Real> f1(fid);
     auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
-    f1.add_property_check(nan_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -696,17 +686,13 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
-    for (auto& p : f1.get_property_checks()) {
-      REQUIRE(p.check(f1));
-    }
+    REQUIRE(nan_check->check(f1));
 
     // Assign a NaN value to the field, make sure it fails the check,
     Int midpt = num_reals / 2;
     f1_data[midpt] = std::numeric_limits<Real>::quiet_NaN();
     f1.sync_to_dev();
-    for (auto& p : f1.get_property_checks()) {
-      REQUIRE(not p.check(f1));
-    }
+    REQUIRE(not nan_check->check(f1));
   }
 
   // Check that the values of a field lie within an interval.
@@ -714,7 +700,6 @@ TEST_CASE("field_property_check", "") {
     Field<Real> f1(fid);
     auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
     REQUIRE(interval_check->can_repair());
-    f1.add_property_check(interval_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -722,9 +707,7 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,pos_pdf);
     f1.sync_to_dev();
-    for (auto& p : f1.get_property_checks()) {
-      REQUIRE(p.check(f1));
-    }
+    REQUIRE(interval_check->check(f1));
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -732,10 +715,74 @@ TEST_CASE("field_property_check", "") {
       f1_data[i] *= -1;
     }
     f1.sync_to_dev();
-    for (auto& p : f1.get_property_checks()) {
-      REQUIRE(not p.check(f1));
-      p.repair(f1);
-      REQUIRE(p.check(f1));
+    REQUIRE(not interval_check->check(f1));
+    interval_check->repair(f1);
+    REQUIRE(interval_check->check(f1));
+  }
+
+  // Check that the values of a field are above a lower bound
+  SECTION ("field_lower_bound_check") {
+    Field<Real> f1(fid);
+    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real> >(-1.0);
+    REQUIRE(lower_bound_check->can_repair());
+    f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    // Assign in-bound values to the field and make sure it passes the lower_bound check
+    auto f1_data = f1.get_internal_view_data<Host>();
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = std::numeric_limits<Real>::max() - i*1.0; 
+    }
+    f1.sync_to_dev();
+    REQUIRE(lower_bound_check->check(f1));
+
+    // Assign out-of-bounds values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = -2.0*(i+1);
+    }
+    f1.sync_to_dev();
+    REQUIRE(not lower_bound_check->check(f1));
+    lower_bound_check->repair(f1);
+    REQUIRE(lower_bound_check->check(f1));
+    // Should have repaired to the lower bound:
+    f1.sync_to_host();
+    for (int i=0; i<num_reals; ++i)
+    {
+      REQUIRE(f1_data[i] == -1.0);
+    }
+  }
+
+  // Check that the values of a field are above below an upper bound
+  SECTION ("field_upper_bound_check") {
+    Field<Real> f1(fid);
+    auto upper_bound_check = std::make_shared<FieldUpperBoundCheck<Real> >(1.0);
+    REQUIRE(upper_bound_check->can_repair());
+    f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    // Assign in-bound values to the field and make sure it passes the upper_bound check
+    auto f1_data = f1.get_internal_view_data<Host>();
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = -std::numeric_limits<Real>::max() + i*1.0; 
+    }
+    f1.sync_to_dev();
+    REQUIRE(upper_bound_check->check(f1));
+
+    // Assign out-of-bounds values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = 2.0*(i+1);
+    }
+    f1.sync_to_dev();
+    REQUIRE(not upper_bound_check->check(f1));
+    upper_bound_check->repair(f1);
+    REQUIRE(upper_bound_check->check(f1));
+    // Should have repaired to the upper bound:
+    f1.sync_to_host();
+    for (int i=0; i<num_reals; ++i)
+    {
+      REQUIRE(f1_data[i] == 1.0);
     }
   }
 }

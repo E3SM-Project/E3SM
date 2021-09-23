@@ -43,16 +43,10 @@ public:
   // The name of the block
   std::string name () const { return m_group_name; }
 
-  // The communicator associated with this atm process
-  const ekat::Comm& get_comm () const { return m_comm; }
-
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   void final_setup ();
-
-  void set_required_group (const FieldGroup<const Real>& group);
-  void set_updated_group (const FieldGroup<Real>& group);
 
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }
@@ -80,12 +74,11 @@ protected:
   void run_sequential (const Real dt);
   void run_parallel   (const Real dt);
 
-  // The methods to set the fields in the process
+  // The methods to set the fields/groups in the right processes of the group
+  void set_required_group_impl (const FieldGroup<const Real>& group);
+  void set_updated_group_impl (const FieldGroup<Real>& group);
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  // The communicator that each process in this group uses
-  ekat::Comm        m_comm;
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
   std::string       m_group_name;

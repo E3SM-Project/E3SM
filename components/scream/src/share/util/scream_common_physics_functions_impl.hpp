@@ -193,6 +193,37 @@ void PhysicsFunctions<DeviceT>::calculate_dse(const MemberType& team,
 
 template<typename DeviceT>
 template<typename ScalarT>
+
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real surf_geopotential)
+{
+  using C = scream::physics::Constants<Real>;
+
+  static constexpr auto cp = C::CP;
+  static constexpr auto g  = C::gravit;
+
+  return (dse - g*z - surf_geopotential)/cp;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::
+calculate_temperature_from_dse(const MemberType& team,
+                               const InputProviderT& dse,
+                               const InputProviderZ& z,
+                               const Real surf_geopotential,
+                               const view_1d<ScalarT>& temperature)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dse.extent(0)),
+                       [&] (const int k) {
+    temperature(k) = calculate_temperature_from_dse(dse(k),z(k),surf_geopotential);
+  });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::
 calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv)

@@ -3,17 +3,15 @@
 
 #include "share/field/field_group.hpp"
 #include "share/scream_types.hpp"
-
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_family_tracking.hpp"
+
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
-#include <list>
-#include <set>
 
 namespace scream {
 
@@ -21,7 +19,7 @@ namespace scream {
 class AtmosphereProcess;
 class FieldHeader;
 
-class FieldTracking : public ekat::enable_shared_from_this<FieldTracking> {
+class FieldTracking : public FamilyTracking<FieldTracking> {
 public:
 
   using TimeStamp         = util::TimeStamp;
@@ -29,11 +27,8 @@ public:
   using atm_proc_ptr_type = std::weak_ptr<AtmosphereProcess>;
   using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
-  FieldTracking() = delete;
-  explicit FieldTracking(const std::string& name);
+  FieldTracking() = default;
   FieldTracking(const FieldTracking&) = default;
-  FieldTracking(const std::string& name,
-                const std::shared_ptr<FieldTracking>& parent);
 
   // No assignment, to prevent tampering with tracking (e.g., rewinding time stamps)
   FieldTracking& operator=(const FieldTracking&) = delete;
@@ -48,10 +43,6 @@ public:
   const atm_proc_set_type& get_providers () const { return m_providers; }
   const atm_proc_set_type& get_customers () const { return m_customers; }
 
-  // Get parent/children (if any)
-  // std::shared_ptr<const FieldHeader> get_parent () const { return m_parent.lock(); }
-  std::weak_ptr<FieldTracking> get_parent () const { return m_parent; }
-
   // List of field groups that this field belongs to
   const ekat::WeakPtrSet<const FieldGroupInfo>& get_groups_info () const { return m_groups; }
 
@@ -65,13 +56,9 @@ public:
   void add_to_group (const std::shared_ptr<const FieldGroupInfo>& group);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
-  // NOTE: if the field has 'children' (see below), their ts will be updated too.
-  //       However, if the field has a 'parent' (see below), the parent's ts will not be updated.
+  // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
+  //       However, if the field has a 'parent' (see FamilyTracking), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
-
-  const std::string& name () const { return m_name; }
-
-  void register_as_children_in_parent ();
 
 protected:
 
@@ -81,32 +68,23 @@ protected:
   // Tracking the updates of the field
   TimeStamp         m_time_stamp;
 
-  // These are to be used to track the order in which providers update the field at each time step.
-  // One can use this information to track when a field gets updated during a timestep. It can be
-  // particularly useful in the case of parallel schedules.
-  std::set<std::string>   m_last_timestep_providers;
-  std::set<std::string>   m_curr_timestep_providers;
-
   // List of provider/customer processes. A provider is an atm process that computes/updates the field.
   // A customer is an atm process that uses the field just as an input.
   // NOTE: do NOT use shared_ptr, since you would create circular references.
   atm_proc_set_type       m_providers;
   atm_proc_set_type       m_customers;
 
-  // If this field is a sub-view of another field, we keep a pointer to the parent
-  // On the other hand, if there are sub-views of this field, we keep a list of them
-  std::weak_ptr<FieldTracking>              m_parent;
-  std::list<std::weak_ptr<FieldTracking>>   m_children;
-
   // Groups are used to bundle together fields, so that a process can request all of them
   // without knowing/listing all their names. For instance, the dynamics process needs to
-  // get all tracers, which need to be advected. However, dyamics has no idea of what are
-  // the tracers names, and neither should it care. Groups can come to rescue here, allowing
-  // dynamics to request all fields that have been marked as 'tracers'.
+  // get all tracers, which need to be advected. However, dynamics has no idea (a priori)
+  // of what are the tracers names or how many there are, and neither should it care.
+  // FieldGroup's allow atm procs to request all fields that have been marked as 'tracers'.
+  // Here, we keep track of all the groups that this field belongs to.
   ekat::WeakPtrSet<const FieldGroupInfo>    m_groups;
 };
 
-// Use this free function to exploit features of enable_from_this
+// Use this free function to exploit features of enable_shared_from_this,
+// as well as features from FamilyTracking.
 template<typename... Args>
 inline std::shared_ptr<FieldTracking>
 create_tracking(const Args&... args) {
