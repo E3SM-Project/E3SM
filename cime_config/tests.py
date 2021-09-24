@@ -300,7 +300,7 @@ _TESTS = {
     },
     "e3sm_bench_hires_g" : {
         "share"    : True,
-        "time"     : "01:00:00",
+        "time"     : "03:00:00",
         "tests"    : (
                  "PFS_P2560.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P2792.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
@@ -337,7 +337,8 @@ _TESTS = {
                  )
     },
     "e3sm_bench_hires_f" : {
-        "time"     : "01:00:00",
+        "share"    : True,
+        "time"     : "03:00:00",
         "tests"    : (
                  "PFS_P7200.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
                  "PFS_P8640.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
@@ -349,8 +350,9 @@ _TESTS = {
                  )
     },
     "e3sm_bench_hires" : {
+        "share"    : True,
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
         "tests"   : (
                  "PFS_PS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
                  "PFS_PM.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
@@ -359,7 +361,7 @@ _TESTS = {
     },
     "e3sm_bench_lores_g" : {
         "share"    : True,
-        "time"     : "01:00:00",
+        "time"     : "03:00:00",
         "tests"    : (
                  "PFS_P320.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P480.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
@@ -369,7 +371,8 @@ _TESTS = {
                  )
     },
     "e3sm_bench_lores_f" : {
-        "time"     : "01:00:00",
+        "share"    : True,
+        "time"     : "03:00:00",
         "tests"    : (
                  "PFS_P1350.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
                  "PFS_P2700.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
@@ -377,8 +380,9 @@ _TESTS = {
                  )
     },
     "e3sm_bench_lores" : {
+        "share"    : True,
         "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
         "tests"   : (
                  "PFS_PS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
                  "PFS_PM.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
@@ -387,7 +391,7 @@ _TESTS = {
     },
     "e3sm_bench_all" : {
         "inherit" : ("e3sm_bench_hires", "e3sm_bench_lores"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
     },
 
 
