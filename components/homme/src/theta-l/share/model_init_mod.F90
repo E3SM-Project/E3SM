@@ -159,9 +159,19 @@ contains
        end if
     end do
 #endif
-nlev_tom=1
 nu_scale_top(1:nlev) = 0.0
+#if 0
+nlev_tom=5
+nu_scale_top(1) = 5.0
+nu_scale_top(2) = 4.0
+nu_scale_top(3) = 3.0
+nu_scale_top(4) = 2.0
+nu_scale_top(5) = 1.0
+#else
+nlev_tom=1
 nu_scale_top(1) = 1.0
+#endif
+
 
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom

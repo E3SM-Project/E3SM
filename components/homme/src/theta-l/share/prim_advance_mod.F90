@@ -826,6 +826,8 @@ print *, 'iteration # ', ic
            lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            lap_v=vlaplace_sphere_wk(elem(ie)%state%v            (:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            
+           !original
+           !xfac=dt*nu_scale_top(k)*nu_top
            !xfac=dt*nu_scale_top(k)*nu_top
            xfac=dt*nu_top
 

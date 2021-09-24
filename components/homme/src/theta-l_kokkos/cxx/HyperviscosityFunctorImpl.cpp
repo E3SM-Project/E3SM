@@ -76,11 +76,14 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
-    Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
-    for (int phys_lev=0; phys_lev<NUM_BIHARMONIC_PHYSICAL_LEVELS; ++phys_lev) {
+    //Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
+    for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
       const int ilev = phys_lev / VECTOR_SIZE;
       const int ivec = phys_lev % VECTOR_SIZE;
-      h_nu_scale_top(ilev)[ivec] = lev_nu_scale_top[phys_lev]*m_data.nu_top;
+
+      auto rr = 5.0 - phys_lev;
+
+      h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
   }
@@ -116,6 +119,8 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
+
+//SORT THIS OUT
   constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
 

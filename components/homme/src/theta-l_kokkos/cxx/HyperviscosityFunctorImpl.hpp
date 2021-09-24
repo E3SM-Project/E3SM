@@ -68,8 +68,10 @@ class HyperviscosityFunctorImpl
   };
   //hyperviscosityData
 
+  //at compuile time we do not really know how many levels we will use
   static constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
   static constexpr int NUM_BIHARMONIC_LEV = ColInfo<NUM_BIHARMONIC_PHYSICAL_LEVELS>::NumPacks;
+  // ExecViewManaged<Scalar * [NUM_LEV]> nu_scale_top;
 
   struct Buffers {
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
@@ -238,7 +240,7 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
 
-    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_data.nu_top;
+    //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_data.nu_top;
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -253,6 +255,8 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
+    //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
+    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_data.nu_top;
       utens(ilev) *= xf;
       vtens(ilev) *= xf;
       ttens(ilev) *= xf;
@@ -427,42 +431,36 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
         phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       }
 #endif
-#if 1	
+#if 1
         utens(0)[0]   *= rspheremp;
         vtens(0)[0]   *= rspheremp;
         ttens(0)[0]   *= rspheremp;
         dptens(0)[0]  *= rspheremp;
-#endif
-#if 0
-        utens(0)[0]   *=rspheremp;
-        vtens(0)[0]   *=rspheremp;
-        ttens(0)[0]   *=rspheremp;
-        dptens(0)[0]  *=rspheremp;
-#endif
         u(0)[0]      += utens(0)[0];
         v(0)[0]      += vtens(0)[0];
         vtheta(0)[0] += ttens(0)[0];
         dp(0)[0]     += dptens(0)[0];
-
+#endif
 #if 0
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        const auto xf =( m_data.dt*m_data.nu_top) / m_data.hypervis_subcycle_tom;
-        utens(ilev)   *= xf*rspheremp;
-        vtens(ilev)   *= xf*rspheremp;
-        ttens(ilev)   *= xf*rspheremp;
-        dptens(ilev)  *= xf*rspheremp;
+        utens(ilev)   *= rspheremp;
+        vtens(ilev)   *= rspheremp;
+        ttens(ilev)   *= rspheremp;
+        dptens(ilev)  *= rspheremp;
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
         vtheta(ilev) += ttens(ilev);
         dp(ilev)     += dptens(ilev);
-        if (m_process_nh_vars) {
+#if 0
+	if (m_process_nh_vars) {
           wtens(ilev)   *= xf*rspheremp;
           phitens(ilev) *= xf*rspheremp;
 
           w(ilev)      += wtens(ilev);
           phi_i(ilev)  += phitens(ilev);
         }
+#endif	
       });//threadvectorrange
 #endif
     });//threadteamrange
