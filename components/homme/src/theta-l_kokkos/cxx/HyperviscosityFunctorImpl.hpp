@@ -431,7 +431,7 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
         phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       }
 #endif
-#if 1
+#if 0
       //replace after nu coef is working
         utens(0)[0]   *= rspheremp;
         vtens(0)[0]   *= rspheremp;
@@ -442,7 +442,7 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
         vtheta(0)[0] += ttens(0)[0];
         dp(0)[0]     += dptens(0)[0];
 #endif
-#if 0
+#if 1
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         utens(ilev)   *= rspheremp;
