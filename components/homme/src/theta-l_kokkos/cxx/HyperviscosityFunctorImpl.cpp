@@ -84,7 +84,7 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       //auto rr = 5.0 - phys_lev;
       //h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
 
-      if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 1.0;
+      if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 3.0;
       if( phys_lev >  0) h_nu_scale_top(ilev)[ivec] = 0.0;
 
 

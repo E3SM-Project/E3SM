@@ -169,7 +169,7 @@ nu_scale_top(4) = 2.0
 nu_scale_top(5) = 1.0
 #else
 nlev_tom=1
-nu_scale_top(1) = 1.0
+nu_scale_top(1) = 3.0
 #endif
 
 
