@@ -584,11 +584,10 @@ protected:
                                         const view_1d<ScalarT,MT>& x_i)
   {
     // Pack size 1 yields a simple impl
-    const int num_int_levels = num_mid_levels + 1;
-    team_parallel_for(team,num_int_levels, [&](const int k) {
-      if (k==0)                     x_i(k) = bc_top;
-      else if (k==num_int_levels-1) x_i(k) = bc_bot;
-      else                          x_i(k) = (x_m(k)*dz(k-1) + x_m(k-1)*dz(k))/(dz(k-1) + dz(k));
+    team_parallel_for(team,num_mid_levels+1, [&](const int k) {
+      if (k==0)                   x_i(k) = bc_top;
+      else if (k==num_mid_levels) x_i(k) = bc_bot;
+      else                        x_i(k) = (x_m(k)*dz(k-1) + x_m(k-1)*dz(k))/(dz(k-1) + dz(k));
     });
   }
 
