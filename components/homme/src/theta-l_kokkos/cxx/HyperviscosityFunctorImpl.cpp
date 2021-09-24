@@ -81,11 +81,21 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       const int ilev = phys_lev / VECTOR_SIZE;
       const int ivec = phys_lev % VECTOR_SIZE;
 
-      auto rr = 5.0 - phys_lev;
+      //auto rr = 5.0 - phys_lev;
+      //h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
 
-      h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
+      if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 1.0;
+      if( phys_lev >  0) h_nu_scale_top(ilev)[ivec] = 0.0;
+
+
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
+
+    for (int phys_lev=0; phys_lev<NUM_LEV*VECTOR_SIZE; ++phys_lev) {
+      const int ilev = phys_lev / VECTOR_SIZE;
+      const int ivec = phys_lev % VECTOR_SIZE;
+printf("ii is %d and h_nu_scale_top is %23.15e \n",phys_lev,h_nu_scale_top(ilev)[ivec]);
+    }
   }
 
   // Init ElementOps

@@ -255,8 +255,8 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
-    //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
-    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * 1.0 * m_data.nu_top;
+    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
+    //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * 1.0 * m_data.nu_top;
       utens(ilev) *= xf;
       vtens(ilev) *= xf;
       ttens(ilev) *= xf;
@@ -432,6 +432,7 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
       }
 #endif
 #if 1
+      //replace after nu coef is working
         utens(0)[0]   *= rspheremp;
         vtens(0)[0]   *= rspheremp;
         ttens(0)[0]   *= rspheremp;
