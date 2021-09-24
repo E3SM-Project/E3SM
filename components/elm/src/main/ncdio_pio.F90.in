@@ -1701,7 +1701,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                    n=4
                    if (start(4) .eq. 0) n=3
                    start(n) = nt; count(n) = 1
-                end if
+             endif
              if (present(switchdim)) then
                 status = pio_get_var(ncid, vardesc, start, count, temp)
                 do j = lb2,ub2
@@ -1873,6 +1873,15 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
+
+
+    !For single column model only: If "nt" is present, time slice is fixed
+    ! and data for the full time dimension(1:dimlen) should not be read from the file.
+    !Following logical finds out if the time dimension is considered in
+    !scam_field_offsets calculations. If it is considered, we need to re-adjust
+    !start and count so that full time dimension is not taken into account while 
+    !reading the data
+    logical :: time_dim_exists
     !-----------------------------------------------------------------------
 
     elmlevel = dim1name      
@@ -1888,10 +1897,15 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           if (single_column) then
              start(:) = 1 
              count(:) = 1
-             call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
+             call scam_field_offsets(ncid, elmlevel, vardesc, start, count,time_dim_exists = time_dim_exists)
              if (present(nt)) then
-               n=5
-               if (start(5) .eq. 0) n=4
+               if(time_dim_exists) then !if time dimesion is considered by scam, shift indices of start
+                  n=4
+                  if (start(4) .eq. 0) n=3
+               else
+                  n=5
+                  if (start(5) .eq. 0) n=4
+               endif
                start(n) = nt ; count(n) = 1
              endif
              
@@ -2084,7 +2098,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
   !------------------------------------------------------------------------
 
   subroutine scam_field_offsets( ncid, dim1name, vardesc, start, count, &
-       found, posNOTonfile)
+       found, posNOTonfile, time_dim_exists)
     !
     ! !DESCRIPTION: 
     ! Read/Write initial data from/to netCDF instantaneous initial data file 
@@ -2103,6 +2117,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional , intent(out)   :: found        ! if present return true if found
     ! dimensions on file else false if NOT present abort if can't find
     logical, optional , intent(in)    :: posNOTonfile ! Position is NOT on this file
+
+    ! finds out if time dimension is considered by scam as one of the dimensions
+    logical, optional , intent(out)    :: time_dim_exists
+
+
     !
     ! !LOCAL VARIABLES:
     integer              :: cc,i,ii           ! index variable
@@ -2128,10 +2147,14 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer              :: ndims,dimlen      ! number of dimensions in desired variable
     character(len=32)    :: dimname           ! dimension name
     character(len=32)    :: subname = 'scam_field_offsets'
+    integer              :: ndims_iod
     !------------------------------------------------------------------------
 
     start(:)=0
     count(:)=0
+
+    !By default, we assume that time dimension is not one of the dimnames
+    if(present(time_dim_exists))time_dim_exists=.false.
 
     if ( present(posNOTonfile) )then
        if ( posNOTonfile )then
@@ -2157,7 +2180,20 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     allocate(dids(ndims))
     status = pio_inq_vardimid(ncid, vardesc, dids)
+
+    !find out if "time" is one of the dimnames
     do i = 1,ndims
+       status = pio_inq_dimname(ncid,dids(i),dimname)
+       dimname=shr_string_toLower(dimname)
+       if ('time' == trim(dimname)) then
+          ndims_iod = ndims - 1
+          if(present(time_dim_exists))time_dim_exists = .true. !set it to true if "time" dimension exists
+       else
+          ndims_iod = ndims
+       end if
+    enddo
+
+    do i = 1,ndims_iod
        status = pio_inq_dimname(ncid,dids(i),dimname)
        dimname=shr_string_toLower(dimname)
        status = pio_inq_dimlen(ncid,dids(i),dimlen)
