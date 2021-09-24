@@ -829,7 +829,7 @@ print *, 'iteration # ', ic
            !original
            !xfac=dt*nu_scale_top(k)*nu_top
            !xfac=dt*nu_scale_top(k)*nu_top
-           xfac=dt*nu_top
+           xfac=dt*nu_scale_top(k)*nu_top
 
            vtens(:,:,:,k,ie)=xfac*lap_v(:,:,:)
            stens(:,:,k,1,ie)=xfac*lap_s(:,:,1)  ! dp3d

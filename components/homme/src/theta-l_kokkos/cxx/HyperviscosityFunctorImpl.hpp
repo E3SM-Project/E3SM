@@ -256,7 +256,7 @@ printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
                            [&](const int ilev) {
 
     //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
-    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_data.nu_top;
+    const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * 1.0 * m_data.nu_top;
       utens(ilev) *= xf;
       vtens(ilev) *= xf;
       ttens(ilev) *= xf;
