@@ -160,7 +160,7 @@ contains
     end do
 #endif
 nu_scale_top(1:nlev) = 0.0
-#if 0
+#if 1
 nlev_tom=5
 nu_scale_top(1) = 5.0
 nu_scale_top(2) = 4.0
