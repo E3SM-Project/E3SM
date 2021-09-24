@@ -68,6 +68,16 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   assert(params.params_set);
 
 
+#if 0      
+      auto rr = 5.0 - phys_lev;
+      if(rr > 0) {
+      h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
+      }else{ h_nu_scale_top(ilev)[ivec] = 0.0;}  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
+      //if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 3.0;
+     // if( phys_lev >  0) h_nu_scale_top(ilev)[ivec] = 0.0;
+#endif
+
+
 //here
 
   if (m_data.nu_top>0) {
@@ -76,19 +86,36 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
+    //assert hvcoord init?
+    const auto& etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
+    const auto& etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
+    Kokkos::deep_copy(etai_h, m_hvcoord.etai);
+    Kokkos::deep_copy(etam_h, m_hvcoord.etam);
+
+
     //Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
     for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
       const int ilev = phys_lev / VECTOR_SIZE;
       const int ivec = phys_lev % VECTOR_SIZE;
 
-      auto rr = 5.0 - phys_lev;
-      if(rr > 0) {
-      h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
-      }else{ h_nu_scale_top(ilev)[ivec] = 0.0;}  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
+      Real ptop_over_press;
 
-      //if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 3.0;
-     // if( phys_lev >  0) h_nu_scale_top(ilev)[ivec] = 0.0;
 
+      //etai is num_physical_lev, that is, 129 or 73
+      //etam is num_lev, so packs
+      if ( etai_h(0) == 0.0) {
+      //    ! pure sigma coordinates could have etai(1)=0
+          ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
+      }else{
+          ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
+      }
+
+      auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
+      if ( val < 0.15 ) val = 0.0;
+      h_nu_scale_top(ilev)[ivec] = val;
+
+     //set nlev_tom here for the future
+     //if (val > 0.0) nlev_tom = phys_lev;
 
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
