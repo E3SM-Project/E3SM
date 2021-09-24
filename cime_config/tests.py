@@ -90,7 +90,7 @@ _TESTS = {
     #atmopheric tests for hi-res
     "e3sm_atm_hi_res" : {
         "time" : "01:30:00",
-        "tests" : "SMS.ne120_ne120.F2010"
+        "tests" : "SMS.ne120pg2_r0125_oRRS18to6v3.F2010"
         },
 
     #atmopheric tests to mimic low res production runs
@@ -187,7 +187,7 @@ _TESTS = {
     "e3sm_hi_res" : {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
-            "SMS.ne120_oRRS18v3.WCYCL1950.eam-cosplite",
+            "SMS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.eam-cosplite",
             "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
             )
         },
@@ -352,9 +352,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "01:00:00",
         "tests"   : (
-                 "PFS_PS.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PM.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PL.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PM.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PL.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
                  )
     },
     "e3sm_bench_lores_g" : {
