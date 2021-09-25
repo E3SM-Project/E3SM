@@ -1599,6 +1599,7 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+    <append > -DTHRUST_IGNORE_CUB_VERSION_CHECK </append>
   </CPPDEFS>
   <SLIBS>
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
