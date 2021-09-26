@@ -100,14 +100,19 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 
       Real ptop_over_press;
 
-
-      //etai is num_physical_lev, that is, 129 or 73
+      //prevent padding of nu_scale to get nans to avoid last interface levels
+      //of w, phi to be nans, too
+      if( phys_lev < NUM_PHYSICAL_LEV ){
+      //etai is num_interface_lev, that is, 129 or 73
       //etam is num_lev, so packs
       if ( etai_h(0) == 0.0) {
       //    ! pure sigma coordinates could have etai(1)=0
           ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
       }else{
           ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
+      }
+      }else{
+          ptop_over_press = 0.0;
       }
 
       auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
