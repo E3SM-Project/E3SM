@@ -262,6 +262,7 @@ TEST_CASE ("recreate_mct_coupling")
   FID sfc_alb_dir_nir_id  ("sfc_alb_dir_nir",    scalar2d_layout, nondim,  grid_name);
   FID sfc_alb_dif_vis_id  ("sfc_alb_dif_vis",    scalar2d_layout, nondim,  grid_name);
   FID sfc_alb_dif_nir_id  ("sfc_alb_dif_nir",    scalar2d_layout, nondim,  grid_name);
+  FID surf_lw_flux_up_id  ("surf_lw_flux_up",    scalar2d_layout, nondim,  grid_name);
 
   // Create necessary fields for export. Tracers qc and qr are unnecessary, but
   // are included to verify that subviewed fields (qv) are correctly handled
@@ -275,7 +276,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_cpl_imports    = 30;
-  const int num_scream_imports = 8;
+  const int num_scream_imports = 9;
   const int num_cpl_exports    = 35;
 
   // Register fields and tracer group in a FieldManager
@@ -288,6 +289,7 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{sfc_alb_dir_nir_id});
   fm->register_field(FR{sfc_alb_dif_vis_id});
   fm->register_field(FR{sfc_alb_dif_nir_id});
+  fm->register_field(FR{surf_lw_flux_up_id});
   fm->register_field(FR{T_mid_id});
   fm->register_field(FR{p_mid_id});
   fm->register_field(FR{z_mid_id});
@@ -307,6 +309,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_alb_dir_nir_f  = fm->get_field(sfc_alb_dir_nir_id);
   auto sfc_alb_dif_vis_f  = fm->get_field(sfc_alb_dif_vis_id);
   auto sfc_alb_dif_nir_f  = fm->get_field(sfc_alb_dif_nir_id);
+  auto surf_lw_flux_up_f  = fm->get_field(surf_lw_flux_up_id);
   auto T_mid_f            = fm->get_field(T_mid_id);
   auto p_mid_f            = fm->get_field(p_mid_id);
   auto z_mid_f            = fm->get_field(z_mid_id);
@@ -326,6 +329,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_alb_dir_nir_d  = sfc_alb_dir_nir_f.get_view<Real*>();
   auto sfc_alb_dif_vis_d  = sfc_alb_dif_vis_f.get_view<Real*>();
   auto sfc_alb_dif_nir_d  = sfc_alb_dif_nir_f.get_view<Real*>();
+  auto surf_lw_flux_up_d  = surf_lw_flux_up_f.get_view<Real*>();
   auto T_mid_d            = T_mid_f.get_view<Real**>();
   auto p_mid_d            = p_mid_f.get_view<Real**>();
   auto z_mid_d            = z_mid_f.get_view<Real**>();
@@ -341,6 +345,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_alb_dir_nir_h  = sfc_alb_dir_nir_f.get_view<Real*,Host>();
   auto sfc_alb_dif_vis_h  = sfc_alb_dif_vis_f.get_view<Real*,Host>();
   auto sfc_alb_dif_nir_h  = sfc_alb_dif_nir_f.get_view<Real*,Host>();
+  auto surf_lw_flux_up_h  = surf_lw_flux_up_f.get_view<Real*,Host>();
   auto T_mid_h            = T_mid_f.get_view<Real**,Host>();
   auto p_mid_h            = p_mid_f.get_view<Real**,Host>();
   auto z_mid_h            = z_mid_f.get_view<Real**,Host>();
@@ -379,7 +384,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("surf_mom_flux",    20, 1);
   coupler.register_import("unused",           21);
   coupler.register_import("surf_sens_flux",   22);
-  coupler.register_import("unused",           23);
+  coupler.register_import("surf_lw_flux_up",  23);
   coupler.register_import("surf_latent_flux", 24);
   coupler.register_import("unused",           25);
   coupler.register_import("unused",           26);
@@ -439,6 +444,7 @@ TEST_CASE ("recreate_mct_coupling")
     sfc_alb_dir_nir_f.deep_copy(0.0);
     sfc_alb_dif_vis_f.deep_copy(0.0);
     sfc_alb_dif_nir_f.deep_copy(0.0);
+    surf_lw_flux_up_f.deep_copy(0.0);
 
     // Fill views needed in the export with random values
     ekat::genRandArray(T_mid_d,engine,pdf);
@@ -472,6 +478,7 @@ TEST_CASE ("recreate_mct_coupling")
     sfc_alb_dir_nir_f.sync_to_host();
     sfc_alb_dif_vis_f.sync_to_host();
     sfc_alb_dif_nir_f.sync_to_host();
+    surf_lw_flux_up_f.sync_to_host();
     T_mid_f.sync_to_host();
     p_mid_f.sync_to_host();
     z_mid_f.sync_to_host();
@@ -492,7 +499,8 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (surf_mom_flux_h   (icol, 0) == import_raw_data[19 + icol*num_cpl_imports]); // 5th scream import (20th cpl import)
       REQUIRE (surf_mom_flux_h   (icol, 1) == import_raw_data[20 + icol*num_cpl_imports]); // 6th scream import (21st cpl import)
       REQUIRE (surf_sens_flux_h  (icol)    == import_raw_data[22 + icol*num_cpl_imports]); // 7th scream import (23rd cpl import)
-      REQUIRE (surf_latent_flux_h(icol)    == import_raw_data[24 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
+      REQUIRE (surf_lw_flux_up_h(icol)     == import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
+      REQUIRE (surf_latent_flux_h(icol)    == import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
 
       // Exports
 

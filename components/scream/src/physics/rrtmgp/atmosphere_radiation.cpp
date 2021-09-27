@@ -3,6 +3,7 @@
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/scream_column_ops.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
 #include "ekat/ekat_assert.hpp"
@@ -60,7 +61,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
-  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name(), ps);
   add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
@@ -209,6 +209,8 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 void RRTMGPRadiation::run_impl (const Real dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
+  using CO = scream::ColumnOps<DefaultDevice,Real>;
+
   // get a host copy of lat/lon 
   auto h_lat  = Kokkos::create_mirror_view(m_lat);
   auto h_lon  = Kokkos::create_mirror_view(m_lon);
@@ -219,7 +221,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
   auto d_pint = get_field_in("p_int").get_view<const Real**>();
   auto d_pdel = get_field_in("pseudo_density").get_view<const Real**>();
-  auto d_tint = get_field_in("t_int").get_view<const Real**>();
   auto d_sfc_alb_dir_vis = get_field_in("sfc_alb_dir_vis").get_view<const Real*>();
   auto d_sfc_alb_dir_nir = get_field_in("sfc_alb_dir_nir").get_view<const Real*>();
   auto d_sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real*>();
@@ -297,9 +298,28 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     }
     Kokkos::deep_copy(d_mu0,h_mu0);
 
+    // dz and T_int will need to be computed
+    view_2d_real d_tint("T_int", m_ncol, m_nlay+1);
+    view_2d_real d_dz  ("dz",    m_ncol, m_nlay);
+
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
+
+      // Calculate dz
+      const auto pseudo_density = ekat::subview(d_pdel, i);
+      const auto p_mid          = ekat::subview(d_pmid, i);
+      const auto T_mid          = ekat::subview(d_tmid, i);
+      const auto qv             = ekat::subview(d_qv,   i);
+      const auto dz             = ekat::subview(d_dz,   i);
+      PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
+      team.team_barrier();
+
+      // Calculate T_int
+      const auto T_int = ekat::subview(d_tint, i);
+      const Real bc_top = T_mid(0);
+      const Real bc_bot = T_mid(m_nlay-1);
+      CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
 
       mu0(i+1) = d_mu0(i);
       sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);

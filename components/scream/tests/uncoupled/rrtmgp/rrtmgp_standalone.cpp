@@ -177,7 +177,6 @@ namespace scream {
         auto d_tmid = field_mgr.get_field("T_mid").get_view<Real**>();
         auto d_pint = field_mgr.get_field("p_int").get_view<Real**>();
         auto d_pdel = field_mgr.get_field("pseudo_density").get_view<Real**>();
-        auto d_tint = field_mgr.get_field("t_int").get_view<Real**>();
         auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_view<Real*>();
         auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
         auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
@@ -232,7 +231,6 @@ namespace scream {
               d_rei(i,k)  = rei(i+1,k+1);
               d_cld(i,k)  = cld(i+1,k+1);
               d_pint(i,k) = p_lev(i+1,k+1);
-              d_tint(i,k) = t_lev(i+1,k+1);
               // Note that gas_vmr(i+1,k+1,1) should be the vmr for qv and since we need qv to calculate the mmr we derive qv separately.
               Real qv_dry = gas_vmr(i+1,k+1,1)*PC::ep_2;
               Real qv_wet = qv_dry/(1.0+qv_dry);
@@ -247,7 +245,6 @@ namespace scream {
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);
-            d_tint(i,nlay) = t_lev(i+1,nlay+1);
           });
         }
         Kokkos::fence();
