@@ -111,7 +111,7 @@ CPPDEF += -DAIX
 cpre = $(null)-WF,-D$(null)
 FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(CPPDEF))
 FFLAGS  = -c -I$(INC_NETCDF) -q64 -qsuffix=f=f90 -qsuffix=f=f90:cpp=F90 \
-	   $(FPPFLAGS)  -g -qfullpath -qarch=auto -qtune=auto -qsigtrap=xl__trcedump  -qsclk=micro
+	      $(FPPFLAGS)  -g -qfullpath -qarch=auto -qtune=auto -qsigtrap=xl__trcedump  -qsclk=micro
 
 LDFLAGS = -L$(LIB_NETCDF) -q64 -lnetcdff -lnetcdf
 ifneq ($(OPT),TRUE)
@@ -248,7 +248,7 @@ ifeq ($(UNAMES),Linux)
   endif
   CPPDEF += -DLINUX -DFORTRANUNDERSCORE
   CFLAGS := $(CPPDEF)
-  LDFLAGS := $(shell $(LIB_NETCDF)/../bin/nf-config --flibs)
+  LDFLAGS := $(shell nf-config --flibs)
   FFLAGS =
 
   ifeq ($(FCTYP),pgf90)
@@ -312,6 +312,18 @@ ifeq ($(UNAMES),Linux)
       LDFLAGS   += -openmp
     endif
   endif
+
+  ifeq ($(FCTYP),gfortran)
+    CPPDEF   += -DG95
+    FFLAGS   := -c -fno-second-underscore $(CPPDEF) $(cpp_path) -I$(MOD_NETCDF) \
+                -fno-range-check -ffixed-line-length-none -ffree-line-length-none
+    ifeq ($(OPT),TRUE)
+      FFLAGS += -O2
+    else
+      FFLAGS += -g -fbounds-check
+    endif
+  endif
+
   FFLAGS += -c -I$(INC_NETCDF) $(CPPDEF) $(cpp_path)
   CFLAGS += $(cpp_path)
 endif
