@@ -78,15 +78,15 @@ module scream_cpl_indices
     vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 1
 
     ! The following are exported from SCREAM
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_z'))      = 'z_mid'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_u'))      = 'horiz_winds'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_v'))      = 'horiz_winds'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_tbot'))   = 'T_mid'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_ptem'))   = 'Sa_ptem'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_pbot'))   = 'p_mid'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_shum'))   = 'qv'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_dens'))   = 'Sa_dens'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_lwdn')) = 'precip_liq_surf'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_z'))       = 'z_mid'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_u'))       = 'horiz_winds'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_v'))       = 'horiz_winds'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_tbot'))    = 'T_mid'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_ptem'))    = 'Sa_ptem'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_pbot'))    = 'p_mid'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_shum'))    = 'qv'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_dens'))    = 'Sa_dens'
+    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_rainl')) = 'precip_liq_surf'
 
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_u')) = 0
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_v')) = 1
