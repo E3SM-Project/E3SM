@@ -499,7 +499,7 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (surf_mom_flux_h   (icol, 0) == import_raw_data[19 + icol*num_cpl_imports]); // 5th scream import (20th cpl import)
       REQUIRE (surf_mom_flux_h   (icol, 1) == import_raw_data[20 + icol*num_cpl_imports]); // 6th scream import (21st cpl import)
       REQUIRE (surf_sens_flux_h  (icol)    == import_raw_data[22 + icol*num_cpl_imports]); // 7th scream import (23rd cpl import)
-      REQUIRE (surf_lw_flux_up_h(icol)     == import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
+      REQUIRE (surf_lw_flux_up_h (icol)    == import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
       REQUIRE (surf_latent_flux_h(icol)    == import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
 
       // Exports
