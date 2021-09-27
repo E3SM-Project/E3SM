@@ -509,6 +509,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         with open("{}/ctest_resource_file.json".format(build_dir),'w') as outfile:
             json.dump(data,outfile,indent=2)
 
+        return end-start
+
     ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
@@ -518,7 +520,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             result += "CIME_MACHINE={} ".format(self._machine)
 
         test_dir = self.get_test_dir(self._work_dir,test)
-        self.create_ctest_resource_file(test,test_dir)
+        num_test_res = self.create_ctest_resource_file(test,test_dir)
+        cmake_config += " -DSCREAM_TEST_MAX_TOTAL_THREADS={}".format(num_test_res)
 
         result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._compile_res_count[test], self._testing_res_count[test])
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)

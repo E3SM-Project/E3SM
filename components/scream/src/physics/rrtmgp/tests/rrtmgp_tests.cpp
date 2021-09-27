@@ -1,24 +1,51 @@
-#include <iostream>
-#include <cmath>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/mo_garand_atmos_io.h"
-#include "YAKL.h"
 #include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
+
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
 
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+
+#include "YAKL.h"
+#include "ekat/util/ekat_test_utils.hpp"
+
+#include <iostream>
+#include <cmath>
+
 using namespace scream;
+
+void expect_another_arg (int i, int argc) {
+  EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
+}
 
 int main(int argc, char** argv) {
     // Parse command line arguments
-    if (argc != 3) {
+    if (argc < 3) {
         std::cout << "argc: " << argc << std::endl;
-        std::cout << argv[0] << " <inputfile> <baseline file>\n";
+        std::cout << argv[0] << " -i <inputfile> -b <baseline file> [options]\n";
         return 1;
     }
-    std::string inputfile(argv[argc-2]);
-    std::string baseline(argv[argc-1]);
+    std::string inputfile, baseline, device;
+
+    for (int i = 1; i < argc-1; ++i) {
+      if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
+        expect_another_arg(i, argc);
+        ++i;
+        baseline = argv[i];
+      }
+      if (ekat::argv_matches(argv[i], "-i", "--input-file")) {
+        expect_another_arg(i, argc);
+        ++i;
+        inputfile = argv[i];
+      }
+      // RRTMGP baselines tests to not use kokoks. Swallow the arg, but ignore it
+      if (std::string(argv[i])=="--ekat-kokkos-device") {
+        expect_another_arg(i, argc);
+        ++i;
+        device = argv[i];
+      }
+    }
 
     // Check to see that inputfiles exist
     if (!rrtmgpTest::file_exists(inputfile.c_str())) {

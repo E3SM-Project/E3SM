@@ -1,4 +1,5 @@
-module load sems-env sems-python/3.5.2 sems-pylint/1.5.4/base
+module load sems-env
+export PATH=/ascldap/users/jgfouca/packages/Python-3.8.5/bin:$PATH
 
 source $JENKINS_SCRIPT_DIR/sandia_son_proxy
 

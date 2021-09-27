@@ -97,6 +97,41 @@ function(CreateUnitTest target_name target_srcs scream_libs)
     list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS} ${SCREAM_Fortran_FLAGS})
   endif ()
 
+  # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
+  if (CreateUnitTest_MPI_RANKS OR CreateUnitTest_THREADS)
+    list(LENGTH CreateUnitTest_MPI_RANKS NUM_MPI_RANK_ARGS)
+    list(LENGTH CreateUnitTest_THREADS   NUM_THREAD_ARGS)
+    if (NUM_MPI_RANK_ARGS EQUAL 0)
+      set (MAX_RANKS 1)
+    elseif (NUM_MPI_RANK_ARGS GREATER 1)
+      list(GET CreateUnitTest_MPI_RANKS 1 MAX_RANKS)
+    else()
+      list(GET CreateUnitTest_MPI_RANKS 0 MAX_RANKS)
+    endif()
+    if (NUM_THREAD_ARGS EQUAL 0)
+      set (MAX_THREADS 1)
+    elseif (NUM_THREAD_ARGS GREATER 1)
+      list(GET CreateUnitTest_THREADS   1 MAX_THREADS)
+    else()
+      list(GET CreateUnitTest_THREADS   0 MAX_THREADS)
+    endif()
+    math(EXPR NUM_THREADS_NEEDED ${MAX_RANKS}*${MAX_THREADS})
+    if (${NUM_THREADS_NEEDED} GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+      string (CONCAT msg
+        "**************************************************************************\n"
+        "Error! Invalid max threads/ranks combination. When invoking CreateUnitTest,\n"
+        "you must ensure that the product of the max requested mpi ranks and\n"
+        "the max requested omp threads is lower than SCREAM_TEST_MAX_TOTAL_THREADS.\n"
+        "   - test exec name: ${target_name}\n"
+        "   - requested max MPI ranks: ${MAX_RANKS}\n"
+        "   - requested max OMP threads: ${MAX_THREADS}\n"
+        "   - resulting max threads needed: ${NUM_THREADS_NEEDED}\n"
+        "   - SCREAM_TEST_MAX_TOTAL_THREADS: ${SCREAM_TEST_MAX_TOTAL_THREADS}\n")
+      message("${msg}")
+      message(FATAL_ERROR "Aborting")
+    endif()
+  endif()
+
 
   EkatCreateUnitTest(${target_name} "${target_srcs}"
     MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
