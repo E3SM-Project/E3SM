@@ -1874,6 +1874,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
 
+    integer :: n_time_ind
 
     !For single column model only: If "nt" is present, time slice is fixed
     ! and data for the full time dimension(1:dimlen) should not be read from the file.
@@ -1899,14 +1900,30 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count,time_dim_exists = time_dim_exists)
              if (present(nt)) then
-               if(time_dim_exists) then !if time dimesion is considered by scam, shift indices of start
-                  n=4
-                  if (start(4) .eq. 0) n=3
-               else
-                  n=5
-                  if (start(5) .eq. 0) n=4
-               endif
-               start(n) = nt ; count(n) = 1
+                !find first non-zero occurrence in the "start" array
+                write(102,*)'BALLI-bef:', start
+                write(102,*)'BALLI-bef:', count
+                n=5
+                do while(start(n) == 0)
+                   n = n - 1
+                enddo
+
+                !time index should replace the first zero occurrence (after a non-zero occurrence) in the "start" array
+                n_time_ind = n + 1
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
+
+                write(102,*)'BALLI:', start
+                write(102,*)'BALLI:', count
+                !write(102,*)'BALLI:', n, start(n)
+                !write(102,*)'BALLI:', count
+                !if(time_dim_exists) then !if time dimesion is considered by scam, shift indices of start
+                !  n=4
+                !  if (start(4) .eq. 0) n=3
+                !else
+                !   n=5
+                !  if (start(5) .eq. 0) n=4
+                !endif
+                !start(n) = nt ; count(n) = 1
              endif
              
              status = pio_get_var(ncid, vardesc, start, count, data)
