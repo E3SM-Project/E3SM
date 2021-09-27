@@ -71,6 +71,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid->name());
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
@@ -231,6 +232,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_cldfrac_tot = get_field_in("cldfrac_tot").get_view<const Real**>();
   auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
   auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
+  auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -316,9 +318,12 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       team.team_barrier();
 
       // Calculate T_int
+      // TODO: we should *not* be calculating bc_bot (T_int(nlay)) like we do here!
+      // Land model ought to say *something* about emissivity or surface temperature,
+      // but this assumes that the emissivity is 1, all the time, regardless! This is bad!
       const auto T_int = ekat::subview(d_tint, i);
       const Real bc_top = T_mid(0);
-      const Real bc_bot = T_mid(m_nlay-1);
+      const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/PC::stebol));
       CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
 
       mu0(i+1) = d_mu0(i);
