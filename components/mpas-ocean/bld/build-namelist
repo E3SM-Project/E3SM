@@ -1603,6 +1603,18 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1685,6 +1697,7 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
+                am_conservationcheck
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

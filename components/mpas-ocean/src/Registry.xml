@@ -2010,8 +2010,11 @@
 			 description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
-
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
+		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
@@ -3158,10 +3161,10 @@
 		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="seaIceFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="icebergFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
 		/>
 
