@@ -1375,7 +1375,7 @@ end function chem_is_active
     use mo_tracname,         only : solsym
     use physconst,           only : rga
     use phys_control,        only : phys_getopts
-    use mo_chem_utls,        only : get_rxt_ndx
+    use mo_chem_utls,        only : get_spc_ndx
     
     implicit none
 
@@ -1423,7 +1423,7 @@ end function chem_is_active
     integer :: nstep
 
     integer :: tim_ndx
-    integer :: uci1_ndx
+    integer :: e90_ndx
 
     logical :: lq(pcnst)
 
@@ -1460,9 +1460,9 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
-    uci1_ndx = get_rxt_ndx('uci1')
-    if (uci1_ndx <= 0) then
-      call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    e90_ndx = get_spc_ndx('E90')
+    if (e90_ndx <= 0) then
+      call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
     else
       call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag)
     end if
