@@ -271,6 +271,25 @@ MODULE MOSART_physics_mod
              TRunoff%etexch_avg(iunit,nt_nmud) = TRunoff%etexch_avg(iunit,nt_nmud) + TRunoff%etexchange(iunit,nt_nmud)
              TRunoff%etexch_avg(iunit,nt_nsan) = TRunoff%etexch_avg(iunit,nt_nsan) + TRunoff%etexchange(iunit,nt_nsan)
           endif
+		  
+!#ifdef INCLUDE_WRM
+          !! TODO: sediment trapping by small reservoirs on sub-network channel
+          !if (sediflag .and. wrmflag) then
+          !   localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+          !   do nt=nt_nmud,nt_nsan  ! I need to use something similar to storwater%supply and storwater%demand to keep the budget right
+          !      !TRunoff%erowm_regi(iunit,nt) = TRunoff%erowm_regi(iunit,nt) + TRunoff%erlateral(iunit,nt)
+          !   enddo
+          !      
+          !   call res_trapping_t(iunit,nt_nmud)
+          !   Tres%wres_t(iunit,nt_nmud) = Tres%wres_t(iunit,nt_nmud) + Tres%dwres_t(iunit,nt_nmud) * localDeltaT
+          !   call res_trapping_t(iunit,nt_nsan)
+          !   Tres%wres_t(iunit,nt_nsan) = Tres%wres_t(iunit,nt_nsan) + Tres%dwres_t(iunit,nt_nsan) * localDeltaT
+          !    
+          !   do nt=nt_nmud,nt_nsan
+          !     !TRunoff%erowm_regf(iunit,nt) = TRunoff%erowm_regf(iunit,nt) + TRunoff%erlateral(iunit,nt)
+          !   enddo
+          !end if                 
+!#endif
        end do ! iunit
        endif  ! euler_calc
 
@@ -554,7 +573,7 @@ MODULE MOSART_physics_mod
        end do ! iunit
        endif  ! euler_calc
        end do ! nt
-       !! the treatment of mud and san is special since these two are interacting with each other
+       !! the mud and sand processes are treated together
        !do nt=nmud,nt_nsan ! sediment transport
        if (sediflag .and. TUnit%euler_calc(nt_nmud)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
@@ -602,27 +621,41 @@ MODULE MOSART_physics_mod
              TRunoff%flow(iunit,nt_nsan) = TRunoff%flow(iunit,nt_nsan) - TRunoff%erout(iunit,nt_nsan)
              TRunoff%erexchange(iunit,nt_nsan) = TRunoff%erexchange(iunit,nt_nsan) / numSubSteps
              TRunoff%erexch_avg(iunit,nt_nsan) = TRunoff%erexch_avg(iunit,nt_nsan) + TRunoff%erexchange(iunit,nt_nsan)
-                                       
+
           endif
           
 !#ifdef INCLUDE_WRM
+          !! Assume that reservoir regulation will only affect suspended load by changing the flow conditions, but do not directly affect sediment flux or storage
           if (sediflag .and. wrmflag) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
              do nt=nt_nmud,nt_nsan
                 TRunoff%erowm_regi(iunit,nt) = TRunoff%erowm_regi(iunit,nt) - TRunoff%erout(iunit,nt)
                 TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) + TRunoff%erout(iunit,nt)
              enddo
-                
-             call res_trapping(iunit,nt_nmud)
-             Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
-             call res_trapping(iunit,nt_nsan)
-             Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
-              
+             
+			 ! first round of trapping, for those main channel reservoirs that both regulate flow and trap sediment
+             if(Tres_para%Eff_trapping(iunit)>TINYVALUE) then			 
+                 call res_trapping(iunit,nt_nmud)
+                 Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
+                 call res_trapping(iunit,nt_nsan)
+                 Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+			 end if
+             
+             !! TODO: second round of trapping, for those main-channel reservoirs that trap sediment only
+             !if(Tres_para%Eff_trapping_r(iunit)>TINYVALUE) then			 
+             !    call res_trapping_r(iunit,nt_nmud)
+             !    Tres%wres(iunit,nt_nmud) = Tres%wres(iunit,nt_nmud) + Tres%dwres(iunit,nt_nmud) * localDeltaT
+             !    call res_trapping_r(iunit,nt_nsan)
+             !    Tres%wres(iunit,nt_nsan) = Tres%wres(iunit,nt_nsan) + Tres%dwres(iunit,nt_nsan) * localDeltaT
+			 !end if
+			 
              do nt=nt_nmud,nt_nsan
-               TRunoff%erowm_regf(iunit,nt) = TRunoff%erowm_regf(iunit,nt) + - TRunoff%erout(iunit,nt)
+               TRunoff%erowm_regf(iunit,nt) = TRunoff%erowm_regf(iunit,nt) - TRunoff%erout(iunit,nt)
                TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) - TRunoff%erout(iunit,nt)
              enddo
-          end if                 
+          end if
+
+		  
 !#endif
           
        end do ! iunit
@@ -730,6 +763,10 @@ MODULE MOSART_physics_mod
     end if
     TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 
+    if(isnan(TRunoff%wh(iunit,nt)) .or. isnan(TRunoff%dwh(iunit,nt))) then
+        write(unit=2101,fmt="(i10, 3(e15.4), 2(f12.4))") iunit, TRunoff%qsur(iunit,nt), TRunoff%ehout(iunit,nt), TRunoff%yh(iunit,nt), TUnit%hslpsqrt(iunit), TUnit%nh(iunit) 
+    end if
+    
   end subroutine hillslopeRouting
 
 !-----------------------------------------------------------------------
@@ -827,7 +864,7 @@ MODULE MOSART_physics_mod
               TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt) / theDeltaT)
+                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8/ theDeltaT)
                  if(TRunoff%mr(iunit,nt) > 0._r8) then
                     TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                  end if
@@ -836,7 +873,7 @@ MODULE MOSART_physics_mod
               TRunoff%erout(iunit,nt) = TRunoff%conc_r(iunit,nt) * TRunoff%erout(iunit,nt_nliq)
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt) / theDeltaT)
+                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8/ theDeltaT)
               end if
           end if
        end if
@@ -865,6 +902,15 @@ MODULE MOSART_physics_mod
            
     TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt) + temp_gwl
 
+    !if(TRunoff%wr(iunit,nt) < TINYVALUE .and. abs(TRunoff%erout(iunit,nt))> TINYVALUE) then
+	!    write(unit=1111,fmt="(i10, 4(e20.11))") iunit, TRunoff%wr(iunit,nt), TRunoff%erout(iunit,nt), TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt), TRunoff%dwr(iunit,nt) 
+	!    write(unit=1112,fmt="(2(i10), 4(e20.11))") iunit, TUnit%mask(iunit), TRunoff%vr(iunit,nt), TUnit%rlen(iunit), TUnit%rwidth(iunit), TUnit%areaTotal2(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit)
+	!end if
+    
+!    if(iunit==490 .and. nt==1) then
+!        write(unit=1111,fmt="(3(e20.11), 5(f12.4))") TUnit%areaTotal2(iunit),TUnit%areaTotal(iunit),TUnit%area(iunit),TUnit%rdepth(iunit), TUnit%rwidth(iunit), TUnit%rslp(iunit), TUnit%nr(iunit), TUnit%nt(iunit)
+!        write(unit=1112,fmt="(6(e20.11))") TRunoff%wr(iunit,nt), TRunoff%dwr(iunit,nt), TRunoff%erlateral(iunit,nt), TRunoff%erin(iunit,nt), TRunoff%erout(iunit,nt), temp_gwl
+!    end if
 ! check for stability
 !    if(TRunoff%vr(iunit,nt) < -TINYVALUE .or. TRunoff%vr(iunit,nt) > 30) then
 !       write(iulog,*) "Numerical error inRouting_KW, ", iunit,nt,TRunoff%vr(iunit,nt)

@@ -39,6 +39,8 @@ module MOSART_BGC_type
      character(len=200) :: paraFile             ! the path of the parameter files
      character(len=100) :: inputPath            ! the path of the input files
      
+     real(r8), pointer :: d50(:)                ! median bed-material sediment particle size [m]
+
      real(r8), pointer :: clay_content(:)       ! clay content in top soil (-)
      real(r8), pointer :: silt_content(:)       ! silt content in top soil (-)
      real(r8), pointer :: rock_frac(:)          ! rock fragment fraction in top soil (-)
@@ -155,11 +157,8 @@ module MOSART_BGC_type
              TSedi%ermal_r(begr:endr),     &
              TSedi%ermb_r(begr:endr),      &
              TSedi%sem_r(begr:endr),       &
-             TSedi_para%annual_Qsur(begr:endr),       &
-             TSedi_para%annual_Qtot(begr:endr),       &
-             TSedi_para%peak_Qsur(begr:endr),       &
-             TSedi_para%peak_Qtot(begr:endr),       &
-             TSedi_para%u_f(begr:endr),       &
+             TSedi_para%u_f(begr:endr),    &
+             !TSedi_para%d50(begr:endr),    &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of sediment local flux/status arrays'
@@ -187,11 +186,8 @@ module MOSART_BGC_type
     TSedi%ermal_r = 0._r8
     TSedi%ermb_r = 0._r8
     TSedi%sem_r = 0._r8
-    TSedi_para%annual_Qsur = 0._r8
-    TSedi_para%annual_Qtot = 0._r8
-    TSedi_para%peak_Qsur = 0._r8
-    TSedi_para%peak_Qtot = 0._r8
-    TSedi_para%u_f = 0._r8
+    !TSedi_para%d50 = 0._r8
+	TSedi_para%u_f = 0._r8
     do iunit = begr, endr
         TSedi_para%u_f(iunit) = CRUF(TUnit%rdepth(iunit), TUnit%rslp(iunit))
     end do

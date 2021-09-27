@@ -22,14 +22,14 @@ MODULE MOSART_reservoir_mod
 
 
     subroutine res_trapping(iunit, nt)
-    ! !DESCRIPTION: trapping of particulate fluxes in the reservoirs (e.g., sediment)
+    ! !DESCRIPTION: trapping of particulate fluxes in the reservoirs on the main channels (e.g., sediment)
     ! !assume the trapping occurs after the channel routing, i.e., won't affect the current channel mass balance, but only change the outflow to the downstream
         implicit none
         
         integer, intent(in) :: iunit, nt
         !real(r8), intent(in) :: theDeltaT
 
-        real(r8) :: trapping_eff  ! trapping efficiency, propoation
+        real(r8) :: trapping_eff  ! trapping efficiency, proportion
         trapping_eff = Tres_para%Eff_trapping(iunit)
         
         Tres%eres_in(iunit,nt) = -TRunoff%erout(iunit,nt)  * trapping_eff
@@ -39,5 +39,43 @@ MODULE MOSART_reservoir_mod
         TRunoff%erout(iunit,nt) = TRunoff%erout(iunit,nt) * (1._r8 - trapping_eff)
         
     end subroutine res_trapping
+
+    subroutine res_trapping_t(iunit, nt)
+    ! !DESCRIPTION: trapping of particulate fluxes in the reservoirs on the sub-network channels (e.g., sediment)
+    ! !assume the trapping occurs after the channel routing, i.e., won't affect the current channel mass balance, but only change the outflow to the downstream
+        implicit none
+        
+        integer, intent(in) :: iunit, nt
+        !real(r8), intent(in) :: theDeltaT
+
+        real(r8) :: trapping_eff_t  ! trapping efficiency, propoation
+        trapping_eff_t = Tres_para%Eff_trapping_t(iunit)
+        
+        Tres%eres_in_t(iunit,nt) = -TRunoff%erlateral(iunit,nt)  * trapping_eff_t
+        Tres%eres_out_t(iunit,nt) = 0._r8  ! currently assuming no sediment release from the dam bottom (this might be OK in U.S., but wrong in other plances such as China)
+        Tres%dwres_t(iunit,nt) =  Tres%eres_in_t(iunit,nt) + Tres%eres_out_t(iunit,nt)
+        
+        TRunoff%erlateral(iunit,nt) = TRunoff%erlateral(iunit,nt) * (1._r8 - trapping_eff_t)
+        
+    end subroutine res_trapping_t
+
+    subroutine res_trapping_r(iunit, nt)
+    ! !DESCRIPTION: trapping of particulate fluxes in the reservoirs on the main channels (e.g., sediment)
+    ! !assume the trapping occurs after the channel routing, i.e., won't affect the current channel mass balance, but only change the outflow to the downstream
+        implicit none
+        
+        integer, intent(in) :: iunit, nt
+        !real(r8), intent(in) :: theDeltaT
+
+        real(r8) :: trapping_eff_r  ! trapping efficiency, proportion
+        trapping_eff_r = Tres_para%Eff_trapping_r(iunit)
+        
+        Tres%eres_in(iunit,nt) = -TRunoff%erout(iunit,nt)  * trapping_eff_r
+        Tres%eres_out(iunit,nt) = 0._r8  ! currently assuming no sediment release from the dam bottom (this might be OK in U.S., but wrong in other plances such as China)
+        Tres%dwres(iunit,nt) =  Tres%eres_in(iunit,nt) + Tres%eres_out(iunit,nt)
+        
+        TRunoff%erout(iunit,nt) = TRunoff%erout(iunit,nt) * (1._r8 - trapping_eff_r)
+        
+    end subroutine res_trapping_r
 
 end MODULE MOSART_reservoir_mod

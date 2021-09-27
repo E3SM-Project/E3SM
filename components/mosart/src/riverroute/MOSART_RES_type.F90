@@ -15,7 +15,7 @@ module MOSART_RES_type
   use RunoffMod     , only : Tctl, TUnit, rtmCTL
   use RtmSpmd       , only : masterproc
   use RtmVar        , only : iulog
-  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
+  use RtmIO         
   use rof_cpl_indices, only : nt_rtm
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
@@ -46,18 +46,23 @@ module MOSART_RES_type
     type Tpara_reservoir
 
         ! reservoirs or lakes
-        real(r8), pointer :: height(:)      ! reservoir height, [m]
-        real(r8), pointer :: length(:)      ! reservoir length, [m]
-        real(r8), pointer :: area(:)        ! reservoir surface area, [m2]
-        real(r8), pointer :: storage(:,:)   ! reservoir storage, [m3] for water, [kg] for sediment
-        real(r8), pointer :: Tres(:)        ! reservoir residence time, [yrs]
-        real(r8), pointer :: Eff_trapping(:)! reservoir trapping efficiency, [-]
-
+        real(r8), pointer :: height(:)       ! reservoir height, [m]
+        real(r8), pointer :: length(:)       ! reservoir length, [m]
+        real(r8), pointer :: area(:)         ! reservoir surface area, [m2]
+        real(r8), pointer :: storage(:,:)    ! reservoir storage, [m3] for water, [kg] for sediment
+        real(r8), pointer :: Tres(:)         ! Change of water residence time due to a reservoir on main channel, [yrs]
+		                                     ! here the reservoirs both regulate flow and trap sediment
+        real(r8), pointer :: Tres_t(:)       ! Change of water residence time due to a reservoir on sub-network channel, [yrs]
+        real(r8), pointer :: Tres_r(:)       ! Change of water residence time due to a reservoir on main channel, [yrs]
+		                                     ! here the reservoirs only trap sediment 
+        real(r8), pointer :: Eff_trapping(:) ! reservoir trapping efficiency on main channel, [-]
+        real(r8), pointer :: Eff_trapping_t(:) ! reservoir trapping efficiency on sub-network channel, [-]
+        real(r8), pointer :: Eff_trapping_r(:) ! reservoir trapping efficiency on main channel, [-]
     end type Tpara_reservoir
 
 ! reservoirs status and fluxes
     type TstatusFlux_reservoir
-     ! reservoirs, lakes
+     ! reservoirs, lakes on the main channel
      !! states
      real(r8), pointer :: wres(:,:)    ! MOSART reservoir storage (m3 for water, kg for mud and sand sediment)
      real(r8), pointer :: dwres(:,:)   ! MOSART reservoir storage change (m3 for water, kg for mud and sand sediment)
@@ -65,6 +70,13 @@ module MOSART_RES_type
      real(r8), pointer :: eres_in(:,:) ! MOSART reservoir inflow  (m3/s for water, kg/s for mud and sand sediment) 
      real(r8), pointer :: eres_out(:,:)! MOSART reservoir outflow  (m3/s for water, kg/s for mud and sand sediment) 
      
+     ! reservoirs, lakes on the subnetwork channel
+     !! states
+     real(r8), pointer :: wres_t(:,:)    ! MOSART reservoir storage (m3 for water, kg for mud and sand sediment)
+     real(r8), pointer :: dwres_t(:,:)   ! MOSART reservoir storage change (m3 for water, kg for mud and sand sediment)
+     !! exchange fluxes
+     real(r8), pointer :: eres_in_t(:,:) ! MOSART reservoir inflow  (m3/s for water, kg/s for mud and sand sediment) 
+     real(r8), pointer :: eres_out_t(:,:)! MOSART reservoir outflow  (m3/s for water, kg/s for mud and sand sediment) 
         
     end type TstatusFlux_reservoir
     
@@ -92,16 +104,19 @@ module MOSART_RES_type
      ! !DESCRIPTION: initilization of reservoir module
      implicit none
 
-  integer :: ier                  ! error code
-  integer :: begr, endr, iunit, nn, n, cnt, nr, nt
-  integer  :: damID
-  character(len=*),parameter :: subname = '(MOSART_reservoir_init)'
-  character(len=*),parameter :: FORMI = '(2A,2i10)'
-  character(len=*),parameter :: FORMR = '(2A,2g15.7)'
+    integer :: ier                  ! error code
+    integer :: begr, endr, iunit, nn, n, cnt, nr, nt
+    integer  :: damID
+    character(len=*),parameter :: subname = '(MOSART_reservoir_init)'
+    character(len=*),parameter :: FORMI = '(2A,2i10)'
+    character(len=*),parameter :: FORMR = '(2A,2g15.7)'
+    type(file_desc_t):: ncid       ! netcdf file
+    type(var_desc_t) :: vardesc    ! netCDF variable description
+    type(io_desc_t)    :: iodesc_dbl ! pio io desc
   
-
     begr = rtmCTL%begr
-    endr = rtmCTL%endr
+    endr = rtmCTL%endr  
+
     if(endr >= begr) then
         allocate(Tres_para%Tres(begr:endr))
         Tres_para%Tres = 0._r8
@@ -130,6 +145,41 @@ module MOSART_RES_type
     
         allocate (Tres%eres_out(begr:endr,nt_rtm))
         Tres%eres_out = 0._r8    
+
+if(0>1) then ! comment out temporily, please do not delete
+        allocate(Tres_para%Eff_trapping_t(begr:endr))
+        Tres_para%Eff_trapping_t = 0._r8
+        do iunit=begr,endr
+		    if(Tres_para%Tres_t(iunit)>0._r8) then
+			    Tres_para%Eff_trapping_t(iunit) = CREff_trapping(Tres_para%Tres_t(iunit))
+			else
+			    Tres_para%Eff_trapping_t(iunit) = 0._r8
+			end if
+		end do
+
+        allocate(Tres_para%Eff_trapping_r(begr:endr))
+        Tres_para%Eff_trapping_r = 0._r8
+        do iunit=begr,endr
+		    if(Tres_para%Tres_r(iunit)>0._r8) then
+			    Tres_para%Eff_trapping_r(iunit) = CREff_trapping(Tres_para%Tres_r(iunit))
+			else
+			    Tres_para%Eff_trapping_r(iunit) = 0._r8
+			end if			
+		end do
+end if
+
+        allocate (Tres%wres_t(begr:endr,nt_rtm))
+        Tres%wres_t = 0._r8
+    
+        allocate (Tres%dwres_t(begr:endr,nt_rtm))
+        Tres%dwres_t = 0._r8
+    
+        allocate (Tres%eres_in_t(begr:endr,nt_rtm))
+        Tres%eres_in_t = 0._r8
+    
+        allocate (Tres%eres_out_t(begr:endr,nt_rtm))
+        Tres%eres_out_t = 0._r8    
+
     end if  
 
   end subroutine MOSART_reservoir_init  
@@ -233,15 +283,15 @@ module MOSART_RES_type
       real(r8), intent(in) :: Q_       ! Mean annual inflow, [m3/s]; 
       real(r8)             :: Tres_        ! approximated residence time of regulated portion of basin [yrs]
 
-      real(r8) :: Q_operational  ! proportion of maximum storage at which reservoirs are assumed to operate routinely [m3]
-      real(r8) :: Eeff  ! Utilization factor [m/s]
+      real(r8) :: V_operational  ! proportion of maximum storage at which reservoirs are assumed to operate routinely [m3]
+      real(r8) :: Eeff  ! Utilization factor [-]
 
       Eeff = 0.67_r8
-      Q_operational = Eeff * Q_
-      Tres_ = V_ / Q_operational
+      V_operational = Eeff * V_
+      Tres_ = V_operational / Q_ 
       Tres_ = Tres_ / (365*24*3600)  !seconds --> yrs
       
-       return
+      return
     end function CRTres
  
     function CREff_trapping(Tres_) result(Eff_trapping_)
