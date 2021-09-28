@@ -586,7 +586,7 @@ contains
         alarmTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr=err)
         call mpas_set_timeInterval(alarmTimeStep, timeString = &
               config_self_attraction_loading_compute_interval, ierr = err)
-        call mpas_add_clock_alarm(domain % clock, 'salComputeAlarm', alarmTime, &
+        call mpas_add_clock_alarm(domain % clock, 'salComputeAlarm', alarmTime + alarmTimeStep, &
               alarmTimeInterval=alarmTimeStep, ierr=err)
 
         if (.not. config_use_parallel_self_attraction_loading) then

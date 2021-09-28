@@ -1744,6 +1744,7 @@
             <var name="gotmEpsbTopOfCell"/>
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
+            <var name="ssh_sal"/>
 		</stream>
 
 		<stream name="output"
