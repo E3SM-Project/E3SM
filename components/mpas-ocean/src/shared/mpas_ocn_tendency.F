@@ -50,6 +50,7 @@ module ocn_tendency
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_CFC
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -512,6 +513,8 @@ contains
          err,                &! internal error flag 
          timeLevel,          &! time level to use for state variables
          indxTemp, indxSalt, &! tracer index for temperature, salinity
+         indxCFC11,          &! tracer index for CFC11
+         indxCFC12,          &! tracer index for CFC12
          nTracersGroup,      &! number of tracers in each tracer group
          nTracersEcosys       ! number of ecosystem tracers
 
@@ -542,6 +545,8 @@ contains
       ! pointers for retrieving data from pools
       integer, pointer :: &
          indexTemperature, indexSalinity ! tracer index for temp,salt
+      integer, pointer :: &
+         indexCFC11, indexCFC12 ! tracer indicies for CFCs
 
       logical, pointer :: & ! option configuration flags
          config_use_tracerGroup, &
@@ -876,6 +881,31 @@ contains
                                   tracerGroupSurfaceFlux, err)
 
          endif ! MacroMolecules
+
+         !
+         ! compute CFC surface fluxes, there are no interior sources/sinks
+         !
+         if ( groupName == 'CFCTracers' ) then
+
+            call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                     activeTracers, timeLevel)
+
+            indxCFC11 = 0
+            indxCFC12 = 0
+            if (config_use_CFC11) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC11', indexCFC11)
+              indxCFC11 = indexCFC11 ! convert to int scalar due to problems with int scalar pointers
+            endif
+            if (config_use_CFC12) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC12', indexCFC12)
+              indxCFC12 = indexCFC12 ! convert to int scalar due to problems with int scalar pointers
+            endif
+                                                 
+            call ocn_tracer_CFC_surface_flux_compute(activeTracers, &
+                                        tracerGroup, forcingPool,  &
+                                        nTracersGroup, nCellsOwned, &
+                                        indxTemp, indxSalt, tracerGroupSurfaceFlux, indxCFC11, indxCFC12, err)
+         endif ! CFC
 
          !
          ! ocean surface restoring
