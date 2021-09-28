@@ -631,6 +631,9 @@ module ocn_forward_mode
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
+         ! pre-timestep analysis computation
+         call ocn_analysis_precompute(domain, ierr)
+
 #ifdef MPAS_DEBUG
          call mpas_log_write( '   Computing surface flux arrays')
 #endif

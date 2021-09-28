@@ -5844,4 +5844,62 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- AM_conservationCheck -->
+
+<entry id="config_AM_conservationCheck_enable" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+If true, ocean analysis member conservationCheck is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_interval" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_output_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the stream that the conservationCheck analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_to_logfile" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if the conservation check is written to the log file.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_restart_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the conservation check.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 </namelist_definition>
