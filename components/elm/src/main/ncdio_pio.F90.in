@@ -1466,6 +1466,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary
     integer                          :: n          ! index      
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: iodnum     ! iodesc num in list
     integer                          :: varid      ! varid
     integer                          :: ndims      ! ndims for var
@@ -1509,9 +1510,15 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,elmlevel,vardesc,start,count)
              if (present(nt)) then
-               n=3
-               if (start(3) .eq. 0) n=2
-               start(n) = nt ; count(n) = 1
+                !find first non-zero occurrence in the "start" array
+                n = 3
+                do while(start(n) == 0)
+                   n = n - 1
+                enddo
+
+                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
+                n_time_ind = n + 1
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
 
 #if ({ITYPE}==TYPELOGICAL)
@@ -1648,6 +1655,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: ndims_iod  ! ndims iodesc for var
     integer           :: varid      ! varid
     integer           :: n,i,j      ! indices
+    integer           :: n_time_ind !time slice index of the "start" array
     integer           :: dims(4)    ! dim sizes       
     integer           :: dids(4)    ! dim ids
     integer           :: iodnum     ! iodesc num in list
@@ -1698,9 +1706,15 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
                 if (present(nt)) then
-                   n=4
-                   if (start(4) .eq. 0) n=3
-                   start(n) = nt; count(n) = 1
+                   !find first non-zero occurrence in the "start" array
+                   n = 4
+                   do while(start(n) == 0)
+                      n = n - 1
+                   enddo
+
+                   !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
+                   n_time_ind = n + 1
+                   start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
              if (present(switchdim)) then
                 status = pio_get_var(ncid, vardesc, start, count, temp)
@@ -1856,6 +1870,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     !
     ! !LOCAL VARIABLES:
+    integer, parameter               :: max_ind = 5   !index for arrays which read data from the netcdf files
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: ndim1,ndim2       
     character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary      
@@ -1863,29 +1879,19 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: ndims      ! ndims total for var
     integer                          :: ndims_iod  ! ndims iodesc for var
     integer                          :: varid      ! varid
-    integer                          :: n          ! index      
-    integer                          :: dims(5)    ! dim sizes       
-    integer                          :: dids(5)    ! dim ids
+    integer                          :: ind          ! index      
+    integer                          :: dims(max_ind)    ! dim sizes       
+    integer                          :: dids(max_ind)    ! dim ids
     integer                          :: iodnum     ! iodesc num in list
-    integer                          :: start(5)   ! netcdf start index
-    integer                          :: count(5)   ! netcdf count index
+    integer                          :: start(max_ind)   ! netcdf start index
+    integer                          :: count(max_ind)   ! netcdf count index
     logical                          :: varpresent ! if true, variable is on tape
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
-
-    integer :: n_time_ind
-
-    !For single column model only: If "nt" is present, time slice is fixed
-    ! and data for the full time dimension(1:dimlen) should not be read from the file.
-    !Following logical finds out if the time dimension is considered in
-    !scam_field_offsets calculations. If it is considered, we need to re-adjust
-    !start and count so that full time dimension is not taken into account while 
-    !reading the data
-    logical :: time_dim_exists
     !-----------------------------------------------------------------------
 
-    elmlevel = dim1name      
+    elmlevel = dim1name 
 
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(elmlevel)
@@ -1896,36 +1902,22 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
           if (single_column) then
-             start(:) = 1 
+             start(:) = 1
              count(:) = 1
-             call scam_field_offsets(ncid, elmlevel, vardesc, start, count,time_dim_exists = time_dim_exists)
+             call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
              if (present(nt)) then
+
                 !find first non-zero occurrence in the "start" array
-                write(102,*)'BALLI-bef:', start
-                write(102,*)'BALLI-bef:', count
-                n=5
-                do while(start(n) == 0)
-                   n = n - 1
+                ind = max_ind
+                do while(start(ind) == 0)
+                   ind = ind - 1
                 enddo
 
-                !time index should replace the first zero occurrence (after a non-zero occurrence) in the "start" array
-                n_time_ind = n + 1
+                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
+                n_time_ind = ind + 1
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
 
-                write(102,*)'BALLI:', start
-                write(102,*)'BALLI:', count
-                !write(102,*)'BALLI:', n, start(n)
-                !write(102,*)'BALLI:', count
-                !if(time_dim_exists) then !if time dimesion is considered by scam, shift indices of start
-                !  n=4
-                !  if (start(4) .eq. 0) n=3
-                !else
-                !   n=5
-                !  if (start(5) .eq. 0) n=4
-                !endif
-                !start(n) = nt ; count(n) = 1
              endif
-             
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1940,8 +1932,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 ndims_iod = ndims
              end if
-             do n = 1,ndims_iod
-                status = pio_inq_dimlen(ncid,dids(n),dims(n))
+             do ind = 1,ndims_iod
+                status = pio_inq_dimlen(ncid,dids(ind),dims(ind))
              enddo
              call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                   PIO_{TYPE}, iodnum)
@@ -1969,8 +1961,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        else
           ndims_iod = ndims
        end if
-       do n = 1,ndims_iod
-          status = pio_inq_dimlen(ncid,dids(n),dims(n))
+       do ind = 1,ndims_iod
+          status = pio_inq_dimlen(ncid,dids(ind),dims(ind))
        enddo
        call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
             PIO_{TYPE}, iodnum)
@@ -2017,6 +2009,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: ndims_iod  ! ndims iodesc for var
     integer                          :: varid      ! varid
     integer                          :: n          ! index      
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: dims(5)    ! dim sizes       
     integer                          :: dids(5)    ! dim ids
     integer                          :: iodnum     ! iodesc num in list
@@ -2042,9 +2035,16 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
-               n=6
-               if (start(6) .eq. 0) n=5
-               start(n) = nt ; count(n) = 1
+
+                !find first non-zero occurrence in the "start" array
+                n = 6
+                do while(start(n) == 0)
+                   n = n - 1
+                enddo
+
+                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
+                n_time_ind = n + 1
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
              
              status = pio_get_var(ncid, vardesc, start, count, data)
@@ -2115,7 +2115,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
   !------------------------------------------------------------------------
 
   subroutine scam_field_offsets( ncid, dim1name, vardesc, start, count, &
-       found, posNOTonfile, time_dim_exists)
+       found, posNOTonfile)
     !
     ! !DESCRIPTION: 
     ! Read/Write initial data from/to netCDF instantaneous initial data file 
@@ -2134,11 +2134,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional , intent(out)   :: found        ! if present return true if found
     ! dimensions on file else false if NOT present abort if can't find
     logical, optional , intent(in)    :: posNOTonfile ! Position is NOT on this file
-
-    ! finds out if time dimension is considered by scam as one of the dimensions
-    logical, optional , intent(out)    :: time_dim_exists
-
-
     !
     ! !LOCAL VARIABLES:
     integer              :: cc,i,ii           ! index variable
@@ -2162,16 +2157,13 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer              :: latidx,lonidx     ! latitude/longitude indices
     real(r8)             :: closelat,closelon ! closest latitude and longitude indices
     integer              :: ndims,dimlen      ! number of dimensions in desired variable
+    integer              :: ndims_iod         ! number of dimensions excluding time dimension (if it exists)
     character(len=32)    :: dimname           ! dimension name
     character(len=32)    :: subname = 'scam_field_offsets'
-    integer              :: ndims_iod
     !------------------------------------------------------------------------
 
     start(:)=0
     count(:)=0
-
-    !By default, we assume that time dimension is not one of the dimnames
-    if(present(time_dim_exists))time_dim_exists=.false.
 
     if ( present(posNOTonfile) )then
        if ( posNOTonfile )then
@@ -2198,15 +2190,15 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     allocate(dids(ndims))
     status = pio_inq_vardimid(ncid, vardesc, dids)
 
-    !find out if "time" is one of the dimnames
+    ndims_iod = ndims !by default, ndims_iod is equal to total number of array dimensions
+
+    !find out if "time" is one of the dimnames and update ndims_iod accordingly
     do i = 1,ndims
        status = pio_inq_dimname(ncid,dids(i),dimname)
        dimname=shr_string_toLower(dimname)
-       if ('time' == trim(dimname)) then
+       if ('time' == trim(dimname)) then !if time dimension is found, reduce ndims_iod by 1
           ndims_iod = ndims - 1
-          if(present(time_dim_exists))time_dim_exists = .true. !set it to true if "time" dimension exists
-       else
-          ndims_iod = ndims
+          exit
        end if
     enddo
 
