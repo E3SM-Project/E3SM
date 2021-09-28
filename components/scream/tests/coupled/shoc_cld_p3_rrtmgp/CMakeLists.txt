@@ -40,7 +40,8 @@ CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/
 CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 # Basic config files
+SetVarDependingOnTestProfile(SCREAM_TEST_NUM_TIME_STEPS 3 5 10)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc
                ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc COPYONLY)

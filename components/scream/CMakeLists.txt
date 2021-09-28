@@ -249,6 +249,12 @@ if (SCREAM_TEST_MAX_RANKS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
   set (SCREAM_TEST_MAX_RANKS ${SCREAM_TEST_MAX_TOTAL_THREADS})
 endif()
 
+# This is a meta-variable, which individual tests can use to set *different* degrees
+# of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
+# for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
+set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
+set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
+
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
