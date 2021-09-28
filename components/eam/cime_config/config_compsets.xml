@@ -27,6 +27,16 @@
   </compset>
 
   <compset>
+    <alias>F20TR_chemUCI-Linozv2</alias>
+    <lname>20TR_EAM%CHEMUCI-LINOZV2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F20TR_chemUCI-Linozv3</alias>
+    <lname>20TR_EAM%CHEMUCI-LINOZV3_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1950</alias>
     <lname>1950_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>

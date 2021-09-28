@@ -1690,6 +1690,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_ice_deep phys="default"> 14.e-6     </clubb_ice_deep>
 <clubb_use_sgv phys="default"> .true.     </clubb_use_sgv>
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6        </seasalt_emis_scale>
+<seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6        </seasalt_emis_scale>
 <zmconv_c0_lnd phys="default"> 0.0020     </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default"> 0.0020     </zmconv_c0_ocn>
 <zmconv_alfa phys="default"> 0.14D0     </zmconv_alfa>
