@@ -83,7 +83,8 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-f0-tt5-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt5-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
-     theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs3-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs3-hvst5-r3-qz1-nutopon
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
   )
