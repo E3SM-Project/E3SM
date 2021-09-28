@@ -29,12 +29,12 @@ Quick Start
 --------------------------------------------------------------------------------
 The [Quick Start](https://e3sm.org/model/running-e3sm/e3sm-quick-start/) page 
 includes instructions on obtaining the necessary code and input data for model 
-setup and execution.
+setup and execution on a supported machine.
 
 Supported Machines 
 --------------------------------------------------------------------------------
-E3SM is high-performance computing application and generally requires a cluster
-with several hundred nodes to run a scientifically validated case at a useful
+E3SM is a high-performance computing application and generally requires a cluster
+with a few dozen nodes to run a scientifically validated case at a useful
 simulation speed.
 
 To run E3SM, it is recommended that you obtain time on a 
