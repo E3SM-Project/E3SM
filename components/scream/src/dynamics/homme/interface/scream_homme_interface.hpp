@@ -37,7 +37,7 @@ bool is_hommexx_functors_inited_f90 ();
 // Generic setup
 void init_parallel_f90 (const int& f_comm);
 void init_params_f90 (const char*& fname);
-void init_grids_f90 (const int& pgN);
+void init_grids_f90 (const int*& pg_types, const int num_pg_types);
 void cleanup_grid_init_data_f90 ();
 void finalize_geometry_f90 ();
 
@@ -52,8 +52,8 @@ void prim_finalize_f90 ();
 // Grids specs
 int get_nlev_f90 ();
 int get_np_f90 ();
-int get_num_local_columns_f90 ();
-int get_num_global_columns_f90 ();
+int get_num_local_columns_f90 (const int pgN);
+int get_num_global_columns_f90 (const int pgN);
 int get_num_local_elems_f90 ();
 int get_num_global_elems_f90 ();
 void get_dyn_grid_data_f90 (AbstractGrid::gid_type* const& gids,

@@ -39,6 +39,8 @@ TEST_CASE("remap", "") {
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
 
+  constexpr int pg_gll = 0;
+
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -69,7 +71,7 @@ TEST_CASE("remap", "") {
 
   // Local counters
   const int num_local_elems = get_num_local_elems_f90();
-  const int num_local_cols = get_num_local_columns_f90();
+  const int num_local_cols = get_num_local_columns_f90(pg_gll);
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Get physics and dynamics grids, and their dofs
@@ -580,6 +582,8 @@ TEST_CASE("combo_remap", "") {
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
 
+  constexpr int pg_gll = 0;
+
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -610,7 +614,7 @@ TEST_CASE("combo_remap", "") {
 
   // Local counters
   const int num_local_elems = get_num_local_elems_f90();
-  const int num_local_cols = get_num_local_columns_f90();
+  const int num_local_cols = get_num_local_columns_f90(pg_gll);
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Get physics and dynamics grids, and their dofs
