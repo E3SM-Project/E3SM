@@ -504,18 +504,18 @@ contains
     end do
     deallocate(gti)
 
-!    ! Read hksat_adj
-!
-!    allocate(hai(bounds%begg:bounds%endg))
-!    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
-!    if (.not. readvar) then
-!       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-!    end if
-!    do c = bounds%begc, bounds%endc
-!       g = col_pp%gridcell(c)
-!       this%hksat_adj_col(c) = hai(g)
-!    end do
-!    deallocate(hai)
+    ! Read hksat_adj
+
+    allocate(hai(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col_pp%gridcell(c)
+       this%hksat_adj_col(c) = hai(g)
+    end do
+    deallocate(hai)
 !
 !    ! Read hksat data
 !
@@ -744,7 +744,7 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                this%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
+                this%hksat_col(c,lev)  = this%hksat_adj_col(c) * (uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat)
 		!this%hksat_col(c,lev)  = this%hksat_adj_col(c) * this%hksat_obs_col(c,lev)
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))           
