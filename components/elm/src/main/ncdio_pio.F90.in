@@ -1513,11 +1513,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 !find first non-zero occurrence in the "start" array
                 n = 3
                 do while(start(n) == 0)
+                   n_time_ind = n ! time index for the start array
                    n = n - 1
                 enddo
-
-                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
-                n_time_ind = n + 1
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
 
@@ -1709,13 +1707,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                    !find first non-zero occurrence in the "start" array
                    n = 4
                    do while(start(n) == 0)
+                      n_time_ind = n ! time index for the start array
                       n = n - 1
                    enddo
-
-                   !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
-                   n_time_ind = n + 1
                    start(n_time_ind) = nt ; count(n_time_ind) = 1
-             endif
+                endif
              if (present(switchdim)) then
                 status = pio_get_var(ncid, vardesc, start, count, temp)
                 do j = lb2,ub2
@@ -1910,11 +1906,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 !find first non-zero occurrence in the "start" array
                 ind = max_ind
                 do while(start(ind) == 0)
+                   n_time_ind = ind ! time index for the start array
                    ind = ind - 1
                 enddo
-
-                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
-                n_time_ind = ind + 1
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
 
              endif
@@ -2039,11 +2033,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 !find first non-zero occurrence in the "start" array
                 n = 6
                 do while(start(n) == 0)
+                   n_time_ind = n ! time index for the start array
                    n = n - 1
                 enddo
-
-                !time index should replace the first occurrence of zero (after a non-zero occurrence) in the "start" array
-                n_time_ind = n + 1
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
              
