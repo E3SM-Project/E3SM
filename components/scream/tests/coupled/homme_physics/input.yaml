@@ -5,7 +5,7 @@ Debug:
 
 Initial Conditions:
   Physics GLL:
-    Filename: homme_shoc_cld_p3_rad_init_ne2np4.nc
+    Filename: homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc
     # Set X_prev = X
     T_mid_prev: T_mid
     horiz_winds_prev: horiz_winds
@@ -31,7 +31,7 @@ Atmosphere Processes:
   Process 4:
     Process Name: RRTMGP
     Grid: Physics GLL
-    active_gases: ["H2O", "CO2", "O3", "N2O", "CO" , "CH4", "O2", "N2"]
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 Grids Manager:
   Type: Dynamics Driven
