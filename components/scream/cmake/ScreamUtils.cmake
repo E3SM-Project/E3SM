@@ -15,6 +15,21 @@ include(EkatUtils)
 #  - One test will be created per combination of valid mpi-rank and thread value
 #  - compiler defs/flags can also be providedd on a per-language basis via COMPILER_[C|CXX|F]_[FLAGS|DEFS]
 
+macro (SetVarDependingOnTestProfile var_name val_short val_medium val_long)
+  string (TOUPPER ${SCREAM_TEST_PROFILE} profile)
+  if (profile STREQUAL "SHORT")
+    set (${var_name} ${val_short})
+  elseif(profile STREQUAL "MEDIUM")
+    set (${var_name} ${val_medium})
+  elseif(profile STREQUAL "LONG")
+    set (${var_name} ${val_long})
+  else()
+    message("Error! Unrecognized testing profile '${profile}'.")
+    message("  Valid test profile options: ${SCREAM_TEST_VALID_PROFILES}")
+    message(FATAL_ERROR "Aborting.")
+  endif()
+endmacro()
+
 function(CreateUnitTest target_name target_srcs scream_libs)
   set(options EXCLUDE_MAIN_CPP SERIAL)
   set(oneValueArgs EXE_ARGS DEP)
@@ -96,6 +111,41 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   if (CreateUnitTest_COMPILER_F_FLAGS OR SCREAM_Fortran_FLAGS)
     list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS} ${SCREAM_Fortran_FLAGS})
   endif ()
+
+  # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
+  if (CreateUnitTest_MPI_RANKS OR CreateUnitTest_THREADS)
+    list(LENGTH CreateUnitTest_MPI_RANKS NUM_MPI_RANK_ARGS)
+    list(LENGTH CreateUnitTest_THREADS   NUM_THREAD_ARGS)
+    if (NUM_MPI_RANK_ARGS EQUAL 0)
+      set (MAX_RANKS 1)
+    elseif (NUM_MPI_RANK_ARGS GREATER 1)
+      list(GET CreateUnitTest_MPI_RANKS 1 MAX_RANKS)
+    else()
+      list(GET CreateUnitTest_MPI_RANKS 0 MAX_RANKS)
+    endif()
+    if (NUM_THREAD_ARGS EQUAL 0)
+      set (MAX_THREADS 1)
+    elseif (NUM_THREAD_ARGS GREATER 1)
+      list(GET CreateUnitTest_THREADS   1 MAX_THREADS)
+    else()
+      list(GET CreateUnitTest_THREADS   0 MAX_THREADS)
+    endif()
+    math(EXPR NUM_THREADS_NEEDED ${MAX_RANKS}*${MAX_THREADS})
+    if (${NUM_THREADS_NEEDED} GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+      string (CONCAT msg
+        "**************************************************************************\n"
+        "Error! Invalid max threads/ranks combination. When invoking CreateUnitTest,\n"
+        "you must ensure that the product of the max requested mpi ranks and\n"
+        "the max requested omp threads is lower than SCREAM_TEST_MAX_TOTAL_THREADS.\n"
+        "   - test exec name: ${target_name}\n"
+        "   - requested max MPI ranks: ${MAX_RANKS}\n"
+        "   - requested max OMP threads: ${MAX_THREADS}\n"
+        "   - resulting max threads needed: ${NUM_THREADS_NEEDED}\n"
+        "   - SCREAM_TEST_MAX_TOTAL_THREADS: ${SCREAM_TEST_MAX_TOTAL_THREADS}\n")
+      message("${msg}")
+      message(FATAL_ERROR "Aborting")
+    endif()
+  endif()
 
 
   EkatCreateUnitTest(${target_name} "${target_srcs}"

@@ -131,7 +131,7 @@ endif ()
 set(DEFAULT_FPMODEL "precise")
 set(DEFAULT_MPIRUN_EXE "mpiexec")
 set(DEFAULT_MPI_EXTRA_ARGS "--bind-to core")
-set(DEFAULT_MPI_NP_FLAG "-np")
+set(DEFAULT_MPI_NP_FLAG "--map-by")
 set(DEFAULT_LIB_ONLY FALSE)
 if (SCREAM_CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
@@ -225,9 +225,35 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 ### <Scream configuration options
 
 # Scream test configuration options
-set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
+set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads per rank for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
 set(SCREAM_TEST_MAX_RANKS ${DEFAULT_MAX_RANKS} CACHE STRING "Upper limit on ranks for mpi tests")
+math(EXPR DEFAULT_MAX_TOTAL_THREADS "${SCREAM_TEST_MAX_RANKS}*${SCREAM_TEST_MAX_THREADS}")
+set(SCREAM_TEST_MAX_TOTAL_THREADS ${DEFAULT_MAX_TOTAL_THREADS} CACHE STRING "Upper limit on nranks*threads for threaded tests")
+
+# Make sure SCREAM_TEST_MAX_RANKS and SCREAM_TEST_MAX_THREADS do not individually exceed SCREAM_TEST_MAX_TOTAL_THREADS
+if (SCREAM_TEST_MAX_THREADS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max threads/rank (${SCREAM_TEST_MAX_THREADS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_THREADS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_THREADS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
+if (SCREAM_TEST_MAX_RANKS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max ranks (${SCREAM_TEST_MAX_RANKS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_RANKS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_RANKS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
+
+# This is a meta-variable, which individual tests can use to set *different* degrees
+# of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
+# for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
+set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
+set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")

@@ -66,7 +66,7 @@ static Int compare (const std::string& label, const Scalar* a,
 
   if (nerr2) {
     std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
-	      << " normalized by ref impl val=" << den << ".\n";
+             << " normalized by ref impl val=" << den << ".\n";
 
   }
 
@@ -112,8 +112,8 @@ struct Baseline {
 
     for (int i = i_start; i < i_end; ++i) { // predict_nc is false or true
       for (int j = j_start; j< j_end; ++j) { //prescribed_CCN is false or true
-	//                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict nc, prescribe CCN or not
-	params_.push_back({ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i>0,                     j>0 });
+  //                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict nc, prescribe CCN or not
+  params_.push_back({ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i>0,                     j>0 });
       }
     }
   }
@@ -279,8 +279,10 @@ int main (int argc, char** argv) {
   Int ncol = 3;
   Int nlev = 72;
   Int repeat = 0;
+  std::string device;
   std::string predict_nc = "both";
   std::string prescribed_ccn = "both";
+  std::string baseline_fn;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
     if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
@@ -288,6 +290,11 @@ int main (int argc, char** argv) {
       expect_another_arg(i, argc);
       ++i;
       tol = std::atof(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
+      expect_another_arg(i, argc);
+      ++i;
+      baseline_fn = argv[i];
     }
     if (ekat::argv_matches(argv[i], "-s", "--steps")) {
       expect_another_arg(i, argc);
@@ -308,6 +315,11 @@ int main (int argc, char** argv) {
       expect_another_arg(i, argc);
       ++i;
       nlev = std::atoi(argv[i]);
+    }
+    if (std::string(argv[i])=="--ekat-kokkos-device") {
+      expect_another_arg(i, argc);
+      ++i;
+      device = argv[i];
     }
     if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
       expect_another_arg(i, argc);
@@ -334,10 +346,34 @@ int main (int argc, char** argv) {
   }
 
   // Decorate baseline name with precision.
-  std::string baseline_fn(argv[argc-1]);
   baseline_fn += std::to_string(sizeof(scream::Real));
 
-  scream::initialize_scream_session(argc, argv); {
+  std::vector<char*> args;
+  for (int i=0; i<argc; ++i) {
+    args.push_back(argv[i]);
+  }
+
+  // If "--ekat-kokkos-device <N>" was specified, add kokkos
+  // initialization flag to argv
+  // Create it outside the if, so its c_str pointer survives
+  std::string dev_arg;
+  if (device!="") {
+    auto is_int = [] (const std::string& s)->bool {
+      std::istringstream is(s);
+      int d;
+      is >> d;
+      return !is.fail() && is.eof();
+    };
+
+    EKAT_REQUIRE_MSG (is_int(device), "Error! Invalid device specification.\n");
+
+    if (std::stoi(device) != -1) {
+      dev_arg = "--kokkos-device-id=" + device;
+      args.push_back(const_cast<char*>(dev_arg.c_str()));
+    }
+  }
+
+  scream::initialize_scream_session(args.size(), args.data()); {
     Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
