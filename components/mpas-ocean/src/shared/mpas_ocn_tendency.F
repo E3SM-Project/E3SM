@@ -1093,7 +1093,8 @@ contains
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &
                                    RediKappaSfcTaper, RediKappaScaling,&
-                                   rediLimiterCount, gmResolutionTaper, tracerGroupTend, err)
+                                   rediLimiterCount, gmResolutionTaper,&
+                                   slopeTaperArray, tracerGroupTend, err)
 
          if (computeBudgets) then
             ! Finish budget calculation by subtracting before, after

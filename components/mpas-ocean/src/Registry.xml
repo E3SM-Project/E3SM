@@ -2824,6 +2824,10 @@
 		<var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
 			description="index of model where mixed layer depth occurs (always one past)"
 		/>
+	    <var name="slopeTaperArray" type="real" dimensions="nVertLevels TWO nEdges time" units="non-dimensional" default_value="1.0"
+			 description="tapering value for slope scheme chosen"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"

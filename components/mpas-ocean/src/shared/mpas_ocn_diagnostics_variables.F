@@ -121,7 +121,7 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: k33
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
-   real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
+   real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown, slopeTaperArray
 
    integer, dimension(:), pointer :: indMLD
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
@@ -389,6 +389,8 @@ contains
                    slopeTriadUp)
          call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', &
                    slopeTriadDown)
+         call mpas_pool_get_array(diagnosticsPool, 'slopeTaperArray', &
+                   slopeTaperArray)
 
          ! GM-related fields
          call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
@@ -675,6 +677,7 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   slopeTaperArray,                 &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -913,6 +916,7 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   slopeTaperArray,                 &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -1112,6 +1116,7 @@ contains
                  SSHGradient,                     &
                  circulation,                     &
                  slopeTriadUp,                    &
+                 slopeTaperArray,                 &
                  gradSSHZonal,                    &
                  cGMphaseSpeed,                   &
                  velocityZonal,                   &

@@ -2455,7 +2455,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterTemperatureFlux', seaIceFreshWaterTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'icebergFreshWaterTemperatureFlux', icebergFreshWaterTemperatureFlux)
-      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
 
