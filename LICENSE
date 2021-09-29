@@ -49,7 +49,8 @@ Name            Code Location                  Institution(s)      License
 
 Software
 -----------
-CIME            cime/                           NCAR, SNL, ANL      BSD
+CIME            cime/scripts                    NCAR, SNL           BSD
+cpl7            driver-mct/ 			NCAR, ANL	    BSD
 GPTL            share/timing                    author              non-commerical
 MCT             externals/mct                   ANL                 BSD
 YAKL		externals/YAKL			author              BSD
