@@ -33,8 +33,8 @@ setup and execution on a supported machine.
 
 Supported Machines 
 --------------------------------------------------------------------------------
-E3SM is a high-performance computing application and generally requires a cluster
-with a few dozen nodes to run a scientifically validated case at a useful
+E3SM is a high-performance computing application and generally requires a
+capable compute cluster to run a scientifically validated case at a useful
 simulation speed.
 
 To run E3SM, it is recommended that you obtain time on a 
@@ -48,7 +48,7 @@ Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/)
 Contributing
 --------------------------------------------------------------------------------
 Please refer to [Contributing](CONTRIBUTING.md) for details on our code development
-process for submitting pull requests.
+process.
 
 Acknowledgement
 --------------------------------------------------------------------------------
