@@ -68,6 +68,7 @@ class TestAllScream(object):
             ("fpe" , "debug_nopack_fpe"),
             ("opt" , "release"),
             ("valg", "valgrind"),
+            ("cmc",  "cuda_mem_check"),
             ("cov" , "coverage"),
         ])
 
@@ -97,6 +98,7 @@ class TestAllScream(object):
             self._tests = list(self._test_full_names.keys())
             self._tests.remove("valg") # don't want this on by default
             self._tests.remove("cov") # don't want this on by default
+            self._tests.remove("cmc") # don't want this on by default
             if is_cuda_machine(self._machine):
                 self._tests.remove("fpe")
         else:
@@ -234,6 +236,8 @@ class TestAllScream(object):
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
+            "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("EKAT_ENABLE_COVERAGE", "True")],
         }
