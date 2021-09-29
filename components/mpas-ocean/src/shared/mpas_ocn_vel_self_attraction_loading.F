@@ -10,7 +10,7 @@
 !  ocn_vel_self_attraction_loading
 !
 !> \brief MPAS ocean module
-!> \author Kristin Barton 
+!> \author Kristin Barton
 !> \date   August 2020
 !> \details
 !>  This module contains routines for the tidal potential forcing.
@@ -39,44 +39,44 @@ module ocn_vel_self_attraction_loading
 #endif
     use iso_c_binding
     use iso_fortran_env, only: real64
-   
+
     implicit none
     private
     save
 
-#ifdef USE_SHTNS    
+#ifdef USE_SHTNS
     include 'shtns.f03'
 #endif
-    
+
     !--------------------------------------------------------------------
     !
     ! Public parameters
     !
     !--------------------------------------------------------------------
-    
+
     !--------------------------------------------------------------------
     !
     ! Public member functions
     !
     !--------------------------------------------------------------------
-    
+
     public :: ocn_compute_self_attraction_loading, &
               ocn_vel_self_attraction_loading_init
-    
+
     !--------------------------------------------------------------------
     !
     ! Private module variables
     !
     !--------------------------------------------------------------------
-    
+
     logical :: selfAttractionLoadingOn
-    
+
     ! Interpolation weights variables
     integer, dimension(:), allocatable :: toRowValues, toColValues
     integer, dimension(:), allocatable :: fromRowValues, fromColValues
     real(kind=RKIND), dimension(:), allocatable :: toSValues, fromSValues
     integer:: nMpas, nGrid
-    
+
     ! SHTns routine variables
     integer, parameter :: dp=real64
 #ifdef USE_SHTNS
@@ -85,7 +85,7 @@ module ocn_vel_self_attraction_loading
 #endif
     complex(dp), allocatable :: Slm(:)
     complex(dp), allocatable :: Slm_local(:)
-    
+
     ! MPI variables
     integer :: nCellsGlobal
     integer, dimension(:), allocatable :: nCellsDisplacement, indexToCellIDGathered
@@ -123,12 +123,12 @@ contains
 !
 !  routine ocn_compute_self_attraction_loading
 !
-!> \brief   Computes self-attraction and loading 
+!> \brief   Computes self-attraction and loading
 !> \author  Kristin Barton
 !> \date    August 2020
 !> \details
 !>  This routine computes the sea surface height perturbation due to
-!>     self-attraction and loading. 
+!>     self-attraction and loading.
 !
 !-----------------------------------------------------------------------
 
@@ -141,29 +141,29 @@ contains
         !-----------------------------------------------------------------
         type (dm_info), intent(in) :: dminfo
         real (kind=RKIND), dimension(:), intent(in) :: ssh
-        
+
         !-----------------------------------------------------------------
         !
         ! input/output variables
         !
         !-----------------------------------------------------------------
         type (domain_type), intent(inout) :: domain !< Input/Output: domain information
-        type (mpas_pool_type), intent(inout) :: forcingPool 
-        
+        type (mpas_pool_type), intent(inout) :: forcingPool
+
         !-----------------------------------------------------------------
         !
         ! output variables
         !
         !-----------------------------------------------------------------
-        
+
         integer, intent(out) :: err !< Output: Error flag
-        
+
         !-----------------------------------------------------------------
         !
         ! local variables
         !
         !-----------------------------------------------------------------
-        
+
         ! SAL variables
         real (kind=RKIND), dimension(:), pointer :: ssh_gg
         ! MPI Variables
@@ -196,24 +196,24 @@ contains
             if (curProc.eq.0) then
                 allocate(globalArray(nCellsGlobal), gatheredArray(nCellsGlobal))
             endif
-    
+
             ! Gather only the nCellsOwned from ssh (does not include Halos)
             call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
                             nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err)
             call mpas_timer_stop('Serial SAL: Gather')
-    
+
             ! Perform SAL calculation only on process 0
             if (curProc.eq.0) then
                 call mpas_timer_start('Serial SAL: Forward')
                 allocate(ssh_gg(nGrid))
                 ssh_gg(:) = 0.0_dp
                 Slm(:)=(0.0_dp, 0.0_dp)
-    
+
                 ! Rearrange ssh into CellID order
                 do iCell = 1,nCellsGlobal
                    globalArray(indexToCellIDGathered(iCell)) = gatheredArray(iCell)
                 enddo
-               
+
                 ! Interpolate ssh onto Gaussian Grid
                 call interpolate( toColValues, toRowValues, toSValues, globalArray, ssh_gg)
                 ! Perform spherical harmonic transform
@@ -230,7 +230,7 @@ contains
 #endif
                 ! Interpolate back to MPAS mesh
                 call interpolate( fromColValues, fromRowValues, fromSValues, ssh_gg, globalArray)
-    
+
                 ! Rearrange back to index order
                 do iCell = 1,nCellsGlobal
                     gatheredArray(iCell) = globalArray(indexToCellIDGathered(iCell))
@@ -242,17 +242,17 @@ contains
                 call mpas_timer_start('Serial SAL: Inverse')
                 call mpas_timer_stop('Serial SAL: Inverse')
             endif
-    
+
             ! Scatter back to ssh_sal
     !!mrp check nCellsAll on next line
             call mpas_timer_start('Serial SAL: Scatter')
             call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                        ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err) 
-    
+                        ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err)
+
             if (curProc.eq.0) then
               deallocate(globalArray, gatheredArray, ssh_gg)
             endif
-    
+
             ! Perform Halo exchange update
             call mpas_dmpar_field_halo_exch(domain,'ssh_sal')
             call mpas_timer_stop('Serial SAL: Scatter')
@@ -265,8 +265,8 @@ contains
             !!!!!!!!!!!!!!!!!!!!!
             ! Forward Transform
             !!!!!!!!!!!!!!!!!!!!!
-            
-            !$omp do schedule(runtime) private(l)
+
+            !$omp do schedule(runtime) private(l,n)
             do m = 0,nOrder
                 do n = m,nOrder
                     l = SHOrderDegreeToIndex(n,m)
@@ -278,7 +278,7 @@ contains
             enddo
             !$omp end do
 
-            !$omp do schedule(runtime) private(startIdx,endIdx,n,l)
+            !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,l,iCell)
             do m = 0,nOrder
 
                 do blk = 1,nBlocks
@@ -294,7 +294,7 @@ contains
                     call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                     ! Compute local integral contribution
-                    do iCell = endIdx, startIdx, -1 
+                    do iCell = endIdx, startIdx, -1
                         SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
                         SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                     enddo
@@ -309,13 +309,13 @@ contains
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                         ! Compute local integral contribution
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
                             SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                         enddo
 
                     endif
-                    
+
                     !------------
                     ! n > m+1
                     !------------
@@ -325,15 +325,15 @@ contains
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                         ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             pmnm2(iCell) = pmnm1(iCell)
                         enddo
-                        do iCell = startIdx, endIdx 
+                        do iCell = startIdx, endIdx
                             pmnm1(iCell) = pmn(iCell)
                         enddo
 
                         ! Compute local integral contribution
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
                             SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                         enddo
@@ -347,7 +347,7 @@ contains
             call mpas_timer_stop('Parallel SAL: Forward Transform')
 
             call mpas_timer_start('Parallel SAL: Communication')
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime)
             do m = 1,lmax
                 Snm_local(m) = SnmRe_local(m)
                 Snm_local(lmax+m) = SnmIm_local(m)
@@ -358,8 +358,8 @@ contains
             ! Compute global integral by summing local contributions
             CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
 
-            !$ omp parallel
-            !$omp do schedule(runtime) 
+            !$omp parallel
+            !$omp do schedule(runtime)
             do m = 1,lmax
                 SnmRe(m) = Snm(m)
                 SnmIm(m) = Snm(lmax+m)
@@ -374,28 +374,28 @@ contains
             ! Apply SAL scaling
             !!!!!!!!!!!!!!!!!!!!!
 
-            !$omp do schedule(runtime) private(l) 
+            !$omp do schedule(runtime) private(n,l)
             do m = 0,nOrder
                 do n = m,nOrder
                     l = SHOrderDegreeToIndex(n,m)
                     SnmRe(l) = SnmRe(l)*LoveScaling(l)
                     SnmIm(l) = SnmIm(l)*LoveScaling(l)
                 enddo
-            enddo 
+            enddo
             !$omp end do
 
             !!!!!!!!!!!!!!!!!!!!
             ! Inverse transform
             !!!!!!!!!!!!!!!!!!!!
 
-            !$omp do schedule(runtime) 
-            do iCell = 1,nCellsAll 
+            !$omp do schedule(runtime)
+            do iCell = 1,nCellsAll
                ssh_sal(iCell) = 0.0_RKIND
             enddo
             !$omp end do
 
 
-            !$omp do schedule(runtime) private(mFac,startIcx,endIdx,n,l)
+            !$omp do schedule(runtime) private(blk,mFac,startIdx,endIdx,n,iCell,l)
             do m = 0,nOrder
 
                 if (m>0) then
@@ -411,53 +411,53 @@ contains
                     ! n = m
                     !------------
                     n = m
-    
+
                     ! Calculate associated Legendre polynomial using recurrence relationship
                     call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-    
+
                     ! Sum together product of spherical harmonic functions and coefficients
-                    do iCell = endIdx, startIdx, -1 
+                    do iCell = endIdx, startIdx, -1
                         ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
-    
+
                     !------------
                     ! n = m+1
                     !------------
                     n = m+1
                     if (n <= nOrder) then
-    
+
                         ! Calculate associated Legendre polynomial using recurrence relationship
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-    
+
                         ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                         enddo
-        
+
                     endif
-    
+
                     !------------
                     ! n > m+1
                     !------------
                     do n = m+2,nOrder
-    
+
                         ! Calculate associated Legendre polynomial using recurrence relationship
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                         ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             pmnm2(iCell) = pmnm1(iCell)
                         enddo
-                        do iCell = startIdx, endIdx 
+                        do iCell = startIdx, endIdx
                             pmnm1(iCell) = pmn(iCell)
                         enddo
-    
+
                         ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = endIdx, startIdx, -1 
+                        do iCell = endIdx, startIdx, -1
                             ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                         enddo
 
-    
+
                     enddo ! n loop
                 enddo ! block loop
             enddo ! m loop
@@ -465,10 +465,10 @@ contains
 
             call mpas_timer_stop('Parallel SAL: Inverse Transform')
 
-            !omp end parallel
+            !$omp end parallel
 
         endif
-        
+
 
         call mpas_timer_stop('SAL Calculation')
 
@@ -483,7 +483,7 @@ contains
 !> \author  Kristin Barton
 !> \date    August 2020
 !> \details
-!>  This routine initializes the ocean self-attraction and loading module 
+!>  This routine initializes the ocean self-attraction and loading module
 !>  and variables.
 !
 !-----------------------------------------------------------------------
@@ -492,15 +492,15 @@ contains
 
         type (domain_type), intent(inout) :: domain
         integer, intent(out) :: err !< Output: error flag
-       
+
         ! Config variables
         type (block_type), pointer :: block_ptr
         type (mpas_pool_type), pointer :: forcingPool, meshPool
-       
+
         ! NetCDF and weights file variables
         integer :: toNcId, toNsDimId, toRowId, toColId, toSId
         integer :: fromNcId, fromNsDimId, fromRowId, fromColId, fromSId
-        integer:: nMpasDimId, nGridDimId, toNsLen, fromNsLen 
+        integer:: nMpasDimId, nGridDimId, toNsLen, fromNsLen
         character (len = NF90_MAX_NAME) :: toNsName, fromNsName, nMpasName, nGridName
         integer, pointer :: n_s
         character(len=StrKIND) :: mpasToGridFile, gridToMpasFile
@@ -514,7 +514,7 @@ contains
         real(dp) :: eps_polar
         real(dp), allocatable :: Sh(:,:), Sh_init(:,:)
         integer, allocatable :: lvec(:)
-       
+
         ! MPI variables
         integer :: curProc
         integer, dimension(:), pointer :: indexToCellID
@@ -531,11 +531,11 @@ contains
 
         real(kind=RKIND) :: d
         real(kind=RKIND) :: trans_start, trans_width
-        
+
         call mpas_timer_start('SAL Init')
 
         err = 0
-        
+
         selfAttractionLoadingOn= .false.
         if (config_use_self_attraction_loading) then
             selfAttractionLoadingOn = .true.
@@ -543,7 +543,7 @@ contains
             call mpas_timer_stop('SAL Init')
             return
         endif
-   
+
         call mpas_pool_get_config(ocnConfigs, 'config_mpas_to_grid_weights_file', config_mpas_to_grid_weights_file)
         call mpas_pool_get_config(ocnConfigs, 'config_grid_to_mpas_weights_file', config_grid_to_mpas_weights_file)
         call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_loading_compute_interval', config_self_attraction_loading_compute_interval)
@@ -557,7 +557,7 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll) 
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll)
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
           call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -596,20 +596,20 @@ contains
 #endif
 
             call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-    
+
             ! Begin MPI portion
             call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
             call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err)
-            
+
             if (curProc.eq.0) then
                 allocate(nCellsPerProc(nProcs))
                 allocate(nCellsDisplacement(nProcs))
             endif
-           
+
             ! Gather nCellsOwned
             call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
                              0, domain % dminfo % comm, err)
-           
+
             ! Set Displacement variable for GATHERV command
             if (curProc.eq.0) then
                 nCellsGlobal = sum(nCellsPerProc)
@@ -621,27 +621,27 @@ contains
                     enddo
                 endif
             endif
-    
+
             ! Gather indexToCellID
             call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
                     nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err)
-         
+
             ! SAL calculations only need to be initialized on process 1
             if (curProc.eq.0) then
                 ! Set variables for file locations
                 mpasToGridFile = trim(config_mpas_to_grid_weights_file)
                 gridToMpasFile = trim(config_grid_to_mpas_weights_file)
-    
+
                 ! Open netcdf weights files
                 call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId) ,err)
                 call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId) ,err)
-                
+
                 ! Get dimension ID
                 call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId) ,err)
                 call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId) ,err)
                 call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId) ,err)
                 call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId) ,err)
-                
+
                 ! Get Variable IDs
                 call check( nf90_inq_varid(toNcId, "row", toRowId) ,err)
                 call check( nf90_inq_varid(toNcId, "col", toColId) ,err)
@@ -649,13 +649,13 @@ contains
                 call check( nf90_inq_varid(fromNcId, "row", fromRowId) ,err)
                 call check( nf90_inq_varid(fromNcId, "col", fromColId) ,err)
                 call check( nf90_inq_varid(fromNcId, "S", fromSId) ,err)
-                
+
                 ! Get Dimension Length
                 call check( nf90_inquire_dimension(toNcId, toNsDimId, toNsName, toNsLen) ,err)
                 call check( nf90_inquire_dimension(fromNcId, fromNsDimId, fromNsName, fromNsLen) ,err)
                 call check( nf90_inquire_dimension(toNcId, nMpasDimId, nMpasName, nMpas) ,err)
                 call check( nf90_inquire_dimension(fromNcId, nGridDimId, nGridName, nGrid) ,err)
-                
+
                 ! Allocate matrices to read data into
                 allocate ( toRowValues (toNsLen) )
                 allocate ( toColValues (toNsLen) )
@@ -663,7 +663,7 @@ contains
                 allocate ( fromRowValues (fromNsLen) )
                 allocate ( fromColValues (fromNsLen) )
                 allocate ( fromSValues (fromNsLen) )
-                
+
                 ! Retrieve data
                 call check( nf90_get_var(toNcId, toColId, toColValues(:) ) ,err)
                 call check( nf90_get_var(toNcId, toRowId, toRowValues(:) ) ,err)
@@ -671,7 +671,7 @@ contains
                 call check( nf90_get_var(fromNcId, fromColId, fromColValues(:) ) ,err)
                 call check( nf90_get_var(fromNcId, fromRowId, fromRowValues(:) ) ,err)
                 call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ) ,err)
-                
+
                 ! Initialize SHTns routine
                 !lmax = nlat-1
                 lmax = int(nlat/2)-1
@@ -688,14 +688,14 @@ contains
                 call c_f_pointer(cptr=shtns%ct, fptr=cosTheta, shape=[shtns%nlat])
                 call c_f_pointer(cptr=shtns%st, fptr=sinTheta, shape=[shtns%nlat])
                 allocate( Slm(1:shtns%nlm), LoveScaling(1:shtns%nlm), lvec(1:shtns%nlm) )
-                
+
                 ! List l values in lvec (for use in reading load Love numbers)
                 lvec = 0
                 do ilm = 1,shtns%nlm
                     l = shtns_lm2l(shtns_c, ilm)
                     lvec(ilm) = l
                 enddo
-                
+
                 call getloadLoveNums(shtns%nlm, lvec, LoveScaling)
 #endif
             endif
@@ -703,14 +703,14 @@ contains
         else
 
             allocate(pmn(nCellsAll),pmnm1(nCellsAll),pmnm2(nCellsAll))
-            
+
             nOrder = config_parallel_self_attraction_loading_order
             lmax = (nOrder+1)*(nOrder+2)/2
             allocate(Snm_local(2*lmax),Snm(2*lmax))
             allocate(SnmRe_local(lmax),SnmRe(lmax))
             allocate(SnmIm_local(lmax),SnmIm(lmax))
-     
-            ! Compute recurrence relationship coefficients 
+
+            ! Compute recurrence relationship coefficients
             allocate(aRecurrenceCoeff(nOrder+1,nOrder+1))
             allocate(bRecurrenceCoeff(nOrder+1,nOrder+1))
             do m = 0,nOrder
@@ -718,10 +718,10 @@ contains
                     aRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n-1)*(2*n+1),RKIND) &
                                               /      real((n-m)*(n+m),RKIND))
                     bRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n+1)*(n+m-1)*(n-m-1),RKIND) &
-                                              /      real((n-m)*(n+m)*(2*n-3),RKIND)) 
+                                              /      real((n-m)*(n+m)*(2*n-3),RKIND))
                 enddo
             enddo
-   
+
             ! Precompute complex exponential factors
             allocate(complexFactorRe(nCellsAll,nOrder+1),complexExpRe(nCellsAll,nOrder+1))
             allocate(complexFactorIm(nCellsAll,nOrder+1),complexExpIm(nCellsAll,nOrder+1))
@@ -733,13 +733,13 @@ contains
                     complexFactorIm(iCell,m+1) = complexExpIm(iCell,m+1) * areaCell(iCell)/sphere_radius**2
                 enddo
             enddo
-           
+
             ! Get SAL scaling factors
             allocate(lvec(lmax))
             allocate(LoveScaling(lmax))
             call getloadLoveNums(nOrder, lvec, LoveScaling)
 
-            ! Pre-compute sin and cos of latCell (co-latitude) values 
+            ! Pre-compute sin and cos of latCell (co-latitude) values
             allocate(sinLatCell(nCellsAll), cosLatCell(nCellsAll))
             do iCell = 1,nCellsAll
                 sinLatCell(iCell) = sin(0.5_RKIND*pii-latCell(iCell))
@@ -786,7 +786,7 @@ contains
     subroutine check(status,err) !{{{
         integer, intent ( in) :: status
         integer, intent(inout) :: err
-        
+
         if(status /= nf90_noerr) then
             err = 1
         end if
@@ -811,10 +811,10 @@ contains
         real (kind=RKIND), dimension(:) :: sValues, dataOut, dataIn
         real (kind=RKIND) :: rhs = 0
         integer :: n_S, n, nRow, nCol
-        
+
         n_S = size(sValues)
         n = 1
-        
+
         do while (n .LE. n_S)
             nRow = rowValues(n)
             do while ( rowValues(n) .EQ. nRow )
@@ -836,14 +836,14 @@ contains
 !> \author  Kristin Barton
 !> \date    February 2021
 !> \details
-!>  Modified by Kristin Barton from routine Written by K. Quinn (March 
-!>     2010) and modifed by M. Schindelegger (May 2017) 
+!>  Modified by Kristin Barton from routine Written by K. Quinn (March
+!>     2010) and modifed by M. Schindelegger (May 2017)
 !> 	This program contains load Love numbers Wang et al. (2012):
 !>  https://www.sciencedirect.com/science/article/pii/S0098300412002245
 !>      Note:  these load love number are in the CM reference frame,
 !>      i.e. center of mass of total Earth system (solid+hydro+atmos).
 !>      To convert to other reference frames, see Blewitt, JGR, 2003,
-!>      https://doi.org/10.1029/2002JB002082 
+!>      https://doi.org/10.1029/2002JB002082
 !>      For CE (center of mass solid Earth), ke0 = 0, he1 = hm1 + 1,
 !>      le1 = lm1 + 1, ke1 = km1 + 1.  For CF (center of figure ~ CE, within 2%),
 !>      kf0 = 0, hf1 = 2/3(hm1 - lm1), lf1 = -1/3(hm1 - lm1),
@@ -2359,20 +2359,20 @@ contains
 !> \author  Steven Brus
 !> \date    July 2021
 !> \details
-!>  This routine computes the associated Legendre polyonials at each cell 
+!>  This routine computes the associated Legendre polyonials at each cell
 !>  center.
 !>  For n=m, output array is pmnm2; pmnm1 and pmn are not required
 !>  For n=m+1, output array is pmnm1; only pmnm2 is required
 !>  For n>=m+2, output array is pmn; pmnm2 and pmnm1 are required
 !>  The recurrence coefficients, aRecurrenceCoeff and bRecurrenceCoeff,
 !>  and the cos/sin of the cell center latatides, cosLatCell and sinLatCell,
-!>  are precomputed in ocn_vel_self_attraction_loading_init 
+!>  are precomputed in ocn_vel_self_attraction_loading_init
 !
 !-----------------------------------------------------------------------
 
     subroutine associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn) !{{{
 
-   
+
         integer, intent(in) :: n
         integer, intent(in) :: m
         integer, intent(in) :: startIdx
@@ -2415,13 +2415,13 @@ contains
 
 !***********************************************************************
 !
-!  function SHOrderDegreeToIndex 
+!  function SHOrderDegreeToIndex
 !
-!> \brief   Compute array index from shperical order n and degree m 
+!> \brief   Compute array index from shperical order n and degree m
 !> \author  Steven Brus
 !> \date    September 2021
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
