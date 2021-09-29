@@ -9,9 +9,9 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
 
 # Add source files
-set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
 if (NOT SCREAM_AUTOTESTER) # TODO: This test should be reinstated once the homme+physics test is fixed.
-  CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}" EXE_ARGS "< namelist.nl" LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
+  CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}"
+                 LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 endif()
 
 # Copy yaml input file to run directory
