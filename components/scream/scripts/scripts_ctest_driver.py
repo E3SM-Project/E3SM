@@ -54,7 +54,7 @@ class ScriptsCtestDriver(object):
     ###############################################################################
     def generate_ctest_config(self, extra_configs):
     ###############################################################################
-        result = "CTEST_PARALLEL_LEVEL=1 CIME_MACHINE={} ".format(self._machine)
+        result = "CIME_MACHINE={} ".format(self._machine)
 
         result += "ctest -j1 -V --output-on-failure "
 

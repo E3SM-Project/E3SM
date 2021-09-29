@@ -22,12 +22,8 @@ if (CONFIG_ERROR_CODE)
   set (TEST_FAILS TRUE)
 else ()
 
-  # Need this code so that build errors don't get buried
-  if (DEFINED ENV{CTEST_PARALLEL_LEVEL})
-    ctest_test(PARALLEL_LEVEL $ENV{CTEST_PARALLEL_LEVEL} RETURN_VALUE TEST_ERROR_CODE)
-  else()
-    ctest_test(RETURN_VALUE TEST_ERROR_CODE)
-  endif()
+  ctest_test(RETURN_VALUE TEST_ERROR_CODE)
+
   if (TEST_ERROR_CODE)
     set(TEST_FAILS TRUE)
   endif()
