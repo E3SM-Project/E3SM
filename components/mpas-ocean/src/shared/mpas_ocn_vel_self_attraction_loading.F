@@ -10,7 +10,7 @@
 !  ocn_vel_self_attraction_loading
 !
 !> \brief MPAS ocean module
-!> \author Kristin Barton
+!> \author Kristin Barton and Steven Brus
 !> \date   August 2020
 !> \details
 !>  This module contains routines for the tidal potential forcing.
@@ -124,7 +124,7 @@ contains
 !  routine ocn_compute_self_attraction_loading
 !
 !> \brief   Computes self-attraction and loading
-!> \author  Kristin Barton
+!> \author  Kristin Barton and Steven Brus
 !> \date    August 2020
 !> \details
 !>  This routine computes the sea surface height perturbation due to
@@ -244,7 +244,6 @@ contains
             endif
 
             ! Scatter back to ssh_sal
-    !!mrp check nCellsAll on next line
             call mpas_timer_start('Serial SAL: Scatter')
             call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
                         ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err)
@@ -2417,7 +2416,7 @@ contains
 !
 !  function SHOrderDegreeToIndex
 !
-!> \brief   Compute array index from shperical order n and degree m
+!> \brief   Compute array index from spherical order n and degree m
 !> \author  Steven Brus
 !> \date    September 2021
 !> \details
