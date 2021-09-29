@@ -1254,6 +1254,12 @@ contains
     integer, parameter :: &
          nit_max = 100     ! maximum number of Picard iterations
 
+    real(kind=dbl_kind), dimension(:), allocatable :: &
+         dTsf, &
+         dzTsn, &
+         dzTin, &
+         ferr
+
     lconverged = .false.
 
     ! prepare quantities for picard iteration
@@ -1278,6 +1284,11 @@ contains
     Tsf_prev  = Tsf
     zTsn_prev = zTsn
     zTin_prev = zTin
+
+    allocate(dTsf(nit_max))
+    allocate(dzTsn(nit_max))
+    allocate(dzTin(nit_max))
+    allocate(ferr(nit_max))
 
     ! picard iteration
     picard: do nit = 1, nit_max
@@ -1340,7 +1351,8 @@ contains
                                      fswint,               &
                                      einit,      dt,       &
                                      fcondtop,   fcondbot, &
-                                     fadvheat_nit)
+                                     fadvheat_nit,         &
+                                     dTsf(nit), dzTsn(nit), dzTin(nit), ferr(nit))
 
        if (lconverged) exit
 
@@ -1397,11 +1409,17 @@ contains
                                   qpond,    qocn,     &
                                   Spond,    sss,      &
                                   q,        dSdt,     &
-                                  w)
+                                  w,                  &
+                                  dTsf, dzTsn, dzTin, ferr)
        lstop = .true.
        stop_label = "picard_solver: Picard solver non-convergence"
 
     endif
+
+    deallocate(dTsf)
+    deallocate(dzTsn)
+    deallocate(dzTin)
+    deallocate(ferr)
 
   end subroutine picard_solver
 
@@ -1430,7 +1448,8 @@ contains
                                    qpond,    qocn,     &
                                    Spond,    sss,      &
                                    q,        dSdt,     &
-                                   w)
+                                   w,                  &
+                                   dTsf, dzTsn, dzTin, ferr)
 
     integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
@@ -1494,8 +1513,15 @@ contains
          fcondbot      , & ! downward cond flux at bottom surface (W m-2)
          fadvheat          ! flow of heat to ocean due to advection (W m-2)
 
+    real(kind=dbl_kind), dimension(:), intent(in) :: &
+         dTsf, &
+         dzTsn, &
+         dzTin, &
+         ferr
+
     integer :: &
-         k        ! vertical layer index
+         k, &        ! vertical layer index
+         nit
 
     character(len=char_len_long) :: &
          warning  ! warning message
@@ -1597,6 +1623,17 @@ contains
     write(warning,*)
     call add_warning(warning)
 
+    write(warning,*) "Convergence errors: max_nit: ", size(dTsf)
+    call add_warning(warning)
+    write(warning,*) "nit, dTsf(nit), dzTsn(nit), dzTin(nit), ferr(nit)"
+    call add_warning(warning)
+    do nit = 1, size(dTsf)
+       write(warning,*) nit, dTsf(nit), dzTsn(nit), dzTin(nit), ferr(nit)
+       call add_warning(warning)
+    enddo ! nit
+    write(warning,*)
+    call add_warning(warning)
+
     write(warning,*) "-------------------------------------"
     call add_warning(warning)
 
@@ -1617,7 +1654,8 @@ contains
                                       fswint,               &
                                       einit,      dt,       &
                                       fcondtop,   fcondbot, &
-                                      fadvheat)
+                                      fadvheat,             &
+                                      dTsf, dzTsn, dzTin, ferr)
 
     integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
@@ -1664,12 +1702,14 @@ contains
          fcondtop , & ! downward cond flux at top surface (W m-2)
          fcondbot     ! downward cond flux at bottom surface (W m-2)
 
-    real(kind=dbl_kind) :: &
+    real(kind=dbl_kind), intent(out) :: &
          ferr     , & ! energy flux error
-         efinal   , & ! initial total energy (J) at iteration
          dzTsn    , & ! change in snow temperature (C) between iterations
          dzTin    , & ! change in ice temperature (C) between iterations
          dTsf         ! change in surface temperature (C) between iterations
+
+    real(kind=dbl_kind) :: &
+         efinal       ! initial total energy (J) at iteration
 
     call picard_final(lsnow,        &
                       nilyr, nslyr, &
