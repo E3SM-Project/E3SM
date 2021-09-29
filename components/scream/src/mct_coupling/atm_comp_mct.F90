@@ -86,7 +86,7 @@ CONTAINS
     type(c_ptr) :: x2a_ptr, a2x_ptr
 
     ! TODO: read this from the namelist?
-    character(len=256)                :: yaml_fname = "data/scream_input.yaml"
+    character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c
     !-------------------------------------------------------------------------------
 
@@ -98,6 +98,7 @@ CONTAINS
          dom=dom_atm, &
          infodata=infodata)
     call seq_infodata_getData(infodata, atm_phase=phase)
+    call seq_infodata_PutData(infodata, atm_aero=.true.)
 
     if (phase > 1) RETURN
 

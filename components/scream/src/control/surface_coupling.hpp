@@ -67,7 +67,7 @@ public:
   void do_import ();
 
   // Export device fields from the AD to host fields in the component coupler
-  void do_export ();
+  void do_export (const bool skip_computed_fields = false);
 
   // Getters
   RepoState get_repo_state () const { return m_state; }
@@ -105,6 +105,11 @@ protected:
     // component (the layout would be something like (num_cols,2,num_levs), so the 1st
     // entry to import export would be at index num_levs.
     int col_offset;
+
+    // Boolean that dictates if the field should be skipped durring the initial export.
+    // This is useful for exported fields which require computation inside SCREAM, as
+    // the first export is done during initialization.
+    bool skip_initial_export;
 
     // Pointer to the scream field device memory
     ValueType*  data;

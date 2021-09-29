@@ -178,6 +178,12 @@ register_export (const std::string& fname,
     m_exports_fids.insert(dummy_field.get_header().get_identifier());
   }
 
+  // Fields which are computed inside SCREAM should skip the initial export
+  info.skip_initial_export = false;
+  if (fname == "precip_liq_surf") {
+    info.skip_initial_export = true;
+  }
+
   // Set cpl index
   info.cpl_idx = cpl_idx;
 
@@ -271,7 +277,7 @@ void SurfaceCoupling::do_import ()
   });
 }
 
-void SurfaceCoupling::do_export ()
+void SurfaceCoupling::do_export (const bool skip_computed_fields)
 {
   if (m_num_scream_exports==0) {
     return;
@@ -288,10 +294,10 @@ void SurfaceCoupling::do_export ()
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density"));
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
-    const auto qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
-    const auto T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
-    const auto p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
-    const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
+    const auto& qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
+    const auto& T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
+    const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
 
     const auto policy = policy_type (0, m_num_cols);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
@@ -314,9 +320,13 @@ void SurfaceCoupling::do_export ()
     const int ifield = i / num_cols;
     const int icol   = i % num_cols;
     const auto& info = scream_exports(ifield);
-
     const auto offset = icol*info.col_stride + info.col_offset;
-    cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
+
+    // during the initial export, some fields may need to be skipped
+    // since values have not been computed inside SCREAM at the time
+    if (!skip_computed_fields || !info.skip_initial_export) {
+      cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
+    }
   });
 
   // Deep copy fields from device to cpl host array

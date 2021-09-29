@@ -118,6 +118,7 @@ contains
     namelist /ctl_nl/test_case, &
       u_perturb,                &
       partmethod,               &         ! mesh partitioning method
+      cubed_sphere_map,         &
       coord_transform_method,   &
       vert_remap_q_alg,         &
       theta_advect_form,        &
@@ -373,6 +374,7 @@ contains
 
        write(iulog,*)"homme namelist: ne,np         = ",NE,np
        write(iulog,*)"homme namelist: partmethod    = ",PARTMETHOD
+       write(iulog,*)"homme namelist: cubed_sphere_map = ",cubed_sphere_map
        write(iulog,*)"homme namelist: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
 
        write(iulog,*)"homme namelist: theta_hydrostatic_mode = ",theta_hydrostatic_mode
