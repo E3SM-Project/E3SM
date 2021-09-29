@@ -56,6 +56,7 @@ module ocn_comp_mct
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
+   use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
@@ -199,6 +200,7 @@ contains
     character(len=StrKIND), pointer :: tempCharConfig
 
     logical, pointer :: config_use_ecosysTracers
+    logical, pointer :: config_use_CFCTracers
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
@@ -699,6 +701,14 @@ contains
         call mpas_timer_stop('io_ecosys')
     endif
 
+    ! read initial data required for CFC forcing
+    call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
+    if (config_use_CFCTracers) then
+        call mpas_timer_start('io_CFC',.false.)
+        call ocn_get_CFCData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_CFC')
+    endif
+
     ! read initial data required for monthly surface salinity restoring
     call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
                                                  config_use_activeTracers_surface_restoring)
@@ -875,6 +885,7 @@ contains
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
+      logical, pointer :: config_use_CFCTracers
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -985,6 +996,14 @@ contains
            call mpas_timer_start('io_ecosys',.false.)
            call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
            call mpas_timer_stop('io_ecosys')
+         endif
+
+         ! read next time level data required for CFC forcing
+         call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
+         if (config_use_CFCTracers) then
+           call mpas_timer_start('io_CFC',.false.)
+           call ocn_get_CFCData(domain % streamManager, domain, domain_ptr % clock, .false.)
+           call mpas_timer_stop('io_CFC')
          endif
 
          ! read next time level data required for monthly surface salinity restoring
@@ -1109,6 +1128,8 @@ contains
          if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain_ptr)
 
          if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
+
+         if (config_use_CFCTracers) call ocn_CFC_forcing_write_restart(domain_ptr)
 
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
              call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
@@ -1577,6 +1598,7 @@ contains
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers,  &
                        config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_use_CFCTracers,  &
                        config_remove_AIS_coupler_runoff, &
                        config_cvmix_kpp_use_theory_wave
 
@@ -1596,7 +1618,8 @@ contains
                                      ecosysAuxiliary,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
-                                     MacroMoleculesSeaIceCoupling
+                                     MacroMoleculesSeaIceCoupling,      &
+                                     CFCAuxiliary
 
    integer, pointer :: nCellsSolve
 
@@ -1657,6 +1680,7 @@ contains
                                                atmosphericPressure, iceFraction, &
                                                seaIcePressure, windSpeedSquared10m, &
                                                atmosphericCO2, atmosphericCO2_ALT_CO2,  &
+                                               windSpeedSquared10mCFC, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1722,6 +1746,7 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
    call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
 
@@ -1880,6 +1905,13 @@ contains
 
          iceFluxDMS => iceFluxDMSField % array
          iceFluxDMSP => iceFluxDMSPField % array
+      endif
+
+      ! CFC fields
+      if (config_use_CFCTracers) then
+         call mpas_pool_get_subpool(forcingPool, 'CFCAuxiliary', CFCAuxiliary)
+         call mpas_pool_get_field(CFCAuxiliary, 'windSpeedSquared10mCFC', windSpeedSquared10mField)
+         windSpeedSquared10mCFC => windSpeedSquared10mField % array
       endif
 
       if (config_remove_AIS_coupler_runoff) then
@@ -2112,6 +2144,13 @@ contains
            endif
          endif
 
+        ! CFC fields
+        if (config_use_CFCTracers) then
+           if ( windSpeedSquared10mField % isActive ) then
+              windSpeedSquared10mCFC(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
+           end if
+        end if
+
       end do
 
       block_ptr => block_ptr % next
@@ -2192,6 +2231,12 @@ contains
 
       call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMS', iceFluxDMSField)
       call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMSP', iceFluxDMSPField)
+   endif
+
+   ! CFC fields
+   if (config_use_CFCTracers) then
+      call mpas_pool_get_subpool(forcingPool, 'CFCAuxiliary', CFCAuxiliary)
+      call mpas_pool_get_field(CFCAuxiliary, 'windSpeedSquared10mCFC', windSpeedSquared10mField)
    endif
 
    if ( windStressMeridionalField % isActive ) then
@@ -2361,6 +2406,13 @@ contains
       if ( iceFluxDMSPField % isActive ) then
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
+   endif
+
+   ! CFC fields
+   if (config_use_CFCTracers .and. .not. config_use_ecosysTracers) then
+      if ( windSpeedSquared10mField % isActive ) then
+         call mpas_dmpar_exch_halo_field(windSpeedSquared10mField)
+      end if
    endif
 
    ! global sum of removed runoff
