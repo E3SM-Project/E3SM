@@ -5,6 +5,7 @@
 #include "KernelVariables.hpp"
 #include "HybridVCoord.hpp"
 #include "ColumnOps.hpp"
+#include "EquationOfState.hpp"
 #include "PhysicalConstants.hpp"
 
 #include "utilities/BfbUtils.hpp"
@@ -78,6 +79,23 @@ public:
       // Compute theta_ref
       theta_ref(ilev) = T0/theta_ref(ilev) + T1;
     });
+  }
+
+  KOKKOS_FUNCTION
+  void get_temperature (const KernelVariables& kv,
+                        const EquationOfState& eos,
+                        const bool use_moisture,
+                        const ExecViewUnmanaged<const Scalar[NUM_LEV]>& dp,
+                        const ExecViewUnmanaged<const Scalar[NUM_LEV]>& exner,
+                        const ExecViewUnmanaged<const Scalar[NUM_LEV]>& vtheta_dp,
+                        const ExecViewUnmanaged<const Scalar[NUM_LEV]>& qv,
+                        const ExecViewUnmanaged<Scalar[NUM_LEV]>& Rstar,
+                        const ExecViewUnmanaged<Scalar[NUM_LEV]>& T) const {
+    using namespace PhysicalConstants;
+    get_R_star(kv, use_moisture, qv, Rstar);
+    Kokkos::parallel_for(
+      Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+      [&] (const int k) { T(k) = Rgas * vtheta_dp(k) * exner(k) / (Rstar(k) * dp(k)); });
   }
 
 private:

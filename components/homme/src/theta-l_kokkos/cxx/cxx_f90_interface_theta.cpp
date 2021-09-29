@@ -11,6 +11,7 @@
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
+#include "ComposeTransport.hpp"
 #include "ForcingFunctor.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HommexxEnums.hpp"
@@ -40,15 +41,16 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
-                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode, const char** test_case)
+                               const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
+                               const int& dt_remap_factor, const int& dt_tracer_factor)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
   // options in the C++ build, we will remove some checks
-  Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3});
+  Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
   Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
-  Errors::check_option("init_simulation_params_c","use_semi_lagrangian_transport",use_semi_lagrangian_transport,{false});
+  Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0,12});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
@@ -68,6 +70,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     params.remap_alg = RemapAlg::PPM_FIXED_PARABOLA;
   } else if (remap_alg == 3) {
     params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
+  } else if (remap_alg == 10) {
+    params.remap_alg = RemapAlg::PPM_LIMITED_EXTRAP;
   }
 
   if (theta_adv_form==0) {
@@ -79,6 +83,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
+  params.dt_remap_factor               = dt_remap_factor;
+  params.dt_tracer_factor              = dt_tracer_factor;
   params.prescribed_wind               = prescribed_wind;
   params.state_frequency               = state_frequency;
   params.qsize                         = qsize;
@@ -94,7 +100,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.disable_diagnostics           = disable_diagnostics;
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
   params.use_cpstar                    = use_cpstar;
-  params.use_semi_lagrangian_transport = use_semi_lagrangian_transport;
+  params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   if (time_step_type==0) {
@@ -221,7 +227,7 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems, params.qsize);
+      tracers.fq = decltype(tracers.fq)("fq", num_elems);
     }
     HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
         elem_derived_FQ, num_elems);
@@ -254,7 +260,8 @@ void init_elements_c (const int& num_elems)
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv, /* alloc_gradphis = */ true);
+  e.init (num_elems, consthv, /* alloc_gradphis = */ true,
+          /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
@@ -324,7 +331,8 @@ void init_functors_c (const bool& allocate_buffer)
   // Some functors might have been previously created, so
   // use the create_if_not_there() function.
   auto& caar = c.create_if_not_there<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
-  auto& esf  = c.create_if_not_there<EulerStepFunctor>();
+  if (params.transport_alg == 0) c.create_if_not_there<EulerStepFunctor>();
+  else                           c.create_if_not_there<ComposeTransport>();
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff   = c.create_if_not_there<ForcingFunctor>();
   auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
@@ -338,8 +346,12 @@ void init_functors_c (const bool& allocate_buffer)
   if (caar.setup_needed()) {
     caar.setup(elems, tracers, ref_FE, hvcoord, sph_op);
   }
-  if (esf.setup_needed()) {
-    esf.setup();
+  if (params.transport_alg == 0) {
+    auto& esf = c.get<EulerStepFunctor>();
+    if (esf.setup_needed()) esf.setup();
+  } else {
+    auto& ct = c.get<ComposeTransport>();
+    if (ct.setup_needed()) ct.setup();
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -366,7 +378,10 @@ void init_functors_c (const bool& allocate_buffer)
     // Make the functor request their buffer to the buffers manager
     // Note: diagnostics also needs buffers
     fbm.request_size(caar.requested_buffer_size());
-    fbm.request_size(esf.requested_buffer_size());
+    if (params.transport_alg == 0)
+      fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
+    else
+      fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
     fbm.request_size(hvf.requested_buffer_size());
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
@@ -381,7 +396,10 @@ void init_functors_c (const bool& allocate_buffer)
   }
 
   caar.init_buffers(fbm);
-  esf.init_buffers(fbm);
+  if (params.transport_alg == 0)
+    Context::singleton().get<EulerStepFunctor>().init_buffers(fbm);
+  else
+    Context::singleton().get<ComposeTransport>().init_buffers(fbm);
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
@@ -396,15 +414,16 @@ void init_elements_2d_c (const int& ie,
                          CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                          CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv,
-                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
+                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart,
+                         double* sphere_cart_vec, double* sphere_latlon_vec)
 {
   auto& c = Context::singleton();
   Elements& e = c.get<Elements> ();
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,
+                             vec_sph2cart,consthv,sphere_cart_vec,sphere_latlon_vec);
 }
 
 void init_geopotential_c (const int& ie,
@@ -518,10 +537,16 @@ void init_boundary_exchanges_c ()
     bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
   }
 
-  // Euler BEs
-  auto& esf = c.get<EulerStepFunctor>();
-  esf.reset(params);
-  esf.init_boundary_exchanges();
+  if (params.transport_alg == 0) {
+    // Euler BEs
+    auto& esf = c.get<EulerStepFunctor>();
+    esf.reset(params);
+    esf.init_boundary_exchanges();
+  } else {
+    auto& ct = c.get<ComposeTransport>();
+    ct.reset(params);
+    ct.init_boundary_exchanges();
+  }
 
   // RK stages BE's
   auto& cf = c.get<CaarFunctor>();
