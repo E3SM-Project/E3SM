@@ -63,6 +63,12 @@ if [ $skip_testing -eq 0 ]; then
     if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
+  # Add a cuda-memcheck test for weaver for nightlies
+  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
+    ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
+  fi
+
   # scripts-tests is pretty expensive, so we limit this testing to mappy
   if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
