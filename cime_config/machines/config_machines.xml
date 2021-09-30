@@ -179,7 +179,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.20.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -332,7 +332,7 @@
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.20.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">perl5-extras</command>
       </modules>
 
