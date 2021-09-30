@@ -17,6 +17,7 @@ module seaice_column
   use mpas_timekeeping
   use mpas_timer
   use mpas_log, only: mpas_log_write
+  use mpas_io_units, only: mpas_new_unit, mpas_release_unit
 
   use seaice_error
 
@@ -183,6 +184,24 @@ module seaice_column
 
   ! warnings string kind
   integer, parameter :: strKINDWarnings = char_len_long
+
+  interface copy_field
+     module procedure copy_field_logical_0D
+     module procedure copy_field_integer_0D
+     module procedure copy_field_real_0D
+     module procedure copy_field_real_1D
+     module procedure copy_field_real_2D
+     module procedure copy_field_real_3D
+  end interface copy_field
+
+  interface deallocate_field
+     module procedure deallocate_field_logical_0D
+     module procedure deallocate_field_integer_0D
+     module procedure deallocate_field_real_0D
+     module procedure deallocate_field_real_1D
+     module procedure deallocate_field_real_2D
+     module procedure deallocate_field_real_3D
+  end interface deallocate_field
 
 contains
 
@@ -1256,6 +1275,150 @@ contains
 
   end subroutine seaice_column_postdynamics_time_integration
 
+  subroutine copy_field_logical_0D(arrayOut, arrayIn)
+
+    logical, intent(inout) :: &
+         arrayOut
+
+    logical, intent(in) :: &
+         arrayIn
+
+    arrayOut = arrayIn
+
+  end subroutine copy_field_logical_0D
+
+  subroutine copy_field_integer_0D(arrayOut, arrayIn)
+
+    integer, intent(inout) :: &
+         arrayOut
+
+    integer, intent(in) :: &
+         arrayIn
+
+    arrayOut = arrayIn
+
+  end subroutine copy_field_integer_0D
+
+  subroutine copy_field_real_0D(arrayOut, arrayIn)
+
+    real(kind=RKIND), intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), intent(in) :: &
+         arrayIn
+
+    arrayOut = arrayIn
+
+  end subroutine copy_field_real_0D
+
+  subroutine copy_field_real_1D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         arrayIn
+
+    allocate(arrayOut(size(arrayIn,1)))
+
+    arrayOut(:) = arrayIn(:)
+
+  end subroutine copy_field_real_1D
+
+  subroutine copy_field_real_2D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         arrayIn
+
+    allocate(arrayOut(size(arrayIn,1), size(arrayIn,2)))
+
+    arrayOut(:,:) = arrayIn(:,:)
+
+  end subroutine copy_field_real_2D
+
+  subroutine copy_field_real_3D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:,:,:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         arrayIn
+
+    allocate(arrayOut(size(arrayIn,1), size(arrayIn,2), size(arrayIn,3)))
+
+    arrayOut(:,:,:) = arrayIn(:,:,:)
+
+  end subroutine copy_field_real_3D
+
+  subroutine deallocate_field_logical_0D(arrayOut, arrayIn)
+
+    logical, intent(inout) :: &
+         arrayOut
+
+    logical, intent(in) :: &
+         arrayIn
+
+  end subroutine deallocate_field_logical_0D
+
+  subroutine deallocate_field_integer_0D(arrayOut, arrayIn)
+
+    integer, intent(inout) :: &
+         arrayOut
+
+    integer, intent(in) :: &
+         arrayIn
+
+  end subroutine deallocate_field_integer_0D
+
+  subroutine deallocate_field_real_0D(arrayOut, arrayIn)
+
+    real(kind=RKIND), intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), intent(in) :: &
+         arrayIn
+
+  end subroutine deallocate_field_real_0D
+
+  subroutine deallocate_field_real_1D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         arrayIn
+
+    deallocate(arrayOut)
+
+  end subroutine deallocate_field_real_1D
+
+  subroutine deallocate_field_real_2D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         arrayIn
+
+    deallocate(arrayOut)
+
+  end subroutine deallocate_field_real_2D
+
+  subroutine deallocate_field_real_3D(arrayOut, arrayIn)
+
+    real(kind=RKIND), dimension(:,:,:), allocatable, intent(inout) :: &
+         arrayOut
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         arrayIn
+
+    deallocate(arrayOut)
+
+  end subroutine deallocate_field_real_3D
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  column_vertical_thermodynamics
@@ -1482,6 +1645,193 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
+
+    !------------------------------------------------------------------------------------------
+    ! diag
+    !------------------------------------------------------------------------------------------
+    character(len=strKIND) :: &
+         inputWriteReadType = "write"
+
+    logical :: &
+         lwriteinputs, &
+         lreadinputs
+
+    character(len=strKIND) :: &
+         filenameDiag
+
+    integer :: &
+         unitDiag
+
+    ! configs
+    real(kind=RKIND) :: &
+         config_dtDiag
+
+    logical :: &
+         config_use_aerosolsDiag, &
+         config_use_prescribed_iceDiag, &
+         config_use_snow_liquid_pondsDiag, &
+         config_use_high_frequency_couplingDiag
+
+    ! dimensions
+    integer :: &
+         nCellsSolveDiag, &
+         nCategoriesDiag, &
+         nIceLayersDiag, &
+         nSnowLayersDiag, &
+         nAerosolsDiag
+
+    ! variables
+    real(kind=RKIND), dimension(:), allocatable :: &
+         latCellDiag, &
+         iceAreaCellInitialDiag, &
+         iceAreaCellDiag, &
+         iceVolumeCellDiag, &
+         snowVolumeCellDiag, &
+         uVelocityDiag, &
+         vvelocityDiag, &
+         uVelocityCellDiag, &
+         vvelocityCellDiag, &
+         uAirVelocityDiag, &
+         vAirVelocityDiag, &
+         windSpeedDiag, &
+         airLevelHeightDiag, &
+         airSpecificHumidityDiag, &
+         airDensityDiag, &
+         airTemperatureDiag, &
+         atmosReferenceTemperature2mDiag, &
+         atmosReferenceHumidity2mDiag, &
+         atmosReferenceSpeed10mDiag, &
+         airOceanDragCoefficientRatioDiag, &
+         oceanDragCoefficientDiag, &
+         oceanDragCoefficientSkinDiag, &
+         oceanDragCoefficientFloeDiag, &
+         oceanDragCoefficientKeelDiag, &
+         airDragCoefficientDiag, &
+         airDragCoefficientSkinDiag, &
+         airDragCoefficientFloeDiag, &
+         airDragCoefficientPondDiag, &
+         airDragCoefficientRidgeDiag, &
+         dragFreeboardDiag, &
+         dragIceSnowDraftDiag, &
+         dragRidgeHeightDiag, &
+         dragRidgeSeparationDiag, &
+         dragKeelDepthDiag, &
+         dragKeelSeparationDiag, &
+         dragFloeLengthDiag, &
+         dragFloeSeparationDiag, &
+         airStressForcingUDiag, &
+         airStressForcingVDiag, &
+         airStressCellUDiag, &
+         airStressCellVDiag, &
+         airPotentialTemperatureDiag, &
+         seaSurfaceTemperatureDiag, &
+         seaSurfaceSalinityDiag, &
+         seaFreezingTemperatureDiag, &
+         oceanStressCellUDiag, &
+         oceanStressCellVDiag, &
+         freezingMeltingPotentialDiag, &
+         lateralIceMeltFractionDiag, &
+         snowfallRateDiag, &
+         rainfallRateDiag, &
+         pondFreshWaterFluxDiag, &
+         surfaceHeatFluxDiag, &
+         surfaceConductiveFluxDiag, &
+         absorbedShortwaveFluxDiag, &
+         longwaveUpDiag, &
+         longwaveDownDiag, &
+         solarZenithAngleCosineDiag, &
+         sensibleHeatFluxDiag, &
+         latentHeatFluxDiag, &
+         evaporativeWaterFluxDiag, &
+         oceanFreshWaterFluxDiag, &
+         oceanSaltFluxDiag, &
+         oceanHeatFluxDiag, &
+         oceanShortwaveFluxDiag, &
+         surfaceIceMeltDiag, &
+         basalIceMeltDiag, &
+         lateralIceMeltDiag, &
+         snowMeltDiag, &
+         congelationDiag, &
+         snowiceFormationDiag, &
+         frazilFormationDiag, &
+         meltOnsetDiag, &
+         freezeOnsetDiag, &
+         oceanHeatFluxIceBottomDiag, &
+         openWaterAreaDiag, &
+         snowLossToLeadsDiag, &
+         snowMeltMassCellDiag
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         iceAreaCategoryInitialDiag, &
+         iceVolumeCategoryInitialDiag, &
+         snowVolumeCategoryInitialDiag, &
+         surfaceShortwaveFluxDiag, &
+         interiorShortwaveFluxDiag, &
+         penetratingShortwaveFluxDiag, &
+         sensibleHeatFluxCategoryDiag, &
+         latentHeatFluxCategoryDiag, &
+         surfaceIceMeltCategoryDiag, &
+         basalIceMeltCategoryDiag, &
+         snowMeltCategoryDiag, &
+         congelationCategoryDiag, &
+         snowiceFormationCategoryDiag, &
+         atmosAerosolFluxDiag, &
+         oceanAerosolFluxDiag, &
+         pondSnowDepthDifferenceDiag, &
+         pondLidMeltFluxFractionDiag, &
+         surfaceHeatFluxCategoryDiag, &
+         surfaceConductiveFluxCategoryDiag, &
+         latentHeatFluxCoupleDiag, &
+         sensibleHeatFluxCoupleDiag, &
+         surfaceHeatFluxCoupleDiag, &
+         surfaceConductiveFluxCoupleDiag, &
+         snowThicknessChangeCategoryDiag, &
+         snowMeltMassCategoryDiag, &
+         snowRadiusInStandardRadiationSchemeCategoryDiag
+
+    real(kind=RKIND), dimension(:,:,:), allocatable :: &
+         iceAreaCategoryDiag, &
+         iceVolumeCategoryDiag, &
+         snowVolumeCategoryDiag, &
+         surfaceTemperatureDiag, &
+         levelIceAreaDiag, &
+         levelIceVolumeDiag, &
+         pondAreaDiag, &
+         pondDepthDiag, &
+         pondLidThicknessDiag, &
+         iceAgeDiag, &
+         firstYearIceAreaDiag, &
+         snowEnthalpyDiag, &
+         iceEnthalpyDiag, &
+         iceSalinityDiag, &
+         absorbedShortwaveIceLayerDiag, &
+         absorbedShortwaveSnowLayerDiag, &
+         snowScatteringAerosolDiag, &
+         snowBodyAerosolDiag, &
+         iceScatteringAerosolDiag, &
+         iceBodyAerosolDiag, &
+         snowIceMassDiag, &
+         snowLiquidMassDiag, &
+         snowGrainRadiusDiag
+
+    real(kind=RKIND), dimension(:,:,:), allocatable :: &
+         specificSnowAerosolDiag, &
+         specificIceAerosolDiag
+
+    logical :: &
+         northernHemisphereMaskDiag, &
+         abortFlagDiag
+
+    real(kind=RKIND) :: &
+         dayOfYearDiag
+
+    if (trim(inputWriteReadType) == "write") then
+       lwriteinputs = .true.
+       lreadinputs  = .false.
+    else if (trim(inputWriteReadType) == "read") then
+       lwriteinputs = .false.
+       lreadinputs  = .true.
+    endif
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1734,6 +2084,286 @@ contains
           else
              northernHemisphereMask = .false.
           endif
+
+          if (lwriteinputs) then
+
+             call copy_field(config_dtDiag, config_dt)
+             call copy_field(nCategoriesDiag, nCategories)
+             call copy_field(nIceLayersDiag, nIceLayers)
+             call copy_field(nSnowLayersDiag, nSnowLayers)
+             call copy_field(nAerosolsDiag, nAerosols)
+             call copy_field(openWaterAreaDiag, openWaterArea)
+             call copy_field(iceAreaCategoryInitialDiag, iceAreaCategoryInitial)
+             call copy_field(iceVolumeCategoryInitialDiag, iceVolumeCategoryInitial)
+             call copy_field(snowVolumeCategoryInitialDiag, snowVolumeCategoryInitial)
+             call copy_field(iceAreaCellDiag, iceAreaCell)
+             call copy_field(iceAreaCategoryDiag, iceAreaCategory)
+             call copy_field(iceVolumeCellDiag, iceVolumeCell)
+             call copy_field(iceVolumeCategoryDiag, iceVolumeCategory)
+             call copy_field(snowVolumeCellDiag, snowVolumeCell)
+             call copy_field(snowVolumeCategoryDiag, snowVolumeCategory)
+             call copy_field(uVelocityCellDiag, uVelocityCell)
+             call copy_field(vVelocityCellDiag, vVelocityCell)
+             call copy_field(surfaceTemperatureDiag, surfaceTemperature)
+             call copy_field(snowEnthalpyDiag, snowEnthalpy)
+             call copy_field(iceEnthalpyDiag, iceEnthalpy)
+             call copy_field(iceSalinityDiag, iceSalinity)
+             call copy_field(snowIceMassDiag, snowIceMass)
+             call copy_field(snowLiquidMassDiag, snowLiquidMass)
+             call copy_field(levelIceAreaDiag, levelIceArea)
+             call copy_field(levelIceVolumeDiag, levelIceVolume)
+             call copy_field(pondAreaDiag, pondArea)
+             call copy_field(pondDepthDiag, pondDepth)
+             call copy_field(pondLidThicknessDiag, pondLidThickness)
+             call copy_field(iceAgeDiag, iceAge)
+             call copy_field(firstYearIceAreaDiag, firstYearIceArea)
+             call copy_field(snowGrainRadiusDiag, snowGrainRadius)
+             call copy_field(config_use_snow_liquid_pondsDiag, config_use_snow_liquid_ponds)
+             call copy_field(specificSnowAerosolDiag, specificSnowAerosol)
+             call copy_field(specificIceAerosolDiag, specificIceAerosol)
+             call copy_field(uAirVelocityDiag, uAirVelocity)
+             call copy_field(vAirVelocityDiag, vAirVelocity)
+             call copy_field(windSpeedDiag, windSpeed)
+             call copy_field(airLevelHeightDiag, airLevelHeight)
+             call copy_field(airSpecificHumidityDiag, airSpecificHumidity)
+             call copy_field(airDensityDiag, airDensity)
+             call copy_field(airTemperatureDiag, airTemperature)
+             call copy_field(atmosReferenceTemperature2mDiag, atmosReferenceTemperature2m)
+             call copy_field(atmosReferenceHumidity2mDiag, atmosReferenceHumidity2m)
+             call copy_field(atmosReferenceSpeed10mDiag, atmosReferenceSpeed10m)
+             call copy_field(airOceanDragCoefficientRatioDiag, airOceanDragCoefficientRatio)
+             call copy_field(oceanDragCoefficientDiag, oceanDragCoefficient)
+             call copy_field(oceanDragCoefficientSkinDiag, oceanDragCoefficientSkin)
+             call copy_field(oceanDragCoefficientFloeDiag, oceanDragCoefficientFloe)
+             call copy_field(oceanDragCoefficientKeelDiag, oceanDragCoefficientKeel)
+             call copy_field(airDragCoefficientDiag, airDragCoefficient)
+             call copy_field(airDragCoefficientSkinDiag, airDragCoefficientSkin)
+             call copy_field(airDragCoefficientFloeDiag, airDragCoefficientFloe)
+             call copy_field(airDragCoefficientPondDiag, airDragCoefficientPond)
+             call copy_field(airDragCoefficientRidgeDiag, airDragCoefficientRidge)
+             call copy_field(dragFreeboardDiag, dragFreeboard)
+             call copy_field(dragIceSnowDraftDiag, dragIceSnowDraft)
+             call copy_field(dragRidgeHeightDiag, dragRidgeHeight)
+             call copy_field(dragRidgeSeparationDiag, dragRidgeSeparation)
+             call copy_field(dragKeelDepthDiag, dragKeelDepth)
+             call copy_field(dragKeelSeparationDiag, dragKeelSeparation)
+             call copy_field(dragFloeLengthDiag, dragFloeLength)
+             call copy_field(dragFloeSeparationDiag, dragFloeSeparation)
+             call copy_field(airStressForcingUDiag, airStressForcingU)
+             call copy_field(airStressForcingVDiag, airStressForcingV)
+             call copy_field(airStressCellUDiag, airStressCellU)
+             call copy_field(airStressCellVDiag, airStressCellV)
+             call copy_field(airPotentialTemperatureDiag, airPotentialTemperature)
+             call copy_field(seaSurfaceTemperatureDiag, seaSurfaceTemperature)
+             call copy_field(seaSurfaceSalinityDiag, seaSurfaceSalinity)
+             call copy_field(seaFreezingTemperatureDiag, seaFreezingTemperature)
+             call copy_field(oceanStressCellUDiag, oceanStressCellU)
+             call copy_field(oceanStressCellVDiag, oceanStressCellV)
+             call copy_field(oceanHeatFluxIceBottomDiag, oceanHeatFluxIceBottom)
+             call copy_field(freezingMeltingPotentialDiag, freezingMeltingPotential)
+             call copy_field(lateralIceMeltFractionDiag, lateralIceMeltFraction)
+             call copy_field(snowfallRateDiag, snowfallRate)
+             call copy_field(rainfallRateDiag, rainfallRate)
+             call copy_field(pondFreshWaterFluxDiag, pondFreshWaterFlux)
+             call copy_field(snowLossToLeadsDiag, snowLossToLeads)
+             call copy_field(surfaceHeatFluxDiag, surfaceHeatFlux)
+             call copy_field(surfaceHeatFluxCategoryDiag, surfaceHeatFluxCategory)
+             call copy_field(surfaceConductiveFluxDiag, surfaceConductiveFlux)
+             call copy_field(surfaceConductiveFluxCategoryDiag, surfaceConductiveFluxCategory)
+             call copy_field(surfaceShortwaveFluxDiag, surfaceShortwaveFlux)
+             call copy_field(interiorShortwaveFluxDiag, interiorShortwaveFlux)
+             call copy_field(penetratingShortwaveFluxDiag, penetratingShortwaveFlux)
+             call copy_field(absorbedShortwaveFluxDiag, absorbedShortwaveFlux)
+             call copy_field(longwaveUpDiag, longwaveUp)
+             call copy_field(absorbedShortwaveSnowLayerDiag, absorbedShortwaveSnowLayer)
+             call copy_field(absorbedShortwaveIceLayerDiag, absorbedShortwaveIceLayer)
+             call copy_field(longwaveDownDiag, longwaveDown)
+             call copy_field(solarZenithAngleCosineDiag, solarZenithAngleCosine)
+             call copy_field(sensibleHeatFluxDiag, sensibleHeatFlux)
+             call copy_field(sensibleHeatFluxCategoryDiag, sensibleHeatFluxCategory)
+             call copy_field(latentHeatFluxDiag, latentHeatFlux)
+             call copy_field(latentHeatFluxCategoryDiag, latentHeatFluxCategory)
+             call copy_field(evaporativeWaterFluxDiag, evaporativeWaterFlux)
+             call copy_field(oceanFreshWaterFluxDiag, oceanFreshWaterFlux)
+             call copy_field(oceanSaltFluxDiag, oceanSaltFlux)
+             call copy_field(oceanHeatFluxDiag, oceanHeatFlux)
+             call copy_field(oceanShortwaveFluxDiag, oceanShortwaveFlux)
+             call copy_field(latentHeatFluxCoupleDiag, latentHeatFluxCouple)
+             call copy_field(sensibleHeatFluxCoupleDiag, sensibleHeatFluxCouple)
+             call copy_field(surfaceHeatFluxCoupleDiag, surfaceHeatFluxCouple)
+             call copy_field(surfaceConductiveFluxCoupleDiag, surfaceConductiveFluxCouple)
+             call copy_field(atmosAerosolFluxDiag, atmosAerosolFlux)
+             call copy_field(oceanAerosolFluxDiag, oceanAerosolFlux)
+             call copy_field(pondSnowDepthDifferenceDiag, pondSnowDepthDifference)
+             call copy_field(pondLidMeltFluxFractionDiag, pondLidMeltFluxFraction)
+             call copy_field(surfaceIceMeltDiag, surfaceIceMelt)
+             call copy_field(surfaceIceMeltCategoryDiag, surfaceIceMeltCategory)
+             call copy_field(basalIceMeltDiag, basalIceMelt)
+             call copy_field(basalIceMeltCategoryDiag, basalIceMeltCategory)
+             call copy_field(lateralIceMeltDiag, lateralIceMelt)
+             call copy_field(snowMeltDiag, snowMelt)
+             call copy_field(snowMeltCategoryDiag, snowMeltCategory)
+             call copy_field(snowMeltMassCellDiag, snowMeltMassCell)
+             call copy_field(snowMeltMassCategoryDiag, snowMeltMassCategory)
+             call copy_field(congelationDiag, congelation)
+             call copy_field(congelationCategoryDiag, congelationCategory)
+             call copy_field(snowiceFormationDiag, snowiceFormation)
+             call copy_field(snowiceFormationCategoryDiag, snowiceFormationCategory)
+             call copy_field(snowThicknessChangeCategoryDiag, snowThicknessChangeCategory)
+             call copy_field(frazilFormationDiag, frazilFormation)
+             call copy_field(northernHemisphereMaskDiag, northernHemisphereMask)
+             call copy_field(meltOnsetDiag, meltOnset)
+             call copy_field(freezeOnsetDiag, freezeOnset)
+             call copy_field(dayOfYearDiag, dayOfYear)
+             call copy_field(config_use_prescribed_iceDiag, config_use_prescribed_ice)
+
+          endif ! lwriteinputs
+
+          if (lreadinputs) then
+
+             call mpas_log_write("Read input for step_therm1");
+
+             filenameDiag = "step_therm1_diag_000000_000002.bin"
+
+             call mpas_new_unit(unitDiag, .true.)
+
+             open(unitDiag, file=filenameDiag, form='unformatted')
+
+             read(unitDiag) config_dt
+             read(unitDiag) nCategories
+             read(unitDiag) nIceLayers
+             read(unitDiag) nSnowLayers
+             read(unitDiag) nAerosols
+             read(unitDiag) openWaterArea
+             read(unitDiag) iceAreaCategoryInitial
+             read(unitDiag) iceVolumeCategoryInitial
+             read(unitDiag) snowVolumeCategoryInitial
+             read(unitDiag) iceAreaCell
+             read(unitDiag) iceAreaCategory
+             read(unitDiag) iceVolumeCell
+             read(unitDiag) iceVolumeCategory
+             read(unitDiag) snowVolumeCell
+             read(unitDiag) snowVolumeCategory
+             read(unitDiag) uVelocityCell
+             read(unitDiag) vVelocityCell
+             read(unitDiag) surfaceTemperature
+             read(unitDiag) snowEnthalpy
+             read(unitDiag) iceEnthalpy
+             read(unitDiag) iceSalinity
+             read(unitDiag) snowIceMass
+             read(unitDiag) snowLiquidMass
+             read(unitDiag) levelIceArea
+             read(unitDiag) levelIceVolume
+             read(unitDiag) pondArea
+             read(unitDiag) pondDepth
+             read(unitDiag) pondLidThickness
+             read(unitDiag) iceAge
+             read(unitDiag) firstYearIceArea
+             read(unitDiag) snowGrainRadius
+             read(unitDiag) config_use_snow_liquid_ponds
+             read(unitDiag) specificSnowAerosol
+             read(unitDiag) specificIceAerosol
+             read(unitDiag) uAirVelocity
+             read(unitDiag) vAirVelocity
+             read(unitDiag) windSpeed
+             read(unitDiag) airLevelHeight
+             read(unitDiag) airSpecificHumidity
+             read(unitDiag) airDensity
+             read(unitDiag) airTemperature
+             read(unitDiag) atmosReferenceTemperature2m
+             read(unitDiag) atmosReferenceHumidity2m
+             read(unitDiag) atmosReferenceSpeed10m
+             read(unitDiag) airOceanDragCoefficientRatio
+             read(unitDiag) oceanDragCoefficient
+             read(unitDiag) oceanDragCoefficientSkin
+             read(unitDiag) oceanDragCoefficientFloe
+             read(unitDiag) oceanDragCoefficientKeel
+             read(unitDiag) airDragCoefficient
+             read(unitDiag) airDragCoefficientSkin
+             read(unitDiag) airDragCoefficientFloe
+             read(unitDiag) airDragCoefficientPond
+             read(unitDiag) airDragCoefficientRidge
+             read(unitDiag) dragFreeboard
+             read(unitDiag) dragIceSnowDraft
+             read(unitDiag) dragRidgeHeight
+             read(unitDiag) dragRidgeSeparation
+             read(unitDiag) dragKeelDepth
+             read(unitDiag) dragKeelSeparation
+             read(unitDiag) dragFloeLength
+             read(unitDiag) dragFloeSeparation
+             read(unitDiag) airStressForcingU
+             read(unitDiag) airStressForcingV
+             read(unitDiag) airStressCellU
+             read(unitDiag) airStressCellV
+             read(unitDiag) airPotentialTemperature
+             read(unitDiag) seaSurfaceTemperature
+             read(unitDiag) seaSurfaceSalinity
+             read(unitDiag) seaFreezingTemperature
+             read(unitDiag) oceanStressCellU
+             read(unitDiag) oceanStressCellV
+             read(unitDiag) oceanHeatFluxIceBottom
+             read(unitDiag) freezingMeltingPotential
+             read(unitDiag) lateralIceMeltFraction
+             read(unitDiag) snowfallRate
+             read(unitDiag) rainfallRate
+             read(unitDiag) pondFreshWaterFlux
+             read(unitDiag) snowLossToLeads
+             read(unitDiag) surfaceHeatFlux
+             read(unitDiag) surfaceHeatFluxCategory
+             read(unitDiag) surfaceConductiveFlux
+             read(unitDiag) surfaceConductiveFluxCategory
+             read(unitDiag) surfaceShortwaveFlux
+             read(unitDiag) interiorShortwaveFlux
+             read(unitDiag) penetratingShortwaveFlux
+             read(unitDiag) absorbedShortwaveFlux
+             read(unitDiag) longwaveUp
+             read(unitDiag) absorbedShortwaveSnowLayer
+             read(unitDiag) absorbedShortwaveIceLayer
+             read(unitDiag) longwaveDown
+             read(unitDiag) solarZenithAngleCosine
+             read(unitDiag) sensibleHeatFlux
+             read(unitDiag) sensibleHeatFluxCategory
+             read(unitDiag) latentHeatFlux
+             read(unitDiag) latentHeatFluxCategory
+             read(unitDiag) evaporativeWaterFlux
+             read(unitDiag) oceanFreshWaterFlux
+             read(unitDiag) oceanSaltFlux
+             read(unitDiag) oceanHeatFlux
+             read(unitDiag) oceanShortwaveFlux
+             read(unitDiag) latentHeatFluxCouple
+             read(unitDiag) sensibleHeatFluxCouple
+             read(unitDiag) surfaceHeatFluxCouple
+             read(unitDiag) surfaceConductiveFluxCouple
+             read(unitDiag) atmosAerosolFlux
+             read(unitDiag) oceanAerosolFlux
+             read(unitDiag) pondSnowDepthDifference
+             read(unitDiag) pondLidMeltFluxFraction
+             read(unitDiag) surfaceIceMelt
+             read(unitDiag) surfaceIceMeltCategory
+             read(unitDiag) basalIceMelt
+             read(unitDiag) basalIceMeltCategory
+             read(unitDiag) lateralIceMelt
+             read(unitDiag) snowMelt
+             read(unitDiag) snowMeltCategory
+             read(unitDiag) snowMeltMassCell
+             read(unitDiag) snowMeltMassCategory
+             read(unitDiag) congelation
+             read(unitDiag) congelationCategory
+             read(unitDiag) snowiceFormation
+             read(unitDiag) snowiceFormationCategory
+             read(unitDiag) snowThicknessChangeCategory
+             read(unitDiag) frazilFormation
+             read(unitDiag) northernHemisphereMask
+             read(unitDiag) meltOnset
+             read(unitDiag) freezeOnset
+             read(unitDiag) dayOfYear
+             read(unitDiag) config_use_prescribed_ice
+
+             close(unitDiag)
+
+             call mpas_release_unit(unitDiag)
+
+          endif ! lreadinputs
 
           call colpkg_clear_warnings()
           call colpkg_step_therm1(&
@@ -2029,7 +2659,290 @@ contains
              call mpas_log_write("freezeOnset: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezeOnset(iCell)/))
              call mpas_log_write("dayOfYear: $r", messageType=MPAS_LOG_ERR, realArgs=(/dayOfYear/))
              call mpas_log_write("config_use_prescribed_ice: $l", messageType=MPAS_LOG_ERR, logicArgs=(/config_use_prescribed_ice/))
-          endif
+
+             if (lwriteinputs) then
+
+                call mpas_log_write("Write input for step_therm1");
+
+                write(filenameDiag, fmt='(a, i6.6, a, i6.6, a)') "step_therm1_diag_", domain % dminfo % my_proc_id, "_", iCell, ".bin"
+
+                call mpas_new_unit(unitDiag, .true.)
+
+                open(unitDiag, file=filenameDiag, form="unformatted")
+
+                write(unitDiag) config_dtDiag
+                write(unitDiag) nCategoriesDiag
+                write(unitDiag) nIceLayersDiag
+                write(unitDiag) nSnowLayersDiag
+                write(unitDiag) nAerosolsDiag
+                write(unitDiag) openWaterAreaDiag
+                write(unitDiag) iceAreaCategoryInitialDiag
+                write(unitDiag) iceVolumeCategoryInitialDiag
+                write(unitDiag) snowVolumeCategoryInitialDiag
+                write(unitDiag) iceAreaCellDiag
+                write(unitDiag) iceAreaCategoryDiag
+                write(unitDiag) iceVolumeCellDiag
+                write(unitDiag) iceVolumeCategoryDiag
+                write(unitDiag) snowVolumeCellDiag
+                write(unitDiag) snowVolumeCategoryDiag
+                write(unitDiag) uVelocityCellDiag
+                write(unitDiag) vVelocityCellDiag
+                write(unitDiag) surfaceTemperatureDiag
+                write(unitDiag) snowEnthalpyDiag
+                write(unitDiag) iceEnthalpyDiag
+                write(unitDiag) iceSalinityDiag
+                write(unitDiag) snowIceMassDiag
+                write(unitDiag) snowLiquidMassDiag
+                write(unitDiag) levelIceAreaDiag
+                write(unitDiag) levelIceVolumeDiag
+                write(unitDiag) pondAreaDiag
+                write(unitDiag) pondDepthDiag
+                write(unitDiag) pondLidThicknessDiag
+                write(unitDiag) iceAgeDiag
+                write(unitDiag) firstYearIceAreaDiag
+                write(unitDiag) snowGrainRadiusDiag
+                write(unitDiag) config_use_snow_liquid_pondsDiag
+                write(unitDiag) specificSnowAerosolDiag
+                write(unitDiag) specificIceAerosolDiag
+                write(unitDiag) uAirVelocityDiag
+                write(unitDiag) vAirVelocityDiag
+                write(unitDiag) windSpeedDiag
+                write(unitDiag) airLevelHeightDiag
+                write(unitDiag) airSpecificHumidityDiag
+                write(unitDiag) airDensityDiag
+                write(unitDiag) airTemperatureDiag
+                write(unitDiag) atmosReferenceTemperature2mDiag
+                write(unitDiag) atmosReferenceHumidity2mDiag
+                write(unitDiag) atmosReferenceSpeed10mDiag
+                write(unitDiag) airOceanDragCoefficientRatioDiag
+                write(unitDiag) oceanDragCoefficientDiag
+                write(unitDiag) oceanDragCoefficientSkinDiag
+                write(unitDiag) oceanDragCoefficientFloeDiag
+                write(unitDiag) oceanDragCoefficientKeelDiag
+                write(unitDiag) airDragCoefficientDiag
+                write(unitDiag) airDragCoefficientSkinDiag
+                write(unitDiag) airDragCoefficientFloeDiag
+                write(unitDiag) airDragCoefficientPondDiag
+                write(unitDiag) airDragCoefficientRidgeDiag
+                write(unitDiag) dragFreeboardDiag
+                write(unitDiag) dragIceSnowDraftDiag
+                write(unitDiag) dragRidgeHeightDiag
+                write(unitDiag) dragRidgeSeparationDiag
+                write(unitDiag) dragKeelDepthDiag
+                write(unitDiag) dragKeelSeparationDiag
+                write(unitDiag) dragFloeLengthDiag
+                write(unitDiag) dragFloeSeparationDiag
+                write(unitDiag) airStressForcingUDiag
+                write(unitDiag) airStressForcingVDiag
+                write(unitDiag) airStressCellUDiag
+                write(unitDiag) airStressCellVDiag
+                write(unitDiag) airPotentialTemperatureDiag
+                write(unitDiag) seaSurfaceTemperatureDiag
+                write(unitDiag) seaSurfaceSalinityDiag
+                write(unitDiag) seaFreezingTemperatureDiag
+                write(unitDiag) oceanStressCellUDiag
+                write(unitDiag) oceanStressCellVDiag
+                write(unitDiag) oceanHeatFluxIceBottomDiag
+                write(unitDiag) freezingMeltingPotentialDiag
+                write(unitDiag) lateralIceMeltFractionDiag
+                write(unitDiag) snowfallRateDiag
+                write(unitDiag) rainfallRateDiag
+                write(unitDiag) pondFreshWaterFluxDiag
+                write(unitDiag) snowLossToLeadsDiag
+                write(unitDiag) surfaceHeatFluxDiag
+                write(unitDiag) surfaceHeatFluxCategoryDiag
+                write(unitDiag) surfaceConductiveFluxDiag
+                write(unitDiag) surfaceConductiveFluxCategoryDiag
+                write(unitDiag) surfaceShortwaveFluxDiag
+                write(unitDiag) interiorShortwaveFluxDiag
+                write(unitDiag) penetratingShortwaveFluxDiag
+                write(unitDiag) absorbedShortwaveFluxDiag
+                write(unitDiag) longwaveUpDiag
+                write(unitDiag) absorbedShortwaveSnowLayerDiag
+                write(unitDiag) absorbedShortwaveIceLayerDiag
+                write(unitDiag) longwaveDownDiag
+                write(unitDiag) solarZenithAngleCosineDiag
+                write(unitDiag) sensibleHeatFluxDiag
+                write(unitDiag) sensibleHeatFluxCategoryDiag
+                write(unitDiag) latentHeatFluxDiag
+                write(unitDiag) latentHeatFluxCategoryDiag
+                write(unitDiag) evaporativeWaterFluxDiag
+                write(unitDiag) oceanFreshWaterFluxDiag
+                write(unitDiag) oceanSaltFluxDiag
+                write(unitDiag) oceanHeatFluxDiag
+                write(unitDiag) oceanShortwaveFluxDiag
+                write(unitDiag) latentHeatFluxCoupleDiag
+                write(unitDiag) sensibleHeatFluxCoupleDiag
+                write(unitDiag) surfaceHeatFluxCoupleDiag
+                write(unitDiag) surfaceConductiveFluxCoupleDiag
+                write(unitDiag) atmosAerosolFluxDiag
+                write(unitDiag) oceanAerosolFluxDiag
+                write(unitDiag) pondSnowDepthDifferenceDiag
+                write(unitDiag) pondLidMeltFluxFractionDiag
+                write(unitDiag) surfaceIceMeltDiag
+                write(unitDiag) surfaceIceMeltCategoryDiag
+                write(unitDiag) basalIceMeltDiag
+                write(unitDiag) basalIceMeltCategoryDiag
+                write(unitDiag) lateralIceMeltDiag
+                write(unitDiag) snowMeltDiag
+                write(unitDiag) snowMeltCategoryDiag
+                write(unitDiag) snowMeltMassCellDiag
+                write(unitDiag) snowMeltMassCategoryDiag
+                write(unitDiag) congelationDiag
+                write(unitDiag) congelationCategoryDiag
+                write(unitDiag) snowiceFormationDiag
+                write(unitDiag) snowiceFormationCategoryDiag
+                write(unitDiag) snowThicknessChangeCategoryDiag
+                write(unitDiag) frazilFormationDiag
+                write(unitDiag) northernHemisphereMaskDiag
+                write(unitDiag) meltOnsetDiag
+                write(unitDiag) freezeOnsetDiag
+                write(unitDiag) dayOfYearDiag
+                write(unitDiag) config_use_prescribed_iceDiag
+
+                close(unitDiag)
+
+                call mpas_release_unit(unitDiag)
+
+             endif ! lwriteinputs
+
+             stop
+
+          endif ! abortFlag
+
+          if (lwriteinputs) then
+
+             call deallocate_field(config_dtDiag, config_dt)
+             call deallocate_field(nCategoriesDiag, nCategories)
+             call deallocate_field(nIceLayersDiag, nIceLayers)
+             call deallocate_field(nSnowLayersDiag, nSnowLayers)
+             call deallocate_field(nAerosolsDiag, nAerosols)
+             call deallocate_field(openWaterAreaDiag, openWaterArea)
+             call deallocate_field(iceAreaCategoryInitialDiag, iceAreaCategoryInitial)
+             call deallocate_field(iceVolumeCategoryInitialDiag, iceVolumeCategoryInitial)
+             call deallocate_field(snowVolumeCategoryInitialDiag, snowVolumeCategoryInitial)
+             call deallocate_field(iceAreaCellDiag, iceAreaCell)
+             call deallocate_field(iceAreaCategoryDiag, iceAreaCategory)
+             call deallocate_field(iceVolumeCellDiag, iceVolumeCell)
+             call deallocate_field(iceVolumeCategoryDiag, iceVolumeCategory)
+             call deallocate_field(snowVolumeCellDiag, snowVolumeCell)
+             call deallocate_field(snowVolumeCategoryDiag, snowVolumeCategory)
+             call deallocate_field(uVelocityCellDiag, uVelocityCell)
+             call deallocate_field(vVelocityCellDiag, vVelocityCell)
+             call deallocate_field(surfaceTemperatureDiag, surfaceTemperature)
+             call deallocate_field(snowEnthalpyDiag, snowEnthalpy)
+             call deallocate_field(iceEnthalpyDiag, iceEnthalpy)
+             call deallocate_field(iceSalinityDiag, iceSalinity)
+             call deallocate_field(snowIceMassDiag, snowIceMass)
+             call deallocate_field(snowLiquidMassDiag, snowLiquidMass)
+             call deallocate_field(levelIceAreaDiag, levelIceArea)
+             call deallocate_field(levelIceVolumeDiag, levelIceVolume)
+             call deallocate_field(pondAreaDiag, pondArea)
+             call deallocate_field(pondDepthDiag, pondDepth)
+             call deallocate_field(pondLidThicknessDiag, pondLidThickness)
+             call deallocate_field(iceAgeDiag, iceAge)
+             call deallocate_field(firstYearIceAreaDiag, firstYearIceArea)
+             call deallocate_field(snowGrainRadiusDiag, snowGrainRadius)
+             call deallocate_field(config_use_snow_liquid_pondsDiag, config_use_snow_liquid_ponds)
+             call deallocate_field(specificSnowAerosolDiag, specificSnowAerosol)
+             call deallocate_field(specificIceAerosolDiag, specificIceAerosol)
+             call deallocate_field(uAirVelocityDiag, uAirVelocity)
+             call deallocate_field(vAirVelocityDiag, vAirVelocity)
+             call deallocate_field(windSpeedDiag, windSpeed)
+             call deallocate_field(airLevelHeightDiag, airLevelHeight)
+             call deallocate_field(airSpecificHumidityDiag, airSpecificHumidity)
+             call deallocate_field(airDensityDiag, airDensity)
+             call deallocate_field(airTemperatureDiag, airTemperature)
+             call deallocate_field(atmosReferenceTemperature2mDiag, atmosReferenceTemperature2m)
+             call deallocate_field(atmosReferenceHumidity2mDiag, atmosReferenceHumidity2m)
+             call deallocate_field(atmosReferenceSpeed10mDiag, atmosReferenceSpeed10m)
+             call deallocate_field(airOceanDragCoefficientRatioDiag, airOceanDragCoefficientRatio)
+             call deallocate_field(oceanDragCoefficientDiag, oceanDragCoefficient)
+             call deallocate_field(oceanDragCoefficientSkinDiag, oceanDragCoefficientSkin)
+             call deallocate_field(oceanDragCoefficientFloeDiag, oceanDragCoefficientFloe)
+             call deallocate_field(oceanDragCoefficientKeelDiag, oceanDragCoefficientKeel)
+             call deallocate_field(airDragCoefficientDiag, airDragCoefficient)
+             call deallocate_field(airDragCoefficientSkinDiag, airDragCoefficientSkin)
+             call deallocate_field(airDragCoefficientFloeDiag, airDragCoefficientFloe)
+             call deallocate_field(airDragCoefficientPondDiag, airDragCoefficientPond)
+             call deallocate_field(airDragCoefficientRidgeDiag, airDragCoefficientRidge)
+             call deallocate_field(dragFreeboardDiag, dragFreeboard)
+             call deallocate_field(dragIceSnowDraftDiag, dragIceSnowDraft)
+             call deallocate_field(dragRidgeHeightDiag, dragRidgeHeight)
+             call deallocate_field(dragRidgeSeparationDiag, dragRidgeSeparation)
+             call deallocate_field(dragKeelDepthDiag, dragKeelDepth)
+             call deallocate_field(dragKeelSeparationDiag, dragKeelSeparation)
+             call deallocate_field(dragFloeLengthDiag, dragFloeLength)
+             call deallocate_field(dragFloeSeparationDiag, dragFloeSeparation)
+             call deallocate_field(airStressForcingUDiag, airStressForcingU)
+             call deallocate_field(airStressForcingVDiag, airStressForcingV)
+             call deallocate_field(airStressCellUDiag, airStressCellU)
+             call deallocate_field(airStressCellVDiag, airStressCellV)
+             call deallocate_field(airPotentialTemperatureDiag, airPotentialTemperature)
+             call deallocate_field(seaSurfaceTemperatureDiag, seaSurfaceTemperature)
+             call deallocate_field(seaSurfaceSalinityDiag, seaSurfaceSalinity)
+             call deallocate_field(seaFreezingTemperatureDiag, seaFreezingTemperature)
+             call deallocate_field(oceanStressCellUDiag, oceanStressCellU)
+             call deallocate_field(oceanStressCellVDiag, oceanStressCellV)
+             call deallocate_field(oceanHeatFluxIceBottomDiag, oceanHeatFluxIceBottom)
+             call deallocate_field(freezingMeltingPotentialDiag, freezingMeltingPotential)
+             call deallocate_field(lateralIceMeltFractionDiag, lateralIceMeltFraction)
+             call deallocate_field(snowfallRateDiag, snowfallRate)
+             call deallocate_field(rainfallRateDiag, rainfallRate)
+             call deallocate_field(pondFreshWaterFluxDiag, pondFreshWaterFlux)
+             call deallocate_field(snowLossToLeadsDiag, snowLossToLeads)
+             call deallocate_field(surfaceHeatFluxDiag, surfaceHeatFlux)
+             call deallocate_field(surfaceHeatFluxCategoryDiag, surfaceHeatFluxCategory)
+             call deallocate_field(surfaceConductiveFluxDiag, surfaceConductiveFlux)
+             call deallocate_field(surfaceConductiveFluxCategoryDiag, surfaceConductiveFluxCategory)
+             call deallocate_field(surfaceShortwaveFluxDiag, surfaceShortwaveFlux)
+             call deallocate_field(interiorShortwaveFluxDiag, interiorShortwaveFlux)
+             call deallocate_field(penetratingShortwaveFluxDiag, penetratingShortwaveFlux)
+             call deallocate_field(absorbedShortwaveFluxDiag, absorbedShortwaveFlux)
+             call deallocate_field(longwaveUpDiag, longwaveUp)
+             call deallocate_field(absorbedShortwaveSnowLayerDiag, absorbedShortwaveSnowLayer)
+             call deallocate_field(absorbedShortwaveIceLayerDiag, absorbedShortwaveIceLayer)
+             call deallocate_field(longwaveDownDiag, longwaveDown)
+             call deallocate_field(solarZenithAngleCosineDiag, solarZenithAngleCosine)
+             call deallocate_field(sensibleHeatFluxDiag, sensibleHeatFlux)
+             call deallocate_field(sensibleHeatFluxCategoryDiag, sensibleHeatFluxCategory)
+             call deallocate_field(latentHeatFluxDiag, latentHeatFlux)
+             call deallocate_field(latentHeatFluxCategoryDiag, latentHeatFluxCategory)
+             call deallocate_field(evaporativeWaterFluxDiag, evaporativeWaterFlux)
+             call deallocate_field(oceanFreshWaterFluxDiag, oceanFreshWaterFlux)
+             call deallocate_field(oceanSaltFluxDiag, oceanSaltFlux)
+             call deallocate_field(oceanHeatFluxDiag, oceanHeatFlux)
+             call deallocate_field(oceanShortwaveFluxDiag, oceanShortwaveFlux)
+             call deallocate_field(latentHeatFluxCoupleDiag, latentHeatFluxCouple)
+             call deallocate_field(sensibleHeatFluxCoupleDiag, sensibleHeatFluxCouple)
+             call deallocate_field(surfaceHeatFluxCoupleDiag, surfaceHeatFluxCouple)
+             call deallocate_field(surfaceConductiveFluxCoupleDiag, surfaceConductiveFluxCouple)
+             call deallocate_field(atmosAerosolFluxDiag, atmosAerosolFlux)
+             call deallocate_field(oceanAerosolFluxDiag, oceanAerosolFlux)
+             call deallocate_field(pondSnowDepthDifferenceDiag, pondSnowDepthDifference)
+             call deallocate_field(pondLidMeltFluxFractionDiag, pondLidMeltFluxFraction)
+             call deallocate_field(surfaceIceMeltDiag, surfaceIceMelt)
+             call deallocate_field(surfaceIceMeltCategoryDiag, surfaceIceMeltCategory)
+             call deallocate_field(basalIceMeltDiag, basalIceMelt)
+             call deallocate_field(basalIceMeltCategoryDiag, basalIceMeltCategory)
+             call deallocate_field(lateralIceMeltDiag, lateralIceMelt)
+             call deallocate_field(snowMeltDiag, snowMelt)
+             call deallocate_field(snowMeltCategoryDiag, snowMeltCategory)
+             call deallocate_field(snowMeltMassCellDiag, snowMeltMassCell)
+             call deallocate_field(snowMeltMassCategoryDiag, snowMeltMassCategory)
+             call deallocate_field(congelationDiag, congelation)
+             call deallocate_field(congelationCategoryDiag, congelationCategory)
+             call deallocate_field(snowiceFormationDiag, snowiceFormation)
+             call deallocate_field(snowiceFormationCategoryDiag, snowiceFormationCategory)
+             call deallocate_field(snowThicknessChangeCategoryDiag, snowThicknessChangeCategory)
+             call deallocate_field(frazilFormationDiag, frazilFormation)
+             call deallocate_field(northernHemisphereMaskDiag, northernHemisphereMask)
+             call deallocate_field(meltOnsetDiag, meltOnset)
+             call deallocate_field(freezeOnsetDiag, freezeOnset)
+             call deallocate_field(dayOfYearDiag, dayOfYear)
+             call deallocate_field(config_use_prescribed_iceDiag, config_use_prescribed_ice)
+
+          endif ! lwriteinputs
 
           ! aerosol
           if (config_use_aerosols) then

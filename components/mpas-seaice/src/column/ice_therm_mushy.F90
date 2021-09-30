@@ -1386,7 +1386,8 @@ contains
     ! if not converged
     if (.not. lconverged) then
 
-       call picard_nonconvergence(nilyr,    nslyr,    &
+       call picard_nonconvergence(lsnow,    lcold,    &
+                                  nilyr,    nslyr,    &
                                   Tsf0,     Tsf,      &
                                   zTsn0,    zTsn,     &
                                   zTin0,    zTin,     &
@@ -1425,7 +1426,8 @@ contains
 
 !=======================================================================
 
-  subroutine picard_nonconvergence(nilyr,    nslyr,    &
+  subroutine picard_nonconvergence(lsnow,    lcold,    &
+                                   nilyr,    nslyr,    &
                                    Tsf0,     Tsf,      &
                                    zTsn0,    zTsn,     &
                                    zTin0,    zTin,     &
@@ -1450,6 +1452,10 @@ contains
                                    q,        dSdt,     &
                                    w,                  &
                                    dTsf, dzTsn, dzTin, ferr)
+
+    logical, intent(in) :: &
+         lsnow, &
+         lcold
 
     integer (kind=int_kind), intent(in) :: &
          nilyr , & ! number of ice layers
@@ -1534,6 +1540,13 @@ contains
     write(warning,*) "picard convergence failed!"
     call add_warning(warning)
     write(warning,*) "=========================="
+    call add_warning(warning)
+    write(warning,*)
+    call add_warning(warning)
+
+    write(warning,*) "lsnow: ", lsnow
+    call add_warning(warning)
+    write(warning,*) "lcold: ", lcold
     call add_warning(warning)
     write(warning,*)
     call add_warning(warning)
