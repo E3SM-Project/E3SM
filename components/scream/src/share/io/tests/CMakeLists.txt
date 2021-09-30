@@ -1,16 +1,12 @@
 #include(ScreamUtils)
 include(ScreamUtils)
 
-set (ARRAY_SCORPIO_SRCS
-  io.cpp
-  restart.cpp
-)
-
-## Test atmosphere processes
+## Test output
 CreateUnitTest(io_test "io.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
+## Test restart
 CreateUnitTest(restart_test "restart.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
