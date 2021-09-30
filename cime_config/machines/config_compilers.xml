@@ -1340,6 +1340,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <SLIBS>
     <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
@@ -1376,6 +1377,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <SLIBS>
     <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
@@ -1392,7 +1394,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <KOKKOS_OPTIONS> --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
+  <!--KOKKOS_OPTIONS> -d-with-cuda=$ENV{CUDA_DIR} -d-with-cuda-options=enable_lambda</KOKKOS_OPTIONS-->
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1412,17 +1414,9 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
-  <CFLAGS>
-    <base DEBUG="FALSE"> -O0 </base>
-  </CFLAGS>
-  <FFLAGS>
-    <base DEBUG="FALSE"> -O0 </base>
-  </FFLAGS>
-  <CXXFLAGS>
-    <base DEBUG="FALSE"> -O0 </base>
-  </CXXFLAGS>
   <SLIBS>
     <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
@@ -1430,6 +1424,26 @@ flags should be captured within MPAS CMake files.
   <NETCDF_FORTRAN_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_FORTRAN_PATH>
   <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
   <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <CFLAGS>
+    <!--append> -target-accel=host </append-->
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <!--append> -target-accel=host </append-->
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <FFLAGS>
+    <!--append> -target-accel=host </append-->
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <!--KOKKOS_OPTIONS compile_threaded="TRUE"> -mp</KOKKOS_OPTIONS-->
+  <!--KOKKOS_OPTIONS> -mp</KOKKOS_OPTIONS-->
+  <!--LDFLAGS>
+    <append> -target-accel=host</append>
+  </LDFLAGS-->
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
   <SCC> cc </SCC>
   <SCXX> CC </SCXX>
   <SFC> ftn </SFC>
@@ -1448,15 +1462,13 @@ flags should be captured within MPAS CMake files.
   <CUDA_FLAGS>
     <append> -O2 -arch sm_80 --use_fast_math </append>
   </CUDA_FLAGS>
-  <CXXFLAGS>
-    <base DEBUG="FALSE"> -O0 </base>
-  </CXXFLAGS>
-  <KOKKOS_OPTIONS> --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
-  <LDFLAGS>
+  <!--KOKKOS_OPTIONS> -d-with-cuda=$ENV{CUDA_DIR} -d-with-cuda-options=enable_lambda</KOKKOS_OPTIONS-->
+  <!--LDFLAGS>
     <append> -target-accel=nvidia80</append>
-  </LDFLAGS>
+  </LDFLAGS-->
   <SLIBS>
     <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <NETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</NETCDF_PATH>

@@ -355,7 +355,8 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:45:00" nodemax="20" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+      <!--queue walltimemax="00:45:00" nodemax="1500" default="true">early_science</queue-->
     </queues>
   </batch_system>
 
