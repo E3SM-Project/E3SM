@@ -148,10 +148,12 @@ TEST_CASE("dyn_grid_io")
   dyn2ctrl->remap(false); // Remap bwd to get data from ctrl to dyn
 
   // Now try to write all fields to file from the dyn grid fm
+  // IMPORTANT! Make the file name dependent on comm size, so all tests
+  //            can run in parallel without race conditions on the nc file.
   ekat::ParameterList io_params;
   io_params.set<int>("Max Snapshots Per File",1);
   io_params.set<std::string>("Averaging Type","Instant");
-  io_params.set<std::string>("Casename","dyn_grid_io");
+  io_params.set<std::string>("Casename","dyn_grid_io_np" + std::to_string(comm.size()));
   io_params.set<std::vector<std::string>>("Fields",fnames);
   io_params.sublist("Output").set<int>("Frequency",1);
   io_params.sublist("Output").set<std::string>("Frequency Units","Steps");
@@ -169,7 +171,7 @@ TEST_CASE("dyn_grid_io")
   }
 
   // Next, let's load all fields from file directly into the dyn grid fm
-  io_params.set<std::string>("Filename","dyn_grid_io.INSTANT.Steps_x1.0001-03-04.000004.nc");
+  io_params.set<std::string>("Filename","dyn_grid_io_np" + std::to_string(comm.size()) + ".INSTANT.Steps_x1.0001-03-04.000004.nc");
   AtmosphereInput input (comm,io_params,fm_dyn, gm);
   input.read_variables();
 
