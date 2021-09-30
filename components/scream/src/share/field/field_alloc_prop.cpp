@@ -5,6 +5,7 @@ namespace scream {
 FieldAllocProp::FieldAllocProp ()
  : m_value_type_sizes (0)
  , m_scalar_type_size (0)
+ , m_pack_size_max    (0)
  , m_alloc_size       (0)
  , m_committed        (false)
 {
@@ -21,6 +22,7 @@ FieldAllocProp& FieldAllocProp::operator= (const FieldAllocProp& src)
     m_layout = src.m_layout;
     m_value_type_sizes = src.m_value_type_sizes;
     m_scalar_type_size = src.m_scalar_type_size;
+    m_pack_size_max = src.m_pack_size_max;
     m_last_extent = src.m_last_extent;
     m_alloc_size = src.m_alloc_size;
     m_subview_idx = src.m_subview_idx;
@@ -45,6 +47,7 @@ subview (const int idim, const int k) const {
   FieldAllocProp props;
   props.m_committed = false;
   props.m_scalar_type_size = m_scalar_type_size;
+  props.m_pack_size_max = m_pack_size_max;
   props.m_alloc_size = m_alloc_size / m_layout->dim(idim);
   props.m_subview_idx = std::make_pair(idim,k);
 
@@ -160,6 +163,9 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
     // The number of scalar_type in a value_type
     const int vt_len = vts / m_scalar_type_size;
 
+    // Update the max pack size
+    m_pack_size_max = std::max(m_pack_size_max,vt_len);
+
     // The number of value_type's needed in the fast-striding dimension
     const int num_vt = (last_phys_extent + vt_len - 1) / vt_len;
 
@@ -182,6 +188,12 @@ int FieldAllocProp::get_alloc_size () const {
   EKAT_REQUIRE_MSG(is_committed(),
       "Error! You cannot query the allocation properties until they have been committed.");
   return m_alloc_size;
+}
+
+int FieldAllocProp::get_largest_pack_size () const {
+  EKAT_REQUIRE_MSG(is_committed(),
+      "Error! You cannot query the allocation properties until they have been committed.");
+  return m_pack_size_max;
 }
 
 int FieldAllocProp::get_last_extent () const {
