@@ -2515,7 +2515,8 @@ subroutine cldliq_immersion_freezing(t_atm,lamc,mu_c,cdist1,qc_incld,inv_qc_relv
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
       dum1 = bfb_exp(aimm*(T_zerodegc-t_atm))
       dum2 = bfb_cube(1._rtype/lamc)
-      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2._rtype)
+      ! sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2._rtype)
+      sbgrd_var_coef = 1._rtype    !no subgrid enhancement
       Q_nuc = sbgrd_var_coef*cons6*cdist1*bfb_gamma(7._rtype+mu_c)*dum1*bfb_square(dum2)
       N_nuc = cons5*cdist1*bfb_gamma(mu_c+4._rtype)*dum1*dum2
       qc2qi_hetero_freeze_tend = Q_nuc
@@ -2678,7 +2679,8 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
      elseif (iparam.eq.3) then
         !Khroutdinov and Kogan (2000)
         !print*,'p3_qc_accret_expon = ',p3_qc_accret_expon
-        sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 1.15_rtype ) !p3_qc_accret_expon
+        !sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 1.15_rtype ) !p3_qc_accret_expon
+        sbgrd_var_coef = 1._rtype    ! no subgrid enhancement
         qc2qr_accret_tend = sbgrd_var_coef*67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
         nc_accret_tend = qc2qr_accret_tend*nc_incld/qc_incld
      endif
@@ -2755,7 +2757,8 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
 
       !Khroutdinov and Kogan (2000)
       !print*,'p3_qc_autocon_expon = ',p3_qc_autocon_expon
-      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.47_rtype)
+      !sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.47_rtype)
+      sbgrd_var_coef = 1._rtype    ! no subgrid enhancement
       qc2qr_autoconv_tend = sbgrd_var_coef*1350._rtype*bfb_pow(qc_incld,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
       !ncautr is change in nr: assume all new raindrops are 25 micron in diameter
       ncautr = qc2qr_autoconv_tend*cons3
