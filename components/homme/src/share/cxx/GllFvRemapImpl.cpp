@@ -339,6 +339,10 @@ void GllFvRemapImpl
   const auto nf2 = m_data.nf2;
   const auto qsize = m_data.qsize;
 
+  const auto buf10 = m_data.buf1[0];
+  const auto buf11 = m_data.buf1[1];
+  const auto buf20 = m_data.buf2[0];
+
 #ifndef NDEBUG
   const auto nelemd = m_data.nelemd;
   assert(ps.extent_int(0) >= nelemd && ps.extent_int(1) >= nf2);
@@ -382,15 +386,16 @@ void GllFvRemapImpl
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
   ElementOps ops; ops.init(hvcoord);
+  const auto tu_ne = m_tu_ne;
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
-    KernelVariables kv(team, m_tu_ne);
+    KernelVariables kv(team, tu_ne);
     const auto ie = kv.ie;
-    
+
     const auto all = Kokkos::ALL();
-    const auto rw1 = Kokkos::subview(m_data.buf1[0], kv.team_idx, all, all, all);
-    const auto rw2 = Kokkos::subview(m_data.buf1[1], kv.team_idx, all, all, all);
-    const auto r2w = Kokkos::subview(m_data.buf2[0], kv.team_idx, all, all, all, all);
+    const auto rw1 = Kokkos::subview(buf10, kv.team_idx, all, all, all);
+    const auto rw2 = Kokkos::subview(buf11, kv.team_idx, all, all, all);
+    const auto r2w = Kokkos::subview(buf20, kv.team_idx, all, all, all, all);
     const EVU<Real*> rw1s(pack2real(rw1), nreal_per_slot1);
     
     const evucr1 fv_metdet_ie(&fv_metdet(ie,0), nf2),
@@ -501,13 +506,14 @@ void GllFvRemapImpl
   Kokkos::parallel_for(m_tp_ne, fe);
 
   const auto dp_g = m_state.m_dp3d;
+  const auto tu_ne_qsize = m_tu_ne_qsize;
   const auto feq = KOKKOS_LAMBDA (const MT& team) {
-    KernelVariables kv(team, qsize, m_tu_ne_qsize);
+    KernelVariables kv(team, qsize, tu_ne_qsize);
     const auto ie = kv.ie, iq = kv.iq;
 
     const auto all = Kokkos::ALL();
-    const auto rw1 = Kokkos::subview(m_data.buf1[0], kv.team_idx, all, all, all);
-    const auto rw2 = Kokkos::subview(m_data.buf1[1], kv.team_idx, all, all, all);
+    const auto rw1 = Kokkos::subview(buf10, kv.team_idx, all, all, all);
+    const auto rw2 = Kokkos::subview(buf11, kv.team_idx, all, all, all);
 
     const evucr1 fv_metdet_ie(&fv_metdet(ie,0), nf2),
       gll_metdet_ie(&gll_metdet(ie,0,0), np2);
@@ -536,6 +542,10 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const int nreal_per_slot1 = np2*max_num_lev_pack;
   const auto nf2 = m_data.nf2;
   const auto qsize = m_data.qsize;
+
+  const auto buf10 = m_data.buf1[0];
+  const auto buf11 = m_data.buf1[1];
+  const auto buf20 = m_data.buf2[0];
 
 #ifndef NDEBUG
   const auto nelemd = m_data.nelemd;
@@ -571,14 +581,15 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
   ElementOps ops; ops.init(hvcoord);
+  const auto tu_ne = m_tu_ne;
 
   const auto fe = KOKKOS_LAMBDA (const MT& team) {
-    KernelVariables kv(team, m_tu_ne);
+    KernelVariables kv(team, tu_ne);
     const auto ie = kv.ie;
 
     const auto all = Kokkos::ALL();
-    const auto rw1 = Kokkos::subview(m_data.buf1[0], kv.team_idx, all, all, all);
-    const auto r2w = Kokkos::subview(m_data.buf2[0], kv.team_idx, all, all, all, all);
+    const auto rw1 = Kokkos::subview(buf10, kv.team_idx, all, all, all);
+    const auto r2w = Kokkos::subview(buf20, kv.team_idx, all, all, all, all);
     const EVU<Real*> rw1s(pack2real(rw1), nreal_per_slot1);
     
     const evucr1 fv_metdet_ie(&fv_metdet(ie,0), nf2),
@@ -658,18 +669,19 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const auto fq = m_tracers.fq;
   const auto qlim = m_tracers.qlim;
   const bool q_adjustment = m_data.q_adjustment;
+  const auto tu_ne_qsize = m_tu_ne_qsize;
 
   const auto feq = KOKKOS_LAMBDA (const MT& team) {
-    KernelVariables kv(team, qsize, m_tu_ne_qsize);
+    KernelVariables kv(team, qsize, tu_ne_qsize);
     const auto ie = kv.ie, iq = kv.iq;
     const auto ttrf = Kokkos::TeamThreadRange(kv.team, nf2);
     const auto ttrg = Kokkos::TeamThreadRange(kv.team, np2);
     const auto tvr  = Kokkos::ThreadVectorRange(kv.team, nlevpk);
     const auto all  = Kokkos::ALL();
 
-    const auto rw1 = Kokkos::subview(m_data.buf1[0], kv.team_idx, all, all, all);
-    const auto rw2 = Kokkos::subview(m_data.buf1[1], kv.team_idx, all, all, all);
-    const auto r2w = Kokkos::subview(m_data.buf2[0], kv.team_idx, all, all, all, all);
+    const auto rw1 = Kokkos::subview(buf10, kv.team_idx, all, all, all);
+    const auto rw2 = Kokkos::subview(buf11, kv.team_idx, all, all, all);
+    const auto r2w = Kokkos::subview(buf20, kv.team_idx, all, all, all, all);
 
     const evucr1 fv_metdet_ie(&fv_metdet(ie,0), nf2),
       gll_metdet_ie(&gll_metdet(ie,0,0), np2);
@@ -743,10 +755,10 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   m_extrema_be->exchange_min_max();
 
   const auto geq = KOKKOS_LAMBDA (const MT& team) {
-    KernelVariables kv(team, qsize, m_tu_ne_qsize);
+    KernelVariables kv(team, qsize, tu_ne_qsize);
     const auto ie = kv.ie, iq = kv.iq;
     const auto all = Kokkos::ALL();
-    const auto rw1 = Kokkos::subview(m_data.buf1[0], kv.team_idx, all, all, all);
+    const auto rw1 = Kokkos::subview(buf10, kv.team_idx, all, all, all);
     // Augment bounds with GLL Q0 bounds. This assures that if the tendency is
     // 0, GLL Q1 = GLL Q0.
     const evucs_np2_nlev qg_ie(&q_g(ie,iq,0,0,0));

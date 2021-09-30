@@ -337,6 +337,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
   const auto geo = m_geometry;
   const auto m_vec_sph2cart = geo.m_vec_sph2cart;
   const auto m_vstar = m_derived.m_vstar;
+  const auto tu_ne = m_tu_ne;
   { // Calculate midpoint velocity.
     const auto buf1a = m_data.buf1[0]; const auto buf1b = m_data.buf1[1];
     const auto buf1c = m_data.buf1[2]; const auto buf2a = m_data.buf2[0];
@@ -364,7 +365,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
       launch_ie_packlev_ij(copy_v);
       Kokkos::fence();
       const auto calc_dprecon = KOKKOS_LAMBDA (const MT& team) {
-        KernelVariables kv(team, m_tu_ne);
+        KernelVariables kv(team, tu_ne);
         const auto ie = kv.ie;
         const auto vn0 = Homme::subview(m_vn0, ie);
         const auto vstar = Homme::subview(m_vstar, ie);
@@ -381,7 +382,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
       Kokkos::fence();
       remap_v(m_dp3d, np1, m_divdp, m_vn0);
       const auto sphere = KOKKOS_LAMBDA (const MT& team) {
-        KernelVariables kv(team, m_tu_ne);
+        KernelVariables kv(team, tu_ne);
         const auto ie = kv.ie;
         const auto spheremp = Homme::subview(m_spheremp, ie);
         const auto rspheremp = Homme::subview(m_rspheremp, ie);
@@ -398,7 +399,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
     }
     GPTLstart("compose_v_bexchv");
     const auto calc_midpoint_velocity = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team, m_tu_ne);
+      KernelVariables kv(team, tu_ne);
       const auto ie = kv.ie;
       const auto vn0 = (independent_time_steps ?
                         Homme::subview(m_vn0, ie) :
@@ -437,7 +438,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
     const auto scale_factor = m_data.geometry_type == 1 ? 1 : PhysicalConstants::rearth;
     const auto m_dep_pts = m_data.dep_pts;
     const auto calc_departure_point = KOKKOS_LAMBDA (const MT& team) {
-      KernelVariables kv(team, m_tu_ne);
+      KernelVariables kv(team, tu_ne);
       const auto ie = kv.ie;
       const auto vstar = Homme::subview(m_vstar, ie);
       const auto vec_sphere2cart = Homme::subview(m_vec_sph2cart, ie);

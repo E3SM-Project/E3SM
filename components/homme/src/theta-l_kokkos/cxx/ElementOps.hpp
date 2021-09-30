@@ -14,10 +14,8 @@ namespace Homme {
 
 class ElementOps {
 public:
-  KOKKOS_INLINE_FUNCTION
   ElementOps () = default;
 
-  KOKKOS_INLINE_FUNCTION
   ~ElementOps () = default;
 
   void init (const HybridVCoord& hvcoord) {
