@@ -498,4 +498,15 @@ _TESTS = {
             )
     },
 
+    "e3sm_wav_developer" : {
+        "time"    : "0:45:00",
+        "tests"   : (
+            #"ERS.CFSR_wQU225EC60to30.UWAV-CFSR",
+            #"ERP.CFSR_wQU225EC60to30.UWAV-CFSR",
+            #"ERS.T62_oEC60to30v3_wQU225EC60to30.GWAV-IAF",
+            "ERS.T62_oEC60to30v3.GMPAS-IAF",
+            #"ERP.T62_oEC60to30v3_wQU225EC60to30.GWAV-IAF",
+            )
+    },
 }
+
