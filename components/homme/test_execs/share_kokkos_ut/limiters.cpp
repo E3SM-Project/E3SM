@@ -290,7 +290,7 @@ struct LimiterTester {
       for (int i = 0; i < NP; ++i)
         for (int j = 0; j < NP; ++j) {
           // Check BFB.
-          REQUIRE(equal(ptens(i,j,vi)[si], ref.ptens(i,j,vi)[si], 0));
+          REQUIRE(equal(ptens(i,j,vi)[si], ref.ptens(i,j,vi)[si]));
         }
     }
   }
