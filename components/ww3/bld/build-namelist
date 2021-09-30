@@ -374,6 +374,9 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'cice0');
     add_default($nl, 'cicen');
     add_default($nl, 'rwndc');
+
+    add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}.in'");
+    add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}.in'");
     
 }
 
@@ -399,14 +402,14 @@ if ($NML_TYPE eq "ww3_grid") {
     $outfile = "./ww3_grid.nml";
 }
 if ($NML_TYPE eq "ww3_grid_nml") {
-    @groups = qw(unst rotd outs misc);
+    @groups = qw(unst rotd outs uost misc);
     $outfile = "./ww3_grid_namelists.nml";
 }
 
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing ww3 namelist to $outfile $eol"; }
 
-# This namelist has to be capitalized...
+# This namelist has to be capitalized, except for strings (WW3 convention)
 if ($NML_TYPE eq "ww3_grid_nml") {
 
     my $file = "ww3_grid_namelists.nml";
@@ -416,7 +419,18 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     close $fh or die "can't close $file";
     
     open(my $fh, '>', $file) or die "can't open $file";
-    print($fh uc($text)); 
+    my @textarray = split/('.*?')/,$text;
+    foreach my $data(@textarray) {
+        if($data !~ /'/) {
+            $data = uc $data;
+        }
+        else {
+ 
+        }
+    }
+    $text = join '',@textarray;
+    #print($fh uc($text)); 
+    print($fh $text); 
     close $fh or die "can't close $file";
   
 }

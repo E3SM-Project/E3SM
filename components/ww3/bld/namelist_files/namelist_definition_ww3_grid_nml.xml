@@ -751,13 +751,13 @@
 <!-- UOST -->
  
 <entry id="uostfilelocal"
-       type="real"
+       type="char*256"
        category="uost"
        group="uost"
        valid_values="">
 </entry>
 <entry id="uostfileshadow"
-       type="real"
+       type="char*256"
        category="uost"
        group="uost"
        valid_values="">
