@@ -161,6 +161,13 @@ TEST_CASE("dyn_grid_io")
   output.run(ts);
   output.finalize();
 
+  // Clear the content of the dyn fields, to avoid seeing the same numbers
+  // only b/c nothing was in fact read.
+  for (const auto& fn : fnames) {
+    auto f = fm_dyn->get_field(fn);
+    f.deep_copy(-1.0);
+  }
+
   // Next, let's load all fields from file directly into the dyn grid fm
   io_params.set<std::string>("Filename","dyn_grid_io.INSTANT.Steps_x1.0001-03-04.000004.nc");
   AtmosphereInput input (comm,io_params,fm_dyn, gm);
