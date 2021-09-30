@@ -132,7 +132,9 @@ CONTAINS
     if (use_moisture) moisture='wet'
 
     ! Initialize hybrid coordinate arrays.
+    call t_startf('hycoef_init')
     call hycoef_init(fh)
+    call t_stopf('hycoef_init')
 
     ! Initialize physics grid reference pressures (needed by initialize_radbuffer)
     call ref_pres_init()
@@ -146,7 +148,9 @@ CONTAINS
 #endif
 
     if(par%dynproc) then
+       call t_startf('prim_init1')
        call prim_init1(elem,par,dom_mt,TimeLevel)
+       call t_stopf('prim_init1')
 
        dyn_in%elem => elem
        dyn_out%elem => elem
@@ -303,7 +307,11 @@ CONTAINS
           ! new run, scale mass to value given in namelist, if needed
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
+
+       call t_startf('prim_init2')
        call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
+       call t_stopf('prim_init2')
+
 #ifdef HORIZ_OPENMP
        !$OMP END PARALLEL 
 #endif
@@ -359,10 +367,10 @@ CONTAINS
        if (.not. use_3dfrc) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
-           call t_startf("prim_run_sybcycle")
+           call t_startf('prim_run_subcycle')
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, single_column, TimeLevel, hvcoord, n)
-           call t_stopf("prim_run_sybcycle")
+           call t_stopf('prim_run_subcycle')
          end do
        endif
 

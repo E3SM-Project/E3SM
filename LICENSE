@@ -2,7 +2,7 @@ Except for the separable pieces descibed below, E3SM is released
 under the following 3-Clause BSD Open Source license.
 
 *******************************************************************************
-Copyright © 2018, UChicago Argonne, LLC All Rights Reserved
+Copyright ©2021, UChicago Argonne, LLC All Rights Reserved
 
 Software Name: Energy Exascale Earth System Model (E3SM)
 
@@ -41,46 +41,55 @@ CESM is public domain software.
 
 *******************************************************************************
 
-Separable Pieces with their own copyright and license:
+Separable pieces with their own copyright and license.  See code location
+for details.
 
 Name            Code Location                  Institution(s)      License
 -------------------------------------------------------------------------------
 
 Software
 -----------
-CIME            cime/                           NCAR, SNL, ANL      BSD
-MCT             cime/src/externals/mct          ANL                 BSD
-GPTL            cime/src/share/timing           author              non-commerical
+CIME            cime/scripts                    NCAR, SNL           BSD
+cpl7            driver-mct/ 			NCAR, ANL	    BSD
+GPTL            share/timing                    author              non-commerical
+MCT             externals/mct                   ANL                 BSD
+YAKL		externals/YAKL			author              BSD
+cub		externals/cub                   author, NVIDIA      BSD
+kokkos          externals/kokkos                SNL                 BSD
 
 Ocean/Ice       under components/
 -----------     -----------------
 CICE            cice                            LANL                BSD
+MPAS Framework  mpas-framework                  LANL                BSD
 MPAS Ocean      mpas-ocean                      LANL                BSD
 MPAS SeaIce     mpas-seaice                     LANL                BSD
-MPAS-Albany LandIce   mpas-albany-landice       LANL,SNL            BSD
+MPAS-Albany LandIce   mpas-albany-landice       LANL, SNL           BSD
 
-Land            under components/clm/src
+Land            under components/elm/src
 -----------     ------------------------
-Fates           external_models/fates           LBNL, NCAR, LANL    BSD
-Betr            external_models/betr            LBNL                BSD
+FATES           external_models/fates           LBNL, NCAR, LANL    BSD
+Betr            external_models/sbetr           LBNL, NCAR          BSD
 MPP             external_models/mpp             LBNL                BSD
 
-Atmosphere      under components/cam/src
+Atmosphere      under components/eam/src
 -----------     ------------------------
 CLUBB           physics/clubb                   authors             --
 rrtmg           physics/rrtmg                   AER                 non-commercial
-COSP            physics/cosp                    BCC                 BSD
-Cosp/MISR       physics/cosp/MISR_simulator     author              BSD
-Cosp/LIDAR      physics/cosp/actsim             CNRS                BSD
-Cosp/quickbeam  physics/cosp/quickbeam          author              BSD
-Cosp/MODIS      physics/cosp/MODIS_simulator    U Colo.             BSD
+rrtmgp          physics/rrtmgp/external         AER                 non-commercial
+Cosp2           physics/cosp2                   authors             BSD
+Cosp2/MISR      physics/cosp2/external/src/simulator/MISR_simulator    author           BSD
+Cosp2/MODIS     physics/cosp2/external/src/simulator/MODIS_simulator    U Colo.         BSD
+Cosp2/actsim    physics/cosp2/external/src/simulator/actsim             CNRS            BSD
+Cosp2/icarus    physics/cosp2/external/src/simulator/icarus             BCC, LLNL       BSD
+Cosp2/parasol   physics/cosp2/external/src/simulator/parasol            CNRS            BSD
+Cosp2/quikbeam  physics/cosp2/external/src/simulator/quickbeam          U Colo.         BSD
+Cosp2/rrtov     physics/cosp2/external/src/simulator/rrtov              U Colo.         BSD
 icarus-scops    physics/icarus-scops            BCC                 BSD
 HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
-                components/homme/src/share/cxx/COPYRIGHT
 
 -------------------------------------------------------------------------------
 
-Institution Names:
+Actual copyright holder for above Institutions:
 NCAR =  University Corporation for Atmospheric Research
 LANL =  Los Alamos National Security, LLC
 SNL  =  National Technology & Engineering Solutions of Sandia, LLC 
@@ -90,4 +99,5 @@ ANL  =  UChicago Argonne, LLC
 BCC  =  British Crown Copyright, the UK Met Office
 AER  =  Atmospheric & Environmental Research, Inc.
 CNRS =  Centre National de la Recherche Scientifique
+U Colo. = Regents of the University of Colorado
 *******************************************************************************
