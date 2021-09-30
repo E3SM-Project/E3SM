@@ -86,6 +86,7 @@ public:
   // Grid description utilities
   GridType type () const { return m_type; }
   const std::string& name () const { return m_name; }
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),

@@ -66,18 +66,20 @@ bool AbstractGrid::is_unique () const {
   // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
   int max_dofs;
   m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
-  int* gids = new int[max_dofs];
+  std::vector<int> gids(max_dofs);
   int unique_gids = 1;
 
   for (int pid=0; pid<m_comm.size(); ++pid) {
     // Rank pid broadcasts its gids, everyone else checks if there are duplicates
     if (pid==m_comm.rank()) {
-      std::memcpy(gids,dofs_h.data(),m_num_local_dofs);
+      auto start = dofs_h.data();
+      auto end   = start + m_num_local_dofs;
+      std::copy(start,end,gids.data());
     }
 
     int ndofs = m_num_local_dofs;
     m_comm.broadcast(&ndofs,1,pid);
-    m_comm.broadcast(gids,ndofs,pid);
+    m_comm.broadcast(gids.data(),ndofs,pid);
 
     int my_unique_gids = 1;
     if (pid!=m_comm.rank()) {
@@ -100,7 +102,6 @@ bool AbstractGrid::is_unique () const {
       break;
     }
   }
-  delete[] gids;
 
   return unique_gids;
 }
