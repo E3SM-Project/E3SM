@@ -30,8 +30,8 @@ contains
 !=====================================================================!
   subroutine register_file_c2f(filename_in,purpose) bind(c)
     use scream_scorpio_interface, only : register_file
-    type(c_ptr), intent(in) :: filename_in
-    integer, intent(in)     :: purpose
+    type(c_ptr), intent(in)         :: filename_in
+    integer(kind=c_int), intent(in) :: purpose
 
     character(len=256)      :: filename
 

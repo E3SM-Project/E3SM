@@ -132,11 +132,11 @@ void count_pio_atm_file() {
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, Real *hbuf) {
   grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
-};
+}
 /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {
   grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
-};
+}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio

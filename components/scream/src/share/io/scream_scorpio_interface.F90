@@ -1210,7 +1210,7 @@ contains
     real(rtype), dimension(:), pointer :: var_data
     type(pio_atm_file_t), pointer      :: pio_atm_file
     type(hist_var_t), pointer          :: var
-    integer                            :: ierr,var_size,ndims,i
+    integer                            :: ierr,var_size
     logical                            :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1253,7 +1253,7 @@ contains
     ! Local variables
     type(pio_atm_file_t),pointer       :: pio_atm_file
     type(hist_var_t), pointer          :: var
-    integer                            :: ierr, var_size, ndims, i
+    integer                            :: ierr, var_size
     logical                            :: found
     real(rtype), dimension(:), pointer :: var_data
 
