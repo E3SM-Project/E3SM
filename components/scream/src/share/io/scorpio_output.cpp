@@ -505,7 +505,7 @@ void AtmosphereOutput::new_file(const std::string& filename)
   using namespace scream::scorpio;
 
   // Register new netCDF file for output.
-  register_outfile(filename);
+  register_file(filename,Write);
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {

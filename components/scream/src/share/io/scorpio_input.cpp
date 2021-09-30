@@ -1,6 +1,7 @@
 #include "share/io/scorpio_input.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 
 #include <numeric>
 
@@ -243,7 +244,7 @@ void AtmosphereInput::init_scorpio_structures()
   // registered, and sets up scorpio for reading.
 
   // Register netCDF file for input.
-  scorpio::register_infile(m_filename);
+  scorpio::register_file(m_filename,scorpio::Read);
 
   // Register variables with netCDF file.
   register_variables();

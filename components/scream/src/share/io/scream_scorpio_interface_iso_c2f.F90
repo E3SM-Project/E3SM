@@ -28,27 +28,17 @@ contains
     call eam_pio_finalize()
   end subroutine eam_pio_finalize_c2f
 !=====================================================================!
-  subroutine register_outfile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : register_outfile
+  subroutine register_file_c2f(filename_in,purpose) bind(c)
+    use scream_scorpio_interface, only : register_file
     type(c_ptr), intent(in) :: filename_in
+    integer, intent(in)     :: purpose
 
-    character(len=256)       :: filename
+    character(len=256)      :: filename
 
     call convert_c_string(filename_in,filename)
-    call register_outfile(trim(filename))
+    call register_file(trim(filename),purpose)
 
-  end subroutine register_outfile_c2f
-!=====================================================================!
-  subroutine register_infile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : register_infile
-    type(c_ptr), intent(in) :: filename_in
-
-    character(len=256)       :: filename
-
-    call convert_c_string(filename_in,filename)
-    call register_infile(trim(filename))
-
-  end subroutine register_infile_c2f
+  end subroutine register_file_c2f
 !=====================================================================!
   subroutine sync_outfile_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_sync_piofile

@@ -75,8 +75,7 @@ module scream_scorpio_interface
             is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
             eam_pio_subsystem_comm,      & ! Return comm used for pio subsystem
             eam_pio_finalize,            & ! Run any final PIO commands
-            register_outfile,            & ! Create a pio output file
-            register_infile,             & ! Open a pio input file
+            register_file,               & ! Creates/opens a pio input/output file
             register_variable,           & ! Register a variable with a particular pio output file
             get_variable,                & ! Register a variable with a particular pio output file
             register_dimension,          & ! Register a dimension with a particular pio output file
@@ -204,6 +203,9 @@ module scream_scorpio_interface
         !> @brief Whether or not the dim/var definition phase is still open
         logical                         :: is_enddef = .false.
 
+        ! The number of customer that requested to open the file.
+        ! Increased at every open request, decreased at every close request.
+        integer :: num_customers
   end type pio_atm_file_t
 
 !----------------------------------------------------------------------
@@ -217,29 +219,21 @@ module scream_scorpio_interface
 !----------------------------------------------------------------------
 contains
 !=====================================================================!
-  ! Register a new file for PIO output with the PIO Atmosphere list.
-  ! This step also creates the header meta-data for the new file.
-  subroutine register_outfile(filename)
+  ! Register a PIO file to be used for input/output operations.
+  ! If file is already open, ensures file_purpose matches the current one
+  subroutine register_file(filename,file_purpose)
 
     character(len=*), intent(in) :: filename
+    integer, intent(in)          :: file_purpose
 
     type(pio_atm_file_t), pointer :: current_atm_file
 
-    if (.not.associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
-    call get_pio_atm_file(filename,current_atm_file,file_purpose_out)
+    if (.not.associated(pio_subsystem)) then
+      call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
+    endif
+    call get_pio_atm_file(filename,current_atm_file,file_purpose)
 
-  end subroutine register_outfile
-!=====================================================================!
-  ! Register a file to be used PIO input with the PIO Atmosphere list.
-  subroutine register_infile(filename)
-
-    character(len=*), intent(in) :: filename
-
-    type(pio_atm_file_t), pointer :: current_atm_file
-
-    call get_pio_atm_file(filename,current_atm_file,file_purpose_in)
-
-  end subroutine register_infile
+  end subroutine register_file
 !=====================================================================!
   ! Mandatory call to finish the variable and dimension definition phase
   ! of a new PIO file.  Once this routine is called it is not possible
@@ -742,9 +736,17 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
     if (found) then
-      call PIO_closefile(pio_atm_file%pioFileDesc)
-      pio_atm_file%isopen = .false.
-      pio_atm_file%purpose = file_purpose_not_set
+      if (pio_atm_file%num_customers .eq. 1) then
+        call PIO_syncfile(pio_atm_file%pioFileDesc)
+        call PIO_closefile(pio_atm_file%pioFileDesc)
+        pio_atm_file%isopen = .false.
+        pio_atm_file%purpose = file_purpose_not_set
+        pio_atm_file%num_customers = 0
+      else if (pio_atm_file%num_customers .gt. 1) then
+        pio_atm_file%num_customers = pio_atm_file%num_customers - 1
+      else
+        call errorHandle("PIO ERROR: while closing file: "//trim(fname)//", found num_customers<=0",-999)
+      endif
     else
       call errorHandle("PIO ERROR: unable to close file: "//trim(fname)//", was not found",-999)
     end if
@@ -1135,6 +1137,10 @@ contains
     logical                        :: found, is_open
     type(pio_file_list_t), pointer :: curr
 
+    ! Sanity check
+    if (purpose .ne. file_purpose_in .and. purpose .ne. file_purpose_out) then
+      call errorHandle("PIO Error: unrecognized file purpose for file '"//filename//"'.",-999)
+    endif
     ! Make sure a there isn't a pio_atm_file pointer already estalished for a
     ! file with this filename.
     call lookup_pio_atm_file(trim(filename),pio_file,found,is_open)
@@ -1145,6 +1151,7 @@ contains
         call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%isopen = .true.
         pio_file%purpose = purpose
+        pio_file%num_customers = pio_file%num_customers + 1
       endif
     endif
 
@@ -1157,6 +1164,7 @@ contains
       pio_file%filename = trim(filename)
       pio_file%isopen = .true.
       pio_file%numRecs = 0
+      pio_file%num_customers = 1
       if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
         call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
         call eam_pio_createHeader(pio_file%pioFileDesc)
