@@ -10,11 +10,13 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(homme_pd_remap
       "homme_pd_remap_tests.cpp;test_helper_mod.F90"
       "scream_share;${dynLibName}"
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+      LABELS "dynamics")
 
   # Test I/O on dyn grid
   CreateUnitTest(dyn_grid_io
       "dyn_grid_io.cpp;test_helper_mod.F90"
       "scream_share;scream_io;${dynLibName}"
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+      LABELS "dynamics;io")
 endif()
