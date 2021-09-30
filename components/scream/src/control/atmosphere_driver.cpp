@@ -237,7 +237,7 @@ void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   auto& io_params = m_atm_params.sublist("SCORPIO");
   for (auto it : m_grids_manager->get_repo()) {
     auto fm = m_field_mgrs.at(it.first);
-    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,restarted_run);
+    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,m_grids_manager,restarted_run);
   }
 
   m_ad_status |= s_output_inited;

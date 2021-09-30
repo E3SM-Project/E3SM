@@ -57,6 +57,7 @@ class OutputManager
 {
 public:
   using fm_type = FieldManager<Real>;
+  using gm_type = GridsManager;
 
   // Constructor(s) & Destructor
   OutputManager () = default;
@@ -67,6 +68,7 @@ public:
   //  - model_restart_output: whether this output stream is to write a model restart file
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::shared_ptr<const fm_type>& field_mgr,
+              const std::shared_ptr<const gm_type>& grids_mgr,
               const bool runtype_restart);
   void run(util::TimeStamp& current_ts);
   void finalize();
@@ -80,13 +82,14 @@ protected:
   // Craft the restart parameter list
   void make_restart_param_list(ekat::ParameterList& params);
 
-  using output_type = AtmosphereOutput;
+  using output_type     = AtmosphereOutput;
   using output_ptr_type = std::shared_ptr<output_type>;
 
   std::vector<output_ptr_type>        m_output_streams;
   ekat::Comm                          m_io_comm;
   ekat::ParameterList                 m_params;
   std::shared_ptr<const fm_type>      m_field_mgr;
+  std::shared_ptr<const gm_type>      m_grids_mgr;
 
   bool m_runtype_restart  = false;
 

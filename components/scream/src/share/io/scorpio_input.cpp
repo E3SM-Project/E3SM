@@ -3,6 +3,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
+#include <memory>
 #include <numeric>
 
 namespace scream
@@ -20,10 +21,11 @@ AtmosphereInput (const ekat::Comm& comm,
 AtmosphereInput::
 AtmosphereInput (const ekat::Comm& comm,
                  const ekat::ParameterList& params,
-                 const std::shared_ptr<const fm_type>& field_mgr)
+                 const std::shared_ptr<const fm_type>& field_mgr,
+                 const std::shared_ptr<const gm_type>& grids_mgr)
  : AtmosphereInput(comm,params)
 {
-  init (field_mgr);
+  init (field_mgr,grids_mgr);
 }
 
 AtmosphereInput::
@@ -44,16 +46,71 @@ set_parameters (const ekat::ParameterList& params) {
   m_fields_names = params.get<std::vector<std::string>>("Fields");
 }
 
-/* ---------------------------------------------------------- */
 void AtmosphereInput::
-set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
+set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
 
-  // The fm is good. Store it, then set the grid.
-  m_field_mgr = field_mgr;
-  set_grid(m_field_mgr->get_grid());
+  auto fm_grid = field_mgr->get_grid();
+  auto unique_grid = fm_grid->get_unique_grid();
+  if (fm_grid->is_unique()) {
+    // The fm is defined on a unique grid. Store it, then set the grid.
+    m_field_mgr = field_mgr;
+  } else {
+    // The fm is not on a unique grid. We need to create a helper fm,
+    // with all the import fields defined on the unique grid,
+    // set up scorpio with the helper fm, then create a remapper
+    // from the unique grid to the input fm grid.
+    EKAT_REQUIRE_MSG (unique_grid,
+        "Error! The grid stored in the input field manager is not unique,\n"
+        "       and is not storing a unique grid.\n"
+        "    grid name: " + fm_grid->name());
+    EKAT_REQUIRE_MSG (grids_mgr,
+        "Error! The input fields manager is defined on a non-unique grid,\n"
+        "       but no grids manager was provided.\n"
+        "    grid name: " + fm_grid->name());
+
+    // Create the remapper and register fields from the fid's taken from the input fm
+    m_remapper = grids_mgr->create_remapper(unique_grid,fm_grid);
+    m_remapper->registration_begins();
+    for (const auto& fname : m_fields_names) {
+      auto f = field_mgr->get_field(fname);
+      const auto& tgt_fid = f.get_header().get_identifier();
+
+      m_remapper->register_field_from_tgt(tgt_fid);
+    }
+    m_remapper->registration_ends();
+
+    // Now register the fields in the unique_fm. To generate their
+    // field identifiers, use the src fids from the remapper
+    auto unique_fm = std::make_shared<fm_type>(unique_grid);
+    unique_fm->registration_begins();
+    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+      const auto& src_fid = m_remapper->get_src_field_id(i);
+      auto f = field_mgr->get_field(src_fid.name());
+
+      const int ps = f.get_header().get_alloc_properties().get_largest_pack_size();
+      FieldRequest src_freq(src_fid,ps);
+      unique_fm->register_field(src_freq);
+    }
+    unique_fm->registration_ends();
+    m_field_mgr = unique_fm;
+
+    // Finally, bind the src/tgt fields in the remapper
+    for (const auto& fname : m_fields_names) {
+      auto src = unique_fm->get_field(fname);
+      auto tgt = field_mgr->get_field(fname);
+      m_remapper->bind_field(src,tgt);
+    }
+
+    // This should never fail, but just in case
+    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+        "Error! Something went wrong while building the scorpio input remapper.\n");
+  }
+
+  set_grid(unique_grid);
 }
 
 /* ---------------------------------------------------------- */
@@ -65,6 +122,9 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
   EKAT_REQUIRE_MSG (grid->name()=="Physics" || grid->name()=="Physics GLL",
       "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+  EKAT_REQUIRE_MSG (grid->is_unique(),
+      "Error! I/O only supports grids which are 'unique', meaning that the\n"
+      "       map dof_gid->proc_id is well defined.\n");
 
   EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
       "Error! PIO interface requires the size of the IO MPI group to be\n"
@@ -150,6 +210,10 @@ void AtmosphereInput::read_variables ()
       f.sync_to_dev();
     }
   }
+
+  if (m_remapper) {
+    m_remapper->remap(true);
+  }
 } 
 
 int AtmosphereInput::
@@ -162,13 +226,14 @@ read_int_scalar (const std::string& name)
 }
 
 void AtmosphereInput::
-init(const std::shared_ptr<const fm_type>& field_mgr) 
+init(const std::shared_ptr<const fm_type>& field_mgr,
+     const std::shared_ptr<const gm_type>& grids_mgr)
 {
   EKAT_REQUIRE_MSG (not m_is_inited,
       "Error! This instance of AtmosphereInput was already inited.\n"
       "       We do not allow re-initialization.\n");
 
-  set_field_manager(field_mgr);
+  set_field_manager(field_mgr,grids_mgr);
 
   for (auto const& name : m_fields_names) {
     auto f = m_field_mgr->get_field(name);

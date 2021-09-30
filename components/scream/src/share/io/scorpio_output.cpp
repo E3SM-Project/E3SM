@@ -12,25 +12,18 @@ namespace scream
 
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                  const std::shared_ptr<const fm_type>& field_mgr,
+                  const std::shared_ptr<const gm_type>& grids_mgr,
                   const bool is_restarted_run, const bool is_model_restart_output)
  : m_comm      (comm)
- , m_params    (params)
- , m_field_mgr (field_mgr)
  , m_is_model_restart_output (is_model_restart_output)
  , m_is_restarted_run (is_restarted_run)
 {
-  // Sanity checks
-  EKAT_REQUIRE_MSG (m_field_mgr, "Error! Invalid field manager pointer.\n");
+  // Parse the input parameter list
+  set_params(params);
 
-  m_grid = m_field_mgr->get_grid();
-  EKAT_REQUIRE_MSG(m_grid->name()=="Physics" || m_grid->name()=="Physics GLL",
-      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
-
-  EKAT_REQUIRE_MSG(m_comm.size()<=m_grid->get_num_global_dofs(),
-      "Error! PIO interface requires the size of the IO MPI group to be\n"
-      "       no greater than the global number of columns.\n"
-      "       Consider decreasing the size of IO MPI group.\n");
+  // Sets the intermal field mgr, and possibly sets up the remapper
+  set_field_manager(field_mgr,grids_mgr);
 
   // Setup I/O structures
   init ();
@@ -39,40 +32,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::init()
 {
-  // Parse the parameters that controls this output instance.
-  m_casename = m_params.get<std::string>("Casename");
-
-  m_max_snapshots_per_file  = m_params.get<int>("Max Snapshots Per File");
-  m_out_frequency           = m_params.sublist("Output").get<int>("Frequency");
-  m_out_frequency_units     = m_params.sublist("Output").get<std::string>("Frequency Units");
-
-  auto avg_type = m_params.get<std::string>("Averaging Type");
-  m_avg_type = ekat::upper_case(avg_type);
-  auto valid_avg_types = {"INSTANT", "MAX", "MIN", "AVERAGE"};
-  EKAT_REQUIRE_MSG (ekat::contains(valid_avg_types,m_avg_type),
-      "Error! Unsupported averaging type '" + avg_type + "'.\n"
-      "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
-
-  m_has_restart_data = (m_avg_type!="INSTANT");
-
-  if (m_has_restart_data) {
-    // This avg_type needs to save  some info in order to restart the output.
-    // E.g., we might save 30-day avg value for field F, but due to job size
-    // break the run into three 10-day runs. We then need to save the state of
-    // our averaging in a "restart" file (e.g., the current avg and avg_count).
-    // If checkpoint_freq=0, we do not perform checkpointing of the output.
-    // NOTE: we may not need to *read* restart data (if this is not a restart run),
-    //       but we might still want to save it. Viceversa, we might not want
-    //       to save it, but still want to read it (a restarted run, where we
-    //       don't want to save additional restart files).
-    m_is_restarted_run     &= m_params.sublist("Restart").get("Perform Restart",true);
-    m_checkpoint_freq       = m_params.sublist("Checkpointing").get("Frequency",0);
-    m_checkpoint_freq_units = m_params.sublist("Checkpointing").get("Frequency Units",m_out_frequency_units);
-  }
-
-  // For each output field, ensure its dimensions are registered in the pio file
-  m_fields = m_params.get<std::vector<std::string>>("Fields");
-  for (const auto& var_name : m_fields) {
+  for (const auto& var_name : m_fields_names) {
     register_dimensions(var_name);
   }
 
@@ -91,8 +51,7 @@ void AtmosphereOutput::init()
     if (m_comm.am_i_root()) {
       std::ifstream rpointer_file;
       rpointer_file.open("rpointer.atm");
-      auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
-      auto testname = compute_filename_root(hist_restart_testname);
+      auto testname = compute_filename_root(m_hist_restart_casename);
       while (rpointer_file >> filename) {
         rpointer_content += filename + "\n";
         if (filename.find(testname) != std::string::npos) {
@@ -122,7 +81,7 @@ void AtmosphereOutput::init()
       // Create an input stream on the fly, and init averaging data
       ekat::ParameterList res_params("Input Parameters");
       res_params.set<std::string>("Filename",filename);
-      res_params.set("Fields",m_fields);
+      res_params.set("Fields",m_fields_names);
 
       AtmosphereInput hist_restart (m_comm,res_params,m_grid,m_host_views_1d,m_layouts);
       hist_restart.read_variables();
@@ -130,8 +89,7 @@ void AtmosphereOutput::init()
       hist_restart.finalize();
     } else {
       if (m_comm.am_i_root()) {
-        auto hist_restart_testname = m_params.sublist("Restart").get("Casename",m_casename);
-        auto testname = compute_filename_root(hist_restart_testname);
+        auto testname = compute_filename_root(m_hist_restart_casename);
         printf ("WARNING! No restart file found in the rpointer for case\n"
                 "        %s\n"
                 "   We *assume* this is because the last model restart write step\n"
@@ -253,8 +211,13 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     }
   }
 
+  // If needed, remap fields from their grid to the unique grid, for I/O
+  if (m_remapper) {
+    m_remapper->remap(true);
+  }
+
   // Take care of updating and possibly writing fields.
-  for (auto const& name : m_fields) {
+  for (auto const& name : m_fields_names) {
     // Get all the info for this field.
     const auto  field = m_field_mgr->get_field(name);
     const auto& layout = m_layouts.at(name);
@@ -342,6 +305,148 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
 } // run_impl
 
 /* ---------------------------------------------------------- */
+
+void AtmosphereOutput::
+set_params (const ekat::ParameterList& params)
+{
+  // Parse the parameters that controls this output instance.
+  m_casename = params.get<std::string>("Casename");
+
+  m_max_snapshots_per_file  = params.get<int>("Max Snapshots Per File");
+  m_out_frequency           = params.sublist("Output").get<int>("Frequency");
+  m_out_frequency_units     = params.sublist("Output").get<std::string>("Frequency Units");
+
+  auto avg_type = params.get<std::string>("Averaging Type");
+  m_avg_type = ekat::upper_case(avg_type);
+  auto valid_avg_types = {"INSTANT", "MAX", "MIN", "AVERAGE"};
+  EKAT_REQUIRE_MSG (ekat::contains(valid_avg_types,m_avg_type),
+      "Error! Unsupported averaging type '" + avg_type + "'.\n"
+      "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
+
+  m_has_restart_data = (m_avg_type!="INSTANT");
+
+  if (m_has_restart_data) {
+    // This avg_type needs to save  some info in order to restart the output.
+    // E.g., we might save 30-day avg value for field F, but due to job size
+    // break the run into three 10-day runs. We then need to save the state of
+    // our averaging in a "restart" file (e.g., the current avg and avg_count).
+    // If checkpoint_freq=0, we do not perform checkpointing of the output.
+    // NOTE: we may not need to *read* restart data (if this is not a restart run),
+    //       but we might still want to save it. Viceversa, we might not want
+    //       to save it, but still want to read it (a restarted run, where we
+    //       don't want to save additional restart files).
+    if (params.isSublist("Restart")) {
+      const auto& pl = params.sublist("Restart");
+      m_is_restarted_run     &= pl.isParameter("Perform Restart") ?
+                                pl.get<bool>("Perform Restart") : true;;
+      m_hist_restart_casename = pl.isParameter("Casename") ? 
+                                pl.get<std::string>("Casename") : m_casename;
+    }
+
+    if (params.isSublist("Checkpointing")) {
+      const auto& pl = params.sublist("Checkpointing"); 
+      m_checkpoint_freq       = pl.isParameter("Frequency") ? 
+                                pl.get<int>("Frequency") : 0;
+      m_checkpoint_freq_units = pl.isParameter("Frequency Units") ?
+                                pl.get<std::string>("Frequency Units") : m_out_frequency_units;
+    }
+  }
+
+  // For each output field, ensure its dimensions are registered in the pio file
+  m_fields_names = params.get<std::vector<std::string>>("Fields");
+}
+
+void AtmosphereOutput::
+set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::shared_ptr<const gm_type>& grids_mgr)
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
+
+  auto fm_grid = field_mgr->get_grid();
+  auto unique_grid = fm_grid->get_unique_grid();
+  if (fm_grid->is_unique()) {
+    // The fm is defined on a unique grid. Store it, then set the grid.
+    m_field_mgr = field_mgr;
+  } else {
+    // The fm is not on a unique grid. We need to create a helper fm,
+    // with all the import fields defined on the unique grid,
+    // set up scorpio with the helper fm, then create a remapper
+    // from the input fm grid to the unique grid.
+    EKAT_REQUIRE_MSG (unique_grid,
+        "Error! The grid stored in the input field manager is not unique,\n"
+        "       and is not storing a unique grid.\n"
+        "    grid name: " + fm_grid->name());
+    EKAT_REQUIRE_MSG (grids_mgr,
+        "Error! The input fields manager is defined on a non-unique grid,\n"
+        "       but no grids manager was provided.\n"
+        "    grid name: " + fm_grid->name());
+
+    // Create the remapper and register fields from the fid's taken from the input fm
+    m_remapper = grids_mgr->create_remapper(fm_grid,unique_grid);
+    m_remapper->registration_begins();
+    for (const auto& fname : m_fields_names) {
+      auto f = field_mgr->get_field(fname);
+      const auto& src_fid = f.get_header().get_identifier();
+
+      m_remapper->register_field_from_src(src_fid);
+    }
+    m_remapper->registration_ends();
+
+    // Now register the fields in the unique_fm. To generate their
+    // field identifiers, use the tgt fids from the remapper
+    auto unique_fm = std::make_shared<fm_type>(unique_grid);
+    unique_fm->registration_begins();
+    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+      const auto& tgt_fid = m_remapper->get_tgt_field_id(i);
+      auto f = field_mgr->get_field(tgt_fid.name());
+
+      const int ps = f.get_header().get_alloc_properties().get_largest_pack_size();
+      FieldRequest tgt_freq(tgt_fid,ps);
+      unique_fm->register_field(tgt_freq);
+    }
+    unique_fm->registration_ends();
+    m_field_mgr = unique_fm;
+
+    // Finally, bind the src/tgt fields in the remapper
+    // While at it, set the same time stamp of the new field
+    // (otherwise an error is thrown during the run() call)
+    for (const auto& fname : m_fields_names) {
+      auto src = field_mgr->get_field(fname);
+      auto tgt = unique_fm->get_field(fname);
+      tgt.get_header().get_tracking().update_time_stamp(src.get_header().get_tracking().get_time_stamp());
+      m_remapper->bind_field(src,tgt);
+    }
+
+    // This should never fail, but just in case
+    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+        "Error! Something went wrong while building the scorpio input remapper.\n");
+  }
+
+  set_grid(unique_grid);
+}
+
+void AtmosphereOutput::
+set_grid (const std::shared_ptr<const AbstractGrid>& grid)
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (not m_grid, "Error! Grid pointer was already set.\n");
+  EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
+  EKAT_REQUIRE_MSG (grid->name()=="Physics" || grid->name()=="Physics GLL",
+      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
+  EKAT_REQUIRE_MSG (grid->is_unique(),
+      "Error! I/O only supports grids which are 'unique', meaning that the\n"
+      "       map dof_gid->proc_id is well defined.\n");
+
+  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
+      "Error! PIO interface requires the size of the IO MPI group to be\n"
+      "       no greater than the global number of columns.\n"
+      "       Consider decreasing the size of IO MPI group.\n");
+
+  // The grid is good. Store it.
+  m_grid = grid;
+}
+
 void AtmosphereOutput::register_dimensions(const std::string& name)
 {
 /* 
@@ -384,7 +489,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 void AtmosphereOutput::register_views()
 {
   // Cycle through all fields and register.
-  for (auto const& name : m_fields) {
+  for (auto const& name : m_fields_names) {
     auto field = m_field_mgr->get_field(name);
 
     // These local views are really only needed if the averaging time is not 'Instant',
@@ -416,7 +521,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   using namespace scorpio;
 
   // Cycle through all fields and register.
-  for (auto const& name : m_fields) {
+  for (auto const& name : m_fields_names) {
     auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -484,7 +589,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   using namespace ShortFieldTagsNames;
 
   // Cycle through all fields and set dof.
-  for (auto const& name : m_fields) {
+  for (auto const& name : m_fields_names) {
     auto field = m_field_mgr->get_field(name);
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());

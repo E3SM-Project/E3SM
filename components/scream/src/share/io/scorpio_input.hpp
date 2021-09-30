@@ -2,10 +2,9 @@
 #define SCREAM_SCORPIO_INPUT_HPP
 
 #include "share/io/scream_scorpio_interface.hpp"
-
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "scream_config.h"
+#include "share/grid/grids_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -59,8 +58,10 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using fm_type   = FieldManager<Real>;
-  using grid_type = AbstractGrid;
+  using fm_type       = FieldManager<Real>;
+  using grid_type     = AbstractGrid;
+  using gm_type       = GridsManager;
+  using remapper_type = AbstractRemapper<Real>;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -90,7 +91,9 @@ public:
   // It calls init(field_mgr) at the end.
   AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params,
-                   const std::shared_ptr<const fm_type>& field_mgr);
+                   const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
+
   // Creates input to read into user-provided flattened 1d host views.
   // Constructor inputs:
   //  - comm: the MPI comm used for I/O operations. Notice that the
@@ -118,7 +121,8 @@ public:
   //  - field_mgr: the FieldManager containing the Field's where the
   //               variables from the input filed will be read into.
   //               Fields can be padded/strided.
-  void init(const std::shared_ptr<const fm_type>& field_mgr);
+  void init(const std::shared_ptr<const fm_type>& field_mgr,
+            const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
 
   // Sets up the scorpio metadata to preare for reading
   // Inputs:
@@ -139,7 +143,8 @@ protected:
   // Internal functions
   void set_parameters (const ekat::ParameterList& params);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::shared_ptr<const gm_type>& grids_mgr);
 
   void init_scorpio_structures ();
   void register_variables();
@@ -154,6 +159,7 @@ protected:
 
   std::shared_ptr<const fm_type>        m_field_mgr;
   std::shared_ptr<const AbstractGrid>   m_grid;
+  std::shared_ptr<remapper_type>        m_remapper;
 
   std::map<std::string, view_1d_host>   m_host_views_1d;
   std::map<std::string, FieldLayout>    m_layouts;

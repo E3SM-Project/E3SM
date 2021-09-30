@@ -33,10 +33,15 @@ using input_type = AtmosphereInput;
 const int packsize = 2;
 using Pack         = ekat::Pack<Real,packsize>;
 
-std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid);
-std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-ekat::ParameterList                 get_om_params(const ekat::Comm& comm, const std::string& grid);
-ekat::ParameterList                 get_in_params(const std::string type, const ekat::Comm& comm);
+std::shared_ptr<FieldManager<Real>>
+get_test_fm(std::shared_ptr<const AbstractGrid> grid);
+
+std::shared_ptr<UserProvidedGridsManager>
+get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+
+ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid);
+
+ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm);
 
 TEST_CASE("input_output_basic","io")
 {
@@ -50,14 +55,15 @@ TEST_CASE("input_output_basic","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // First set up a field manager and grids manager to interact with the output functions
-  auto grid = get_test_grid(io_comm,num_gcols,num_levs);
+  auto gm = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = gm->get_grid("Physics");
   int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
 
   // Create an Output manager for testing output
   OutputManager output_manager;
   auto output_params = get_om_params(io_comm,grid->name());
-  output_manager.setup(io_comm,output_params,field_manager,false);
+  output_manager.setup(io_comm,output_params,field_manager,gm,false);
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
@@ -199,6 +205,7 @@ TEST_CASE("input_output_basic","io")
   
   // All Done 
   scorpio::eam_pio_finalize();
+  gm->clean_up();
 } // TEST_CASE output_instance
 /* ----------------------------------*/
 
@@ -281,9 +288,12 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   return fm;
 }
 /*===================================================================================================================*/
-std::shared_ptr<const AbstractGrid> get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-  return create_point_grid("Physics",num_gcols,num_levs,io_comm);
+  auto pg =  create_point_grid("Physics",num_gcols,num_levs,io_comm);
+  auto gm = std::make_shared<UserProvidedGridsManager>();
+  gm->set_grid(pg);
+  return gm;
 }
 /*===================================================================================================================*/
 ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid)
