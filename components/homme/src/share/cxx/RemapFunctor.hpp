@@ -482,14 +482,16 @@ struct RemapFunctor : public Remapper {
     const int ne = dp_src.extent_int(0), nv = num_remap;
     assert(nv <= m_data.capacity);
     const auto remap = m_remap;
+    const auto tu_ne = m_tu_ne;
     const auto g = KOKKOS_LAMBDA (const TeamMember& team) {
-      KernelVariables kv(team, m_tu_ne);
+      KernelVariables kv(team, tu_ne);
       remap.compute_grids_phase(kv, Homme::subview(dp_src, kv.ie, np1),
                                 Homme::subview(dp_tgt, kv.ie));
     };
     Kokkos::parallel_for(get_default_team_policy<ExecSpace>(ne), g);
+    const auto tu_ne_ntr = m_tu_ne_ntr;
     const auto r = KOKKOS_LAMBDA (const TeamMember& team) {
-      KernelVariables kv(team, nv, m_tu_ne_ntr);
+      KernelVariables kv(team, nv, tu_ne_ntr);
       remap.compute_remap_phase(kv, Kokkos::subview(v, kv.ie, kv.iq, ALL(), ALL(), ALL()));
     };
     Kokkos::fence();
@@ -506,14 +508,16 @@ struct RemapFunctor : public Remapper {
     const int ne = dp_src.extent_int(0), nv = num_remap;
     assert(nv <= m_data.capacity);
     const auto remap = m_remap;
+    const auto tu_ne = m_tu_ne;
     const auto g = KOKKOS_LAMBDA (const TeamMember& team) {
-      KernelVariables kv(team, m_tu_ne);
+      KernelVariables kv(team, tu_ne);
       remap.compute_grids_phase(kv, Homme::subview(dp_src, kv.ie),
                                 Homme::subview(dp_tgt, kv.ie, np1));
     };
     Kokkos::parallel_for(get_default_team_policy<ExecSpace>(ne), g);
+    const auto tu_ne_ntr = m_tu_ne_ntr;
     const auto r = KOKKOS_LAMBDA (const TeamMember& team) {
-      KernelVariables kv(team, nv, m_tu_ne_ntr);
+      KernelVariables kv(team, nv, tu_ne_ntr);
       remap.compute_remap_phase(kv, Kokkos::subview(v, kv.ie, n_v, kv.iq, ALL(), ALL(), ALL()));
     };
     Kokkos::fence();
