@@ -2,23 +2,18 @@ module test_helper_mod
 
   implicit none
 
-  public :: set_test_params_f90
+  public :: init_test_params_f90
   public :: cleanup_test_f90
 
 contains
 
-  subroutine set_test_params_f90 (ne_in) bind(c)
-    use iso_c_binding,     only: c_int
-    use dimensions_mod,    only: ne
+  ! This routine marks the params as inited in the F90 interface to homme,
+  ! as well as hard codes some parameters that prescribe a cubed-sphere mesh
+  subroutine init_test_params_f90 () bind(c)
     use control_mod,       only: topology, cubed_sphere_map, partmethod
     use params_mod,        only: SFCURVE
     use homme_context_mod, only: is_params_inited
     use physical_constants, only : domain_size, DD_PI
-
-    !
-    ! Inputs
-    !
-    integer (kind=c_int), intent(in) :: ne_in
 
     ! Hard coded choices for cubed sphere
     topology = 'cube'
@@ -26,11 +21,8 @@ contains
     partmethod = SFCURVE
     domain_size = 4.0D0*DD_PI
 
-    ! Set desired resolution
-    ne = ne_in
-
     is_params_inited = .true.
-  end subroutine set_test_params_f90
+  end subroutine init_test_params_f90
 
   subroutine cleanup_test_f90 () bind(c)
     use schedtype_mod,     only: schedule

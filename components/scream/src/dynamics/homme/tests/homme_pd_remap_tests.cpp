@@ -21,7 +21,7 @@
 
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
-void set_test_params_f90 (const int& ne_in);
+void init_test_params_f90 ();
 void cleanup_test_f90 ();
 }
 
@@ -51,6 +51,7 @@ TEST_CASE("remap", "") {
     auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
     init_parallel_f90(comm_f);
   }
+  init_test_params_f90 ();
 
   // We'll use this extensively, so let's use a short ref name
   auto& c = Homme::Context::singleton();
@@ -61,7 +62,7 @@ TEST_CASE("remap", "") {
 
   // Set parameters
   constexpr int ne = 2;
-  set_test_params_f90 (ne);
+  set_homme_param("ne",ne);
 
   // Create the grids
   ekat::ParameterList params;
@@ -594,6 +595,7 @@ TEST_CASE("combo_remap", "") {
     auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
     init_parallel_f90(comm_f);
   }
+  init_test_params_f90 ();
 
   // We'll use this extensively, so let's use a short ref name
   auto& c = Homme::Context::singleton();
@@ -604,7 +606,7 @@ TEST_CASE("combo_remap", "") {
 
   // Set parameters
   constexpr int ne = 2;
-  set_test_params_f90 (ne);
+  set_homme_param("ne",ne);
 
   // Create the grids
   ekat::ParameterList params;
