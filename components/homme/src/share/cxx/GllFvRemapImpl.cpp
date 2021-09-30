@@ -5,8 +5,13 @@
  *******************************************************************************/
 
 #include "GllFvRemapImpl.hpp"
-#include "EquationOfState.hpp"
-#include "ElementOps.hpp"
+#ifdef MODEL_THETA_L
+// GllFvRemap can't run with preqx_kokkos because preqx_kokkos does not provide
+// EquationOfState or ElementOps. But we need this to build for use in the
+// eam-hommexx test.
+# include "EquationOfState.hpp"
+# include "ElementOps.hpp"
+#endif
 
 namespace Homme {
 
@@ -324,6 +329,8 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
                       const Phys2T& omegas, const Phys3T& uvs, const Phys3T& qs) {
+  // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
+#ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
   const int np2 = GllFvRemapImpl::np2;
@@ -515,11 +522,13 @@ void GllFvRemapImpl
   };
   Kokkos::fence();
   Kokkos::parallel_for(m_tp_ne_qsize, feq);
+#endif
 }
 
 void GllFvRemapImpl::
 run_fv_phys_to_dyn (const int timeidx, const Real dt,
                     const CPhys2T& Ts, const CPhys3T& uvs, const CPhys3T& qs) {
+#ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
   const int np2 = GllFvRemapImpl::np2;
@@ -761,6 +770,7 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   };
   Kokkos::fence();
   parallel_for(m_tp_ne_qsize, geq);
+#endif
 }
 
 void GllFvRemapImpl::run_fv_phys_to_dyn_dss () {

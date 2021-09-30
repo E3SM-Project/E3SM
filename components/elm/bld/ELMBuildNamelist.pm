@@ -2132,12 +2132,12 @@ sub setup_logic_glacier {
   # to also respond to GLC_TWO_WAY_COUPLING, by not bothering to send / map
   # these fields - so we want to ensure that CLM is truly listening to this
   # shared xml variable and not overriding it)
-  my $var = "glc_do_dynglacier";
-  my $val = logical_to_fortran($envxml_ref->{$clm_upvar});
-  add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$val);
-  if (lc($nl->get_value($var)) ne lc($val)) {
-    fatal_error("glc_do_dynglacier can only be set via the env variable $clm_upvar: it can NOT be set in user_nl_clm\n");
-  }
+  #  my $var = "glc_do_dynglacier";
+  #  my $val = logical_to_fortran($envxml_ref->{$clm_upvar});
+  #  add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$val);
+  #  if (lc($nl->get_value($var)) ne lc($val)) {
+  #    fatal_error("glc_do_dynglacier can only be set via the env variable $clm_upvar: it can NOT be set in user_nl_clm\n");
+  #  }
   
   my $var = "maxpatch_glcmec";
   add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$nl_flags->{'glc_nec'} );

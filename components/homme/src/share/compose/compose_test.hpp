@@ -20,8 +20,8 @@ typedef Int Size;
 
 namespace ko = Kokkos;
 
-template <typename T> inline constexpr T square (const T& x) { return x*x; }
-template <typename T> inline constexpr T cube (const T& x) { return x*x*x; }
+template <typename T> KOKKOS_INLINE_FUNCTION T square (const T& x) { return x*x; }
+template <typename T> KOKKOS_INLINE_FUNCTION T cube (const T& x) { return x*x*x; }
 
 struct consts {
   static constexpr Real earth_radius_m = 6.376e6;

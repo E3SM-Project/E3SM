@@ -14,8 +14,8 @@
 	branch = e3sm/kokkos
 [submodule "rrtmgp"]
 	path = components/eam/src/physics/rrtmgp/external
-	url = git@github.com:RobertPincus/rte-rrtmgp.git
-	branch = develop
+	url = git@github.com:E3SM-Project/rte-rrtmgp.git
+	branch = master
 [submodule "externals/scorpio"]
 	path = externals/scorpio
 	url = git@github.com:E3SM-Project/scorpio.git

@@ -796,6 +796,9 @@
 <use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
 <MMF_VT_wn_max            > 0      </MMF_VT_wn_max>
 
+<MMF_orientation_angle yes3Dval=0 > 90.0 </MMF_orientation_angle>
+<MMF_orientation_angle yes3Dval=1 >  0.0 </MMF_orientation_angle>
+
 <do_aerocom_ind3                > .false. </do_aerocom_ind3>
 <do_aerocom_ind3  aerocom_ind3="1" > .true.  </do_aerocom_ind3>
 
@@ -1180,7 +1183,6 @@
 <integration> "explicit" </integration>
 
 <se_ftype> 2 </se_ftype>
-<se_ftype scam="1" > 0 </se_ftype>
 
 <se_limiter_option> 9 </se_limiter_option>
 

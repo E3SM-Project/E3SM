@@ -50,7 +50,7 @@ set_Qm (const Int& lclcellidx, const Int& tracer_idx,
       cedr_kernel_throw_if(true, "set_Q: invalid problem_type.");
     }
     if (problem_type & ProblemType::conserve) {
-      cedr_kernel_throw_if(Qm_prev == std::numeric_limits<Real>::infinity(),
+      cedr_kernel_throw_if(Qm_prev == cedr::impl::TypeTraits<Real>::infinity,
                            "Qm_prev was not provided to set_Q.");
       bd[next] = Qm_prev;
     }
@@ -134,7 +134,7 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
     const bool lo = Qm < Qm_min, hi = Qm > Qm_max;
     if (lo || hi) {
       // If the discrepancy is numerical noise, don't act on it.
-      const Real tol = 10*std::numeric_limits<Real>::epsilon();
+      const Real tol = 10*cedr::impl::TypeTraits<Real>::epsilon;
       const Real discrepancy = lo ? Qm_min - Qm : Qm - Qm_max;
       if (discrepancy > tol*(Qm_max - Qm_min)) {
         const Real rhom_kids[] = {rhom0, rhom1};

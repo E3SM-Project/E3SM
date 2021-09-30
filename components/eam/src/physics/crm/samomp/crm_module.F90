@@ -1,4 +1,6 @@
-
+!---------------------------------------------------------------------------------------------------
+! MMF main driver (original version by Marat Khairoutdinov)
+!---------------------------------------------------------------------------------------------------
 module crm_module
   use perf_mod
   use task_init_mod, only: task_init
@@ -24,7 +26,7 @@ module crm_module
   use damping_mod
   use ice_fall_mod
   use coriolis_mod
-
+  use setparm_mod,            only: setparm
   use crm_state_module,       only: crm_state_type
   use crm_rad_module,         only: crm_rad_type
   use crm_input_module,       only: crm_input_type
@@ -33,16 +35,11 @@ module crm_module
 #ifdef ECPP  
   use module_ecpp_crm_driver, only: ecpp_crm_stat, ecpp_crm_init, ecpp_crm_cleanup
 #endif
-!---------------------------------------------------------------
-!  Super-parameterization's main driver
-!  Marat Khairoutdinov, 2001-2009
-!---------------------------------------------------------------
-use setparm_mod, only : setparm
 
 contains
 
-subroutine crm(lchnk, ncrms, dt_gl, plev,       &
-                crm_input, crm_state, crm_rad,  &
+subroutine crm( ncrms, dt_gl, plev,       &
+                crm_input, crm_state, crm_rad, &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
                 use_VT, VT_wn_max, &
@@ -79,8 +76,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !-----------------------------------------------------------------------------------------------
   ! Interface variable declarations
   !-----------------------------------------------------------------------------------------------
-
-  integer , intent(in   ) :: lchnk                            ! chunk identifier (only for lat/lon and random seed)
   integer , intent(in   ) :: ncrms                            ! Number of "vector" GCM columns to push down into CRM for SIMD vectorization / more threading
   integer , intent(in   ) :: plev                             ! number of levels in parent model
   real(r8), intent(in   ) :: dt_gl                            ! global model's time step
@@ -315,6 +310,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   real(crm_rknd), pointer :: crm_rad_qi           (:,:,:,:)
   real(crm_rknd), pointer :: crm_rad_cld          (:,:,:,:)
   real(crm_rknd), pointer :: crm_rad_qrad         (:,:,:,:)
+  real(crm_rknd), pointer :: crm_rad_nc           (:,:,:,:)
+  real(crm_rknd), pointer :: crm_rad_ni           (:,:,:,:)
+  real(crm_rknd), pointer :: crm_rad_qs           (:,:,:,:)
+  real(crm_rknd), pointer :: crm_rad_ns           (:,:,:,:)
+
   real(crm_rknd), pointer :: crm_state_u_wind     (:,:,:,:)
   real(crm_rknd), pointer :: crm_state_v_wind     (:,:,:,:)
   real(crm_rknd), pointer :: crm_state_w_wind     (:,:,:,:)
@@ -369,10 +369,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_rad_qi  = 0.
   crm_rad_cld = 0.
 #ifdef m2005
-  crm_rad%nc = 0.0
-  crm_rad%ni = 0.0
-  crm_rad%qs = 0.0
-  crm_rad%ns = 0.0
+  crm_rad_nc = 0.0
+  crm_rad_ni = 0.0
+  crm_rad_qs = 0.0
+  crm_rad_ns = 0.0
 #endif /* m2005 */
   do icrm = 1 , ncrms
     bflx(icrm) = crm_input_bflxls(icrm)
@@ -1085,13 +1085,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             endif
 #ifdef m2005
             !$omp atomic update
-            crm_rad%nc         (icrm,i_rad,j_rad,k) = crm_rad%nc         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,incl)
+            crm_rad_nc         (icrm,i_rad,j_rad,k) = crm_rad_nc         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,incl)
             !$omp atomic update
-            crm_rad%ni         (icrm,i_rad,j_rad,k) = crm_rad%ni         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,inci)
+            crm_rad_ni         (icrm,i_rad,j_rad,k) = crm_rad_ni         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,inci)
             !$omp atomic update
-            crm_rad%qs         (icrm,i_rad,j_rad,k) = crm_rad%qs         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,iqs )
+            crm_rad_qs         (icrm,i_rad,j_rad,k) = crm_rad_qs         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,iqs )
             !$omp atomic update
-            crm_rad%ns         (icrm,i_rad,j_rad,k) = crm_rad%ns         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,ins )
+            crm_rad_ns         (icrm,i_rad,j_rad,k) = crm_rad_ns         (icrm,i_rad,j_rad,k) + micro_field(icrm,i,j,k,ins )
 #endif
           enddo
         enddo
@@ -1180,10 +1180,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
           crm_rad_qi         (icrm,i,j,k) = crm_rad_qi         (icrm,i,j,k) * tmp1
           crm_rad_cld        (icrm,i,j,k) = crm_rad_cld        (icrm,i,j,k) * tmp1
 #ifdef m2005
-          crm_rad%nc         (icrm,i,j,k) = crm_rad%nc         (icrm,i,j,k) * tmp1
-          crm_rad%ni         (icrm,i,j,k) = crm_rad%ni         (icrm,i,j,k) * tmp1
-          crm_rad%qs         (icrm,i,j,k) = crm_rad%qs         (icrm,i,j,k) * tmp1
-          crm_rad%ns         (icrm,i,j,k) = crm_rad%ns         (icrm,i,j,k) * tmp1
+          crm_rad_nc         (icrm,i,j,k) = crm_rad_nc         (icrm,i,j,k) * tmp1
+          crm_rad_ni         (icrm,i,j,k) = crm_rad_ni         (icrm,i,j,k) * tmp1
+          crm_rad_qs         (icrm,i,j,k) = crm_rad_qs         (icrm,i,j,k) * tmp1
+          crm_rad_ns         (icrm,i,j,k) = crm_rad_ns         (icrm,i,j,k) * tmp1
 #endif /* m2005 */
         enddo
       enddo
@@ -1967,6 +1967,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     crm_rad_qi          => crm_rad%qi         (1:ncrms,:,:,:)
     crm_rad_cld         => crm_rad%cld        (1:ncrms,:,:,:)
     crm_rad_qrad        => crm_rad%qrad       (1:ncrms,:,:,:)
+
+#ifdef m2005
+    crm_rad_nc => crm_rad%nc(1:ncrms,:,:,:)
+    crm_rad_ni => crm_rad%ni(1:ncrms,:,:,:)
+    crm_rad_qs => crm_rad%qs(1:ncrms,:,:,:)
+    crm_rad_ns => crm_rad%ns(1:ncrms,:,:,:)
+#endif /* m2005 */
 
     crm_state_u_wind      => crm_state%u_wind     (1:ncrms,:,:,:)
     crm_state_v_wind      => crm_state%v_wind     (1:ncrms,:,:,:)

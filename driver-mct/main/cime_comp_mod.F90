@@ -1377,6 +1377,7 @@ contains
 
   subroutine cime_init()
 
+103 format( 5A )
 104 format( A, i10.8, i8)
 
   !-----------------------------------------------------------------------------
@@ -2316,6 +2317,10 @@ contains
 
     call seq_diag_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
+       if (iamroot_CPLID) then
+          write(logunit,103) subname,' Reading restart file ',trim(rest_file)
+          call shr_sys_flush(logunit)
+       end if
        call seq_rest_read(rest_file, infodata, &
             atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
@@ -2416,7 +2421,8 @@ contains
     integer               :: hashint(hashcnt)
                                                   ! Driver pause/resume
     logical               :: drv_pause            ! Driver writes pause restart file
-    character(len=CL)     :: drv_resume           ! Driver resets state from restart file
+    logical               :: drv_resume           ! Driver resets state from restart file
+    character(len=CL)     :: drv_resume_file      ! The restart (resume) file
     character(len=CL), pointer :: resume_files(:) ! Component resume files
 
     type(ESMF_Time)       :: etime_curr           ! Current model time
@@ -2441,6 +2447,7 @@ contains
 
     call t_startf ('CPL:cime_run_init')
     hashint = 0
+    drv_resume=.FALSE.
 
     call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
     call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
@@ -3116,7 +3123,7 @@ contains
        !----------------------------------------------------------
        !| Write driver restart file
        !----------------------------------------------------------
-       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume)
+       call cime_run_write_restart(drv_pause, restart_alarm, drv_resume_file)
 
        !----------------------------------------------------------
        !| Write history file, only AVs on CPLID
@@ -3348,7 +3355,7 @@ contains
                   WAVID(ewi), component_get_iamroot_compid(wav(ewi)))
           end do
           ! Here we pass 1 as num_inst_driver as num_inst_driver is used inside
-          call seq_resume_store_comp('x', drv_resume, 1,                      &
+          call seq_resume_store_comp('x', drv_resume_file, 1,                 &
                driver_id, iamroot_CPLID)
           call component_run(Eclock_e, esp, esp_run, infodata,                &
                comp_prognostic=esp_prognostic, comp_num=comp_num_esp,         &
@@ -3402,26 +3409,27 @@ contains
           end if
           call seq_resume_get_files('x', resume_files)
           if (associated(resume_files)) then
-             drv_resume = resume_files(driver_id)
+             drv_resume_file = resume_files(driver_id)
           end if
        end if
 
        !----------------------------------------------------------
        !| RESUME (read restart) if signaled
        !----------------------------------------------------------
-       if (len_trim(drv_resume) > 0) then
+       if (drv_resume)  then
           if (iamroot_CPLID) then
-             write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume)
+             write(logunit,103) subname,' Reading restart (resume) file ',trim(drv_resume_file)
              call shr_sys_flush(logunit)
           end if
           if (iamin_CPLID) then
-             call seq_rest_read(drv_resume, infodata,                          &
+             call seq_rest_read(drv_resume_file, infodata,                     &
                   atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
                   fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
                   fractions_rx, fractions_gx, fractions_wx, fractions_zx)
           end if
           ! Clear the resume file so we don't try to read it again
-          drv_resume = ' '
+          drv_resume = .FALSE.
+          drv_resume_file = ' '
        end if
 
        !----------------------------------------------------------
@@ -4243,7 +4251,7 @@ contains
        ! ocn budget
        !----------------------------------------------------------
        if (do_budgets) then
-          call cime_run_calc_budgets3()
+          call cime_run_calc_budgets3(in_cplrun=.true.)
        endif
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4753,7 +4761,7 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_calc_budgets1()
+  subroutine cime_run_calc_budgets1(in_cplrun)
 
     !----------------------------------------------------------
     ! Budget with old fractions
@@ -4766,9 +4774,21 @@ contains
     ! it will also use the current r2x_ox here which is the value from the last timestep
     ! consistent with the ocean coupling
 
+    logical,intent(in),optional :: in_cplrun  ! flag indicating whether routine
+                                              ! called within the scope of the
+                                              ! CPL:RUN timer
+
+    logical :: lcplrun
+    !-------------------------------------------------------------------------------
+
+    lcplrun  = .true.
+    if (present(in_cplrun)) then
+       lcplrun = .not. in_cplrun
+    endif
+    
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
-       call t_drvstartf ('CPL:BUDGET1',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
           call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
        endif
@@ -4778,35 +4798,47 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
-       call t_drvstopf  ('CPL:BUDGET1',cplrun=.true.,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets1
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_calc_budgets2()
+  subroutine cime_run_calc_budgets2(in_cplrun)
 
     !----------------------------------------------------------
     ! Budget with new fractions
     !----------------------------------------------------------
 
+    logical,intent(in),optional :: in_cplrun  ! flag indicating whether routine
+                                              ! called within the scope of the
+                                              ! CPL:RUN timer
+
+    logical :: lcplrun
+    !-------------------------------------------------------------------------------
+
+    lcplrun  = .true.
+    if (present(in_cplrun)) then
+       lcplrun = .not. in_cplrun
+    endif
+    
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET2_BARRIER')
 
-       call t_drvstartf ('CPL:BUDGET2',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
           call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
-       call t_drvstopf  ('CPL:BUDGET2',cplrun=.true.,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
 
-       call t_drvstartf ('CPL:BUDGET3',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        call seq_diag_accum_mct()
-       call t_drvstopf  ('CPL:BUDGET3',cplrun=.true.,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.)
 
-       call t_drvstartf ('CPL:BUDGETF',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (.not. dead_comps) then
           call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
                budget_daily, budget_month, budget_ann, budget_ltann, &
@@ -4814,25 +4846,37 @@ contains
        endif
        call seq_diag_zero_mct(EClock=EClock_d)
 
-       call t_drvstopf  ('CPL:BUDGETF',cplrun=.true.,budget=.true.)
+       call t_drvstopf  ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets2
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_calc_budgets3()
+  subroutine cime_run_calc_budgets3(in_cplrun)
 
     !----------------------------------------------------------
     ! ocn budget (rasm_option2)
     !----------------------------------------------------------
 
+    logical,intent(in),optional :: in_cplrun  ! flag indicating whether routine
+                                              ! called within the scope of the
+                                              ! CPL:RUN timer
+
+    logical :: lcplrun
+    !-------------------------------------------------------------------------------
+
+    lcplrun  = .true.
+    if (present(in_cplrun)) then
+       lcplrun = .not. in_cplrun
+    endif
+    
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
-       call t_drvstartf ('CPL:BUDGET0',cplrun=.true.,budget=.true.,barrier=mpicom_CPLID)
+       call t_drvstartf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
        call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
             do_o2x=.true., do_x2o=.true., do_xao=.true.)
-       call t_drvstopf ('CPL:BUDGET0',cplrun=.true.,budget=.true.)
+       call t_drvstopf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets3
 
@@ -4878,7 +4922,7 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume)
+  subroutine cime_run_write_restart(drv_pause, write_restart, drv_resume_file)
 
     !----------------------------------------------------------
     ! Write driver restart file
@@ -4886,7 +4930,7 @@ contains
 
     logical         , intent(in)    :: drv_pause
     logical         , intent(in)    :: write_restart
-    character(len=*), intent(inout) :: drv_resume ! Driver resets state from restart file
+    character(len=*), intent(inout) :: drv_resume_file ! Driver resets state from restart file
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -4905,17 +4949,17 @@ contains
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
                fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
                fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
-               trim(cpl_inst_tag), drv_resume)
+               trim(cpl_inst_tag), drv_resume_file)
 
           if (iamroot_CPLID) then
-             write(logunit,103) ' Restart filename: ',trim(drv_resume)
+             write(logunit,103) ' Restart filename: ',trim(drv_resume_file)
              call shr_sys_flush(logunit)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:RESTART',cplrun=.true.)
        else
-          drv_resume = ''
+          drv_resume_file = ' '
        endif
     end if
 

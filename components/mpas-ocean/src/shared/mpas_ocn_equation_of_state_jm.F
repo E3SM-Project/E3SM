@@ -68,11 +68,17 @@ module ocn_equation_of_state_jm
 
    real (kind=RKIND), dimension(:,:), allocatable :: &
       tracerTemp, tracerSalt
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(tracerTemp, tracerSalt)
+#endif
 
    !*** depth-based reference pressure for pressure term in eq state
 
    real (kind=RKIND), dimension(:), allocatable :: &
       ocnEqStatePRef   ! reference pressure at each layer
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(ocnEqStatePRef)
+#endif
 
    !*** valid range of T,S for Jackett and McDougall
 
@@ -191,7 +197,7 @@ contains
 
       integer, intent(in) :: &
          nCells,             &! number of horizontal cells
-         nVertLevels,        &! max number of verical levels
+         nVertLevels,        &! max number of vertical levels
          kDisplaced,         &! target layer for displacement
          indexT,             &! temperature index in tracer array
          indexS               ! salinity    index in tracer array
@@ -221,13 +227,16 @@ contains
       integer ::          &
          iCell, k,        &! cell and vertical level loop indices
          kTmp, kRef,      &! indices to determine ref level for pressure
-         kDisplacedLocal   ! locally modified diplacement target level
+         kDisplacedLocal   ! locally modified displacement target level
 
       character(len=60) :: &
          displacementTypeLocal ! locally modified displacement type
 
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(p, p2)
+#endif
 
       real (kind=RKIND) :: &
          work1, work2,     &! temporary scalars for calc
@@ -277,11 +286,17 @@ contains
 
       if (kDisplacedLocal == 0) then
          ! use pressure at in situ level
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector
+#endif
          do k=1,nVertLevels
             p (k) = ocnEqStatePRef(k)
             p2(k) = ocnEqStatePRef(k)*ocnEqStatePRef(k)
          enddo
       else ! kDisplacedLocal /= 0
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector
+#endif
          do k=1,nVertLevels
             ! determine level to which parcel is displaced
             !  and thus which pressure (depth) to use in EOS
@@ -299,13 +314,19 @@ contains
       !*** compute modified T,S to account for displacement and
       !*** valid range
 
+! For MPAS_OPENACC, these are device resident only
       allocate(tracerTemp(nVertLevels,nCells))
       allocate(tracerSalt(nVertLevels,nCells))
 
       if (displacementType == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc&  present(tracerssurfacelayervalue)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k, tq, sq)
+#endif
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -316,13 +337,20 @@ contains
             tracerSalt(k,iCell) = max(sq,ocnEqStateSmin)
          enddo
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc&  present(tracers)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k, tq, sq)
+#endif
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -331,15 +359,16 @@ contains
             tracerSalt(k,iCell) = max(sq,ocnEqStateSmin)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(p, p2, tracerTemp, tracerSalt)
       !$acc parallel loop gang vector collapse(2) &
-      !$acc&   present(density, p, p2, tracerTemp, tracerSalt)
+      !$acc&   present(density)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
@@ -391,10 +420,7 @@ contains
 
       end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc update host(density)
-      !$acc exit data delete(p, p2, tracerTemp, tracerSalt)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
@@ -449,7 +475,7 @@ contains
 
       integer, intent(in) :: &
          nCells,             &! number of horizontal cells
-         nVertLevels,        &! max number of verical levels
+         nVertLevels,        &! max number of vertical levels
          kDisplaced,         &! target layer for displacement
          indexT,             &! temperature index in tracer array
          indexS               ! salinity    index in tracer array
@@ -485,7 +511,7 @@ contains
       integer ::          &
          iCell, k,        &! cell and vertical level loop indices
          kTmp, kRef,      &! indices to determine ref level for pressure
-         kDisplacedLocal   ! locally modified diplacement target level
+         kDisplacedLocal   ! locally modified displacement target level
 
       character(len=60) :: &
          displacementTypeLocal ! locally modified displacement type
@@ -507,6 +533,9 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(p, p2)
+#endif
 
       !-----------------------------------------------------------------
 
@@ -548,11 +577,17 @@ contains
 
       if (kDisplacedLocal == 0) then
          ! use pressure at in situ level
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector
+#endif
          do k=1,nVertLevels
             p (k) = ocnEqStatePRef(k)
             p2(k) = ocnEqStatePRef(k)*ocnEqStatePRef(k)
          enddo
       else ! kDisplacedLocal /= 0
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector
+#endif
          do k=1,nVertLevels
             ! determine level to which parcel is displaced
             !  and thus which pressure (depth) to use in EOS
@@ -570,13 +605,19 @@ contains
       !*** compute modified T,S to account for displacement and
       !*** valid range
 
+! For MPAS_OPENACC, these are device resident only
       allocate(tracerTemp(nVertLevels,nCells))
       allocate(tracerSalt(nVertLevels,nCells))
 
       if (displacementType == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc&  present(tracerssurfacelayervalue)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k, tq, sq)
+#endif
          do iCell=1,nCells
          do k=1,nVertLevels
             tq = min(tracersSurfaceLayerValue(indexT,iCell), &
@@ -587,13 +628,20 @@ contains
             tracerSalt(k,iCell) = max(sq,ocnEqStateSmin)
          enddo
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc&  present(tracers)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k, tq, sq)
+#endif
          do iCell=1,nCells
          do k = 1, nVertLevels
             tq = min(tracers(indexT,k,iCell), ocnEqStateTmax)
@@ -602,15 +650,16 @@ contains
             tracerSalt(k,iCell) = max(sq,ocnEqStateSmin)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(p, p2, tracerTemp, tracerSalt)
       !$acc parallel loop gang vector collapse(2)     &
-      !$acc&   present(density, p, p2, tracerTemp, tracerSalt, &
+      !$acc&   present(density,                       &
       !$acc&           thermalExpansionCoeff,         &
       !$acc&           salineContractionCoeff)
 #else
@@ -710,12 +759,7 @@ contains
 
       end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc update host(density,                &
-      !$acc&            thermalExpansionCoeff,  &
-      !$acc&            salineContractionCoeff)
-      !$acc exit data delete(p, p2, tracerTemp, tracerSalt)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
@@ -812,6 +856,10 @@ contains
       !***  3-d dynamic depth/press
 
       allocate(ocnEqStatePRef(nVertLevels))
+
+#ifdef MPAS_OPENACC
+!$acc serial
+#endif
       depth = 0.5_RKIND*refBottomDepth(1)
       ocnEqStatePRef(1) = &
            0.059808_RKIND  *(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
@@ -824,6 +872,9 @@ contains
             + 0.100766_RKIND  *depth                                 &
             + 2.28405e-7_RKIND*depth**2
       enddo
+#ifdef MPAS_OPENACC
+!$acc end serial
+#endif
 
    !--------------------------------------------------------------------
 

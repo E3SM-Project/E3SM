@@ -11,7 +11,6 @@
 
 #include "Context.hpp"
 #include "Elements.hpp"
-#include "ElementOps.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsDerivedState.hpp"
 #include "FunctorsBuffersManager.hpp"

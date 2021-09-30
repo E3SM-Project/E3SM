@@ -671,7 +671,6 @@
         <command name="load">sems-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
-        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake/3.19.1</command>
       </modules>
       <modules compiler="gnu">
@@ -1147,6 +1146,8 @@
     <SAVE_TIMING_DIR>/lcrc/group/e3sm/PERF_Chrysalis</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>/lcrc/group/e3sm/public_html/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_URL_ROOT>https://web.lcrc.anl.gov/public/e3sm/$ENV{USER}</CIME_URL_ROOT>
     <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
@@ -2860,7 +2861,7 @@
         <command name="purge"/>
         <command name="ls"/>
         <command name="load">DefApps</command>
-        <command name="load">python/3.5.2</command>
+        <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
         <command name="load">git/2.13.0</command>
         <command name="load">cmake/3.20.2</command>
@@ -2918,6 +2919,10 @@
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables compiler="ibm.*">
+      <env name="XLC_USR_CONFIG">/gpfs/alpine/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.1</env>
+      <env name="LD_LIBRARY_PATH">/sw/summit/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
@@ -2978,16 +2983,17 @@
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="ibmgpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi">
       <executable>jsrun</executable>
       <arguments>
         <arg name="exit_on_error">-X 1</arg>
-        <arg name="num_rs">--nrs $ENV{NUM_RS}</arg>
-        <arg name="rs_per_node">--rs_per_host $ENV{RS_PER_NODE}</arg>
+        <arg name="num_rs">$SHELL{if [ {{ total_tasks }} -eq 1 ];then echo --nrs 1 --rs_per_host 1;else echo --nrs $NUM_RS --rs_per_host $RS_PER_NODE;fi}</arg>
         <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
@@ -3012,51 +3018,65 @@
         <command name="load">DefApps</command>
         <command name="load">python/3.7.0</command>
         <command name="load">subversion/1.9.3</command>
-        <command name="load">git/2.13.0</command>
+        <command name="load">git/2.20.1</command>
         <command name="load">cmake/3.18.2</command>
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
-      <modules compiler="pgi.*">
-        <command name="load">pgi/19.9</command>
-        <command name="load">pgi-cxx14/default</command>
-      </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="gnugpu">
-        <command name="load">cuda/10.1.105</command>
+      <modules compiler="pgi.*">
+        <command name="load">pgi/19.10</command>
+        <command name="use">/gpfs/wolf/cli115/world-shared/e3sm/tools</command>
+        <command name="load">pgirc/cxx14</command>
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">hdf5/1.10.4</command>
+        <command name="load">netcdf/4.6.1</command>
+        <command name="load">netcdf-fortran/4.4.4</command>
+        <command name="load">parallel-netcdf/1.8.1</command>
       </modules>
       <modules compiler="ibm.*">
-        <command name="load">xl/16.1.1-7</command>
+        <command name="load">xl/16.1.1-10</command>
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">hdf5/1.10.7</command>
+        <command name="load">netcdf-c/4.7.4</command>
+        <command name="load">netcdf-cxx/4.2</command>
+        <command name="load">netcdf-fortran/4.4.5</command>
+        <command name="load">parallel-netcdf/1.12.1</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="gnu">
+      <modules compiler="gnu.*">
         <command name="load">gcc/8.1.1</command>
-      </modules>
-      <modules compiler="gnugpu">
-        <command name="load">gcc/8.1.1</command>
-      </modules>
-      <modules>
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+        <command name="load">hdf5/1.10.4</command>
         <command name="load">netcdf/4.6.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">parallel-netcdf/1.8.1</command>
-        <command name="load">hdf5/1.10.4</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="load">cuda/10.1.105</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
-      <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
-      <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
+      <env name="PATH">/gpfs/wolf/cli115/world-shared/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
-      <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
-      <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables compiler="ibm.*">
+      <env name="XLC_USR_CONFIG">/gpfs/wolf/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.2.89</env>
+      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+    <environment_variables compiler="pgi.*">
+      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
@@ -3079,6 +3099,8 @@
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
+      <env name="NVCC_WRAPPER_DEFAULT_COMPILER">pgc++</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="RS_PER_NODE">6</env>
