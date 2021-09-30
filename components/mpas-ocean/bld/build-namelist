@@ -1049,6 +1049,32 @@ add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
 add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
 
+###############################################
+# Namelist group: tracer_forcing_idealAgeTracers #
+###############################################
+
+add_default($nl, 'config_use_idealAgeTracers');
+add_default($nl, 'config_use_idealAgeTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_idealAgeTracers_surface_restoring');
+add_default($nl, 'config_use_idealAgeTracers_interior_restoring');
+add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
+add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
+add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
+
+###############################################
+# Namelist group: tracer_forcing_CFCTracers #
+###############################################
+
+add_default($nl, 'config_use_CFCTracers');
+add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_CFCTracers_surface_restoring');
+add_default($nl, 'config_use_CFCTracers_interior_restoring');
+add_default($nl, 'config_use_CFCTracers_exponential_decay');
+add_default($nl, 'config_use_CFCTracers_idealAge_forcing');
+add_default($nl, 'config_use_CFCTracers_ttd_forcing');
+add_default($nl, 'config_use_CFC11');
+add_default($nl, 'config_use_CFC12');
+
 ##################################
 # Namelist group: AM_globalStats #
 ##################################
@@ -1591,6 +1617,18 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1638,6 +1676,8 @@ my @groups = qw(run_modes
                 tracer_forcing_ecosystracers
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
+                tracer_forcing_idealagetracers
+                tracer_forcing_cfctracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -1672,6 +1712,7 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
+                am_conservationcheck
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

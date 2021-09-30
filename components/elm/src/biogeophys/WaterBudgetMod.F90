@@ -139,21 +139,29 @@ contains
              budg_fluxL(:,ip)  = 0.0_r8
              budg_fluxG(:,ip)  = 0.0_r8
              budg_fluxN(:,ip)  = 0.0_r8
+             budg_stateL(:,ip) = 0.0_r8
+             budg_stateG(:,ip) = 0.0_r8
           endif
           if (ip==p_day .and. sec==0) then
              budg_fluxL(:,ip)  = 0.0_r8
              budg_fluxG(:,ip)  = 0.0_r8
              budg_fluxN(:,ip)  = 0.0_r8
+             budg_stateL(:,ip) = 0.0_r8
+             budg_stateG(:,ip) = 0.0_r8
           endif
           if (ip==p_mon .and. day==1 .and. sec==0) then
              budg_fluxL(:,ip)  = 0.0_r8
              budg_fluxG(:,ip)  = 0.0_r8
              budg_fluxN(:,ip)  = 0.0_r8
+             budg_stateL (:,ip)= 0.0_r8
+             budg_stateG (:,ip)= 0.0_r8
           endif
           if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
              budg_fluxL(:,ip)  = 0.0_r8
              budg_fluxG(:,ip)  = 0.0_r8
              budg_fluxN(:,ip)  = 0.0_r8
+             budg_stateL (:,ip)= 0.0_r8
+             budg_stateG (:,ip)= 0.0_r8
           endif
        enddo
 
