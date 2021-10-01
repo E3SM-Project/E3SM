@@ -67,19 +67,6 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   // Sanity check
   assert(params.params_set);
 
-
-#if 0      
-      auto rr = 5.0 - phys_lev;
-      if(rr > 0) {
-      h_nu_scale_top(ilev)[ivec] = rr;  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
-      }else{ h_nu_scale_top(ilev)[ivec] = 0.0;}  //lev_nu_scale_top[phys_lev]*m_data.nu_top;
-      //if( phys_lev == 0) h_nu_scale_top(ilev)[ivec] = 3.0;
-     // if( phys_lev >  0) h_nu_scale_top(ilev)[ivec] = 0.0;
-#endif
-
-
-//here
-
   if (m_data.nu_top>0) {
 
     m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
@@ -92,8 +79,6 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     Kokkos::deep_copy(etai_h, m_hvcoord.etai);
     Kokkos::deep_copy(etam_h, m_hvcoord.etam);
 
-
-    //Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
     for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
       const int ilev = phys_lev / VECTOR_SIZE;
       const int ivec = phys_lev % VECTOR_SIZE;
@@ -106,7 +91,6 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       //etai is num_interface_lev, that is, 129 or 73
       //etam is num_lev, so packs
       if ( etai_h(0) == 0.0) {
-      //    ! pure sigma coordinates could have etai(1)=0
           ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
       }else{
           ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
@@ -125,11 +109,6 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
 
-    for (int phys_lev=0; phys_lev<NUM_LEV*VECTOR_SIZE; ++phys_lev) {
-      const int ilev = phys_lev / VECTOR_SIZE;
-      const int ivec = phys_lev % VECTOR_SIZE;
-printf("ii is %d and h_nu_scale_top is %23.15e \n",phys_lev,h_nu_scale_top(ilev)[ivec]);
-    }
   }
 
   // Init ElementOps
@@ -218,6 +197,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
   mem += size_mid_vector*nelems;
 
+///remove
   // Biharmonic views (non-persistent views => nteams)
   m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
   mem += size_bhm_scalar*nteams;
@@ -344,8 +324,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
 //what is single? 
         Kokkos::single(Kokkos::PerThread(team),[&](){
-
-//why not reuse these?
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
           constexpr int LAST_MID_PACK     = InfoM::LastPack;
@@ -369,9 +347,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
 //sponge layer  
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
-
-
-	  std::cout << "HEREEEEEEEEEEEEEEEEEEEEEE in tom sub \n";
 
 //m_policy_first_laplace has ref states, so cannot be reused now
 //  Kokkos::parallel_for(m_policy_first_laplace, *this);

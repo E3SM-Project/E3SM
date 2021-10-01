@@ -659,26 +659,6 @@ contains
            stens(:,:,k,3,ie)=-nu  *stens(:,:,k,3,ie) ! w
            stens(:,:,k,4,ie)=-nu_s*stens(:,:,k,4,ie) ! phi
         enddo
-        if (nu_top>0 .and. hypervis_subcycle_tom==0) then
-
-print *, 'FFFFFFFFFFFFFFhere?'
-
-           do k=1,nlev_tom
-              !vtheta_dp(:,:)=elem(ie)%state%vtheta_dp(:,:,k,nt)*elem(ie)%state%dp3d(:,:,k,nt)/hvcoord%dp0(k)
-              lap_s(:,:,1)=laplace_sphere_wk(elem(ie)%state%dp3d       (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              !lap_s(:,:,2)=laplace_sphere_wk(vtheta_dp                           ,deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,2)=laplace_sphere_wk(elem(ie)%state%vtheta_dp(:,:,k,nt)  ,deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,3)=laplace_sphere_wk(elem(ie)%state%w_i        (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i    (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-
-              vtens(:,:,:,k,ie)=vtens(:,:,:,k,ie) + nu_scale_top(k)*nu_top*lap_v(:,:,:) ! u and v
-              stens(:,:,k,1,ie)=stens(:,:,k,1,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,1) ! dp3d
-              stens(:,:,k,2,ie)=stens(:,:,k,2,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,2) ! theta
-              stens(:,:,k,3,ie)=stens(:,:,k,3,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,3) ! w
-              stens(:,:,k,4,ie)=stens(:,:,k,4,ie) + nu_scale_top(k)*nu_top*lap_s(:,:,4) ! phi
-           enddo
-        endif
         
         kptr=0;      call edgeVpack_nlyr(edge_g,elem(ie)%desc,vtens(:,:,:,:,ie),2*nlev,kptr,nlyr_tot)
         kptr=2*nlev; call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize,kptr,nlyr_tot)
@@ -792,30 +772,12 @@ print *, 'FFFFFFFFFFFFFFhere?'
   enddo
 
 
-130 format (A,e38.30e3) !e23.18)  
-!before sponge level
-ie=1
-k=1
- if(k == 1) then
-                        !print *, "rsph", elem(ie)%rspheremp(:,:)
-                        do j=1,np
-                        do i=1,np
-                        print *, "i,j", i,j  !,stens(i,j,k,2,ie)
-                        write(*,130) "u = ",elem(ie)%state%v(i,j,1,k,nt)
-                        enddo; enddo;
-endif
-
-!stop
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  sponge layer
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   if (nu_top>0 .and. hypervis_subcycle_tom>0 ) then
   dt=dt2/hypervis_subcycle_tom
   do ic=1,hypervis_subcycle_tom
-
-print *, 'iteration # ', ic
 
      do ie=nets,nete
         do k=1,nlev_tom
@@ -826,9 +788,6 @@ print *, 'iteration # ', ic
            lap_s(:,:,4)=laplace_sphere_wk(elem(ie)%state%phinh_i  (:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            lap_v=vlaplace_sphere_wk(elem(ie)%state%v            (:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
            
-           !original
-           !xfac=dt*nu_scale_top(k)*nu_top
-           !xfac=dt*nu_scale_top(k)*nu_top
            xfac=dt*nu_scale_top(k)*nu_top
 
            vtens(:,:,:,k,ie)=xfac*lap_v(:,:,:)
@@ -891,18 +850,6 @@ print *, 'iteration # ', ic
         enddo
      enddo ! ie
   enddo  ! subcycle
-
-ie=1
-k=1
- if(k == 1) then
-                        !print *, "rsph", elem(ie)%rspheremp(:,:)
-                        do j=1,1
-                        do i=1,1
-                        print *, "i,j", i,j  !,stens(i,j,k,2,ie)
-                        write(*,130) " AFTER u = ",elem(ie)%state%v(i,j,1,k,nt)
-                        enddo; enddo;
-endif
-
 
   endif
 

@@ -95,7 +95,7 @@ public:
   struct TagSecondLaplaceConstHV {};
   struct TagSecondLaplaceTensorHV {};
   struct TagUpdateStates {};
-  struct TagUpdateStates2 {}; //dummy with a mask, then merge both updates into one
+  struct TagUpdateStates2 {};
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
   struct TagNutopLaplace {};
@@ -154,6 +154,7 @@ public:
         }
       });
 
+//defined/used where?
 #ifndef XX_NONBFB_COMING
       // It would be fine to not even bother with the surface level, since
       // phitens is only NUM_LEV long, so all the hv stuff does not even happen
@@ -198,18 +199,9 @@ public:
   // Laplace for nu_top
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagNutopLaplace&, const TeamMember& team) const {
-//what is m_tu -- teamUtils
     KernelVariables kv(team, m_tu);
 
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
-//    using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
-
-//if(kv.ie == 0){    
-//for(int ii=0; ii< 1; ++ii)
-//	for (int jj=0; jj<1; ++jj){
-//      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,ii,jj);
-//printf("i %d,j %d,u before subcycle is %1.29e \n",ii,jj, u(0)[0]);
-//	}}
 
     // Laplacian of layer thickness
     m_sphere_ops.laplace_simple(kv,
@@ -258,7 +250,6 @@ public:
                            [&](const int ilev) {
 
         const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
-    //const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * 1.0 * m_data.nu_top;
         utens(ilev) *= xf;
         vtens(ilev) *= xf;
         ttens(ilev) *= xf;
@@ -377,7 +368,7 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
-//intr a var for dt/hvs			   
+//introduce a var for dt/hvs			   
         utens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
         vtens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
         ttens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
@@ -457,13 +448,6 @@ public:
         }
       });//threadvectorrange
     });//threadteamrange
-//if(kv.ie == 0){
-//for(int ii=0; ii< 4; ++ii)
-//        for (int jj=0; jj<4; ++jj){
-//      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,ii,jj);
-//printf("i %d,j %d,u after subcycle is %1.29e \n",ii,jj, u(0)[0]);
-//        }}
-
   }//tagUpdateStates2
 
 
@@ -505,6 +489,7 @@ public:
           dpdiss_bih(ilev) += m_data.eta_ave_w*dptens(ilev) / m_data.hypervis_subcycle;
         }
       });
+//where is it set?
 #ifndef XX_NONBFB_COMING
       // It would be fine to not even bother with the surface level, since
       // phitens is only NUM_LEV long, so all the hv stuff does not even happen
