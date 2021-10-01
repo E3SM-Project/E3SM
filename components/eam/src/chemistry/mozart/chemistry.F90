@@ -1415,10 +1415,15 @@ end function chem_is_active
     real(r8), pointer :: cldtop(:)
     real(r8), pointer, dimension(:) :: gas_ac_2D
     real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: gas_ac_temp(pcols,pver) ! tmp space
+    real(r8) :: gas_ac_layers(pcols,4)
     real(r8) :: Diff(pcols,pver) ! tmp space
+    real(r8) :: Diff_layers(pcols,4) ! tmp space
     real(r8) :: ftem(pcols,pver) ! tmp space
+    real(r8) :: ftem_layers(pcols,4) ! tmp space
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D
+    logical :: history_gaschmbudget_2D_levels
     integer ::  gas_ac_idx
     integer :: nstep
 
@@ -1432,7 +1437,8 @@ end function chem_is_active
     nstep = get_nstep()
 
     call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
-                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels )
 
     chem_dt = chem_freq*dt
 
@@ -1478,7 +1484,7 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! output gas concentration and tendency
 !-----------------------------------------------------------------------
-    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+    if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
       do m = 1,pcnst
          n = map2chm(m)
          if (n > 0 .and. (.not. any( aer_species == n ))) then
@@ -1502,10 +1508,11 @@ end function chem_is_active
            end if
            !
            if (history_gaschmbudget_2D) then
-             do k=2,pver
-               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+             ftem_layers = 0.0_r8
+             do k=1,pver
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
              end do
-             call outfld(trim(solsym(n))//'_2DMSB', ftem(:ncol,1), pcols, lchnk )
+             call outfld(trim(solsym(n))//'_2DMSB', ftem_layers(:ncol,1), pcols, lchnk )
 
              gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
@@ -1516,10 +1523,54 @@ end function chem_is_active
                 !end if
 
              else
-                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))/dt
+                Diff(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_2D(:ncol))/dt
              end if
              call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
            end if
+           ! HHLEE 20210923
+           if (history_gaschmbudget_2D_levels ) then
+             ftem_layers = 0.0_r8
+             gas_ac_layers = 0.0_r8
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+
+             do k=1,25 ! 0-90 hPa
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k)
+             end do
+             do k=26,40 ! 90-300 hPa
+               ftem_layers(:ncol,2) = ftem_layers(:ncol,2) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,2) = gas_ac_layers(:ncol,2) + gas_ac(:ncol,k)
+             end do
+             do k=41,58 ! 300-850 hPa
+               ftem_layers(:ncol,3) = ftem_layers(:ncol,3) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,3) = gas_ac_layers(:ncol,3) + gas_ac(:ncol,k)
+             end do
+             do k=59,pver ! 850 hPa - surface
+               ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
+             end do
+             call outfld(trim(solsym(n))//'_2DMSB_L1', ftem_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L2', ftem_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L3', ftem_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L4', ftem_layers(:ncol,4), pcols, lchnk)
+
+             if( nstep == 0 ) then
+                Diff_layers(:ncol,:) = 0.0_r8
+             else
+                Diff_layers(:ncol,:) = 0.0_r8
+                Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
+                Diff_layers(:ncol,2) = (ftem_layers(:ncol,2) - gas_ac_layers(:ncol,2))/dt
+                Diff_layers(:ncol,3) = (ftem_layers(:ncol,3) - gas_ac_layers(:ncol,3))/dt
+                Diff_layers(:ncol,4) = (ftem_layers(:ncol,4) - gas_ac_layers(:ncol,4))/dt
+             end if
+             call outfld(trim(solsym(n))//'_2DTDO_L1', Diff_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L2', Diff_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L3', Diff_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L4', Diff_layers(:ncol,4), pcols, lchnk)
+           end if
+
          end if
       end do
     end if
