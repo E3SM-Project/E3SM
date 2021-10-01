@@ -360,6 +360,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
+    def test_run_diff_opt_not_captured(self):
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF=True -m $machine -b HEAD -k -t opt", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+        else:
+            self.skipTest("Skipping full run")
+
     def test_run_bfb_unit_diff_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF_BFB_UNIT=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
