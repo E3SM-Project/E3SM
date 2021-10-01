@@ -3,11 +3,11 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
 
 #include "physics/zm/atmosphere_deep_convection.hpp"
 #include "physics/zm/scream_zm_interface.hpp"
 
+#include "share/grid/physics_only_grids_manager.hpp"
 #include <iostream>
 namespace scream {
 
@@ -34,7 +34,7 @@ TEST_CASE("zm-standalone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("ZM",&create_atmosphere_process<ZMDeepConvection>);
-  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
+  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
 
   // Create the driver
   AtmosphereDriver ad;

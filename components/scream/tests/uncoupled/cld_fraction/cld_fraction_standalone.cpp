@@ -4,7 +4,7 @@
 
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 
-#include "physics/share/physics_only_grids_manager.hpp"
+#include "share/grid/physics_only_grids_manager.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
 
@@ -33,7 +33,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
-  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
+  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
 
   // Create the driver
   AtmosphereDriver ad;

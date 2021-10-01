@@ -6,7 +6,6 @@
 #include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream {
-namespace physics {
 
 // This class is meant to be used for small unit tests, where we want to
 // test the Atmosphere Driver (AD) capabilities, without bothering too much
@@ -61,7 +60,12 @@ create_physics_only_grids_manager (const ekat::Comm& comm, const ekat::Parameter
   return std::make_shared<PhysicsOnlyGridsManager>(comm,p);
 }
 
-} // namespace physics
+inline void register_physics_only_grids_manager () {
+  // A physics-only grids manager, in case we run a physics-only test
+  auto& gm_factory = GridsManagerFactory::instance();
+  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
+}
+
 } // namespace scream
 
 #endif // SCREAM_PHYSICS_ONLY_GRIDS_MANAGER_HPP

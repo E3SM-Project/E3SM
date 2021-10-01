@@ -4,8 +4,7 @@
 
 #include "physics/spa/atmosphere_prescribed_aerosol.hpp"
 
-#include "physics/share/physics_only_grids_manager.hpp"
-
+#include "share/grid/physics_only_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -32,7 +31,7 @@ TEST_CASE("spa-stand-alone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("SPA",&create_atmosphere_process<SPA>);
-  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
+  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
 
   // Create the grids manager
   auto& gm_params = ad_params.sublist("Grids Manager");

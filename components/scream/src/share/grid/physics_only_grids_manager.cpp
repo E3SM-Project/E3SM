@@ -1,10 +1,8 @@
-#include "physics/share/physics_only_grids_manager.hpp"
-
+#include "share/grid/physics_only_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 
 namespace scream {
-namespace physics {
 
 PhysicsOnlyGridsManager::
 PhysicsOnlyGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
@@ -47,5 +45,4 @@ build_grids (const std::set<std::string>& grid_names,
   m_grids["Physics"] = grid;
 }
 
-} // namespace physics
 } // namespace scream

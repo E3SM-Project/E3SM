@@ -19,9 +19,9 @@
 #include "rrtmgp_test_utils.hpp"
 // Other helper headers needed for the specifics of this test
 #include "physics/share/physics_constants.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/grid/physics_only_grids_manager.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
 /*
@@ -73,7 +73,7 @@ namespace scream {
         auto& proc_factory = AtmosphereProcessFactory::instance();
         auto& gm_factory = GridsManagerFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
-        gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
+        gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
 
         // Create the driver
         AtmosphereDriver ad;
