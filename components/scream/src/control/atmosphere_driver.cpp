@@ -109,8 +109,7 @@ void AtmosphereDriver::create_grids()
 
   // Tell the grid manager to build all the grids required
   // by the atm processes, as well as the reference grid
-  m_grids_manager->build_grids(m_atm_process_group->get_required_grids(),
-                               gm_params.get<std::string>("Reference Grid"));
+  m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
 
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need

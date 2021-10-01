@@ -26,13 +26,14 @@ do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void PhysicsOnlyGridsManager::
-build_grids (const std::set<std::string>& grid_names,
-             const std::string& reference_grid) {
+build_grids (const std::set<std::string>& grid_names)
+{
   for (const auto& gn : grid_names) {
     EKAT_REQUIRE_MSG (gn=="Physics",
         "Error! Only 'Physics' grid supported for physics-only runs.\n"
         "       Requested grid: " + gn + "\n");
   }
+  auto reference_grid = m_params.get<std::string>("Reference Grid","Physics");
   EKAT_REQUIRE_MSG (reference_grid=="Physics",
         "Error! Reference grid '" + reference_grid + "' is not supported by PhysicsOnlyGridsManager.\n");
 

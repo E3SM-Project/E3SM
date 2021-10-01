@@ -31,8 +31,7 @@ public:
     return gnames;
   }
 
-  void build_grids (const std::set<std::string>& grid_names,
-                    const std::string& reference_grid);
+  void build_grids (const std::set<std::string>& grid_names);
 
   const grid_repo_type& get_repo () const { return m_grids; }
 

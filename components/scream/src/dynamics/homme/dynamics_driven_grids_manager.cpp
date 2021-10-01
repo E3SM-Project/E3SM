@@ -9,6 +9,8 @@
 // Get all Homme's compile-time dims
 #include "homme_dimensions.hpp"
 
+#include "ekat/std_meta/ekat_std_utils.hpp"
+
 namespace scream
 {
 
@@ -50,6 +52,11 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
 
   // TODO: add other rebalancing?
 
+  // Get the ref grid name
+  m_ref_grid_name = p.get<std::string>("Reference Grid");
+  EKAT_REQUIRE_MSG (ekat::contains(gn,m_ref_grid_name),
+      "Error! Invalid reference grid name: " + m_ref_grid_name + "\n");
+
   // Create the grid integer codes map (i.e., int->string
   build_grid_codes ();
 }
@@ -89,10 +96,8 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void DynamicsDrivenGridsManager::
-build_grids (const std::set<std::string>& grid_names,
-             const std::string& reference_grid) {
-  m_ref_grid_name = reference_grid;
-
+build_grids (const std::set<std::string>& grid_names)
+{
   // Retrieve all physics grids codes
   std::vector<int> pg_codes;
   for (const auto& gn : grid_names) {
@@ -107,10 +112,7 @@ build_grids (const std::set<std::string>& grid_names,
       pg_codes.push_back(code);
     }
   }
-  // Also check the ref grid (and retrieve its code)
-  EKAT_REQUIRE_MSG (supported_grids().count(reference_grid)==1,
-                    "Error! Grid '" +reference_grid + "' is not supported by this grid manager.\n");
-  pg_codes.push_back(m_grid_codes.at(reference_grid));
+  pg_codes.push_back(m_grid_codes.at(m_ref_grid_name));
   const int* codes_ptr = pg_codes.data();
   init_grids_f90 (codes_ptr,pg_codes.size());
 
@@ -123,8 +125,8 @@ build_grids (const std::set<std::string>& grid_names,
     }
   }
 
-  if (m_grids.find(reference_grid)==m_grids.end()) {
-    build_physics_grid(reference_grid);
+  if (m_grids.find(m_ref_grid_name)==m_grids.end()) {
+    build_physics_grid(m_ref_grid_name);
   }
 
   // Now we can cleanup all the grid stuff in f90
