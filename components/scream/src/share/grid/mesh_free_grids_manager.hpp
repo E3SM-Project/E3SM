@@ -9,12 +9,10 @@ namespace scream {
 
 // This class is meant to be used for small unit tests, where we want to
 // test some infrastructure of scream, without bothering too much about
-// grids-related features. This manager builds a PointGrid and a SEGrid.
-// The two grids are completely unrelated. In particular, the SEGrid
-// is made up of "separate" elements, so that all dofs gids are unique
-// (that is, no connectivity between elements).
-// Since the grids are not related, this GM only builds a DoNothingRemapper
-// between the two grids.
+// grids-related features. This manager can build a PointGrid and a SEGrid.
+// If the SEGrid is build, it corresponds to a "strip" of elements,
+// and the PointGrid is built as the 'unique' grid of that SEGrid.
+
 class MeshFreeGridsManager : public GridsManager
 {
 public:
@@ -42,6 +40,8 @@ public:
 
 protected:
 
+  void build_pt_from_se (const int num_local_elems, const int num_gp, const int num_vertical_levels);
+
   std::string get_reference_grid_name () const {
     return m_params.get<std::string>("Reference Grid");
   }
@@ -63,6 +63,10 @@ inline std::shared_ptr<GridsManager>
 create_mesh_free_grids_manager (const ekat::Comm& comm, const ekat::ParameterList& p) {
   return std::make_shared<MeshFreeGridsManager>(comm,p);
 }
+
+std::shared_ptr<GridsManager>
+create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elems,
+                                const int num_gp, const int num_vertical_levels);
 
 inline void register_mesh_free_grids_manager () {
   // A physics-only grids manager, in case we run a physics-only test
