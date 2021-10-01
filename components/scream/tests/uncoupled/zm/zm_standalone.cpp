@@ -36,13 +36,6 @@ TEST_CASE("zm-standalone", "") {
   proc_factory.register_product("ZM",&create_atmosphere_process<ZMDeepConvection>);
   gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
 
-
-  // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
-  auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
-
-
   // Create the driver
   AtmosphereDriver ad;
 
@@ -51,7 +44,7 @@ TEST_CASE("zm-standalone", "") {
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
     ad.run(300.0);
-}
+  }
 
   // Finalize 
   ad.finalize();

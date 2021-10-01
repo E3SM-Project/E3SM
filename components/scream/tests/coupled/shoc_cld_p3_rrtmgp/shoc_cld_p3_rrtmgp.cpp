@@ -31,11 +31,6 @@ TEST_CASE("shoc-stand-alone", "") {
   // Need to register products in the factory *before* we create any atm process or grids manager.
   register_physics();
 
-  // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
-  auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
-
   // Create the driver
   AtmosphereDriver ad;
 
