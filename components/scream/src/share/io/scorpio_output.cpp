@@ -432,8 +432,6 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
   // Sanity checks
   EKAT_REQUIRE_MSG (not m_grid, "Error! Grid pointer was already set.\n");
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (grid->name()=="Physics" || grid->name()=="Physics GLL",
-      "Error! I/O only supports output on a Physics or Physics GLL grid.\n");
   EKAT_REQUIRE_MSG (grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
