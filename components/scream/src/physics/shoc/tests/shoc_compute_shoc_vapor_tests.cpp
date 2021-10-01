@@ -128,16 +128,16 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ComputeShocVaporData& d_f90 = f90_data[i];
-      ComputeShocVaporData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.qv); ++k) {
-        REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ComputeShocVaporData& d_f90 = f90_data[i];
+        ComputeShocVaporData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.qv); ++k) {
+          REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 };
 

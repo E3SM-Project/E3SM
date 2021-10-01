@@ -181,18 +181,18 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       shoc_pblintd_init_pot_f(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
     }
 
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
-    for (Int i = 0; i < num_runs; ++i) {
-      Int shcol = pblintd_init_pot_data_cxx[i].shcol;
-      Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
-      for (Int j = 0; j < shcol; ++j ) {
-        for (Int k = 0; k < nlev; ++k) {
-          REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
+      for (Int i = 0; i < num_runs; ++i) {
+        Int shcol = pblintd_init_pot_data_cxx[i].shcol;
+        Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
+        for (Int j = 0; j < shcol; ++j ) {
+          for (Int k = 0; k < nlev; ++k) {
+            REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
+          }
         }
       }
     }
-#endif
   }
 
 };

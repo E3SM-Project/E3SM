@@ -7,7 +7,7 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   if (PROJECT_NAME STREQUAL "E3SM")
     add_subdirectory(mct_coupling)
   endif()
-elseif ($ENV{SCREAM_FORCE_RUN_DIFF})
+elseif (SCREAM_FAKE_NEED_P3)
   # Cannot test diff handling without p3
   add_subdirectory(physics)
 endif()

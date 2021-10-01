@@ -148,16 +148,16 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeLInfShocLengthData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ComputeLInfShocLengthData& d_f90 = SDS_f90[i];
-      ComputeLInfShocLengthData& d_cxx = SDS_cxx[i];
-      for (Int c = 0; c < d_f90.shcol; ++c) {
-        REQUIRE(d_f90.l_inf[c] == d_cxx.l_inf[c]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeLInfShocLengthData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ComputeLInfShocLengthData& d_f90 = SDS_f90[i];
+        ComputeLInfShocLengthData& d_cxx = SDS_cxx[i];
+        for (Int c = 0; c < d_f90.shcol; ++c) {
+          REQUIRE(d_f90.l_inf[c] == d_cxx.l_inf[c]);
+        }
       }
     }
-#endif
   }
 };
 

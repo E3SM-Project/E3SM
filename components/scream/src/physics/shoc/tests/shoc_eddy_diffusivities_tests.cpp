@@ -295,17 +295,17 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
-    for (Int i = 0; i < num_runs; ++i) {
-      EddyDiffusivitiesData& d_f90 = f90_data[i];
-      EddyDiffusivitiesData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.tkh); ++k) {
-        REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
-        REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
+      for (Int i = 0; i < num_runs; ++i) {
+        EddyDiffusivitiesData& d_f90 = f90_data[i];
+        EddyDiffusivitiesData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.tkh); ++k) {
+          REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
+          REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 };
 

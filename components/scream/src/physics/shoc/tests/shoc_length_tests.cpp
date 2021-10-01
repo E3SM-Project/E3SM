@@ -231,17 +231,17 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocLengthData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocLengthData& d_f90 = SDS_f90[i];
-      ShocLengthData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.brunt); ++k) {
-        REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
-        REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocLengthData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocLengthData& d_f90 = SDS_f90[i];
+        ShocLengthData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.brunt); ++k) {
+          REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
+          REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+        }
       }
     }
-#endif
   }
 };
 

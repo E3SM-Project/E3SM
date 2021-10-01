@@ -377,31 +377,31 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
-    for (Int i = 0; i < num_runs; ++i) {
-      UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
-      UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
+      for (Int i = 0; i < num_runs; ++i) {
+        UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
+        UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
 
-      REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
-      REQUIRE(d_f90.total(d_f90.qw) == d_cxx.total(d_cxx.qw));
-      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
-      REQUIRE(d_f90.total(d_f90.u_wind) == d_cxx.total(d_cxx.u_wind));
-      REQUIRE(d_f90.total(d_f90.v_wind) == d_cxx.total(d_cxx.v_wind));
-      for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
-        REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-        REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-        REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-        REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-        REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
-      }
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_f90.total(d_f90.qw) == d_cxx.total(d_cxx.qw));
+        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
+        REQUIRE(d_f90.total(d_f90.u_wind) == d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_f90.total(d_f90.v_wind) == d_cxx.total(d_cxx.v_wind));
+        for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
+          REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
+          REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
+          REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
+          REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
+          REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
+        }
 
-      REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
-      for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
-        REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
+        REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
+        for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
+          REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

@@ -291,23 +291,23 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocTkeData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocTkeData& d_f90 = f90_data[i];
-      ShocTkeData& d_cxx = cxx_data[i];
-      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
-      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tk));
-      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tkh));
-      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.isotropy));
-      for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
-        REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-        REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
-        REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
-        REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocTkeData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocTkeData& d_f90 = f90_data[i];
+        ShocTkeData& d_cxx = cxx_data[i];
+        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
+        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tk));
+        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tkh));
+        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.isotropy));
+        for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
+          REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
+          REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+          REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
+          REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 };
 

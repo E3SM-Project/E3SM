@@ -207,18 +207,18 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocDiagObklenData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocDiagObklenData& d_f90 = SDS_f90[i];
-      ShocDiagObklenData& d_cxx = SDS_cxx[i];
-      for (Int s = 0; s < d_f90.shcol; ++s) {
-        REQUIRE(d_f90.ustar[s] == d_cxx.ustar[s]);
-        REQUIRE(d_f90.kbfs[s] == d_cxx.kbfs[s]);
-        REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocDiagObklenData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocDiagObklenData& d_f90 = SDS_f90[i];
+        ShocDiagObklenData& d_cxx = SDS_cxx[i];
+        for (Int s = 0; s < d_f90.shcol; ++s) {
+          REQUIRE(d_f90.ustar[s] == d_cxx.ustar[s]);
+          REQUIRE(d_f90.kbfs[s] == d_cxx.kbfs[s]);
+          REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);
+        }
       }
     }
-#endif
   }
 };
 

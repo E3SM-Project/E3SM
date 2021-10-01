@@ -151,25 +151,25 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
-    for (Int i = 0; i < num_runs; ++i) {
-      PblintdSurfTempData& d_f90 = f90_data[i];
-      PblintdSurfTempData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.tlv); ++k) {
-        REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.tlv));
-        REQUIRE(d_f90.tlv[k] == d_cxx.tlv[k]);
-        REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.pblh));
-        REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
-        REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.check));
-        REQUIRE(d_f90.check[k] == d_cxx.check[k]);
-      }
-      for (Int k = 0; k < d_f90.total(d_f90.rino); ++k) {
-        REQUIRE(d_f90.total(d_f90.rino) == d_cxx.total(d_cxx.rino));
-        REQUIRE(d_f90.rino[k] == d_cxx.rino[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
+      for (Int i = 0; i < num_runs; ++i) {
+        PblintdSurfTempData& d_f90 = f90_data[i];
+        PblintdSurfTempData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.tlv); ++k) {
+          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.tlv));
+          REQUIRE(d_f90.tlv[k] == d_cxx.tlv[k]);
+          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.pblh));
+          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.check));
+          REQUIRE(d_f90.check[k] == d_cxx.check[k]);
+        }
+        for (Int k = 0; k < d_f90.total(d_f90.rino); ++k) {
+          REQUIRE(d_f90.total(d_f90.rino) == d_cxx.total(d_cxx.rino));
+          REQUIRE(d_f90.rino[k] == d_cxx.rino[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

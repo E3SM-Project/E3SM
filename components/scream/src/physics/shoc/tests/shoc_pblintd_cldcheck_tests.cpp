@@ -126,15 +126,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
       shoc_pblintd_cldcheck_f(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
     }
 
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(cldcheck_data_f90) / sizeof(PblintdCldcheckData);
-    for (Int i = 0; i < num_runs; ++i) {
-      const Int shcol = cldcheck_data_cxx[i].shcol;
-      for (Int k = 0; k < shcol; ++k) {
-        REQUIRE(cldcheck_data_f90[i].pblh[k]  == cldcheck_data_cxx[i].pblh[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(cldcheck_data_f90) / sizeof(PblintdCldcheckData);
+      for (Int i = 0; i < num_runs; ++i) {
+        const Int shcol = cldcheck_data_cxx[i].shcol;
+        for (Int k = 0; k < shcol; ++k) {
+          REQUIRE(cldcheck_data_f90[i].pblh[k]  == cldcheck_data_cxx[i].pblh[k]);
+        }
       }
     }
-#endif
   }  // run_bfb
 
 };

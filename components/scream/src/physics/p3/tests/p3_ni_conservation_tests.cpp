@@ -71,15 +71,15 @@ struct UnitWrap::UnitTest<D>::TestNiConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-#ifndef NDEBUG
-    for (Int i = 0; i < max_pack_size; ++i) {
-      NiConservationData& d_f90 = f90_data[i];
-      NiConservationData& d_cxx = cxx_host[i];
-      REQUIRE(d_f90.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
-      REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
-      REQUIRE(d_f90.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        NiConservationData& d_f90 = f90_data[i];
+        NiConservationData& d_cxx = cxx_host[i];
+        REQUIRE(d_f90.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
+        REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
+        REQUIRE(d_f90.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+      }
     }
-#endif
   } // run_bfb
 
 };

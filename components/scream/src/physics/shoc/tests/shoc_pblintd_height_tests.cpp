@@ -209,19 +209,19 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
-    for (Int i = 0; i < num_runs; ++i) {
-      PblintdHeightData& d_f90 = f90_data[i];
-      PblintdHeightData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-        REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
-        REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
-        REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.check));
-        REQUIRE(d_f90.check[k] == d_cxx.check[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
+      for (Int i = 0; i < num_runs; ++i) {
+        PblintdHeightData& d_f90 = f90_data[i];
+        PblintdHeightData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
+          REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
+          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+          REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.check));
+          REQUIRE(d_f90.check[k] == d_cxx.check[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

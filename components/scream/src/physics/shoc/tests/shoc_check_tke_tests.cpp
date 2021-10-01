@@ -116,16 +116,16 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckTkeData);
-    for (Int i = 0; i < num_runs; ++i) {
-      CheckTkeData& d_f90 = SDS_f90[i];
-      CheckTkeData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
-        REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckTkeData);
+      for (Int i = 0; i < num_runs; ++i) {
+        CheckTkeData& d_f90 = SDS_f90[i];
+        CheckTkeData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
+          REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
+        }
       }
     }
-#endif
   }
 
 };

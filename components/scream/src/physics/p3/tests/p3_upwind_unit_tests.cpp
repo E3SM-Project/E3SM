@@ -251,24 +251,24 @@ static void run_bfb()
       d.num_arrays, fluxes, vs, qnx);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
-    Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
+      Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
 
-    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
-    cuds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
-    cuds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+      Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+      cuds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+      cuds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
 
-    for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
-      for (Int k = start; k < end; ++k) {
-        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
-        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
+      for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
+        for (Int k = start; k < end; ++k) {
+          REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+          REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
+        }
       }
     }
   }
-#endif
 }
 
 };
@@ -325,27 +325,27 @@ static void run_bfb()
                                 d.num_arrays, fluxes, vs, qnx);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
-    Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
+      Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
 
-    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
-    gsds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
-    gsds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+      Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+      gsds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+      gsds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
 
-    for (int n = 0; n < gsds_fortran[i].num_arrays; ++n) {
-      for (Int k = start; k < end; ++k) {
-        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
-        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
+      for (int n = 0; n < gsds_fortran[i].num_arrays; ++n) {
+        for (Int k = start; k < end; ++k) {
+          REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+          REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
+        }
       }
+      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
+      REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
+      REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
     }
-    REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
-    REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
-    REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
   }
-#endif
 }
 
 };

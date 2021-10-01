@@ -292,6 +292,10 @@ print_var(SCREAM_TPL_LIBRARIES)
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
+if (EKAT_ENABLE_CUDA_MEMCHECK)
+  add_definitions(-DEKAT_ENABLE_CUDA_MEMCHECK)
+endif()
+
 # Hooks for testing test-all-scream within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
@@ -304,6 +308,11 @@ if ($ENV{SCREAM_FORCE_RUN_FPE_FAIL})
 endif()
 if ($ENV{SCREAM_FORCE_RUN_DIFF})
   add_definitions(-DSCREAM_FORCE_RUN_DIFF)
+  set(SCREAM_FAKE_NEED_P3 ON)
+endif()
+if ($ENV{SCREAM_FORCE_RUN_DIFF_BFB_UNIT})
+  add_definitions(-DSCREAM_FORCE_RUN_DIFF_BFB_UNIT)
+  set(SCREAM_FAKE_NEED_P3 ON)
 endif()
 if ($ENV{SCREAM_FORCE_RUN_KOKKOS_OOB})
   add_definitions(-DSCREAM_FORCE_RUN_KOKKOS_OOB)

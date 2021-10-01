@@ -72,14 +72,14 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-#ifndef NDEBUG
-    for (Int i = 0; i < max_pack_size; ++i) {
-      IceSupersatConservationData& d_f90 = f90_data[i];
-      IceSupersatConservationData& d_cxx = cxx_host[i];
-      REQUIRE(d_f90.qidep == d_cxx.qidep);
-      REQUIRE(d_f90.qinuc == d_cxx.qinuc);
+    if (SCREAM_BFB_TESTING) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        IceSupersatConservationData& d_f90 = f90_data[i];
+        IceSupersatConservationData& d_cxx = cxx_host[i];
+        REQUIRE(d_f90.qidep == d_cxx.qidep);
+        REQUIRE(d_f90.qinuc == d_cxx.qinuc);
+      }
     }
-#endif
   } // run_bfb
 
 };
