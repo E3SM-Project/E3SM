@@ -522,7 +522,7 @@ contains
   end function get_homme_bool_param_f90
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
-    use dimensions_mod,    only: qsize, qsize_d, nlev, np
+    use dimensions_mod,    only: qsize, nlev
     use control_mod,       only: ftype, use_moisture
     use time_mod,          only: nmax
     !
@@ -539,6 +539,8 @@ contains
     call c_f_pointer(param_name_c,param_name)
     len = index(param_name, C_NULL_CHAR) -1
     select case(param_name(1:len))
+      case("ne")
+        ne = param_value
       case("ftype")
         ftype = param_value
       case("qsize")

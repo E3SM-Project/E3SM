@@ -14,7 +14,7 @@ using scream::Int;
 extern "C" {
 
 // Fortran routines to be called from C++
-  void register_infile_c2f(const char*&& filename);
+  void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
   void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, Real *&hbuf);
@@ -23,7 +23,6 @@ extern "C" {
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
   void eam_pio_finalize_c2f();
-  void register_outfile_c2f(const char*&& filename);
   void sync_outfile_c2f(const char*&& filename);
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const Real time);
@@ -53,20 +52,13 @@ void eam_pio_finalize() {
   GPTLfinalize();
 }
 /* ----------------------------------------------------------------- */
-void register_outfile(const std::string& filename) {
-
-
-  register_outfile_c2f(filename.c_str());
+void register_file(const std::string& filename, const FileMode mode) {
+  register_file_c2f(filename.c_str(),mode);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_closefile(const std::string& filename) {
 
   eam_pio_closefile_c2f(filename.c_str());
-}
-/* ----------------------------------------------------------------- */
-void register_infile(const std::string& filename) {
-
-  register_infile_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
 void sync_outfile(const std::string& filename) {
@@ -140,11 +132,11 @@ void count_pio_atm_file() {
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, Real *hbuf) {
   grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
-};
+}
 /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {
   grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
-};
+}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio

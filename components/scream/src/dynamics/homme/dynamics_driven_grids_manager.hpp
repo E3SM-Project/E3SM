@@ -46,6 +46,8 @@ protected:
 
   void build_grid_codes ();
 
+  ekat::Comm      m_comm;
+
   grid_repo_type  m_grids;
 
   std::string m_ref_grid_name;

@@ -1,6 +1,7 @@
 #ifndef SCREAM_POINT_GRID_HPP
 #define SCREAM_POINT_GRID_HPP
 
+#include <memory>
 #include "share/grid/abstract_grid.hpp"
 #include "share/scream_types.hpp"
 
@@ -27,9 +28,15 @@ class PointGrid : public AbstractGrid
 public:
 
   PointGrid (const std::string& grid_name,
-             const int num_global_cols,
              const int num_my_cols,
-             const int num_vertical_levels);
+             const int num_vertical_levels,
+             const ekat::Comm& comm);
+
+  PointGrid (const std::string& grid_name,
+             const int num_my_cols,
+             const int num_vertical_levels,
+             const std::shared_ptr<const AbstractGrid>& unique_grid,
+             const ekat::Comm& comm);
 
   virtual ~PointGrid () = default;
 
@@ -40,7 +47,6 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
-  void set_dofs (const dofs_list_type& dofs);
   void set_geometry_data (const std::string& name, const geo_view_type& data) override;
 };
 

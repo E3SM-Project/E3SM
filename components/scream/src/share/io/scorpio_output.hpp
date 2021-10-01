@@ -2,7 +2,10 @@
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
 #include "share/io/scream_scorpio_interface.hpp"
-#include "scream_config.h"
+#include "share/field/field_manager.hpp"
+#include "share/grid/abstract_grid.hpp"
+#include "share/grid/grids_manager.hpp"
+#include "share/util//scream_time_stamp.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -78,19 +81,13 @@
 namespace scream
 {
 
-// Forward declarations
-template<typename T>
-class FieldManager;
-
-class FieldLayout;
-
-class AbstractGrid;
-
-namespace util { class TimeStamp; }
-
 class AtmosphereOutput 
 {
 public:
+  using fm_type       = FieldManager<Real>;
+  using grid_type     = AbstractGrid;
+  using gm_type       = GridsManager;
+  using remapper_type = AbstractRemapper<Real>;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -108,7 +105,8 @@ public:
   //    In this case, we have to also create an "rpointer.atm" file (which
   //    contains metadata, and is expected by the component coupled)
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                   const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::shared_ptr<const gm_type>& grids_mgr,
                    const bool is_restarted_run = false,
                    const bool is_model_restart_output = false);
 
@@ -120,6 +118,11 @@ public:
 protected:
 
   // Internal functions
+  void set_params (const ekat::ParameterList& params);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::shared_ptr<const gm_type>& grids_mgr);
+  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
+
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename);
   void set_degrees_of_freedom(const std::string& filename);
@@ -132,9 +135,9 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm                                  m_comm;
-  ekat::ParameterList                         m_params;
   std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
   std::shared_ptr<const AbstractGrid>         m_grid;
+  std::shared_ptr<remapper_type>              m_remapper;
   
   // The output filename root
   std::string       m_casename;
@@ -147,7 +150,7 @@ protected:
   std::string m_out_frequency_units;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>            m_fields;
+  std::vector<std::string>            m_fields_names;
   std::map<std::string,FieldLayout>   m_layouts;
   std::map<std::string,int>           m_dofs;
   std::map<std::string,int>           m_dims;
@@ -167,6 +170,7 @@ protected:
 
   // Whether this run is the restart of a previous run (in which case, we might load an output checkpoint)
   bool m_is_restarted_run;
+  std::string m_hist_restart_casename;
 
   // Whether the output file is open.
   // Note: this is redundant, since it's equal to m_num_snapshots_in_file==0, but it makes code more readable.

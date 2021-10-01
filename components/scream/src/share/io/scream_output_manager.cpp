@@ -1,4 +1,6 @@
 #include "scream_output_manager.hpp"
+#include <cmath>
+#include <memory>
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 
@@ -8,11 +10,13 @@ namespace scream
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<const fm_type>& field_mgr,
+       const std::shared_ptr<const gm_type>& grids_mgr,
        const bool runtype_restart)
 {
   m_io_comm   = io_comm;
   m_params    = params;
   m_field_mgr = field_mgr;
+  m_grids_mgr = grids_mgr;
   m_runtype_restart = runtype_restart;
 
   // Check for model restart output
@@ -89,10 +93,11 @@ void OutputManager::finalize()
 void OutputManager::
 add_output_stream(const ekat::ParameterList& params, const bool model_restart_output)
 {
-  auto output = std::make_shared<output_type>(m_io_comm,params,m_field_mgr,
+  auto output = std::make_shared<output_type>(m_io_comm,params,m_field_mgr,m_grids_mgr,
                                               m_runtype_restart, model_restart_output);
   m_output_streams.push_back(output);
 }
+
 /*===============================================================================================*/
 void OutputManager::make_restart_param_list(ekat::ParameterList& params)
 {

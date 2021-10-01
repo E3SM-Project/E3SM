@@ -65,6 +65,7 @@ public:
   using layout_ptr_type  = std::shared_ptr<const layout_type>;
 
   FieldAllocProp ();
+  FieldAllocProp (const FieldAllocProp&) = default;
 
   FieldAllocProp& operator= (const FieldAllocProp&);
 
@@ -102,6 +103,9 @@ public:
   // Get number of m_scalar_type_size-sized scalars in the allocation.
   int  get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
 
+  // Get the largest pack size that this allocation was requested to accommodate
+  int  get_largest_pack_size () const;
+
   // Wether this allocation is contiguous
   bool contiguous () const { return m_contiguous; }
 
@@ -126,6 +130,9 @@ protected:
 
   // The size of the scalar type
   int   m_scalar_type_size;
+
+  // The largest pack size that was requested
+  int   m_pack_size_max;
 
   // The extent along the last dimension for this allocation
   int   m_last_extent;

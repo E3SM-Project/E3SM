@@ -12,7 +12,8 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(field "field_tests.cpp" scream_share)
 
   # Test grids
-  CreateUnitTest(grid "grid_tests.cpp" scream_share)
+  CreateUnitTest(grid "grid_tests.cpp" scream_share
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
   # Test common physics functions
   CreateUnitTest(common_physics "common_physics_functions_tests.cpp" scream_share)

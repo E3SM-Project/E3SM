@@ -3,7 +3,6 @@ module homme_grid_mod
   use parallel_mod,      only: abortmp
   use kinds,             only: iulog
   use homme_context_mod, only: par, masterproc
-  use phys_grid_mod,     only: fv_nphys
 
   implicit none
   private
@@ -39,14 +38,22 @@ contains
     endif
   end subroutine check_grids_inited
 
-  subroutine init_grids_f90 (pgN) bind(c)
+  subroutine init_grids_f90 (pg_types_ptr,num_pg_types) bind(c)
     use dyn_grid_mod,      only: dyn_grid_init
-    use phys_grid_mod,     only: phys_grid_init
+    use phys_grid_mod,     only: phys_grids_init
     use homme_context_mod, only: is_geometry_inited
     !
     ! Input(s)
     !
-    integer (kind=c_int), intent(in) :: pgN
+    integer (kind=c_int), intent(in), value :: num_pg_types
+    type(c_ptr), intent(in) :: pg_types_ptr
+    !
+    ! Local(s)
+    !
+    integer :: ipg
+    integer (kind=c_int), pointer :: pg_types(:)
+
+    call c_f_pointer(pg_types_ptr, pg_types, [num_pg_types])
 
     ! We don't expect this to be called twice
     call check_grids_inited(.false.)
@@ -54,10 +61,8 @@ contains
     ! Init SE grid struff in Homme
     call dyn_grid_init ()
 
-    ! If doing a dyn-only test, we don't need pg stuff
-    if (pgN .ge. 0) then
-      call phys_grid_init (pgN)
-    endif
+    ! Init physics grids
+    call phys_grids_init (pg_types)
 
     is_geometry_inited = .true.
   end subroutine init_grids_f90
@@ -127,7 +132,7 @@ contains
     ! Sanity check
     call check_grids_inited(.true.)
 
-    ncols = get_num_local_columns_f90()
+    ncols = get_num_local_columns_f90(mod(pg_type,10))
 
     call c_f_pointer (gids_ptr, gids, [ncols])
     call c_f_pointer (lat_ptr,  lat,  [ncols])
@@ -139,9 +144,13 @@ contains
 
   end subroutine get_phys_grid_data_f90
 
-  function get_num_local_columns_f90 () result (ncols) bind(c)
+  function get_num_local_columns_f90 (pg_type) result (ncols) bind(c)
     use phys_grid_mod,     only: get_num_local_columns
     !
+    ! Input(s)
+    !
+    integer (kind=c_int), intent(in), value :: pg_type
+    !
     ! Local(s)
     !
     integer (kind=c_int) :: ncols
@@ -149,11 +158,15 @@ contains
     ! Sanity check
     call check_grids_inited(.true.)
 
-    ncols = get_num_local_columns()
+    ncols = get_num_local_columns(mod(pg_type,10))
   end function get_num_local_columns_f90
 
-  function get_num_global_columns_f90 () result (ncols) bind(c)
+  function get_num_global_columns_f90 (pg_type) result (ncols) bind(c)
     use phys_grid_mod, only: get_num_global_columns
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int), intent(in), value :: pg_type
     !
     ! Local(s)
     !
@@ -162,7 +175,7 @@ contains
     ! Sanity check
     call check_grids_inited(.true.)
 
-    ncols = get_num_global_columns()
+    ncols = get_num_global_columns(mod(pg_type,10))
   end function get_num_global_columns_f90
 
   function get_num_local_elems_f90 () result(num_elems) bind(c)

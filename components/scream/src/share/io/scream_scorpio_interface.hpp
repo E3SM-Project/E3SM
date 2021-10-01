@@ -22,16 +22,21 @@ static constexpr int PIO_INT = 4;
 
 namespace scream {
 namespace scorpio {
+
+  // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
+  // in the scream_scorpio_interface F90 module
+  enum FileMode {
+    Read = 1,
+    Write = 2
+  };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
   void eam_init_pio_subsystem(const int mpicom);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
   /* Close a file currently open in scorpio */
   void eam_pio_closefile(const std::string& filename);
-  /* Register a new file for output with scorpio module */
-  void register_outfile(const std::string& filename);
-  /* Register a new file to be used for input with the scorpio module */
-  void register_infile(const std::string& filename);
+  /* Register a new file to be used for input/output with the scorpio module */
+  void register_file(const std::string& filename, const FileMode mode);
   /* Every timestep each output file needs to be synced, call once per timestep, per file */
   void sync_outfile(const std::string& filename);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
