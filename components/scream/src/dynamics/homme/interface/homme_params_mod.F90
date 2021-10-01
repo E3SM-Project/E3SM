@@ -422,7 +422,7 @@ contains
   end subroutine init_params_f90
 
   function get_homme_int_param_f90 (param_name_c) result(param_value) bind(c)
-    use dimensions_mod,    only: nelemd, qsize, nlev, np
+    use dimensions_mod,    only: qsize, nlev, np
     use control_mod,       only: ftype
     use time_mod,          only: nmax
     use homme_context_mod, only: elem

@@ -64,7 +64,6 @@ TEST_CASE("se_grid", "") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   const int num_local_elems = 10;
-  const int num_global_elems = num_local_elems*comm.size();
   const int num_gp = 4;
   const int num_levels = 72;
 
@@ -93,7 +92,6 @@ TEST_CASE("se_grid", "") {
   int offset = num_local_unique_dofs*comm.rank();
 
   for (int ie = 0; ie < num_local_elems; ++ie) {
-    int elem_offset = offset + ie*num_elem_unique_dofs;
     for (int igp = 0; igp < num_gp-1; ++igp) {
       for (int jgp = 0; jgp < num_gp; ++jgp) {
         int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
