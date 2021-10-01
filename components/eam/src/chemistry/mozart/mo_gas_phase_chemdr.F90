@@ -418,6 +418,7 @@ contains
     ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget
     logical :: history_gaschmbudget_2D
+    logical :: history_gaschmbudget_2D_levels
 
     integer ::  gas_ac_idx
     real(r8), pointer, dimension(:) :: gas_ac_2D
@@ -427,7 +428,8 @@ contains
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
     call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
-                    history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+             history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
 
     call t_startf('chemdr_init')
 
@@ -815,7 +817,7 @@ contains
 
     call t_stopf('chemdr_init')
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
@@ -845,7 +847,7 @@ contains
        enddo
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
@@ -853,6 +855,16 @@ contains
        if ( history_gaschmbudget_2D ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -881,7 +893,7 @@ contains
        enddo
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
@@ -889,6 +901,16 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -985,7 +1007,7 @@ contains
 
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDA' )
@@ -993,6 +1015,16 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1021,7 +1053,7 @@ contains
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDL' )
@@ -1034,6 +1066,24 @@ contains
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL' )
        endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL_L4' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL_L4' )
+       endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
@@ -1042,7 +1092,7 @@ contains
     !-----------------------------------------------------------------------      
     call negtrc( 'After chemistry ', vmr, ncol )
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDN' )
@@ -1050,6 +1100,16 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1059,7 +1119,7 @@ contains
     !-----------------------------------------------------------------------      
     if(.not. do_lin_strat_chem) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDU' )
@@ -1067,6 +1127,16 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1080,7 +1150,7 @@ contains
        call ghg_chem_set_flbc( vmr, ncol )
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDB' )
@@ -1088,6 +1158,16 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1132,7 +1212,7 @@ contains
        end do
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDS' )
@@ -1144,6 +1224,24 @@ contains
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS' )
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS_L4' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_L4' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1237,7 +1335,7 @@ contains
     endif
     call t_stopf('drydep')
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDD' )
@@ -1250,12 +1348,30 @@ contains
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD' )
        endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD_L4' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_L1' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_L2' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_L3' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_L4' )
+       endif
        do m = 1,pcnst
           n = map2chm(m)
           if (n > 0 .and. (.not. any( aer_species == n ))) then
             ! store gas chemistry tracer concentration in pbuf for tendency
             ! calculation
-            if (history_gaschmbudget) then
+            if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
                gas_ac_idx = pbuf_get_index(gas_ac_name(n))
                call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
                ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
