@@ -2,7 +2,7 @@
 ---
 FILENAME: shoc_stand_alone_output
 AVERAGING TYPE: Instant
-GRID: Physics
+GRID: Point Grid
 FREQUENCY:
   OUT_N: 5
   OUT_OPTION: Steps

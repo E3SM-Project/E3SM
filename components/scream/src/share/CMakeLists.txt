@@ -18,9 +18,9 @@ else()
     field/field_layout.cpp
     field/field_tracking.cpp
     grid/abstract_grid.cpp
+    grid/mesh_free_grids_manager.cpp
     grid/se_grid.cpp
     grid/point_grid.cpp
-    grid/physics_only_grids_manager.cpp
     grid/user_provided_grids_manager.cpp
     util/scream_test_session.cpp
     util/scream_time_stamp.cpp

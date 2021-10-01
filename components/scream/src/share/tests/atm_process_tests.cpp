@@ -1,19 +1,70 @@
 #include <catch2/catch.hpp>
 
+#include "ekat/ekat_parameter_list.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
+
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/remap/inverse_remapper.hpp"
-#include "share/tests/dummy_se_point_remapper.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 namespace scream {
 
-template<AtmosphereProcessType PType>
+ekat::ParameterList create_test_params ()
+{
+  // Create a parameter list for inputs
+  ekat::ParameterList params ("Atmosphere Processes");
+
+  params.set("Number of Entries",2);
+  params.set<std::string>("Schedule Type","Sequential");
+
+  auto& p0 = params.sublist("Process 0");
+  p0.set<std::string>("Process Name", "Foo");
+  p0.set<std::string>("Grid Name", "Point Grid");
+
+  auto& p1 = params.sublist("Process 1");
+  p1.set<std::string>("Process Name", "Group");
+  p1.set("Number of Entries",2);
+  p1.set<std::string>("Schedule Type","Sequential");
+
+  auto& p1_0 = p1.sublist("Process 0");
+  p1_0.set<std::string>("Process Name", "Bar");
+  p1_0.set<std::string>("Grid Name", "Point Grid");
+
+  auto& p1_1 = p1.sublist("Process 1");
+  p1_1.set<std::string>("Process Name", "Baz");
+  p1_1.set<std::string>("Grid Name", "Point Grid");
+
+  return params;
+}
+
+std::shared_ptr<GridsManager>
+create_gm (const ekat::Comm& comm) {
+
+  const int num_local_elems = 4;
+  const int np = 4;
+  const int nlevs = 10;
+  const int num_local_cols = 13;
+  const int num_global_cols = num_local_cols*comm.size();
+
+  ekat::ParameterList gm_params;
+  gm_params.set<std::string>("Reference Grid", "Point Grid");
+  gm_params.sublist("Mesh Free").set<int>("Number of Global Columns", num_global_cols);
+  gm_params.sublist("Mesh Free").set<int>("Number of Local Elements", num_local_elems);
+  gm_params.sublist("Mesh Free").set<int>("Number of Vertical Levels", nlevs);
+  gm_params.sublist("Mesh Free").set<int>("Number of Gauss Points", np);
+
+  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  gm->build_all_grids();
+
+  return gm;
+}
+
+// A dummy atm proc
 class DummyProcess : public scream::AtmosphereProcess {
 public:
 
@@ -24,9 +75,6 @@ public:
     m_grid_name = params.get<std::string> ("Grid Name");
   }
 
-  // The type of the block (dynamics or physics)
-  AtmosphereProcessType type () const { return PType; }
-
   // The type of grids on which the process is defined
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
@@ -36,9 +84,6 @@ public:
 
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
-
-  // Register all fields in the given field manager(s)
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& /* field_mgrs */) const {}
 
 protected:
 
@@ -57,60 +102,64 @@ protected:
   std::string m_grid_name;
 };
 
-class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>
+class Foo : public DummyProcess
 {
 public:
-  using base = DummyProcess<AtmosphereProcessType::Dynamics>;
 
-  MyDynamics (const ekat::Comm& comm,const ekat::ParameterList& params)
-   : base(comm,params)
+  Foo (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
   {
     // Nothing to do here
   }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
 
     const auto grid = gm->get_grid(m_grid_name);
-    const auto dyn_lt = grid->get_3d_scalar_layout(true);
+    const auto lt = grid->get_3d_scalar_layout(true);
 
-    add_field<Required>("Temperature tendency",dyn_lt,K/s,m_grid_name);
-    add_field<Computed>("Temperature",dyn_lt,K,m_grid_name);
+    add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
+    add_field<Computed>("Temperature",lt,K,m_grid_name);
   }
 };
 
-class MyPhysicsA : public DummyProcess<AtmosphereProcessType::Physics>
+class Bar : public DummyProcess
 {
 public:
-  using base = DummyProcess<AtmosphereProcessType::Physics>;
-
-  MyPhysicsA (const ekat::Comm& comm,const ekat::ParameterList& params)
-   : base(comm,params)
+  Bar (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
   {
     // Nothing to do here
   }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
 
     const auto grid = gm->get_grid(m_grid_name);
-    const auto phys_lt = grid->get_3d_scalar_layout (true);
+    const auto lt = grid->get_3d_scalar_layout (true);
 
-    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
-    add_field<Computed>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+    add_field<Required>("Temperature",lt,K,m_grid_name);
+    add_field<Computed>("Concentration A",lt,kg/pow(m,3),m_grid_name);
   }
 };
 
-class MyPhysicsB : public DummyProcess<AtmosphereProcessType::Physics>
+class Baz : public DummyProcess
 {
 public:
-  using base = DummyProcess<AtmosphereProcessType::Physics>;
-
-  MyPhysicsB (const ekat::Comm& comm,const ekat::ParameterList& params)
-   : base(comm,params)
+  Baz (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
   {
     // Nothing to do here
   }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
@@ -124,45 +173,6 @@ public:
     add_field<Computed>("Temperature tendency",phys_lt,K/s,m_grid_name);
   }
 };
-
-std::shared_ptr<UserProvidedGridsManager>
-setup_upgm (const int ne) {
-
-  ekat::Comm comm(MPI_COMM_WORLD);
-
-  const int num_local_elems = 4;
-  const int np = 4;
-  const int nvl = 128;
-  const int ncols = 6*ne*ne*9 + 2;
-
-  // Note: our test does not use actual dof info, but we need to set these
-  //       views in the SEGrid's, so that the num local dofs is set
-  AbstractGrid::dofs_list_type dyn_dofs("",num_local_elems*np*np);
-  AbstractGrid::dofs_list_type phys_dofs("",ncols);
-
-  AbstractGrid::lid_to_idx_map_type dyn_dofs_map ("",num_local_elems*np*np,3);
-  AbstractGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
-
-  // Create a grids manager
-  auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_local_elems,np,nvl,comm);
-  auto dummy_phys_grid = create_point_grid("Physics",ncols,nvl,comm);
-  dummy_dyn_grid->set_dofs(dyn_dofs);
-  dummy_dyn_grid->set_lid_to_idx_map(dyn_dofs_map);
-  upgm->set_grid(dummy_dyn_grid);
-  upgm->set_grid(dummy_phys_grid);
-  upgm->set_reference_grid(dummy_phys_grid->name());
-
-  using dummy_remapper = DummySEPointRemapper<Real>;
-  using inverse_remapper = InverseRemapper<Real>;
-  auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
-  auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
-  auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);
-  upgm->set_remapper(dummy_phys_dyn_remapper);
-  upgm->set_remapper(dummy_dyn_phys_remapper);
-
-  return upgm;
-}
 
 // ================================ TESTS ============================== //
 
@@ -179,9 +189,9 @@ TEST_CASE("process_factory", "") {
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
-  factory.register_product("MyPhysicsA",&create_atmosphere_process<MyPhysicsA>);
-  factory.register_product("mYphysicsb",&create_atmosphere_process<MyPhysicsB>);
-  factory.register_product("mYdynAmics",&create_atmosphere_process<MyDynamics>);
+  factory.register_product("Foo",&create_atmosphere_process<Foo>);
+  factory.register_product("Bar",&create_atmosphere_process<Bar>);
+  factory.register_product("Baz",&create_atmosphere_process<Baz>);
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
 
   // Create the processes
@@ -193,7 +203,7 @@ TEST_CASE("process_factory", "") {
   // 1) Must be a group
   REQUIRE (static_cast<bool>(group));
 
-  // 2) Must store 2 processes: a dynamics and a group
+  // 2) Must store 2 processes: a Physics and a Group
   REQUIRE (group->get_num_processes()==2);
   REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
   REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
@@ -209,76 +219,54 @@ TEST_CASE("process_factory", "") {
 TEST_CASE("atm_proc_dag", "") {
   using namespace scream;
 
-  constexpr int ne = 4;
-
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  // Create a parameter list for inputs
-  ekat::ParameterList params ("Atmosphere Processes");
-
-  params.set("Number of Entries",2);
-  params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", "Dynamics");
-
-  auto& p1 = params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Group");
-  p1.set("Number of Entries",2);
-  p1.set<std::string>("Schedule Type","Sequential");
-
-  auto& p1_0 = p1.sublist("Process 0");
-  p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", "Physics");
-
-  auto& p1_1 = p1.sublist("Process 1");
-  p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", "Physics");
-
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
-  factory.register_product("MyPhysicsA",&create_atmosphere_process<MyPhysicsA>);
-  factory.register_product("mYphysicsb",&create_atmosphere_process<MyPhysicsB>);
-  factory.register_product("mYdynAmics",&create_atmosphere_process<MyDynamics>);
+  factory.register_product("Foo",&create_atmosphere_process<Foo>);
+  factory.register_product("Bar",&create_atmosphere_process<Bar>);
+  factory.register_product("Baz",&create_atmosphere_process<Baz>);
   factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
+
+  // Create a grids manager
+  auto gm = create_gm(comm);
 
   // Test a case where the dag has no unmet deps
   SECTION ("working") {
+    auto params = create_test_params ();
+
     // Create the processes
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
-    // Create a grids manager
-    auto upgm = setup_upgm (ne);
-
     // Set the grids, so the remappers in the group are not empty
-    atm_process->set_grids(upgm);
+    atm_process->set_grids(gm);
 
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process),{});
     dag.write_dag("working_atm_proc_dag.dot",4);
 
-    // Clean up
-    upgm->clean_up();
+    REQUIRE (not dag.has_unmet_dependencies());
   }
 
   SECTION ("broken") {
-    auto upgm = setup_upgm(ne);
 
-    // Make it look like we forgot to request MyPhysicsA
+    auto params = create_test_params();
+    auto p1 = params.sublist("Process 1");
+
+    // Make it look like we forgot to request MyPhysicsB
     p1.set("Number of Entries", 1);
-    p1_0.set<std::string>("Process Name", "MyPhysicsB");
+    // p1_0.set<std::string>("Process Name", "MyPhysicsB");
     std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
-    broken_atm_group->set_grids(upgm);
+    broken_atm_group->set_grids(gm);
 
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group),{});
     dag.write_dag("broken_atm_proc_dag.dot",4);
 
-    upgm->clean_up();
+    REQUIRE (dag.has_unmet_dependencies());
   }
 }
 

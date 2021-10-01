@@ -4,7 +4,7 @@
 
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 
-#include "share/grid/physics_only_grids_manager.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
 
@@ -33,7 +33,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
-  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
+  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
   // Create the driver
   AtmosphereDriver ad;
@@ -45,7 +45,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   // Because this is a relatively simple test based on two variables, we initialize them here
   // rather than use the netCDF input structure.
-  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
+  const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
   const auto& field_mgr = *ad.get_field_mgr(grid->name());
   
   int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank

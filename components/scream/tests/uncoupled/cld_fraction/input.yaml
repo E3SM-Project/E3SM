@@ -8,18 +8,18 @@ Atmosphere Processes:
 
   Process 0:
     Process Name: CldFraction
-    Grid: Physics
+    Grid: Point Grid
 
 Grids Manager:
-  Type: Physics Only
-  Reference Grid: Physics
-  Physics Only:
-    Number of global columns:   3
-    Number of vertical levels:  128
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns:   3
+    Number of Vertical Levels:  128
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Physics:
+  Point Grid:
     cldfrac_liq: 0.0
     qi: 0.0 
 ...
