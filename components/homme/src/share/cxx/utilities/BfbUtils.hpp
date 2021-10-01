@@ -37,7 +37,7 @@ double zeroulpn (double a, const int n, double replace) {
   x <<= n;
   { // Replace the n least significant bits with those from the fraction part of
     // 'replace'.
-    const long long int ones = 0xffffffffffffffff;
+    const unsigned long long int ones = 0xffffffffffffffff;
     auto mask = ones;
     mask >>= n;
     mask <<= n;
