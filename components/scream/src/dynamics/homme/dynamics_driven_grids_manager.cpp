@@ -101,6 +101,8 @@ build_grids (const std::set<std::string>& grid_names,
                       "Error! Grid '" + gn + "' is not supported by this grid manager.\n");
 
     auto code = m_grid_codes.at(gn);
+    // Dyn grid has a negative code, while phys grids codes are >=0.
+    // We only need to store the phys grids codes.
     if (code>=0) {
       pg_codes.push_back(code);
     }
@@ -257,7 +259,7 @@ build_grid_codes () {
   constexpr int gll_t = 10;  // Physics GLL Twin
   constexpr int pg2_t = 12;  // Physics PG2 Twin
   constexpr int pg3_t = 13;  // Physics PG3 Twin
-  constexpr int pg4_t = 13;  // Physics PG4 Twin
+  constexpr int pg4_t = 14;  // Physics PG4 Twin
 
   for (const auto& name : m_valid_grid_names) {
     int code;
