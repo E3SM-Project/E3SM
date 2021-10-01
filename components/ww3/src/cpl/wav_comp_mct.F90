@@ -170,7 +170,7 @@
       use w3triamd, only: SETUGIOBP
 !/
       use w3initmd, only: w3init 
-      use w3wavemd, only: w3wave 
+      use w3wavemd, only: w3wave
       use w3gridmd, only: w3grid
 !/
       use w3iopomd, only:
@@ -326,6 +326,7 @@ CONTAINS
                     'MOV' /
 
       namelist /ww3_inparm/ stafile, fldout, fldcou, pnt_out_freq, grd_out_freq
+
 
       !--------------------------------------------------------------------
       ! Initialize mpi
@@ -782,7 +783,7 @@ CONTAINS
 
       call shr_sys_flush(ndso)
 
-      call read_stations_file(stafile,npts,x,y,pnames)
+      call read_stations_file(ndso,stafile,npts,x,y,pnames)
 
       !--------------------------------------------------------------------
       ! Wave model initializations
@@ -1439,17 +1440,18 @@ CONTAINS
 !=====================================================================
 !=====================================================================
 
-    subroutine read_stations_file(fname,npts,x,y,pnames)
+    subroutine read_stations_file(ndso,fname,npts,x,y,pnames)
 
     implicit none
 
+    integer, intent(in) :: ndso
     character(*), intent(in) :: fname
     integer, intent(out) :: npts
     real, dimension(:), allocatable, intent(out) :: x
     real, dimension(:), allocatable, intent(out) :: y
     character(len=40), dimension(:), allocatable, intent(out) :: pnames
 
-    integer :: ndso,ndsl
+    integer :: ndsl
     integer :: ipts
     integer :: iloop
     integer :: ierr
