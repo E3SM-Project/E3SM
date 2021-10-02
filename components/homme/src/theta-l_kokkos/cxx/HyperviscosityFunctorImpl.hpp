@@ -37,17 +37,15 @@ class HyperviscosityFunctorImpl
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, 
                        const int hypervis_subcycle_tom_in, 
-		       const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
+                       const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
                        const Real hypervis_scaling_in)
                       : hypervis_subcycle(hypervis_subcycle_in) 
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
-		      , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
+                      , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
                       , consthv(hypervis_scaling_in == 0){}
 
-
-    //are these guarded against being 0?
     const int   hypervis_subcycle;
     const int   hypervis_subcycle_tom;
 
@@ -65,8 +63,7 @@ class HyperviscosityFunctorImpl
     Real        eta_ave_w;
 
     bool consthv;
-  };
-  //hyperviscosityData
+  };//hyperviscosityData
 
   struct Buffers {
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
@@ -74,8 +71,7 @@ class HyperviscosityFunctorImpl
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
-  };
-  //buffers
+  };//buffers
 
 public:
 
@@ -477,6 +473,7 @@ public:
           dpdiss_bih(ilev) += m_data.eta_ave_w*dptens(ilev) / m_data.hypervis_subcycle;
         }
       });
+
 //where is it set?
 #ifndef XX_NONBFB_COMING
       // It would be fine to not even bother with the surface level, since

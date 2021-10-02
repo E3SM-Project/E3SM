@@ -73,9 +73,8 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
-    //assert hvcoord init?
-    const auto& etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
-    const auto& etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
+    const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
+    const auto etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
     Kokkos::deep_copy(etai_h, m_hvcoord.etai);
     Kokkos::deep_copy(etam_h, m_hvcoord.etam);
 
@@ -88,13 +87,13 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       //prevent padding of nu_scale to get nans to avoid last interface levels
       //of w, phi to be nans, too
       if( phys_lev < NUM_PHYSICAL_LEV ){
-      //etai is num_interface_lev, that is, 129 or 73
-      //etam is num_lev, so packs
-      if ( etai_h(0) == 0.0) {
+        //etai is num_interface_lev, that is, 129 or 73
+        //etam is num_lev, so packs
+        if ( etai_h(0) == 0.0) {
           ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
-      }else{
+        }else{
           ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
-      }
+        }
       }else{
           ptop_over_press = 0.0;
       }
@@ -103,8 +102,8 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       if ( val < 0.15 ) val = 0.0;
       h_nu_scale_top(ilev)[ivec] = val;
 
-     //set nlev_tom here for the future
-     //if (val > 0.0) nlev_tom = phys_lev;
+      //set nlev_tom here for the future
+      //if (val > 0.0) nlev_tom = phys_lev;
 
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
@@ -220,13 +219,8 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
 
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
 {
-
-	//scaling dt, so no need to scale  nu, still add tests for hv_sub>1
-
   m_data.np1 = np1;
 
-//move this from here  
-//  m_data.dt = dt/m_data.hypervis_subcycle;
   m_data.dt = dt;
   m_data.eta_ave_w = eta_ave_w;
 
@@ -292,7 +286,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       // Adjust w_i at the surface, since velocity has changed
       if (m_process_nh_vars) {
 
-//what is single? 
         Kokkos::single(Kokkos::PerThread(team),[&](){
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
@@ -315,27 +308,22 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     });
   });//conversion back to vtheta
 
-//sponge layer  
+  //sponge layer  
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
 
-//m_policy_first_laplace has ref states, so cannot be reused now
-//  Kokkos::parallel_for(m_policy_first_laplace, *this);
-//
-//  laplace(fields) --> ttens, etc.
+    //m_policy_first_laplace has ref states, so cannot be reused now
+    //laplace(fields) --> ttens, etc.
     Kokkos::parallel_for(m_policy_nutop_laplace, *this);
     Kokkos::fence();
 
-//exchange is done on ttens, dptens, vtens, etc.
+    //exchange is done on ttens, dptens, vtens, etc.
     ///? do another timer or the same for all mpi in HV?
-///exchange on a subset of levels in future? is it possible?    
+    ///exchange on a subset of levels in future? 
     assert (m_be->is_registration_completed());
     GPTLstart("hvf-bexch");
     m_be->exchange();
     GPTLstop("hvf-bexch");
 
-    // Update states, m_policy_update_states cannot be reused?
-    // it uses dt := dt/hv_subcycle, use dt and a mask as input, is it faster or slower?
-    // use a dummy for now
     Kokkos::parallel_for(m_policy_update_states2, *this);
     Kokkos::fence();
   } //for for sponge layer
