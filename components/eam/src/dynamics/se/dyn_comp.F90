@@ -394,7 +394,7 @@ CONTAINS
            call t_startf('prim_run_subcycle')
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, single_column_in, TimeLevel, hvcoord, n)
-           call t_stopf('prim_run_sybcycle')
+           call t_stopf('prim_run_subcycle')
          end do
        endif
 
