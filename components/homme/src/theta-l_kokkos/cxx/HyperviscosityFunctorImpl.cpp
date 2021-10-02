@@ -143,25 +143,16 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
-//SORT THIS OUT
-  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
-  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
-
   const int nteams = m_tu.get_num_ws_slots();
 
-  // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
+  // Number of scalar/vector int/mid buffers needed, with size nteams/nelems
   const int mid_vectors_nelems = 1;
   const int int_scalars_nelems = 0;
   const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
 
-  const int bhm_scalars_nteams = 2 + (m_process_nh_vars ? 2 : 0);
-  const int bhm_vectors_nteams = 1;
-
   const int size = m_num_elems*(mid_scalars_nelems*size_mid_scalar +
                                 mid_vectors_nelems*size_mid_vector +
-                                int_scalars_nelems*size_int_scalar) +
-                   nteams*(bhm_scalars_nteams*size_bhm_scalar +
-                           bhm_vectors_nteams*size_bhm_vector);
+                                int_scalars_nelems*size_int_scalar);
 
   return size;
 }
@@ -171,8 +162,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV;
-  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
-  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
   auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
@@ -196,25 +185,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
   mem += size_mid_vector*nelems;
-
-///remove
-  // Biharmonic views (non-persistent views => nteams)
-  m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
-
-  if (m_process_nh_vars) {
-    m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
-    mem += size_bhm_scalar*nteams;
-
-    m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,nteams);
-    mem += size_bhm_scalar*nteams;
-  }
-
-  m_buffers.lapl_theta = decltype(m_buffers.lapl_theta)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
-
-  m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,nteams);
-  mem += size_bhm_vector*nteams;
 
   const int used_mem = reinterpret_cast<Real*>(mem)-mem_in;
   if (used_mem < requested_buffer_size()) {

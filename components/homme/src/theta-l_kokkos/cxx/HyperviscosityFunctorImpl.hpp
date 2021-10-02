@@ -68,24 +68,12 @@ class HyperviscosityFunctorImpl
   };
   //hyperviscosityData
 
-  //at compuile time we do not really know how many levels we will use
-  static constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
-  static constexpr int NUM_BIHARMONIC_LEV = ColInfo<NUM_BIHARMONIC_PHYSICAL_LEVELS>::NumPacks;
-  // ExecViewManaged<Scalar * [NUM_LEV]> nu_scale_top;
-
   struct Buffers {
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    ttens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
-
-//remove these
-    ExecViewManaged<Scalar * [NP][NP][NUM_BIHARMONIC_LEV]>    lapl_dp;
-    ExecViewManaged<Scalar * [NP][NP][NUM_BIHARMONIC_LEV]>    lapl_theta;
-    ExecViewManaged<Scalar * [NP][NP][NUM_BIHARMONIC_LEV]>    lapl_w;
-    ExecViewManaged<Scalar * [NP][NP][NUM_BIHARMONIC_LEV]>    lapl_phi;
-    ExecViewManaged<Scalar * [2][NP][NP][NUM_BIHARMONIC_LEV]> lapl_v;
   };
   //buffers
 
@@ -504,20 +492,12 @@ public:
     });//teamthreadrange loop
     kv.team_barrier();
 
-
-#if 0  
-//notice different buffer names, does it mean we can shrink the buffer? check
-//buffer.lapl_dp, lapl_phi, etc.
-//old nu_top code
-#endif
-
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &point_idx) {
       const int igp = point_idx / NP;
       const int jgp = point_idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&](const int &lev) {
-//nu / hv_subcycling below? no tests with hv_sub >1
         m_buffers.vtens(kv.ie, 0, igp, jgp, lev) *= -m_data.nu;
         m_buffers.vtens(kv.ie, 1, igp, jgp, lev) *= -m_data.nu;
         m_buffers.ttens(kv.ie, igp, jgp, lev) *= -m_data.nu;
