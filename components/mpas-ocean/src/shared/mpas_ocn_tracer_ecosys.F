@@ -74,7 +74,7 @@ module ocn_tracer_ecosys
       ecosys_interior_diagnostics_cnt, &
       ecosys_surface_forcing_diagnostics_cnt
 
-!maltrud NEED TO GET THIS FROM MARBL
+! Bioavailability is already included in surface Fe flux
    real (kind=RKIND) :: &
       parm_Fe_bioavail = 1.0_RKIND
 
@@ -509,7 +509,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_ecosys_compute(activeTracers, ecosysTracers, forcingPool, nTracers, nCellsSolve, &
-      latCell, minLevelCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, indexSalinity, ecosysTracersTend, err)!{{{
+      latCell, minLevelCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, indexSalinity,  &
+      ecosysTracersTend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -635,8 +636,6 @@ contains
       !
 
       ! two dimensional arrays (nx,nz)
-!maltrud NOT SAVED IN BGC_mod YET
-! ecosys_diag_POC_ACCUM,  &
       real (kind=RKIND), dimension(:,:), pointer :: &
          ecosys_diag_O2_PRODUCTION,  &
          ecosys_diag_O2_CONSUMPTION,  &
@@ -770,23 +769,12 @@ contains
       real (kind=RKIND) :: &
          PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND
 
-!!!!!!!!!!!!!!!!!!!!!!!
-!!! NOTE need to define forcing diag fields (like pCO2SURF, etc)
-!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
       ! source/sink wants CGS units
       ! then convert back to MKS after
       real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
       real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
       real (kind=RKIND) :: zTop, zBot
    
-!maltrud debug
-      real (kind=RKIND) :: diagTest
-!maltrud debug
-! integer, save :: stepCounter = 1
-
       integer :: iCell, iLevel, iTracer, numColumns, column, autotroph, n
 
       err = 0
@@ -794,9 +782,6 @@ contains
       call mpas_timer_start("ecosys source-sink")
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
-
-!     call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-!maltrud should be available from ocn_diagnostics_variables
 
       call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_3D', PH_PREV_3D)
       call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2_3D', PH_PREV_ALT_CO2_3D)
@@ -967,19 +952,6 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_SiO3_RESTORE', ecosys_diag_SiO3_RESTORE)
       endif
 
-!maltrud debug
-!write(*,*)' dustFlux_indexInMARBL2 = ', dustFlux_indexInMARBL
-!write(*,*)' shortwave_indexInMARBL2 = ', shortwave_indexInMARBL
-!write(*,*)' PAR_col_frac_indexInMARBL2 = ', PAR_col_frac_indexInMARBL
-!write(*,*)' temperature_indexInMARBL2 = ', temperature_indexInMARBL
-!write(*,*)' salinity_indexInMARBL2 = ', salinity_indexInMARBL
-!write(*,*)' pressure_indexInMARBL2 = ', pressure_indexInMARBL
-
-
-
-!maltrud debug
-!if (marbl_instances(1)%StatusLog%labort_marbl) write(*,*)' ABORT01 ',stepCounter
-
       numColumns = 1
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
@@ -987,7 +959,7 @@ contains
 
          marbl_instances(1)%domain%kmt = maxLevelCell(iCell)
          marbl_instances(1)%interior_tendency_forcings(dustFlux_indexInMARBL)%field_0d(1)  = dust_FLUX_IN(iCell)
-!maltrud NOTE shortwave has a second (subcolumn) index, so use field1d instead of field0d
+! NOTE shortwave has a second (subcolumn) index, so use field1d instead of field0d
 !  also we need to define the PAR column fraction (always 1 for now)
          marbl_instances(1)%interior_tendency_forcings(shortwave_indexInMARBL)%field_1d(1,1) = shortWaveHeatFlux(iCell)
          if (PAR_col_frac_indexInMARBL > 0) &
@@ -1006,18 +978,16 @@ contains
             marbl_instances(1)%tracers(n, :) = 0.0_RKIND
          end do
 
-! will likely have to modify logic for under ice shelves
+! NOTE we will likely have to modify logic for under ice shelves
+! for now ASSUME NO ICE SHELF CAVITIES
          zTop = 0.0_RKIND
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
             marbl_instances(1)%interior_tendency_forcings(temperature_indexInMARBL)%field_1d(1,iLevel) = &
                activeTracers(indexTemperature,iLevel,iCell)
             marbl_instances(1)%interior_tendency_forcings(salinity_indexInMARBL)%field_1d(1,iLevel) = &
                activeTracers(indexSalinity,iLevel,iCell)
-
-! NOTE pressure is in diagnostics pool, which isnt passed in.  so we need to modify the call....
             marbl_instances(1)%interior_tendency_forcings(pressure_indexInMARBL)%field_1d(1,iLevel) = &
                pressure(iLevel,iCell)*PascalsToAtmospheres
-
             marbl_instances(1)%interior_tendency_forcings(fesedFlux_indexInMARBL)%field_1d(1,iLevel) = &
                FESEDFLUX(iLevel,iCell)
 
@@ -1041,21 +1011,8 @@ contains
 
          enddo  !  iLevel
 
-! compute source-sink
-!maltrud debug
-! marbl_instances(1)%StatusLog%labort_marbl = .false.
-! if (iCell == 1) write(*,*) ' calling interior_tendency_compute'
+! compute source-sink terms
          call marbl_instances(1)%interior_tendency_compute()
-
-         if (marbl_instances(1)%StatusLog%labort_marbl) then
-!maltrud debug
-!  if (iCell == 1) write(*,*) ' MARBL puking'
-!           write(log_message,"(A,I0,A)") "marbl_instances(", 1, &
-!                                         ")%set_interior_forcing()"
-            call marbl_instances(1)%StatusLog%log_error_trace("MARBL barfing", "subname")
-         end if
-!        call print_marbl_log(marbl_instances(1)%StatusLog, iCell)
-         call marbl_instances(1)%StatusLog%erase()
 
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
 
@@ -1071,29 +1028,6 @@ contains
                marbl_instances(1)%interior_tendency_saved_state%state(interior_pH_indexInMARBL)%field_3d(iLevel,1)
             PH_PREV_ALT_CO2_3D(iLevel,iCell) = &
                marbl_instances(1)%interior_tendency_saved_state%state(interior_pH_altCO2_indexInMARBL)%field_3d(iLevel,1)
-
-!maltrud debug
-!   call ocn_ecosys_echo_indices
-
-!maltrud debug
-!do n = 1, 200
-!  if (allocated(marbl_instances(1)%interior_tendency_diags%diags(n)%field_2d) ) then
-!    diagTest = marbl_instances(1)%interior_tendency_diags%diags(n)  &
-!                    %field_2d(column)
-!    write(*,*)' diagTest = ', n, diagTest
-!  else
-!    write(*,*)' diagTest UNALLOCATED_2D ', n
-!  endif
-!  if (allocated(marbl_instances(1)%interior_tendency_diags%diags(n)%field_3d) ) then
-!    diagTest = marbl_instances(1)%interior_tendency_diags%diags(n)  &
-!                    %field_3d(iLevel,column)
-!    write(*,*)' diagTest = ', n, diagTest
-!  else
-!    write(*,*)' diagTest UNALLOCATED_3D ', n
-!  endif
-!enddo
-
-
 
             !
             ! level 1 diagnostics, full depth
@@ -1248,100 +1182,98 @@ contains
                 diags(ecosys_diag_PON_REMIN_NH4_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_PON_REMIN_NH4_allocatedInMARBL)
 
-               do autotroph = 1, autotroph_cnt
+              do autotroph = 1, autotroph_cnt
 
-                 ecosys_diag_Qp(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_Qp_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_Qp_allocatedInMARBL(autotroph))
+                ecosys_diag_Qp(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_Qp_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_Qp_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_N_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_N_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_N_lim_allocatedInMARBL(autotroph))
+                ecosys_diag_N_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_N_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_N_lim_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_P_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_P_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_P_lim_allocatedInMARBL(autotroph))
+                ecosys_diag_P_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_P_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_P_lim_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_Fe_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_Fe_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_Fe_lim_allocatedInMARBL(autotroph))
+                ecosys_diag_Fe_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_Fe_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_Fe_lim_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_SiO3_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_SiO3_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_SiO3_lim_allocatedInMARBL(autotroph))
+                ecosys_diag_SiO3_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_SiO3_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_SiO3_lim_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_light_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_light_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_light_lim_allocatedInMARBL(autotroph))
+                ecosys_diag_light_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_light_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_light_lim_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_photoC(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_photoC_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_photoC_allocatedInMARBL(autotroph))
+                ecosys_diag_photoC(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_photoC_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_photoC_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_photoC_NO3(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_photoC_NO3_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_photoC_NO3_allocatedInMARBL(autotroph))
+                ecosys_diag_photoC_NO3(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_photoC_NO3_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_photoC_NO3_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_photoFe(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_photoFe_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_photoFe_allocatedInMARBL(autotroph))
+                ecosys_diag_photoFe(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_photoFe_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_photoFe_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_photoNO3(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_photoNO3_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_photoNO3_allocatedInMARBL(autotroph))
+                ecosys_diag_photoNO3(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_photoNO3_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_photoNO3_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_photoNH4(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_photoNH4_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_photoNH4_allocatedInMARBL(autotroph))
+                ecosys_diag_photoNH4(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_photoNH4_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_photoNH4_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_DOP_uptake(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_DOP_uptake_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_DOP_uptake_allocatedInMARBL(autotroph))
+                ecosys_diag_DOP_uptake(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_DOP_uptake_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_DOP_uptake_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_PO4_uptake(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_PO4_uptake_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_PO4_uptake_allocatedInMARBL(autotroph))
+                ecosys_diag_PO4_uptake(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_PO4_uptake_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_PO4_uptake_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_graze(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_graze_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_graze_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_graze(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_graze_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_graze_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_graze_poc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_graze_poc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_graze_poc_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_graze_poc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_graze_poc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_graze_poc_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_graze_doc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_graze_doc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_graze_doc_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_graze_doc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_graze_doc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_graze_doc_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_graze_zoo(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_graze_zoo_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_graze_zoo_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_graze_zoo(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_graze_zoo_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_graze_zoo_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_loss(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_loss_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_loss_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_loss(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_loss_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_loss_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_loss_poc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_loss_poc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_loss_poc_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_loss_poc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_loss_poc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_loss_poc_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_loss_doc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_loss_doc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_loss_doc_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_loss_doc(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_loss_doc_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_loss_doc_allocatedInMARBL(autotroph))
 
-                 ecosys_diag_auto_agg(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_auto_agg_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_auto_agg_allocatedInMARBL(autotroph))
+                ecosys_diag_auto_agg(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_auto_agg_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_auto_agg_allocatedInMARBL(autotroph))
 
 ! Nfix only defined for N-fixers
-! maltrud i do not think we need to check--it should be redundant
-!                 if(ecosys_diag_Nfix_indexInMARBL(autotroph) > 0)  &
-                 ecosys_diag_Nfix(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_Nfix_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_Nfix_allocatedInMARBL(autotroph))
+                ecosys_diag_Nfix(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_Nfix_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_Nfix_allocatedInMARBL(autotroph))
 
-               end do  !  autotroph
+              end do  !  autotroph
 
             endif  !  config_ecosysTracers_diagnostic_fields_level2
 
@@ -1471,15 +1403,12 @@ contains
                 diags(ecosys_diag_Lig_deg_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_Lig_deg_allocatedInMARBL)
 
-               do autotroph = 1, autotroph_cnt
+              do autotroph = 1, autotroph_cnt
 ! bSi_form only defined for silicifiers
-! maltrud i do not think we need to check--it should be redundant
-!                 if(ecosys_diag_bSi_form_indexInMARBL(autotroph) > 0)  &
-                 ecosys_diag_bSi_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_bSi_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_bSi_form_allocatedInMARBL(autotroph))
-
-               enddo  !  autotroph loop
+                ecosys_diag_bSi_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_bSi_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_bSi_form_allocatedInMARBL(autotroph))
+              enddo  !  autotroph loop
 
             endif  !  config_ecosysTracers_diagnostic_fields_level3
 
@@ -1544,16 +1473,12 @@ contains
                 diags(ecosys_diag_co3_sat_arag_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_co3_sat_arag_allocatedInMARBL)
 
-               do autotroph = 1, autotroph_cnt
+              do autotroph = 1, autotroph_cnt
 ! CaCO3_form only defined for calcifiers
-! maltrud i do not think we need to check--it should be redundant
-!                 if(ecosys_diag_CaCO3_form_indexInMARBL(autotroph) > 0)  then
-
-                 ecosys_diag_CaCO3_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                   diags(ecosys_diag_CaCO3_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                   ecosysMissingValue, ecosys_diag_CaCO3_form_allocatedInMARBL(autotroph))
-
-               enddo  !  autotroph
+                ecosys_diag_CaCO3_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_CaCO3_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_CaCO3_form_allocatedInMARBL(autotroph))
+              enddo  !  autotroph
 
             endif  !  config_ecosysTracers_diagnostic_fields_level4
 
@@ -1563,13 +1488,7 @@ contains
 
             if (config_ecosysTracers_diagnostic_fields_level5) then
 
-!maltrud debug use restoring arrays for debugging
-! n = 20 for spC
-              ecosys_diag_PO4_RESTORE(iLevel,iCell) = marbl_instances(1)%interior_tendencies(20,iLevel)
-! n = 18 for zooC
-              ecosys_diag_NO3_RESTORE(iLevel,iCell) = marbl_instances(1)%interior_tendencies(18,iLevel)
-! n = 8 for DIC
-              ecosys_diag_SiO3_RESTORE(iLevel,iCell) = marbl_instances(1)%interior_tendencies(8,iLevel)
+! nutrient restoring is currently not implemented
 
 !             ecosys_diag_PO4_RESTORE(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
 !               diags(ecosys_diag_PO4_RESTORE_indexInMARBL)%field_3d(iLevel,column),  &
@@ -1592,73 +1511,73 @@ contains
          !
          if (config_ecosysTracers_diagnostic_fields_level1) then
 
-          ecosys_diag_photoC_TOT_zint(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_photoC_TOT_zint_indexInMARBL)%field_2d(column)*convertLengthCGStoMKS,  &
-            ecosysMissingValue, ecosys_diag_photoC_TOT_zint_allocatedInMARBL)
+           ecosys_diag_photoC_TOT_zint(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_photoC_TOT_zint_indexInMARBL)%field_2d(column)*convertLengthCGStoMKS,  &
+             ecosysMissingValue, ecosys_diag_photoC_TOT_zint_allocatedInMARBL)
 
-          ecosys_diag_photoC_NO3_TOT_zint(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL)%field_2d(column)*convertLengthCGStoMKS,  &
-            ecosysMissingValue, ecosys_diag_photoC_NO3_TOT_zint_allocatedInMARBL)
+           ecosys_diag_photoC_NO3_TOT_zint(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL)%field_2d(column)*convertLengthCGStoMKS,  &
+             ecosysMissingValue, ecosys_diag_photoC_NO3_TOT_zint_allocatedInMARBL)
 
-          ecosys_diag_O2_ZMIN(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_O2_ZMIN_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_O2_ZMIN_allocatedInMARBL)
+           ecosys_diag_O2_ZMIN(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_O2_ZMIN_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_O2_ZMIN_allocatedInMARBL)
 
-          ecosys_diag_O2_ZMIN_DEPTH(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL)
+           ecosys_diag_O2_ZMIN_DEPTH(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL)
 
-          ecosys_diag_Jint_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_Ctot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_Ctot_allocatedInMARBL)
+           ecosys_diag_Jint_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_Ctot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_Ctot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Ntot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Ntot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Ntot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Ntot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Ntot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Ntot_allocatedInMARBL)
 
-          ecosys_diag_Jint_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_Ptot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_Ptot_allocatedInMARBL)
+           ecosys_diag_Jint_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_Ptot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_Ptot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Ptot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Ptot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Ptot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Ptot_allocatedInMARBL)
 
-          ecosys_diag_Jint_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_Sitot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_Sitot_allocatedInMARBL)
+           ecosys_diag_Jint_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_Sitot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_Sitot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Sitot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Sitot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Sitot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Sitot_allocatedInMARBL)
 
-          ecosys_diag_Jint_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_Fetot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_Fetot_allocatedInMARBL)
+           ecosys_diag_Jint_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_Fetot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_Fetot_allocatedInMARBL)
 
-          ecosys_diag_Jint_100m_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-            diags(ecosys_diag_Jint_100m_Fetot_indexInMARBL)%field_2d(column),  &
-            ecosysMissingValue, ecosys_diag_Jint_100m_Fetot_allocatedInMARBL)
+           ecosys_diag_Jint_100m_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_Jint_100m_Fetot_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Jint_100m_Fetot_allocatedInMARBL)
 
-          do autotroph = 1, autotroph_cnt
+           do autotroph = 1, autotroph_cnt
 
-            ecosys_diag_photoC_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-              diags(ecosys_diag_photoC_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
-              ecosysMissingValue, ecosys_diag_photoC_zint_allocatedInMARBL(autotroph))
+             ecosys_diag_photoC_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_photoC_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
+               ecosysMissingValue, ecosys_diag_photoC_zint_allocatedInMARBL(autotroph))
   
-            ecosys_diag_photoC_NO3_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-              diags(ecosys_diag_photoC_NO3_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
-              ecosysMissingValue, ecosys_diag_photoC_NO3_zint_allocatedInMARBL(autotroph))
+             ecosys_diag_photoC_NO3_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_photoC_NO3_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
+               ecosysMissingValue, ecosys_diag_photoC_NO3_zint_allocatedInMARBL(autotroph))
 
-          enddo  ! autotroph
+           enddo  ! autotroph
 
          endif  !  config_ecosysTracers_diagnostic_fields_level1
 
@@ -1691,8 +1610,6 @@ contains
 
             do autotroph = 1, autotroph_cnt
 ! CaCO3_form_zint only defined for calcifiers
-! maltrud i do not think we need to check--it should be redundant
-!              if(ecosys_diag_CaCO3_form_zint_indexInMARBL(autotroph) > 0)  &
               ecosys_diag_CaCO3_form_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_CaCO3_form_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
                 ecosysMissingValue, ecosys_diag_CaCO3_form_zint_allocatedInMARBL(autotroph))
@@ -1701,10 +1618,6 @@ contains
          endif  !  config_ecosysTracers_diagnostic_fields_level4
 
       enddo  !  iCell
-
-!maltrud debug
-!if (marbl_instances(1)%StatusLog%labort_marbl) write(*,*)' ABORT02 ',stepCounter
-!stepCounter = stepCounter + 1
 
       call mpas_timer_stop("ecosys source-sink")
 
@@ -1861,12 +1774,6 @@ contains
          ecosys_diag_atmPressure,          &
          ecosys_diag_ifrac
 
-
-!maltrud debug
-! integer, save :: stepCounter = 1
-
-
-
       call mpas_timer_start("ecosys surface flux")
       err = 0
 
@@ -1936,11 +1843,7 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_dpCO2_ALT_CO2', ecosys_diag_dpCO2_ALT_CO2)
       endif
 
-! maltrud assume we want gas fluxes
-!     BGC_forcing%lcalc_O2_gas_flux  = .true.
-!     BGC_forcing%lcalc_CO2_gas_flux = .true.
-
-!!!!!  unlike original, marbl does all surface points in 1 call
+!  for surface fluxes, marbl does all surface points in 1 call
       numColumns = 1
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
@@ -1955,21 +1858,10 @@ contains
             PH_PREV_ALT_CO2(iCell)
 
 ! load surface forcing fields
-!maltrud figure out pressure conversion
          marbl_instances(1)%surface_flux_forcings(atmPressure_indexInMARBL)%field_0d(iCell) = &
             atmosphericPressure(iCell)*9.86923e-6
-!maltrud debug
-!if (iCell == 1) write(*,*)' PRESSMPAS: ',nCellsSolve,atmosphericPressure(iCell)*9.86923e-6
-!ecosys_diag_atmPressure(iCell) = -1.
-!        marbl_instances(1)%surface_flux_forcings(atmPressure_indexInMARBL)%field_0d(iCell) = &
-!           1.0_RKIND
          marbl_instances(1)%surface_flux_forcings(ifrac_indexInMARBL)%field_0d(iCell) = &
             iceFraction(iCell)
-!maltrud assume for now that if there is any land ice, it is all land ice
-!        if (associated(landIceFraction)) then
-!           if (landIceFraction(iCell) > 0.0_RKIND)  &
-!             marbl_instances(1)%surface_flux_forcings(ifrac_indexInMARBL)%field_0d(iCell) = 1.0_RKIND
-!        endif
          marbl_instances(1)%surface_flux_forcings(u10sqr_indexInMARBL)%field_0d(iCell) = &
             windSpeedSquared10m(iCell)*convertLengthSquaredMKStoCGS
          marbl_instances(1)%surface_flux_forcings(atmCO2_indexInMARBL)%field_0d(iCell) = &
@@ -1981,13 +1873,9 @@ contains
          marbl_instances(1)%surface_flux_forcings(sss_indexInMARBL)%field_0d(iCell) = &
             activeTracers(indexSalinity,iLevelSurface,iCell)
 ! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
-!             divide river Fe by bioavail since it is already the available to make it total
-! CHECK THIS FOR MARBL
+!  divide river Fe by bioavail since it is already the available to make it total
          marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
-!maltrud debug first try has 100x too much Fe flux
-!  or maybe its ok (dec 18 2020)
             IRON_FLUX_IN(iCell)
-!           IRON_FLUX_IN(iCell)*0.01_RKIND
          marbl_instances(1)%surface_flux_forcings(noxFlux_indexInMARBL)%field_0d(iCell) = &
             depositionFluxNO3(iCell)
          marbl_instances(1)%surface_flux_forcings(nhyFlux_indexInMARBL)%field_0d(iCell) = &
@@ -2011,21 +1899,14 @@ contains
 !  copies no3, nh4, iron deposition fluxes into output flux arrays
 !  uses dust flux to calculate po4 and sio3 deposition fluxes
 
-!maltrud debug
-!if (marbl_instances(1)%StatusLog%labort_marbl) write(*,*)' ABORT03 ',stepCounter
-
       call marbl_instances(1)%surface_flux_compute()
 
-      if (marbl_instances(1)%StatusLog%labort_marbl) then
+!     if (marbl_instances(1)%StatusLog%labort_marbl) then
 !           write(log_message,"(A,I0,A)") "marbl_instances(", 1, &
 !                                         ")%set_surface_forcing()"
 !        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-      end if
+!     end if
 !        call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-
-!maltrud debug
-!if (marbl_instances(1)%StatusLog%labort_marbl) write(*,*)' ABORT04 ',stepCounter
-!stepCounter = stepCounter + 1
 
       call marbl_instances(1)%StatusLog%erase()
 
@@ -2035,7 +1916,6 @@ contains
       do iCell=1,nCellsSolve
 
 ! copy updated surface fluxes
-! maltrud do we need to renormalize here??????
          do n = 1, ecosys_tracer_cnt
             ecosysSurfaceFlux(ecosysIndexMARBLtoMPASO(n),iCell) =  &
                marbl_instances(1)%surface_fluxes(iCell,n)
@@ -2058,12 +1938,11 @@ contains
 ! copy updated CO2 flux and total Chl
 ! gas fluxes come back in CGS units
          CO2_gas_flux(iCell) = marbl_instances(1)%surface_flux_output%sfo(co2_flux_indexInMARBL)%forcing_field(iCell)*convertLengthCGStoMKS
-!        CO2_gas_flux(iCell) = 0.0_RKIND
-!maltrud marbl doesnt return alt_co2_flux anymore
+
+! marbl doesnt return alt_co2_flux anymore !?!?
 !        CO2_alt_gas_flux(iCell) = marbl_instances(1)%surface_flux_output%sfo(co2_flux_alt_co2_indexInMARBL)%forcing_field(iCell)
          CO2_alt_gas_flux(iCell) = 0.0_RKIND
          total_Chl(iCell) = marbl_instances(1)%surface_flux_output%sfo(totalChl_indexInMARBL)%forcing_field(iCell)
-!        total_Chl(iCell) = 0.0_RKIND
 
 ! add contribution from river fluxes
          ecosysSurfaceFlux(no3_ind_MPAS,iCell) =  &
@@ -2095,35 +1974,32 @@ contains
          ecosysSurfaceFlux(docr_ind_MPAS,iCell) =  &
             ecosysSurfaceFlux(docr_ind_MPAS,iCell) + riverFluxDOC(iCell) * 0.2_RKIND
 
-! now add contribution from sea ice fluxes if available
-!maltrud sea ice fluxes are already correct MPAS units, so change to POP units (??????)
-
+! now add contribution from sea ice fluxes if available (assume MKS)
          if (config_use_ecosysTracers_sea_ice_coupling) then
             ecosysSurfaceFlux(no3_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(no3_ind_MPAS,iCell) + iceFluxNO3(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(no3_ind_MPAS,iCell) + iceFluxNO3(iCell)
             ecosysSurfaceFlux(don_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(don_ind_MPAS,iCell) + iceFluxDON(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(don_ind_MPAS,iCell) + iceFluxDON(iCell)
             ecosysSurfaceFlux(nh4_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(nh4_ind_MPAS,iCell) + iceFluxNH4(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(nh4_ind_MPAS,iCell) + iceFluxNH4(iCell)
             ecosysSurfaceFlux(sio3_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(sio3_ind_MPAS,iCell) + iceFluxSiO3(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(sio3_ind_MPAS,iCell) + iceFluxSiO3(iCell)
             ecosysSurfaceFlux(fe_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(fe_ind_MPAS,iCell) + iceFluxFeDissolved(iCell)*convertLengthMKStoCGS/parm_Fe_bioavail
+               ecosysSurfaceFlux(fe_ind_MPAS,iCell) + iceFluxFeDissolved(iCell)/parm_Fe_bioavail
             ecosysSurfaceFlux(dic_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(dic_ind_MPAS,iCell) + iceFluxDIC(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(dic_ind_MPAS,iCell) + iceFluxDIC(iCell)
             ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + iceFluxDIC(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + iceFluxDIC(iCell)
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell)*convertLengthMKStoCGS + &
-                                                              + iceFluxDOC(2,iCell)*convertLengthMKStoCGS
-!maltrud sea ice BGC doesnt care about C or N for donr--this is just a placeholder--so assume N units
+               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell)
+! this is just a placeholder
             ecosysSurfaceFlux(donr_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)
 
             ecosysSurfaceFlux(diatC_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(diatC_ind_MPAS,iCell) + iceFluxPhytoC(1,iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(diatC_ind_MPAS,iCell) + iceFluxPhytoC(1,iCell)
             ecosysSurfaceFlux(spC_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(spC_ind_MPAS,iCell) + iceFluxPhytoC(2,iCell)*convertLengthMKStoCGS
+               ecosysSurfaceFlux(spC_ind_MPAS,iCell) + iceFluxPhytoC(2,iCell)
          endif
 
 !explicitly set the rest of the fluxes to 0
@@ -2147,72 +2023,72 @@ contains
          if (config_ecosysTracers_diagnostic_fields_level2) then
 
            ecosys_diag_pistonVel_O2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_pistonVel_O2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_pistonVel_O2_allocatedInMARBL)
+             diags(ecosys_diag_pistonVel_O2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pistonVel_O2_allocatedInMARBL)
 
            ecosys_diag_pistonVel_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_pistonVel_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_pistonVel_CO2_allocatedInMARBL)
+             diags(ecosys_diag_pistonVel_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pistonVel_CO2_allocatedInMARBL)
 
            ecosys_diag_Schmidt_O2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_Schmidt_O2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_Schmidt_O2_allocatedInMARBL)
+             diags(ecosys_diag_Schmidt_O2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Schmidt_O2_allocatedInMARBL)
 
            ecosys_diag_Schmidt_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_Schmidt_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_Schmidt_CO2_allocatedInMARBL)
+             diags(ecosys_diag_Schmidt_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_Schmidt_CO2_allocatedInMARBL)
 
            ecosys_diag_O2_saturation(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_O2_saturation_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_O2_saturation_allocatedInMARBL)
+             diags(ecosys_diag_O2_saturation_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_O2_saturation_allocatedInMARBL)
 
            ecosys_diag_xkw(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_xkw_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_xkw_allocatedInMARBL)
+             diags(ecosys_diag_xkw_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_xkw_allocatedInMARBL)
 
 ! no u10sqr diagnostic in marbl so use forcing field
            ecosys_diag_u10sqr(iCell) = marbl_instances(1)%surface_flux_forcings(u10sqr_indexInMARBL)%field_0d(column)*convertLengthSquaredCGStoMKS
 
            ecosys_diag_ifrac(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_ifrac_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_ifrac_allocatedInMARBL)
+             diags(ecosys_diag_ifrac_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_ifrac_allocatedInMARBL)
 
 ! convert back to Pa
            ecosys_diag_atmPressure(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_atmPressure_indexInMARBL)%field_2d(column)/9.86923e-6,  &
-               ecosysMissingValue, ecosys_diag_atmPressure_allocatedInMARBL)
+             diags(ecosys_diag_atmPressure_indexInMARBL)%field_2d(column)/9.86923e-6,  &
+             ecosysMissingValue, ecosys_diag_atmPressure_allocatedInMARBL)
 
            ecosys_diag_CO2star(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_CO2star_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_CO2star_allocatedInMARBL)
+             diags(ecosys_diag_CO2star_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_CO2star_allocatedInMARBL)
 
            ecosys_diag_dCO2star(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_dCO2star_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_dCO2star_allocatedInMARBL)
+             diags(ecosys_diag_dCO2star_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_dCO2star_allocatedInMARBL)
 
            ecosys_diag_pCO2surface(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_pCO2surface_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_pCO2surface_allocatedInMARBL)
+             diags(ecosys_diag_pCO2surface_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pCO2surface_allocatedInMARBL)
 
            ecosys_diag_dpCO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_dpCO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_dpCO2_allocatedInMARBL)
+             diags(ecosys_diag_dpCO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_dpCO2_allocatedInMARBL)
 
            ecosys_diag_CO2star_ALT_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_CO2star_ALT_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_CO2star_ALT_CO2_allocatedInMARBL)
+             diags(ecosys_diag_CO2star_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_CO2star_ALT_CO2_allocatedInMARBL)
 
            ecosys_diag_dCO2star_ALT_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_dCO2star_ALT_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_dCO2star_ALT_CO2_allocatedInMARBL)
+             diags(ecosys_diag_dCO2star_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_dCO2star_ALT_CO2_allocatedInMARBL)
 
            ecosys_diag_pCO2surface_ALT_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_pCO2surface_ALT_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_pCO2surface_ALT_CO2_allocatedInMARBL)
+             diags(ecosys_diag_pCO2surface_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pCO2surface_ALT_CO2_allocatedInMARBL)
 
            ecosys_diag_dpCO2_ALT_CO2(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-               diags(ecosys_diag_dpCO2_ALT_CO2_indexInMARBL)%field_2d(column),  &
-               ecosysMissingValue, ecosys_diag_dpCO2_ALT_CO2_allocatedInMARBL)
+             diags(ecosys_diag_dpCO2_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_dpCO2_ALT_CO2_allocatedInMARBL)
 
          endif  !  level 2 diagnostics
 
@@ -2238,8 +2114,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_ecosys_init(domain,err)!{{{
-
-!NOTE:  called from mpas_ocn_forward_mode.F
 
       type (domain_type), intent(inout) :: domain !< Input/Output: domain information
 
@@ -2324,6 +2198,8 @@ contains
 
       err = 0
 
+      if (config_use_ecosysTracers) then
+
       !
       ! Get tracer group so we can get the number of tracers in it
       !
@@ -2331,8 +2207,6 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
-
-      if (associated(ecosysTracers)) then
 
     !--------------------------------------------------------------------
     !  MARBL setup is 3 steps:
@@ -2371,7 +2245,7 @@ contains
     !  Configure marbl
     !--------------------------------------------------------------------
 
-! maltrud below didnt work so hardwired in marbl_settings_mod.F90
+! NOTE below didnt work so hardwired in marbl_settings_mod.F90
 !    call marbl_instances%put_setting('ciso_on', .false.)
 !    call marbl_instances%put_setting('ciso_lsource_sink', .false.)
 
@@ -2379,34 +2253,33 @@ contains
     !  Initialize marbl
     !--------------------------------------------------------------------
 
-     call marbl_instances(1)%init(                                     &
-          gcm_num_levels = nVertLevels,                                              &
-          gcm_num_PAR_subcols = 1,                                 &
-          gcm_num_elements_surface_flux = nCellsSolve,         &
-          gcm_delta_z = dz,                                                 &
-          gcm_zw = zw,                                                      &
-          gcm_zt = zt,                                                      &
+     call marbl_instances(1)%init(                      &
+          gcm_num_levels = nVertLevels,                 &
+          gcm_num_PAR_subcols = 1,                      &
+          gcm_num_elements_surface_flux = nCellsSolve,  &
+          gcm_delta_z = dz,                             &
+          gcm_zw = zw,                                  &
+          gcm_zt = zt,                                  &
           lgcm_has_global_ops = .false.)
 
-!         marbl_tracer_cnt = marbl_actual_tracer_cnt)
-
-     if (marbl_instances(1)%StatusLog%labort_marbl) then
+!    if (marbl_instances(1)%StatusLog%labort_marbl) then
 !      write(log_message,"(A,I0,A)") "marbl(", 1, ")%init()"
 !      call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-     end if
+!    end if
 !    call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-     call marbl_instances(1)%StatusLog%erase()
+!    call marbl_instances(1)%StatusLog%erase()
 
      ! Make sure MARBL tracer count lines up with what MPASO expects
       nTracers = size(ecosysTracers, dim=1)
 
-      if (marbl_actual_tracer_cnt /= nTracers) then
+! NOTE we dont actually have a value for marbl_actual_tracer_cnt
+!     if (marbl_actual_tracer_cnt /= nTracers) then
 !      write(log_message,"(A,I0,A,I0)") 'MARBL is computing tendencies for ', &
-!                 marbl_actual_tracer_cnt, ' tracers, but POP is expecting ', &
+!                 marbl_actual_tracer_cnt, ' tracers, but MPAS-OCEAN is expecting ', &
 !                 ecosys_tracer_cnt
 !        err = 1
 !        return
-      endif
+!     endif
 
       deallocate(zt, zw, dz)
 
@@ -2414,14 +2287,12 @@ contains
     !  Complete marbl setup
     !--------------------------------------------------------------------
 
-!    call marbl_instances(1)%complete_config_and_init()
-
-     if (marbl_instances(1)%StatusLog%labort_marbl) then
+!    if (marbl_instances(1)%StatusLog%labort_marbl) then
 !      write(log_message,"(A,I0,A)") "marbl(", 1, ")%complete_init_and_config()"
 !      call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-     end if
+!    end if
 !    call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-     call marbl_instances(1)%StatusLog%erase()
+!    call marbl_instances(1)%StatusLog%erase()
 
 ! figure out correspondence of marbl to mpaso specific indices
      allocate(ecosysIndexMARBLtoMPASO(ecosys_tracer_cnt))
@@ -2439,9 +2310,9 @@ contains
         if (index_dummy > 0) then
            ecosysIndexMARBLtoMPASO(n) = index_dummy
            ecosysIndexMPASOtoMARBL(index_dummy) = n
-           write(*,*)' found ',trim(fieldNameInMARBL)
-           write(*,*)' MARBL index = ', n
-           write(*,*)' MPASO index = ', ecosysIndexMARBLtoMPASO(n)
+!          write(*,*)' found ',trim(fieldNameInMARBL)
+!          write(*,*)' MARBL index = ', n
+!          write(*,*)' MPASO index = ', ecosysIndexMARBLtoMPASO(n)
            call ocn_ecosys_assign_MPAS_indices_prognostic(fieldNameForMPAS, index_dummy)
         endif
     end do
@@ -2457,118 +2328,86 @@ contains
 
 ! set indices for surface forcing
     u10sqr_indexInMARBL          = marbl_instances(1)%surface_flux_forcing_ind%u10_sqr_id
-  write(*,*)'u10sqr_indexInMARBL = ',u10sqr_indexInMARBL
     ifrac_indexInMARBL           = marbl_instances(1)%surface_flux_forcing_ind%ifrac_id
-  write(*,*)'ifrac_indexInMARBL = ',ifrac_indexInMARBL
     sst_indexInMARBL             = marbl_instances(1)%surface_flux_forcing_ind%sst_id
     sss_indexInMARBL             = marbl_instances(1)%surface_flux_forcing_ind%sss_id
     atmPressure_indexInMARBL     = marbl_instances(1)%surface_flux_forcing_ind%atm_pressure_id
-  write(*,*)'atmPressure_indexInMARBL = ',atmPressure_indexInMARBL
     atmCO2_indexInMARBL          = marbl_instances(1)%surface_flux_forcing_ind%xco2_id
     atmAltCO2_indexInMARBL       = marbl_instances(1)%surface_flux_forcing_ind%xco2_alt_co2_id
     dustFluxSurface_indexInMARBL = marbl_instances(1)%surface_flux_forcing_ind%dust_flux_id
-  write(*,*)'dustFluxSurface_indexInMARBL = ',dustFluxSurface_indexInMARBL
     ironFlux_indexInMARBL        = marbl_instances(1)%surface_flux_forcing_ind%iron_flux_id
-  write(*,*)'ironFlux_indexInMARBL = ',ironFlux_indexInMARBL
     noxFlux_indexInMARBL         = marbl_instances(1)%surface_flux_forcing_ind%nox_flux_id
-  write(*,*)'noxFlux_indexInMARBL = ',noxFlux_indexInMARBL
     nhyFlux_indexInMARBL         = marbl_instances(1)%surface_flux_forcing_ind%nhy_flux_id
-  write(*,*)'nhyFlux_indexInMARBL = ',nhyFlux_indexInMARBL
 
 ! set indices for interior forcing
     dustFlux_indexInMARBL    = marbl_instances(1)%interior_tendency_forcing_ind%dustflux_id
-  write(*,*)'dustFlux_indexInMARBL = ',dustFlux_indexInMARBL
     shortwave_indexInMARBL   = marbl_instances(1)%interior_tendency_forcing_ind%surf_shortwave_id
-  write(*,*)'shortwave_indexInMARBL = ',shortwave_indexInMARBL
     PAR_col_frac_indexInMARBL = marbl_instances(1)%interior_tendency_forcing_ind%PAR_col_frac_id
     temperature_indexInMARBL = marbl_instances(1)%interior_tendency_forcing_ind%potemp_id
-  write(*,*)'temperature_indexInMARBL = ',temperature_indexInMARBL
     salinity_indexInMARBL    = marbl_instances(1)%interior_tendency_forcing_ind%salinity_id
-  write(*,*)'salinity_indexInMARBL = ',salinity_indexInMARBL
     pressure_indexInMARBL    = marbl_instances(1)%interior_tendency_forcing_ind%pressure_id
     fesedFlux_indexInMARBL   = marbl_instances(1)%interior_tendency_forcing_ind%fesedflux_id
-! write(*,*)'fesedFlux_indexInMARBL = ',fesedFlux_indexInMARBL
 
     call ocn_ecosys_init_indices
 
-! search for diagnostic field indices
-! i think the number of diag fields in marbl is marbl_instances(1)%interior_tendency_diags%num_elements
-! but need to hardwire ecosys_interior_diagnostics_cnt.  make sure they agree.
-!maltrud debug skip diags for now--seems to have a problem
-!    ecosys_interior_diagnostics_cnt = marbl_instances(1)%interior_tendency_diags%num_elements
-!    ecosys_interior_diagnostics_cnt = 800
-     ecosys_interior_diagnostics_cnt = size(marbl_instances(1)%interior_tendency_diags%diags)
-  write(*,*)'ecosys_interior_diagnostics_cnt = ',ecosys_interior_diagnostics_cnt
-     do n = 1, ecosys_interior_diagnostics_cnt
-        fieldNameInMARBL = marbl_instances(1)%interior_tendency_diags%diags(n)%short_name
-        fieldNameForMPAS = trim(fieldNameInMARBL)
-        index_dummy = n
-! write(*,*)'fieldNameForMPAS = ',n, fieldNameForMPAS
-  write(*,*)'fieldNameForMPAStrim = ',n,trim(fieldNameForMPAS)
-! write(*,*)'fieldNameInMARBL = ',marbl_instances(1)%interior_tendency_diags%diags(n)%short_name,n
-        foundIndex = .false.
-        call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
-! write(*,*)'foundIndex = ',n,foundIndex
-        if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
+! search for interior diagnostic field indices
+    ecosys_interior_diagnostics_cnt = size(marbl_instances(1)%interior_tendency_diags%diags)
+    do n = 1, ecosys_interior_diagnostics_cnt
+       fieldNameInMARBL = marbl_instances(1)%interior_tendency_diags%diags(n)%short_name
+       fieldNameForMPAS = trim(fieldNameInMARBL)
+       index_dummy = n
+       foundIndex = .false.
+       call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
+!      if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
     end do
 
-! do same for surface diags, but we dont have any defined yet in mpas
-
-!    ecosys_surface_forcing_diagnostics_cnt = marbl_instances(1)%surface_flux_diags%num_elements
-!    ecosys_surface_forcing_diagnostics_cnt = 28
-     ecosys_surface_forcing_diagnostics_cnt = size(marbl_instances(1)%surface_flux_diags%diags)
-  write(*,*)'ecosys_surface_forcing_diagnostics_cnt = ',ecosys_surface_forcing_diagnostics_cnt
-     do n = 1, ecosys_surface_forcing_diagnostics_cnt
-        fieldNameInMARBL = marbl_instances(1)%surface_flux_diags%diags(n)%short_name
-        fieldNameForMPAS = trim(fieldNameInMARBL)
-        index_dummy = n
-! write(*,*)'fieldNameForMPAS = ',n, fieldNameForMPAS
-  write(*,*)'fieldNameForMPAStrix = ',n,trim(fieldNameForMPAS)
-  write(*,*)'fieldNameInMARBL = ',trim(marbl_instances(1)%surface_flux_diags%diags(n)%short_name),n
-        foundIndex = .false.
-        call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
-! write(*,*)'found zsatcalc =? ',n,ecosys_diag_zsatcalc_indexInMARBL
-        if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
+! search for surface diagnostic field indices
+    ecosys_surface_forcing_diagnostics_cnt = size(marbl_instances(1)%surface_flux_diags%diags)
+    do n = 1, ecosys_surface_forcing_diagnostics_cnt
+       fieldNameInMARBL = marbl_instances(1)%surface_flux_diags%diags(n)%short_name
+       fieldNameForMPAS = trim(fieldNameInMARBL)
+       index_dummy = n
+       foundIndex = .false.
+       call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
+!      if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
     end do
 
 ! no marbl diagnostic for u10sqr so use the forcing index instead
     ecosys_diag_u10sqr_indexInMARBL = u10sqr_indexInMARBL
 
-    call ocn_ecosys_echo_indices
+!   call ocn_ecosys_echo_indices
 
       !
       ! for now only do 1 column at a time
       !
-      numColumnsMax = 1
+    numColumnsMax = 1
 
       ! identify saved state indices as defined by MARBL
-      surface_pH_indexInMARBL = marbl_instances(1)%surf_state_ind%ph_surf
-      surface_pH_altCO2_indexInMARBL = marbl_instances(1)%surf_state_ind%ph_alt_co2_surf
-      interior_pH_indexInMARBL = marbl_instances(1)%interior_state_ind%ph_col
-      interior_pH_altCO2_indexInMARBL = marbl_instances(1)%interior_state_ind%ph_alt_co2_col
-!maltrud debug
-! write(*,*)' pH_indicies: ',surface_pH_indexInMARBL,surface_pH_altCO2_indexInMARBL,interior_pH_indexInMARBL,interior_pH_altCO2_indexInMARBL
+    surface_pH_indexInMARBL = marbl_instances(1)%surf_state_ind%ph_surf
+    surface_pH_altCO2_indexInMARBL = marbl_instances(1)%surf_state_ind%ph_alt_co2_surf
+    interior_pH_indexInMARBL = marbl_instances(1)%interior_state_ind%ph_col
+    interior_pH_altCO2_indexInMARBL = marbl_instances(1)%interior_state_ind%ph_alt_co2_col
 
       ! tell MARBL we want CO2 flux and total Chl field for (short-wave absorption) as additional outputs
 
-       call marbl_instances(1)%surface_flux_output%add_sfo(           &
-              num_elements = nCellsSolve,                           &
-              field_name   = "flux_co2",                                      &
-              sfo_id       = co2_flux_indexInMARBL,                                     &
-              marbl_status_log = marbl_instances(1)%StatusLog)
-       if (marbl_instances(1)%StatusLog%labort_marbl) then
+    call marbl_instances(1)%surface_flux_output%add_sfo(   &
+          num_elements = nCellsSolve,                      &
+          field_name   = "flux_co2",                       &
+          sfo_id       = co2_flux_indexInMARBL,            &
+          marbl_status_log = marbl_instances(1)%StatusLog)
+!      if (marbl_instances(1)%StatusLog%labort_marbl) then
 !        write(log_message,"(A,I0,A)") "marbl(", 1, &
 !                                    ")%surface_flux_output%add_sfo(flux_co2)"
 !        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-       end if
+!      end if
 !      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-       call marbl_instances(1)%StatusLog%erase()
+!      call marbl_instances(1)%StatusLog%erase()
 
-!maltrud marbl doesnt return flux_alt_co2 anymore
-!      call marbl_instances(1)%surface_flux_output%add_sfo(           &
-!             num_elements = nCellsSolve,                           &
-!             field_name   = "flux_alt_co2",                                      &
-!             sfo_id       = co2_flux_alt_co2_indexInMARBL,                                     &
+! marbl doesnt return flux_alt_co2 anymore ???!!!
+!      call marbl_instances(1)%surface_flux_output%add_sfo(  &
+!             num_elements = nCellsSolve,                    &
+!             field_name   = "flux_alt_co2",                 &
+!             sfo_id       = co2_flux_alt_co2_indexInMARBL,  &
 !             marbl_status_log = marbl_instances(1)%StatusLog)
 !      if (marbl_instances(1)%StatusLog%labort_marbl) then
 !        write(log_message,"(A,I0,A)") "marbl(", 1, &
@@ -2578,18 +2417,18 @@ contains
 !      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
 !      call marbl_instances(1)%StatusLog%erase()
 
-       call marbl_instances(1)%surface_flux_output%add_sfo(           &
-              num_elements = nCellsSolve,                           &
-              field_name   = "totalChl",                                      &
-              sfo_id       = totalChl_indexInMARBL,                                     &
+       call marbl_instances(1)%surface_flux_output%add_sfo(  &
+              num_elements = nCellsSolve,                    &
+              field_name   = "totalChl",                     &
+              sfo_id       = totalChl_indexInMARBL,          &
               marbl_status_log = marbl_instances(1)%StatusLog)
-       if (marbl_instances(1)%StatusLog%labort_marbl) then
+!      if (marbl_instances(1)%StatusLog%labort_marbl) then
 !        write(log_message,"(A,I0,A)") "marbl(", 1, &
 !                                    ")%surface_flux_output%add_sfo(totalChl)"
 !        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-       end if
+!      end if
 !      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-       call marbl_instances(1)%StatusLog%erase()
+!      call marbl_instances(1)%StatusLog%erase()
 
 ! initialize monthly forcing to be read from file
 
@@ -2688,7 +2527,7 @@ contains
 ! only read in river fluxes if not getting them from coupler
       if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzNO3', &
@@ -2699,7 +2538,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzPO4', &
@@ -2710,7 +2549,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDON', &
@@ -2721,7 +2560,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOP', &
@@ -2732,7 +2571,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzSiO3', &
@@ -2743,7 +2582,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzFe', &
@@ -2754,7 +2593,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDIC', &
@@ -2765,7 +2604,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzALK', &
@@ -2776,7 +2615,7 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
+        call MPAS_forcing_init_field( domain % streamManager, &
                 forcingGroupHead, &
                 'ecosysMonthlyClimatology', &
                 'riverFluzDOC', &
@@ -2795,7 +2634,7 @@ contains
          config_do_restart, &
          .false.)
 
-      end if  !  associated(ecosysTracers)
+      end if  !  config_use_ecosysTracers)
 
    !--------------------------------------------------------------------
 
@@ -2872,7 +2711,6 @@ contains
         call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
         call mpas_get_timeInterval(timeStepEco,dt=dt)
 
-!maltrud debug
         if (firstTimeStep .and. config_do_restart) then
           call MPAS_forcing_get_forcing(forcingGroupHead, &
              'ecosysMonthlyClimatology', streamManager, 0.0_RKIND)

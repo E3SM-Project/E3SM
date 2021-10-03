@@ -89,7 +89,7 @@ module ocn_tracer_DMS
       diatC_ind_MPAS_DMS,     &
       diazChl_ind_MPAS_DMS,     &
       diazC_ind_MPAS_DMS
-!maltrud no phaeo with marbl
+! currently no Phaeo in MARBL
 !     phaeoChl_ind_MPAS_DMS     &
 !     phaeoC_ind_MPAS_DMS     &
 
