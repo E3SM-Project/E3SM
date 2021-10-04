@@ -67,7 +67,7 @@ build_grids (const std::set<std::string>& grid_names)
     const int num_gp           = gm_params.get<int>("Number of Gauss Points");
 
     // Build the PointGrid first, so we can set it as the 'unique' grid of the SEGrid
-    build_pt_from_se (num_local_elems,num_gp, num_vertical_levels);
+    build_pt_from_se (num_local_elems,num_gp,num_vertical_levels);
 
     // Set up the degrees of freedom.
     SEGrid::dofs_list_type dofs("", num_local_elems*num_gp*num_gp);
@@ -154,6 +154,7 @@ build_pt_from_se (const int num_local_elems, const int num_gp, const int num_ver
   PointGrid::dofs_list_type dofs("",num_my_cols);
   auto dofs_h = Kokkos::create_mirror_view(dofs);
   std::iota(dofs_h.data(),dofs_h.data()+num_my_cols,dofs_offset);
+  Kokkos::deep_copy(dofs,dofs_h);
 
   auto pt_grid = std::make_shared<PointGrid>("Point Grid",num_my_cols,num_vertical_levels,m_comm);
   pt_grid->setSelfPointer(pt_grid);
