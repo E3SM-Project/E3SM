@@ -1510,11 +1510,18 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,elmlevel,vardesc,start,count)
              if (present(nt)) then
-                !find first non-zero occurrence in the "start" array
-                n = 3
-                do while(start(n) == 0)
-                   n_time_ind = n ! time index for the start array
-                   n = n - 1
+                !-------------------------------------------------------------
+                !Find the last non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
+
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = 3
+
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind - 1 ! time index for the start array
+                   if(n_time_ind == 1) exit    ! do not test for start(1)
                 enddo
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
@@ -1704,11 +1711,18 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
                 if (present(nt)) then
-                   !find first non-zero occurrence in the "start" array
-                   n = 4
-                   do while(start(n) == 0)
-                      n_time_ind = n ! time index for the start array
-                      n = n - 1
+
+                   !-------------------------------------------------------------
+                   !Find the last non-zero occurrence in the "start" array
+                   !-------------------------------------------------------------
+
+                   !Assuming that the last non-zero index corresponds to the
+                   !time dimension. We need to read the "nt" th time dimension here
+
+                   n_time_ind = 4
+                   do while(start(n_time_ind) == 0)
+                      n_time_ind = n_time_ind - 1 ! time index for the start array
+                      if(n_time_ind == 1) exit    ! do not test for start(1)
                    enddo
                    start(n_time_ind) = nt ; count(n_time_ind) = 1
                 endif
@@ -1902,12 +1916,17 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
              if (present(nt)) then
+                !-------------------------------------------------------------
+                !Find the last  non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
 
-                !find first non-zero occurrence in the "start" array
-                ind = max_ind
-                do while(start(ind) == 0)
-                   n_time_ind = ind ! time index for the start array
-                   ind = ind - 1
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = max_ind
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind -1 ! time index for the start array
+                   if(n_time_ind == 1) exit   ! do not test for start(1)
                 enddo
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
 
@@ -2030,11 +2049,17 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
 
-                !find first non-zero occurrence in the "start" array
-                n = 6
-                do while(start(n) == 0)
-                   n_time_ind = n ! time index for the start array
-                   n = n - 1
+                !-------------------------------------------------------------
+                !Find the last non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
+
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = 6
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind -1 ! time index for the start array
+                   if(n_time_ind == 1) exit   ! do not test for start(1)
                 enddo
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
@@ -2149,7 +2174,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer              :: latidx,lonidx     ! latitude/longitude indices
     real(r8)             :: closelat,closelon ! closest latitude and longitude indices
     integer              :: ndims,dimlen      ! number of dimensions in desired variable
-    integer              :: ndims_iod         ! number of dimensions excluding time dimension (if it exists)
     character(len=32)    :: dimname           ! dimension name
     character(len=32)    :: subname = 'scam_field_offsets'
     !------------------------------------------------------------------------
@@ -2181,20 +2205,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     allocate(dids(ndims))
     status = pio_inq_vardimid(ncid, vardesc, dids)
-
-    ndims_iod = ndims !by default, ndims_iod is equal to total number of array dimensions
-
-    !find out if "time" is one of the dimnames and update ndims_iod accordingly
     do i = 1,ndims
-       status = pio_inq_dimname(ncid,dids(i),dimname)
-       dimname=shr_string_toLower(dimname)
-       if ('time' == trim(dimname)) then !if time dimension is found, reduce ndims_iod by 1
-          ndims_iod = ndims - 1
-          exit
-       end if
-    enddo
-
-    do i = 1,ndims_iod
        status = pio_inq_dimname(ncid,dids(i),dimname)
        dimname=shr_string_toLower(dimname)
        status = pio_inq_dimlen(ncid,dids(i),dimlen)
