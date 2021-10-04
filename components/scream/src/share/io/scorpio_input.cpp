@@ -136,13 +136,31 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 /* ---------------------------------------------------------- */
 void AtmosphereInput::read_variables ()
 {
+  // The default read input is to use the last step set for this
+  // file by eam_update_timesnap.
+  // To trigger the default in the read_variables routine we pass
+  // a negative value for the time level.
+  read_variables(-999);
+}
+/* ---------------------------------------------------------- */
+// Note: The timelevel argument provides a way to control which
+//       time snap to read input from in the file.  If a negative
+//       number is provided the routine will read input at the
+//       last time level set by running eam_update_timesnap.
+void AtmosphereInput::read_variables (const int timelevel)
+{
   EKAT_REQUIRE_MSG (m_is_inited,
       "Error! The init method has not been called yet.\n");
 
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,m_host_views_1d.at(name).data());
+    if (timelevel < 0)
+    {
+      scorpio::grid_read_data_array(m_filename,name,m_host_views_1d.at(name).data());
+    } else {
+      scorpio::grid_read_data_array(m_filename,name,timelevel,m_host_views_1d.at(name).data());
+    }
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.

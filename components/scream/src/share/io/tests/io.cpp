@@ -207,6 +207,28 @@ TEST_CASE("input_output_basic","io")
     REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
   }
   min_input.finalize();
+
+  // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
+  input_type multi_input(io_comm,multi_params,field_manager);
+  for (int tt = 1; tt<=std::min(max_steps,10); tt++) {
+    multi_input.read_variables(tt);
+    f1.sync_to_host();
+    f2.sync_to_host();
+    f3.sync_to_host();
+    f4.sync_to_host();
+
+    for (int ii=0;ii<num_lcols;++ii) {
+      REQUIRE(std::abs(f1_host(ii)-(tt*dt+ii))<tol);
+      for (int jj=0;jj<num_levs;++jj) {
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
+      }
+    }
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f2_host(jj)-(tt*dt + (jj+1)/10.))<tol);
+    }
+  }
+  multi_input.finalize();
   
   // All Done 
   scorpio::eam_pio_finalize();
@@ -323,7 +345,7 @@ ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm
   ekat::ParameterList in_params("Input Parameters");
   if (type == "Multisnap") {
     auto type_ci = ekat::upper_case("Instant");
-    in_params.set<std::string>("Filename","io_multisnap_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
+    in_params.set<std::string>("Filename","io_multisnap_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x1.0000-01-01.000001.nc");
   } else {
     auto type_ci = ekat::upper_case(type);
     in_params.set<std::string>("Filename","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");

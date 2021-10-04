@@ -256,7 +256,7 @@ contains
 
   end subroutine grid_write_data_array_c2f_real
 !=====================================================================!
-  subroutine grid_read_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)
+  subroutine grid_read_data_array_c2f(filename_in,varname_in,var_data_ptr) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
 
     type(c_ptr), intent(in) :: filename_in
@@ -270,6 +270,23 @@ contains
     call convert_c_string(varname_in,varname)
     call grid_read_data_array(filename,varname,var_data_ptr)
 
-  end subroutine grid_read_data_array_c2f_real
+  end subroutine grid_read_data_array_c2f
+!=====================================================================!
+  subroutine grid_read_data_array_wtime_c2f(filename_in,varname_in,var_data_ptr,timelevel) bind(c)
+    use scream_scorpio_interface, only: grid_read_data_array
+
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    type(c_ptr), intent(in) :: var_data_ptr
+    integer(kind=c_int), value, intent(in) :: timelevel
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_read_data_array(filename,varname,var_data_ptr,timelevel)
+
+  end subroutine grid_read_data_array_wtime_c2f
 !=====================================================================!
 end module scream_scorpio_interface_iso_c2f

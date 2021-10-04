@@ -17,7 +17,8 @@ extern "C" {
   void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
-  void grid_read_data_array_c2f_real(const char*&& filename, const char*&& varname, Real *&hbuf);
+  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, Real *&hbuf);
+  void grid_read_data_array_wtime_c2f(const char*&& filename, const char*&& varname, Real *&hbuf, const Int timelevel);
   void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
@@ -131,7 +132,11 @@ void count_pio_atm_file() {
 }
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, Real *hbuf) {
-  grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
+  grid_read_data_array_c2f(filename.c_str(),varname.c_str(),hbuf);
+}
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const int timelevel, Real *hbuf) {
+  grid_read_data_array_wtime_c2f(filename.c_str(),varname.c_str(),hbuf,timelevel);
 }
 /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {

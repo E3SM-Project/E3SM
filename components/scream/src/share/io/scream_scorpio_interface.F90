@@ -1253,12 +1253,13 @@ contains
   !  grid_read_darray_1d: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d(filename, varname, var_data_ptr)
+  subroutine grid_read_darray_1d(filename, varname, var_data_ptr, timelevel)
 
     ! Dummy arguments
-    character(len=*), intent(in) :: filename       ! PIO filename
-    character(len=*), intent(in) :: varname
-    type (c_ptr),     intent(in) :: var_data_ptr
+    character(len=*), intent(in)  :: filename       ! PIO filename
+    character(len=*), intent(in)  :: varname
+    type (c_ptr),     intent(in)  :: var_data_ptr
+    integer, optional, intent(in) :: timelevel
 
     ! Local variables
     type(pio_atm_file_t),pointer       :: pio_atm_file
@@ -1272,7 +1273,11 @@ contains
     call get_var(pio_atm_file,varname,var)
 
     ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (present(timelevel)) then
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(timelevel,kind=pio_offset_kind))
+    else
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    end if
     
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
