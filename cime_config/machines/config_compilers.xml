@@ -2378,6 +2378,32 @@ flags should be captured within MPAS CMake files.
   <SFC MPILIB="mpi-serial">gfortran</SFC>-->
 </compiler>
 
+<compiler MACH="gcp" COMPILER="gnu">
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
+  </CPPDEFS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
+    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
+  </FFLAGS>
+
+  <SLIBS>
+    <append> -L$ENV{HDF5_PATH}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff</append>
+    <append> -L$ENV{CURL_PATH}/lib -lcurl -lblas -llapack</append>
+    <append> -L$ENV{LAPACK_PATH}/lib64 -lblas -llapack</append>
+    <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf</append>
+  </SLIBS>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
 <compiler MACH="userdefined">
   <CONFIG_ARGS>
     <base/>
