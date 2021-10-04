@@ -139,37 +139,37 @@ if (NOT EXISTS core_ocean/MARBL/.git)
   message(FATAL "Missing core_ocean/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(MARBL_FILES
-  core_ocean/MARBL/marbl_ciso_diagnostics_mod.F90
-  core_ocean/MARBL/marbl_ciso_init_mod.F90
-  core_ocean/MARBL/marbl_ciso_interior_tendency_mod.F90
-  core_ocean/MARBL/marbl_ciso_surface_flux_mod.F90
-  core_ocean/MARBL/marbl_co2calc_mod.F90
-  core_ocean/MARBL/marbl_constants_mod.F90
-  core_ocean/MARBL/marbl_debug_mod.F90
-  core_ocean/MARBL/marbl_diagnostics_mod.F90
-  core_ocean/MARBL/marbl_diagnostics_share_mod.F90
-  core_ocean/MARBL/marbl_glo_avg_mod.F90
-  core_ocean/MARBL/marbl_init_mod.F90
-  core_ocean/MARBL/marbl_interface.F90
-  core_ocean/MARBL/marbl_interface_constants.F90
-  core_ocean/MARBL/marbl_interface_private_types.F90
-  core_ocean/MARBL/marbl_interface_public_types.F90
-  core_ocean/MARBL/marbl_interior_tendency_mod.F90
-  core_ocean/MARBL/marbl_interior_tendency_share_mod.F90
-  core_ocean/MARBL/marbl_kinds_mod.F90
-  core_ocean/MARBL/marbl_logging.F90
-  core_ocean/MARBL/marbl_nhx_surface_emis_mod.F90
-  core_ocean/MARBL/marbl_oxygen.F90
-  core_ocean/MARBL/marbl_pft_mod.F90
-  core_ocean/MARBL/marbl_restore_mod.F90
-  core_ocean/MARBL/marbl_saved_state_mod.F90
-  core_ocean/MARBL/marbl_schmidt_number_mod.F90
-  core_ocean/MARBL/marbl_settings_mod.F90
-  core_ocean/MARBL/marbl_surface_flux_mod.F90
-  core_ocean/MARBL/marbl_surface_flux_share_mod.F90
-  core_ocean/MARBL/marbl_temperature.F90
-  core_ocean/MARBL/marbl_timing_mod.F90
-  core_ocean/MARBL/marbl_utils_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_diagnostics_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_init_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_interior_tendency_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_surface_flux_mod.F90
+  core_ocean/MARBL/src/marbl_co2calc_mod.F90
+  core_ocean/MARBL/src/marbl_constants_mod.F90
+  core_ocean/MARBL/src/marbl_debug_mod.F90
+  core_ocean/MARBL/src/marbl_diagnostics_mod.F90
+  core_ocean/MARBL/src/marbl_diagnostics_share_mod.F90
+  core_ocean/MARBL/src/marbl_glo_avg_mod.F90
+  core_ocean/MARBL/src/marbl_init_mod.F90
+  core_ocean/MARBL/src/marbl_interface.F90
+  core_ocean/MARBL/src/marbl_interface_constants.F90
+  core_ocean/MARBL/src/marbl_interface_private_types.F90
+  core_ocean/MARBL/src/marbl_interface_public_types.F90
+  core_ocean/MARBL/src/marbl_interior_tendency_mod.F90
+  core_ocean/MARBL/src/marbl_interior_tendency_share_mod.F90
+  core_ocean/MARBL/src/marbl_kinds_mod.F90
+  core_ocean/MARBL/src/marbl_logging.F90
+  core_ocean/MARBL/src/marbl_nhx_surface_emis_mod.F90
+  core_ocean/MARBL/src/marbl_oxygen.F90
+  core_ocean/MARBL/src/marbl_pft_mod.F90
+  core_ocean/MARBL/src/marbl_restore_mod.F90
+  core_ocean/MARBL/src/marbl_saved_state_mod.F90
+  core_ocean/MARBL/src/marbl_schmidt_number_mod.F90
+  core_ocean/MARBL/src/marbl_settings_mod.F90
+  core_ocean/MARBL/src/marbl_surface_flux_mod.F90
+  core_ocean/MARBL/src/marbl_surface_flux_share_mod.F90
+  core_ocean/MARBL/src/marbl_temperature.F90
+  core_ocean/MARBL/src/marbl_timing_mod.F90
+  core_ocean/MARBL/src/marbl_utils_mod.F90
 )
 # Add GOTM
 if (NOT EXISTS core_ocean/gotm/.git)
