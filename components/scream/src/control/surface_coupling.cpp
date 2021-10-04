@@ -115,7 +115,8 @@ register_import(const std::string& fname,
 void SurfaceCoupling::
 register_export (const std::string& fname,
                  const int cpl_idx,
-                 const int vecComp)
+                 const int vecComp,
+                 const bool export_during_init)
 {
   // Two separate checks rather than state==Open, so we can print more specific error messages
   EKAT_REQUIRE_MSG (m_state!=RepoState::Clean,
@@ -179,10 +180,7 @@ register_export (const std::string& fname,
   }
 
   // Fields which are computed inside SCREAM should skip the initial export
-  info.skip_initial_export = false;
-  if (fname == "precip_liq_surf") {
-    info.skip_initial_export = true;
-  }
+  info.do_initial_export = export_during_init;
 
   // Set cpl index
   info.cpl_idx = cpl_idx;
@@ -277,7 +275,7 @@ void SurfaceCoupling::do_import ()
   });
 }
 
-void SurfaceCoupling::do_export (const bool skip_computed_fields)
+void SurfaceCoupling::do_export (const bool init_phase)
 {
   if (m_num_scream_exports==0) {
     return;
@@ -324,7 +322,8 @@ void SurfaceCoupling::do_export (const bool skip_computed_fields)
 
     // during the initial export, some fields may need to be skipped
     // since values have not been computed inside SCREAM at the time
-    if (!skip_computed_fields || !info.skip_initial_export) {
+    bool do_export = (!init_phase || info.do_initial_export);
+    if (do_export) {
       cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
     }
   });

@@ -56,7 +56,8 @@ public:
                         const int vecComp = -1);
   void register_export (const std::string& fname,
                         const int cpl_idx,
-                        const int vecComp = -1);
+                        const int vecComp = -1,
+                        const bool export_during_init = true);
 
   // Marks the end of the registration phase. Here, we check that there are no
   // import/export Info struct with only partial information
@@ -66,8 +67,10 @@ public:
   // Import host fields from the component coupler to device fields in the AD
   void do_import ();
 
-  // Export device fields from the AD to host fields in the component coupler
-  void do_export (const bool skip_computed_fields = false);
+  // Export device fields from the AD to host fields in the component coupler.
+  // If this export is called during the init phase, set init_phase=true
+  // so that fields which are computed inside SCREAM during the run phase are skipped.
+  void do_export (const bool init_phase = false);
 
   // Getters
   RepoState get_repo_state () const { return m_state; }
@@ -106,10 +109,10 @@ protected:
     // entry to import export would be at index num_levs.
     int col_offset;
 
-    // Boolean that dictates if the field should be skipped durring the initial export.
-    // This is useful for exported fields which require computation inside SCREAM, as
-    // the first export is done during initialization.
-    bool skip_initial_export;
+    // Boolean that dictates if the field can be exported if do_export() is called during
+    // initialization. This is useful since inside SCREAM some fields require computation
+    // internally.
+    bool do_initial_export;
 
     // Pointer to the scream field device memory
     ValueType*  data;
