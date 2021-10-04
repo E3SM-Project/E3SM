@@ -38,7 +38,8 @@ _TESTS = {
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
-            "ERS.ELM_USRDAT.I1850ELM.elm-usrdat"
+            "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
+            "SMS_Lm1.f09_f09.IELM.elm-solar_rad"
             )
         },
 
