@@ -113,8 +113,9 @@ TEST_CASE("input_output_basic","io")
     f.deep_copy(ekat::ScalarTraits<Real>::invalid());
   }
 
-  // At this point we should have 4 files output:
+  // At this point we should have 5 files output:
   // 1 file each for averaged, instantaneous, min and max data.
+  // And 1 file with multiple time snaps of instantaneous data.
   // Cycle through each output and make sure it is correct.
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
@@ -123,7 +124,7 @@ TEST_CASE("input_output_basic","io")
   auto min_params = get_in_params("Min",io_comm);
   auto max_params = get_in_params("Max",io_comm);
   auto multi_params = get_in_params("Multisnap",io_comm);
-  Real tol = pow(10,-6);
+  Real tol = 100*std::numeric_limits<Real>::epsilon();
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_manager);
   ins_input.read_variables();

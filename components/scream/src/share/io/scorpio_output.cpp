@@ -207,7 +207,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
       }
     }
 
-    // Set the timelevel for this snap in the pio file.
+    // Set the time_index for this snap in the pio file.
     pio_update_time(filename,time);
     if (is_output_step) {
       // We're adding one snapshot to the file
