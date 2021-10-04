@@ -213,6 +213,7 @@ TEST_CASE("column_ops_ps_1") {
       auto dz  = ekat::subview(dz_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+      team.team_barrier();
       column_ops::compute_interface_values_linear(team,num_levs,v_m,dz,bc_top,bc_bot,v_i);
     });
     Kokkos::fence();
@@ -334,6 +335,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+      team.team_barrier();
       column_ops::compute_interface_values_compatible<true>(team,num_levs,v_m,1,v_i);
     });
     Kokkos::fence();
@@ -361,6 +363,7 @@ TEST_CASE("column_ops_ps_1") {
       auto v_m = ekat::subview(v_mid,icol);
 
       column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+      team.team_barrier();
       column_ops::compute_interface_values_compatible<false>(team,num_levs,v_m,2*num_levs+1,v_i);
     });
     Kokkos::fence();
@@ -670,6 +673,7 @@ TEST_CASE("column_ops_ps_N") {
           auto dz  = ekat::subview(dz_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+          team.team_barrier();
           column_ops::compute_interface_values_linear(team,num_levs,v_m,dz,bc_top,bc_bot,v_i);
         });
         Kokkos::fence();
@@ -807,6 +811,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+          team.team_barrier();
           column_ops::compute_interface_values_compatible<true>(team,num_levs,v_m,1,v_i);
         });
         Kokkos::fence();
@@ -838,6 +843,7 @@ TEST_CASE("column_ops_ps_N") {
           auto v_m = ekat::subview(v_mid,icol);
 
           column_ops::compute_midpoint_values(team,num_levs,v_i,v_m);
+          team.team_barrier();
           column_ops::compute_interface_values_compatible<false>(team,num_levs,v_m,2*num_levs+1,v_i);
         });
         Kokkos::fence();
