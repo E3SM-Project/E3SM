@@ -143,7 +143,7 @@ namespace scream {
             mu0,
             lwp, iwp, rel, rei, cld
         );
-        //
+
         // Need to calculate a dummy pseudo_density for our test problem
         parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
@@ -181,6 +181,7 @@ namespace scream {
         auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
         auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
         auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
+        auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up").get_view<Real*>();
         auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
         auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
@@ -205,6 +206,7 @@ namespace scream {
         auto ch4_mol = PC::get_gas_mol_weight("ch4");
         auto o2_mol  = PC::get_gas_mol_weight("o2");
         auto n2_mol  = PC::get_gas_mol_weight("n2");
+        auto ibot = (p_lay(1,1) > p_lay(1,nlay)) ? 1 : nlay+1;
         {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -245,6 +247,9 @@ namespace scream {
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);
+
+            // Compute surface flux from surface temperature
+            d_surf_lw_flux_up(i) = PC::stebol * pow(t_lev(i+1,ibot), 4.0);
           });
         }
         Kokkos::fence();
@@ -291,12 +296,14 @@ namespace scream {
         // to approximate the solar zenith angle used in the RRTMGP clear-sky
         // test problem with our trial and error lat/lon values, so fluxes will
         // be slightly off. We just verify that they are all "close" here, within
-        // some tolerance.
-        REQUIRE(rrtmgpTest::all_close(sw_flux_up_ref    , sw_flux_up_test    , 0.001));
-        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_ref    , sw_flux_dn_test    , 0.001));
-        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_ref, sw_flux_dn_dir_test, 0.001));
-        REQUIRE(rrtmgpTest::all_close(lw_flux_up_ref    , lw_flux_up_test    , 0.001));
-        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_ref    , lw_flux_dn_test    , 0.001));
+        // some tolerance. Computation of level temperatures from midpoints is
+        // also unable to exactly reproduce the values in the test problem, so
+        // computed fluxes will be further off from the reference calculation.
+        REQUIRE(rrtmgpTest::all_close(sw_flux_up_ref    , sw_flux_up_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_ref    , sw_flux_dn_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_ref, sw_flux_dn_dir_test, 1.0));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_up_ref    , lw_flux_up_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_ref    , lw_flux_dn_test    , 1.0));
 
         // Deallocate YAKL arrays
         p_lay.deallocate();

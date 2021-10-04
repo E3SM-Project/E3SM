@@ -317,14 +317,26 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
       team.team_barrier();
 
-      // Calculate T_int
-      // TODO: we should *not* be calculating bc_bot (T_int(nlay)) like we do here!
-      // Land model ought to say *something* about emissivity or surface temperature,
-      // but this assumes that the emissivity is 1, all the time, regardless! This is bad!
+      // Calculate T_int from longwave flux up from the surface, assuming
+      // blackbody emission with emissivity of 1.
+      // TODO: Does land model assume something other than emissivity of 1? If so
+      // we should use that here rather than assuming perfect blackbody emission.
+      // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
+      // surface. The input data for the standalone test is ordered surface to
+      // toa, but SCREAM in general assumes data is toa to surface. We account
+      // for this here by swapping bc_top and bc_bot in the case that the input
+      // data is ordered surface to toa.
       const auto T_int = ekat::subview(d_tint, i);
-      const Real bc_top = T_mid(0);
+      const auto P_mid = ekat::subview(d_pmid, i);
+      const int itop = (P_mid(0) < P_mid(m_nlay-1)) ? 0 : m_nlay;
+      const Real bc_top = T_mid(itop-1);
       const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/PC::stebol));
-      CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
+      if (itop == 0) {
+          CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
+      } else {
+          CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_bot, bc_top, T_int);
+      }
+      team.team_barrier();
 
       mu0(i+1) = d_mu0(i);
       sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);
