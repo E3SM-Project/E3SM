@@ -154,6 +154,10 @@ void scream_setup_surface_coupling (
     }
 
     sc->registration_ends(cpl_x2a_ptr, cpl_a2x_ptr);
+
+    // After registration we need to export all fields (except those that require scream computations)
+    // as other models will need these values.
+    sc->do_export(true);
   });
 }
 
