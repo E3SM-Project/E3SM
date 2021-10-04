@@ -206,7 +206,6 @@ namespace scream {
         auto ch4_mol = PC::get_gas_mol_weight("ch4");
         auto o2_mol  = PC::get_gas_mol_weight("o2");
         auto n2_mol  = PC::get_gas_mol_weight("n2");
-        auto ibot = (p_lay(1,1) > p_lay(1,nlay)) ? 1 : nlay+1;
         {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -249,6 +248,7 @@ namespace scream {
             d_pint(i,nlay) = p_lev(i+1,nlay+1);
 
             // Compute surface flux from surface temperature
+            auto ibot = (p_lay(1,1) > p_lay(1,nlay)) ? 1 : nlay+1;
             d_surf_lw_flux_up(i) = PC::stebol * pow(t_lev(i+1,ibot), 4.0);
           });
         }
