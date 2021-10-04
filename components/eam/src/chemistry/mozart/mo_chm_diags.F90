@@ -90,6 +90,14 @@ contains
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies
+    integer :: gaschmbudget_2D_L1_s
+    integer :: gaschmbudget_2D_L1_e
+    integer :: gaschmbudget_2D_L2_s
+    integer :: gaschmbudget_2D_L2_e
+    integer :: gaschmbudget_2D_L3_s
+    integer :: gaschmbudget_2D_L3_e
+    integer :: gaschmbudget_2D_L4_s
+    integer :: gaschmbudget_2D_L4_e
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
@@ -99,8 +107,16 @@ contains
                        history_verbose_out = history_verbose,  &
                        cam_chempkg_out     = chempkg, &
                        history_gaschmbudget_out = history_gaschmbudget, &
-                       history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-                history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+             history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                       gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                       gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                       gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                       gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                       gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                       gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                       gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                       gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
     if (masterproc) then
        if (history_gaschmbudget) then
@@ -1182,12 +1198,28 @@ contains
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
+    integer  :: gaschmbudget_2D_L1_s ! Start layer of L1 for gas chemistry tracer budget 
+    integer  :: gaschmbudget_2D_L1_e ! End layer of L1 for gas chemistry trracer budget
+    integer  :: gaschmbudget_2D_L2_s
+    integer  :: gaschmbudget_2D_L2_e
+    integer  :: gaschmbudget_2D_L3_s
+    integer  :: gaschmbudget_2D_L3_e
+    integer  :: gaschmbudget_2D_L4_s
+    integer  :: gaschmbudget_2D_L4_e
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
                        history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-                       history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+                       history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                       gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                       gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                       gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                       gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                       gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                       gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                       gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                       gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
     if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D .and. .not. history_gaschmbudget_2D_levels) return
 
@@ -1218,22 +1250,22 @@ contains
 
             wrk_sum(:ncol) = 0.0_r8
             if (len(flag) >= 6 .and. flag(6:8) == '_L1') then
-               do k = 1,25
+               do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
             elseif (len(flag) >= 6 .and. flag(6:8) == '_L2') then
-               do k = 26,40
+               do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
             elseif (len(flag) >= 6 .and. flag(6:8) == '_L3') then
-               do k = 41,58
+               do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
             elseif (len(flag) >= 6 .and.flag(6:8) == '_L4') then
-               do k = 59, pver
+               do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )

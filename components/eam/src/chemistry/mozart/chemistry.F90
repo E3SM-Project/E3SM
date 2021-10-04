@@ -1424,6 +1424,14 @@ end function chem_is_active
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D
     logical :: history_gaschmbudget_2D_levels
+    integer :: gaschmbudget_2D_L1_s
+    integer :: gaschmbudget_2D_L1_e
+    integer :: gaschmbudget_2D_L2_s
+    integer :: gaschmbudget_2D_L2_e
+    integer :: gaschmbudget_2D_L3_s
+    integer :: gaschmbudget_2D_L3_e
+    integer :: gaschmbudget_2D_L4_s
+    integer :: gaschmbudget_2D_L4_e
     integer ::  gas_ac_idx
     integer :: nstep
 
@@ -1438,8 +1446,16 @@ end function chem_is_active
 
     call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels )
-
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, & 
+                      gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                      gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                      gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                      gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                      gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                      gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                      gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                      gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
+            
     chem_dt = chem_freq*dt
 
     lchnk = state%lchnk
@@ -1535,19 +1551,19 @@ end function chem_is_active
              gas_ac_idx = pbuf_get_index(gas_ac_name(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
 
-             do k=1,25 ! 0-90 hPa
+             do k= gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e ! 0-90 hPa
                ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
                gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k)
              end do
-             do k=26,40 ! 90-300 hPa
+             do k= gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e ! 90-300 hPa
                ftem_layers(:ncol,2) = ftem_layers(:ncol,2) + ftem(:ncol,k)
                gas_ac_layers(:ncol,2) = gas_ac_layers(:ncol,2) + gas_ac(:ncol,k)
              end do
-             do k=41,58 ! 300-850 hPa
+             do k= gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e ! 300-850 hPa
                ftem_layers(:ncol,3) = ftem_layers(:ncol,3) + ftem(:ncol,k)
                gas_ac_layers(:ncol,3) = gas_ac_layers(:ncol,3) + gas_ac(:ncol,k)
              end do
-             do k=59,pver ! 850 hPa - surface
+             do k= gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e ! 850 hPa - surface
                ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
                gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
              end do
