@@ -21,7 +21,7 @@ CORI_WEB = False
 
 
 def get_results_dir(output_list):
-    """Given output from acme_diags_driver, extract the path to results_dir."""
+    """Given output from e3sm_diags_driver, extract the path to results_dir."""
     for line in output_list:
         match = re.search("Viewer HTML generated at (.*)viewer.*.html", line)
         if match:

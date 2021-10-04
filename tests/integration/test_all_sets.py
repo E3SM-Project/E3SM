@@ -17,7 +17,7 @@ def count_images(directory, file_type="png"):
 
 class TestAllSets(unittest.TestCase):
     def get_results_dir(self, output):
-        """Given output from acme_diags_driver, extract the path to results_dir."""
+        """Given output from e3sm_diags_driver, extract the path to results_dir."""
         for line in output:
             match = re.search("Viewer HTML generated at (.*)viewer.*.html", line)
             if match:

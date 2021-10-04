@@ -26,7 +26,7 @@ tag_template = "v{new_version}"
 src = "setup.py"
 
 [[file]]
-src = "acme_diags/__init__.py"
+src = "e3sm_diags/__init__.py"
 
 [[file]]
 src = "conda/meta.yaml"

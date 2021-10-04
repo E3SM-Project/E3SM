@@ -15,11 +15,10 @@
   "python.testing.unittestArgs": [
     "-v",
     "-s",
-    "./tests/acme_diags",
+    "./tests/e3sm_diags",
     "-p",
     "test_*.py"
   ],
   "python.testing.pytestEnabled": false,
-  "python.testing.nosetestsEnabled": false,
   "python.testing.unittestEnabled": true
 }
