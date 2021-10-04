@@ -35,6 +35,7 @@ foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
   configure_file(io_test_average.yaml io_test_average_np${MPI_RANKS}.yaml)
   configure_file(io_test_max.yaml io_test_max_np${MPI_RANKS}.yaml)
   configure_file(io_test_min.yaml io_test_min_np${MPI_RANKS}.yaml)
+  configure_file(io_test_multisnap.yaml io_test_multisnap_np${MPI_RANKS}.yaml)
   configure_file(io_test_restart.yaml io_test_restart_np${MPI_RANKS}.yaml)
   configure_file(io_test_restart_check.yaml io_test_restart_check_np${MPI_RANKS}.yaml)
 
