@@ -70,7 +70,6 @@ libcvmix:
 		(cd cvmix/src/shared; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
 		(pwd ; echo "Missing mpas-ocean/src/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
-		(pwd ; echo "Missing core_ocean/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 libBGC:
@@ -78,24 +77,17 @@ libBGC:
 		(cd BGC; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
 		(echo "Missing mpas-ocean/src/BGC/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
-		(echo "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 libgotm:
 	if [ -e gotm/.git ]; then \
+	  	if [ -e gotm/build/Makefil ]; then \
 			(cd gotm/build; make) \
 		else \
 			(cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
 		fi \
 	else \
 		(pwd ; echo "Missing mpas-ocean/src/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
-		if [ -e gotm/build ]; then \
-			(cd gotm/build; make) \
-		else \
-			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
-		fi \
-	else \
-		(pwd ; echo "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 shared: libcvmix libBGC libgotm

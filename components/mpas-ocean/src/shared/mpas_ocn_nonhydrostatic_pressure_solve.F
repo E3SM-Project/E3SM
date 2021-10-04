@@ -240,6 +240,7 @@ module ocn_compute_nonhydrostatic_pressure
     integer, intent(in) :: mpi_comm
     logical, intent(in) :: reuse_preconditioner
     real(kind=RKIND),dimension(:,:), intent(out) :: nhPressureCorrection
+#ifdef USE_PETSC
     PetscScalar :: x_array(m)
     PetscOffset :: i_x
     PetscInt :: itNum
@@ -248,6 +249,7 @@ module ocn_compute_nonhydrostatic_pressure
     integer :: vecSpot, iCell, k, reason
 
     overlap=2
+#endif
 
     call mpas_timer_start('NH solve - pressure solve total',.false.)
 

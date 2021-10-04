@@ -1300,20 +1300,6 @@ contains
 
     end subroutine ocn_diagnostics_variables_destroy!}}}
 
-      call mpas_pool_get_array(diagnosticsPool, 'velocityForcingTend', velocityForcingTend)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityPGFtend', velocityPGFtend)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityVadvTend', velocityVadvTend)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityHmixTend', velocityHmixTend)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityVmixTend', velocityVmixTend)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityCoriolisTend', velocityCoriolisTend)
-
-      call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
-      call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
-      call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
-
-      call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
-
-    end subroutine ocn_diagnostics_variables_init!}}}
 
 !***********************************************************************
 

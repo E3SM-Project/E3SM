@@ -524,9 +524,6 @@ module ocn_time_integration_rk4
              call mpas_timer_stop("RK4-prevent drying")
         end if
 
-             call mpas_timer_stop("RK4-prevent drying")
-        end if
-
         !FIXME - LVR - ALE is not working with non hydrostatic, for now implement switch to disable
         ! Compute tendencies for velocity, thickness, and tracers.
         ! In RK4 notation, we are computing the right hand side f(t,y),
@@ -959,6 +956,7 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, normalVelocityCur
+      real (kind=RKIND), dimension(:, :), pointer :: verticalVelocityCur
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
       real (kind=RKIND), dimension(:, :), pointer ::  verticalVelocityProvis
 
@@ -992,18 +990,18 @@ module ocn_time_integration_rk4
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdge, normalVelocityProvis, &
             verticalVelocityProvis, sshCur, rkSubstepWeight, &
             vertAleTransportTop, nhPressureCorrection, err, highFreqThicknessProvis)
       else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdge, normalVelocityProvis, &
             verticalVelocityProvis, sshCur, rkSubstepWeight, &
             vertAleTransportTop, nhPressureCorrection, err)
       endif
 
-      call ocn_tend_vvel(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, 1, dt)
+      call ocn_tend_vvel(tendPool, provisStatePool, forcingPool, meshPool, 1, dt)
 
    end subroutine ocn_time_integrator_rk4_compute_vvel_tends
 
@@ -1047,16 +1045,6 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
-
-      if (config_use_GM) then
-            !$omp parallel
-            !$omp do schedule(runtime) 
-            do iEdge = 1, nEdges
-               normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + normalGMBolusVelocity(:, iEdge)
-            end do
-            !$omp end do
-            !$omp end parallel
-         end if
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
@@ -1186,7 +1174,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
-      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -1195,9 +1182,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(provisStatePool, 'tracers', tracersPool)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-      call mpas_pool_get_array(provisStatePool, 'tke', tkeNew, 1)
+            call mpas_pool_get_array(provisStatePool, 'tke', tkeNew, 1)
       call mpas_pool_get_array(provisStatePool, 'glsPsi', glsPsiNew, 1)
       call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
       call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
@@ -1210,16 +1195,15 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(provisStatePool, 'verticalVelocity', verticalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdge, normalVelocityProvis, &
             verticalVelocityProvis, sshCur, rkSubstepWeight, &
             vertAleTransportTop, nhPressureCorrection, err, highFreqThicknessProvis)
       else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdge, normalVelocityProvis, &
             verticalVelocityProvis, sshCur, rkSubstepWeight, &
             vertAleTransportTop, nhPressureCorrection, err)

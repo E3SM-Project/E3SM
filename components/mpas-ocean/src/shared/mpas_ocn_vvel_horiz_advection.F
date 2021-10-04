@@ -28,7 +28,9 @@ module ocn_vvel_horiz_advection_vector_invariant
    use mpas_io_units
    use mpas_threading
    use ocn_config
+   use ocn_mesh
    use mpas_tracer_advection_helpers
+   use ocn_tracer_advection_shared
    use ocn_diagnostics_variables
 
    implicit none
@@ -59,35 +61,20 @@ module ocn_vvel_horiz_advection_vector_invariant
 !>  NOTE this is only active for non hydrostatic mode
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vvel_horiz_vector_invariant_advection_tend(verticalVelocity, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, &
-                                            advCellsForEdge, &!{{{
-                                            normalTransportVelocity, layerThicknessEdge, dt, meshPool, &
-                                             tend, maxLevelCell, maxLevelEdgeTop, &
-                                             highOrderAdvectionMask, edgeSignOnCell)
+   subroutine ocn_vvel_horiz_vector_invariant_advection_tend(verticalVelocity, &!{{{
+                                            normalTransportVelocity, layerThicknessEdge, dt, &
+                                             tend)
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coeffs for blending in 3rd/4th order
-      integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
-      integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
       real (kind=RKIND), dimension(:,:), intent(in) :: normalTransportVelocity !< Input: Thichness weighted velocitiy
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThicknessEdge !< Input: Thickness
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalVelocity
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tend !< Input/Output: Vertical Velocity tendency
-      integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
-      integer, dimension(:), pointer :: maxLevelEdgeTop !< Input: Index to max level at edge with non-land cells on both sides
-      integer, dimension(:,:), pointer :: highOrderAdvectionMask !< Input: Mask for high order advection
-      integer, dimension(:, :), pointer :: edgeSignOnCell !< Input: Sign for flux from edge on each cell.
 
       integer :: i, iCell, iEdge, k, cell1, cell2
       integer :: nVertLevels, nCells, nEdges
-      integer, pointer :: nCellsSolve, maxEdges
-      integer, dimension(:), pointer :: nEdgesOnCell, nCellsArray, nEdgesArray
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
 
       real (kind=RKIND) :: vvel_weight, invAreaCell1
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, dcEdge
 
       real (kind=RKIND), dimension(:), allocatable :: fluxTmp
 
@@ -96,23 +83,12 @@ module ocn_vvel_horiz_advection_vector_invariant
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
       ! Get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
       nVertLevels = size(verticalVelocity,dim=1)
 
       ! Initialize pointers
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
-      nCells = nCellsArray( 2 )
-      nEdges = nEdgesArray( 3 )
+      nCells = nCellsHalo( 1 )
+      nEdges = nEdgesHalo( 2 )
       allocate(high_order_horiz_flux(nVertLevels, nEdges))
       allocate(tendtmp(nVertLevels,nCells))
       allocate(fluxTmp(nVertLevels))

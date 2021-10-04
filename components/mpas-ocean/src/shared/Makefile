@@ -110,7 +110,7 @@ mpas_ocn_thick_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_
 
 mpas_ocn_gm.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
-mpas_ocn_two_equation_model_driver.o: mpas_ocn_mesh.o mpas_ocn_tke_advection_mono.o mpas_ocn_glsPsi_advection_mono.o mpas_ocn_tke_glsPsi_transport.o mpas_ocn_shear_production.o mpas_ocn_buoyancy_production.o mpas_ocn_diagnostics_variables.o mpas_ocn_two_equation_structure_functions.o mpas_ocn_config.o
+mpas_ocn_two_equation_model_driver.o: mpas_ocn_tracer_advection_shared.o mpas_ocn_mesh.o mpas_ocn_tke_advection_mono.o mpas_ocn_glsPsi_advection_mono.o mpas_ocn_tke_glsPsi_transport.o mpas_ocn_shear_production.o mpas_ocn_buoyancy_production.o mpas_ocn_diagnostics_variables.o mpas_ocn_two_equation_structure_functions.o mpas_ocn_config.o
 
 mpas_ocn_two_equation_structure_functions.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
 
@@ -154,11 +154,11 @@ mpas_ocn_vvel_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vvel_pgf.o: mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vvel_vert_advection.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vvel_vert_advection.o: mpas_ocn_mesh.o mpas_ocn_tracer_advection_shared.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vvel_horiz_advection.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
+mpas_ocn_vvel_horiz_advection.o: mpas_ocn_tracer_advection_shared.o mpas_ocn_mesh.o mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
 
-mpas_ocn_vvel_horiz_advection_old.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
+mpas_ocn_vvel_horiz_advection_old.o: mpas_ocn_tracer_advection_shared.o mpas_ocn_mesh.o mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
 
 mpas_ocn_vvel_hmix_del2.o: mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o
 

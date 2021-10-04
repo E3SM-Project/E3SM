@@ -1190,7 +1190,7 @@ contains
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, nCells, nEdges
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
       real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh, bottomDepth   ! needed for depth-variable computation
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: verticalVelocity, normalVelocity, layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: nonLocalSurfaceTracerFlux, tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:,:,:), allocatable :: nonLocalFluxTend

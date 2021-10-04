@@ -38,6 +38,7 @@ module ocn_two_equation_model
    use ocn_diagnostics_variables
    use ocn_two_equation_structure_functions
    use ocn_config
+   use ocn_tracer_advection_shared
 
    implicit none
    private
@@ -174,13 +175,13 @@ contains
                                       normalThicknessFlux, verticalVelocity, dt,       &
                                       advCoefs, advCoefs3rd,            &
                                       nAdvCellsForEdge, advCellsForEdge,&
-                                      highOrderAdvectionMask)
+                                      advMaskHighOrder)
 
      call ocn_glsPsi_advection_mono_tend(glsPsiTend, glsPsi, layerThickness,    &
                                       normalThicknessFlux, verticalVelocity, dt,       &
                                       advCoefs, advCoefs3rd,            &
                                       nAdvCellsForEdge, advCellsForEdge,&
-                                      highOrderAdvectionMask)
+                                      advMaskHighOrder)
 
      call ocn_compute_two_equation_molecular_viscosity(activeTracers)
      call ocn_tke_transport_horizontal_compute(tke, tkeTend, err) 

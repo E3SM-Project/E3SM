@@ -40,6 +40,7 @@ module ocn_time_integration_si
    use ocn_mesh
    use ocn_tendency
    use ocn_diagnostics_variables
+   use ocn_two_equation_model
    use ocn_diagnostics
    use ocn_gm
 
@@ -246,7 +247,15 @@ module ocn_time_integration_si
          highFreqThicknessCur,        &! high frq thick at current time
          highFreqThicknessNew,        &! high frq thick at new     time
          lowFreqDivergenceCur,        &! low frq div    at current time
-         lowFreqDivergenceNew          ! low frq div    at new     time
+         lowFreqDivergenceNew,        &! low frq div    at new     time
+         verticalVelocityNew,         &! Vertical Velocity at new time 
+         verticalVelocityCur,         &! Vertical Velocity at current time
+         tkeNew,                      &! TKE at new time
+         tkeCur,                      &! TKE at current time
+         glsPsiNew,                   &! glsPsi at new time
+         glsPsiCur,                   &! glsPsi at current time
+         nonhydrostaticPressure,      &! nhpressure at new time
+         nonhydrostaticPressureOld     ! nh pressure at current time
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
@@ -263,6 +272,8 @@ module ocn_time_integration_si
       type (mpas_pool_iterator_type) :: &
          groupItr               ! iterator for tracer groups
 
+      type (dm_info) :: dminfo 
+
       character (len=StrKIND) :: &
          modifiedGroupName,    &! constructed tracer group names
          configName             ! constructed config names for tracers
@@ -276,7 +287,10 @@ module ocn_time_integration_si
          normalVelocityTend,    &! normal velocity tendency
          highFreqThicknessTend, &! thickness tendency for high-freq iter
          lowFreqDivergenceTend, &! thickness tendency for low freq
-         layerThicknessTend      ! main thickness tendency
+         layerThicknessTend,    &! main thickness tendency
+         tendTKE,               &! TKE tendency
+         tendglsPsi,            &! glsPsi tendency
+         verticalVelocityTend    ! tendency of vertical velocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracersGroupTend,      &! tendencies for tracer groups
@@ -646,16 +660,17 @@ module ocn_time_integration_si
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
-                 vertAleTransportTop, err, highFreqThicknessNew)
+                 layerThickEdge, normalVelocityCur, verticalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, nhPressureCorrection, &
+                 err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
 #endif
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
-                 vertAleTransportTop, err)
+                 layerThickEdge, normalVelocityCur, verticalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, nhPressureCorrection, err)
          endif
 #ifdef MPAS_OPENACC
          !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
@@ -2625,7 +2640,7 @@ module ocn_time_integration_si
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, verticalVelocity, sshCur, &
+                 layerThickEdge, normalTransportVelocity, verticalVelocityNew, sshCur, &
                  dt, vertAleTransportTop, nhPressureCorrection, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
@@ -2633,7 +2648,7 @@ module ocn_time_integration_si
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, verticalVelocity, sshCur, &
+                 layerThickEdge, normalTransportVelocity, verticalVelocityNew, sshCur, &
                  dt, vertAleTransportTop, nhPressureCorrection, err)
          endif
 #ifdef MPAS_OPENACC

@@ -93,11 +93,12 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: verticalMeshPool
 
-      integer :: iCell, k, idx
+      integer :: iCell, k, idx, mlc, i, iEdge, cell1, cell2
 
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nCells, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
+      integer, pointer :: nEdges
 
       ! Define variable pointers
       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell, nEdgesArray
@@ -202,6 +203,7 @@ contains
 
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
         call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 

@@ -331,7 +331,7 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, timeLevelIn
    ! velocity tendency: horizontal and vertical advection
    !
    call ocn_vvel_advection_tend(verticalVelocity, normalTransportVelocity,       &
-                                        layerThickness, layerThickEdge, dt, meshPool,          &
+                                        layerThickness, layerThickEdge, dt,          &
                                         tend_verticalVelocity)
 
    !
@@ -536,7 +536,8 @@ end subroutine ocn_tend_vvel!}}}
       call ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
                                       layerThickEdge, normalVelocity, &
-                                      kineticEnergyCell, tendVel, err)
+                                      kineticEnergyCell, verticalVelocity, &
+                                      tendVel, err)
       do iEdge = 1,nEdgesOwned
          do k=1,nVertLevels
             velocityCoriolisTend(k,iEdge) = tendVel(k,iEdge) - velocityCoriolisTend(k,iEdge)
@@ -555,7 +556,8 @@ end subroutine ocn_tend_vvel!}}}
       end do
 
       ! Add pressure gradient
-      call ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
+      call ocn_vel_pressure_grad_tend(ssh, nonhydrostaticPressure, &
+                               pressure, surfacePressure, &
                                montgomeryPotential, zMid, &
                                density, potentialDensity, &
                                indxTemp, indxSalt, activeTracers, &
@@ -583,7 +585,7 @@ end subroutine ocn_tend_vvel!}}}
 
 
       ! Add horizontal mixing
-      call ocn_vel_hmix_tend(divergence, relativeVorticity, tendVel,err)
+      call ocn_vel_hmix_tend(divergence, relativeVorticity, viscosity, tendVel,err)
       do iEdge=1,nEdgesOwned
          do k=1,nVertLevels
             velocityHmixtend(k,iEdge) = tendVel(k,iEdge) - velocityHmixtend(k,iEdge)

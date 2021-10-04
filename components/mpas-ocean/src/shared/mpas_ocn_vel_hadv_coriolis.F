@@ -22,6 +22,7 @@
 module ocn_vel_hadv_coriolis
 
    use mpas_timer
+   use mpas_constants
    use ocn_constants
    use ocn_mesh
    use ocn_config

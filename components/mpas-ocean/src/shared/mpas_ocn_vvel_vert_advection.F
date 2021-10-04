@@ -27,8 +27,9 @@ module ocn_vvel_vert_advection
    use mpas_pool_routines
    use mpas_io_units
    use mpas_threading
-
+   use ocn_mesh
    use mpas_tracer_advection_helpers
+   use ocn_tracer_advection_shared
 
    implicit none
    private
@@ -61,40 +62,20 @@ module ocn_vvel_vert_advection
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vvel_vert_advection_tend(verticalVelocity, &!{{{
-                                             layerThickness, dt, meshPool, &
-                                             tend, maxLevelCell, maxLevelEdgeTop)
+                                             layerThickness, dt, &
+                                             tend)
 
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalVelocity !< Input: current vertVel values
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tend !< Input/Output: VertVel tendency
-      integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
-      integer, dimension(:), pointer :: maxLevelEdgeTop !< Input: Index to max level at edge with non-land cells on both sides
 
       integer :: i, iCell, iEdge, k, cell1, cell2
       integer :: nVertLevels
       integer, pointer :: nCells, nEdges, maxEdges
-      integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
-
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
-      ! Get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
-
-      ! Initialize pointers
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-
-        !  Compute the high order vertical flux. now to be consistent with Horizontal
+      !  Compute the high order vertical flux. now to be consistent with Horizontal
 ! momentum
 
         !omp do schedule(runtime)

@@ -130,6 +130,8 @@ module ocn_time_integration_split
       ! Local variables
       !-----------------------------------------------------------------
 
+      type (dm_info) :: dminfo 
+
       type (block_type), pointer :: &
          block ! structure with subdomain data
 
@@ -581,7 +583,7 @@ module ocn_time_integration_split
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, &
-                 verticalVelocity, sshCur, dt, &
+                 verticalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, nhPressureCorrection, &
                  err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
@@ -591,7 +593,7 @@ module ocn_time_integration_split
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, &
-                 verticalVelocity, sshCur, dt, &
+                 verticalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, nhPressureCorrection, err)
          endif
 #ifdef MPAS_OPENACC
@@ -1534,7 +1536,7 @@ module ocn_time_integration_split
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, &
-                 verticalVelocity, sshCur, &
+                 verticalVelocityCur, sshCur, &
                  dt, vertAleTransportTop, nhPressureCorrection, &
                  err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
@@ -1544,7 +1546,7 @@ module ocn_time_integration_split
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, &
-                 verticalVelocity, sshCur, &
+                 verticalVelocityCur, sshCur, &
                  dt, vertAleTransportTop, nhPressureCorrection, err)
          endif
 #ifdef MPAS_OPENACC

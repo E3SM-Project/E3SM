@@ -66,7 +66,7 @@ module ocn_vvel_advection
 !-------------------------------------------------------------------------------
 
    subroutine ocn_vvel_advection_tend(verticalVelocity, normalThicknessFlux,       &
-                                        layerThickness, layerThicknessEdge, dt, meshPool,          &
+                                        layerThickness, layerThicknessEdge, dt,          &
                                         tend)!{{{
 
       !*** Input/Output parameters
@@ -85,22 +85,6 @@ module ocn_vvel_advection
          layerThicknessEdge
       real (kind=RKIND), intent(in) :: &
          dt                  !< [in] Time step
-      type (mpas_pool_type), intent(in) :: &
-         meshPool            !< [in] Mesh information
-
-      !*** Local variables
-
-      real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
-         advCoefs, advCoefs3rd ! advection coefficients
-
-      integer, dimension(:), pointer, contiguous :: &
-         maxLevelCell,    &! index of max level at each cell
-         maxLevelEdgeTop, &! max level at edge with both cells active
-         nAdvCellsForEdge  ! number of advective cells for each edge
-      integer, dimension(:,:), pointer, contiguous :: &!
-         highOrderAdvectionMask, &! mask for higher order contributions
-         edgeSignOnCell,  &! sign at cell edge for fluxes
-         advCellsForEdge   ! index of advective cells for each edge
 
       ! end of preamble
       !----------------
@@ -111,32 +95,16 @@ module ocn_vvel_advection
 
       call mpas_timer_start("Vertical Velocity adv")
 
-      ! extract pool variables
-      call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
-      call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', &
-                                          highOrderAdvectionMask)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-      call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', nAdvCellsForEdge)
-      call mpas_pool_get_array(meshPool, 'advCellsForEdge', advCellsForEdge)
-
-
       if(config_vvel_advection_use_vector_invariant_form) then
-         call ocn_vvel_horiz_vector_invariant_advection_tend(verticalVelocity, advCoefs, advCoefs3rd, &
-               nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, layerThicknessEdge, &
-               dt, meshPool, tend, maxLevelCell, maxLevelEdgeTop, &
-               highOrderAdvectionMask, edgeSignOnCell)
+         call ocn_vvel_horiz_vector_invariant_advection_tend(verticalVelocity, &
+               normalThicknessFlux, layerThicknessEdge, dt, tend)
       else
-         call ocn_vvel_horiz_advection_tend(verticalVelocity, advCoefs, advCoefs3rd, &
-               nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, layerThickness, &
-               dt, meshPool, tend, maxLevelCell, maxLevelEdgeTop, &
-               highOrderAdvectionMask, edgeSignOnCell)
+         call ocn_vvel_horiz_advection_tend(verticalVelocity, normalThicknessFlux, &
+               layerThickness, dt, tend)
       end if
 
-      call ocn_vvel_vert_advection_tend( verticalVelocity, layerThickness, dt, meshPool, &
-                                                tend, maxLevelCell, maxLevelEdgeTop)
+      call ocn_vvel_vert_advection_tend( verticalVelocity, layerThickness, dt, &
+                                                tend)
 
       call mpas_timer_stop("Vertical Velocity adv")
 

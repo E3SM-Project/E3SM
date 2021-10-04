@@ -122,7 +122,7 @@ module ocn_tke_advection_mono
          nAdvCellsForEdge    !< [in] Number of advection cells for each edge
       integer, dimension(:,:), intent(in) :: &
          advCellsForEdge     !< [in] List of advection cells for each edge
-      integer, dimension(:,:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
          highOrderAdvectionMask !< [in] Mask for high order advection
 
       !*** Local variables
@@ -297,7 +297,7 @@ module ocn_tke_advection_mono
           ! Remove low order flux from the high order flux
           ! Store left over high order flux in highOrderFlx array
           do k = 1, maxLevelEdgeTop(iEdge)
-            tkeWeight = iand(highOrderAdvectionMask(k, iEdge)+1, 1) &
+            tkeWeight = (1.0_RKIND - highOrderAdvectionMask(k, iEdge)) &
                          * (dvEdge(iEdge) * 0.5_RKIND)                 &
                          * normalThicknessFlux(k, iEdge)
 
