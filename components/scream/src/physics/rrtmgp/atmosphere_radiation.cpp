@@ -328,8 +328,8 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       // data is ordered surface to toa.
       const auto T_int = ekat::subview(d_tint, i);
       const auto P_mid = ekat::subview(d_pmid, i);
-      const int itop = (P_mid(0) < P_mid(m_nlay-1)) ? 0 : m_nlay;
-      const Real bc_top = T_mid(itop-1);
+      const int itop = (P_mid(0) < P_mid(m_nlay-1)) ? 0 : m_nlay-1;
+      const Real bc_top = T_mid(itop);
       const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/PC::stebol));
       if (itop == 0) {
           CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
