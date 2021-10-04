@@ -63,8 +63,10 @@ module scream_scorpio_interface
 
 #include "scream_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
+# define pio_rtype PIO_double
 # define rtype c_double
 #else
+# define pio_rtype PIO_real
 # define rtype c_float
 #endif
 
@@ -210,7 +212,7 @@ module scream_scorpio_interface
 
 !----------------------------------------------------------------------
   interface grid_read_data_array
-    module procedure grid_read_darray_1d_real
+    module procedure grid_read_darray_1d
   end interface grid_read_data_array
 !----------------------------------------------------------------------
   interface grid_write_data_array
@@ -1227,23 +1229,22 @@ contains
     call errorHandle( 'eam_grid_write_darray_1d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_1d_real
 !=====================================================================!
-  ! Read output from file based on type (int or real) and dimensionality
-  ! (currently support 1-4 dimensions).
+  ! Read output from file based on type (int or real)
   ! --Note-- that any dimensionality could be read if it is flattened to 1D
   ! before calling a write routine.
   ! Mandatory inputs are:
-  ! filename: the netCDF filename to be read from.
-  ! hbuf:     An array of data that will be used to read the input.  NOTE:
-  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
-  !           which includes only those degrees of freedom that have been
-  !           assigned to this rank.  See set_dof above.
-  ! varname:  The shortname for the variable being read.
+  ! filename:     the netCDF filename to be read from.
+  ! varname:      The shortname for the variable being read.i
+  ! var_data_ptr: An c_ptr of data that will be used to read the input.  NOTE:
+  !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
+  !               which includes only those degrees of freedom that have been
+  !               assigned to this rank.  See set_dof above.
   !---------------------------------------------------------------------------
   !
-  !  grid_read_darray_1d_real: Read a variable defined on this grid
+  !  grid_read_darray_1d: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d_real(filename, varname, var_data_ptr)
+  subroutine grid_read_darray_1d(filename, varname, var_data_ptr)
 
     ! Dummy arguments
     character(len=*), intent(in) :: filename       ! PIO filename
@@ -1255,22 +1256,32 @@ contains
     type(hist_var_t), pointer          :: var
     integer                            :: ierr, var_size
     logical                            :: found
-    real(rtype), dimension(:), pointer :: var_data
+    real(rtype), dimension(:), pointer         :: var_data_real
+    integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
     
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    call c_f_pointer (var_data_ptr, var_data, [var_size])
+    if (var%dtype .eq. pio_rtype) then
+      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_INT) then
+      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
+    else
+      call errorHandle( "eam_grid_read_darray: Error reading variable "//trim(varname)//" unsupported dtype", -999)
+    end if
 
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
-    call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
-
-  end subroutine grid_read_darray_1d_real
+  end subroutine grid_read_darray_1d
 !=====================================================================!
 
 end module scream_scorpio_interface
