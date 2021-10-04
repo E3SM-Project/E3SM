@@ -8,7 +8,9 @@ set(P3_SRCS
 )
 
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
-  list(APPEND P3_SRCS atmosphere_microphysics.cpp)
+  list(APPEND P3_SRCS
+    atmosphere_microphysics.cpp
+    atmosphere_microphysics_run.cpp)
 endif()
 
 # Add ETI source files if not on CUDA
