@@ -349,7 +349,7 @@ add_custom_target(baseline)
 add_custom_target(baseline_cxx)
 
 add_subdirectory(src)
-if (NOT SCREAM_LIB_ONLY AND NOT DEFINED ENV{SCREAM_FAKE_ONLY})
+if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
   include(BuildCprnc)
   BuildCprnc()
