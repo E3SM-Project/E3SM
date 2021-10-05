@@ -302,11 +302,22 @@ module ocn_time_integration_rk4
             do iCell = 1, nCells
                do k = 1, maxLevelCell(iCell)
                   tkeNew(k,iCell) = tkeCur(k,iCell)
-                  glsPsiNew(k,iCell) = glsPsiCur(k,iCell)
                end do
             end do
             !$omp end do
             !$omp end parallel
+
+            if(.not. config_LES_mode) then
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+               do iCell = 1, nCells
+                  do k = 1, maxLevelCell(iCell)
+                     glsPsiNew(k,iCell) = glsPsiCur(k,iCell)
+                  end do
+               end do
+               !$omp end do
+               !$omp end parallel
+            end if
          end if
 
          call mpas_pool_begin_iteration(tracersPool)
@@ -1523,7 +1534,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessNew, layerThicknessTend
       real (kind=RKIND), dimension(:, :), pointer :: highFreqThicknessNew, highFreqThicknessTend
       real (kind=RKIND), dimension(:, :), pointer :: lowFreqDivergenceNew, lowFreqDivergenceTend
-      real (kind=RKIND), dimension(:, :), pointer :: verticalVelocityNew
+      real (kind=RKIND), dimension(:, :), pointer :: verticalVelocityNew, tkeNew, glsPsiNew
+      real (kind=RKIND), dimension(:, :), pointer :: tendTKE, tendglsPsi
       real (kind=RKIND), dimension(:, :), pointer :: verticalVelocityTend
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew, tracersGroupTend
@@ -1565,6 +1577,13 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
       end if
 
+      if (config_use_two_equation_turbulence_model) then
+         call mpas_pool_get_array(statePool, 'tke', tkeNew, 2)
+         call mpas_pool_get_array(statePool, 'glsPsi', glsPsiNew, 2)
+         call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
+         call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
+      end if
+
       call mpas_pool_get_array(tendPool, 'highFreqThickness', highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', lowFreqDivergenceTend)
 
@@ -1598,6 +1617,25 @@ module ocn_time_integration_rk4
          !$omp end parallel
       end if
 
+      if (config_use_two_equation_turbulence_model) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            tkeNew(:, iCell) = tkeNew(:, iCell) + rkWeight * tendTKE(:, iCell)
+         end do
+         !$omp end do
+         !$omp end parallel
+
+         if(config_LES_mode) then
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               glsPsiNew(:, iCell) = glsPsiNew(:, iCell) + rkWeight * tendglsPsi(:, iCell)
+            end do
+            !$omp end do 
+            !$omp end parallel
+         end if
+      end if
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then

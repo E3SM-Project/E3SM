@@ -427,6 +427,14 @@
 					description="flag to determine whether or not to check for monotonicity in advection"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_LES_mode" type="logical" default_value=".false." units="unitless"
+					description="logical to enable LES mode, requires config_use_two_equation_model='.true.'"
+					possible_values=".true. or .false."
+		/>
+	    <nml_option name="smagorinsky_coefficient" type="real" default_value="0.18" units="unitless"
+					description="Smagorinsky coefficient for the LES closure"
+					possible_values="usually between 0.1 and 0.2"
+	    />
 		<nml_option name="config_two_equation_model_choice" type="character" default_value="epsilon" units="NA"
 					description="choice for psi equation in the two equation model"
 					possible_values="'epsilon', 'omega', 'kl', 'ktau', user-defined"
@@ -1087,6 +1095,48 @@
 					possible_values="any positive real, but typically 1000-1035"
 		/>
 	</nml_record>
+	<nml_record name="nonhydrostatic_pressure">
+	    <nml_option name="config_enable_nonhydrostatic_mode" type="logical" default_value=".false." units="unitless"
+					description="Flag to enable the nonhydrostatic pressure calculation"
+					possible_values=".true. or .false."
+		/>
+	    <nml_option name="config_nonhydrostatic_solve_surface_boundary_condition" type="character" default_value="noGradient" units="unitless"
+				    description="setting for surface boundary condition for the pressure correction solve"
+					possible_values="noGradient or no pressure"
+		/>
+		<nml_option name="config_enable_vertMomentum_disable_nonHydro" type="logical" default_value=".false." units="unitless"
+					description="flag to enable hydrostatic pressure with vertical momentum tendencies"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_nonhydrostatic_remove_rhs_mean" type="logical" default_value=".true." units="unitless"
+					description="flag to enabling mean from the right hand side of the nonhydro solve"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_nonhydrostatic_preconditioner" type="character" default_value="jacobi" units="unitless"
+					description="String describing preconditioner to use, recommended options -- jacobi, bjacobi, ilu" 
+					possible_values="jacobi, bjacobi, ilu"
+		/>
+		<nml_option name="config_nonhydrostatic_solver_type" type="character" default_value="pipecgrr" units="unitless"
+					description="String describing the solver context, recommended types -- pipecgrr, pipecg, cg, bcgs, gmres" 
+					possible_values="pipecgrr, pipecg, cg, bcgs, gmres"
+		/>
+		<nml_option name="config_petsc_rtol" type="real" default_value="1.0e-10" units="unitless"
+					description="relative tolerance for the norm in petsc convergence"
+					possible_values="very small positive reals"
+		/>
+		<nml_option name="config_petsc_atol" type="real" default_value="1.0E-20" units="unitless"
+					description="absolute tolerance for the norm in petsc convergence"
+					possible_values="very small positive reals"
+		/>
+		<nml_option name="config_petsc_maxit" type="integer" default_value="10000" units="unitless"
+					description="maximum number of iterations in petsc solve"
+					possible_values="positive integers"
+		/>
+		<nml_option name="config_use_constant_forced_pgf" type="logical" default_value=".false." units="unitless"
+					description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
@@ -1104,46 +1154,6 @@
 					description="The meridional (y) ssh gradient to be applied."
 					possible_values="any real"
 		/>
-    <nml_option name="config_enable_nonhydrostatic_mode" type="logical" default_value=".false." units="unitless"
-          description="Flag to enable the nonhydrostatic pressure calculation"
-          possible_values=".true. or .false."
-    />
-    <nml_option name="config_nonhydrostatic_solve_surface_boundary_condition" type="character" default_value="noGradient" units="unitless"
-		  description="setting for surface boundary condition for the pressure correction solve"
-		  possible_values="noGradient or no pressure"
-	/>
-	<nml_option name="config_enable_vertMomentum_disable_nonHydro" type="logical" default_value=".false." units="unitless"
-		  description="flag to enable hydrostatic pressure with vertical momentum tendencies"
-		  possible_values=".true. or .false."
-	/>
-	<nml_option name="config_nonhydrostatic_remove_rhs_mean" type="logical" default_value=".true." units="unitless"
-		  description="flag to enabling mean from the right hand side of the nonhydro solve"
-		  possible_values=".true. or .false."
-	/>
-    <nml_option name="config_nonhydrostatic_preconditioner" type="character" default_value="jacobi" units="unitless"
-		 description="String describing preconditioner to use, recommended options -- jacobi, bjacobi, ilu" 
-		 possible_values="jacobi, bjacobi, ilu"
-	/>
-	<nml_option name="config_nonhydrostatic_solver_type" type="character" default_value="pipecgrr" units="unitless"
-		 description="String describing the solver context, recommended types -- pipecgrr, pipecg, cg, bcgs, gmres" 
-		 possible_values="pipecgrr, pipecg, cg, bcgs, gmres"
-	/>
-	<nml_option name="config_petsc_rtol" type="real" default_value="1.0e-10" units="unitless"
-		 description="relative tolerance for the norm in petsc convergence"
-		 possible_values="very small positive reals"
-	/>
-	<nml_option name="config_petsc_atol" type="real" default_value="1.0E-20" units="unitless"
-		 description="absolute tolerance for the norm in petsc convergence"
-		 possible_values="very small positive reals"
-	/>
-	<nml_option name="config_petsc_maxit" type="integer" default_value="10000" units="unitless"
-		 description="maximum number of iterations in petsc solve"
-		 possible_values="positive integers"
-	/>
-	<nml_option name="config_use_constant_forced_pgf" type="logical" default_value=".false." units="unitless"
-		 description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
-		 possible_values=".true. or .false."
-	/>
 	</nml_record>
 	<nml_record name="eos">
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"

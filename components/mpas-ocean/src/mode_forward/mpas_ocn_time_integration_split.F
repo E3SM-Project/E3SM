@@ -486,6 +486,30 @@ module ocn_time_integration_split
          !$omp end parallel
       end if
 
+      if(config_use_two_equation_turbulence_model) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+         do iCell = 1, nCells
+            do k = 2, maxLevelCell(iCell)
+               tkeNew(k,iCell) = tkeCur(k,iCell)
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+
+         if(.not. config_LES_mode) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell = 1, nCells
+               do k = 2, maxLevelCell(iCell)
+                  glsPsiNew(k,iCell) = glsPsiCur(k,iCell)
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+      end if
+
       call mpas_timer_stop("se prep")
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1690,13 +1714,24 @@ module ocn_time_integration_split
                   do k = 1, maxLevelCell(iCell)
                      temp_h = tkeCur(k,iCell) + dt * tendTKE(k,iCell)
                      tkeNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(tkeCur(k,iCell) + temp_h))
-
-                     temp_h = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)
-                     glsPsiNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(glsPsiCur(k,iCell) + temp_h))
                   end do
                end do
                !$omp end do
                !$omp end parallel
+
+               if (.not. config_LES_mode) then
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k, temp_h)
+                  do iCell = 1, nCells
+                     do k = 1, maxLevelCell(iCell)
+                        temp_h = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)
+                        glsPsiNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(glsPsiCur(k,iCell) + temp_h))
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+               end if
+
             end if
 
             if (config_use_freq_filtered_thickness) then
@@ -1787,11 +1822,23 @@ module ocn_time_integration_split
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
                         tkeNew(k,iCell) = max(0.0_RKIND, tkeCur(k,iCell) + dt * tendTKE(k,iCell))
-                        glsPsiNew(k,iCell) = max(0.0_RKIND, glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell))
                      end do
                   end do
                   !$omp end do
                   !$omp end parallel
+
+                  if (.not. config_LES_mode) then
+                     !$omp parallel
+                     !$omp do schedule(runtime) private(k)
+                     do iCell = 1, nCells
+                        do k = 1, maxLevelCell(iCell)
+                           glsPsiNew(k,iCell) = max(0.0_RKIND, glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell))
+                        end do
+                     end do
+                     !$omp end do
+                     !$omp end parallel
+                  end if
+
                end if
  
             if (config_compute_active_tracer_budgets) then

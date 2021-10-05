@@ -170,6 +170,7 @@ contains
      !Compute the strain for the remaining terms in the tendency
      call ocn_compute_strain(velocityZonal, velocityMeridional,  &
                 verticalVelocity, activeTracers, strainTensor, layerThickness, err)
+     call ocn_compute_two_equation_molecular_viscosity(activeTracers)
 
      call ocn_tke_advection_mono_tend(tkeTend, tke, layerThickness,    &
                                       normalThicknessFlux, verticalVelocity, dt,       &
@@ -177,15 +178,20 @@ contains
                                       nAdvCellsForEdge, advCellsForEdge,&
                                       advMaskHighOrder)
 
-     call ocn_glsPsi_advection_mono_tend(glsPsiTend, glsPsi, layerThickness,    &
-                                      normalThicknessFlux, verticalVelocity, dt,       &
-                                      advCoefs, advCoefs3rd,            &
-                                      nAdvCellsForEdge, advCellsForEdge,&
-                                      advMaskHighOrder)
+        call ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err) 
 
-     call ocn_compute_two_equation_molecular_viscosity(activeTracers)
-     call ocn_tke_transport_horizontal_compute(tke, tkeTend, err) 
-     call ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, c_psi2, err)
+     if (.not. config_LES_mode) then
+
+        call ocn_glsPsi_advection_mono_tend(glsPsiTend, glsPsi, layerThickness,    &
+                                            normalThicknessFlux, verticalVelocity, dt,       &
+                                            advCoefs, advCoefs3rd,            &
+                                            nAdvCellsForEdge, advCellsForEdge,&
+                                            advMaskHighOrder)
+
+         call ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, c_psi2, sigma_psi, err)
+
+     endif
+
      call ocn_compute_two_equation_dissipation(tke, glsPsi, tkeTend, glsPsiTend)
      call ocn_buoyancy_production_compute(tkeTend, glsPsiTend, glsPsi, tke, c_psi3, err)
      call ocn_shear_production_compute(tkeTend, glsPsiTend, tke, glsPsi, c_psi1, err)
@@ -219,49 +225,101 @@ contains
 
      real(kind=RKIND), intent(in) :: dt
 
-     real(kind=RKIND) :: length,dissipation
-     integer :: iCell, k, nCells, nEdges, iEdge
+     real(kind=RKIND) :: length, dissipation, length_grid, length_stable, dcAv
+     integer :: j, iCell, k, nCells, nEdges, iEdge
 
      !compute new diffusivity based on older values
      call ocn_canuto_structure_function_compute(Sm, Sh, tke, glsPsi, c_p, c_m, c_n, c_mu)
      nCells = nCellsHalo(1)
 
-     !$omp parallel
-     !$omp do schedule(runtime) private(k)
-     do iCell=1,nCells
-        vertViscTopOfCell(1,iCell) = 0.0_RKIND
-        vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
-        do k=2,maxLevelCell(iCell)
-           dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
-                         glsPsi(k,iCell)**(-1.0/c_n)
-           length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
-           vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) + 1.0E-5_RKIND
+     if (config_LES_mode) then
+        !$omp parallel
+        !$omp do schedule(runtime) private(k,iEdge,dcAv,length_grid,length_stable,length)
+        do iCell=1,nCells
+           dcAv = 0.0_RKIND
+           do j=1,nEdgesOnCell(iCell)
+              iEdge = edgesOnCell(j, iCell)
+              dcAv = dcAv + dcEdge(iEdge)
+           end do
+           dcAv = dcAv / (1.0E-15_RKIND + nEdgesOnCell(iCell))
+           do k=2,maxLevelCell(iCell)
+              !compute length scale
+              !define the viscosity
+              length_grid = sqrt(dcAv * 0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)))
+              length_stable = 0.76_RKIND*sqrt(tke(k,iCell))/(sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
+                                                             1.0E-15_RKIND)
+              length = min(length_grid, length_stable)
+              vertViscTopOfCell(k,iCell) = smagorinsky_coefficient*length*sqrt(tke(k,iCell))
+              vertDiffTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) !Assume turbulent Pr of 1
+           end do
         end do
-     end do
-     !$omp end do 
-     !$omp end parallel
+        !$omp end do
+        !$omp end parallel
+     else
+        !$omp parallel
+        !$omp do schedule(runtime) private(k,length,dissipation)
+        do iCell=1,nCells
+           vertViscTopOfCell(1,iCell) = 0.0_RKIND
+           vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
+           do k=2,maxLevelCell(iCell)
+              dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
+                            glsPsi(k,iCell)**(-1.0/c_n)
+              length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
+              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell))
+           end do
+        end do
+        !$omp end do 
+        !$omp end parallel
+     end if
 
      call ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,dt)
      call ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,dt)
-     ! Recompute now that everything is fully up to date
-     call ocn_canuto_structure_function_compute(Sm, Sh, tke, glsPsi, c_p, c_m, c_n, c_mu)
-     !$omp parallel
-     !$omp do schedule(runtime) private(k)
-     do iCell=1,nCells
-        vertDiffTopOfCell(1,iCell) = 0.0_RKIND
-        vertViscTopOfCell(1,iCell) = 0.0_RKIND
-        vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
-        vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
-        do k=2,maxLevelCell(iCell)
-           dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
-                         glsPsi(k,iCell)**(-1.0/c_n)
-           length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
-           vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) + 1.0E-5_RKIND
-           vertDiffTopOfCell(k,iCell) = length*Sh(k,iCell)*sqrt(tke(k,iCell)) + 1.0E-5_RKIND
+
+     if (config_LES_mode) then
+        !$omp parallel
+        !$omp do schedule(runtime) private(k,dcAv,iEdge,length_grid,length_stable,length)
+        do iCell=1,nCells
+           dcAv = 0.0_RKIND
+           do j=1,nEdgesOnCell(iCell)
+              iEdge = edgesOnCell(j, iCell)
+              dcAv = dcAv + dcEdge(iEdge)
+           end do
+           dcAv = dcAv / (1.0E-15_RKIND + nEdgesOnCell(iCell))
+           do k=2,maxLevelCell(iCell)
+              !compute length scale
+              !define the viscosity
+              length_grid = sqrt(dcAv * 0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)))
+              length_stable = 0.76_RKIND*sqrt(tke(k,iCell))/(sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
+                                                             1.0E-15_RKIND)
+              length = min(length_grid, length_stable)
+              vertViscTopOfCell(k,iCell) = smagorinsky_coefficient*length*sqrt(tke(k,iCell))
+              vertDiffTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) !Assume turbulent Pr of 1
+           end do
         end do
-     end do
-     !$omp end do 
-     !$omp end parallel
+        !$omp end do
+        !$omp end parallel
+     else
+       ! Recompute now that everything is fully up to date
+        call ocn_canuto_structure_function_compute(Sm, Sh, tke, glsPsi, c_p, c_m, c_n, c_mu)
+        !$omp parallel
+        !$omp do schedule(runtime) private(k,dissipation,length)
+        do iCell=1,nCells
+           vertDiffTopOfCell(1,iCell) = 0.0_RKIND
+           vertViscTopOfCell(1,iCell) = 0.0_RKIND
+           vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
+           vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
+           do k=2,maxLevelCell(iCell)
+              dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
+                            glsPsi(k,iCell)**(-1.0/c_n)
+              length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
+              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell))
+              vertDiffTopOfCell(k,iCell) = length*Sh(k,iCell)*sqrt(tke(k,iCell))
+           end do
+        end do
+        !$omp end do 
+        !$omp end parallel
+     end if
+
    end subroutine ocn_compute_two_equation_diff
 
 !***********************************************************************
@@ -561,15 +619,16 @@ contains
         do k = 1,nVertLevels
            freshwaterMu = A*10.0_RKIND**(B/(activeTracers(1,k,iCell) + 273.15_RKIND - C))
            A1 = 1.541_RKIND + 0.01998*activeTracers(1,k,iCell) - 9.52E-5_RKIND*activeTracers(1,k,iCell)**2.0
-           B1 = 7.974_RKIND - 0.07561*activeTracers(1,k,iCell) + 4.724E-5_RKIND*activeTracers(1,k,iCell)**2.0
+           B1 = 7.974_RKIND - 0.07561*activeTracers(1,k,iCell) + 4.724E-4_RKIND*activeTracers(1,k,iCell)**2.0
            dynamicViscosity(k,iCell) = freshwaterMu*(1.0_RKIND + &
                                         A1*activeTracers(2,k,iCell) + &
-                                        B1*activeTracers(2,k,iCell))
+                                        B1*activeTracers(2,k,iCell)**2)
            boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
                                   velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
            !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
 
-           uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage))/rho_sw)
+           uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
+                          * dynamicViscosity(k,iCell)/rho_sw)
            yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (dynamicViscosity(k,iCell)/rho_sw)
         end do
      end do

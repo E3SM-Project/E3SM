@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tke_transport_horizontal_compute(tke, tkeTend, err)
+   subroutine ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -88,6 +88,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         tke !< Input: tke at current timestep
+      real (kind=RKIND), intent(in) :: sigma_k
 
       !-----------------------------------------------------------------
       !
@@ -113,7 +114,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2
-      integer :: j, i, k
+      integer :: j, i, k, iCellValid
 
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND) :: tke_turb_flux, flux, r_tmp
@@ -143,7 +144,9 @@ contains
              tke_turb_flux = tke(k, cell2) - tke(k, cell1)
 
              eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2) + &
-                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))
+                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_k
+             eddyDiff2 = eddyDiff2 + 0.25_RKIND*(dynamicViscosity(k,cell1) + dynamicViscosity(k,cell2) + &
+                                                 dynamicViscosity(k+1,cell1) + dynamicViscosity(k+1,cell2))/rho_sw
 
              ! div(h \kappa_2 \nabla \phi) at cell center
              flux = eddyDiff2 * layerThickEdge(k, iEdge) * tke_turb_flux * r_tmp
@@ -169,14 +172,19 @@ contains
                      iEdge = edgesOnCell(j,iCell)
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
-                     if(cell1 < 1 .or. cell2 < 1) then
-                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCell) + vertDiffTopOfCell(k+1,iCell))
-                        tke_turb_flux = -tke(k,iCell) !Assumes k=0 in boundary condition
-                        ! div(h \kappa_2 \nabla \phi) at cell center
-                        flux = eddyDiff2 * layerThickEdge(k, iEdge) * tke_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
+                     if(cell1 < 1) then
+                        iCellValid = cell2
+                     else
+                        iCellValid = cell1
+                     endif
 
-                        tkeTend(k, iCell) = tkeTend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
-                     end if
+                     eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))
+                     eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
+                     tke_turb_flux = -tke(k,iCellValid) !Assumes k=0 in boundary condition
+                     ! div(h \kappa_2 \nabla \phi) at cell center
+                     flux = eddyDiff2 * layerThickEdge(k, iEdge) * tke_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
+
+                     tkeTend(k, iCellValid) = tkeTend(k, iCellValid) - edgeSignOnCell(i, iCellValid) * flux * invAreaCell
                   end do !nEdges loop
                end if !end cell mask if
             end do
@@ -219,13 +227,13 @@ contains
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND
          do k = 2, N
-            A(k) = -2.0_RKIND*dt*vertViscTopOfCell(k,iCell)/sigma_k &
+            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_k) &
                   / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
                   / layerThickness(k,iCell)
          end do
 
          do k = 1, N-1
-            C(k) = -2.0_RKIND*dt*vertViscTopOfCell(k+1,iCell)/sigma_k &
+            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_k) &
                   / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) &
                   / layerThickness(k,iCell)
          end do
@@ -264,7 +272,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, &
-                    c_psi2, err)
+                    c_psi2, sigma_psi, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -273,7 +281,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         glsPsi !< Input: tke at current timestep
-
+      real (kind=RKIND), intent(in) :: sigma_psi
       real (kind=RKIND) :: c_psi2
 
       !-----------------------------------------------------------------
@@ -299,7 +307,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, iEdge, cell1, cell2
+      integer :: iCell, iEdge, cell1, cell2, iCellValid
       integer :: j, i, k
 
       real (kind=RKIND) :: bcValue, invAreaCell
@@ -330,7 +338,9 @@ contains
              glsPsi_turb_flux = glsPsi(k, cell2) - glsPsi(k, cell1)
 
              eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2) + &
-                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))
+                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_psi
+             eddyDiff2 = eddyDiff2+0.25_RKIND*(dynamicViscosity(k,cell1)   + dynamicViscosity(k,cell2) + &
+                                               dynamicViscosity(k+1,cell1) + dynamicViscosity(k+1,cell2))/rho_sw
 
              ! div(h \kappa_2 \nabla \phi) at cell center
              flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * r_tmp
@@ -357,13 +367,19 @@ contains
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
                      if(cell1 < 1 .or. cell2 < 1) then
-                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCell) + vertDiffTopOfCell(k+1,iCell))
-                        bcValue = 60.0*dynamicViscosity(k,iCell)/rho_sw/(c_psi2*distanceToBoundary(k,iCell))
-                        glsPsi_turb_flux = -glsPsi(k,iCell) !Assumes k=0 in boundary condition
+                        if(cell1 < 1) then
+                           iCellValid = cell2
+                        else
+                           iCellValid = cell1
+                        endif
+                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))
+                        eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
+                        bcValue = 60.0_RKIND*dynamicViscosity(k,iCellValid)/rho_sw/(c_psi2*distanceToBoundary(k,iCellValid))
+                        glsPsi_turb_flux = -glsPsi(k,iCellValid) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
                         flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
-                        glsPsiTend(k, iCell) = glsPsiTend(k, iCell) - flux * invAreaCell
+                        glsPsiTend(k, iCellValid) = glsPsiTend(k, iCellValid) - flux * invAreaCell
                      end if
                   end do !nEdges loop
                end if !end cell mask if
@@ -429,13 +445,13 @@ contains
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND
          do k = 2, N
-            A(k) = -2.0_RKIND*dt*vertViscTopOfCell(k,iCell)/sigma_psi &
+            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_psi) &
                   / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
                   / layerThickness(k,iCell)
          end do
 
          do k = 1, N-1
-            C(k) = -2.0_RKIND*dt*vertViscTopOfCell(k+1,iCell)/sigma_psi &
+            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_psi) &
                   / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) &
                   / layerThickness(k,iCell)
          end do

@@ -531,11 +531,22 @@ module ocn_time_integration_si
             do iCell = 1, nCells
                do k = 1, nVertLevels
                   tkeNew(k,iCell) = tkeCur(k,iCell)
-                  glsPsiNew(k,iCell) = glsPsiNew(k,iCell)
                end do
             end do
             !$omp end do 
             !$omp end parallel
+
+            if(.not. config_LES_mode) then
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+               do iCell = 1, nCells
+                  do k = 1, nVertLevels
+                     glsPsiNew(k,iCell) = glsPsiCur(k,iCell)
+                  end do
+               end do
+               !$omp end do 
+               !$omp end parallel
+            end if
          end if
 
 
@@ -2774,6 +2785,19 @@ module ocn_time_integration_si
                   end do
                   !$omp end do
                   !$omp end parallel
+
+                  if(.not. config_LES_mode) then
+                     !$omp parallel
+                     !$ompe do schedule(runtime) private(k, temp_h)
+                     do iCell = 1, nCells
+                        do k = 1, maxLevelCell(iCell)
+                           temp_h = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)
+                           glsPsiNew(k,iCell) = max(0.0_RKIND, 0.5_RKIND*(glsPsiCur(k,iCell) + temp_h))
+                        end do
+                     end do
+                     !$omp end do
+                     !$omp end parallel
+                  end if
                end if
 
             !$omp parallel
@@ -2893,11 +2917,22 @@ module ocn_time_integration_si
                   do iCell=1,nCells
                      do k=1,maxLevelCell(iCell)
                         tkeNew(k,iCell) = max(0.0_RKIND, tkeCur(k,iCell) + dt*tendTKE(k,iCell))
-                        glsPsiNew(k,iCell) = max(0.0_RKIND, glsPsiCur(k,iCell) + dt*tendglsPsi(k,iCell))
                      end do
                   end do
                   !$omp end do
                   !$omp end parallel
+
+                  if(.not. config_LES_mode) then
+                     !$omp parallel
+                     !$omp do schedule(runtime) private(k)
+                     do iCell=1,nCells
+                        do k=1,maxLevelCell(iCell)
+                           glsPsiNew(k,iCell) = max(0.0_RKIND, glsPsiCur(k,iCell) + dt*tendglsPsi(k,iCell))
+                        end do
+                     end do
+                     !$omp end do
+                     !$omp end parallel
+                  end if
                end if
 
             if (config_compute_active_tracer_budgets) then
