@@ -79,16 +79,19 @@ struct SPAFunctions
 
   struct SPAData {
     SPAData() = default;
+    // Basic spatial dimensions of the data
+    Int ncols;
+    Int nlevs;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
-    view_2d<const Spack> CCN3;
-    // AER_G_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
-    view_3d<const Spack> AER_G_SW;
-    // AER_SSA_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
-    view_3d<const Spack> AER_SSA_SW;
-    // AER_TAU_SW: unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
-    view_3d<const Spack> AER_TAU_SW;
-    // AER_TAU_LW: unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
-    view_3d<const Spack> AER_TAU_LW;
+    view_2d<Spack> CCN3;
+    // AER_Gnit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    view_3d<Spack> AER_G_SW;
+    // AER_S unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    view_3d<Spack> AER_SSA_SW;
+    // AER_T unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    view_3d<Spack> AER_TAU_SW;
+    // AER_T unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
+    view_3d<Spack> AER_TAU_LW;
   }; // SPAPrescribedAerosolData
 
   struct SPAOutput {

@@ -50,18 +50,18 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
-  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_G_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_G_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_SSA_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_SSA_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_LW_beg"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_LW_end"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_G_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_G_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_SSA_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_SSA_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_TAU_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_TAU_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_TAU_LW_beg"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
+  add_field<Updated>("AER_TAU_LW_end"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
