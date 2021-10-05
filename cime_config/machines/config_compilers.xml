@@ -2381,7 +2381,7 @@ flags should be captured within MPAS CMake files.
 <compiler MACH="gcp" COMPILER="gnu">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
+     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
