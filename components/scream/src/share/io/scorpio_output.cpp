@@ -171,7 +171,11 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   const bool is_write_step = is_output_step || is_checkpoint_step;
   std::string filename;
   if (is_write_step) {
-    filename = compute_filename_root(m_casename) + "." + time_str;
+    if (m_num_snapshots_in_file==0) {
+      // A new file has been opened and we need a new filename for it.
+      m_filename = compute_filename_root(m_casename) + "." + time_str;
+    }
+    filename = m_filename;
     // If we are going to write an output checkpoint file, or a model restart file,
     // we need to append to the filename ".rhist" or ".r" respectively, and add
     // the filename to the rpointer.atm file.
@@ -203,7 +207,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
       }
     }
 
-    // Set the timelevel for this snap in the pio file.
+    // Set the time_index for this snap in the pio file.
     pio_update_time(filename,time);
     if (is_output_step) {
       // We're adding one snapshot to the file

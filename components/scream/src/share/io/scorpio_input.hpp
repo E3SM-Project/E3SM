@@ -135,7 +135,7 @@ public:
             const std::map<std::string,FieldLayout>&  layouts);
 
   // Read fields that were required via parameter list.
-  void read_variables ();
+  void read_variables (const int time_index = -1);
   int read_int_scalar (const std::string& name);
   void finalize();
 

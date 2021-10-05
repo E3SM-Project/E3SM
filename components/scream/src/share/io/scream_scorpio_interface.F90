@@ -63,8 +63,10 @@ module scream_scorpio_interface
 
 #include "scream_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
+# define pio_rtype PIO_double
 # define rtype c_double
 #else
+# define pio_rtype PIO_real
 # define rtype c_float
 #endif
 
@@ -210,11 +212,11 @@ module scream_scorpio_interface
 
 !----------------------------------------------------------------------
   interface grid_read_data_array
-    module procedure grid_read_darray_1d_real
+    module procedure grid_read_darray_1d
   end interface grid_read_data_array
 !----------------------------------------------------------------------
   interface grid_write_data_array
-    module procedure grid_write_darray_1d_real
+    module procedure grid_write_darray_1d
   end interface
 !----------------------------------------------------------------------
 contains
@@ -1137,6 +1139,8 @@ contains
     logical                        :: found, is_open
     type(pio_file_list_t), pointer :: curr
 
+    integer                        :: ierr, time_id
+
     ! Sanity check
     if (purpose .ne. file_purpose_in .and. purpose .ne. file_purpose_out) then
       call errorHandle("PIO Error: unrecognized file purpose for file '"//filename//"'.",-999)
@@ -1172,6 +1176,16 @@ contains
       elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
         call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%purpose = file_purpose_in
+        ! Update the numRecs to match the number of recs in this file.
+        ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
+        if (ierr.ne.0) then
+          ! time is not present in the file, set the number of Recs to 1
+          pio_file%numRecs = 1
+        else
+          ! time is present, set the number of Recs accordingly
+          ierr = pio_inq_dimlen(pio_file%pioFileDesc,time_id,pio_file%numRecs)
+          call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension time in file "//trim(pio_file%filename),ierr)
+        end if
       else
         call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
       end if
@@ -1184,30 +1198,30 @@ contains
 
   end subroutine get_pio_atm_file
 !=====================================================================!
-  ! Write output to file based on type (int or real) and dimensionality
-  ! (currently support 1-4 dimensions).
+  ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D
   ! before calling a write routine.
   ! Mandatory inputs are:
-  ! filename: the netCDF filename to be written to.
-  ! hbuf:     An array of data that will be used to write the output.  NOTE:
-  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
-  !           which includes only those degrees of freedom that have been
-  !           assigned to this rank.  See set_dof above.
-  ! varname:  The shortname for the variable being written.
+  ! filename:     the netCDF filename to be written to.
+  ! varname:      The shortname for the variable being written.
+  ! var_data_ptr: An array of data that will be used to write the output.  NOTE:
+  !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
+  !               which includes only those degrees of freedom that have been
+  !               assigned to this rank.  See set_dof above.
   !---------------------------------------------------------------------------
   !
-  !  grid_write_darray_1d_real: Write a variable defined on this grid
+  !  grid_write_darray_1d: Write a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_write_darray_1d_real(filename, varname, var_data_ptr)
+  subroutine grid_write_darray_1d(filename, varname, var_data_ptr)
     ! Dummy arguments
     character(len=*),   intent(in) :: filename       ! PIO filename
     character(len=*),   intent(in) :: varname
     type (c_ptr),       intent(in) :: var_data_ptr
 
     ! Local variables
-    real(rtype), dimension(:), pointer :: var_data
+    real(rtype), dimension(:), pointer         :: var_data_real
+    integer(kind=c_int), dimension(:), pointer :: var_data_int
     type(pio_atm_file_t), pointer      :: pio_atm_file
     type(hist_var_t), pointer          :: var
     integer                            :: ierr,var_size
@@ -1216,61 +1230,86 @@ contains
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
+    ! Set the timesnap we are reading
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    call c_f_pointer (var_data_ptr, var_data, [var_size])
-
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
-    call errorHandle( 'eam_grid_write_darray_1d_real: Error writing variable',ierr)
-  end subroutine grid_write_darray_1d_real
+    if (var%dtype .eq. pio_rtype) then
+      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_INT) then
+      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
+      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+    else
+      call errorHandle( "eam_grid_write_darray_1d: Error writing variable "//trim(varname)//" unsupported dtype", -999)
+    end if
+  end subroutine grid_write_darray_1d
 !=====================================================================!
-  ! Read output from file based on type (int or real) and dimensionality
-  ! (currently support 1-4 dimensions).
+  ! Read output from file based on type (int or real)
   ! --Note-- that any dimensionality could be read if it is flattened to 1D
   ! before calling a write routine.
   ! Mandatory inputs are:
-  ! filename: the netCDF filename to be read from.
-  ! hbuf:     An array of data that will be used to read the input.  NOTE:
-  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
-  !           which includes only those degrees of freedom that have been
-  !           assigned to this rank.  See set_dof above.
-  ! varname:  The shortname for the variable being read.
+  ! filename:     the netCDF filename to be read from.
+  ! varname:      The shortname for the variable being read.i
+  ! var_data_ptr: An c_ptr of data that will be used to read the input.  NOTE:
+  !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
+  !               which includes only those degrees of freedom that have been
+  !               assigned to this rank.  See set_dof above.
   !---------------------------------------------------------------------------
   !
-  !  grid_read_darray_1d_real: Read a variable defined on this grid
+  !  grid_read_darray_1d: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d_real(filename, varname, var_data_ptr)
+  subroutine grid_read_darray_1d(filename, varname, var_data_ptr, time_index)
 
     ! Dummy arguments
     character(len=*), intent(in) :: filename       ! PIO filename
     character(len=*), intent(in) :: varname
     type (c_ptr),     intent(in) :: var_data_ptr
+    integer, intent(in)          :: time_index
 
     ! Local variables
     type(pio_atm_file_t),pointer       :: pio_atm_file
     type(hist_var_t), pointer          :: var
     integer                            :: ierr, var_size
     logical                            :: found
-    real(rtype), dimension(:), pointer :: var_data
+    real(rtype), dimension(:), pointer         :: var_data_real
+    integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    if (time_index .gt. 0) then
+      ! The user has set a valid time index to read from
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
+    else
+      ! Otherwise default to the last time_index in the file
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
+    end if
     
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    call c_f_pointer (var_data_ptr, var_data, [var_size])
+    if (var%dtype .eq. pio_rtype) then
+      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_INT) then
+      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    else
+      call errorHandle( "eam_grid_read_darra_1d: Error reading variable "//trim(varname)//" unsupported dtype", -999)
+    end if
 
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
-    call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
-
-  end subroutine grid_read_darray_1d_real
+  end subroutine grid_read_darray_1d
 !=====================================================================!
 
 end module scream_scorpio_interface

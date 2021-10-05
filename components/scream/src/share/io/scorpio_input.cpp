@@ -134,7 +134,11 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::read_variables ()
+// Note: The time_index argument provides a way to control which
+//       time snap to read input from in the file.  If a negative
+//       number is provided the routine will read input at the
+//       last time level set by running eam_update_timesnap.
+void AtmosphereInput::read_variables (const int time_index)
 {
   EKAT_REQUIRE_MSG (m_is_inited,
       "Error! The init method has not been called yet.\n");
@@ -142,7 +146,7 @@ void AtmosphereInput::read_variables ()
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,m_host_views_1d.at(name).data());
+    scorpio::grid_read_data_array(m_filename,name,time_index,m_host_views_1d.at(name).data());
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.
