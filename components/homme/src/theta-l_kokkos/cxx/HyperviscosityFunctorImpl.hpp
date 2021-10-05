@@ -59,6 +59,8 @@ class HyperviscosityFunctorImpl
 
     int         np1; // The time-level on which to apply hv
     Real        dt;
+    Real        dt_hvs;
+    Real        dt_hvs_tom;
 
     Real        eta_ave_w;
 
@@ -152,6 +154,9 @@ public:
 #endif
     }); //team thread range
 
+    //to ensure profiles are fully subtracted
+    kv.team_barrier();
+
     // Laplacian of layer thickness
     m_sphere_ops.laplace_simple(kv,
                    Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
@@ -212,6 +217,8 @@ public:
                               Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.vtens,kv.ie));
 
+    kv.team_barrier();
+
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -233,7 +240,7 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
-        const auto xf =( m_data.dt / m_data.hypervis_subcycle_tom ) * m_nu_scale_top(ilev) * m_data.nu_top;
+        const auto xf = m_data.dt_hvs_tom  * m_nu_scale_top(ilev) * m_data.nu_top;
         utens(ilev) *= xf;
         vtens(ilev) *= xf;
         ttens(ilev) *= xf;
@@ -352,19 +359,19 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
-//introduce a var for dt/hvs			   
-        utens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
-        vtens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
-        ttens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
-        dptens(ilev)  *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+        utens(ilev)   *= m_data.dt_hvs*rspheremp;
+        vtens(ilev)   *= m_data.dt_hvs*rspheremp;
+        ttens(ilev)   *= m_data.dt_hvs*rspheremp;
+        dptens(ilev)  *= m_data.dt_hvs*rspheremp;
+
 
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
         vtheta(ilev) += ttens(ilev);
         dp(ilev)     += dptens(ilev);
         if (m_process_nh_vars) {
-          wtens(ilev)   *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
-          phitens(ilev) *= (m_data.dt/m_data.hypervis_subcycle)*rspheremp;
+          wtens(ilev)   *= m_data.dt_hvs * rspheremp;
+          phitens(ilev) *= m_data.dt_hvs * rspheremp;
 
           w(ilev)      += wtens(ilev);
           phi_i(ilev)  += phitens(ilev);
@@ -382,9 +389,6 @@ public:
 
     using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
-
-//define another dt
-//    m_data.dt_top = 
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {

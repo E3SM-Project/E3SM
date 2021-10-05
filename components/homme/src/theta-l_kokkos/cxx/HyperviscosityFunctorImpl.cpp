@@ -222,6 +222,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.np1 = np1;
 
   m_data.dt = dt;
+  m_data.dt_hvs = dt/m_data.hypervis_subcycle;
+  m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
@@ -308,6 +310,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       }
     });
   });//conversion back to vtheta
+
+  Kokkos::fence();
 
   //sponge layer  
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
