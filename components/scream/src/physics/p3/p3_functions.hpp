@@ -275,8 +275,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void prevent_ice_overdepletion(
     const Spack& pres, const Spack& T_atm, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
-    Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& range_mask = Smask(true),
-    const Smask& context = Smask(true) );
+    Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& context = Smask(true) );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -620,7 +619,6 @@ struct Functions
                                     const Spack& qi_incld, const Spack& qc_incld,
                                     const Spack& ni_incld, const Spack& nc_incld,
                                     Spack& qc2qi_collect_tend, Spack& nc_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& ncshdc,
-				    const Smask& range_mask = Smask(true),
                                     const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -675,8 +673,7 @@ struct Functions
 			  const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion,
 			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 			  const Spack& qv, const Spack& qi_incld, const Spack& ni_incld,
-			  Spack& qi2qr_melt_tend, Spack& ni2nr_melt_tend, const Smask& range_mask = Smask(true),
-                          const Smask& context = Smask(true));
+			  Spack& qi2qr_melt_tend, Spack& ni2nr_melt_tend, const Smask& context = Smask(true));
 
   //liquid-phase dependent processes:
   KOKKOS_FUNCTION
@@ -731,8 +728,7 @@ struct Functions
                                     const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
                                     const Spack& qi_incld, const Spack& ni_incld, const Spack& qr_incld,
                                     Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate,
-				    Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend, const Smask& range_mask = Smask(true),
-                                    const Smask& context = Smask(true));
+				    Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend, const Smask& context = Smask(true));
 
   // Note: not a kernel function
   static void get_latent_heat(const Int& nj, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);

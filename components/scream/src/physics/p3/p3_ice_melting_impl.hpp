@@ -16,8 +16,7 @@ void Functions<S,D>
   const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion,
   const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
   const Spack& qv, const Spack& qi_incld, const Spack& ni_incld,
-  Spack& qi2qr_melt_tend, Spack& ni2nr_melt_tend, const Smask& range_mask,
-  const Smask& context)
+  Spack& qi2qr_melt_tend, Spack& ni2nr_melt_tend, const Smask& context)
 {
   // Notes Left over from WRF Version:
   // need to add back accelerated melting due to collection of ice mass by rain (pracsw1)
@@ -36,7 +35,7 @@ void Functions<S,D>
 
   if (has_melt_qi.any()) {
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
-    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false, range_mask); //"false" here means NOT saturation w/ respect to ice.
+    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false, context); //"false" here means NOT saturation w/ respect to ice.
 
     qi2qr_melt_tend.set(has_melt_qi, ( (table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))
 			     *((T_atm-Tmelt)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))

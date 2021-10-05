@@ -331,17 +331,19 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
+    //compute mask to identify padded values in packs, which are undefined
+    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    const auto range_mask = range_pack < nk;
+      
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
-    const auto skip_all = !(qc(k) >= qsmall || qr(k) >= qsmall || qi(k) >= qsmall) &&
-      (T_atm(k) < T_zerodegc && qv_supersat_i(k) < -0.05);
+    const auto skip_all = ( ( qc(k) < qsmall && qr(k) < qsmall && qi(k) < qsmall )
+			    && ( T_atm(k) < T_zerodegc && qv_supersat_i(k) < -0.05 ) 
+			    || !range_mask );
+    
     const auto not_skip_all = !skip_all;
     if (skip_all.all()) {
       return; // skip all process rates
     }
-
-    //compute mask to identify padded values in packs, which are undefined
-    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
-    const auto range_mask = range_pack < nk;
 
     // All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
 
@@ -505,15 +507,15 @@ void Functions<S,D>
       // melting
       ice_melting(
         rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), latent_heat_fusion(k), dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
-        qi2qr_melt_tend, ni2nr_melt_tend, range_mask, not_skip_micro);
+        qi2qr_melt_tend, ni2nr_melt_tend, not_skip_micro);
 
       // calculate wet growth
       ice_cldliq_wet_growth(
         rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k),
         latent_heat_fusion(k), dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
-        wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, range_mask, not_skip_micro);
+        wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
 
-      // calcualte total inverse ice relaxation timescale combined for all ice categories
+      // calculate total inverse ice relaxation timescale combined for all ice categories
       // note 'f1pr' values are normalized, so we need to multiply by N
       ice_relaxation_timescale(
         rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k),
@@ -617,7 +619,7 @@ void Functions<S,D>
     //   1) Should we be taking qv2qi_nucleat_tend into consideration too?
     //   2) Is MG correct in NOT limiting qi2qv_sublim_tend?
 
-    prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, range_mask, not_skip_all);
+    prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, not_skip_all);
 
     ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
 
