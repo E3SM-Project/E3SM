@@ -1139,6 +1139,8 @@ contains
     logical                        :: found, is_open
     type(pio_file_list_t), pointer :: curr
 
+    integer                        :: ierr, time_id
+
     ! Sanity check
     if (purpose .ne. file_purpose_in .and. purpose .ne. file_purpose_out) then
       call errorHandle("PIO Error: unrecognized file purpose for file '"//filename//"'.",-999)
@@ -1174,6 +1176,16 @@ contains
       elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
         call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%purpose = file_purpose_in
+        ! Update the numRecs to match the number of recs in this file.
+        ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
+        if (ierr.ne.0) then
+          ! time is not present in the file, set the number of Recs to 1
+          pio_file%numRecs = 1
+        else
+          ! time is present, set the number of Recs accordingly
+          ierr = pio_inq_dimlen(pio_file%pioFileDesc,time_id,pio_file%numRecs)
+          call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension time in file "//trim(pio_file%filename),ierr)
+        end if
       else
         call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
       end if
@@ -1274,9 +1286,11 @@ contains
 
     ! Set the timesnap we are reading
     if (time_index .gt. 0) then
+      ! The user has set a valid time index to read from
       call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
     else
-      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+      ! Otherwise default to the last time_index in the file
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
     end if
     
     ! We don't want the extent along the 'time' dimension
