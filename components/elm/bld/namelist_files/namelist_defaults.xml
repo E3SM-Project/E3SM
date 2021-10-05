@@ -240,6 +240,8 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
 <!-- for present day simulations - year 2010 -->
+<fsurdat hgrid="ne4np4"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2010_c210908.nc</fsurdat>
 <fsurdat hgrid="ne30np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
 <fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
@@ -247,7 +249,9 @@ lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="r05"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2000_c210402.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
+<fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c210902.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >

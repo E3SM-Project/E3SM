@@ -54,6 +54,7 @@ module ocn_analysis_driver
    use ocn_sediment_flux_index
    use ocn_sediment_transport
    use ocn_harmonic_analysis
+   use ocn_conservation_check
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -76,6 +77,7 @@ module ocn_analysis_driver
              ocn_analysis_bootstrap, &
              ocn_analysis_init, &
              ocn_analysis_compute_startup, &
+             ocn_analysis_precompute, &
              ocn_analysis_compute, &
              ocn_analysis_write, &
              ocn_analysis_restart, &
@@ -90,6 +92,7 @@ module ocn_analysis_driver
 
    character (len=*), parameter :: initReadTimerPrefix = 'init_read_'
    character (len=*), parameter :: initTimerPrefix = 'init_'
+   character (len=*), parameter :: precomputeTimerPrefix = 'precompute_'
    character (len=*), parameter :: computeTimerPrefix = 'compute_'
    character (len=*), parameter :: computeStartupTimerPrefix = 'compute_startup_'
    character (len=*), parameter :: writeTimerPrefix = 'write_'
@@ -204,6 +207,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'sedimentFluxIndex', 1)
       call mpas_pool_add_config(analysisMemberList, 'sedimentTransport', 1)
       call mpas_pool_add_config(analysisMemberList, 'harmonicAnalysis', 1)
+      call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -442,6 +446,7 @@ contains
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       err = 0
+      err_tmp = 0
 
       call mpas_timer_start('analysis_init')
 
@@ -638,6 +643,101 @@ contains
       call mpas_timer_stop('analysis_compute_startup')
 
    end subroutine ocn_analysis_compute_startup!}}}
+
+!***********************************************************************
+!
+!  routine ocn_analysis_precompute
+!
+!> \brief   Driver for MPAS-OCN analysis computations
+!> \author  MPAS-Ocean/OCN development team
+!> \date    November 2013
+!> \details
+!>  This routine calls all pre timestep computation subroutines
+!>  required for the MPAS-OCN analysis driver.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_analysis_precompute(domain, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: timeLevel, err_tmp
+
+      character (len=StrKIND) :: configName, alarmName, timerName
+      character (len=StrKIND), pointer :: config_AM_output_stream, config_AM_compute_interval
+      logical, pointer :: config_AM_enable
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
+
+      err = 0
+
+      call mpas_timer_start('analysis_precompute', .false.)
+
+      timeLevel=1
+
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
+
+         if ( config_AM_enable ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+
+            ! Build name of alarm for analysis member
+            alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
+            timerName = trim(precomputeTimerPrefix) // poolItr % memberName(1:nameLength)
+
+            ! Compute analysis member just before output
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream /= 'none') then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &
+                    streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+                  call mpas_timer_start(timerName, .false.)
+                  call ocn_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call mpas_timer_stop(timerName)
+               end if
+            else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
+               !call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp) ! not needed in precompute
+               call mpas_timer_start(timerName, .false.)
+               call ocn_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call mpas_timer_stop(timerName)
+            end if
+         end if
+      end do
+
+      call mpas_timer_stop('analysis_precompute')
+
+   end subroutine ocn_analysis_precompute!}}}
 
 !***********************************************************************
 !
@@ -1063,8 +1163,8 @@ contains
          call ocn_bootstrap_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_init_transect_transport(domain, err_tmp)
-!      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
-!        call ocn_init_sediment_flux_index(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_init_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1142,6 +1242,8 @@ contains
          call ocn_init_sediment_transport(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
         call ocn_init_harmonic_analysis(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_init_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1174,6 +1276,37 @@ contains
       iErr = ior(iErr, err_tmp)
 
    end subroutine ocn_init_analysis_members!}}}
+
+!***********************************************************************
+!
+!  routine ocn_precompute_analysis_members
+!
+!> \brief Analysis member compute driver
+!> \author Adrian K. Turner
+!> \date 09/09/2015
+!> \details
+!>  This private routine calls the correct precompute routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_precompute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+      err_tmp = 0 ! needed since time series stats is commented out
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_precompute_conservation_check(domain, timeLevel, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_precompute_analysis_members!}}}
 
 !***********************************************************************
 !
@@ -1244,6 +1377,8 @@ contains
          call ocn_compute_sediment_transport(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
          call ocn_compute_harmonic_analysis(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_compute_conservation_check(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1351,6 +1486,8 @@ contains
          call ocn_restart_sediment_transport(domain, err_tmp)
      else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
         call ocn_restart_harmonic_analysis(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_restart_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1452,6 +1589,8 @@ contains
          call ocn_finalize_sediment_transport(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
          call ocn_finalize_harmonic_analysis(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call ocn_finalize_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
