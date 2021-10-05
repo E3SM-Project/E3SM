@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports       = 8
+  integer, parameter, public :: num_scream_imports       = 9
   integer, parameter, public :: num_scream_exports       = 9
   integer, public :: num_cpl_imports, num_cpl_exports
 
@@ -73,6 +73,7 @@ module scream_cpl_indices
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 'surf_mom_flux'
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_sen'))  = 'surf_sens_flux'
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_evap')) = 'surf_latent_flux'
+    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_lwup')) = 'surf_lw_flux_up'
 
     vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_taux')) = 0
     vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 1

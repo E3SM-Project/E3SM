@@ -11,6 +11,7 @@
 
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "ekat/ekat_pack_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/util//ekat_arch.hpp"
 #include "ekat/ekat_pack.hpp"
 
@@ -146,6 +147,25 @@ public:
     compute_midpoint_values_impl<CM,InputProvider,ScalarT,MT>(team,num_mid_levels,x_i,x_m,alpha,beta);
   }
 
+  // Compute X at level interfaces, given X at level midpoints and top and bot bc.
+  // Note: with proper bc, and with constant dz, then x_int(x_mid(x_int))==x_int.
+  template<typename InputProvider1, typename InputProvider2, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static void
+  compute_interface_values_linear (const TeamMember&          team,
+                                   const int                  num_mid_levels,
+                                   const InputProvider1&      x_m,
+                                   const InputProvider2&      dz,
+                                   const scalar_type&         bc_top,
+                                   const scalar_type&         bc_bot,
+                                   const view_1d<ScalarT,MT>& x_i)
+  {
+    // Sanity checks
+    debug_checks<InputProvider1>(num_mid_levels+1,x_i);
+
+    compute_interface_values_linear_impl(team,num_mid_levels,x_m,dz,bc_top,bc_bot,x_i);
+  }
+
   // Compute X at level interfaces, given X at level midpoints and top or bot bc.
   // Notes:
   //  - If FixTop=true, the bc value is imposed at the top, and a scan sum from the
@@ -159,16 +179,16 @@ public:
   template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
-  compute_interface_values (const TeamMember& team,
-                            const int num_mid_levels,
-                            const InputProvider& x_m,
-                            const scalar_type& bc,
-                            const view_1d<ScalarT,MT>& x_i)
+  compute_interface_values_compatible (const TeamMember& team,
+                                       const int num_mid_levels,
+                                       const InputProvider& x_m,
+                                       const scalar_type& bc,
+                                       const view_1d<ScalarT,MT>& x_i)
   {
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels+1,x_i);
 
-    compute_interface_values_impl<FixTop>(team,num_mid_levels,x_m,bc,x_i);
+    compute_interface_values_compatible_impl<FixTop>(team,num_mid_levels,x_m,bc,x_i);
   }
 
   // Given X at level interfaces, compute dX at level midpoints.
@@ -552,14 +572,75 @@ protected:
 
   // ------------ Impls of compute_interface_values ------------- //
 
+  template<typename InputProvider1, typename InputProvider2, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
+  compute_interface_values_linear_impl (const TeamMember&          team,
+                                        const int                  num_mid_levels,
+                                        const InputProvider1&      x_m,
+                                        const InputProvider2&      dz,
+                                        const scalar_type&         bc_top,
+                                        const scalar_type&         bc_bot,
+                                        const view_1d<ScalarT,MT>& x_i)
+  {
+    // Pack size 1 yields a simple impl
+    team_parallel_for(team,num_mid_levels+1, [&](const int k) {
+      if (k==0)                   x_i(k) = bc_top;
+      else if (k==num_mid_levels) x_i(k) = bc_bot;
+      else                        x_i(k) = (x_m(k)*dz(k-1) + x_m(k-1)*dz(k))/(dz(k-1) + dz(k));
+    });
+  }
+
+  template<typename InputProvider1, typename InputProvider2, typename ScalarT, typename MT>
+  KOKKOS_INLINE_FUNCTION
+  static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
+  compute_interface_values_linear_impl (const TeamMember&          team,
+                                        const int                  num_mid_levels,
+                                        const InputProvider1&      x_m,
+                                        const InputProvider2&      dz,
+                                        const scalar_type&         bc_top,
+                                        const scalar_type&         bc_bot,
+                                        const view_1d<ScalarT,MT>& x_i)
+  {
+    using PackType           = ScalarT;
+    constexpr int PackLength = pack_size<PackType>();
+    using IntPackType        = ekat::Pack<Int,PackLength>;
+    using PackInfo           = ekat::PackInfo<PackLength>;
+    const auto num_int_packs = PackInfo::num_packs(num_mid_levels+1);
+
+    const auto s_x_m = ekat::scalarize(x_m);
+    const auto s_dz  = ekat::scalarize(dz);
+
+    team_parallel_for(team,num_int_packs, [&](const int k) {
+      // Setup Masks for boundary conditions
+      const auto range        = ekat::range<IntPackType>(k*PackType::n);
+      const auto at_top       = (range==0);
+      const auto at_bottom    = (range==num_mid_levels);
+      const auto in_interior  = (range>0 && range<num_mid_levels);
+
+      // Calculate shift. Mask out 0 so shift does not
+      // attempt to access index -1 or num_mid_levels.
+      auto range_no_boundary = range;
+      range_no_boundary.set(range<1 || range>=num_mid_levels, 1);
+      PackType x_m_k, x_m_km1, dz_k, dz_km1;
+      ekat::index_and_shift<-1>(s_x_m, range_no_boundary, x_m_k, x_m_km1);
+      ekat::index_and_shift<-1>(s_dz,  range_no_boundary, dz_k,  dz_km1);
+
+      // Calculate interface values
+      x_i(k).set(at_top,      bc_top);
+      x_i(k).set(at_bottom,   bc_bot);
+      x_i(k).set(in_interior, (x_m_k*dz_km1 + x_m_km1*dz_k)/(dz_km1 + dz_k));
+    });
+  }
+
   template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
-  compute_interface_values_impl (const TeamMember& team,
-                                 const int num_mid_levels,
-                                 const InputProvider& x_m,
-                                 const scalar_type& bc,
-                                 const view_1d<ScalarT,MT>& x_i)
+  compute_interface_values_compatible_impl (const TeamMember& team,
+                                            const int num_mid_levels,
+                                            const InputProvider& x_m,
+                                            const scalar_type& bc,
+                                            const view_1d<ScalarT,MT>& x_i)
   {
     // Helper function that returns (-1)^k
     auto m1_pow_k = [](const int k) -> scalar_type {
@@ -601,11 +682,11 @@ protected:
   template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
-  compute_interface_values_impl (const TeamMember& team,
-                                 const int num_mid_levels,
-                                 const InputProvider& x_m,
-                                 const scalar_type& bc,
-                                 const view_1d<ScalarT,MT>& x_i)
+  compute_interface_values_compatible_impl (const TeamMember& team,
+                                            const int num_mid_levels,
+                                            const InputProvider& x_m,
+                                            const scalar_type& bc,
+                                            const view_1d<ScalarT,MT>& x_i)
   {
     using pack_type = ScalarT;
     constexpr int PackLength = pack_size<ScalarT>();

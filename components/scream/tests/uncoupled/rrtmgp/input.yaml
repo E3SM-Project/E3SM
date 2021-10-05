@@ -27,7 +27,7 @@ Initial Conditions:
     p_int: 0.0
     pseudo_density: 0.0
     T_mid: 0.0
-    t_int: 0.0
+    surf_lw_flux_up: 0.0
     sfc_alb_dir_vis: 0.0
     sfc_alb_dir_nir: 0.0
     sfc_alb_dif_vis: 0.0
