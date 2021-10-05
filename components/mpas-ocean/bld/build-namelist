@@ -1599,14 +1599,6 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
-#######################################
-# Namelist group: transport_tests     #
-#######################################
-add_default($nl, 'config_transport_tests_vert_levels');
-add_default($nl, 'config_transport_tests_temperature');
-add_default($nl, 'config_transport_tests_salinity');
-add_default($nl, 'config_transport_tests_flow_id');
-
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1617,6 +1609,7 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
+                transport_tests
                 time_integration
                 hmix
                 hmix_del2
@@ -1688,7 +1681,6 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
-                transport_tests
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group
