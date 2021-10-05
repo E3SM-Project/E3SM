@@ -222,8 +222,18 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.np1 = np1;
 
   m_data.dt = dt;
-  m_data.dt_hvs = dt/m_data.hypervis_subcycle;
-  m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
+  if (m_data.hypervis_subcycle > 1) { 
+    m_data.dt_hvs = dt/m_data.hypervis_subcycle;
+  }else{
+    //won't be used
+    m_data.dt_hvs = -1.0;
+  }
+  if (m_data.hypervis_subcycle_tom > 1) { 
+    m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
+  }else{
+    //won't be used
+    m_data.dt_hvs_tom = -1.0;
+  }
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
