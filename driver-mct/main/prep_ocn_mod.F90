@@ -437,7 +437,7 @@ contains
     type(mct_avect), pointer :: x2o_ox
     character(*), parameter  :: subname = '(prep_ocn_accum_avg)'
     !---------------------------------------------------------------
-    print *, "_wpc1b. start prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
+    print *, "_wpc1b. Start prep_ocn_accum_avg() call. x2oacc_ox_cnt = ", x2oacc_ox_cnt
     call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        ! temporary formation of average
@@ -448,13 +448,18 @@ contains
        end if
 
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_ox
+       Print *, '_wpc4b Before x2o_ox pointer work. x2o_ox =', x2o_ox
+       Print *, '_wpc5b Before x2o_ox pointer work.  component_get_x2c_cx(ocn(eoi)) =', component_get_x2c_cx(ocn(eoi))
        x2o_ox   => component_get_x2c_cx(ocn(eoi))
        call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
+       print *, "_wpc6b. After x2o_ox pointer work. x2o_ox = ", x2o_ox
+       print *, "_wpc7b. After x2o_ox pointer work. x2oacc_ox(eoi) = ", x2oacc_ox(eoi)
     enddo
     x2oacc_ox_cnt = 0
-    Print *, '_wpc4b After x2oacc_ox_cnt set to 0. x2oacc_ox_cnt =', x2oacc_ox_cnt
+    Print *, '_wpc8b After x2oacc_ox_cnt set to 0. x2oacc_ox_cnt =', x2oacc_ox_cnt
     call t_drvstopf (trim(timer_accum))
-    print *, "_wpc5b. end prep_ocn_accum_avg() call x2oacc_ox_cnt = ", x2oacc_ox_cnt
+    print *, "_wpc9b. End prep_ocn_accum_avg() call. x2oacc_ox_cnt = ", x2oacc_ox_cnt
+    print *, "_wpc10b. End prep_ocn_accum_avg() call. timer_accum = ", timer_accum
 
   end subroutine prep_ocn_accum_avg
 
