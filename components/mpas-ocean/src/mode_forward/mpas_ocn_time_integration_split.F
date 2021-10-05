@@ -141,8 +141,7 @@ module ocn_time_integration_split
          tracersTendPool,   &! structure holding tracer tendencies
          forcingPool,       &! structure holding forcing variables
          scratchPool,       &! structure holding temporary variables
-         swForcingPool,     &! structure holding short-wave forcing vars
-         diagnosticsPool     ! structure holding diagnostic (not tendency) variables
+         swForcingPool       ! structure holding short-wave forcing vars
 
       logical :: &
          activeTracersOnly   ! only compute tendencies for active tracers
@@ -301,7 +300,6 @@ module ocn_time_integration_split
                                              tracersPool)
       call mpas_pool_get_subpool(tendPool,  'tracersTend', &
                                              tracersTendPool)
-      call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
 
       !*** Retrieve state variables at two time levels
 
