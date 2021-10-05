@@ -26,21 +26,21 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     )
 
     # Copy yaml input file to run directory
-    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                    ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
 
     # Copy RRTMGP initial condition to local data directory
-    FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+    file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 
     # Copy RRTMGP absorption coefficient lookup tables to local data directory
-    CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
+    configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-    CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
+    configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-    CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/examples/all-sky/rrtmgp-allsky.nc
+    configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/examples/all-sky/rrtmgp-allsky.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-    CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+    configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-    CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+    configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 endif()

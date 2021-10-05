@@ -2,7 +2,7 @@
 ---
 Casename: p3_standalone_output
 Averaging Type: Instant
-Grid: Physics
+Grid: Point Grid
 Max Snapshots Per File: 1
 Fields:
   - T_mid

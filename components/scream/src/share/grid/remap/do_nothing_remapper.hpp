@@ -1,5 +1,5 @@
-#ifndef SCREAM_DUMMY_SE_POINT_REMAPPER_HPP
-#define SCREAM_DUMMY_SE_POINT_REMAPPER_HPP
+#ifndef SCREAM_DO_NOTHING_REMAPPER_HPP
+#define SCREAM_DO_NOTHING_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
 
@@ -22,7 +22,7 @@ namespace scream
  */
 
 template<typename RealType>
-class DummySEPointRemapper : public AbstractRemapper<RealType>
+class DoNothingRemapper : public AbstractRemapper<RealType>
 {
 public:
   using base_type       = AbstractRemapper<RealType>;
@@ -31,65 +31,60 @@ public:
   using layout_type     = typename base_type::layout_type;
   using grid_ptr_type   = typename base_type::grid_ptr_type;
 
-  DummySEPointRemapper (const grid_ptr_type point_grid, const grid_ptr_type se_grid)
-   : base_type(point_grid,se_grid)
+  DoNothingRemapper (const grid_ptr_type from, const grid_ptr_type to)
+   : base_type(from,to)
   {
-    EKAT_REQUIRE_MSG(se_grid->type()==GridType::SE,
-                       "Error in DummySEPointRemapper! Invalid input se grid.\n");
-    EKAT_REQUIRE_MSG(point_grid->type()==GridType::Point,
-                       "Error in DummySEPointRemapper! Invalid input point grid.\n");
+    // Nothing to do here
   }
 
-  ~DummySEPointRemapper () = default;
+  ~DoNothingRemapper () = default;
 
   FieldLayout create_src_layout (const FieldLayout& tgt) const override {
     using namespace ShortFieldTagsNames;
-    using TV = std::vector<FieldTag>;
-    using IV = std::vector<int>;
 
-    auto ncol = this->get_src_grid()->get_2d_scalar_layout().dim(0);
-
-    const auto rank = tgt.rank();
-    EKAT_REQUIRE_MSG (rank==3 || rank==4 || rank==5,
-      "Error! Target layout not supported. Remember that this class has limited support.\n");
-    switch (rank) {
-      case 3:
-        return FieldLayout (TV{COL},IV{ncol});
-      case 4:
-        return FieldLayout (TV{COL,tgt.tags().back()},IV{ncol,tgt.dim(3)});
-      case 5:
-        return FieldLayout (TV{COL,CMP,tgt.tags().back()},IV{ncol,tgt.dim(1),tgt.dim(4)});
+    auto type = get_layout_type(tgt.tags());
+    FieldLayout src = {{}};
+    switch (type) {
+      case LayoutType::Scalar2D:
+        src = this->m_src_grid->get_2d_scalar_layout();
+        break;
+      case LayoutType::Vector2D:
+        src = this->m_src_grid->get_2d_vector_layout(CMP,tgt.dim(CMP));
+        break;
+      case LayoutType::Scalar3D:
+        src = this->m_src_grid->get_3d_scalar_layout(tgt.has_tag(LEV));
+        break;
+      case LayoutType::Vector3D:
+        src = this->m_src_grid->get_3d_vector_layout(tgt.has_tag(LEV),CMP,tgt.dim(CMP));
+        break;
       default:
-        return FieldLayout (TV{},IV{});
+        EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");
     }
+    return src;
   }
 
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
-    using TV = std::vector<FieldTag>;
-    using IV = std::vector<int>;
 
-    auto nele = this->get_tgt_grid()->get_2d_scalar_layout().dim(0);
-
-    const auto rank = src.rank();
-    EKAT_REQUIRE_MSG (rank==1 || rank==2 || rank==3,
-      "Error! Source layout not supported. Remember that this class has limited support.\n");
-
-    switch (rank) {
-      case 1:
-        return FieldLayout (TV{EL,GP,GP},IV{nele,4,4});
-      case 2:
-        return FieldLayout (TV{EL,GP,GP,src.tag(1)},IV{nele,4,4,src.dim(1)});
-      case 3:
-        return FieldLayout (TV{EL,CMP,GP,GP,src.tags().back()},IV{nele,src.dim(1),4,4,src.dim(2)});
+    auto type = get_layout_type(src.tags());
+    FieldLayout tgt = {{}};
+    switch (type) {
+      case LayoutType::Scalar2D:
+        tgt = this->m_tgt_grid->get_2d_scalar_layout();
+        break;
+      case LayoutType::Vector2D:
+        tgt = this->m_tgt_grid->get_2d_vector_layout(CMP,tgt.dim(CMP));
+        break;
+      case LayoutType::Scalar3D:
+        tgt = this->m_tgt_grid->get_3d_scalar_layout(tgt.has_tag(LEV));
+        break;
+      case LayoutType::Vector3D:
+        tgt = this->m_tgt_grid->get_3d_vector_layout(tgt.has_tag(LEV),CMP,tgt.dim(CMP));
+        break;
       default:
-        return FieldLayout (TV{},IV{});
+        EKAT_ERROR_MSG ("Error! Unsupported field layout.\n");
     }
-  }
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags());
+    return tgt;
   }
 
 protected:
@@ -131,9 +126,10 @@ protected:
     // Do nothing
   }
 
+  // We need to store fields in case the remapper is queried for them
   std::vector<std::pair<field_type,field_type>>   m_fields;
 };
 
 } // namespace scream
 
-#endif // SCREAM_DUMMY_SE_POINT_REMAPPER_HPP
+#endif // SCREAM_DO_NOTHING_REMAPPER_HPP

@@ -7,7 +7,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
-#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
 #include "share/field/field_identifier.hpp"
@@ -36,7 +36,7 @@ using Pack         = ekat::Pack<Real,packsize>;
 std::shared_ptr<FieldManager<Real>>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 
-std::shared_ptr<UserProvidedGridsManager>
+std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid);
@@ -56,7 +56,7 @@ TEST_CASE("input_output_basic","io")
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_gcols,num_levs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("Point Grid");
   int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
 
@@ -233,7 +233,6 @@ TEST_CASE("input_output_basic","io")
   
   // All Done 
   scorpio::eam_pio_finalize();
-  gm->clean_up();
 } // TEST_CASE output_instance
 /* ----------------------------------*/
 
@@ -316,11 +315,13 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   return fm;
 }
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-  auto pg =  create_point_grid("Physics",num_gcols,num_levs,io_comm);
-  auto gm = std::make_shared<UserProvidedGridsManager>();
-  gm->set_grid(pg);
+  ekat::ParameterList gm_params;
+  gm_params.sublist("Mesh Free").set("Number of Global Columns",num_gcols);
+  gm_params.sublist("Mesh Free").set("Number of Vertical Levels",num_levs);
+  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
+  gm->build_grids(std::set<std::string>{"Point Grid"});
   return gm;
 }
 /*===================================================================================================================*/

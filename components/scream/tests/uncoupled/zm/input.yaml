@@ -8,13 +8,13 @@ Atmosphere Processes:
 
   Process 0:
     Process Name: ZM
-    Grid: Physics
+    Grid: Point Grid
     Can Initialize All Inputs: true
 
 Grids Manager:
-  Type: Physics Only
-  Reference Grid: Physics
-  Physics Only:
-    Number of global columns:   32
-    Number of vertical levels: 128
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns:   32
+    Number of Vertical Levels: 128
 ...

@@ -8,22 +8,22 @@ Atmosphere Processes:
 
   Process 0:
     Process Name: P3
-    Grid: Physics
+    Grid: Point Grid
 
 Grids Manager:
-  Type: Physics Only
-  Reference Grid: Physics
-  Physics Only:
-    Number of global columns:   218
-    Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns:   218
+    Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Physics:
+  Point Grid:
     Filename: p3_init_ne2np4.nc
 
 # The parameters for I/O control
 SCORPIO:
   Output YAML Files:
-    Physics: ["p3_standalone_output.yaml"]
+    Point Grid: ["p3_standalone_output.yaml"]
 ...

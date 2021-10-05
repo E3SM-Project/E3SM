@@ -3,9 +3,10 @@
 // Boiler plate, needed for all runs
 #include "control/atmosphere_driver.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-// Boiler plate, needed for when physics is part of the run
+
 #include "physics/register_physics.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
+
 // EKAT headers
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -30,11 +31,7 @@ TEST_CASE("shoc-stand-alone", "") {
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   register_physics();
-
-  // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
-  auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
+  register_mesh_free_grids_manager();
 
   // Create the driver
   AtmosphereDriver ad;

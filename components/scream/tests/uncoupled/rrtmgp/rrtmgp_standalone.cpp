@@ -1,28 +1,31 @@
-#include <iostream>
-#include <cmath>
 #include <catch2/catch.hpp>
 
-// Boiler plate, needed for all runs
+// The atmosphere driver
 #include "control/atmosphere_driver.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-// Boiler plate, needed for when physics is part of the run
-#include "physics/register_physics.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
-// EKAT headers
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
+
 // Other rrtmgp specific code needed specifically for this test
+#include "physics/rrtmgp//tests/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "YAKL.h"
-#include "rrtmgp_test_utils.hpp"
-// Other helper headers needed for the specifics of this test
+
 #include "physics/share/physics_constants.hpp"
-#include "physics/share/physics_only_grids_manager.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+
+// scream share headers
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+
+// EKAT headers
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+
+// System headers
+#include <iostream>
+#include <cmath>
 
 /*
  * Run standalone test problem for RRTMGP and compare with baseline
@@ -73,12 +76,7 @@ namespace scream {
         auto& proc_factory = AtmosphereProcessFactory::instance();
         auto& gm_factory = GridsManagerFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
-        gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
-
-        // Create the grids manager
-        auto& gm_params = ad_params.sublist("Grids Manager");
-        const std::string& gm_type = gm_params.get<std::string>("Type");
-        auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
+        gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
         // Create the driver
         AtmosphereDriver ad;
@@ -94,7 +92,7 @@ namespace scream {
          */
 
         // Get dimension sizes from the field manager
-        const auto& grid = ad.get_grids_manager()->get_grid("Physics");
+        const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
         const auto& field_mgr = *ad.get_field_mgr(grid->name());
         int ncol  = grid->get_num_local_dofs();
         int nlay  = grid->get_num_vertical_levels();

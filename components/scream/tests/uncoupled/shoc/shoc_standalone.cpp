@@ -4,11 +4,9 @@
 
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "physics/share/physics_only_grids_manager.hpp"
-
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 namespace scream {
@@ -33,12 +31,7 @@ TEST_CASE("shoc-stand-alone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("shoc",&create_atmosphere_process<SHOCMacrophysics>);
-  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
-
-  // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
-  auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
+  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
   // Create the driver
   AtmosphereDriver ad;
