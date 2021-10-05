@@ -263,18 +263,18 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
-      REQUIRE(cwdc[s].qc2qr_autoconv_tend  == cwdc_host(s).qc2qr_autoconv_tend);
-      REQUIRE(cwdc[s].qc2qr_accret_tend  == cwdc_host(s).qc2qr_accret_tend);
-      REQUIRE(cwdc[s].qc2qi_collect_tend  == cwdc_host(s).qc2qi_collect_tend);
-      REQUIRE(cwdc[s].qc2qi_hetero_freeze_tend == cwdc_host(s).qc2qi_hetero_freeze_tend);
-      REQUIRE(cwdc[s].qc2qi_berg_tend == cwdc_host(s).qc2qi_berg_tend);
-      REQUIRE(cwdc[s].qi2qv_sublim_tend  == cwdc_host(s).qi2qv_sublim_tend);
-      REQUIRE(cwdc[s].qv2qi_vapdep_tend  == cwdc_host(s).qv2qi_vapdep_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
+        REQUIRE(cwdc[s].qc2qr_autoconv_tend  == cwdc_host(s).qc2qr_autoconv_tend);
+        REQUIRE(cwdc[s].qc2qr_accret_tend  == cwdc_host(s).qc2qr_accret_tend);
+        REQUIRE(cwdc[s].qc2qi_collect_tend  == cwdc_host(s).qc2qi_collect_tend);
+        REQUIRE(cwdc[s].qc2qi_hetero_freeze_tend == cwdc_host(s).qc2qi_hetero_freeze_tend);
+        REQUIRE(cwdc[s].qc2qi_berg_tend == cwdc_host(s).qc2qi_berg_tend);
+        REQUIRE(cwdc[s].qi2qv_sublim_tend  == cwdc_host(s).qi2qv_sublim_tend);
+        REQUIRE(cwdc[s].qv2qi_vapdep_tend  == cwdc_host(s).qv2qi_vapdep_tend);
+      }
     }
-#endif
   }
 
   static void ice_water_conservation_unit_bfb_tests()
@@ -356,20 +356,20 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(iwdc_host, iwdc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(iwdc[s].qi == iwdc_host(s).qi);
-      REQUIRE(iwdc[s].qv2qi_vapdep_tend == iwdc_host(s).qv2qi_vapdep_tend );
-      REQUIRE(iwdc[s].qv2qi_nucleat_tend == iwdc_host(s).qv2qi_nucleat_tend);
-      REQUIRE(iwdc[s].qc2qi_berg_tend == iwdc_host(s).qc2qi_berg_tend);
-      REQUIRE(iwdc[s].qr2qi_collect_tend  == iwdc_host(s).qr2qi_collect_tend);
-      REQUIRE(iwdc[s].qc2qi_collect_tend == iwdc_host(s).qc2qi_collect_tend);
-      REQUIRE(iwdc[s].qr2qi_immers_freeze_tend == iwdc_host(s).qr2qi_immers_freeze_tend);
-      REQUIRE(iwdc[s].qc2qi_hetero_freeze_tend == iwdc_host(s).qc2qi_hetero_freeze_tend);
-      REQUIRE(iwdc[s].qi2qv_sublim_tend == iwdc_host(s).qi2qv_sublim_tend);
-      REQUIRE(iwdc[s].qi2qr_melt_tend == iwdc_host(s).qi2qr_melt_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(iwdc[s].qi == iwdc_host(s).qi);
+        REQUIRE(iwdc[s].qv2qi_vapdep_tend == iwdc_host(s).qv2qi_vapdep_tend );
+        REQUIRE(iwdc[s].qv2qi_nucleat_tend == iwdc_host(s).qv2qi_nucleat_tend);
+        REQUIRE(iwdc[s].qc2qi_berg_tend == iwdc_host(s).qc2qi_berg_tend);
+        REQUIRE(iwdc[s].qr2qi_collect_tend  == iwdc_host(s).qr2qi_collect_tend);
+        REQUIRE(iwdc[s].qc2qi_collect_tend == iwdc_host(s).qc2qi_collect_tend);
+        REQUIRE(iwdc[s].qr2qi_immers_freeze_tend == iwdc_host(s).qr2qi_immers_freeze_tend);
+        REQUIRE(iwdc[s].qc2qi_hetero_freeze_tend == iwdc_host(s).qc2qi_hetero_freeze_tend);
+        REQUIRE(iwdc[s].qi2qv_sublim_tend == iwdc_host(s).qi2qv_sublim_tend);
+        REQUIRE(iwdc[s].qi2qr_melt_tend == iwdc_host(s).qi2qr_melt_tend);
+      }
     }
-#endif
   }
 
   static void rain_water_conservation_unit_bfb_tests(){
@@ -448,18 +448,18 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(rwdc_host, rwdc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
-      REQUIRE(rwdc[s].qc2qr_autoconv_tend  == rwdc_host(s).qc2qr_autoconv_tend);
-      REQUIRE(rwdc[s].qc2qr_accret_tend  == rwdc_host(s).qc2qr_accret_tend);
-      REQUIRE(rwdc[s].qi2qr_melt_tend  == rwdc_host(s).qi2qr_melt_tend);
-      REQUIRE(rwdc[s].qc2qr_ice_shed_tend  == rwdc_host(s).qc2qr_ice_shed_tend);
-      REQUIRE(rwdc[s].qr2qv_evap_tend  == rwdc_host(s).qr2qv_evap_tend);
-      REQUIRE(rwdc[s].qr2qi_collect_tend  == rwdc_host(s).qr2qi_collect_tend);
-      REQUIRE(rwdc[s].qr2qi_immers_freeze_tend == rwdc_host(s).qr2qi_immers_freeze_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
+        REQUIRE(rwdc[s].qc2qr_autoconv_tend  == rwdc_host(s).qc2qr_autoconv_tend);
+        REQUIRE(rwdc[s].qc2qr_accret_tend  == rwdc_host(s).qc2qr_accret_tend);
+        REQUIRE(rwdc[s].qi2qr_melt_tend  == rwdc_host(s).qi2qr_melt_tend);
+        REQUIRE(rwdc[s].qc2qr_ice_shed_tend  == rwdc_host(s).qc2qr_ice_shed_tend);
+        REQUIRE(rwdc[s].qr2qv_evap_tend  == rwdc_host(s).qr2qv_evap_tend);
+        REQUIRE(rwdc[s].qr2qi_collect_tend  == rwdc_host(s).qr2qi_collect_tend);
+        REQUIRE(rwdc[s].qr2qi_immers_freeze_tend == rwdc_host(s).qr2qi_immers_freeze_tend);
+      }
     }
-#endif
   }
 
   static void run_bfb() {
@@ -679,20 +679,20 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     Kokkos::deep_copy(pupidc_host, pupidc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(pupidc[s].th_atm    == pupidc_host(s).th_atm);
-      REQUIRE(pupidc[s].qc        == pupidc_host(s).qc);
-      REQUIRE(pupidc[s].nr        == pupidc_host(s).nr);
-      REQUIRE(pupidc[s].qr        == pupidc_host(s).qr);
-      REQUIRE(pupidc[s].qv        == pupidc_host(s).qv);
-      REQUIRE(pupidc[s].nc        == pupidc_host(s).nc);
-      REQUIRE(pupidc[s].qi        == pupidc_host(s).qi);
-      REQUIRE(pupidc[s].ni        == pupidc_host(s).ni);
-      REQUIRE(pupidc[s].qm        == pupidc_host(s).qm);
-      REQUIRE(pupidc[s].bm        == pupidc_host(s).bm );
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(pupidc[s].th_atm    == pupidc_host(s).th_atm);
+        REQUIRE(pupidc[s].qc        == pupidc_host(s).qc);
+        REQUIRE(pupidc[s].nr        == pupidc_host(s).nr);
+        REQUIRE(pupidc[s].qr        == pupidc_host(s).qr);
+        REQUIRE(pupidc[s].qv        == pupidc_host(s).qv);
+        REQUIRE(pupidc[s].nc        == pupidc_host(s).nc);
+        REQUIRE(pupidc[s].qi        == pupidc_host(s).qi);
+        REQUIRE(pupidc[s].ni        == pupidc_host(s).ni);
+        REQUIRE(pupidc[s].qm        == pupidc_host(s).qm);
+        REQUIRE(pupidc[s].bm        == pupidc_host(s).bm );
+      }
     }
-#endif
   }
 
   static void run_bfb(){
@@ -796,19 +796,19 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     Kokkos::deep_copy(gtspvd_host, gtspvd_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
-      REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
-      REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
-      REQUIRE(gtspvd[s].dqsdt  == gtspvd_host(s).dqsdt);
-      REQUIRE(gtspvd[s].dqsidt == gtspvd_host(s).dqsidt);
-      REQUIRE(gtspvd[s].ab     == gtspvd_host(s).ab);
-      REQUIRE(gtspvd[s].abi    == gtspvd_host(s).abi);
-      REQUIRE(gtspvd[s].kap    == gtspvd_host(s).kap);
-      REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
+        REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
+        REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
+        REQUIRE(gtspvd[s].dqsdt  == gtspvd_host(s).dqsdt);
+        REQUIRE(gtspvd[s].dqsidt == gtspvd_host(s).dqsidt);
+        REQUIRE(gtspvd[s].ab     == gtspvd_host(s).ab);
+        REQUIRE(gtspvd[s].abi    == gtspvd_host(s).abi);
+        REQUIRE(gtspvd[s].kap    == gtspvd_host(s).kap);
+        REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
+      }
     }
-#endif
   }
 
   static void run_bfb(){
@@ -974,16 +974,16 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     Kokkos::deep_copy(pupldc_host, pupldc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(pupldc[s].th_atm == pupldc_host(s).th_atm);
-      REQUIRE(pupldc[s].qv     == pupldc_host(s).qv);
-      REQUIRE(pupldc[s].qc     == pupldc_host(s).qc);
-      REQUIRE(pupldc[s].nc     == pupldc_host(s).nc);
-      REQUIRE(pupldc[s].qr     == pupldc_host(s).qr);
-      REQUIRE(pupldc[s].nr     == pupldc_host(s).nr);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(pupldc[s].th_atm == pupldc_host(s).th_atm);
+        REQUIRE(pupldc[s].qv     == pupldc_host(s).qv);
+        REQUIRE(pupldc[s].qc     == pupldc_host(s).qc);
+        REQUIRE(pupldc[s].nc     == pupldc_host(s).nc);
+        REQUIRE(pupldc[s].qr     == pupldc_host(s).qr);
+        REQUIRE(pupldc[s].nr     == pupldc_host(s).nr);
+      }
     }
-#endif
   }
 
   static void run_bfb(){
@@ -1079,14 +1079,14 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
     Kokkos::deep_copy(ids_host, ids_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(ids[s].qv2qi_vapdep_tend  == ids_host(s).qv2qi_vapdep_tend);
-      REQUIRE(ids[s].qi2qv_sublim_tend  == ids_host(s).qi2qv_sublim_tend);
-      REQUIRE(ids[s].ni_sublim_tend  == ids_host(s).ni_sublim_tend);
-      REQUIRE(ids[s].qc2qi_berg_tend == ids_host(s).qc2qi_berg_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(ids[s].qv2qi_vapdep_tend  == ids_host(s).qv2qi_vapdep_tend);
+        REQUIRE(ids[s].qi2qv_sublim_tend  == ids_host(s).qi2qv_sublim_tend);
+        REQUIRE(ids[s].ni_sublim_tend  == ids_host(s).ni_sublim_tend);
+        REQUIRE(ids[s].qc2qi_berg_tend == ids_host(s).qc2qi_berg_tend);
+      }
     }
-#endif
   }
 
   static void run_bfb(){
@@ -1161,12 +1161,12 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(dc[s].ni_local   == dc_host(s).ni_local);
-      REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(dc[s].ni_local   == dc_host(s).ni_local);
+        REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
+      }
     }
-#endif
   }
 
   static void run_bfb(){

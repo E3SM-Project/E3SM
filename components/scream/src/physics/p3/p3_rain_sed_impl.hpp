@@ -152,9 +152,15 @@ void Functions<S,D>
       });
     }
     Kokkos::single(
-     Kokkos::PerTeam(team), [&] () {
-      precip_liq_surf += prt_accum * C::INV_RHO_H2O * inv_dt;
-    });
+      Kokkos::PerTeam(team), [&] () {
+        precip_liq_surf += prt_accum * C::INV_RHO_H2O * inv_dt;
+        // The code below is to force a result difference. This is used by the
+        // scream/scripts internal testing to verify that various types of DIFFs
+        // are detected.
+#if defined(SCREAM_FORCE_RUN_DIFF) || defined(SCREAM_FORCE_RUN_DIFF_BFB_UNIT)
+        precip_liq_surf *= 2;
+#endif
+      });
   }
 
   Kokkos::parallel_for(

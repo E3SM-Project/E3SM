@@ -115,18 +115,18 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
 
     Kokkos::deep_copy(self_host, self_device);
 
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(self[s].qc_incld == self_host(s).qc_incld);
-      REQUIRE(self[s].qr_incld == self_host(s).qr_incld);
-      REQUIRE(self[s].qi_incld == self_host(s).qi_incld);
-      REQUIRE(self[s].qm_incld == self_host(s).qm_incld);
-      REQUIRE(self[s].nc_incld == self_host(s).nc_incld);
-      REQUIRE(self[s].nr_incld == self_host(s).nr_incld);
-      REQUIRE(self[s].ni_incld == self_host(s).ni_incld);
-      REQUIRE(self[s].bm_incld == self_host(s).bm_incld);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(self[s].qc_incld == self_host(s).qc_incld);
+        REQUIRE(self[s].qr_incld == self_host(s).qr_incld);
+        REQUIRE(self[s].qi_incld == self_host(s).qi_incld);
+        REQUIRE(self[s].qm_incld == self_host(s).qm_incld);
+        REQUIRE(self[s].nc_incld == self_host(s).nc_incld);
+        REQUIRE(self[s].nr_incld == self_host(s).nr_incld);
+        REQUIRE(self[s].ni_incld == self_host(s).ni_incld);
+        REQUIRE(self[s].bm_incld == self_host(s).bm_incld);
+      }
     }
-#endif
   }
 
   static void run_incloud_mixing_phys()

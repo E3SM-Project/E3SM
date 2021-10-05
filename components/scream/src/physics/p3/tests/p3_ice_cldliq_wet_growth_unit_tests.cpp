@@ -113,17 +113,17 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
 
     Kokkos::deep_copy(self_host, self_device);
 
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
 
-      REQUIRE(self[s].qr2qi_collect_tend    == self_host(s).qr2qi_collect_tend);
-      REQUIRE(self[s].qc2qi_collect_tend    == self_host(s).qc2qi_collect_tend);
-      REQUIRE(self[s].qc_growth_rate        == self_host(s).qc_growth_rate);
-      REQUIRE(self[s].nr_ice_shed_tend      == self_host(s).nr_ice_shed_tend);
-      REQUIRE(self[s].qc2qr_ice_shed_tend   == self_host(s).qc2qr_ice_shed_tend);
+        REQUIRE(self[s].qr2qi_collect_tend    == self_host(s).qr2qi_collect_tend);
+        REQUIRE(self[s].qc2qi_collect_tend    == self_host(s).qc2qi_collect_tend);
+        REQUIRE(self[s].qc_growth_rate        == self_host(s).qc_growth_rate);
+        REQUIRE(self[s].nr_ice_shed_tend      == self_host(s).nr_ice_shed_tend);
+        REQUIRE(self[s].qc2qr_ice_shed_tend   == self_host(s).qc2qr_ice_shed_tend);
+      }
     }
-#endif
   }
 
   static void run_ice_cldliq_wet_growth_phys()

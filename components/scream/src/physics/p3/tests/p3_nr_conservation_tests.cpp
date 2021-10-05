@@ -75,16 +75,16 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-#ifndef NDEBUG
-    for (Int i = 0; i < max_pack_size; ++i) {
-      NrConservationData& d_f90 = f90_data[i];
-      NrConservationData& d_cxx = cxx_host[i];
-      REQUIRE(d_f90.nr_collect_tend == d_cxx.nr_collect_tend);
-      REQUIRE(d_f90.nr2ni_immers_freeze_tend == d_cxx.nr2ni_immers_freeze_tend);
-      REQUIRE(d_f90.nr_selfcollect_tend == d_cxx.nr_selfcollect_tend);
-      REQUIRE(d_f90.nr_evap_tend == d_cxx.nr_evap_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        NrConservationData& d_f90 = f90_data[i];
+        NrConservationData& d_cxx = cxx_host[i];
+        REQUIRE(d_f90.nr_collect_tend == d_cxx.nr_collect_tend);
+        REQUIRE(d_f90.nr2ni_immers_freeze_tend == d_cxx.nr2ni_immers_freeze_tend);
+        REQUIRE(d_f90.nr_selfcollect_tend == d_cxx.nr_selfcollect_tend);
+        REQUIRE(d_f90.nr_evap_tend == d_cxx.nr_evap_tend);
+      }
     }
-#endif
   } // run_bfb
 
 };

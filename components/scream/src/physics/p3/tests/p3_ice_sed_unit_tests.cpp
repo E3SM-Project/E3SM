@@ -112,13 +112,13 @@ static void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_host, cbrr_device);
 
   // Validate results
-#ifndef NDEBUG
-  for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cbrr_fortran[s].qi_rim   == cbrr_host(s).qi_rim);
-    REQUIRE(cbrr_fortran[s].bi_rim   == cbrr_host(s).bi_rim);
-    REQUIRE(cbrr_fortran[s].rho_rime == cbrr_host(s).rho_rime);
+  if (SCREAM_BFB_TESTING) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(cbrr_fortran[s].qi_rim   == cbrr_host(s).qi_rim);
+      REQUIRE(cbrr_fortran[s].bi_rim   == cbrr_host(s).bi_rim);
+      REQUIRE(cbrr_fortran[s].rho_rime == cbrr_host(s).rho_rime);
+    }
   }
-#endif
 }
 
 static void run_bfb_ice_sed()
@@ -163,26 +163,26 @@ static void run_bfb_ice_sed()
                         d.ni_incld, &d.precip_ice_surf, d.qi_tend, d.ni_tend);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
-    Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
-    for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].qi[k]       == isds_cxx[i].qi[k]);
-      REQUIRE(isds_fortran[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
-      REQUIRE(isds_fortran[i].ni[k]       == isds_cxx[i].ni[k]);
-      REQUIRE(isds_fortran[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
-      REQUIRE(isds_fortran[i].qm[k]       == isds_cxx[i].qm[k]);
-      REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
-      REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
-      REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
-      REQUIRE(isds_fortran[i].qi_tend[k]  == isds_cxx[i].qi_tend[k]);
-      REQUIRE(isds_fortran[i].ni_tend[k]  == isds_cxx[i].ni_tend[k]);
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
+      for (Int k = start; k < end; ++k) {
+        REQUIRE(isds_fortran[i].qi[k]       == isds_cxx[i].qi[k]);
+        REQUIRE(isds_fortran[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
+        REQUIRE(isds_fortran[i].ni[k]       == isds_cxx[i].ni[k]);
+        REQUIRE(isds_fortran[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
+        REQUIRE(isds_fortran[i].qm[k]       == isds_cxx[i].qm[k]);
+        REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
+        REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
+        REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
+        REQUIRE(isds_fortran[i].qi_tend[k]  == isds_cxx[i].qi_tend[k]);
+        REQUIRE(isds_fortran[i].ni_tend[k]  == isds_cxx[i].ni_tend[k]);
+      }
+      REQUIRE(isds_fortran[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
     }
-    REQUIRE(isds_fortran[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
   }
-#endif
 }
 
 static void run_bfb_homogeneous_freezing()
@@ -226,24 +226,24 @@ static void run_bfb_homogeneous_freezing()
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
-    Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
-    for (Int k = start; k < end; ++k) {
-      REQUIRE(hfds_fortran[i].qc[k]     == hfds_cxx[i].qc[k]);
-      REQUIRE(hfds_fortran[i].nc[k]     == hfds_cxx[i].nc[k]);
-      REQUIRE(hfds_fortran[i].qr[k]     == hfds_cxx[i].qr[k]);
-      REQUIRE(hfds_fortran[i].nr[k]     == hfds_cxx[i].nr[k]);
-      REQUIRE(hfds_fortran[i].qi[k]     == hfds_cxx[i].qi[k]);
-      REQUIRE(hfds_fortran[i].ni[k]     == hfds_cxx[i].ni[k]);
-      REQUIRE(hfds_fortran[i].qm[k]     == hfds_cxx[i].qm[k]);
-      REQUIRE(hfds_fortran[i].bm[k]     == hfds_cxx[i].bm[k]);
-      REQUIRE(hfds_fortran[i].th_atm[k] == hfds_cxx[i].th_atm[k]);
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
+      for (Int k = start; k < end; ++k) {
+        REQUIRE(hfds_fortran[i].qc[k]     == hfds_cxx[i].qc[k]);
+        REQUIRE(hfds_fortran[i].nc[k]     == hfds_cxx[i].nc[k]);
+        REQUIRE(hfds_fortran[i].qr[k]     == hfds_cxx[i].qr[k]);
+        REQUIRE(hfds_fortran[i].nr[k]     == hfds_cxx[i].nr[k]);
+        REQUIRE(hfds_fortran[i].qi[k]     == hfds_cxx[i].qi[k]);
+        REQUIRE(hfds_fortran[i].ni[k]     == hfds_cxx[i].ni[k]);
+        REQUIRE(hfds_fortran[i].qm[k]     == hfds_cxx[i].qm[k]);
+        REQUIRE(hfds_fortran[i].bm[k]     == hfds_cxx[i].bm[k]);
+        REQUIRE(hfds_fortran[i].th_atm[k] == hfds_cxx[i].th_atm[k]);
+      }
     }
   }
-#endif
 }
 
 static void run_bfb()

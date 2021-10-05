@@ -248,16 +248,16 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
-    for (Int i = 0; i < num_runs; ++i) {
-      DiagThirdShocMomentsData& d_f90 = SDS_f90[i];
-      DiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.w3); ++k) {
-        REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
+      for (Int i = 0; i < num_runs; ++i) {
+        DiagThirdShocMomentsData& d_f90 = SDS_f90[i];
+        DiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.w3); ++k) {
+          REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        }
       }
     }
-#endif
   }
 };
 

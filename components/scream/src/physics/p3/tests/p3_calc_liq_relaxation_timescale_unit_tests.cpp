@@ -97,12 +97,12 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale {
 
     Kokkos::deep_copy(self_host, self_device);
 
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(self[s].epsr == self_host(s).epsr);
-      REQUIRE(self[s].epsc == self_host(s).epsc);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(self[s].epsr == self_host(s).epsr);
+        REQUIRE(self[s].epsc == self_host(s).epsc);
+      }
     }
-#endif
   }
 
 };

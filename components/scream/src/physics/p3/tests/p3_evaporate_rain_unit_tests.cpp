@@ -248,12 +248,12 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Kokkos::deep_copy(espd_host, espd_device);
 
     // Validate results
-#ifndef NDEBUG
-    for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
-      REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
+    if (SCREAM_BFB_TESTING) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
+        REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
+      }
     }
-#endif
   } // end run_bfb
 
 

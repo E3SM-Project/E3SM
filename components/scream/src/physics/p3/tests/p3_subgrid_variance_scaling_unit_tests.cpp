@@ -72,8 +72,9 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 	Kokkos::deep_copy(scaling_host, scaling_device);
 
 	// Validate results
-	REQUIRE(f_scaling == scaling_host(0) );
-
+        if (SCREAM_BFB_TESTING) {
+          REQUIRE(f_scaling == scaling_host(0) );
+        }
       } //end loop over relvar[j]
     } //end loop over expons[i]
   } //end function run_bfb_tests

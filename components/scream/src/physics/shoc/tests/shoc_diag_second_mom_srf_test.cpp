@@ -115,16 +115,16 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
       shoc_diag_second_moments_srf_f(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
     }
 
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
-    for (Int i = 0; i < num_runs; ++i) {
-      Int shcol = mom_srf_data_cxx[i].shcol;
-      for (Int k = 0; k < shcol; ++k) {
-        REQUIRE(mom_srf_data_f90[i].ustar2[k] == mom_srf_data_cxx[i].ustar2[k]);
-        REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
+      for (Int i = 0; i < num_runs; ++i) {
+        Int shcol = mom_srf_data_cxx[i].shcol;
+        for (Int k = 0; k < shcol; ++k) {
+          REQUIRE(mom_srf_data_f90[i].ustar2[k] == mom_srf_data_cxx[i].ustar2[k]);
+          REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
+        }
       }
     }
-#endif
 #endif
   }
 
