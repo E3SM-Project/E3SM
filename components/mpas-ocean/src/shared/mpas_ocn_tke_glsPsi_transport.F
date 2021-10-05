@@ -375,7 +375,7 @@ contains
                         eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))
                         eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
                         bcValue = 60.0_RKIND*dynamicViscosity(k,iCellValid)/rho_sw/(c_psi2*distanceToBoundary(k,iCellValid))
-                        glsPsi_turb_flux = -glsPsi(k,iCellValid) !Assumes k=0 in boundary condition
+                        glsPsi_turb_flux = bcValue - glsPsi(k,iCellValid) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
                         flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
