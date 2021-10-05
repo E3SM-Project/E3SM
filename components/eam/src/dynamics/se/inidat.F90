@@ -21,6 +21,8 @@ module inidat
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
   use scamMod, only: single_column, precip_off, scmlat, scmlon
+  use perf_mod, only: t_startf, t_stopf
+
   implicit none
   private
   public read_inidat
@@ -175,8 +177,12 @@ contains
 
     fieldname = 'U'
     tmp = 0.0_r8
+
+    call t_startf('read_inidat_infld')
     call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
          1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+    call t_stopf('read_inidat_infld')
+
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -195,8 +201,12 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
+
+    call t_startf('read_inidat_infld')
     call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
          1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+    call t_stopf('read_inidat_infld')
+
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -214,8 +224,12 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
+
+    call t_startf('read_inidat_infld')
     call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
          1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
+    call t_stopf('read_inidat_infld')
+
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
@@ -318,9 +332,12 @@ contains
 	  else
 	    
 	    tmp = 0.0_r8
+
+            call t_startf('read_inidat_infld')
             call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                  1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
-	    
+            call t_stopf('read_inidat_infld')
+
 	  endif
        end if
        if(.not. found) then
@@ -405,8 +422,12 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
+
+    call t_startf('read_inidat_infld')
     call infld(fieldname, ncid_ini, ncol_name,      &
          1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+    call t_stopf('read_inidat_infld')
+
     if(.not. found) then
        call endrun('Could not find PS field on input datafile')
     end if
@@ -440,13 +461,21 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys == 0) then
+
+         call t_startf('read_inidat_infld')
          call infld(fieldname, ncid_topo, ncol_name,      &
               1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+         call t_stopf('read_inidat_infld')
+
       else
          ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
          ! addition to PHIS.
+
+         call t_startf('read_inidat_infld')
          call infld(trim(fieldname) // '_d', ncid_topo, ncol_name, &
               1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+         call t_stopf('read_inidat_infld')
+
          if (found) then
             if (masterproc) then
                write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
@@ -459,8 +488,12 @@ contains
                     ' on gridname physgrid_d'
             end if
             read_pg_grid = .true.
+
+            call t_startf('read_inidat_infld')
             call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
                  1, nelemd, phis_tmp, found, gridname='physgrid_d')
+            call t_stopf('read_inidat_infld')
+
             call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
          end if
       end if

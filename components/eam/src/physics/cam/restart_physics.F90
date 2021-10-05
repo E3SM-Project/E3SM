@@ -18,6 +18,7 @@ module restart_physics
                                 pio_put_var, pio_get_var
   use cospsimulator_intr, only: docosp
   use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num
+  use perf_mod,           only: t_startf, t_stopf
 
   implicit none
   private
@@ -215,14 +216,18 @@ module restart_physics
       !-----------------------------------------------------------------------
 
       ! Write grid vars
+      call t_startf("cam_grid_write_var")
       call cam_grid_write_var(File, phys_decomp)
+      call t_stopf("cam_grid_write_var")
 
       ! Physics buffer
       if (is_subcol_on()) then
          call subcol_write_restart(File)
       end if
 
+      call t_startf("pbuf_write_restart")
       call pbuf_write_restart(File, pbuf2d)
+      call t_stopf("pbuf_write_restart")
 
       physgrid = cam_grid_id('physgrid')
       call cam_grid_dimensions(physgrid, gdims(1:2), nhdims)
@@ -230,12 +235,20 @@ module restart_physics
       if ( .not. adiabatic .and. .not. ideal_phys )then
 
          ! data for chemistry
+         call t_startf("chem_write_restart")
          call chem_write_restart(File)
+         call t_stopf("chem_write_restart")
 
          call write_prescribed_ozone_restart(File)
          call write_prescribed_ghg_restart(File)
+
+         call t_startf("write_prescribed_aero_restart")
          call write_prescribed_aero_restart(File)
+         call t_stopf("write_prescribed_aero_restart")
+
+         call t_startf("write_prescribed_volcaero_restart")
          call write_prescribed_volcaero_restart(File)
+         call t_stopf("write_prescribed_volcaero_restart")
  
          do i=begchunk,endchunk
             ncol = cam_out(i)%ncol
@@ -458,7 +471,9 @@ module restart_physics
         call subcol_read_restart(File)
      end if
 
+     call t_startf("pbuf_read_restart")
      call pbuf_read_restart(File, pbuf2d)
+     call t_stopf("pbuf_read_restart")
 
      csize=endchunk-begchunk+1
      dims(1) = pcols
@@ -479,11 +494,17 @@ module restart_physics
      if ( .not. adiabatic .and. .not. ideal_phys )then
 
         ! data for chemistry
+        call t_startf ('chem_read_restart')
         call chem_read_restart(File)
+        call t_stopf ('chem_read_restart')
 
         call read_prescribed_ozone_restart(File)
         call read_prescribed_ghg_restart(File)
+
+        call t_startf ('read_prescribed_aero_restart')
         call read_prescribed_aero_restart(File)
+        call t_stopf ('read_prescribed_aero_restart')
+
         call read_prescribed_volcaero_restart(File)
 
         allocate(tmpfield2(pcols, begchunk:endchunk))

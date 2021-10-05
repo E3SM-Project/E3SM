@@ -257,7 +257,7 @@ struct GllFvRemapImpl {
     assert(dp .extent_int(0) >= n && dp .extent_int(1) >= nlev);
     assert(wrk.extent_int(0) >= n && wrk.extent_int(1) >= nlev);
     assert(q  .extent_int(0) >= n && q  .extent_int(1) >= nlev);
-    static_assert(Scalar::vector_length == packn);
+    static_assert(Scalar::vector_length == packn, "vector_length == packn");
     const auto f = [&] (const int k) {
       auto& c = wrk;
       { // In the case of an infeasible problem, prefer to conserve mass and

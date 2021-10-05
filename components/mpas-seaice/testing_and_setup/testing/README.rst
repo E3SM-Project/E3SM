@@ -68,14 +68,14 @@ file that specifies the configurations (namelist and streams file), domains
 This example specifies a series of tests (**regression**, **parallelism** and
 **restartability**) to be performed with the **domain_QU120km** domain and the
 **standard_physics** configuration. Test suites are stored in
-``MPAS/testing_and_setup/seaice/testing`` within the MPAS repo.
+``E3SM/components/mpas-seaice/testing_and_setup/testing`` within the MPAS repo.
 
 Configurations
 ==============
 
 The testing system uses configurations (i.e. namelist and stream file pairs)
 listed in the testsuite xml file in the test runs that it performs. The
-files are stored in the repository at ``MPAS/testing_and_setup/seaice/configurations``.
+files are stored in the repository at ``MPAS/testing_and_setup/configurations``.
 
 Domains
 =======
