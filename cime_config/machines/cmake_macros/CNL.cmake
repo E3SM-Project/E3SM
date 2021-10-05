@@ -1,4 +1,4 @@
-if (MPILIB STREQUAL !impi)
+if (NOT MPILIB STREQUAL impi)
   string(APPEND CMAKE_OPTS " -DCMAKE_SYSTEM_NAME=Catamount")
 endif()
 string(APPEND CPPDEFS " -DLINUX")

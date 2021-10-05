@@ -124,6 +124,8 @@ def create_if_statement(child, varname=None, append=False):
             statement += k
         elif v == "FALSE":
             statement += f"NOT {k}"
+        elif v.startswith("!"):
+            statement += f"NOT {k} STREQUAL {v.strip('!')}"
         else:
             statement += f"{k} STREQUAL {v}"
 
