@@ -95,6 +95,7 @@ Solution Classes
  Explicit
    CO, C2H6, C3H8, CH3COCH3
    E90, O3LNZ
+   DMS, SO2, H2SO4, SOAG
  End Explicit
 
  Implicit
@@ -102,7 +103,6 @@ Solution Classes
    NO, NO2, NO3, N2O5, HNO3, HO2NO2, PAN
    C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
    ISOP, ISOPO2, MVKMACR, MVKO2
-   DMS, SO2, H2SO4, SOAG
    so4_a1,  so4_a2,  so4_a3
    pom_a1,           pom_a3,  pom_a4
    soa_a1,  soa_a2,  soa_a3
