@@ -3231,6 +3231,92 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="gcp">
+    <DESC>Google Cloud cluster with c2-compute-60's</DESC>
+    <NODENAME_REGEX>gcp*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/home/$USER/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/home/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>16</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>60</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>30</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="pmi_layer"> --mpi=pmi2</arg>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+	<arg name="thread_count">-c $SHELL{echo `./xmlquery --value MAX_TASKS_PER_NODE`/ {{ tasks_per_node }} |bc}</arg>
+	<arg name="binding"> $SHELL{if [ `./xmlquery --value MAX_TASKS_PER_NODE` -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+	<arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+
+    <module_system type="module">
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+      <modules>
+	<command name="unload">gcc</command>
+	<command name="unload">openmpi</command>
+      </modules>
+
+      <modules compiler="gnu">
+	<command name="load">gcc/8.5.0-gcc@8.5.0</command>
+      </modules>
+
+      <modules mpilib="openmpi">
+	<command name="load">openmpi/4.1.1-gcc@8.5.0</command>
+      </modules>
+
+      <modules compiler="gnu">
+	<command name="load">cmake</command>
+	<command name="load">perl</command>
+	<command name="load">perl-xml-libxml</command>
+	<command name="load">netcdf-c</command>
+	<command name="load">netcdf-cxx</command>
+	<command name="load">netcdf-fortran</command>
+	<command name="load">parallel-netcdf</command>
+	<command name="load">hdf5</command>
+	<command name="load">netlib-lapack</command>
+	<command name="load">openblas</command>
+      </modules>
+
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables compiler="gnu">
+      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
+      <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/openblas-0.3.17-avqlf5r7hpzvwesfqg25awhqrpypwgfe</env>
+      <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/netlib-lapack-3.9.1-gton74muo2csn5l3bzf636276ig6h3yx</env>
+    </environment_variables>
+
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+    </environment_variables>
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
