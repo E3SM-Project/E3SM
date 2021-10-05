@@ -1,6 +1,6 @@
 module scream_cpl_indices
 
-  use iso_c_binding, only: c_int, c_char
+  use iso_c_binding, only: c_int, c_char, c_bool
 
   implicit none
   private
