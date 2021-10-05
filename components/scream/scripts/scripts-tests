@@ -473,7 +473,6 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         Test that MPI ranks and threads are properly spread across a machine's computing resources (TODO)
         """
-        pass
 
     def test_jenkins_process_at(self):
         """
