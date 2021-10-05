@@ -307,6 +307,10 @@ void SurfaceCoupling::do_export (const bool init_phase)
     });
   }
 
+  // Deep copy fields to device in case host data was updated
+  // in between registration_end() and do_export()
+  Kokkos::deep_copy(m_cpl_exports_view_d,m_cpl_exports_view_h);
+
   // Local copies, to deal with CUDA's handling of *this.
   const auto scream_exports = m_scream_exports_dev;
   const auto cpl_exports_view_d = m_cpl_exports_view_d;
