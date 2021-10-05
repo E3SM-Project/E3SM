@@ -492,6 +492,19 @@ module ocn_tracer_ecosys
 
       real (kind=RKIND) :: ecosysMissingValue = -999.
 
+      real (kind=RKIND) :: &
+         PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND
+
+      ! flux routine wants CGS units
+      ! then convert back to MKS after
+      real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
+      real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
+      real (kind=RKIND) :: convertLengthSquaredMKStoCGS = 1.0e4_RKIND
+      real (kind=RKIND) :: convertLengthSquaredCGStoMKS = 1.0e-4_RKIND
+
+      logical :: verbose = .true.
+      character(strKIND) :: logMessage
+
 !***********************************************************************
 
 contains
@@ -766,13 +779,6 @@ contains
          ecosys_diag_NO3_RESTORE,  &
          ecosys_diag_SiO3_RESTORE
 
-      real (kind=RKIND) :: &
-         PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND
-
-      ! source/sink wants CGS units
-      ! then convert back to MKS after
-      real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
-      real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
       real (kind=RKIND) :: zTop, zBot
    
       integer :: iCell, iLevel, iTracer, numColumns, column, autotroph, n
@@ -1013,6 +1019,9 @@ contains
 
 ! compute source-sink terms
          call marbl_instances(1)%interior_tendency_compute()
+
+         if (marbl_instances(1)%StatusLog%labort_marbl) &
+           call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
 
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
 
@@ -1739,15 +1748,6 @@ contains
          PH_PREV,              &
          PH_PREV_ALT_CO2
 
-      ! flux routine wants atmospheres
-      real (kind=RKIND) :: PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND
-      ! flux routine wants CGS units
-      ! then convert back to MKS after
-      real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
-      real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
-      real (kind=RKIND) :: convertLengthSquaredMKStoCGS = 1.0e4_RKIND
-      real (kind=RKIND) :: convertLengthSquaredCGStoMKS = 1.0e-4_RKIND
-
       !
       ! level 2 diagnostics
       !
@@ -1859,7 +1859,7 @@ contains
 
 ! load surface forcing fields
          marbl_instances(1)%surface_flux_forcings(atmPressure_indexInMARBL)%field_0d(iCell) = &
-            atmosphericPressure(iCell)*9.86923e-6
+            atmosphericPressure(iCell)*PascalsToAtmospheres
          marbl_instances(1)%surface_flux_forcings(ifrac_indexInMARBL)%field_0d(iCell) = &
             iceFraction(iCell)
          marbl_instances(1)%surface_flux_forcings(u10sqr_indexInMARBL)%field_0d(iCell) = &
@@ -1901,14 +1901,8 @@ contains
 
       call marbl_instances(1)%surface_flux_compute()
 
-!     if (marbl_instances(1)%StatusLog%labort_marbl) then
-!           write(log_message,"(A,I0,A)") "marbl_instances(", 1, &
-!                                         ")%set_surface_forcing()"
-!        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!     end if
-!        call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-
-      call marbl_instances(1)%StatusLog%erase()
+      if (marbl_instances(1)%StatusLog%labort_marbl) &
+        call mpas_log_write("WARNING: problem in MARBL surface_flux_compute", MPAS_LOG_CRIT)
 
 ! copy marbl output into mpas arrays
 
@@ -2055,7 +2049,7 @@ contains
 
 ! convert back to Pa
            ecosys_diag_atmPressure(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
-             diags(ecosys_diag_atmPressure_indexInMARBL)%field_2d(column)/9.86923e-6,  &
+             diags(ecosys_diag_atmPressure_indexInMARBL)%field_2d(column)/PascalsToAtmospheres,  &
              ecosysMissingValue, ecosys_diag_atmPressure_allocatedInMARBL)
 
            ecosys_diag_CO2star(iCell) = merge(marbl_instances(1)%surface_flux_diags%  &
@@ -2262,12 +2256,8 @@ contains
           gcm_zt = zt,                                  &
           lgcm_has_global_ops = .false.)
 
-!    if (marbl_instances(1)%StatusLog%labort_marbl) then
-!      write(log_message,"(A,I0,A)") "marbl(", 1, ")%init()"
-!      call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!    end if
-!    call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-!    call marbl_instances(1)%StatusLog%erase()
+     if (marbl_instances(1)%StatusLog%labort_marbl) &
+        call mpas_log_write("WARNING: problem in MARBL initialization", MPAS_LOG_CRIT)
 
      ! Make sure MARBL tracer count lines up with what MPASO expects
       nTracers = size(ecosysTracers, dim=1)
@@ -2284,15 +2274,8 @@ contains
       deallocate(zt, zw, dz)
 
     !--------------------------------------------------------------------
-    !  Complete marbl setup
+    !  make connections between marbl and mpaso
     !--------------------------------------------------------------------
-
-!    if (marbl_instances(1)%StatusLog%labort_marbl) then
-!      write(log_message,"(A,I0,A)") "marbl(", 1, ")%complete_init_and_config()"
-!      call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!    end if
-!    call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-!    call marbl_instances(1)%StatusLog%erase()
 
 ! figure out correspondence of marbl to mpaso specific indices
      allocate(ecosysIndexMARBLtoMPASO(ecosys_tracer_cnt))
@@ -2305,12 +2288,14 @@ contains
         fieldNameInMARBL = marbl_instances(1)%tracer_metadata(n)%short_name
         fieldNameForMPAS = trim(fieldNameInMARBL)
         fieldIndexNameForMPAS = 'index_'//trim(fieldNameInMARBL)
-!       write(*,*)' looking for ',trim(fieldIndexNameForMPAS)
+        logMessage = ' looking for '//trim(fieldIndexNameForMPAS)
+        if (verbose) call mpas_log_write(trim(logMessage))
         call mpas_pool_get_dimension(tracersPool, trim(fieldIndexNameForMPAS), index_dummy)
         if (index_dummy > 0) then
            ecosysIndexMARBLtoMPASO(n) = index_dummy
            ecosysIndexMPASOtoMARBL(index_dummy) = n
-!          write(*,*)' found ',trim(fieldNameInMARBL)
+           logMessage = ' found '//trim(fieldIndexNameForMPAS)
+           if (verbose) call mpas_log_write(trim(logMessage))
 !          write(*,*)' MARBL index = ', n
 !          write(*,*)' MPASO index = ', ecosysIndexMARBLtoMPASO(n)
            call ocn_ecosys_assign_MPAS_indices_prognostic(fieldNameForMPAS, index_dummy)
@@ -2319,7 +2304,8 @@ contains
 
 ! make sure all field indices were found
     do n = 1, ecosys_tracer_cnt
-       if (ecosysIndexMARBLtoMPASO(n) == -999) write(*,*)' could not find BGC index in MARBL: n = ',n
+       if (ecosysIndexMARBLtoMPASO(n) == -999) call mpas_log_write(  &
+          "' could not find MARBL index for '//trim(marbl_instances(1)%tracer_metadata(n)%short_name)",MPAS_LOG_CRIT)
     enddo
     if (any(ecosysIndexMARBLtoMPASO <= 0)) then
        err = 1
@@ -2358,7 +2344,8 @@ contains
        index_dummy = n
        foundIndex = .false.
        call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
-!      if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
+       logMessage = ' could not find MARBL interior diagnostic index for '//trim(fieldNameForMPAS)
+       if (.not. foundIndex) call mpas_log_write(trim(logMessage))
     end do
 
 ! search for surface diagnostic field indices
@@ -2369,13 +2356,14 @@ contains
        index_dummy = n
        foundIndex = .false.
        call ocn_ecosys_assign_MPAS_indices_diagnostic(fieldNameForMPAS, index_dummy, foundIndex)
-!      if (.not. foundIndex) write(*,*)' DID NOT FIND INDEX FOR ',trim(fieldNameForMPAS)
+       logMessage = ' could not find MARBL surface diagnostic index for '//trim(fieldNameForMPAS)
+       if (.not. foundIndex) call mpas_log_write(trim(logMessage))
     end do
 
 ! no marbl diagnostic for u10sqr so use the forcing index instead
     ecosys_diag_u10sqr_indexInMARBL = u10sqr_indexInMARBL
 
-!   call ocn_ecosys_echo_indices
+    if (verbose) call ocn_ecosys_echo_indices
 
       !
       ! for now only do 1 column at a time
@@ -2395,13 +2383,9 @@ contains
           field_name   = "flux_co2",                       &
           sfo_id       = co2_flux_indexInMARBL,            &
           marbl_status_log = marbl_instances(1)%StatusLog)
-!      if (marbl_instances(1)%StatusLog%labort_marbl) then
-!        write(log_message,"(A,I0,A)") "marbl(", 1, &
-!                                    ")%surface_flux_output%add_sfo(flux_co2)"
-!        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!      end if
-!      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-!      call marbl_instances(1)%StatusLog%erase()
+
+    if (marbl_instances(1)%StatusLog%labort_marbl) &
+        call mpas_log_write("WARNING: problem in MARBL flux_co2 initialization", MPAS_LOG_CRIT)
 
 ! marbl doesnt return flux_alt_co2 anymore ???!!!
 !      call marbl_instances(1)%surface_flux_output%add_sfo(  &
@@ -2409,26 +2393,15 @@ contains
 !             field_name   = "flux_alt_co2",                 &
 !             sfo_id       = co2_flux_alt_co2_indexInMARBL,  &
 !             marbl_status_log = marbl_instances(1)%StatusLog)
-!      if (marbl_instances(1)%StatusLog%labort_marbl) then
-!        write(log_message,"(A,I0,A)") "marbl(", 1, &
-!                                    ")%surface_flux_output%add_sfo(flux_co2)"
-!        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!      end if
-!      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-!      call marbl_instances(1)%StatusLog%erase()
 
-       call marbl_instances(1)%surface_flux_output%add_sfo(  &
-              num_elements = nCellsSolve,                    &
-              field_name   = "totalChl",                     &
-              sfo_id       = totalChl_indexInMARBL,          &
-              marbl_status_log = marbl_instances(1)%StatusLog)
-!      if (marbl_instances(1)%StatusLog%labort_marbl) then
-!        write(log_message,"(A,I0,A)") "marbl(", 1, &
-!                                    ")%surface_flux_output%add_sfo(totalChl)"
-!        call marbl_instances(1)%StatusLog%log_error_trace(log_message, subname)
-!      end if
-!      call print_marbl_log(marbl_instances(1)%StatusLog, 1)
-!      call marbl_instances(1)%StatusLog%erase()
+    call marbl_instances(1)%surface_flux_output%add_sfo(  &
+          num_elements = nCellsSolve,                    &
+          field_name   = "totalChl",                     &
+          sfo_id       = totalChl_indexInMARBL,          &
+          marbl_status_log = marbl_instances(1)%StatusLog)
+
+      if (marbl_instances(1)%StatusLog%labort_marbl) &
+        call mpas_log_write("WARNING: problem in MARBL totalChl initialization", MPAS_LOG_CRIT)
 
 ! initialize monthly forcing to be read from file
 
@@ -4335,6 +4308,7 @@ contains
    subroutine ocn_ecosys_echo_indices!{{{
 
 ! check for any indices that have not been defined
+! NOTE this writes to ALL processors
 
  write(*,*) 'ecosys_diag_photoC_TOT_zint_indexInMARBL = ', 	ecosys_diag_photoC_TOT_zint_indexInMARBL
  write(*,*) 'ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL = ', 	ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL
