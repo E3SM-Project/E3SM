@@ -138,6 +138,5 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 }
 /* ----------------------------------------------------------------- */
-
 } // namespace scorpio
 } // namespace scream

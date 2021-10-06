@@ -90,7 +90,8 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             count_pio_atm_file,          & ! Diagnostic to count how many files are still open
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
-            set_int_attribute              ! Writes an integer global attribute to the nc file
+            set_int_attribute,           & ! Writes an integer global attribute to the nc file
+            get_dimlen                     ! Returns the length of a specific dimension in a file
 
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -1203,6 +1204,24 @@ contains
     endif
 
   end subroutine get_pio_atm_file
+!=====================================================================!
+  ! Retrieve the dimension length for a file.
+  function get_dimlen(filename,dimname) result(val)
+    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: dimname
+    integer                      :: val
+
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    integer                       :: dim_id, ierr
+    logical                       :: found
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    if (.not.found) call errorHandle("pio_inq_dimlen ERROR: File "//trim(filename)//" not found",-999)
+    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(dimname),dim_id)
+    call errorHandle("pio_inq_dimlen ERROR: dimension "//trim(dimname)//" not found in file "//trim(filename)//".",ierr)
+    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
+
+  end function get_dimlen
 !=====================================================================!
   ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D
