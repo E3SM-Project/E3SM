@@ -5,6 +5,7 @@
 
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream {
 namespace spa {
@@ -108,6 +109,29 @@ struct SPAFunctions
     // AER_TAU_LW: unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
     view_3d<Spack> AER_TAU_LW;
   }; // SPAPrescribedAerosolData
+
+  struct SPAHorizInterp {
+    // This structure stores the information need by SPA to conduct horizontal
+    // interpolation from a set of source data to horizontal locations in the
+    // simulation grid.
+    // The source_grid_loc stores the column index in the source data,
+    // The target_grid_loc stores the column index in the target data that will be mapped to
+    // The weights stores the remapping weight to be applied to the source grid data for this location
+    //   in the target data.
+    SPAHorizInterp() = default;
+    // Number of weights in remap data
+    Int length;
+    // Number of columns and levels on source grid
+    // Note, the number of columns and levels on target grid should already be known.
+    //       these are given based on the simulation grid.
+    Int source_grid_ncols, source_grid_nlevs;
+    // 1D index of weights.  Needs decoder indexing, see below
+    view_1d<Real> weights;
+    // 1D index of source grid column.
+    view_1d<Int> source_grid_loc;
+    // 1D index of target grid column.
+    view_1d<Int> target_grid_loc;
+  }; // SPAHorizInterp
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
   static void spa_main(
@@ -120,6 +144,12 @@ struct SPAFunctions
     Int nlevs_scream,
     Int nswbands,
     Int nlwbands);
+
+  static void get_remap_weights_from_file(
+    const std::string& remap_file_name,
+          SPAHorizInterp& spa_horiz_interp,
+    const Int ncols_scream);
+
 }; // struct Functions
 
 } // namespace spa 

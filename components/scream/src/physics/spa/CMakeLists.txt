@@ -11,3 +11,5 @@ set(CLDFRAC_HEADERS
 
 add_library(spa ${CLDFRAC_SRCS})
 target_link_libraries(spa physics_share scream_share)
+
+add_subdirectory(tests)

@@ -1,6 +1,8 @@
 #ifndef SPA_FUNCTIONS_IMPL_HPP
 #define SPA_FUNCTIONS_IMPL_HPP
 
+#include "share/scream_types.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
@@ -273,6 +275,69 @@ void SPAFunctions<S,D>
   });
   Kokkos::fence();
 
+}
+/*-----------------------------------------------------------------*/
+// Function to read the weights for conducting horizontal remapping
+// from a file.
+template <typename S, typename D>
+void SPAFunctions<S,D>
+::get_remap_weights_from_file(
+    const std::string& remap_file_name,
+          SPAHorizInterp& spa_horiz_interp,
+    const Int ncols_scream
+  )
+{
+  // Note, the remap file doesn't follow a conventional grid setup so
+  // here we manually go through all of the input steps rather than
+  // use the scorpio_input class.
+
+  // Open input file: 
+  scorpio::register_file(remap_file_name,scorpio::Read);
+
+  // Gather the size of the remap data from file.
+  spa_horiz_interp.length = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_s");
+  // And the number of columns that should be in the data source file
+  spa_horiz_interp.source_grid_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_a");
+  // Check that the target grid size matches the remap file
+  Int target_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_b");
+  EKAT_REQUIRE_MSG(target_ncols==ncols_scream,"ERROR: SPA get_remap_weights_from_file, remap target domain does not match simulation domain size");
+
+  // Construct local arrays to read data into
+  view_1d<Real> S_global("weights",spa_horiz_interp.length);
+  view_1d<Int>  row_global("row",spa_horiz_interp.length); 
+  view_1d<Int>  col_global("col",spa_horiz_interp.length); 
+
+  // Setup the scorpio structures needed for input
+  // Register variables for input
+  std::vector<std::string> vec_of_dims{"n_s"};
+  std::string r_decomp = "Real-n_s";
+  std::string i_decomp = "Int-n_s";
+  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims.size(), vec_of_dims, PIO_REAL, r_decomp);
+  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
+  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
+  // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
+  std::vector<int> var_dof(spa_horiz_interp.length);
+  std::iota(var_dof.begin(),var_dof.end(),0);
+  scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
+  scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());
+  scorpio::set_dof(remap_file_name,"col",var_dof.size(),var_dof.data());
+  scorpio::set_decomp(remap_file_name);
+  
+  // Now read all of the input
+  scorpio::grid_read_data_array(remap_file_name,"S",0,S_global.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"row",0,row_global.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"col",0,col_global.data()); 
+
+  // Finished, close the file
+  scorpio::eam_pio_closefile(remap_file_name);
+
+  // Retain only the information needed on this rank. 
+  // TODO: We could probably calculate which entries in the remap data correspond to local dof's on this rank
+  // and then only keep those.  I leave this for future development.
+  spa_horiz_interp.weights = view_1d<Real>(S_global);
+  spa_horiz_interp.source_grid_loc = view_1d<Int>(row_global);
+  spa_horiz_interp.target_grid_loc = view_1d<Int>(col_global);
+  
 }
 /*-----------------------------------------------------------------*/
 // A helper function to manage basic linear interpolation in time.
