@@ -823,41 +823,6 @@ contains
     !        ... Call the class solution algorithms
     !=======================================================================
     !-----------------------------------------------------------------------
-    !	... Solve for "Explicit" species
-    !-----------------------------------------------------------------------
-    if (uci1_ndx > 0) then
-       vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
-    endif
-    call t_startf('exp_sol')
-    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
-    call t_stopf('exp_sol')
-
-    ! reset vmr to pre-exp_sol values for stratospheric boxes
-    if (uci1_ndx > 0) then
-       ! exclude E90 from resetting
-       vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
-       do i = 1,ncol
-          do k = 1,pver
-             if ( .not. tropFlag(i,k) ) then
-                vmr(i,k,:) = vmr_old2(i,k,:)
-             endif
-          enddo
-       enddo
-    endif
-
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
-       if ( history_gaschmbudget ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
-       endif
-       if ( history_gaschmbudget_2D ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
-       endif
-       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
-    endif
-
-    !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
     if ( has_strato_chem ) wrk(:,:) = vmr(:,:,h2o_ndx)
@@ -889,6 +854,41 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
+    !-----------------------------------------------------------------------
+    !	... Solve for "Explicit" species
+    !-----------------------------------------------------------------------
+    if (uci1_ndx > 0) then
+       vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+    call t_startf('exp_sol')
+    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
+    call t_stopf('exp_sol')
+
+    ! reset vmr to pre-exp_sol values for stratospheric boxes
+    if (uci1_ndx > 0) then
+       ! exclude E90 from resetting
+       vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
+       do i = 1,ncol
+          do k = 1,pver
+             if ( .not. tropFlag(i,k) ) then
+                vmr(i,k,:) = vmr_old2(i,k,:)
+             endif
+          enddo
+       enddo
+    endif
+
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+       if ( history_gaschmbudget ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
