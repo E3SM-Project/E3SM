@@ -50,10 +50,14 @@ public:
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
 
-  // Register import/export scream fields
+  // Register import scream fields
   void register_import (const std::string& fname,
                         const int cpl_idx,
                         const int vecComp = -1);
+
+  // Register export scream fields. Since do_export() can be called during initialization,
+  // some scream fields may not have valid entries (i.e., computed fields with no IC).
+  // For these fields, set export_during_init=false and they will be skipped.
   void register_export (const std::string& fname,
                         const int cpl_idx,
                         const int vecComp = -1,

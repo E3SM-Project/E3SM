@@ -176,6 +176,7 @@ contains
     ndays =  0
     nmax  = 12
     moisture = 'dry'
+    cubed_sphere_map = 2
     partmethod = SFCURVE
     coord_transform_method = SPHERE_COORDS
     transport_alg = 0

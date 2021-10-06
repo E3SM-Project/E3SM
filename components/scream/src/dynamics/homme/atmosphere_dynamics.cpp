@@ -841,7 +841,7 @@ void HommeDynamics::update_pressure() {
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-   const int& icol = team.league_rank();
+    const int& icol = team.league_rank();
 
     auto dp = ekat::subview(dp_view,icol);
     auto p_mid = ekat::subview(p_mid_view,icol);
