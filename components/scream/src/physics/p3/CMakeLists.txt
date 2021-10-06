@@ -51,6 +51,9 @@ if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     p3_incloud_mixingratios.cpp
     p3_subgrid_variance_scaling.cpp
     p3_main.cpp
+    p3_main_part1.cpp
+    p3_main_part2.cpp
+    p3_main_part3.cpp
     p3_ice_supersat_conservation.cpp
     p3_nc_conservation.cpp
     p3_nr_conservation.cpp
