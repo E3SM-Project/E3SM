@@ -3,7 +3,6 @@ set(P3_SRCS
   p3_functions_f90.cpp
   p3_ic_cases.cpp
   p3_iso_c.f90
-  p3_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
 )
 
