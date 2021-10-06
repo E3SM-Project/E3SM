@@ -377,6 +377,19 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
+    def test_run_valg_err_captured(self):
+        """
+        Test that the 'valg' test in test-all-scream detects and returns non-zero if there's a valgrind error
+        """
+        if self._full:
+            if is_cuda_machine(self._machine):
+                self.skipTest("Skipping valgrind test on cuda")
+            else:
+                cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_VALG_ERR=True -m $machine -b HEAD -k -t valg", self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
     def test_run_diff_captured(self):
         """
         Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a baseline diff in p3_run_and_cmp
