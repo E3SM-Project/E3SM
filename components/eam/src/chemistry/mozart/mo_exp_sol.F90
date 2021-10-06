@@ -88,13 +88,19 @@ contains
        if (trim(solsym(l)) == 'E90') then
           do i = 1,ncol
              do k = 1,pver
-                base_sol(i,k,l)  = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                ! change the old equation
+                ! base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                ! to use the e-folding decay to handle the loss part to ensure non-negative solutions
+                ! loss/base_sol is the loss frequency (dx/x).
+                ! base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) is what left after decay
+                ! and delt*(prod(i,k,m)+ind_prd(i,k,m)) is the production.
+                base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
-                base_sol(i,k,l)  = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
        end if
