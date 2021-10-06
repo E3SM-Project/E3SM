@@ -302,18 +302,30 @@ void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
 }
 
 template<typename DeviceT>
-template<typename ScalarT, typename InputProviderZ>
+template<typename InputProviderZ, typename ViewT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
                                                 const int num_levs,
                                                 const InputProviderZ& dz,
                                                 const Real z_surf,
-                                                const view_1d<ScalarT>& z_int)
+                                                const ViewT& z_int)
 {
   using column_ops  = ColumnOps<DeviceT,Real>;
   // Note, we set FromTop to false since we are prescribing the *bottom* elevation.
   constexpr bool FromTop = false;
   column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,z_surf);
+}
+
+template<typename DeviceT>
+template<typename InputProvider, typename ViewT>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_z_mid(const MemberType& team,
+                                                const int num_levs,
+                                                const InputProvider& z_int,
+                                                const ViewT& z_mid)
+{
+  using column_ops  = ColumnOps<DeviceT,Real>;
+  column_ops::compute_midpoint_values(team,num_levs,z_int,z_mid);
 }
 
 template<typename DeviceT>

@@ -62,7 +62,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // These variables are needed by the interface, but not actually passed to p3_main. 
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("z_int",       scalar3d_layout_int, m,      grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)

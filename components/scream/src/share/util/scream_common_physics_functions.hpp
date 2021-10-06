@@ -351,15 +351,26 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ>
+  template<typename InputProviderZ, typename ViewT>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_int (const MemberType& team,
                                const int num_levs,
                                const InputProviderZ& dz,
                                const Real z_surf,
-                               const view_1d<ScalarT>& z_int);
+                               const ViewT& z_int);
 
-  
+  //-----------------------------------------------------------------------------------------------//
+  // Determines the vertical layer height on mid points from the vertical layer interface height:
+  //   z_mid(i,k) = (z_int(i,k) + z_int(i,k+1))/2.0
+  // where
+  //   z_int is the vertical layer interface height, [m]
+  //-----------------------------------------------------------------------------------------------//
+  template<typename InputProvider, typename ViewT>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_z_mid (const MemberType& team,
+                               const int num_levs,
+                               const InputProvider& z_int,
+                               const ViewT& z_mid);
 
 }; // struct PhysicsFunctions
 

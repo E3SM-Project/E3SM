@@ -44,9 +44,15 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports,
   m_scream_exports_host = Kokkos::create_mirror_view(m_scream_exports_dev);
 
   // These fields contain computation needed for some export fields
-  Sa_ptem      = decltype(Sa_ptem)     ("", m_num_cols);
-  Sa_dens      = decltype(Sa_dens)     ("", m_num_cols);
-  zero_view    = decltype(zero_view)   ("", m_num_cols);
+  dz    = decltype(dz)    ("", m_num_levs);
+  z_int = decltype(z_int) ("", m_num_levs+1);
+  z_mid = decltype(z_mid) ("", m_num_levs);
+
+  // These fields contain export data
+  Sa_z         = decltype(Sa_z)      ("", m_num_cols);
+  Sa_ptem      = decltype(Sa_ptem)   ("", m_num_cols);
+  Sa_dens      = decltype(Sa_dens)   ("", m_num_cols);
+  zero_view    = decltype(zero_view) ("", m_num_cols);
   Kokkos::deep_copy(zero_view, 0.0);
 
   // These will be incremented every time we register an import/export.
@@ -168,6 +174,7 @@ register_export (const std::string& fname,
 
     // Set view data ptr
     if (fname == "set_zero")     info.data = zero_view.data();
+    else if (fname == "Sa_z")    info.data = Sa_z.data();
     else if (fname == "Sa_ptem") info.data = Sa_ptem.data();
     else if (fname == "Sa_dens") info.data = Sa_dens.data();
     else                         EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
@@ -284,7 +291,8 @@ void SurfaceCoupling::do_export (const bool init_phase)
     return;
   }
 
-  using policy_type = KokkosTypes<device_type>::RangePolicy;
+  using KT = KokkosTypes<device_type>;
+  using policy_type = KT::RangePolicy;
   using PF = PhysicsFunctions<device_type>;
 
   // For each export fields that is not trivially exist in the field
@@ -300,13 +308,29 @@ void SurfaceCoupling::do_export (const bool init_phase)
     const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
     const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
 
-    const auto policy = policy_type (0, m_num_cols);
-    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
-      const auto dz = PF::calculate_dz(pseudo_density(i, last_entry), p_mid(i, last_entry),
-                                       T_mid(i, last_entry), qv(i, last_entry));
+    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, m_num_levs);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
+      const int i = team.league_rank();
 
-      Sa_ptem(i) = PF::calculate_theta_from_T(T_mid(i, last_entry), p_mid(i, last_entry));
-      Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
+      const auto qv_i             = ekat::subview(qv, i);
+      const auto T_mid_i          = ekat::subview(T_mid, i);
+      const auto p_mid_i          = ekat::subview(p_mid, i);
+      const auto pseudo_density_i = ekat::subview(pseudo_density, i);
+
+      // Compute vertical layer heights
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_num_levs), [&] (const Int& k) {
+        dz(k) = PF::calculate_dz(pseudo_density_i(k), p_mid_i(k), T_mid_i(k), qv_i(k));
+      });
+      team.team_barrier();
+
+      // Compute vertical layer heights
+      PF::calculate_z_int(team,m_num_levs,dz,0.0,z_int);
+      team.team_barrier();
+      PF::calculate_z_mid(team,m_num_levs,z_int,z_mid);
+
+      Sa_z(i)    = z_mid(last_entry);
+      Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
+      Sa_dens(i) = PF::calculate_density(pseudo_density_i(last_entry), dz(last_entry));
     });
   }
 

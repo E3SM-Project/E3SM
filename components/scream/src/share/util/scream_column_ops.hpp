@@ -431,6 +431,9 @@ protected:
                     const view_1d<ScalarT,MT>& x_i,
                     const scalar_type& s0 = zero())
   {
+    EKAT_KERNEL_ASSERT_MSG(pack_size<ScalarT>() <= num_mid_levels,
+                           "Error! Currently, column_scan_impl() is not implemented for pack_size > num_mid_levels.");
+
     using pack_type = ScalarT;
     constexpr int PackLength = pack_size<ScalarT>();
     using pack_info = ekat::PackInfo<PackLength>;

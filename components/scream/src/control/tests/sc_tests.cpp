@@ -268,7 +268,6 @@ TEST_CASE ("recreate_mct_coupling")
   // are included to verify that subviewed fields (qv) are correctly handled
   FID T_mid_id           ("T_mid",           scalar3d_layout, K,      grid_name);
   FID p_mid_id           ("p_mid",           scalar3d_layout, Pa,     grid_name);
-  FID z_mid_id           ("z_mid",           scalar3d_layout, m,      grid_name);
   FID horiz_winds_id     ("horiz_winds",     vector3d_layout, m/s,    grid_name);
   FID pseudo_density_id  ("pseudo_density",  scalar3d_layout, Pa,     grid_name);
   FID qv_id              ("qv",              scalar3d_layout, nondim, grid_name);
@@ -292,7 +291,6 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{surf_lw_flux_up_id});
   fm->register_field(FR{T_mid_id});
   fm->register_field(FR{p_mid_id});
-  fm->register_field(FR{z_mid_id});
   fm->register_field(FR{horiz_winds_id});
   fm->register_field(FR{pseudo_density_id});
   fm->register_field(FR{qv_id,"tracers"});
@@ -312,7 +310,6 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_lw_flux_up_f  = fm->get_field(surf_lw_flux_up_id);
   auto T_mid_f            = fm->get_field(T_mid_id);
   auto p_mid_f            = fm->get_field(p_mid_id);
-  auto z_mid_f            = fm->get_field(z_mid_id);
   auto horiz_winds_f      = fm->get_field(horiz_winds_id);
   auto pseudo_density_f   = fm->get_field(pseudo_density_id);
   auto qv_f               = fm->get_field(qv_id);
@@ -332,7 +329,6 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_lw_flux_up_d  = surf_lw_flux_up_f.get_view<Real*>();
   auto T_mid_d            = T_mid_f.get_view<Real**>();
   auto p_mid_d            = p_mid_f.get_view<Real**>();
-  auto z_mid_d            = z_mid_f.get_view<Real**>();
   auto horiz_winds_d      = horiz_winds_f.get_view<Real***>();
   auto pseudo_density_d   = pseudo_density_f.get_view<Real**>();
   auto qv_d               = qv_f.get_view<Real**>();
@@ -348,7 +344,6 @@ TEST_CASE ("recreate_mct_coupling")
   auto surf_lw_flux_up_h  = surf_lw_flux_up_f.get_view<Real*,Host>();
   auto T_mid_h            = T_mid_f.get_view<Real**,Host>();
   auto p_mid_h            = p_mid_f.get_view<Real**,Host>();
-  auto z_mid_h            = z_mid_f.get_view<Real**,Host>();
   auto pseudo_density_h   = pseudo_density_f.get_view<Real**,Host>();
   auto horiz_winds_h      = horiz_winds_f.get_view<Real***,Host>();
   auto qv_h               = qv_f.get_view<Real**,Host>();
@@ -392,7 +387,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("unused",           28);
   coupler.register_import("unused",           29);
 
-  coupler.register_export("z_mid",           0);
+  coupler.register_export("Sa_z",            0);
   coupler.register_export("set_zero",        1);
   coupler.register_export("horiz_winds",     2, 0);
   coupler.register_export("horiz_winds",     3, 1);
@@ -449,7 +444,6 @@ TEST_CASE ("recreate_mct_coupling")
     // Fill views needed in the export with random values
     ekat::genRandArray(T_mid_d,engine,pdf);
     ekat::genRandArray(p_mid_d,engine,pdf);
-    ekat::genRandArray(z_mid_d,engine,pdf);
     ekat::genRandArray(horiz_winds_d,engine,pdf);
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
@@ -481,7 +475,6 @@ TEST_CASE ("recreate_mct_coupling")
     surf_lw_flux_up_f.sync_to_host();
     T_mid_f.sync_to_host();
     p_mid_f.sync_to_host();
-    z_mid_f.sync_to_host();
     horiz_winds_f.sync_to_host();
     pseudo_density_f.sync_to_host();
     precip_liq_surf_f.sync_to_host();
@@ -505,7 +498,6 @@ TEST_CASE ("recreate_mct_coupling")
       // Exports
 
       // These exports are direct values from a scream field
-      REQUIRE (export_raw_data[0 + icol*num_cpl_exports]  == z_mid_h          (icol,    nlevs-1)); // 1st export
       REQUIRE (export_raw_data[2 + icol*num_cpl_exports]  == horiz_winds_h    (icol, 0, nlevs-1)); // 3rd export
       REQUIRE (export_raw_data[3 + icol*num_cpl_exports]  == horiz_winds_h    (icol, 1, nlevs-1)); // 4th export
       REQUIRE (export_raw_data[4 + icol*num_cpl_exports]  == T_mid_h          (icol,    nlevs-1)); // 5th export

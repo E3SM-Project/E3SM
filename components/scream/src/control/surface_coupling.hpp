@@ -138,7 +138,11 @@ protected:
   decltype(m_scream_imports_dev)::HostMirror    m_scream_imports_host;
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
+  // Views needed for export computations
+  view_1d<device_type,Real> dz, z_int, z_mid;
+
   // Views for storing export values for various fields that need to be computed
+  view_1d<device_type,Real> Sa_z;
   view_1d<device_type,Real> Sa_ptem;
   view_1d<device_type,Real> Sa_dens;
   view_1d<device_type,Real> zero_view;
