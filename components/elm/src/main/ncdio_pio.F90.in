@@ -1470,6 +1470,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary
     integer                          :: n          ! index      
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: iodnum     ! iodesc num in list
     integer                          :: varid      ! varid
     integer                          :: ndims      ! ndims for var
@@ -1513,9 +1514,20 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,elmlevel,vardesc,start,count)
              if (present(nt)) then
-               n=3
-               if (start(3) .eq. 0) n=2
-               start(n) = nt ; count(n) = 1
+                !-------------------------------------------------------------
+                !Find the last non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
+
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = 3
+
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind - 1 ! time index for the start array
+                   if(n_time_ind == 1) exit    ! do not test for start(1)
+                enddo
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
 
 #if ({ITYPE}==TYPELOGICAL)
@@ -1652,6 +1664,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: ndims_iod  ! ndims iodesc for var
     integer           :: varid      ! varid
     integer           :: n,i,j      ! indices
+    integer           :: n_time_ind !time slice index of the "start" array
     integer           :: dims(4)    ! dim sizes       
     integer           :: dids(4)    ! dim ids
     integer           :: iodnum     ! iodesc num in list
@@ -1702,10 +1715,21 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
                 if (present(nt)) then
-                   n=4
-                   if (start(4) .eq. 0) n=3
-                   start(n) = nt; count(n) = 1
-                end if
+
+                   !-------------------------------------------------------------
+                   !Find the last non-zero occurrence in the "start" array
+                   !-------------------------------------------------------------
+
+                   !Assuming that the last non-zero index corresponds to the
+                   !time dimension. We need to read the "nt" th time dimension here
+
+                   n_time_ind = 4
+                   do while(start(n_time_ind) == 0)
+                      n_time_ind = n_time_ind - 1 ! time index for the start array
+                      if(n_time_ind == 1) exit    ! do not test for start(1)
+                   enddo
+                   start(n_time_ind) = nt ; count(n_time_ind) = 1
+                endif
              if (present(switchdim)) then
                 status = pio_get_var(ncid, vardesc, start, count, temp)
                 do j = lb2,ub2
@@ -1860,6 +1884,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     !
     ! !LOCAL VARIABLES:
+    integer, parameter               :: max_ind = 5   !index for arrays which read data from the netcdf files
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: ndim1,ndim2       
     character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary      
@@ -1867,19 +1893,19 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: ndims      ! ndims total for var
     integer                          :: ndims_iod  ! ndims iodesc for var
     integer                          :: varid      ! varid
-    integer                          :: n          ! index      
-    integer                          :: dims(5)    ! dim sizes       
-    integer                          :: dids(5)    ! dim ids
+    integer                          :: ind          ! index      
+    integer                          :: dims(max_ind)    ! dim sizes       
+    integer                          :: dids(max_ind)    ! dim ids
     integer                          :: iodnum     ! iodesc num in list
-    integer                          :: start(5)   ! netcdf start index
-    integer                          :: count(5)   ! netcdf count index
+    integer                          :: start(max_ind)   ! netcdf start index
+    integer                          :: count(max_ind)   ! netcdf count index
     logical                          :: varpresent ! if true, variable is on tape
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
 
-    elmlevel = dim1name      
+    elmlevel = dim1name 
 
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(elmlevel)
@@ -1890,15 +1916,25 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
           if (single_column) then
-             start(:) = 1 
+             start(:) = 1
              count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
              if (present(nt)) then
-               n=5
-               if (start(5) .eq. 0) n=4
-               start(n) = nt ; count(n) = 1
+                !-------------------------------------------------------------
+                !Find the last  non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
+
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = max_ind
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind -1 ! time index for the start array
+                   if(n_time_ind == 1) exit   ! do not test for start(1)
+                enddo
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
+
              endif
-             
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1913,8 +1949,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 ndims_iod = ndims
              end if
-             do n = 1,ndims_iod
-                status = pio_inq_dimlen(ncid,dids(n),dims(n))
+             do ind = 1,ndims_iod
+                status = pio_inq_dimlen(ncid,dids(ind),dims(ind))
              enddo
              call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
                   PIO_{TYPE}, iodnum)
@@ -1942,8 +1978,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        else
           ndims_iod = ndims
        end if
-       do n = 1,ndims_iod
-          status = pio_inq_dimlen(ncid,dids(n),dims(n))
+       do ind = 1,ndims_iod
+          status = pio_inq_dimlen(ncid,dids(ind),dims(ind))
        enddo
        call ncd_getiodesc(ncid, elmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
             PIO_{TYPE}, iodnum)
@@ -1990,6 +2026,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: ndims_iod  ! ndims iodesc for var
     integer                          :: varid      ! varid
     integer                          :: n          ! index      
+    integer                          :: n_time_ind !time slice index of the "start" array
     integer                          :: dims(5)    ! dim sizes       
     integer                          :: dids(5)    ! dim ids
     integer                          :: iodnum     ! iodesc num in list
@@ -2015,9 +2052,20 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              start(:) = 1; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
-               n=6
-               if (start(6) .eq. 0) n=5
-               start(n) = nt ; count(n) = 1
+
+                !-------------------------------------------------------------
+                !Find the last non-zero occurrence in the "start" array
+                !-------------------------------------------------------------
+
+                !Assuming that the last non-zero index corresponds to the
+                !time dimension. We need to read the "nt" th time dimension here
+
+                n_time_ind = 6
+                do while(start(n_time_ind) == 0)
+                   n_time_ind = n_time_ind -1 ! time index for the start array
+                   if(n_time_ind == 1) exit   ! do not test for start(1)
+                enddo
+                start(n_time_ind) = nt ; count(n_time_ind) = 1
              endif
              
              status = pio_get_var(ncid, vardesc, start, count, data)
