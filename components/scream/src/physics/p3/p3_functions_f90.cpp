@@ -2988,7 +2988,7 @@ void p3_main_part2_f(
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
-      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0));
+      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0),nk);
   });
 
   // Sync back to host. Skip intent in variables.
