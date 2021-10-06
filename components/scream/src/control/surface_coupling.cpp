@@ -240,6 +240,9 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
     // Setup the host and device 2d views
     m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_scream_exports);
     m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+
+    // Deep copy to preserve any existing data in cpl_exports_ptr
+    Kokkos::deep_copy(m_cpl_exports_view_d,m_cpl_exports_view_h);
   }
 
   // Finally, mark registration as completed.
@@ -306,10 +309,6 @@ void SurfaceCoupling::do_export (const bool init_phase)
       Sa_dens(i) = PF::calculate_density(pseudo_density(i, last_entry), dz);
     });
   }
-
-  // Deep copy fields to device in case host data was updated
-  // in between registration_end() and do_export()
-  Kokkos::deep_copy(m_cpl_exports_view_d,m_cpl_exports_view_h);
 
   // Local copies, to deal with CUDA's handling of *this.
   const auto scream_exports = m_scream_exports_dev;
