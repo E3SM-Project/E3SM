@@ -1567,6 +1567,9 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
+  <CXXFLAGS>
+    <append DEBUG="TRUE" > -O0 -g </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
