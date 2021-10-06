@@ -1022,6 +1022,7 @@ contains
 
          if (marbl_instances(1)%StatusLog%labort_marbl) &
            call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
+        call marbl_instances(1)%StatusLog%erase()
 
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
 
@@ -1903,6 +1904,7 @@ contains
 
       if (marbl_instances(1)%StatusLog%labort_marbl) &
         call mpas_log_write("WARNING: problem in MARBL surface_flux_compute", MPAS_LOG_CRIT)
+        call marbl_instances(1)%StatusLog%erase()
 
 ! copy marbl output into mpas arrays
 
@@ -2258,6 +2260,7 @@ contains
 
      if (marbl_instances(1)%StatusLog%labort_marbl) &
         call mpas_log_write("WARNING: problem in MARBL initialization", MPAS_LOG_CRIT)
+        call marbl_instances(1)%StatusLog%erase()
 
      ! Make sure MARBL tracer count lines up with what MPASO expects
       nTracers = size(ecosysTracers, dim=1)
@@ -2386,6 +2389,7 @@ contains
 
     if (marbl_instances(1)%StatusLog%labort_marbl) &
         call mpas_log_write("WARNING: problem in MARBL flux_co2 initialization", MPAS_LOG_CRIT)
+        call marbl_instances(1)%StatusLog%erase()
 
 ! marbl doesnt return flux_alt_co2 anymore ???!!!
 !      call marbl_instances(1)%surface_flux_output%add_sfo(  &
@@ -2402,6 +2406,7 @@ contains
 
       if (marbl_instances(1)%StatusLog%labort_marbl) &
         call mpas_log_write("WARNING: problem in MARBL totalChl initialization", MPAS_LOG_CRIT)
+        call marbl_instances(1)%StatusLog%erase()
 
 ! initialize monthly forcing to be read from file
 
