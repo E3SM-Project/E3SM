@@ -33,7 +33,8 @@ struct UnitWrap::UnitTest<D>::TestReadRemapData {
 
     const std::string remap_file_name = "map_ne2np4_to_ne4np4_mono.nc";
 
-    SPAFunc::get_remap_weights_from_file(remap_file_name,spa_horiz_interp,866);
+    Int target_grid_ncols = 866;
+    SPAFunc::get_remap_weights_from_file(remap_file_name,target_grid_ncols,spa_horiz_interp);
 
     REQUIRE(spa_horiz_interp.length==17498); // The test file has 17,498 points in it
     REQUIRE(spa_horiz_interp.source_grid_ncols==218); // The test file maps ne2 (218 cols) to ne4 (866 cols)

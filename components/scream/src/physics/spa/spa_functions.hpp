@@ -80,19 +80,37 @@ struct SPAFunctions
 
   struct SPAData {
     SPAData() = default;
+    SPAData(const int ncol_, const int nlev_, const int nswbands_, const int nlwbands_) :
+      ncols(ncol_)
+      ,nlevs(nlev_)
+      ,nswbands(nswbands_)
+      ,nlwbands(nlwbands_)
+    {
+      PS        = view_1d<Real>("",ncols);
+      CCN3      = view_2d<Spack>("",ncols,nlevs);
+      AER_G_SW  = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_SSA_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_LW = view_3d<Spack>("",ncols,nlwbands,nlevs); 
+    }
     // Basic spatial dimensions of the data
     Int ncols;
     Int nlevs;
+    Int nswbands;
+    Int nlwbands;
+    // PS unit = Pa: Surface pressure
+    view_1d<Real> PS;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
     view_2d<Spack> CCN3;
-    // AER_Gnit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    // AER_G_SW unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_G_SW;
-    // AER_S unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    // AER_SSA_SW unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_SSA_SW;
-    // AER_T unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
+    // AER_TAU_SW unit = #/cm3, dimensions = (ncol,nswband=14,nlev)
     view_3d<Spack> AER_TAU_SW;
-    // AER_T unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
+    // AER_TAU_LW unit = #/cm3, dimensions = (ncol,nswband=16,nlev)
     view_3d<Spack> AER_TAU_LW;
+
   }; // SPAPrescribedAerosolData
 
   struct SPAOutput {
@@ -119,10 +137,17 @@ struct SPAFunctions
     // The weights stores the remapping weight to be applied to the source grid data for this location
     //   in the target data.
     SPAHorizInterp() = default;
+    SPAHorizInterp(const int length_)
+    {
+      length = length_;
+      weights = view_1d<Real>("",length_);
+      source_grid_loc = view_1d<Int>("",length_);
+      target_grid_loc = view_1d<Int>("",length_);
+    }
     // Number of weights in remap data
     Int length;
     // Number of columns and levels on source grid
-    // Note, the number of columns and levels on target grid should already be known.
+    // Note, the number of columns on target grid should already be known.
     //       these are given based on the simulation grid.
     Int source_grid_ncols, source_grid_nlevs;
     // 1D index of weights.  Needs decoder indexing, see below
@@ -131,6 +156,7 @@ struct SPAFunctions
     view_1d<Int> source_grid_loc;
     // 1D index of target grid column.
     view_1d<Int> target_grid_loc;
+
   }; // SPAHorizInterp
   /* ------------------------------------------------------------------------------------------- */
   // SPA routines
@@ -147,8 +173,17 @@ struct SPAFunctions
 
   static void get_remap_weights_from_file(
     const std::string& remap_file_name,
+    const Int ncols_scream,
+          SPAHorizInterp& spa_horiz_interp);
+
+  static void update_spa_data_from_file(
+    const ekat::Comm&     comm,
+    const std::string&    spa_data_file_name,
+    const Int             time_index,
+    const Int             nswbands,
+    const Int             nlwbands,
           SPAHorizInterp& spa_horiz_interp,
-    const Int ncols_scream);
+          SPAData&        spa_data);
 
 }; // struct Functions
 

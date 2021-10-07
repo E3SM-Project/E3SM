@@ -434,15 +434,22 @@ contains
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
-      if ( trim(hist_var%name) .ne. trim(shortname) .or. &
-           trim(hist_var%long_name) .ne. trim(longname) .or. &
-           hist_var%dtype .ne. dtype .or. &
+      if ( trim(hist_var%name) .ne. trim(shortname) &
+               .or. &
+           trim(hist_var%long_name) .ne. trim(longname) &
+               .or. &
+           hist_var%dtype .ne. dtype &
+                .or. &
            (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
             (hist_var%numdims .ne. numdims .or. &
-             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) .or. &
-           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
-            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
-             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) )then
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) &
+! TODO: Check on this last conditional statement.  I don't think it is defined
+! correctly.  Commenting out for now.
+!                 .or. &
+!           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
+!            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
+!             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) &
+          ) then
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different name and/or dims and/or dtype and/or decomp tag, in file: "//trim(filename),-999)
       endif
     endif

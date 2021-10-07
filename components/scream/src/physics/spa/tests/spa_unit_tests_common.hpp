@@ -1,8 +1,10 @@
 #ifndef SPA_UNIT_TESTS_COMMON_HPP
 #define SPA_UNIT_TESTS_COMMON_HPP
 
-#include "physics/shoc/shoc_functions.hpp"
 #include "share/scream_types.hpp"
+
+#include "physics/spa/spa_functions.hpp"
+
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 namespace scream {
@@ -40,19 +42,18 @@ struct UnitWrap {
     template <typename S>
     using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
-    using Functions          = scream::shoc::Functions<Real, Device>;
+    using Functions          = scream::spa::SPAFunctions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
     using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
-    using C                  = typename Functions::C;
 
     static constexpr Int max_pack_size = 16;
     static constexpr Int num_test_itrs = max_pack_size / Spack::n;
 
     // Put struct decls here
     struct TestReadRemapData;
+    struct TestReadDataFile;
+
   };
 
 };
