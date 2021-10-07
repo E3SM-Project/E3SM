@@ -1099,13 +1099,18 @@ contains
              end if
           else ! not use_cn
 
-             if (doalb.or.(use_fates_sp.and.doalb)) then
+             if (.not.use_fates_sp .and. doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes
-
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
+
+             if (.not.use_fates_sp .and. doalb) then
+               call SatellitePhenology(bounds_clump,               &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
+               waterstate_vars, canopystate_vars)
+             endif
 
           end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc

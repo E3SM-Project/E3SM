@@ -917,7 +917,8 @@ contains
           !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
           do nc = 1,nclumps
              call get_clump_bounds(nc, bounds_clump)
-             call SatellitePhenology(bounds_clump, filter(nc)%num_nolakep, filter(nc)%nolakep, &
+             call SatellitePhenology(bounds_clump, &
+                  filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
                   water_inst%waterdiagnosticbulk_inst, canopystate_inst)
           end do
           !$OMP END PARALLEL DO
