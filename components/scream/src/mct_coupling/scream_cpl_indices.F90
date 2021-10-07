@@ -1,6 +1,6 @@
 module scream_cpl_indices
 
-  use iso_c_binding, only: c_int, c_char
+  use iso_c_binding, only: c_int, c_char, c_bool
 
   implicit none
   private
@@ -21,6 +21,9 @@ module scream_cpl_indices
   ! Vector component of import/export fields. If not a vector field, set to -1.
   integer(kind=c_int), public, allocatable, target :: vec_comp_a2x(:)
   integer(kind=c_int), public, allocatable, target :: vec_comp_x2a(:)
+
+  ! Stores whether or not field can be exported during initialization
+  logical(kind=c_bool), public, allocatable, target :: can_be_exported_during_init(:)
 
   public :: scream_set_cpl_indices
 
@@ -52,6 +55,8 @@ module scream_cpl_indices
     allocate (vec_comp_x2a(num_cpl_imports))
     allocate (vec_comp_a2x(num_cpl_exports))
 
+    allocate (can_be_exported_during_init(num_cpl_exports))
+
     ! Initialize arrays
     do i=1,num_cpl_imports
       index_x2a(i) = i
@@ -62,6 +67,7 @@ module scream_cpl_indices
       index_a2x(i) = i
       scr_names_a2x(i) = 'set_zero'
       vec_comp_a2x(i) = -1
+      can_be_exported_during_init(i) = .true.
     enddo
 
     ! The following are imported to SCREAM
@@ -91,6 +97,9 @@ module scream_cpl_indices
 
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_u')) = 0
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_v')) = 1
+
+    ! SCREAM needs to run before this field can be exported
+    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_rainl')) = .false.
 
     ! Trim names
     do i=1,num_cpl_imports

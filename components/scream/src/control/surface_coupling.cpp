@@ -115,7 +115,8 @@ register_import(const std::string& fname,
 void SurfaceCoupling::
 register_export (const std::string& fname,
                  const int cpl_idx,
-                 const int vecComp)
+                 const int vecComp,
+                 const bool export_during_init)
 {
   // Two separate checks rather than state==Open, so we can print more specific error messages
   EKAT_REQUIRE_MSG (m_state!=RepoState::Clean,
@@ -178,6 +179,9 @@ register_export (const std::string& fname,
     m_exports_fids.insert(dummy_field.get_header().get_identifier());
   }
 
+  // Fields which are computed inside SCREAM should skip the initial export
+  info.do_initial_export = export_during_init;
+
   // Set cpl index
   info.cpl_idx = cpl_idx;
 
@@ -236,6 +240,9 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
     // Setup the host and device 2d views
     m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_scream_exports);
     m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+
+    // Deep copy to preserve any existing data in cpl_exports_ptr
+    Kokkos::deep_copy(m_cpl_exports_view_d,m_cpl_exports_view_h);
   }
 
   // Finally, mark registration as completed.
@@ -271,7 +278,7 @@ void SurfaceCoupling::do_import ()
   });
 }
 
-void SurfaceCoupling::do_export ()
+void SurfaceCoupling::do_export (const bool init_phase)
 {
   if (m_num_scream_exports==0) {
     return;
@@ -288,10 +295,10 @@ void SurfaceCoupling::do_export ()
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density"));
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
-    const auto qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
-    const auto T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
-    const auto p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
-    const auto pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
+    const auto& qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
+    const auto& T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
+    const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
 
     const auto policy = policy_type (0, m_num_cols);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
@@ -314,9 +321,14 @@ void SurfaceCoupling::do_export ()
     const int ifield = i / num_cols;
     const int icol   = i % num_cols;
     const auto& info = scream_exports(ifield);
-
     const auto offset = icol*info.col_stride + info.col_offset;
-    cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
+
+    // during the initial export, some fields may need to be skipped
+    // since values have not been computed inside SCREAM at the time
+    bool do_export = (!init_phase || info.do_initial_export);
+    if (do_export) {
+      cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
+    }
   });
 
   // Deep copy fields from device to cpl host array

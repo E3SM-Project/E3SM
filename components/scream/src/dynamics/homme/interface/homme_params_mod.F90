@@ -118,6 +118,7 @@ contains
     namelist /ctl_nl/test_case, &
       u_perturb,                &
       partmethod,               &         ! mesh partitioning method
+      cubed_sphere_map,         &
       coord_transform_method,   &
       vert_remap_q_alg,         &
       theta_advect_form,        &
@@ -175,6 +176,7 @@ contains
     ndays =  0
     nmax  = 12
     moisture = 'dry'
+    cubed_sphere_map = 2
     partmethod = SFCURVE
     coord_transform_method = SPHERE_COORDS
     transport_alg = 0
@@ -373,6 +375,7 @@ contains
 
        write(iulog,*)"homme namelist: ne,np         = ",NE,np
        write(iulog,*)"homme namelist: partmethod    = ",PARTMETHOD
+       write(iulog,*)"homme namelist: cubed_sphere_map = ",cubed_sphere_map
        write(iulog,*)"homme namelist: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
 
        write(iulog,*)"homme namelist: theta_hydrostatic_mode = ",theta_hydrostatic_mode

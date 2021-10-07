@@ -62,6 +62,9 @@ protected:
   // Propagates initial conditions to homme
   void import_initial_conditions ();
 
+  // Updates p_mid
+  void update_pressure ();
+
   void initialize_impl (const util::TimeStamp& t0);
 protected:
   void run_impl        (const Real dt);

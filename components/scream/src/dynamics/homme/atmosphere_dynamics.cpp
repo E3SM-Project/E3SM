@@ -308,6 +308,11 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   // Import I.C. from the ref grid to the dyn grid.
   import_initial_conditions ();
 
+  // Update p_int and p_mid. Other models might import these values from
+  // SurfaceCoupling during initialization. They will be overwritten
+  // during postprocessing.
+  update_pressure();
+
   // Complete homme model initialization
   prim_init_model_f90 ();
 }
@@ -811,6 +816,40 @@ void HommeDynamics::import_initial_conditions () {
     const int k  = idx % NVL;
 
     qdp(ie,n0_qdp,iq,ip,jp,k) = q(ie,iq,ip,jp,k) * dp(ie,n0,ip,jp,k);
+  });
+}
+// =========================================================================================
+void HommeDynamics::update_pressure() {
+  using KT = KokkosTypes<DefaultDevice>;
+  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
+  using Pack = ekat::Pack<Real,N>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+
+  const auto ncols = m_ref_grid->get_num_local_dofs();
+  const auto nlevs = m_ref_grid->get_num_vertical_levels();
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+
+  const auto& c = Homme::Context::singleton();
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
+
+  const auto dp_view    = get_field_out("pseudo_density").get_view<Pack**>();
+  const auto p_int_view = get_field_out("p_int").get_view<Pack**>();
+  const auto p_mid_view = get_field_out("p_mid").get_view<Pack**>();
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int& icol = team.league_rank();
+
+    auto dp = ekat::subview(dp_view,icol);
+    auto p_mid = ekat::subview(p_mid_view,icol);
+    auto p_int = ekat::subview(p_int_view,icol);
+
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    team.team_barrier();
+    ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
   });
 }
 // =========================================================================================

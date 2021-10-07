@@ -547,3 +547,109 @@ TEST_CASE ("recreate_mct_coupling")
   delete[] export_raw_data;
   delete[] import_raw_data;
 }
+
+
+TEST_CASE ("do_initial_export")
+{
+  /*
+   * This test performs 2 exports, one with init_phase=true, to
+   * test that feature.
+   */
+
+  // Some namespaces/aliases
+  using namespace scream;
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  using FL = FieldLayout;
+  using FID = FieldIdentifier;
+  using RPDF = std::uniform_real_distribution<Real>;
+
+  // Some constants
+  constexpr int ncols = 4;
+  constexpr int nlevs = 8;
+  constexpr int nruns = 10;
+
+  // Create a comm
+  ekat::Comm comm (MPI_COMM_WORLD);
+
+  // The random numbers generator
+  auto engine = setup_random_test(&comm);
+  RPDF pdf(0.0,1.0);
+
+  // Create a grid
+  auto grid = create_point_grid("my grid",ncols*comm.size(), nlevs, comm);
+
+  // Create some field ids, and register them in a field manager
+  FID f1_id("f1",FL{{COL},{ncols}},Pa,grid->name());
+  FID f2_id("f2",FL{{COL},{ncols}},Pa,grid->name());
+
+  // NOTE: if you add fields above, you will have to modify these counters too.
+  const int num_fields = 2;
+
+  // Keep two separate fms, so we can compare original and final fields.
+  auto fm = std::make_shared<FieldManager<Real>> (grid);
+  fm->registration_begins();
+  fm->register_field(f1_id);
+  fm->register_field(f2_id);
+  fm->registration_ends();
+
+  // Create a raw array big enough to contain all the 2d data for import/export
+  double* raw_data = new double[ncols*num_fields];
+
+  // Repeat experiment N times: fill export fields, export init fields, check values, export all, check values
+  auto f1_exp = fm->get_field(f1_id);
+  auto f2_exp = fm->get_field(f2_id);
+  auto f1_exp_d = f1_exp.get_view<Real*>();
+  auto f2_exp_d = f2_exp.get_view<Real*>();
+  auto f1_exp_h = f1_exp.get_view<Real*,Host>();
+  auto f2_exp_h = f2_exp.get_view<Real*,Host>();
+
+  for (int i=0; i<nruns; ++i) {
+    // Create two SC objects, to import and export
+    control::SurfaceCoupling exporter(fm);
+    exporter.set_num_fields(0,num_fields);
+
+    // Register fields in the exporter. Set f2 to not export during init phase
+    exporter.register_export("f1",0);
+    exporter.register_export("f2",1,-1,false);
+
+    // Set all raw_data to -1
+    std::fill_n(raw_data,ncols*num_fields,-1);
+
+    // Complete setup of exporter. This needs to be done in the run loop for this test since
+    // this is the last place which
+    exporter.registration_ends(nullptr,raw_data);
+
+    // Fill export fields
+    ekat::genRandArray(f1_exp_d,engine,pdf);
+    ekat::genRandArray(f2_exp_d,engine,pdf);
+
+    // Perform export with init_phase=true
+    exporter.do_export(true);
+
+    // Check that only f1 was exported
+    f1_exp.sync_to_host();
+    f2_exp.sync_to_host();
+    for (int icol=0; icol<ncols; ++icol) {
+      REQUIRE (raw_data[0 + icol*num_fields] == f1_exp_h(icol));
+      REQUIRE (raw_data[1 + icol*num_fields] == -1);
+    }
+
+    // Set all raw_data back to -1
+    std::fill_n(raw_data,ncols*num_fields,-1);
+
+    // Perform export with init_phase=false (default)
+    exporter.do_export();
+
+    // Check that both f1 and f2 were exported
+    f1_exp.sync_to_host();
+    f2_exp.sync_to_host();
+    for (int icol=0; icol<ncols; ++icol) {
+      REQUIRE (raw_data[0 + icol*num_fields] == f1_exp_h(icol));
+      REQUIRE (raw_data[1 + icol*num_fields] == f2_exp_h(icol));
+    }
+  }
+
+  // Clean up
+  delete[] raw_data;
+}

@@ -50,13 +50,18 @@ public:
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
 
-  // Register import/export scream fields
+  // Register import scream fields
   void register_import (const std::string& fname,
                         const int cpl_idx,
                         const int vecComp = -1);
+
+  // Register export scream fields. Since do_export() can be called during initialization,
+  // some scream fields may not have valid entries (i.e., computed fields with no IC).
+  // For these fields, set export_during_init=false and they will be skipped.
   void register_export (const std::string& fname,
                         const int cpl_idx,
-                        const int vecComp = -1);
+                        const int vecComp = -1,
+                        const bool export_during_init = true);
 
   // Marks the end of the registration phase. Here, we check that there are no
   // import/export Info struct with only partial information
@@ -66,8 +71,10 @@ public:
   // Import host fields from the component coupler to device fields in the AD
   void do_import ();
 
-  // Export device fields from the AD to host fields in the component coupler
-  void do_export ();
+  // Export device fields from the AD to host fields in the component coupler.
+  // If this export is called during the init phase, set init_phase=true
+  // so that fields which are computed inside SCREAM during the run phase are skipped.
+  void do_export (const bool init_phase = false);
 
   // Getters
   RepoState get_repo_state () const { return m_state; }
@@ -105,6 +112,11 @@ protected:
     // component (the layout would be something like (num_cols,2,num_levs), so the 1st
     // entry to import export would be at index num_levs.
     int col_offset;
+
+    // Boolean that dictates if the field can be exported if do_export() is called during
+    // initialization. This is useful since inside SCREAM some fields require computation
+    // internally.
+    bool do_initial_export;
 
     // Pointer to the scream field device memory
     ValueType*  data;
