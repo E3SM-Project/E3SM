@@ -5,7 +5,7 @@ namespace rrtmgpTest {
     bool file_exists(const char *filename);
     bool all_close(real2d &arr1, real2d &arr2, double tolerance);
     void dummy_clouds(
-            CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, 
+            CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay,
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld
         );
     void dummy_atmos(
@@ -17,7 +17,7 @@ namespace rrtmgpTest {
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld
         );
     void read_fluxes(
-            std::string inputfile, 
+            std::string inputfile,
             real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
             real2d &lw_flux_up, real2d &lw_flux_dn
         );

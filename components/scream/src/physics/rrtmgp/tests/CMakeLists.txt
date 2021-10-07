@@ -5,22 +5,19 @@ set (NEED_LIBS scream_rrtmgp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
-    set (SRC rrtmgp_tests.cpp rrtmgp_test_utils.cpp)
     CreateUnitTest(
-        rrtmgp_tests "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
+        rrtmgp_tests rrtmgp_tests.cpp "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "-i ${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
         EXCLUDE_MAIN_CPP
     )
-    set (SRC rrtmgp_unit_tests.cpp rrtmgp_test_utils.cpp)
     CreateUnitTest(
-        rrtmgp_unit_tests "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
+        rrtmgp_unit_tests rrtmgp_unit_tests.cpp "${NEED_LIBS}" LABELS "rrtmgp;physics"
     )
 endif()
 
 # Build baseline code
-set (GEN_BASELINE_SRC generate_baseline.cpp rrtmgp_test_utils.cpp)
-add_executable(generate_baseline "${GEN_BASELINE_SRC}")
-target_link_libraries(generate_baseline ${NEED_LIBS})
+add_executable(generate_baseline generate_baseline.cpp)
+target_link_libraries(generate_baseline PUBLIC ${NEED_LIBS})
 
 # Copy RRTMGP absorption coefficient lookup tables to local data directory
 # TODO: RRTMGP code and data should live in higher level "externals" directory

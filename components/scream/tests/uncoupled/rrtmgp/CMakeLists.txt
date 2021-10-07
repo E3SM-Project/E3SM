@@ -7,11 +7,8 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
     set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
 
-    # Add source files
-    set (SRC rrtmgp_standalone.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
-
     CreateUnitTest(
-        rrtmgp_standalone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
+        rrtmgp_standalone rrtmgp_standalone.cpp "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
     )
     target_include_directories(rrtmgp_standalone PUBLIC

@@ -47,7 +47,7 @@ set(INTERFACE_SRC
   mo_garand_atmos_io.cpp
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp
-  tests/rrtmgp_test_utils.cpp
+  rrtmgp_test_utils.cpp
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
