@@ -137,7 +137,7 @@ contains
 !> \author  Phillip Wolfram
 !> \date    07/01/2014
 !> \details
-!>  This routine builds and allocates particlces following initalization
+!>  This routine builds and allocates particles following initalization
 !
 !-----------------------------------------------------------------------
    subroutine mpas_particle_list_build_and_assign_particle_list(domain,err) !{{{
