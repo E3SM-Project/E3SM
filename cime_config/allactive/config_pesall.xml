@@ -1648,7 +1648,7 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="anlworkstation">
+    <mach name="anlworkstation|anlgce">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
