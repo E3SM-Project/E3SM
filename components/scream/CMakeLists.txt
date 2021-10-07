@@ -40,6 +40,21 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (Kokkos_ENABLE_CUDA)
+  if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+    if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENALBE_DEBUG_BOUNDS_CHECK=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(WARNING "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    else()
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(STATUS "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    endif()
+  endif()
   include(EkatBuildKokkos)
   # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
   EkatSetKokkosSourceDir()
