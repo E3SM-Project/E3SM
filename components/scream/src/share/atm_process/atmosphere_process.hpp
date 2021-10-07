@@ -40,23 +40,19 @@ namespace scream
  *   - If an AP 'updates' a field (i.e., f = f + delta), then it should make
  *     sure that f is listed both as required and computed field. This helps
  *     the AD to check that all the AP's dependencies are met.
- *   - Most AP's will require a single grid. However, the special concrete
- *     class AtmosphereProcessGroup can store AP's running on different grids.
- *   - When a derived class implements the set methods for required/computed
- *     fields, it should make sure to set itself as customer/provider of
- *     the field. The methods add_me_as_provider/customer can be used on the
- *     input field to achieve this result.
- *   - An AP can claim to require or update a group of fields. This can be useful
+ *   - An AP can claim to require or compute a group of fields. This can be useful
  *     if the AP performs the *same* action on a bunch of fields, with no
  *     knowledge of what fields are (e.g., advect them, or apply fix/limiter).
- *     For each group, the AP must specify the group name and the grid name.
- *     If the same group is needed on multiple grids, the AP will issue a separate
- *     request for each grid. An AP that needs this feature must override the
- *     get_X_groups and the set_X_groups (with X=required and/or updated).
- *     Notice that it makes no sense to have computed_groups: if an AP computes
- *     a group of fields that are not an input (i.e., not updated fields), then
- *     it must know the names and layouts of the fields, which means it can handle
- *     all these fields directly in [set,get]_computed_fields.
+ *   - Fields and groups must be requested via FieldRequest and GroupRequest
+ *     respectively (see field_request.hpp). To add a request, use the methods
+ *     add_field<RT>(..) and add_group<RT>(..), with RT=Required, Updated, or
+ *     Computed (Updated = Required + Computed).
+ *   - If the same group is needed on multiple grids, the AP will issue a separate
+ *     request for each grid.
+ *   - Notice that it is unlikely that an AP computes a group, without requiring
+ *     it as an input (it should probably know what's in the group that it computes).
+ *     Nevertheless, to simplify the code (treat fields and groups similarly),
+ *     we expose required and computed groups, just like fields.
  */
 
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
@@ -115,10 +111,14 @@ public:
   // corresponding set_xyz_impl method(s).
   // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the views in the field/group are allocated by now.
-  void set_required_field (const Field<const Real>& f);
-  void set_computed_field (const Field<Real>& f);
-  void set_required_group (const FieldGroup<const Real>& group);
-  void set_updated_group (const FieldGroup<Real>& group);
+  // Note: you are *unlikely* to need to override these method. In 99.99% of the cases,
+  //       overriding the corresponding _impl method should be enough. The class
+  //       AtmosphereProcessGroup is the big exception to this, since it needs
+  //       to perform some extra action *before* setting the field/group.
+  virtual void set_required_field (const Field<const Real>& f);
+  virtual void set_computed_field (const Field<Real>& f);
+  virtual void set_required_group (const FieldGroup<const Real>& group);
+  virtual void set_computed_group (const FieldGroup<Real>& group);
 
   // These methods checks that all the in/out fields of this atm process are valid.
   // For each field, these routines run all the property checks stored in the field.

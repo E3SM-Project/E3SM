@@ -116,6 +116,8 @@ public:
 
   const ATMBufferManager& get_memory_buffer() const { return m_memory_buffer; }
 
+  const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
+
 protected:
 
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);

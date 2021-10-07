@@ -60,6 +60,11 @@ public:
   // Initialize memory buffer for each process
   void initialize_atm_memory_buffer (ATMBufferManager& memory_buffer);
 
+  // The APG class needs to perform special checks before establishing whether
+  // a required group/field is indeed a required group for this APG
+  void set_required_field (const Field<const Real>& field);
+  void set_required_group (const FieldGroup<const Real>& group);
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).

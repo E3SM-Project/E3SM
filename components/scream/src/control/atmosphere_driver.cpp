@@ -201,25 +201,30 @@ void AtmosphereDriver::create_fields()
   // Set all the fields/groups in the processes. Input fields/groups will be handed
   // to the processes with const scalar type (const Real), to prevent them from
   // overwriting them (though, they can always cast away const...).
-  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
-    const auto& fid = req.fid;
-    auto fm = get_field_mgr(fid.get_grid_name());
-    m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
-  }
+  // IMPORTANT: set all computed fields/groups first, since the AtmProcGroup class
+  // needs to inspect those before deciding whether a required group is indeed
+  // required or not. E.g., in AtmProcGroup [A, B], if A computes group "blah" (or all
+  // the fields contained in group "blah"), then group "blah" is not a required
+  // group for the AtmProcGroup, even if it is a required group for B.
   for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
     const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_computed_field(fm->get_field(fid));
+  }
+  for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
+    auto fm = get_field_mgr(it.grid);
+    auto group = fm->get_field_group(it.name);
+    m_atm_process_group->set_computed_group(group);
   }
   for (const auto& it : m_atm_process_group->get_required_group_requests()) {
     auto fm = get_field_mgr(it.grid);
     auto group = fm->get_const_field_group(it.name);
     m_atm_process_group->set_required_group(group);
   }
-  for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
-    auto fm = get_field_mgr(it.grid);
-    auto group = fm->get_field_group(it.name);
-    m_atm_process_group->set_computed_group(group);
+  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
+    const auto& fid = req.fid;
+    auto fm = get_field_mgr(fid.get_grid_name());
+    m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
 
   m_ad_status |= s_fields_created;
