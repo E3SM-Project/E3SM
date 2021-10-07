@@ -1,26 +1,19 @@
 set (F90_SRC rrtmgp_interface.F90)
 set (CXX_SRC
-    mo_garand_atmos_io.cpp
-    mo_load_cloud_coefficients.cpp
-    mo_load_coefficients.cpp  
     rrtmgp_interface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
-)
-set (RRTMGPXX_HEADERS    
-    simple_netcdf.hpp
-    mo_garand_atmos_io.h
-    mo_load_cloud_coefficients.h
-    mo_load_coefficients.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples/mo_load_coefficients.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples/all-sky/mo_load_cloud_coefficients.cpp
 )
 
 # Add library for interface code
 add_library(rrtmgp_interface STATIC ${CXX_SRC})
 
+# Set compile flags for RRTMGP sources (handles CUDA flags when needed)
 include(${YAKL_HOME}/yakl_utils.cmake)
 yakl_process_target(rrtmgp_interface)
 
 # Libraries to link
-#find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
 find_library(
     NETCDF_C_LIBRARY NAMES netcdf libnetcdf 
     HINTS ${LIB_NETCDF} ${LIB_NETCDF_C}
@@ -33,6 +26,8 @@ target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.
 target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/rrtmgp)
 target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/extensions/cloud_optics)
 target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/extensions/fluxes_byband)
+target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples)
+target_include_directories(rrtmgp_interface PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples/all-sky)
 
 # Set fortran compiler flags
 set_source_files_properties(${F90_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
