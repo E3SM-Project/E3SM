@@ -4,7 +4,7 @@
 #include "mo_rte_sw.h"
 #include "mo_rte_lw.h"
 #include "mo_optical_props.h"
-#include "const.h"
+#include "rrtmgp_const.h"
 #include "mo_fluxes_byband.h"
 
 using yakl::intrinsics::minval;
