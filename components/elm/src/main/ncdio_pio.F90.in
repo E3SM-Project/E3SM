@@ -2200,7 +2200,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     end if
 
     if (flag == 'read') then
-
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
           if (single_column) then
@@ -2224,7 +2223,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              endif
 
              if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
-
              if (scm_multcols) then
 
                if (start(4) .eq. 0) then
@@ -2238,12 +2236,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
                  do i=1,count_iop3d(2)
                    do j=1,count_iop3d(3)
-                     data(:,i,j) = iop_data3d(1,i,j)
+                      data(:,:,i,j) = iop_data3d(1,i,j)
                    enddo
-                 enddo
+                enddo
 
                  deallocate(iop_data3d)
-
                else
 
                  count_iop4d(1:4) = count(1:4)
@@ -2255,7 +2252,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
                  do i=1,count_iop4d(2)
                    do j=1,count_iop4d(3)
-                     data(:,i,j) = iop_data4d(1,i,j,1)
+                     data(:,:,i,j) = iop_data4d(1,i,j,1)
                    enddo
                  enddo
 
@@ -2264,6 +2261,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                endif
 
             endif ! scm_multcols
+
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -2290,7 +2288,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           end if
        end if
        if (present(readvar)) readvar = varpresent
-
     else if (flag == 'write') then
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
