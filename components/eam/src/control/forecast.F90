@@ -315,6 +315,11 @@ subroutine forecast(lat, psm1, psm2,ps, &
          (qminus(1,k,m) - qminus(1,k-1,m)))
      enddo
 
+     ! thermal expansion term due to LS vertical advection
+     do k=1,plev
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k))
+     enddo
+
 !
 !  SLT is used for constituents only
 !  so that a centered approximation is used for T, U and V, and Q
