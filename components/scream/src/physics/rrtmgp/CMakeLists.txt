@@ -13,27 +13,28 @@ EkatDisableAllWarning(yakl)
 # We will need the shr_orb_mod source too; this builds library share_util
 add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
 
+set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
 # NOTE: The external RRTMGP build needs some fixes to work with CUDA in a library build, so for now we will build these ourselves
 set(EXTERNAL_SRC
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels/mo_gas_optics_kernels.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_constants.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/mo_rrtmgp_util_reorder.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/expand_and_transpose.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_fluxes_broadband_kernels.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels/mo_gas_optics_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/mo_rrtmgp_constants.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/mo_rrtmgp_util_reorder.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rte/expand_and_transpose.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_fluxes_broadband_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 target_link_libraries(rrtmgp PUBLIC yakl)
 target_include_directories(rrtmgp PUBLIC 
     ${SCREAM_BASE_DIR}/../../externals/YAKL
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
+    ${EAM_RRTMGP_DIR}/external/cpp
+    ${EAM_RRTMGP_DIR}/external/cpp/rte
+    ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels
+    ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
+    ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
 
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface
@@ -47,14 +48,13 @@ set(INTERFACE_SRC
   mo_garand_atmos_io.cpp
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp
-  tests/rrtmgp_test_utils.cpp
+  rrtmgp_test_utils.cpp
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
 target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
-target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${NetCDF_C_PATHS}/include)
-target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${SCREAM_BASE_DIR}/../../externals)
-target_include_directories(scream_rrtmgp SYSTEM PUBLIC ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
+target_include_directories(scream_rrtmgp SYSTEM PUBLIC
+    ${NetCDF_C_PATHS}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
 
 # Build tests
 if (NOT SCREAM_LIB_ONLY)

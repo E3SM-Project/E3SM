@@ -1,11 +1,13 @@
-#include <iostream>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/mo_garand_atmos_io.h"
+#include "physics/rrtmgp/simple_netcdf.hpp"
+
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "cpp/rte/mo_fluxes.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
-#include "physics/rrtmgp/simple_netcdf.hpp"
+
+#include <iostream>
 #include <netcdf.h>
 
 namespace rrtmgpTest {

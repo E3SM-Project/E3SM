@@ -45,7 +45,7 @@ set(P3_TESTS_SRCS
 # it via the FIXTURES_REQUIRED property.
 # (See https://cmake.org/cmake/help/latest/prop_test/FIXTURES_REQUIRED.html)
 CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
-               PROPERTIES FIXTURES_SETUP p3_tables)
+               EXCLUDE_MAIN_CPP PROPERTIES FIXTURES_SETUP p3_tables)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})

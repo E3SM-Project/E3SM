@@ -748,9 +748,9 @@ struct Functions
 } // namespace shoc
 } // namespace scream
 
-// If a GPU build, make all code available to the translation unit; otherwise,
-// ETI is used.
-#ifdef KOKKOS_ENABLE_CUDA
+// If a GPU build, without relocatable device code enabled, make all code available
+// to the translation unit; otherwise, ETI is used.
+#if defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
 # include "shoc_calc_shoc_varorcovar_impl.hpp"
 # include "shoc_calc_shoc_vertflux_impl.hpp"
 # include "shoc_diag_second_moments_srf_impl.hpp"
@@ -792,6 +792,6 @@ struct Functions
 # include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
 # include "shoc_tke_impl.hpp"
-#endif // KOKKOS_ENABLE_CUDA
+#endif // KOKKOS_ENABLE_CUDA || !KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE
 
 #endif // SHOC_FUNCTIONS_HPP

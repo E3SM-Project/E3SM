@@ -1,12 +1,15 @@
-#include <iostream>
-#include <cmath>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/mo_garand_atmos_io.h"
-#include "YAKL.h"
-#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
+#include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
+
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+
+#include "YAKL.h"
+
+#include <iostream>
+#include <cmath>
 
 using namespace scream;
 

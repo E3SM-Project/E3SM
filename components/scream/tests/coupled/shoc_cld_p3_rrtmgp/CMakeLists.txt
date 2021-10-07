@@ -5,11 +5,9 @@ INCLUDE (ScreamUtils)
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
 SET (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
 
-# Add source files
-set (SRC shoc_cld_p3_rrtmgp.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
-
 # Test atmosphere processes.
-CreateUnitTest(shoc_cld_p3_rrtmgp "${SRC}" "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
+CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
+
 target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp
     ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests

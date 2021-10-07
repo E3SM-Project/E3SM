@@ -4,7 +4,7 @@
 #include "control/atmosphere_driver.hpp"
 
 // Other rrtmgp specific code needed specifically for this test
-#include "physics/rrtmgp//tests/rrtmgp_test_utils.hpp"
+#include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "mo_gas_concentrations.h"

@@ -134,7 +134,9 @@ struct Baseline {
 
         if (ps.repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
-                    << ", dt=" << d->dt << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc;
+                    << ", dt=" << d->dt << ", ts=" << d->it
+                    << ", predict_nc=" << d->do_predict_nc
+                    << ", prescribed_CCN=" << d->do_prescribed_CCN;
 
           if (!use_fortran) {
             std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
