@@ -123,6 +123,23 @@ namespace scream {
         auto mu0 = real1d("mu0", ncol);
         auto gas_vmr = real3d("gas_vmr", ncol, nlay, ngas);
 
+        // Setup dummy problem; need to use tmp arrays with ncol_all size
+        auto ncol_all = grid->get_num_global_dofs();
+        auto p_lay_all = real2d("p_lay", ncol_all, nlay);
+        auto t_lay_all = real2d("t_lay", ncol_all, nlay);
+        auto p_del_all = real2d("p_del", ncol_all, nlay);
+        auto p_lev_all = real2d("p_lev", ncol_all, nlay+1);
+        auto t_lev_all = real2d("t_lev", ncol_all, nlay+1);
+        auto sfc_alb_dir_vis_all = real1d("sfc_alb_dir_vis", ncol_all);
+        auto sfc_alb_dir_nir_all = real1d("sfc_alb_dir_nir", ncol_all);
+        auto sfc_alb_dif_vis_all = real1d("sfc_alb_dif_vis", ncol_all);
+        auto sfc_alb_dif_nir_all = real1d("sfc_alb_dif_nir", ncol_all);
+        auto lwp_all = real2d("lwp", ncol_all, nlay);
+        auto iwp_all = real2d("iwp", ncol_all, nlay);
+        auto rel_all = real2d("rel", ncol_all, nlay);
+        auto rei_all = real2d("rei", ncol_all, nlay);
+        auto cld_all = real2d("cld", ncol_all, nlay);
+        auto mu0_all = real1d("mu0", ncol_all);
         // Read in dummy Garand atmosphere; if this were an actual model simulation,
         // these would be passed as inputs to the driver
         // NOTE: set ncol to size of col_flx dimension in the input file. This is so
@@ -131,16 +148,57 @@ namespace scream {
         // times. We will then fill some fraction of these columns with clouds for
         // the test problem.
         GasConcs gas_concs;
-        read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
-
-        // Setup dummy problem
+        read_atmos(inputfile, p_lay_all, t_lay_all, p_lev_all, t_lev_all, gas_concs, ncol_all);
+        // Setup dummy problem; need to use tmp arrays with ncol_all size
         rrtmgpTest::dummy_atmos(
-            inputfile, ncol, p_lay, t_lay,
-            sfc_alb_dir_vis, sfc_alb_dir_nir,
-            sfc_alb_dif_vis, sfc_alb_dif_nir,
-            mu0,
-            lwp, iwp, rel, rei, cld
+            inputfile, ncol_all, p_lay_all, t_lay_all,
+            sfc_alb_dir_vis_all, sfc_alb_dir_nir_all,
+            sfc_alb_dif_vis_all, sfc_alb_dif_nir_all,
+            mu0_all,
+            lwp_all, iwp_all, rel_all, rei_all, cld_all
         );
+        // Populate our local input arrays with the proper columns, based on our rank
+        int irank = atm_comm.rank();
+        parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            auto icol_all = ncol * irank + icol;
+            sfc_alb_dir_vis(icol) = sfc_alb_dir_vis_all(icol_all);
+            sfc_alb_dir_nir(icol) = sfc_alb_dir_nir_all(icol_all);
+            sfc_alb_dif_vis(icol) = sfc_alb_dif_vis_all(icol_all);
+            sfc_alb_dif_nir(icol) = sfc_alb_dif_nir_all(icol_all);
+            mu0(icol) = mu0_all(icol_all);
+        });
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            auto icol_all = ncol * irank + icol;
+            p_lay(icol,ilay) = p_lay_all(icol_all,ilay);
+            t_lay(icol,ilay) = t_lay_all(icol_all,ilay);
+            p_del(icol,ilay) = p_del_all(icol_all,ilay);
+            lwp(icol,ilay) = lwp_all(icol_all,ilay);
+            iwp(icol,ilay) = iwp_all(icol_all,ilay);
+            rel(icol,ilay) = rel_all(icol_all,ilay);
+            rei(icol,ilay) = rei_all(icol_all,ilay);
+            cld(icol,ilay) = cld_all(icol_all,ilay);
+        });
+        parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            auto icol_all = ncol * irank + icol;
+            p_lev(icol,ilay) = p_lev_all(icol_all,ilay);
+            t_lev(icol,ilay) = t_lev_all(icol_all,ilay);
+        });
+        // Free temporary variables
+        p_lay_all.deallocate();
+        t_lay_all.deallocate();
+        p_del_all.deallocate();
+        p_lev_all.deallocate();
+        t_lev_all.deallocate();
+        sfc_alb_dir_vis_all.deallocate();
+        sfc_alb_dir_nir_all.deallocate();
+        sfc_alb_dif_vis_all.deallocate();
+        sfc_alb_dif_nir_all.deallocate();
+        lwp_all.deallocate();
+        iwp_all.deallocate();
+        rel_all.deallocate();
+        rei_all.deallocate();
+        cld_all.deallocate();
+        mu0_all.deallocate();
 
         // Need to calculate a dummy pseudo_density for our test problem
         parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
@@ -159,7 +217,8 @@ namespace scream {
 
         // Copy gases from gas_concs to gas_vmr array
         parallel_for(Bounds<3>(ncol,nlay,ngas), YAKL_LAMBDA(int icol, int ilay, int igas) {
-            gas_vmr(icol,ilay,igas) = gas_concs.concs(icol,ilay,igas);
+            auto icol_all = ncol * irank + icol;
+            gas_vmr(icol,ilay,igas) = gas_concs.concs(icol_all,ilay,igas);
         });
         gas_concs.reset();
 
@@ -297,11 +356,26 @@ namespace scream {
         // some tolerance. Computation of level temperatures from midpoints is
         // also unable to exactly reproduce the values in the test problem, so
         // computed fluxes will be further off from the reference calculation.
-        REQUIRE(rrtmgpTest::all_close(sw_flux_up_ref    , sw_flux_up_test    , 1.0));
-        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_ref    , sw_flux_dn_test    , 1.0));
-        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_ref, sw_flux_dn_dir_test, 1.0));
-        REQUIRE(rrtmgpTest::all_close(lw_flux_up_ref    , lw_flux_up_test    , 1.0));
-        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_ref    , lw_flux_dn_test    , 1.0));
+        //
+        // We need to create local copies with only the columns specific to our rank in case we have split columns over multiple ranks
+        auto sw_flux_up_loc     = real2d("sw_flux_up_loc"    , ncol, nlay+1);
+        auto sw_flux_dn_loc     = real2d("sw_flux_dn_loc"    , ncol, nlay+1);
+        auto sw_flux_dn_dir_loc = real2d("sw_flux_dn_dir_loc", ncol, nlay+1);
+        auto lw_flux_up_loc     = real2d("lw_flux_up_loc"    , ncol, nlay+1);
+        auto lw_flux_dn_loc     = real2d("lw_flux_dn_loc"    , ncol, nlay+1);
+        parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            auto icol_all = ncol * irank + icol;
+            sw_flux_up_loc(icol,ilay) = sw_flux_up_ref(icol_all,ilay);
+            sw_flux_dn_loc(icol,ilay) = sw_flux_dn_ref(icol_all,ilay);
+            sw_flux_dn_dir_loc(icol,ilay) = sw_flux_dn_dir_ref(icol_all,ilay);
+            lw_flux_up_loc(icol,ilay) = lw_flux_up_ref(icol_all,ilay);
+            lw_flux_dn_loc(icol,ilay) = lw_flux_dn_ref(icol_all,ilay);
+        });
+        REQUIRE(rrtmgpTest::all_close(sw_flux_up_loc    , sw_flux_up_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_loc    , sw_flux_dn_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(sw_flux_dn_dir_loc, sw_flux_dn_dir_test, 1.0));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_up_loc    , lw_flux_up_test    , 1.0));
+        REQUIRE(rrtmgpTest::all_close(lw_flux_dn_loc    , lw_flux_dn_test    , 1.0));
 
         // Deallocate YAKL arrays
         p_lay.deallocate();
@@ -332,6 +406,11 @@ namespace scream {
         sw_flux_dn_dir_ref.deallocate();
         lw_flux_up_ref.deallocate();
         lw_flux_dn_ref.deallocate();
+        sw_flux_up_loc.deallocate();
+        sw_flux_dn_loc.deallocate();
+        sw_flux_dn_dir_loc.deallocate();
+        lw_flux_up_loc.deallocate();
+        lw_flux_dn_loc.deallocate();
 
         // Finalize the driver. YAKL will be finalized inside
         // RRTMGPRadiation::finalize_impl after RRTMGP has had the
