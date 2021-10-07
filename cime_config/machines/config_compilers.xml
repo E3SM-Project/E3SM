@@ -1626,7 +1626,7 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append DEBUG="FALSE"> -O3 -arch sm_70 --use_fast_math </append>
-    <append DEBUG="TRUE" > -O0 -g -arch sm_70 --use_fast_math </append>
+    <append DEBUG="TRUE" > -O0 -g -arch sm_70 </append>
   </CUDA_FLAGS>
   <USE_CUDA>TRUE</USE_CUDA>
 </compiler>
@@ -1850,7 +1850,7 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append DEBUG="FALSE"> -O3 -arch sm_70 --use_fast_math </append>
-    <append DEBUG="TRUE" > -O0 -arch sm_70 --use_fast_math </append>
+    <append DEBUG="TRUE" > -O0 -g -arch sm_70 </append>
   </CUDA_FLAGS>
   <USE_CUDA>TRUE</USE_CUDA>
 </compiler>
