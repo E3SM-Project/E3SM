@@ -11,6 +11,8 @@ Initial Conditions:
     horiz_winds_prev: horiz_winds
     w_int: 0.0 # Start from zero vert velocity
     w_int_prev: 0.0
+    surf_latent_flux: 0.0
+    surf_sens_flux: 0.0
   Dynamics:
     tracers: tracers, Physics GLL
 
