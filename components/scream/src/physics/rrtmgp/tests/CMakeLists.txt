@@ -23,21 +23,23 @@ target_link_libraries(generate_baseline PUBLIC ${NEED_LIBS})
 # TODO: RRTMGP code and data should live in higher level "externals" directory
 # not in the "eam" directory. We ultimately do not want dependencies on
 # anything in EAM.
-FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+
+configure_file(${EAM_RRTMGP_DIR}/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
+configure_file(${EAM_RRTMGP_DIR}/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/examples/all-sky/rrtmgp-allsky.nc
+configure_file(${EAM_RRTMGP_DIR}/external/examples/all-sky/rrtmgp-allsky.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+configure_file(${EAM_RRTMGP_DIR}/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+configure_file(${EAM_RRTMGP_DIR}/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 
 add_custom_target(rrtmgp_allsky_baseline.nc
     COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:generate_baseline>
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/examples/all-sky/rrtmgp-allsky.nc ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc
+            ${EAM_RRTMGP_DIR}/external/examples/all-sky/rrtmgp-allsky.nc
+            ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc
 )
 
 add_dependencies(baseline rrtmgp_allsky_baseline.nc)
