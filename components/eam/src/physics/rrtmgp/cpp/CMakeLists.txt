@@ -13,18 +13,11 @@ set (RRTMGPXX_HEADERS
     mo_load_coefficients.h
 )
 
-# Set compile flags for cxx source
-if ("${YAKL_ARCH}" STREQUAL "CUDA")
-    message(STATUS "rrtmgp_interface flags: ${YAKL_CUDA_FLAGS}")
-    set_source_files_properties(${CXX_SRC} PROPERTIES LANGUAGE CUDA)
-    set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr  ${YAKL_CUDA_FLAGS}")
-else ()
-    message(STATUS "rrtmgp_interface flags: ${YAKL_CXX_FLAGS}")
-    set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-endif ()
-
 # Add library for interface code
 add_library(rrtmgp_interface STATIC ${CXX_SRC})
+
+include(${YAKL_HOME}/yakl_utils.cmake)
+yakl_process_target(rrtmgp_interface)
 
 # Libraries to link
 #find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)

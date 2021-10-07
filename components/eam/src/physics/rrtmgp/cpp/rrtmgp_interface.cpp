@@ -7,9 +7,6 @@
 #include "rrtmgp_const.h"
 #include "mo_fluxes_byband.h"
 
-using yakl::intrinsics::minval;
-using yakl::intrinsics::maxval;
-
 // Prototypes
 extern "C" int get_nband_sw();
 extern "C" int get_nband_lw();
