@@ -138,7 +138,7 @@ public:
   const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
   const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
   const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::set<GroupRequest>& get_updated_group_requests  () const { return m_updated_group_requests; }
+  const std::set<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -153,7 +153,7 @@ public:
   bool requires_field (const FieldIdentifier& id) const;
   bool computes_field (const FieldIdentifier& id) const;
   bool requires_group (const std::string& name, const std::string& grid) const;
-  bool updates_group (const std::string& name, const std::string& grid) const;
+  bool computes_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }
@@ -167,7 +167,7 @@ protected:
   enum RequestType {
     Required,
     Computed,
-    Updated
+    Updated   // For convenience, triggers Required+Computed
   };
 
   // Derived classes can used these method, so that if we change how fields/groups
@@ -248,10 +248,16 @@ protected:
   template<RequestType RT>
   void add_group (const GroupRequest& req)
   {
-    static_assert(RT==Required || RT==Updated,
+    // Since we use C-style enum, let's avoid invalid integers casts
+    static_assert(RT==Required || RT==Updated || RT==Computed,
         "Error! Invalid request type in call to add_group.\n");
-    auto& groups = RT==Required ? m_required_group_requests : m_updated_group_requests;
-    groups.emplace(req);
+    if (RT==Updated) {
+      add_group<Required>(req);
+      add_group<Computed>(req);
+    } else {
+      auto& groups = RT==Required ? m_required_group_requests : m_computed_group_requests;
+      groups.emplace(req);
+    }
   }
 
   // Override this method to initialize the derived
@@ -273,7 +279,7 @@ protected:
   void add_me_as_customer (const Field<const Real>& f);
 
   // The base class already registers the required/computed/updated fields/groups in
-  // the set_required/computed_field and set_required/updated_group routines.
+  // the set_required/computed_field and set_required/computed_group routines.
   // These impl methods provide a way for derived classes to add more specialized
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
@@ -281,7 +287,7 @@ protected:
   virtual void set_required_field_impl (const Field<const Real>& /* f */) {}
   virtual void set_computed_field_impl (const Field<      Real>& /* f */) {}
   virtual void set_required_group_impl (const FieldGroup<const Real>& /* group */) {}
-  virtual void set_updated_group_impl  (const FieldGroup<      Real>& /* group */) {}
+  virtual void set_computed_group_impl (const FieldGroup<      Real>& /* group */) {}
 
   // The Base class already runs all registered field checks for all fields.
   // Similar to the set_required/computed_field_impl comment above, it is
@@ -354,7 +360,7 @@ private:
   std::set<FieldRequest>   m_required_field_requests;
   std::set<FieldRequest>   m_computed_field_requests;
   std::set<GroupRequest>   m_required_group_requests;
-  std::set<GroupRequest>   m_updated_group_requests;
+  std::set<GroupRequest>   m_computed_group_requests;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.

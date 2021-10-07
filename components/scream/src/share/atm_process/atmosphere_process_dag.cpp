@@ -214,21 +214,18 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
         ofile << "</font></td></tr>\n";
       }
 
-      // Update groups
-      if (n.gr_updated.size()>0) {
+      // Computed groups
+      if (n.gr_computed.size()>0) {
         if (n.name=="Begin of atm time step") {
           ofile << "      <tr><td align=\"left\"><font color=\"blue\">Atm Input groups:</font></td></tr>\n";
         } else if (n.name!="End of atm time step"){
-          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Updated Groups:</font></td></tr>\n";
+          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Computed Groups:</font></td></tr>\n";
         }
-        for (const auto& gr_fid : n.gr_updated) {
+        for (const auto& gr_fid : n.gr_computed) {
           std::string fc = "<font color=\"";
           fc += (ekat::contains(unmet,gr_fid) ? "red" : "black");
           fc += "\">  ";
           ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
-          if (ekat::contains(m_unmet_deps.at(n.id),gr_fid)) {
-            ofile << "<b>  *** MISSING ***</b>";
-          }
           ofile << "</font></td></tr>\n";
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
@@ -436,8 +433,8 @@ add_nodes (const group_type& atm_procs,
         }
       }
 
-      // Input-output groups
-      for (const auto& itg : proc->get_updated_group_requests()) {
+      // Output groups
+      for (const auto& itg : proc->get_computed_group_requests()) {
         EKAT_REQUIRE_MSG (field_mgrs.find(itg.grid)!=field_mgrs.end(),
             "Error! Field manager not found for this group request.\n"
             "       Group name: " + itg.name + "\n"
@@ -448,48 +445,14 @@ add_nodes (const group_type& atm_procs,
           for (const auto& it_f : group.m_fields) {
             const auto& fid = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
-            node.required.insert(fid_id);
             node.computed.insert(fid_id);
-            auto it = m_fid_to_last_provider.find(fid_id);
-            if (it==m_fid_to_last_provider.end()) {
-              m_unmet_deps[id].insert(fid_id);
-            } else {
-              // Establish parent-child relationship
-              Node& parent = m_nodes[it->second];
-              parent.children.push_back(node.id);
-            }
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
           // Group is bundled: process the bundled field
           const auto& gr_fid = group.m_bundle->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
-          node.gr_required.insert(gr_fid_id);
-          node.gr_updated.insert(gr_fid_id);
-          auto it = m_fid_to_last_provider.find(gr_fid_id);
-          if (it==m_fid_to_last_provider.end()) {
-            // It might still be ok, as long as there is a provider for all the fields in the group
-            bool all_members_have_providers = true;
-            for (auto it_f : group.m_fields) {
-              const auto& fid = it_f.second->get_header().get_identifier();
-              const int fid_id = add_fid(fid);
-              auto it_p = m_fid_to_last_provider.find(fid_id);
-              if (it_p==m_fid_to_last_provider.end()) {
-                m_unmet_deps[id].insert(fid_id);
-                all_members_have_providers = false;
-              } else {
-                Node& parent = m_nodes[it_p->second];
-                parent.children.push_back(node.id);
-              }
-            }
-            if (!all_members_have_providers) {
-              m_unmet_deps[id].insert(gr_fid_id);
-            }
-          } else {
-            // Establish parent-child relationship
-            Node& parent = m_nodes[it->second];
-            parent.children.push_back(node.id);
-          }
+          node.gr_computed.insert(gr_fid_id);
           m_fid_to_last_provider[gr_fid_id] = id;
           m_gr_fid_to_group.emplace(gr_fid,group);
 

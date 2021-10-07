@@ -100,10 +100,10 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       add_field<Computed>(req);
     }
     for (const auto& req : atm_proc->get_required_group_requests()) {
-      add_group<Required>(req);
+      process_required_group(req);
     }
-    for (const auto& req : atm_proc->get_updated_group_requests()) {
-      add_group<Updated>(req);
+    for (const auto& req : atm_proc->get_computed_group_requests()) {
+      add_group<Computed>(req);
     }
   }
 }
@@ -156,13 +156,18 @@ set_required_group_impl (const FieldGroup<const Real>& group)
 }
 
 void AtmosphereProcessGroup::
-set_updated_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup<Real>& group)
 {
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    auto atm_proc = m_atm_processes[iproc];
-
-    if (atm_proc->updates_group(group.m_info->m_group_name,group.grid_name())) {
-      atm_proc->set_updated_group(group);
+  for (auto atm_proc : m_atm_processes) {
+    if (atm_proc->computes_group(group.m_info->m_group_name,group.grid_name())) {
+      atm_proc->set_computed_group(group);
+    }
+    // In sequential scheduling, some groups may be computed by
+    // a process and used by the next one. In this case, the group
+    // may not figure as 'input' for the group, but we still
+    // need to set it in the processes that need it.
+    if (atm_proc->requires_group(group.m_info->m_group_name,group.grid_name())) {
+      atm_proc->set_required_group(group.get_const());
     }
   }
 }
@@ -187,7 +192,7 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
     // does not figure as 'input' for the group, but we still
     // need to set it in the processes that need it.
     if (atm_proc->requires_field(fid)) {
-      atm_proc->set_required_field(f);
+      atm_proc->set_required_field(f.get_const());
     }
   }
 }
@@ -195,17 +200,17 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
 void AtmosphereProcessGroup::
 process_required_group (const GroupRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (updates_group(req.name,req.grid)) {
-      // Some previous atm proc updated this group, so it's not an 'input'
+    if (computes_group(req.name,req.grid)) {
+      // Some previous atm proc computes this group, so it's not an 'input'
       // of the atm group as a whole. However, we might need a different
       // pack size. So, instead of adding to the required groups,
-      // we add to the updated ones. This way we don't modify the inputs
+      // we add to the computed ones. This way we don't modify the inputs
       // of the group, and still manage to communicate to the AD the pack size
       // that we need.
       // NOTE; we don't have a way to check if all the fields in the group
       //       are computed by previous processes, since we don't have
       //       the list of all fields in this group.
-      add_group<Updated>(req);
+      add_group<Computed>(req);
     } else {
       add_group<Required>(req);
     }

@@ -190,7 +190,7 @@ void AtmosphereDriver::create_fields()
   };
 
   process_imported_groups (m_atm_process_group->get_required_group_requests());
-  process_imported_groups (m_atm_process_group->get_updated_group_requests());
+  process_imported_groups (m_atm_process_group->get_computed_group_requests());
 
   // Close the FM's, allocate all fields
   for (auto it : m_grids_manager->get_repo()) {
@@ -201,14 +201,12 @@ void AtmosphereDriver::create_fields()
   // Set all the fields/groups in the processes. Input fields/groups will be handed
   // to the processes with const scalar type (const Real), to prevent them from
   // overwriting them (though, they can always cast away const...).
-  const auto& inputs  = m_atm_process_group->get_required_field_requests();
-  const auto& outputs = m_atm_process_group->get_computed_field_requests();
-  for (const auto& req : inputs) {
+  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
     const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
-  for (const auto& req : outputs) {
+  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
     const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_computed_field(fm->get_field(fid));
@@ -218,10 +216,10 @@ void AtmosphereDriver::create_fields()
     auto group = fm->get_const_field_group(it.name);
     m_atm_process_group->set_required_group(group);
   }
-  for (const auto& it : m_atm_process_group->get_updated_group_requests()) {
+  for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
     auto fm = get_field_mgr(it.grid);
     auto group = fm->get_field_group(it.name);
-    m_atm_process_group->set_updated_group(group);
+    m_atm_process_group->set_computed_group(group);
   }
 
   m_ad_status |= s_fields_created;

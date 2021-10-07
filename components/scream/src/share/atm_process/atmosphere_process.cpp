@@ -109,29 +109,14 @@ void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group)
   set_required_group_impl(group);
 }
 
-void AtmosphereProcess::set_updated_group (const FieldGroup<Real>& group) {
+void AtmosphereProcess::set_computed_group (const FieldGroup<Real>& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (updates_group(group.m_info->m_group_name,group.grid_name()),
-    "Error! This atmosphere process does not update the input group.\n"
+  EKAT_REQUIRE_MSG (computes_group(group.m_info->m_group_name,group.grid_name()),
+    "Error! This atmosphere process does not compute the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
-
-  if (not ekat::contains(m_groups_in,group.get_const())) {
-    m_groups_in.emplace_back(group);
-    // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-    // so don't add me as customer if I'm an atm proc group.
-    if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_customer(group.m_bundle->get_const());
-      } else {
-        for (auto& it : group.m_fields) {
-          add_me_as_customer(it.second->get_const());
-        }
-      }
-    }
-  }
 
   if (not ekat::contains(m_groups_out,group)) {
     m_groups_out.emplace_back(group);
@@ -148,7 +133,7 @@ void AtmosphereProcess::set_updated_group (const FieldGroup<Real>& group) {
     }
   }
 
-  set_updated_group_impl(group);
+  set_computed_group_impl(group);
 }
 
 void AtmosphereProcess::check_required_fields () const { 
@@ -285,8 +270,8 @@ bool AtmosphereProcess::requires_group (const std::string& name, const std::stri
   }
   return false;
 }
-bool AtmosphereProcess::updates_group (const std::string& name, const std::string& grid) const {
-  for (const auto& it : m_updated_group_requests) {
+bool AtmosphereProcess::computes_group (const std::string& name, const std::string& grid) const {
+  for (const auto& it : m_computed_group_requests) {
     if (it.name==name && it.grid==grid) {
       return true;
     }
