@@ -45,7 +45,7 @@ contains
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_instance     , only : elm_instance_init
-    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland &
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, &
                                   scm_multcols, scm_nx, scm_ny
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
