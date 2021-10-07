@@ -76,7 +76,7 @@ contains
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
                                         RediKappaSfcTaper, RediKappaScaling, rediLimiterCount,       &
-                                        gmResolutionTaper, slopeTaperArray, tend, err)!{{{
+                                        gmResolutionTaper, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -97,7 +97,7 @@ contains
          layerThickness
 
       real(kind=RKIND), dimension(:, :, :), intent(in) :: &
-         slopeTaperArray, slopeTriadUp, slopeTriadDown, &
+         slopeTriadUp, slopeTriadDown, &
          tracers !< Input: tracer quantities
 
       real(kind=RKIND), intent(in) :: dt

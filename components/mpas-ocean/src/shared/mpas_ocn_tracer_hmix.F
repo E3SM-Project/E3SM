@@ -82,7 +82,7 @@ contains
    subroutine ocn_tracer_hmix_tend(meshPool, layerThicknessEdge, layerThickness, zMid, tracers, &
                                    RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
                                    RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, &
-                                   gmResolutionTaper, slopeTaperArray, tend, err)!{{{
+                                   gmResolutionTaper, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -103,7 +103,7 @@ contains
          RediKappaSfcTaper, RediKappaScaling        !< Input: vertical structure of GM/Redi limiter
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        slopeTaperArray, slopeTriadUp, slopeTriadDown, &
+        slopeTriadUp, slopeTriadDown, &
         tracers !< Input: tracer quantities
 
       real (kind=RKIND), intent(in) :: dt
@@ -156,7 +156,7 @@ contains
                                      RediKappa, dt, isActiveTracer,        &
                                      slopeTriadUp, slopeTriadDown, RediKappaSfcTaper, &
                                      RediKappaScaling, rediLimiterCount, &
-                                     gmResolutionTaper, slopeTaperArray, tend, err1)
+                                     gmResolutionTaper, tend, err1)
       endif
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")

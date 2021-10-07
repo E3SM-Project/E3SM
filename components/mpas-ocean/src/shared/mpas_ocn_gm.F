@@ -244,10 +244,15 @@ contains
             !$omp parallel
             !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
             do iCell = 1, nCells
-               k = min(maxLevelCell(iCell) - 1, indMLD(iCell))
+               k = min(maxLevelCell(iCell) - 1, max(minLevelCell(iCell),indMLD(iCell)))
                maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+               do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
+                  k = k+1
+                  maxN = max(maxN, max(BruntVaisalaFreqTop(k, iCell),0.0_RKIND))
+               end do
 
-               do k = minLevelCell(iCell), maxLevelCell(iCell)
+               maxLocation = k
+               do k = 1, maxLevelCell(iCell)
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
                   RediKappaScaling(k, iCell) = min(max(config_Redi_N2_based_taper_min,                  &
                                                        BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
@@ -358,27 +363,25 @@ contains
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
-                  slopeTaperArray(k,iCellSelf, iEdge) = 0.5_RKIND*(slopeTaperUp + slopeTaperDown)
-
-                  ! Griffies 1998 eqn 34
-                  if (k > minLevelCell(iCell)) then
-                     k33(k, iCell) = k33(k, iCell) +  &
-                                     areaEdge*dzTop(k)*slopeTaperUp* &
-                                     slopeTriadUp(k, iCellSelf, iEdge)**2
-                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
-                  end if
-   
-                  !Taper Redi by tapering the slopes
-                  k33(k + 1, iCell) = k33(k + 1, iCell) +  &
-                                      areaEdge*dzTop(k + 1)*slopeTaperDown* &
-                                      slopeTriadDown(k, iCellSelf, iEdge)**2
-                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
-   
                   slopeTriadUp(k, iCellSelf, iEdge) = &
                      slopeTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
                      slopeTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
-  
+
+                  ! Griffies 1998 eqn 34
+                  if (k > minLevelCell(iCell)) then
+                     k33(k, iCell) = k33(k, iCell) +  &
+                                     areaEdge*dzTop(k)* &
+                                     slopeTriadUp(k, iCellSelf, iEdge)**2
+                     k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
+                  end if
+
+                  !Taper Redi by tapering the slopes
+                  k33(k + 1, iCell) = k33(k + 1, iCell) +  &
+                                      areaEdge*dzTop(k + 1)* &
+                                      slopeTriadDown(k, iCellSelf, iEdge)**2
+                  k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
+
                end do ! maxLevelEdgeTop(iEdge)
             end do ! nEdgesOnCell(iCell)
    
