@@ -19,7 +19,8 @@ module CNStateType
   use elm_varctl     , only: forest_fert_exp
   use elm_varctl          , only : nu_com
   use elm_varctl   , only:  use_fates,use_crop
-
+  use topounit_varcon,  only : max_topounits
+  use GridcellType    , only : grc_pp
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -698,11 +699,11 @@ contains
     type(bounds_type), intent(in) :: bounds   
     !
     ! !LOCAL VARIABLES:
-    integer               :: g,l,c,p,n,j,m            ! indices
-    real(r8) ,pointer     :: gdp (:)                  ! global gdp data (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer     :: peatf (:)                ! global peatf data (needs to be a pointer for use in ncdio)
-    integer  ,pointer     :: soilorder_rdin (:)       ! global soil order data (needs to be a pointer for use in ncdio)
-    integer  ,pointer     :: abm (:)                  ! global abm data (needs to be a pointer for use in ncdio)
+    integer               :: g,l,c,p,n,j,m, t, ti, topi            ! indices
+    real(r8) ,pointer     :: gdp (:,:)                  ! global gdp data (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer     :: peatf (:,:)                ! global peatf data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: soilorder_rdin (:,:)       ! global soil order data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: abm (:,:)                  ! global abm data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: gti (:)                  ! read in - fmax (needs to be a pointer for use in ncdio)
     integer               :: dimid                    ! dimension id
     integer               :: ier                      ! error status
@@ -716,10 +717,10 @@ contains
     integer     ,pointer     :: fert_continue_rdin (:)
     real(r8)    ,pointer     :: fert_dose_rdin (:,:)
     ! soil phosphorus pool Qing Z. 2017
-    real(r8) ,pointer  :: labp_g (:)                       ! read in - LABILE_P
-    real(r8) ,pointer  :: secp_g (:)                       ! read in - SECONDARY_P
-    real(r8) ,pointer  :: occp_g (:)                       ! read in - OCCLUDED_P
-    real(r8) ,pointer  :: prip_g (:)                       ! read in - APATITE_P
+    real(r8) ,pointer  :: labp_g (:,:)                       ! read in - LABILE_P
+    real(r8) ,pointer  :: secp_g (:,:)                       ! read in - SECONDARY_P
+    real(r8) ,pointer  :: occp_g (:,:)                       ! read in - OCCLUDED_P
+    real(r8) ,pointer  :: prip_g (:,:)                       ! read in - APATITE_P
     integer     ,pointer     :: fert_start_rdin (:)
     integer     ,pointer     :: fert_end_rdin (:)
     !-----------------------------------------------------------------------
@@ -753,14 +754,18 @@ contains
     ! Read in GDP data 
     ! --------------------------------------------------------------------
 
-    allocate(gdp(bounds%begg:bounds%endg))
+    allocate(gdp(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='gdp', flag='read', data=gdp, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: gdp NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%gdp_lf_col(c) = gdp(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%gdp_lf_col(c) = gdp(g,ti)
     end do
     deallocate(gdp)
 
@@ -768,14 +773,18 @@ contains
     ! Read in peatf data 
     ! --------------------------------------------------------------------
 
-    allocate(peatf(bounds%begg:bounds%endg))
+    allocate(peatf(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='peatf', flag='read', data=peatf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: peatf NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%peatf_lf_col(c) = peatf(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%peatf_lf_col(c) = peatf(g,ti)
     end do
     deallocate(peatf)
 
@@ -789,13 +798,18 @@ contains
     ! if the soil-order data is available, the model will use it. If it is not, it will
     ! use a default.
  
-    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+    allocate(soilorder_rdin(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
 
     if (readvar) then
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%isoilorder(c) = soilorder_rdin(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+
+          this%isoilorder(c) = soilorder_rdin(g,ti)
+
        end do
     else
        do c = bounds%begc, bounds%endc
@@ -875,14 +889,18 @@ contains
     ! Read in ABM data 
     ! --------------------------------------------------------------------
 
-    allocate(abm(bounds%begg:bounds%endg))
+    allocate(abm(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='abm', flag='read', data=abm, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: abm NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%abm_lf_col(c) = abm(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%abm_lf_col(c) = abm(g,ti)
     end do
     deallocate(abm)
 
@@ -904,50 +922,62 @@ contains
 
     ! Read soil phosphorus pool Qing Z. 2017 
     this%pdatasets_present = .true.
-    allocate(labp_g(bounds%begg:bounds%endg))
+    allocate(labp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='LABILE_P', flag='read', data=labp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%labp_col(c) = labp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%labp_col(c) = labp_g(g,ti)
        end do
     end if
     deallocate(labp_g)
 
-    allocate(secp_g(bounds%begg:bounds%endg))
+    allocate(secp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='SECONDARY_P', flag='read', data=secp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%secp_col(c) = secp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%secp_col(c) = secp_g(g,ti)
        end do
     end if
     deallocate(secp_g)
 
-    allocate(occp_g(bounds%begg:bounds%endg))
+    allocate(occp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='OCCLUDED_P', flag='read', data=occp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%occp_col(c) = occp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%occp_col(c) = occp_g(g,ti)
        end do
     end if
     deallocate(occp_g)
 
-    allocate(prip_g(bounds%begg:bounds%endg))
+    allocate(prip_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='APATITE_P', flag='read', data=prip_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%prip_col(c) = prip_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%prip_col(c) = prip_g(g,ti)
        end do
     end if
     deallocate(prip_g)  

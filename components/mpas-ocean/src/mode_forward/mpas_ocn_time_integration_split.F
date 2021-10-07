@@ -43,6 +43,7 @@ module ocn_time_integration_split
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
+   use ocn_transport_tests
 
    implicit none
    private
@@ -355,6 +356,13 @@ module ocn_time_integration_split
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
+
+      if (config_transport_tests_flow_id > 0) then
+        ! This is a transport test. Write advection velocity from prescribed
+        ! flow field.
+        call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, &
+          0.5*dt, normalVelocityCur)
+      endif
 
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.

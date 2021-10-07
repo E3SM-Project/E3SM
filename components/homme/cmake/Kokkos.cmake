@@ -42,3 +42,8 @@ macro(install_kokkos_if_needed)
     add_subdirectory (${KOKKOS_SRC} ${KOKKOS_LIBRARY_DIR})
   endif ()
 endmacro()
+
+macro(link_to_kokkos targetName)
+  TARGET_INCLUDE_DIRECTORIES(${targetName} SYSTEM PUBLIC ${KOKKOS_INCLUDE_DIR})
+  TARGET_LINK_LIBRARIES(${targetName} ${KOKKOS_TPL_LIBRARIES} ${KOKKOS_LIBRARIES} -L${KOKKOS_LIBRARY_DIR})
+endmacro(link_to_kokkos)
