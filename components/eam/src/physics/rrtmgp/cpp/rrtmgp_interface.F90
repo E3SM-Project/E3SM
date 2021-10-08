@@ -177,11 +177,4 @@ contains
       end do
    end function c_strarr
 
-!  function c_string(str) result(str_c)
-!     implicit none
-!     use iso_c_binding
-!     character(len=*), intent(in) :: str
-!     character(kind=c_char) :: str_c
-!     str_c = trim(str)//C_NULL_CHAR
-!  end function c_string
 end module rrtmgp_interface
