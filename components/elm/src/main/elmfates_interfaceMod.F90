@@ -513,6 +513,7 @@ contains
       integer                                        :: s         ! FATES site index
       integer                                        :: c         ! HLM column index
       integer                                        :: l         ! HLM LU index
+      integer                                        :: g         ! HLM grid index
       integer                                        :: m         ! HLM PFT index
       integer                                        :: ft        ! FATES PFT index
       integer                                        :: pi,pf
