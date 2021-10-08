@@ -138,11 +138,13 @@
       <!-- Aqua planet -->
       <value compset="_EAM%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
-      <value compset="_EAM%RCE"      >RCEMIP_EAMv1</value>
+      <value compset="_EAM%RCEMIP"      >RCEMIP_EAMv1</value>
+      <value compset="_EAM%RCEROT"      >RCEROT_EAMv1</value>
       <!-- MMF / Super-Parameterization -->
       <value compset="2010(?:SOI)?_EAM%MMF[1XO]">2010_mmf_1mom</value>
       <value compset="2010(?:SOI)?_EAM%MMF2"    >2010_mmf_2mom</value>
-      <value compset="_EAM%MMF.*-RCE"           >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-RCEMIP"           >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-RCEROT"           >RCEROT_EAMv1</value>
       <value compset="_EAM%MMF.*-AQUA"          >aquaplanet_MMF-1mom</value>
       <value compset="AR97_EAM%MMF.*-SCM"       >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%MMF.*-SCM"       >scam_rico_MMF-1mom</value>
