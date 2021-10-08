@@ -820,7 +820,7 @@ contains
          if(use_fates_sp)then
             do ft = natpft_lb,natpft_ub !set of pfts in HLM
                 ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
-                p = ft + col%patchi(c) ! for an FT of 1 we want to use
+                p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                 this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
                 this%fates(nc)%bc_in(s)%hlm_sp_tsai(ft) = canopystate_inst%tsai_patch(p)
                 this%fates(nc)%bc_in(s)%hlm_sp_htop(ft) = canopystate_inst%htop_patch(p)
@@ -1097,13 +1097,13 @@ contains
           ! Other modules may have AI's we only flush values
           ! that are on the naturally vegetated columns
           elai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
-          esai(col%patchi(c):col%patchf(c)) = 0.0_r8
-          hbot(col%patchi(c):col%patchf(c)) = 0.0_r8
+          esai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          hbot(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
 
           if(use_fates_sp)then
-            canopystate_inst%tlai_hist_patch(col%patchi(c):col%patchf(c)) = 0.0_r8
-            canopystate_inst%tsai_hist_patch(col%patchi(c):col%patchf(c)) = 0.0_r8
-            canopystate_inst%htop_hist_patch(col%patchi(c):col%patchf(c)) = 0.0_r8
+            canopystate_inst%tlai_hist_patch(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+            canopystate_inst%tsai_hist_patch(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+            canopystate_inst%htop_hist_patch(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
           else
             tlai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
             tsai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
@@ -1132,9 +1132,9 @@ contains
                1.0_r8 - sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch)) )
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
-          patch%sp_pftorder_index(col%patchi(c)) = 0
+          patch%sp_pftorder_index(col_pp%pfti(c)) = 0
 
-          areacheck = patch%wt_ed(col%patchi(c))
+          areacheck = patch%wt_ed(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
 
@@ -1450,7 +1450,7 @@ contains
                      c = this%f2hmap(nc)%fcolumn(s)
                      do ft = natpft_lb,natpft_ub !set of pfts in HLM
                         ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
-                        p = ft + col%patchi(c) ! for an FT of 1 we want to use
+                        p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                         this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
                         this%fates(nc)%bc_in(s)%hlm_sp_tsai(ft) = canopystate_inst%tsai_patch(p)
                         this%fates(nc)%bc_in(s)%hlm_sp_htop(ft) = canopystate_inst%htop_patch(p)
@@ -1583,7 +1583,7 @@ contains
                   c = this%f2hmap(nc)%fcolumn(s)
                   do ft = natpft_lb,natpft_ub !set of pfts in HLM
                      ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
-                     p = ft + col%patchi(c) ! for an FT of 1 we want to use
+                     p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                      this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
                      this%fates(nc)%bc_in(s)%hlm_sp_tsai(ft) = canopystate_inst%tsai_patch(p)
                      this%fates(nc)%bc_in(s)%hlm_sp_htop(ft) = canopystate_inst%htop_patch(p)
