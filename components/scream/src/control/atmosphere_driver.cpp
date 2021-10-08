@@ -581,7 +581,8 @@ initialize_constant_field(const FieldIdentifier& fid,
 void AtmosphereDriver::initialize_atm_procs ()
 {
   // Initialize memory buffer for all atm processes
-  m_atm_process_group->initialize_atm_memory_buffer(m_memory_buffer);
+  m_memory_buffer = std::make_shared<ATMBufferManager>();
+  m_atm_process_group->initialize_atm_memory_buffer(*m_memory_buffer);
 
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts);
@@ -639,17 +640,32 @@ void AtmosphereDriver::run (const int dt) {
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
-  m_atm_process_group->finalize( /* inputs ? */ );
 
-  // Finalize output streams, make sure files are closed
+  // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
     out_mgr.second.finalize();
   }
+  m_output_managers.clear();
 
+  // Finalize, and then destroy all atmosphere processes
+  m_atm_process_group->finalize( /* inputs ? */ );
+  m_atm_process_group = nullptr;
+
+  // Destroy the buffer manager
+  m_memory_buffer = nullptr;
+
+  // Destroy the surface coupling (if any)
+  m_surface_coupling = nullptr;
+
+  // Destroy the grids manager
+  m_grids_manager = nullptr;
+
+  // Destroy all the fields manager
   for (auto it : m_field_mgrs) {
     it.second->clean_up();
   }
 
+  // Finalize scorpio
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
   }
