@@ -194,8 +194,11 @@ module li_calving
       endif
       
       ! Zero calvingThickness here instead of in individual subroutines.
-      ! This is necessary when using damage threshold calving with other      
-      ! calving routines
+      ! This is necessary when using damage threshold calving with other calving
+      ! routines. Some individual routines still set calvingThickness to zero, but 
+      ! this is redundant. li_apply_front_ablation_velocity will zero 
+      ! calvingThickness, so any routines that use that should not be applied 
+      ! after other calving routines.
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
