@@ -166,10 +166,10 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
-
       ! Need 1 halo around owned cells
       nCells = nCellsArray( 2 )
+
+      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
 
       ! first del2: div(h \nabla \phi) at cell center
       !$omp parallel
