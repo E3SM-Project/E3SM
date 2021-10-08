@@ -184,17 +184,33 @@
   <!-- *********************************** -->
   <compset>
     <alias>F-EAM-RCEMIP</alias>
-    <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%RCEMIP_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F-MMF1-RCEMIP</alias>
-    <lname>2000_EAM%MMF1-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%MMF1-RCEMIP_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>F-MMFXX-RCEMIP</alias>
-    <lname>2000_EAM%MMFXX-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAM%MMFXX-RCEMIP_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- rotating RCE -->
+  <compset>
+    <alias>F-EAM-RCEROT</alias>
+    <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F-MMF1-RCEROT</alias>
+    <lname>2000_EAM%MMF1-RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F-MMFXX-RCEROT</alias>
+    <lname>2000_EAM%MMFXX-RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
