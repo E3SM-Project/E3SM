@@ -193,7 +193,7 @@ module li_calving
          end do
       endif
       
-      ! Zero calvingThickness here instead of in individual subroutines.
+      ! Zero calvingThickness here instead of or in addition to in individual subroutines.
       ! This is necessary when using damage threshold calving with other calving
       ! routines. Some individual routines still set calvingThickness to zero, but 
       ! this is redundant. li_apply_front_ablation_velocity will zero 
