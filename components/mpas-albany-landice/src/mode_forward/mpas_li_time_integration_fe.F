@@ -627,6 +627,7 @@ module li_time_integration_fe
       integer, pointer :: nCells
 
       character (len=StrKIND), pointer :: config_thickness_advection
+      logical, pointer :: config_restore_thickness_after_advection
       character (len=StrKIND), pointer :: config_tracer_advection
 
       logical, pointer :: config_print_thickness_advection_info
@@ -642,6 +643,7 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+      call mpas_pool_get_config(liConfigs, 'config_restore_thickness_after_advection', config_restore_thickness_after_advection)
 
       dminfo => domain % dminfo
 
@@ -794,6 +796,13 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         
+         ! restore thickness if using config_restore_thickness_after_advection
+         if ( config_restore_thickness_after_advection ) then
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
+            thickness(:) = thicknessOld(:)
+         endif
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          call li_update_geometry(geometryPool)
