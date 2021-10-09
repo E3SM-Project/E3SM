@@ -193,7 +193,21 @@ module li_calving
             block => block % next
          end do
       endif
-
+      
+      ! Zero calvingThickness here instead of or in addition to in individual subroutines.
+      ! This is necessary when using damage threshold calving with other calving
+      ! routines. Some individual routines still set calvingThickness to zero, but 
+      ! this is redundant. li_apply_front_ablation_velocity will zero 
+      ! calvingThickness, so any routines that use that should not be applied 
+      ! after other calving routines.
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         calvingThickness(:) = 0.0_RKIND
+   
+         block => block % next
+      end do
       ! compute calvingThickness based on the calving_config option
       if (trim(config_calving) == 'thickness_threshold') then
 
@@ -3006,8 +3020,6 @@ module li_calving
       call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
       growMask => growMaskField % array
       growMask(:) = 0
-
-      calvingThickness(:) = 0.0_RKIND
 
       ! define seed and grow masks for flood fill.
       where ( li_mask_is_dynamic_margin(cellMask) .and. (damage .ge. config_damage_calving_threshold) )
