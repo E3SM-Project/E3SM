@@ -1132,9 +1132,9 @@ contains
                1.0_r8 - sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch)) )
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
-          patch%sp_pftorder_index(col_pp%pfti(c)) = 0
+          veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
 
-          areacheck = patch%wt_ed(col_pp%pfti(c))
+          areacheck = veg_pp%wt_ed(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
 
@@ -1147,7 +1147,7 @@ contains
              veg_pp%is_veg(p) = .true.
              veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
 
-             areacheck = areacheck + patch%wt_ed(p)
+             areacheck = areacheck + veg_pp%wt_ed(p)
 
              elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
              esai(p) = this%fates(nc)%bc_out(s)%esai_pa(ifp)
@@ -2224,7 +2224,7 @@ contains
 
        if(.not.this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) )then
           write(iulog,*) 's,p,ifp',s,p,ifp
-          write(iulog,*) 'Not all patches on the natveg column were passed to canrad',patch%sp_pftorder_index(p)
+          write(iulog,*) 'Not all patches on the natveg column were passed to canrad',veg_pp%sp_pftorder_index(p)
           call endrun(msg=errMsg(sourcefile, __LINE__))
        else
           albd(p,:) = this%fates(nc)%bc_out(s)%albd_parb(ifp,:)
