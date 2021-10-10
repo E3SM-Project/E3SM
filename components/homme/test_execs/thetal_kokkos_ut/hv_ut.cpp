@@ -140,12 +140,12 @@ TEST_CASE("hvf", "biharmonic") {
   auto& params = c.create<SimulationParams>();
   //keep nu_top=0 till nu_scale_top is set here
   params.nu_top            = 0.0; //RPDF(1e-6,1e-3)(engine);
-  params.nu                = 1.0e15;//RPDF(1e-6,1e-3)(engine);
-  params.nu_p              = 0.0;//RPDF(1e-6,1e-3)(engine);
-  params.nu_s              = 0.0;//RPDF(1e-6,1e-3)(engine);
+  params.nu                = RPDF(1e-1,1e3)(engine);
+  params.nu_p              = RPDF(1e-6,1e-3)(engine);
+  params.nu_s              = RPDF(1e-6,1e-3)(engine);
   //do not set to 0 in the test, won't work
-  params.nu_div            = 1.0;//RPDF(1e-6,1e-3)(engine);
-  params.hypervis_scaling  = 0;//RPDF(0.1,1.0)(engine);
+  params.nu_div            = RPDF(1e-6,1e-3)(engine);
+  params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
   params.hypervis_subcycle_tom = 0; 
   params.params_set = true;
@@ -156,6 +156,7 @@ TEST_CASE("hvf", "biharmonic") {
   MPI_Bcast(&params.nu_p,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_s,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_div,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  //reset below, not bcasted
   MPI_Bcast(&params.hypervis_scaling,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.hypervis_subcycle,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
@@ -284,7 +285,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Update hv settings
         params.hypervis_scaling = hv_scaling;
-#if 1
         if (params.nu != params.nu_div) {
           Real ratio = params.nu_div / params.nu;
           if (params.hypervis_scaling != 0.0) {
@@ -298,12 +298,6 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio1 = 1.0;
           params.nu_ratio2 = 1.0;
         }
-#else
-          params.nu_ratio1 = 1.0;
-          params.nu_ratio2 = 1.0;
-#endif
-
-
 
         // Randomize inputs
         state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
@@ -444,14 +438,16 @@ TEST_CASE("hvf", "biharmonic") {
       const Real* phi_ref_ptr   = phi_ref_f90.data();
 
       for (Real hv_scaling : {0.0, 1.2345}) {
-      //for (Real hv_scaling : {0.0, 0.0}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
 
         // Generate timestep settings
         const Real dt = RPDF(1e-5,1e-3)(engine);
+        //randomize it? also, dpdiss is not tested in here
         const Real eta_ave_w = 1.0;
-        const int  np1 = IPDF(0,2)(engine);
+        int  np1 = IPDF(0,2)(engine);
+        // Sync np1 across ranks. If they are not synced, we may get stuck in an mpi wait
+        MPI_Bcast(&np1,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
         // Create the HVF tester
         HVFTester hvf(params,geo,state,derived);
@@ -544,7 +540,6 @@ TEST_CASE("hvf", "biharmonic") {
         Real* phinh_f90_ptr  = phinh_f90.data();
 
         // Update hv settings
-#if 1
         params.hypervis_scaling = hv_scaling;
         if (params.nu != params.nu_div) {
           Real ratio = params.nu_div / params.nu;
@@ -559,15 +554,10 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio1 = 1.0;
           params.nu_ratio2 = 1.0;
         }
-#else
-          params.nu_ratio1 = 1.0;
-          params.nu_ratio2 = 1.0;
-#endif
 
         // Set the viscosity params
         hvf.set_hv_data(hv_scaling,params.nu_ratio1,params.nu_ratio2);
 
-#if 1
         // Run the cxx functor
         hvf.run(np1,dt,eta_ave_w);
 
@@ -575,7 +565,6 @@ TEST_CASE("hvf", "biharmonic") {
         advance_hypervis_f90(np1+1,dt,eta_ave_w, hv_scaling, hydrostatic,
                              dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,
                              v_f90_ptr, w_f90_ptr, vtheta_f90_ptr, dp_f90_ptr, phinh_f90_ptr);
-#endif
 
         // Compare answers
         auto v_cxx      = Kokkos::create_mirror_view(state.m_v);
