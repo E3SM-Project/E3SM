@@ -68,8 +68,8 @@ public:
   void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w)
   {
     m_data.np1 = np1;
-    m_data.dt = dt;// /m_data.hypervis_subcycle;
-    m_data.dt_hvs = dt/m_data.hypervis_subcycle;
+    m_data.dt = dt;
+    m_data.dt_hvs = (m_data.hypervis_subcycle > 0 ) ? dt/m_data.hypervis_subcycle : -1.0;
     m_data.dt_hvs_tom = -1.0;// set to dt/m_data.hypervis_subcycle_tom;
     m_data.eta_ave_w = eta_ave_w;
   }
@@ -79,7 +79,6 @@ public:
     m_data.nu_ratio1 = nu_ratio1;
     m_data.nu_ratio2 = nu_ratio2;
     m_data.consthv = (hv_scaling==0.0);
-printf("---------------const HV? %d \n", m_data.consthv);
   }
 
   using ScalarTens = ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>;
@@ -139,6 +138,7 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Init parameters
   auto& params = c.create<SimulationParams>();
+  //keep nu_top=0 till nu_scale_top is set here
   params.nu_top            = 0.0; //RPDF(1e-6,1e-3)(engine);
   params.nu                = 1.0e15;//RPDF(1e-6,1e-3)(engine);
   params.nu_p              = 0.0;//RPDF(1e-6,1e-3)(engine);
@@ -146,7 +146,7 @@ TEST_CASE("hvf", "biharmonic") {
   //do not set to 0 in the test, won't work
   params.nu_div            = 1.0;//RPDF(1e-6,1e-3)(engine);
   params.hypervis_scaling  = 0;//RPDF(0.1,1.0)(engine);
-  params.hypervis_subcycle = 1; //IPDF(1,3)(engine);
+  params.hypervis_subcycle = IPDF(1,3)(engine);
   params.hypervis_subcycle_tom = 0; 
   params.params_set = true;
 
