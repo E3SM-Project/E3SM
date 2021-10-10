@@ -222,13 +222,13 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.np1 = np1;
 
   m_data.dt = dt;
-  if (m_data.hypervis_subcycle > 1) { 
+  if (m_data.hypervis_subcycle > 0) { 
     m_data.dt_hvs = dt/m_data.hypervis_subcycle;
   }else{
     //won't be used
     m_data.dt_hvs = -1.0;
   }
-  if (m_data.hypervis_subcycle_tom > 1) { 
+  if (m_data.hypervis_subcycle_tom > 0) { 
     m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
   }else{
     //won't be used

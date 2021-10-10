@@ -68,7 +68,9 @@ public:
   void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w)
   {
     m_data.np1 = np1;
-    m_data.dt = dt/m_data.hypervis_subcycle;
+    m_data.dt = dt;// /m_data.hypervis_subcycle;
+    m_data.dt_hvs = dt/m_data.hypervis_subcycle;
+    m_data.dt_hvs_tom = -1.0;// set to dt/m_data.hypervis_subcycle_tom;
     m_data.eta_ave_w = eta_ave_w;
   }
 
@@ -77,6 +79,7 @@ public:
     m_data.nu_ratio1 = nu_ratio1;
     m_data.nu_ratio2 = nu_ratio2;
     m_data.consthv = (hv_scaling==0.0);
+printf("---------------const HV? %d \n", m_data.consthv);
   }
 
   using ScalarTens = ExecViewUnmanaged<Scalar*   [NP][NP][NUM_LEV]>;
@@ -136,13 +139,15 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Init parameters
   auto& params = c.create<SimulationParams>();
-  params.nu_top            = RPDF(1e-6,1e-3)(engine);
-  params.nu                = RPDF(1e-6,1e-3)(engine);
-  params.nu_p              = RPDF(1e-6,1e-3)(engine);
-  params.nu_s              = RPDF(1e-6,1e-3)(engine);
-  params.nu_div            = RPDF(1e-6,1e-3)(engine);
-  params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
-  params.hypervis_subcycle = IPDF(1,3)(engine);
+  params.nu_top            = 0.0; //RPDF(1e-6,1e-3)(engine);
+  params.nu                = 1.0e15;//RPDF(1e-6,1e-3)(engine);
+  params.nu_p              = 0.0;//RPDF(1e-6,1e-3)(engine);
+  params.nu_s              = 0.0;//RPDF(1e-6,1e-3)(engine);
+  //do not set to 0 in the test, won't work
+  params.nu_div            = 1.0;//RPDF(1e-6,1e-3)(engine);
+  params.hypervis_scaling  = 0;//RPDF(0.1,1.0)(engine);
+  params.hypervis_subcycle = 1; //IPDF(1,3)(engine);
+  params.hypervis_subcycle_tom = 0; 
   params.params_set = true;
 
   // Sync params across ranks
@@ -279,6 +284,7 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Update hv settings
         params.hypervis_scaling = hv_scaling;
+#if 1
         if (params.nu != params.nu_div) {
           Real ratio = params.nu_div / params.nu;
           if (params.hypervis_scaling != 0.0) {
@@ -292,6 +298,12 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio1 = 1.0;
           params.nu_ratio2 = 1.0;
         }
+#else
+          params.nu_ratio1 = 1.0;
+          params.nu_ratio2 = 1.0;
+#endif
+
+
 
         // Randomize inputs
         state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
@@ -378,14 +390,14 @@ TEST_CASE("hvf", "biharmonic") {
                 REQUIRE(ttens_cxx(igp,jgp,k)==ttens_f90(ie,k,igp,jgp));
                 if(vtens_cxx(0,igp,jgp,k)!=vtens_f90(ie,k,0,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(0,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,0,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(0,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,0,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(0,igp,jgp,k)==vtens_f90(ie,k,0,igp,jgp));
                 if(vtens_cxx(1,igp,jgp,k)!=vtens_f90(ie,k,1,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(1,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,1,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(1,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,1,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(1,igp,jgp,k)==vtens_f90(ie,k,1,igp,jgp));
 
@@ -432,6 +444,7 @@ TEST_CASE("hvf", "biharmonic") {
       const Real* phi_ref_ptr   = phi_ref_f90.data();
 
       for (Real hv_scaling : {0.0, 1.2345}) {
+      //for (Real hv_scaling : {0.0, 0.0}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
 
@@ -465,7 +478,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         constexpr Real noise_lvl = 0.05;
         genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
-
         EquationOfState eos;
         eos.init(hydrostatic,hvcoord);
 
@@ -532,6 +544,7 @@ TEST_CASE("hvf", "biharmonic") {
         Real* phinh_f90_ptr  = phinh_f90.data();
 
         // Update hv settings
+#if 1
         params.hypervis_scaling = hv_scaling;
         if (params.nu != params.nu_div) {
           Real ratio = params.nu_div / params.nu;
@@ -546,10 +559,15 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio1 = 1.0;
           params.nu_ratio2 = 1.0;
         }
+#else
+          params.nu_ratio1 = 1.0;
+          params.nu_ratio2 = 1.0;
+#endif
 
         // Set the viscosity params
         hvf.set_hv_data(hv_scaling,params.nu_ratio1,params.nu_ratio2);
 
+#if 1
         // Run the cxx functor
         hvf.run(np1,dt,eta_ave_w);
 
@@ -557,7 +575,7 @@ TEST_CASE("hvf", "biharmonic") {
         advance_hypervis_f90(np1+1,dt,eta_ave_w, hv_scaling, hydrostatic,
                              dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,
                              v_f90_ptr, w_f90_ptr, vtheta_f90_ptr, dp_f90_ptr, phinh_f90_ptr);
-
+#endif
 
         // Compare answers
         auto v_cxx      = Kokkos::create_mirror_view(state.m_v);
@@ -581,15 +599,15 @@ TEST_CASE("hvf", "biharmonic") {
 
                 if (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,0,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,0,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,0,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,0,igp,jgp));
 
                 if (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,1,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,1,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,1,igp,jgp));
 

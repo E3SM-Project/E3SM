@@ -38,8 +38,8 @@ set(CURL_LIBRARY -L$ENV{CURL_ROOT}/lib -lcurl CACHE LIST "")
 
 # Flag tweaks
 set(CMAKE_C_FLAGS "-w" CACHE STRING "")
-set(CMAKE_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas --fmad=false" CACHE STRING "")
-set(CMAKE_Fortran_FLAGS "-w" CACHE STRING "")
+set(ADD_CXX_FLAGS "-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored -Wno-unknown-pragmas --fmad=false -O0" CACHE STRING "")
+set(ADD_Fortran_FLAGS " -ffp-contract=off -O0" CACHE STRING "")
 set(CMAKE_EXE_LINKER_FLAGS "-ldl" CACHE STRING "")
 set(OPT_FLAGS "-O0" CACHE STRING "")
 set(DEBUG_FLAGS "-ffp-contract=off -g"CACHE STRING "")
