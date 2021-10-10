@@ -115,4 +115,5 @@
 <gas_wetdep_method   >'NEU'</gas_wetdep_method>
 <gas_wetdep_list     >'C2H5OOH','CH2O','CH3CHO','CH3OOH','H2O2','H2SO4','HNO3','HO2NO2','SO2'</gas_wetdep_list>
 <fstrat_efold_list>'CH2O', 'CH3O2', 'CH3OOH', 'PAN', 'CO', 'C2H6', 'C3H8', 'C2H4', 'ROHO2', 'CH3COCH3', 'C2H5O2', 'C2H5OOH', 'CH3CHO', 'CH3CO3', 'ISOP', 'ISOPO2', 'MVKMACR', 'MVKO2'</fstrat_efold_list>
+<fstrat_list         >''</fstrat_list>
 </namelist_defaults>
