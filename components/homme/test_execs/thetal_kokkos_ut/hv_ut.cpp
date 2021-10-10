@@ -182,6 +182,8 @@ TEST_CASE("hvf", "biharmonic") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
+// nu is set differently for tensor than for const hv, move this call down
+// or reset nu only
   init_hv_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),
               hvcoord.ps0,params.hypervis_subcycle,
               params.nu, params.nu_div, params.nu_top,
