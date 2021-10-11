@@ -269,14 +269,6 @@ struct Functions
                                    Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
                                    const Smask& context = Smask(true) );
 
-  // Limits ice process rates to prevent overdepletion of sources such that
-  // the subsequent adjustments are done with maximum possible rates for the
-  // time step.
-  KOKKOS_FUNCTION
-  static void prevent_ice_overdepletion(
-    const Spack& pres, const Spack& T_atm, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
-    Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& context = Smask(true) );
-
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
   // ------------------------------------------------------------------------------------------!
@@ -684,13 +676,9 @@ struct Functions
     const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
-  // TODO (comments)
+  // compute deposition onto ice or sublimation from ice
   KOKKOS_FUNCTION
-  static void ice_deposition_sublimation(const Spack& qi_incld,
-    const Spack& ni_incld, const Spack& T_atm, const Spack& qv_sat_l, const Spack& qv_sat_i,
-    const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qv2qi_vapdep_tend,
-    Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
-    const Smask& context = Smask(true));
+  static void ice_deposition_sublimation(const Spack& qi_incld, const Spack& ni_incld, const Spack& t_atm, const Spack& qv_sat_l, const Spack& qv_sat_i, const Spack& epsi, const Spack& abi, const Spack& qv, const Scalar& inv_dt, Spack& qidep, Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qiberg, const Smask& context = Smask(true) );
 
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(
@@ -968,6 +956,9 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim, const Scalar& dt, const Spack& qidep, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context = Smask(true) );
 }; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
@@ -989,7 +980,6 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_table3_impl.hpp"
 # include "p3_table_ice_impl.hpp"
 # include "p3_back_to_cell_average_impl.hpp"
-# include "p3_prevent_ice_overdepletion_impl.hpp"
 # include "p3_dsd2_impl.hpp"
 # include "p3_upwind_impl.hpp"
 # include "p3_find_impl.hpp"
@@ -1027,6 +1017,6 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_nc_conservation_impl.hpp"
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
+# include "p3_prevent_liq_supersaturation_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA || !KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE
-
 #endif // P3_FUNCTIONS_HPP

@@ -259,16 +259,6 @@ contains
       qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend)
   end subroutine back_to_cell_average_c
 
-subroutine prevent_ice_overdepletion_c(pres,T_atm,qv,latent_heat_sublim,inv_dt,    &
-   qv2qi_vapdep_tend,qi2qv_sublim_tend) bind(C)
-    use micro_p3, only: prevent_ice_overdepletion
-
-    real(kind=c_real), value, intent(in) :: pres, T_atm, qv, latent_heat_sublim, inv_dt
-    real(kind=c_real), intent(inout) :: qv2qi_vapdep_tend, qi2qv_sublim_tend
-
-    call prevent_ice_overdepletion(pres, T_atm, qv, latent_heat_sublim, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend)
-end subroutine prevent_ice_overdepletion_c
-
   subroutine cloud_water_conservation_c(qc,dt,qc2qr_autoconv_tend,qc2qr_accret_tend,qc2qi_collect_tend,qc2qi_hetero_freeze_tend,qc2qr_ice_shed_tend,     &
     qc2qi_berg_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend) bind(C)
     use micro_p3, only: cloud_water_conservation
@@ -699,17 +689,13 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
   end subroutine update_prognostic_liquid_c
 
-  subroutine ice_deposition_sublimation_c(qi_incld, ni_incld, T_atm,  qv_sat_l, qv_sat_i, epsi, abi, qv, &
-           qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend)  bind(C)
-    use micro_p3, only: ice_deposition_sublimation
+  subroutine ice_deposition_sublimation_c(qi_incld, ni_incld, t_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt, qidep, qi2qv_sublim_tend, ni_sublim_tend, qiberg) bind(C)
+    use micro_p3, only : ice_deposition_sublimation
 
-    !arguments
-    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv
+    real(kind=c_real) , value, intent(in) :: qi_incld, ni_incld, t_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt
+    real(kind=c_real) , intent(out) :: qidep, qi2qv_sublim_tend, ni_sublim_tend, qiberg
 
-    real(kind=c_real), intent(out) :: qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend
-
-    call ice_deposition_sublimation(qi_incld, ni_incld, T_atm,  qv_sat_l, qv_sat_i, epsi, abi, qv, &
-           qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend)
+    call ice_deposition_sublimation(qi_incld, ni_incld, t_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt, qidep, qi2qv_sublim_tend, ni_sublim_tend, qiberg)
   end subroutine ice_deposition_sublimation_c
 
   subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt,   &
@@ -966,4 +952,12 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
     call ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend)
   end subroutine ni_conservation_c
+  subroutine prevent_liq_supersaturation_c(pres, t_atm, qv, latent_heat_vapor, latent_heat_sublim, dt, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend) bind(C)
+    use micro_p3, only : prevent_liq_supersaturation
+
+    real(kind=c_real) , value, intent(in) :: pres, t_atm, qv, latent_heat_vapor, latent_heat_sublim, dt, qidep, qinuc
+    real(kind=c_real) , intent(inout) :: qi2qv_sublim_tend, qr2qv_evap_tend
+
+    call prevent_liq_supersaturation(pres, t_atm, qv, latent_heat_vapor, latent_heat_sublim, dt, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend)
+  end subroutine prevent_liq_supersaturation_c
 end module p3_iso_c

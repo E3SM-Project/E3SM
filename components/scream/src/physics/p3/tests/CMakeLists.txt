@@ -7,7 +7,6 @@ set(P3_TESTS_SRCS
     p3_ice_tables_unit_tests.cpp
     p3_table3_unit_tests.cpp
     p3_back_to_cell_average_unit_tests.cpp
-    p3_prevent_ice_overdepletion_unit_tests.cpp
     p3_find_unit_tests.cpp
     p3_upwind_unit_tests.cpp
     p3_calc_rime_density_unit_tests.cpp
@@ -37,6 +36,8 @@ set(P3_TESTS_SRCS
     p3_nc_conservation_tests.cpp
     p3_nr_conservation_tests.cpp
     p3_ni_conservation_tests.cpp
+    p3_ice_deposition_sublimation_tests.cpp
+    p3_prevent_liq_supersaturation_tests.cpp
     ) # P3_TESTS_SRCS
 
 # The p3_test_setup executable generates tables used by all p3 tests. This

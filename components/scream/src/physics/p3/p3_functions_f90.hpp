@@ -149,17 +149,6 @@ struct BackToCellAverageData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PreventIceOverdepletionData
-{
-  // inputs
-  Real pres, T_atm, qv, latent_heat_sublim, inv_dt;
-
-  //output
-  Real qv2qi_vapdep_tend, qi2qv_sublim_tend;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct CloudWaterConservationData
 {
   // inputs
@@ -537,13 +526,17 @@ struct P3UpdatePrognosticLiqData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IceDepSublimationData
+struct IceDepositionSublimationData
 {
   //Inputs
-  Real qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv;
+  Real qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt;
 
   //Outs
   Real qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
+
+  // This populates all input fields with test data within [0,1].
+  void randomize(std::mt19937_64& engine);
+
 };
 
 struct IceCldliqCollectionData
@@ -817,6 +810,17 @@ struct NiConservationData {
   void randomize(std::mt19937_64& engine);
 };
 
+struct PreventLiqSupersaturationData {
+  // Inputs
+  Real pres, t_atm, qv, latent_heat_vapor, latent_heat_sublim, dt, qidep, qinuc;
+  
+  // Inputs/Outputs
+  Real qi2qv_sublim_tend, qr2qv_evap_tend;
+  
+  // This populates all fields with test data within [0,1].
+  void randomize(std::mt19937_64& engine);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);
@@ -824,7 +828,6 @@ void find_lookuptable_indices_1b(LookupIceDataB& d);
 void access_lookup_table(AccessLookupTableData& d);
 void access_lookup_table_coll(AccessLookupTableCollData& d);
 void back_to_cell_average(BackToCellAverageData& d);
-void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
 void cloud_water_conservation(CloudWaterConservationData& d);
 void rain_water_conservation(RainWaterConservationData& d);
 void ice_water_conservation(IceWaterConservationData& d);
@@ -852,7 +855,7 @@ void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
 void update_prognostic_ice(P3UpdatePrognosticIceData& d);
 void evaporate_rain(EvapRainData& d);
 void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
-void ice_deposition_sublimation(IceDepSublimationData& d);
+void ice_deposition_sublimation(IceDepositionSublimationData& d);
 void ice_cldliq_collection(IceCldliqCollectionData& d);
 void ice_rain_collection(IceRainCollectionData& d);
 void ice_self_collection(IceSelfCollectionData& d);
@@ -872,6 +875,7 @@ void ice_supersat_conservation(IceSupersatConservationData& d);
 void nc_conservation(NcConservationData& d);
 void nr_conservation(NrConservationData& d);
 void ni_conservation(NiConservationData& d);
+void prevent_liq_supersaturation(PreventLiqSupersaturationData& d);
 extern "C" { // _f function decls
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
@@ -898,9 +902,6 @@ void back_to_cell_average_f(Real cld_frac_l, Real cld_frac_r, Real cld_frac_i,
                             Real* ni_selfcollect_tend, Real* qv2qi_vapdep_tend, Real* nr2ni_immers_freeze_tend,
                             Real* ni_sublim_tend, Real* qv2qi_nucleat_tend, Real* ni_nucleat_tend,
                             Real* qc2qi_berg_tend);
-
-void prevent_ice_overdepletion_f(Real pres, Real T_atm, Real qv, Real latent_heat_sublim,
-                                 Real inv_dt, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend);
 
 void cloud_water_conservation_f(
   Real qc, Real dt, Real* qc2qr_autoconv_tend, Real* qc2qr_accret_tend, Real* qc2qi_collect_tend,
@@ -1016,9 +1017,7 @@ void update_prognostic_liquid_f(
   Real inv_rho, Real inv_exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
 
-void ice_deposition_sublimation_f(
-  Real qi_incld, Real ni_incld, Real T_atm, Real qv_sat_l, Real qv_sat_i,
-  Real epsi, Real abi, Real qv, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend, Real* ni_sublim_tend, Real* qc2qi_berg_tend);
+void ice_deposition_sublimation_f(Real qi_incld, Real ni_incld, Real t_atm, Real qv_sat_l, Real qv_sat_i, Real epsi, Real abi, Real qv, Real inv_dt, Real* qidep, Real* qi2qv_sublim_tend, Real* ni_sublim_tend, Real* qiberg);
 
 void ice_cldliq_collection_f(Real rho, Real temp, Real rhofaci, Real table_val_qc2qi_collect,
                              Real qi_incld,Real qc_incld, Real ni_incld, Real nc_incld,
@@ -1102,6 +1101,7 @@ void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
+void prevent_liq_supersaturation_f(Real pres, Real t_atm, Real qv, Real latent_heat_vapor, Real latent_heat_sublim, Real dt, Real qidep, Real qinuc, Real* qi2qv_sublim_tend, Real* qr2qv_evap_tend);
 } // end _f function decls
 
 }  // namespace p3

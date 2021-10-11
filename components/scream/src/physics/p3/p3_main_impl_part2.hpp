@@ -111,7 +111,7 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    //compute mask to identify padded values in packs, which are undefined
+    //compute mask to identify padded values in packs, which shouldn't be used in calculations
     const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
       
@@ -336,7 +336,7 @@ void Functions<S,D>
 		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
 
       ice_deposition_sublimation(
-        qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k),
+	qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k), inv_dt,
         qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
     }
 
@@ -380,31 +380,10 @@ void Functions<S,D>
     // conservation of water
     //
 
-    // The microphysical process rates are computed above, based on the environmental conditions.
-    // The rates are adjusted here (where necessary) such that the sum of the sinks of mass cannot
-    // be greater than the sum of the sources, thereby resulting in overdepletion.
-    //-- Limit ice process rates to prevent overdepletion of sources such that
-    //   the subsequent adjustments are done with maximum possible rates for the
-    //   time step.  (note: most ice rates are adjusted here since they must be done
-    //   simultaneously (outside of iice-loops) to distribute reduction proportionally
-    //   amongst categories.
-    //PMC - might need to rethink above statement since only one category now.
-    // AaronDonahue: Do we need the below checks for the new definition of
-    // how qv2qi_vapdep_tend and qi2qv_sublim_tend are derived?
-    // AaronDonahue: UPDATE, if we are following the implementation of MG
-    // then the answer appears to be YES.  There is a similar check in MG
-    // microphysics which limits qv2qi_vapdep_tend and qv2qi_nucleat_tend, but does not limit qi2qv_sublim_tend.
-    // So similar but slightly different.  The overall answer would be that
-    // qv2qi_vapdep_tend does need some limit.  The next questions are,
-    //   1) Should we be taking qv2qi_nucleat_tend into consideration too?
-    //   2) Is MG correct in NOT limiting qi2qv_sublim_tend?
-
-    prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, not_skip_all);
-
-    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
-
-    // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
-    //          cannot possibly overdeplete qv
+    // don't bother checking vapor since all sinks already have limits imposed and the sum, therefore,
+    // cannot possibly overdeplete qv [PMC: the above argument makes no sense to me. I think we don't
+    // check qv because it is typically much greater than zero so seldom goes negative (and if it does
+    // catastrophic failure is appropriate)]
 
     // cloud
     cloud_water_conservation(
@@ -418,7 +397,8 @@ void Functions<S,D>
 
     // ice
     ice_water_conservation(
-      qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
+      qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, 
+      qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
       qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
 
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
@@ -427,6 +407,14 @@ void Functions<S,D>
                     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
     ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,
                     ni_sublim_tend,ni_selfcollect_tend, not_skip_all);
+
+    // make sure procs don't inappropriately push qv beyond ice saturation
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),
+			      latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
+    // make sure procs don't inappropriately push qv beyond liquid saturation
+    prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), latent_heat_vapor(k), latent_heat_sublim(k),dt,
+				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
+				not_skip_all);
 
     //---------------------------------------------------------------------------------
     // update prognostic microphysics and thermodynamics variables

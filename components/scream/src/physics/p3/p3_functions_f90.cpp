@@ -44,9 +44,6 @@ void back_to_cell_average_c(Real cld_frac_l_, Real cld_frac_r_, Real cld_frac_i_
                             Real* ni_sublim_tend_, Real* qv2qi_nucleat_tend_, Real* ni_nucleat_tend_,
                             Real* qc2qi_berg_tend_);
 
-void prevent_ice_overdepletion_c(Real pres, Real T_atm, Real qv, Real latent_heat_sublim,
-                                 Real inv_dt, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend);
-
 void cloud_water_conservation_c(Real qc, Real dt, Real* qc2qr_autoconv_tend, Real* qc2qr_accret_tend, Real* qc2qi_collect_tend,
   Real* qc2qi_hetero_freeze_tend, Real* qc2qr_ice_shed_tend, Real* qc2qi_berg_tend, Real* qi2qv_sublim_tend, Real* qv2qi_vapdep_tend);
 
@@ -144,9 +141,7 @@ void update_prognostic_liquid_c(
   Real inv_rho, Real inv_exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
 
-void ice_deposition_sublimation_c(
-  Real qi_incld, Real ni_incld, Real T_atm, Real qv_sat_l, Real qv_sat_i, Real epsi,
-  Real abi, Real qv, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend, Real* ni_sublim_tend, Real* qc2qi_berg_tend);
+void ice_deposition_sublimation_c(Real qi_incld, Real ni_incld, Real t_atm, Real qv_sat_l, Real qv_sat_i, Real epsi, Real abi, Real qv, Real inv_dt, Real* qidep, Real* qi2qv_sublim_tend, Real* ni_sublim_tend, Real* qiberg);
 
 void compute_rain_fall_velocity_c(Real qr_incld, Real rhofacr,
                                   Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
@@ -238,6 +233,7 @@ void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
+void prevent_liq_supersaturation_c(Real pres, Real t_atm, Real qv, Real latent_heat_vapor, Real latent_heat_sublim, Real dt, Real qidep, Real qinuc, Real* qi2qv_sublim_tend, Real* qr2qv_evap_tend);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -335,13 +331,6 @@ void back_to_cell_average(BackToCellAverageData& d)
     &d.qi2qr_melt_tend, &d.qc2qi_collect_tend, &d.qr2qi_immers_freeze_tend, &d.ni2nr_melt_tend, &d.nc_collect_tend, &d.ncshdc, &d.nc2ni_immers_freeze_tend,
     &d.nr_collect_tend, &d.ni_selfcollect_tend, &d.qv2qi_vapdep_tend, &d.nr2ni_immers_freeze_tend, &d.ni_sublim_tend, &d.qv2qi_nucleat_tend, &d.ni_nucleat_tend,
     &d.qc2qi_berg_tend);
-}
-
-void prevent_ice_overdepletion(PreventIceOverdepletionData& d)
-{
-  p3_init();
-  prevent_ice_overdepletion_c(d.pres, d.T_atm, d.qv, d.latent_heat_sublim, d.inv_dt, &d.qv2qi_vapdep_tend,
-                              &d.qi2qv_sublim_tend);
 }
 
 void calc_rime_density(CalcRimeDensityData& d)
@@ -579,10 +568,10 @@ void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
 			      &d.qc, &d.nc, &d.qr, &d.nr);
 }
 
-void ice_deposition_sublimation(IceDepSublimationData& d){
+void ice_deposition_sublimation(IceDepositionSublimationData& d)
+{
   p3_init();
-  ice_deposition_sublimation_c(d.qi_incld, d.ni_incld, d.T_atm, d.qv_sat_l, d.qv_sat_i, d.epsi, d.abi,
-			       d.qv, &d.qv2qi_vapdep_tend, &d.qi2qv_sublim_tend, &d.ni_sublim_tend, &d.qc2qi_berg_tend);
+  ice_deposition_sublimation_c(d.qi_incld, d.ni_incld, d.T_atm, d.qv_sat_l, d.qv_sat_i, d.epsi, d.abi, d.qv, d.inv_dt, &d.qv2qi_vapdep_tend, &d.qi2qv_sublim_tend, &d.ni_sublim_tend, &d.qc2qi_berg_tend);
 }
 
 CalcUpwindData::CalcUpwindData(
@@ -861,6 +850,12 @@ void ni_conservation(NiConservationData& d)
   ni_conservation_c(d.ni, d.ni_nucleat_tend, d.nr2ni_immers_freeze_tend, d.nc2ni_immers_freeze_tend, d.dt, &d.ni2nr_melt_tend, &d.ni_sublim_tend, &d.ni_selfcollect_tend);
 }
 
+void prevent_liq_supersaturation(PreventLiqSupersaturationData& d)
+{
+  p3_init();
+  prevent_liq_supersaturation_c(d.pres, d.t_atm, d.qv, d.latent_heat_vapor, d.latent_heat_sublim, d.dt, d.qidep, d.qinuc, &d.qi2qv_sublim_tend, &d.qr2qv_evap_tend);
+}
+
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
@@ -920,6 +915,60 @@ void NiConservationData::randomize(std::mt19937_64& engine)
   ni_sublim_tend           = data_dist(engine);
   ni_selfcollect_tend      = data_dist(engine);
 }
+
+void PreventLiqSupersaturationData::randomize(std::mt19937_64& engine)
+{
+  /*Create random test data which changes each invocation, yet is 
+    physically reasonable. Follows examples in common_physics_functions_tests.cpp.
+    Note that rates must be chosen carefully to prevent qv and T_atm from going negative.
+    Note also that I'm using crude approx of latent heats here because these tests shouldn't 
+    care about slight numerical inaccuracies. I'm hardcoding cp here because I can't figure out
+    how to make physics_constants.hpp available here. It may also be nice/needed to add eps to
+    "make T and q exactly zero" calculations to prevent neg values due to roundoff error.
+  */
+  
+  // Construct random input data
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf_qv(1e-5,1e-3),
+    pdf_pres(0.1,102000),
+    pdf_temp(200.0,300.0),
+    //pdf_dt(0.1,300.), //since dt is Scalar, always gets set to 1st index of Pack... so can't use rand val here.
+    pdf_rate(0.,1e-3);
+
+  Real cp=1004; //approx cp is good enough for testing.
+  
+  pres                     = pdf_pres(engine);
+  t_atm                    = pdf_temp(engine);
+  qv                       = pdf_qv(engine);
+  latent_heat_vapor        = 2.5e6; //approx val is good enough for testing
+  latent_heat_sublim       = 2.838e6; //approx val is good enough for testing
+  dt                       = 60; //pdf_dt(engine);
+  
+  //qv sinks: don't let qv go neg.
+  qidep                    = std::min(pdf_rate(engine), qv/dt ); //don't let dep make qv neg by itself  
+  qinuc                    = std::min(pdf_rate(engine), qv/dt - qidep); //don't let qidep+qinuc make qv neg 
+
+  //qv sources: don't let T go neg.
+  qi2qv_sublim_tend        = std::min(pdf_rate(engine), cp/latent_heat_sublim * t_atm/dt + qidep+qinuc ); //don't let sublim make T neg.
+
+  qr2qv_evap_tend          = std::min(pdf_rate(engine),
+				      cp/latent_heat_vapor*t_atm/dt
+    				      +(qidep+qinuc-qi2qv_sublim_tend)*latent_heat_sublim/latent_heat_vapor );
+
+  /*
+  pres                     = data_dist(engine);
+  t_atm                    = data_dist(engine);
+  qv                       = data_dist(engine);
+  latent_heat_vapor        = data_dist(engine);
+  latent_heat_sublim       = data_dist(engine);
+  dt                       = data_dist(engine);
+  qidep                    = data_dist(engine);
+  qinuc                    = data_dist(engine);
+  qi2qv_sublim_tend        = data_dist(engine);
+  qr2qv_evap_tend          = data_dist(engine);
+  */
+}
+
 // end _c impls
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1312,42 +1361,6 @@ void update_prognostic_liquid_f(Real qc2qr_accret_tend_, Real nc_accret_tend_, R
   *nc_    = t_h(3);
   *qr_    = t_h(4);
   *nr_    = t_h(5);
-}
-
-void ice_deposition_sublimation_f(Real qi_incld_, Real ni_incld_, Real T_atm_, Real qv_sat_l_,
-				  Real qv_sat_i_, Real epsi_, Real abi_, Real qv_,
-				  Real* qv2qi_vapdep_tend_, Real* qi2qv_sublim_tend_, Real* ni_sublim_tend_, Real* qc2qi_berg_tend_)
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  typename P3F::view_1d<Real> t_d("t_h", 4);
-  auto t_h = Kokkos::create_mirror_view(t_d);
-
-  Real local_qv2qi_vapdep_tend  = *qv2qi_vapdep_tend_;
-  Real local_qi2qv_sublim_tend  = *qi2qv_sublim_tend_;
-  Real local_ni_sublim_tend  = *ni_sublim_tend_;
-  Real local_qc2qi_berg_tend = *qc2qi_berg_tend_;
-
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack qi_incld(qi_incld_), ni_incld(ni_incld_), T_atm(T_atm_), qv_sat_l(qv_sat_l_), qv_sat_i(qv_sat_i_),
-	epsi(epsi_), abi(abi_), qv(qv_);
-
-      typename P3F::Spack qv2qi_vapdep_tend(local_qv2qi_vapdep_tend), qi2qv_sublim_tend(local_qi2qv_sublim_tend), ni_sublim_tend(local_ni_sublim_tend), qc2qi_berg_tend(local_qc2qi_berg_tend);
-
-      P3F::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv,
-				      qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
-
-      t_d(0) = qv2qi_vapdep_tend[0];
-      t_d(1) = qi2qv_sublim_tend[0];
-      t_d(2) = ni_sublim_tend[0];
-      t_d(3) = qc2qi_berg_tend[0];
-    });
-  Kokkos::deep_copy(t_h, t_d);
-
-  *qv2qi_vapdep_tend_  = t_h(0);
-  *qi2qv_sublim_tend_  = t_h(1);
-  *ni_sublim_tend_  = t_h(2);
-  *qc2qi_berg_tend_ = t_h(3);
 }
 
 template <typename T>
@@ -1896,32 +1909,6 @@ void back_to_cell_average_f(Real cld_frac_l_, Real cld_frac_r_, Real cld_frac_i_
   *qv2qi_nucleat_tend_       = t_h(26);
   *ni_nucleat_tend_          = t_h(27);
   *qc2qi_berg_tend_          = t_h(28);
-}
-
-void prevent_ice_overdepletion_f(
-  Real pres_, Real T_atm_, Real qv_, Real latent_heat_sublim_, Real inv_dt_, Real* qv2qi_vapdep_tend_,
-  Real* qi2qv_sublim_tend_)
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  typename P3F::view_1d<Real> t_d("t_h", 2);
-  auto t_h = Kokkos::create_mirror_view(t_d);
-  Real local_qv2qi_vapdep_tend = *qv2qi_vapdep_tend_;
-  Real local_qi2qv_sublim_tend = *qi2qv_sublim_tend_;
-
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    typename P3F::Spack pres(pres_), T_atm(T_atm_), qv(qv_), latent_heat_sublim(latent_heat_sublim_),
-      qv2qi_vapdep_tend(local_qv2qi_vapdep_tend), qi2qv_sublim_tend(local_qi2qv_sublim_tend);
-    P3F::prevent_ice_overdepletion(pres, T_atm, qv, latent_heat_sublim, inv_dt_, qv2qi_vapdep_tend, qi2qv_sublim_tend);
-
-    t_d(0) = qv2qi_vapdep_tend[0];
-    t_d(1) = qi2qv_sublim_tend[0];
-
-  });
-  Kokkos::deep_copy(t_h, t_d);
-
-  *qv2qi_vapdep_tend_ = t_h(0);
-  *qi2qv_sublim_tend_ = t_h(1);
 }
 
 void calc_rime_density_f(

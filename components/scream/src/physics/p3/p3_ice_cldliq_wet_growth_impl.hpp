@@ -66,10 +66,10 @@ void Functions<S,D>
                 qc2qr_ice_shed_tend+dum*qc2qi_collect_tend*dum1);
 
       qc2qi_collect_tend.set(any_if_col && dum_ge_small,
-                qc2qi_collect_tend-dum*qc2qi_collect_tend*dum1);
+			     max(0,qc2qi_collect_tend-dum*qc2qi_collect_tend*dum1));
 
       qr2qi_collect_tend.set(any_if_col && dum_ge_small,
-                qr2qi_collect_tend-dum*qr2qi_collect_tend*dum1);
+			     max(0,qr2qi_collect_tend-dum*qr2qi_collect_tend*dum1));
     }
 
     log_wetgrowth = any_if && dum_ge_small;
