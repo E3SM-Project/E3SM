@@ -8,7 +8,7 @@ endif
 FRAMEWORK_DIR = ../../../mpas-framework/src
 OCEAN_SHARED_INCLUDES = -I$(FRAMEWORK_DIR)/framework -I$(FRAMEWORK_DIR)/external/esmf_time_f90 -I$(FRAMEWORK_DIR)/operators
 OCEAN_SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/mode_forward -I$(PWD)/mode_analysis
-OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/MARBL -I$(PWD)/cvmix/src/shared -I$(PWD)/gotm/build -I$(PWD)/gotm/build/modules
+OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/MARBL/include -I$(PWD)/cvmix/src/shared -I$(PWD)/gotm/build -I$(PWD)/gotm/build/modules
 ifneq "$(EXCLUDE_INIT_MODE)" "true"
 	OCEAN_SHARED_INCLUDES += -I$(PWD)/mode_init
 endif
@@ -81,7 +81,7 @@ libBGC:
 
 libMARBL:
 	if [ -e MARBL/.git ]; then \
-		(cd MARBL; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd MARBL/src; make OBJ_DIR=../tests/obj depends; make ../lib/libmarbl.a USE_DEPS="TRUE" FC="$(FC)" FCFLAGS="$(FFLAGS)" OBJ_DIR="../tests/obj" INC_DIR="../include" ) \
 	else \
 		(echo "Missing mpas-ocean/src/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
@@ -114,7 +114,7 @@ clean:
 		(cd BGC; make clean) \
 	fi
 	if [ -e MARBL/.git ]; then \
-		(cd MARBL; make clean) \
+		(cd MARBL/src; make clean OBJ_DIR="../tests/obj" INC_DIR="../include") \
 	fi
 	if [ -e gotm/.git ]; then \
 		(cd gotm; git clean -dfx) \
