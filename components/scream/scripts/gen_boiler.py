@@ -1928,20 +1928,21 @@ class GenBoiler(object):
             }
         <BLANKLINE>
             // Verify BFB results, all data should be in C layout
-            for (Int i = 0; i < num_runs; ++i) {
-              FakeSubData& d_f90 = f90_data[i];
-              FakeSubData& d_cxx = cxx_data[i];
-              REQUIRE(d_f90.bab1 == d_cxx.bab1);
-              REQUIRE(d_f90.bab2 == d_cxx.bab2);
-              for (Int k = 0; k < d_f90.total(d_f90.baz); ++k) {
-                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.baz));
-                REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
-                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball1));
-                REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
-                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
-                REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
+            if (SCREAM_BFB_TESTING) {
+              for (Int i = 0; i < num_runs; ++i) {
+                FakeSubData& d_f90 = f90_data[i];
+                FakeSubData& d_cxx = cxx_data[i];
+                REQUIRE(d_f90.bab1 == d_cxx.bab1);
+                REQUIRE(d_f90.bab2 == d_cxx.bab2);
+                for (Int k = 0; k < d_f90.total(d_f90.baz); ++k) {
+                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.baz));
+                  REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
+                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball1));
+                  REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
+                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
+                  REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
+                }
               }
-        <BLANKLINE>
             }
           } // run_bfb
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
@@ -2003,22 +2004,23 @@ class GenBoiler(object):
             Kokkos::deep_copy(cxx_host, cxx_device);
         <BLANKLINE>
             // Verify BFB results
-            for (Int i = 0; i < num_runs; ++i) {
-              FakeSubData& d_f90 = f90_data[i];
-              FakeSubData& d_cxx = cxx_host[i];
-              REQUIRE(d_f90.bar1 == d_cxx.bar1);
-              REQUIRE(d_f90.bar2 == d_cxx.bar2);
-              REQUIRE(d_f90.baz1 == d_cxx.baz1);
-              REQUIRE(d_f90.baz2 == d_cxx.baz2);
-              REQUIRE(d_f90.gal1 == d_cxx.gal1);
-              REQUIRE(d_f90.gal2 == d_cxx.gal2);
-              REQUIRE(d_f90.bal1 == d_cxx.bal1);
-              REQUIRE(d_f90.bal2 == d_cxx.bal2);
-              REQUIRE(d_f90.gut1 == d_cxx.gut1);
-              REQUIRE(d_f90.gut2 == d_cxx.gut2);
-              REQUIRE(d_f90.gat1 == d_cxx.gat1);
-              REQUIRE(d_f90.gat2 == d_cxx.gat2);
-        <BLANKLINE>
+            if (SCREAM_BFB_TESTING) {
+              for (Int i = 0; i < num_runs; ++i) {
+                FakeSubData& d_f90 = f90_data[i];
+                FakeSubData& d_cxx = cxx_host[i];
+                REQUIRE(d_f90.bar1 == d_cxx.bar1);
+                REQUIRE(d_f90.bar2 == d_cxx.bar2);
+                REQUIRE(d_f90.baz1 == d_cxx.baz1);
+                REQUIRE(d_f90.baz2 == d_cxx.baz2);
+                REQUIRE(d_f90.gal1 == d_cxx.gal1);
+                REQUIRE(d_f90.gal2 == d_cxx.gal2);
+                REQUIRE(d_f90.bal1 == d_cxx.bal1);
+                REQUIRE(d_f90.bal2 == d_cxx.bal2);
+                REQUIRE(d_f90.gut1 == d_cxx.gut1);
+                REQUIRE(d_f90.gut2 == d_cxx.gut2);
+                REQUIRE(d_f90.gat1 == d_cxx.gat1);
+                REQUIRE(d_f90.gat2 == d_cxx.gat2);
+              }
             }
           } // run_bfb
         """
@@ -2040,7 +2042,7 @@ class GenBoiler(object):
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
-            check_scalars += "      REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
+            check_scalars += "        REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2059,12 +2061,12 @@ class GenBoiler(object):
                         all_data[k] = v
 
             for _, data in all_data.items():
-                check_arrays += "      for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
+                check_arrays += "        for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
                 for datum in data:
-                    check_arrays += "        REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
-                    check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
+                    check_arrays += "          REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
+                    check_arrays += "          REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
 
-                check_arrays += "      }\n"
+                check_arrays += "        }"
 
         if has_array:
             result = \
@@ -2096,10 +2098,12 @@ class GenBoiler(object):
     }}
 
     // Verify BFB results, all data should be in C layout
-    for (Int i = 0; i < num_runs; ++i) {{
-      {data_struct}& d_f90 = f90_data[i];
-      {data_struct}& d_cxx = cxx_data[i];
+    if (SCREAM_BFB_TESTING) {{
+      for (Int i = 0; i < num_runs; ++i) {{
+        {data_struct}& d_f90 = f90_data[i];
+        {data_struct}& d_cxx = cxx_data[i];
 {check_scalars}{check_arrays}
+      }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
                           sub=sub,
@@ -2184,10 +2188,11 @@ class GenBoiler(object):
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    for (Int i = 0; i < num_runs; ++i) {{
-      {data_struct}& d_f90 = f90_data[i];
-      {data_struct}& d_cxx = cxx_host[i];
-{check_scalars}
+    if (SCREAM_BFB_TESTING) {{
+      for (Int i = 0; i < num_runs; ++i) {{
+        {data_struct}& d_f90 = f90_data[i];
+        {data_struct}& d_cxx = cxx_host[i];
+{check_scalars}      }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
                           sub=sub,
@@ -2301,6 +2306,7 @@ template struct Functions<Real,DefaultDevice>;
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
         }
+        <BLANKLINE>
 
         >>> force_file_lines = [
         ... "fake_line_before_1",
@@ -2318,6 +2324,7 @@ template struct Functions<Real,DefaultDevice>;
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
         }
+        <BLANKLINE>
 
         >>> force_file_lines[2:2] = ["void fake_sub(FakeSubData& d)", "{", "}"]
         >>> print("\n".join(force_file_lines))
