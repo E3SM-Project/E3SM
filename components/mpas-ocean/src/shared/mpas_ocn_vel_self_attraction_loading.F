@@ -719,10 +719,12 @@ contains
             allocate(bRecurrenceCoeff(nOrder+1,nOrder+1))
             do m = 0,nOrder
                 do n = m,nOrder
-                    aRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n-1)*(2*n+1),RKIND) &
-                                              /      real((n-m)*(n+m),RKIND))
-                    bRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n+1)*(n+m-1)*(n-m-1),RKIND) &
-                                              /      real((n-m)*(n+m)*(2*n-3),RKIND))
+                    if (m /= n) then
+                       aRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n-1)*(2*n+1),RKIND) &
+                                                 /      real((n-m)*(n+m),RKIND))
+                       bRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n+1)*(n+m-1)*(n-m-1),RKIND) &
+                                                 /      real((n-m)*(n+m)*(2*n-3),RKIND))
+                    endif
                 enddo
             enddo
 
