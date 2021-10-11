@@ -63,6 +63,11 @@ if (Kokkos_ENABLE_CUDA)
   EkatSetNvccWrapper()
 endif()
 
+# Homme's composef90 library (built for f90 support) requires Kokkos::Serial
+# to be defined, which in turn requires the CMake var Kokkos_ENABLE_SERIAL
+# to be on. For now, simply ensure Kokkos Serial is enabled
+option (Kokkos_ENABLE_SERIAL "" ON)
+
 set (CMAKE_CXX_STANDARD 14)
 
 if (NOT SCREAM_CIME_BUILD)
