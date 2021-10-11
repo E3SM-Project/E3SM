@@ -1060,6 +1060,9 @@ module li_advection
          enddo
 
          ! set damage of new ice at upper and lower surfaces to 0
+         ! TODO: Assess if this is the most appropriate option.  Other options would be setting damage equal to the existing value
+         ! or the Nye zero stress value.  BISICLES implementation of the Bassis & Ma damage model sets damage associated with
+         ! surface and basal accumulation as we are doing now.
          surfaceTracers(iTracer,:) = 0.0_RKIND
          basalTracers(iTracer,:) = 0.0_RKIND
 
