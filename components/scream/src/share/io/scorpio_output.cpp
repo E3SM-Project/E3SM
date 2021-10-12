@@ -74,10 +74,7 @@ void AtmosphereOutput::init()
     //      For now, simply print a warning.
     if (found) {
       // Have the root rank communicate the nc filename
-      int filename_size = filename.size();
-      m_comm.broadcast(&filename_size,1,m_comm.root_rank());
-      filename.resize(filename_size);
-      m_comm.broadcast(&filename.front(),filename_size,m_comm.root_rank());
+      broadcast_string(filename,m_comm,m_comm.root_rank());
 
       // Create an input stream on the fly, and init averaging data
       ekat::ParameterList res_params("Input Parameters");
