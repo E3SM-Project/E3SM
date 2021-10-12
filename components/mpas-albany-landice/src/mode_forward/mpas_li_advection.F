@@ -1172,9 +1172,11 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
 
-      iTracer = 1
+      iTracer = 0
 
       if (trim(config_thermal_solver) == 'enthalpy') then
+
+         iTracer = iTracer + 1
 
          ! update the enthalpy
          enthalpy(:,:) = advectedTracers(iTracer,:,:)
@@ -1194,13 +1196,17 @@ module li_advection
 
       elseif (trim(config_thermal_solver) == 'temperature') then
 
+         iTracer = iTracer + 1
+
          ! update the temperature
          temperature(:,:) = advectedTracers(iTracer,:,:)
 
       endif
 
       if (config_calculate_damage) then
+
          iTracer = iTracer + 1
+
          do iCell = 1, nCellsSolve
             damage(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
          enddo
