@@ -3,7 +3,9 @@ INCLUDE (ScreamUtils)
 SET (NEED_LIBS spa scream_io physics_share scream_share)
 set(SPA_TESTS_SRCS
     spa_unit_tests.cpp
-    spa_read_remap_from_file_test.cpp
+#    spa_read_remap_from_file_test.cpp
+#    spa_init_pio_for_test.cpp
+#    spa_finish_pio_for_test.cpp
     spa_read_data_from_file_test.cpp
     ) # SPA_TESTS_SRCS
 

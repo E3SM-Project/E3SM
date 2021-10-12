@@ -365,58 +365,59 @@ void SPAFunctions<S,D>
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data doesn't match the SPA data file");
-  // Good housekeeping - close the file now that we have retrieved the dimension lengths.  We will open it again
-  // when we read the input data.
+
+  // Construct local arrays to read data into
+  view_1d<Real> PS_v("PS",spa_horiz_interp.source_grid_ncols);
+  view_2d<Real> CCN3_v("CCN3",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs);
+  view_3d<Real> AER_G_SW_v("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
+  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
+  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
+  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,spa_horiz_interp.source_grid_nlevs);
+  // Setup the scorpio structures needed for input
+  // Register variables for input
+  std::vector<std::string> vec_of_dims_1d{"ncol"};
+  std::vector<std::string> vec_of_dims_2d{"ncol", "lev"};
+  std::vector<std::string> vec_of_dims_3ds{"ncol", "swband", "lev"};
+  std::vector<std::string> vec_of_dims_3dl{"ncol", "lwband", "lev"};
+  std::reverse(vec_of_dims_2d.begin(),vec_of_dims_2d.end());
+  std::reverse(vec_of_dims_3ds.begin(),vec_of_dims_3ds.end());
+  std::reverse(vec_of_dims_3dl.begin(),vec_of_dims_3dl.end());
+  std::string decomp_1d = "Real-ncol";
+  std::string decomp_2d = "Real-ncol-lev";
+  std::string decomp_3ds = "Real-ncol-swband-lev";
+  std::string decomp_3dl = "Real-ncol-lwband-lev";
+  scorpio::get_variable(spa_data_file_name, "PS", "PS", vec_of_dims_1d.size(), vec_of_dims_1d, PIO_REAL, decomp_1d);
+  scorpio::get_variable(spa_data_file_name, "CCN3", "CCN3", vec_of_dims_2d.size(), vec_of_dims_2d, PIO_REAL, decomp_2d);
+  scorpio::get_variable(spa_data_file_name, "AER_G_SW", "AER_G_SW", vec_of_dims_3ds.size(), vec_of_dims_3ds, PIO_REAL, decomp_3ds);
+  scorpio::get_variable(spa_data_file_name, "AER_SSA_SW", "AER_SSA_SW", vec_of_dims_3ds.size(), vec_of_dims_3ds, PIO_REAL, decomp_3ds);
+  scorpio::get_variable(spa_data_file_name, "AER_TAU_SW", "AER_TAU_SW", vec_of_dims_3ds.size(), vec_of_dims_3ds, PIO_REAL, decomp_3ds);
+  scorpio::get_variable(spa_data_file_name, "AER_TAU_LW", "AER_TAU_LW", vec_of_dims_3dl.size(), vec_of_dims_3dl, PIO_REAL, decomp_3dl);
+  // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
+  std::vector<int> var_dof(spa_horiz_interp.source_grid_ncols);
+  std::iota(var_dof.begin(),var_dof.end(),0);
+  std::vector<int> var_dof_2d(spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs);
+  std::iota(var_dof_2d.begin(),var_dof_2d.end(),0);
+  std::vector<int> var_dof_3ds(spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nswbands);
+  std::iota(var_dof_3ds.begin(),var_dof_3ds.end(),0);
+  std::vector<int> var_dof_3dl(spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nlwbands);
+  std::iota(var_dof_3dl.begin(),var_dof_3dl.end(),0);
+  scorpio::set_dof(spa_data_file_name,"PS",var_dof.size(),var_dof.data());
+  scorpio::set_dof(spa_data_file_name,"CCN3",var_dof_2d.size(),var_dof_2d.data());
+  scorpio::set_dof(spa_data_file_name,"AER_G_SW",var_dof_3ds.size(),var_dof_3ds.data());
+  scorpio::set_dof(spa_data_file_name,"AER_SSA_SW",var_dof_3ds.size(),var_dof_3ds.data());
+  scorpio::set_dof(spa_data_file_name,"AER_TAU_SW",var_dof_3ds.size(),var_dof_3ds.data());
+  scorpio::set_dof(spa_data_file_name,"AER_TAU_LW",var_dof_3dl.size(),var_dof_3dl.data());
+  scorpio::set_decomp(spa_data_file_name);
+  // Now read all of the input
+  scorpio::grid_read_data_array(spa_data_file_name,"PS",time_index,PS_v.data()); 
+  scorpio::grid_read_data_array(spa_data_file_name,"CCN3",time_index,CCN3_v.data()); 
+  scorpio::grid_read_data_array(spa_data_file_name,"AER_G_SW",time_index,AER_G_SW_v.data()); 
+  scorpio::grid_read_data_array(spa_data_file_name,"AER_SSA_SW",time_index,AER_SSA_SW_v.data()); 
+  scorpio::grid_read_data_array(spa_data_file_name,"AER_TAU_SW",time_index,AER_TAU_SW_v.data()); 
+  scorpio::grid_read_data_array(spa_data_file_name,"AER_TAU_LW",time_index,AER_TAU_LW_v.data()); 
+  // Finished, close the file
   scorpio::eam_pio_closefile(spa_data_file_name);
-  // Now we have what we need to construct the grid.
-  auto grid = std::make_shared<PointGrid>("spa_data_grid", spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs, comm);
-  PointGrid::dofs_list_type dofs_gids ("phys dofs",spa_horiz_interp.source_grid_ncols);
-  grid->set_dofs(dofs_gids);
-
-  using namespace ShortFieldTagsNames;
-  FieldLayout scalar2d_layout_mid { {COL}, {spa_horiz_interp.source_grid_ncols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, spa_horiz_interp.source_grid_nlevs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, spa_horiz_interp.source_grid_nlevs} }; 
-  using view_h = typename view_1d<Real>::HostMirror;
-  std::vector<std::string>          fnames;
-  std::map<std::string,view_h>      host_views;
-  std::map<std::string,FieldLayout> layouts;
-  // Define each input variable we need
-  fnames.push_back("PS");
-  host_views["PS"] = view_h("",spa_horiz_interp.source_grid_ncols);
-  layouts.emplace("PS", scalar2d_layout_mid);
-  //
-  fnames.push_back("CCN3");
-  host_views["CCN3"] = view_h("",spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs);
-  layouts.emplace("CCN3",scalar3d_layout_mid);
-  //
-  fnames.push_back("AER_G_SW");
-  host_views["AER_G_SW"] = view_h("AER_G_SW",spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nswbands);
-  layouts.emplace("AER_G_SW",scalar3d_swband_layout);
-  //
-  fnames.push_back("AER_SSA_SW");
-  host_views["AER_SSA_SW"] = view_h("AER_SSA_SW",spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nswbands);
-  layouts.emplace("AER_SSA_SW",scalar3d_swband_layout);
-  //
-  fnames.push_back("AER_TAU_SW");
-  host_views["AER_TAU_SW"] = view_h("AER_TAU_SW",spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nswbands);
-  layouts.emplace("AER_TAU_SW",scalar3d_swband_layout);
-  //
-  fnames.push_back("AER_TAU_LW");
-  host_views["AER_TAU_LW"] = view_h("AER_TAU_LW",spa_horiz_interp.source_grid_ncols*spa_horiz_interp.source_grid_nlevs*nlwbands);
-  layouts.emplace("AER_TAU_LW",scalar3d_lwband_layout);
-  //
-
-  // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Fields",fnames);
-  spa_data_in_params.set("Filename",spa_data_file_name);
-  AtmosphereInput spa_data_input(comm,spa_data_in_params);
-  spa_data_input.init(grid,host_views,layouts);
-  spa_data_input.read_variables(time_index);
-  spa_data_input.finalize();
-
+  
   // Now that we have the data we can map the data onto the target data.
   auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
   auto ccn3_h       = Kokkos::create_mirror_view(spa_data.CCN3);
@@ -431,44 +432,31 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(aer_tau_sw_h,0.0);
   Kokkos::deep_copy(aer_tau_lw_h,0.0);
 
-  using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(spa_horiz_interp.source_grid_nlevs);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(spa_horiz_interp.length, spa_horiz_interp.source_grid_nlevs);
-  Kokkos::parallel_for(
-    "remap data",
-    policy,
-    KOKKOS_LAMBDA(const MemberType& team) {
-      const Int idx = team.league_rank();  // remap data idx
-      auto src_wgt = spa_horiz_interp.weights(idx);
-      int  src_col = spa_horiz_interp.source_grid_loc(idx)-1;
-      int  tgt_col = spa_horiz_interp.target_grid_loc(idx)-1;
-      // PS is defined only over columns
-      ps_h(tgt_col) += host_views.at("PS")(src_col)*src_wgt;
-      // CCN3 and all AER variables have levels
-      Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team,spa_horiz_interp.source_grid_nlevs), [&] (int kk) {
-        // Note, all variables we map to are packed, while all the data we just loaded as
-        // input is flattened to 1D.  So we need to back out the indices.
-        int pack = kk / nk_pack; 
-        int kidx = kk % nk_pack;
-        int src_idx = src_col*spa_horiz_interp.source_grid_nlevs + kk;
-        ccn3_h(tgt_col,pack)[kidx] = host_views.at("CCN3")(src_idx)*src_wgt;
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team,nswbands), [&] (int n) {
-            int bnd_idx = src_col*nswbands*spa_horiz_interp.source_grid_nlevs + nswbands*spa_horiz_interp.source_grid_nlevs + kk;
-            aer_g_sw_h(tgt_col,n,pack)[kidx]   = host_views.at("AER_G_SW")(bnd_idx)*src_wgt;
-            aer_ssa_sw_h(tgt_col,n,pack)[kidx] = host_views.at("AER_SSA_SW")(bnd_idx)*src_wgt;
-            aer_tau_sw_h(tgt_col,n,pack)[kidx] = host_views.at("AER_TAU_SW")(bnd_idx)*src_wgt;
-        });
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team,nlwbands), [&] (int n) {
-            int bnd_idx = src_col*nlwbands*spa_horiz_interp.source_grid_nlevs + nlwbands*spa_horiz_interp.source_grid_nlevs + kk;
-            aer_tau_lw_h(tgt_col,n,pack)[kidx] = host_views.at("AER_TAU_LW")(bnd_idx)*src_wgt;
-        });
-      });
-    team.team_barrier();
-  });
-  Kokkos::fence();
+  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
+    auto src_wgt = spa_horiz_interp.weights(idx);
+    int  src_col = spa_horiz_interp.source_grid_loc(idx)-1;
+    int  tgt_col = spa_horiz_interp.target_grid_loc(idx)-1;
+    // PS is defined only over columns
+    ps_h(tgt_col) += PS_v(src_col)*src_wgt;
+    // CCN3 and all AER variables have levels
+    for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
+      // Note, all variables we map to are packed, while all the data we just loaded as
+      // input are in real N-D views.  So we need to back out the indices for the target
+      // data.
+      int pack = kk / Spack::n; 
+      int kidx = kk % Spack::n;
+      ccn3_h(tgt_col,pack)[kidx] += CCN3_v(src_col,kk)*src_wgt;
+      for (int n=0; n<nswbands; n++) {
+        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v(src_col,n,kk)*src_wgt;
+        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v(src_col,n,kk)*src_wgt;
+        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v(src_col,n,kk)*src_wgt;
+      }
+      for (int n=0; n<nlwbands; n++) {
+        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v(src_col,n,kk)*src_wgt;
+      }
+    }
+  }
   Kokkos::deep_copy(spa_data.PS,ps_h);
   Kokkos::deep_copy(spa_data.CCN3,ccn3_h);
   Kokkos::deep_copy(spa_data.AER_G_SW,aer_g_sw_h);
