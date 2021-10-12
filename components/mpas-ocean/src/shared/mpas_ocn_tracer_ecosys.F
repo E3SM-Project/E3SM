@@ -780,7 +780,7 @@ contains
          ecosys_diag_SiO3_RESTORE
 
       real (kind=RKIND) :: zTop, zBot
-   
+
       integer :: iCell, iLevel, iTracer, numColumns, column, autotroph, n
 
       err = 0
@@ -1582,7 +1582,7 @@ contains
              ecosys_diag_photoC_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                diags(ecosys_diag_photoC_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
                ecosysMissingValue, ecosys_diag_photoC_zint_allocatedInMARBL(autotroph))
-  
+
              ecosys_diag_photoC_NO3_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                diags(ecosys_diag_photoC_NO3_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
                ecosysMissingValue, ecosys_diag_photoC_NO3_zint_allocatedInMARBL(autotroph))
@@ -4108,14 +4108,14 @@ contains
    ecosys_diag_Jint_100m_Sitot_indexInMARBL = -999
    ecosys_diag_Jint_Fetot_indexInMARBL = -999
    ecosys_diag_Jint_100m_Fetot_indexInMARBL = -999
-   
+
    ecosys_diag_photoC_zint_indexInMARBL(1) = -999
    ecosys_diag_photoC_NO3_zint_indexInMARBL(1) = -999
    ecosys_diag_photoC_zint_indexInMARBL(2) = -999
    ecosys_diag_photoC_NO3_zint_indexInMARBL(2) = -999
    ecosys_diag_photoC_zint_indexInMARBL(3) = -999
    ecosys_diag_photoC_NO3_zint_indexInMARBL(3) = -999
-   
+
    ecosys_diag_PAR_avg_indexInMARBL = -999
    ecosys_diag_POC_FLUX_IN_indexInMARBL = -999
    ecosys_diag_CaCO3_FLUX_IN_indexInMARBL = -999
@@ -4139,7 +4139,7 @@ contains
    ecosys_diag_pfeToSed_indexInMARBL = -999
    ecosys_diag_SedDenitrif_indexInMARBL = -999
    ecosys_diag_tot_Nfix_indexInMARBL = -999
-   
+
    ecosys_diag_pistonVel_O2_indexInMARBL = -999
    ecosys_diag_pistonVel_CO2_indexInMARBL = -999
    ecosys_diag_Schmidt_O2_indexInMARBL = -999
@@ -4157,7 +4157,7 @@ contains
 
    ecosys_diag_ifrac_indexInMARBL = -999
    ecosys_diag_atmPressure_indexInMARBL = -999
-   
+
    ecosys_diag_O2_PRODUCTION_indexInMARBL = -999
    ecosys_diag_O2_CONSUMPTION_indexInMARBL = -999
    ecosys_diag_AOU_indexInMARBL = -999
@@ -4170,7 +4170,7 @@ contains
    ecosys_diag_POP_REMIN_indexInMARBL = -999
    ecosys_diag_POP_REMIN_PO4_indexInMARBL = -999
    ecosys_diag_PON_REMIN_NH4_indexInMARBL = -999
-   
+
    ecosys_diag_Qp_indexInMARBL(1) = -999
    ecosys_diag_N_lim_indexInMARBL(1) = -999
    ecosys_diag_P_lim_indexInMARBL(1) = -999
@@ -4237,9 +4237,9 @@ contains
    ecosys_diag_auto_loss_doc_indexInMARBL(3) = -999
    ecosys_diag_auto_agg_indexInMARBL(3) = -999
    ecosys_diag_Nfix_indexInMARBL(3) = -999
-   
+
    ecosys_diag_tot_bSi_form_indexInMARBL = -999
-   
+
    ecosys_diag_SiO2_FLUX_IN_indexInMARBL = -999
    ecosys_diag_SiO2_PROD_indexInMARBL = -999
    ecosys_diag_SiO2_REMIN_indexInMARBL = -999
@@ -4270,19 +4270,19 @@ contains
    ecosys_diag_bsiToSed_indexInMARBL = -999
    ecosys_diag_dustToSed_indexInMARBL = -999
    ecosys_diag_OtherRemin_indexInMARBL = -999
-   
+
    ecosys_diag_bSi_form_indexInMARBL(1) = -999
    ecosys_diag_bSi_form_indexInMARBL(2) = -999
    ecosys_diag_bSi_form_indexInMARBL(3) = -999
-   
+
    ecosys_diag_tot_CaCO3_form_zint_indexInMARBL = -999
    ecosys_diag_zsatcalc_indexInMARBL = -999
    ecosys_diag_zsatarag_indexInMARBL = -999
-   
+
    ecosys_diag_CaCO3_form_zint_indexInMARBL(1) = -999
    ecosys_diag_CaCO3_form_zint_indexInMARBL(2) = -999
    ecosys_diag_CaCO3_form_zint_indexInMARBL(3) = -999
-   
+
    ecosys_diag_CaCO3_PROD_indexInMARBL = -999
    ecosys_diag_CaCO3_REMIN_indexInMARBL = -999
    ecosys_diag_CaCO3_ALT_CO2_PROD_indexInMARBL = -999
@@ -4297,7 +4297,7 @@ contains
    ecosys_diag_pH_3D_ALT_CO2_indexInMARBL = -999
    ecosys_diag_co3_sat_calc_indexInMARBL = -999
    ecosys_diag_co3_sat_arag_indexInMARBL = -999
-   
+
    ecosys_diag_CaCO3_form_indexInMARBL(1) = -999
    ecosys_diag_CaCO3_form_indexInMARBL(2) = -999
    ecosys_diag_CaCO3_form_indexInMARBL(3) = -999
