@@ -711,6 +711,7 @@ contains
     call cime_cpl_init(global_comm, driver_comm, num_inst_driver, driver_id)
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
+    print *, "_wpc00a. Executed shr_pio_init1() call. NLFileName = ", NLFileName
     !
     ! If pio_async_interface is true Global_comm is MPI_COMM_NULL on the servernodes
     ! and server nodes do not return from shr_pio_init2
@@ -943,6 +944,7 @@ contains
     !  shr_pio_init2
     !
     call shr_pio_init2(comp_id,comp_name,comp_iamin,comp_comm,comp_comm_iam)
+    print *, "_wpc00b. Executed shr_pio_init2() call. comp_name = ", comp_name
 
   end subroutine cime_pre_init1
 
