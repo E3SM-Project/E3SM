@@ -490,8 +490,10 @@ subroutine gw_init()
   end if
 
   ! Total temperature tendency output.
-  call addfld ('TTGW',(/ 'lev' /), 'A','K/s', &
-       'T tendency - gravity wave drag')
+  call addfld ('TTGW',(/ 'lev' /), 'A','K/s', 'T tendency - gravity wave drag')
+  
+  ! humidity tendency
+  call addfld ('QTGW',(/ 'lev' /), 'A','K/s', 'Q tendency - gravity wave drag')
 
   if (masterproc) then
      write (iulog,*) 'using GW energy fix   =',use_gw_energy_fix
@@ -499,6 +501,7 @@ subroutine gw_init()
 
   if ( history_budget ) then
      call add_default ('TTGW', history_budget_histfile_num, ' ')
+     call add_default ('QTGW', history_budget_histfile_num, ' ')
   end if
 
 end subroutine gw_init
@@ -963,6 +966,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   ! Write total temperature tendency to history file
   call outfld ('TTGW', ptend%s/cpairv(:,:,lchnk),  pcols, lchnk)
+  call outfld ('QTGW', ptend%q,  pcols, lchnk)
 
 end subroutine gw_tend
 

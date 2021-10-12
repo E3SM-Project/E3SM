@@ -42,6 +42,10 @@ module physpkg
   integer :: water_vap_ac_idx     = 0
   integer :: mmf_clear_rh_idx     = 0
   integer :: species_class(pcnst) = -1 
+  integer :: DSE_ac_idx           = 0
+  integer :: QLV_ac_idx           = 0
+  integer :: DSE_tot_idx          = 0
+  integer :: QLV_tot_idx          = 0
 
   save
   !-----------------------------------------------------------------------------
@@ -133,6 +137,11 @@ subroutine phys_register
   call pbuf_add_field('vmag_gust',      'global', dtype_r8,(/pcols/), dummy)
   call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
   call pbuf_add_field('MMF_CLEAR_RH',   'physpkg',dtype_r8,(/pcols,pver/),mmf_clear_rh_idx)
+
+  call pbuf_add_field('DSE_ac',      'global', dtype_r8,(/pcols,pver/),DSE_ac_idx)
+  call pbuf_add_field('QLV_ac',      'global', dtype_r8,(/pcols,pver/),QLV_ac_idx)
+  call pbuf_add_field('DSE_tot',     'global', dtype_r8,(/pcols,pver/),DSE_tot_idx)
+  call pbuf_add_field('QLV_tot',     'global', dtype_r8,(/pcols,pver/),QLV_tot_idx)
 
   ! check energy package
   call check_energy_register()
@@ -1063,6 +1072,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use phys_control,       only: use_qqflx_fixer
   use co2_cycle,          only: co2_cycle_set_ptend
 
+  use physconst,      only: cpair, gravit, latvap
+
   implicit none
   !-----------------------------------------------------------------------------
   ! Arguments
@@ -1082,6 +1093,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   real(r8), pointer, dimension(:)   :: static_ener_ac_2d  ! Vertically integrated static energy
   real(r8), pointer, dimension(:)   :: water_vap_ac_2d    ! Vertically integrated water vapor
+  real(r8), pointer, dimension(:,:) :: DSE_ac
+  real(r8), pointer, dimension(:,:) :: QLV_ac
   real(r8), pointer, dimension(:,:) :: tini               !
   real(r8), pointer, dimension(:,:) :: cld                !
   real(r8), pointer, dimension(:,:) :: qini               !
@@ -1279,12 +1292,17 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   call pbuf_get_field(pbuf, pbuf_get_index('static_ener_ac'), static_ener_ac_2d )
   call pbuf_get_field(pbuf, pbuf_get_index('water_vap_ac'), water_vap_ac_2d )
 
+  call pbuf_get_field(pbuf, DSE_ac_idx, DSE_ac )
+  call pbuf_get_field(pbuf, QLV_ac_idx, QLV_ac )
+
   static_ener_ac_2d(:) = 0
   water_vap_ac_2d(:)   = 0
   do i = 1,ncol
     do k = 1,pver
       static_ener_ac_2d(i) = static_ener_ac_2d(i) + state%pdel(i,k)*rga*( state%s(i,k) + state%q(i,k,1)*latvap )
       water_vap_ac_2d(i)   = water_vap_ac_2d(i)   + state%pdel(i,k)*rga*  state%q(i,k,1)
+      DSE_ac(i,k) = cpair*state%t(i,k) + gravit*state%zm(i,k) + state%phis(i)
+      QLV_ac(i,k) = state%q(i,k,1)*latvap
     end do
   end do
 
@@ -1368,6 +1386,9 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8), pointer, dimension(:,:) :: cldiceini
   real(r8), pointer, dimension(:,:) :: dtcore
   real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
+
+  real(r8), pointer, dimension(:,:) :: DSE_ac
+  real(r8), pointer, dimension(:,:) :: QLV_ac
 
   ! energy checking variables
   real(r8) :: zero(pcols)                    ! array of zeros
