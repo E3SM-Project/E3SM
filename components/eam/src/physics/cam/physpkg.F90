@@ -1609,6 +1609,12 @@ end if ! l_tracer_aero
 
     call t_stopf('tphysac_init')
 
+
+    !save TE before physstep
+    call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+    state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+
+
 if (l_tracer_aero) then
     !===================================================
     ! Source/sink terms for advected tracers.
@@ -2732,6 +2738,25 @@ end if ! l_rad
     call t_stopf('diag_export')
 
     call check_tracers_fini(tracerint)
+
+
+    !!!! now after cam_export      cam_out%precc , cam_out%precl are ready -- liquid+ice
+    !!!! and cam_out%precsc, cam_out%precsl -- only ice
+
+    !!!! compute net energy budget here
+    !!!! expected TE2 - TE1 = restom - ressurf
+    !    for TE2-TE1 we will use te_cur - te_before_physstep
+    !    for restom - ressurf we will use fluxes to/from atm following AMWG energy scripts
+
+    !my guess is that precc etc are fluxes, since CG script uses them like fluxes and
+    !they are called rates in cam exchange
+    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+    state%delta_te_flux(1:ncol) =                         &
+       ( fsnt(1:ncol) - flnt(1:ncol) )                    &
+     - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
+     -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
+     + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
 
 end subroutine tphysbc
 

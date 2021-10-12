@@ -588,8 +588,9 @@ end subroutine check_energy_get_integrals
 
     real(r8) :: te(pcols,begchunk:endchunk,3)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(3)               ! global means of total energy
+    real(r8) :: te_glob(5)               ! global means of total energy
     real(r8), pointer :: teout(:)
+    real(r8) :: delta_te_glob, rr_glob
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
@@ -606,16 +607,24 @@ end subroutine check_energy_get_integrals
        te(:ncol,lchnk,2) = teout(1:ncol)
        ! surface pressure for heating rate
        te(:ncol,lchnk,3) = state(lchnk)%pint(:ncol,pver+1)
+
+       !energy change versus restom-ressurf
+       te(:ncol,lchnk,4) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,5) = state(lchnk)%rr(:ncol)
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 3)
+    call gmean(te, te_glob, 5)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
        teout_glob = te_glob(2)
        psurf_glob = te_glob(3)
+
+       delta_te_glob = te_glob(4)
+       rr_glob       = te_glob(5)
+
        ptopb_glob = state(begchunk)%pint(1,1)
 
        ! Global mean total energy difference
@@ -624,6 +633,8 @@ end subroutine check_energy_get_integrals
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
+          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, d(te)/dt, rr", nstep, delta_te_glob/dtime, rr
+          write(iulog,'(1x,a9,1x,i8,1(1x,e25.17))') "nstep, diff", nstep, delta_te_glob/dtime-rr
        end if
     else
        heat_glob = 0._r8
