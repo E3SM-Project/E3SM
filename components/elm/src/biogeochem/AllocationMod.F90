@@ -1730,12 +1730,14 @@ contains
             
          end if
       end do
-      
-      deallocate(plant_nh4demand_vr_fates)
-      deallocate(plant_no3demand_vr_fates)
-      deallocate(plant_pdemand_vr_fates)
 
-    end if
+      if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
+         deallocate(plant_nh4demand_vr_fates)
+         deallocate(plant_no3demand_vr_fates)
+         deallocate(plant_pdemand_vr_fates)
+      end if
+      
+    end if  ! if(use_fates)
 
     end associate
  end subroutine Allocation2_ResolveNPLimit
