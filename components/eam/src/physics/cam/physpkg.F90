@@ -2751,7 +2751,7 @@ end if ! l_rad
     !my guess is that precc etc are fluxes, since CG script uses them like fluxes and
     !they are called rates in cam exchange
     state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
-    state%delta_te_flux(1:ncol) =                         &
+    state%rr(1:ncol) =                         &
        ( fsnt(1:ncol) - flnt(1:ncol) )                    &
      - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
      -        (latvap+latice)*cam_in%cflx(:ncol,1)        &

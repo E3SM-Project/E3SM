@@ -586,7 +586,7 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,3)   
+    real(r8) :: te(pcols,begchunk:endchunk,5)   
                                          ! total energy of input/output states (copy)
     real(r8) :: te_glob(5)               ! global means of total energy
     real(r8), pointer :: teout(:)
@@ -633,8 +633,8 @@ end subroutine check_energy_get_integrals
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
-          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, d(te)/dt, rr", nstep, delta_te_glob/dtime, rr
-          write(iulog,'(1x,a9,1x,i8,1(1x,e25.17))') "nstep, diff", nstep, delta_te_glob/dtime-rr
+          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, d(te)/dt, rr", nstep, delta_te_glob/dtime, rr_glob
+          write(iulog,'(1x,a9,1x,i8,1(1x,e25.17))') "nstep, diff", nstep, delta_te_glob/dtime-rr_glob
        end if
     else
        heat_glob = 0._r8
