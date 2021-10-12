@@ -448,12 +448,14 @@ contains
        end if
 
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_ox
-       Print *, '_wpc4b Before x2o_ox pointer work. x2o_ox =', x2o_ox
-       Print *, '_wpc5b Before x2o_ox pointer work.  component_get_x2c_cx(ocn(eoi)) =', component_get_x2c_cx(ocn(eoi))
+       !Print *, '_wpc4b Before x2o_ox pointer work. x2o_ox =', x2o_ox
+       !Print *, '_wpc5b Before x2o_ox pointer work.  component_get_x2c_cx(ocn(eoi)) =', component_get_x2c_cx(ocn(eoi))
+       Print *, '_wpc5b Before x2o_ox pointer work.  eoi =', eoi
        x2o_ox   => component_get_x2c_cx(ocn(eoi))
        call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
-       print *, "_wpc6b. After x2o_ox pointer work. x2o_ox = ", x2o_ox
-       print *, "_wpc7b. After x2o_ox pointer work. x2oacc_ox(eoi) = ", x2oacc_ox(eoi)
+       !print *, "_wpc6b. After x2o_ox pointer work. x2o_ox = ", x2o_ox
+       !print *, "_wpc7b. After x2o_ox pointer work. x2oacc_ox(eoi) = ", x2oacc_ox(eoi)
+       Print *, '_wpc7b Before x2o_ox pointer work.  eoi =', eoi
     enddo
     x2oacc_ox_cnt = 0
     Print *, '_wpc8b After x2oacc_ox_cnt set to 0. x2oacc_ox_cnt =', x2oacc_ox_cnt

@@ -2813,7 +2813,9 @@ contains
               trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
               trim(cpl_seq_option) == 'NUOPC_TIGHT'     .or. &
               trim(cpl_seq_option) == 'RASM_OPTION1') then
+             print *, "_wpc_1. enter cime_run_ocn_setup_send subroutine ", 'OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)'
              call cime_run_ocn_setup_send()
+             print *, "_wpc_1b. exit cime_run_ocn_setup_send subroutine ", 'OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)'
           end if
        endif
 
@@ -3042,7 +3044,9 @@ contains
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'RASM_OPTION2') then
+             print *, "_wpc_2. enter cime_run_ocn_setup_send subroutine ", 'OCN SETUP-SEND (rasm_option2)'
              call cime_run_ocn_setup_send()
+             print *, "_wpc_2b. exit cime_run_ocn_setup_send subroutine ", 'OCN SETUP-SEND (rasm_option2)'
           end if
        endif
 
@@ -3868,6 +3872,7 @@ contains
     !----------------------------------------------------
     ! "startup" wait
     !----------------------------------------------------
+    print *, "_wpc0a. start cime_run_ocn_setup_send subroutine ", 'cime_run_ocn_setup_send'
     if (iamin_CPLALLOCNID) then
        ! want to know the time the ocean pes waited for the cpl pes
        ! at the first ocnrun_alarm, min ocean wait is wait time
