@@ -26,29 +26,34 @@ namespace control {
  *  2) Create the grid manager, and query the atm procs for the grids they need. The GM will then
  *     proceed to build those grids (and only those grids).
  *  3) The GM is passed back to the atm procs, which can grab the needed grids, from which they can
- *     get the information needed to complete the setup of the FieldIdentifiers of their fields
- *     (both required and computed). Their field identifiers MUST be completed upon return from
+ *     get the information needed to complete the setup of the FieldRequest and GroupRequest for
+ *     the required/computed fields/groups. Their requests MUST be completed upon return from
  *     the 'set_grids' method.
  *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
  *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
- *  4) Register all fields from all atm procs inside the field manager
+ *  4) Register all fields and all groups from all atm procs inside the field managers, and proceed
+ *     to allocate fields. Each field manager (there is one FM per grid) will take care of
+ *     accommodate all requests for packing as well as (if possible) bundling of groups.
+ *     For more details, see the documentation in the share/field/field_request.hpp header.
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
- *     FieldIdentifiers for their input/output fields. Now, we pass actual Field objects to them,
- *     where both the data (Kokkos::View) and metadata (FieldHeader) inside will be shared across
- *     all processes using the field. This allow data and metadata to be always in sync.
- *     Note: output fields are passed to an atm proc as read-write (i.e., non-const data type),
- *           while input fields are passed as read-only (i.e., const data type). Yes, the atm proc
- *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
- *           we store 2 copies of each field, and use the extra copy to check, at run time, that
- *           no process alters the values of any of its input fields.
+ *     FieldIdentifiers for their input/output fields and FieldGroupInfo for their input/output
+ *     field groups. Now, we pass actual Field and FieldGroup objects to them, where both the
+ *     data (Kokkos::View) and metadata (FieldHeader) inside will be shared across all copies
+ *     of the field. This allow data and metadata to be always in sync.
+ *     Note: output fields/groups are passed to an atm proc as read-write (i.e., non-const data type),
+ *           while input ones are passed as read-only (i.e., const data type). Yes, the atm proc
+ *           could cheat, and cast away the const, but we can't prevent that.
  *  6) All the atm inputs (that the AD can deduce by asking the atm proc group for the required fiedls)
- *     are initialized, by reading values from an initial conditions netcdf file.
+ *     are initialized. For restart runs, all fields are read from a netcdf file (to allow BFB
+ *     restarts), while for initial runs we offer a few more options (e.g., init a field to
+ *     a constant, or as a copy of another field). During this process, we also set the initial
+ *     time stamp on all the atm input fields.
  *     If an atm input is not found in the IC file, we'll error out, saving a DAG of the
  *     atm processes, which the user can inspect (to see what's missing in the IC file).
  *  7) All the atm process are initialized. During this call, atm process are able to set up
- *     all the internal structures that they were not able to init previously. They can also
- *     utilize their input fields to perform initialization of some internal data structure.
- *  8) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
+ *     all the internal structures that they were not able to init previously. For instance,
+ *     they can set up remappers from the reference grid to the grid they operate on. They can
+ *     also utilize their input fields to perform initialization of some internal data structure.
  *
  */
 
