@@ -404,7 +404,7 @@ CONTAINS
           call atm_import( x2a_a%rattr, cam_in )
 
           call t_startf('CAM_run1')
-          call cam_run1 ( cam_in, cam_out ) 
+          call cam_run1 ( cam_in, cam_out, do_dp_coupling=.true. ) 
           call t_stopf('CAM_run1')
           
           call atm_export( cam_out, a2x_a%rattr )
@@ -419,7 +419,7 @@ CONTAINS
           call atm_import( x2a_a%rattr, cam_in, .true. )
 
           call t_startf('cam_run1')
-          call cam_run1 ( cam_in, cam_out ) 
+          call cam_run1 ( cam_in, cam_out, do_dp_coupling=.true. ) 
           call t_stopf('cam_run1')
        end if
 
@@ -594,7 +594,7 @@ CONTAINS
        ! Run cam radiation/clouds (run1)
           
        call t_startf ('CAM_run1')
-       call cam_run1 ( cam_in, cam_out ) 
+       call cam_run1 ( cam_in, cam_out, do_dp_coupling=.true. ) 
        call t_stopf  ('CAM_run1')
        
        ! Map output from cam to mct data structures

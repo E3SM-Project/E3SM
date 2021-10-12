@@ -16,7 +16,7 @@ module cam_comp
    use physics_types,     only: physics_state, physics_tend
    use cam_control_mod,   only: nsrest, print_step_cost, obliqr, lambm0, mvelpp, eccen
    use dyn_comp,          only: dyn_import_t, dyn_export_t
-   use ppgrid,            only: begchunk, endchunk
+   use ppgrid,            only: begchunk, endchunk, pcols, pver, pverp
    use perf_mod
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
@@ -203,7 +203,7 @@ end subroutine cam_init
 !
 !-----------------------------------------------------------------------
 !
-subroutine cam_run1(cam_in, cam_out)
+subroutine cam_run1(cam_in, cam_out, do_dp_coupling)
 !-----------------------------------------------------------------------
 !
 ! Purpose:   First phase of atmosphere model run method.
@@ -211,7 +211,8 @@ subroutine cam_run1(cam_in, cam_out)
 !            physics (before surface model updates).
 !
 !-----------------------------------------------------------------------
-   
+   use physics_buffer,   only: pbuf_get_field, pbuf_get_chunk, pbuf_get_index
+   use physconst,        only: cpair, latvap, gravit
    use physpkg,          only: phys_run1
    use stepon,           only: stepon_run1
 #if ( defined SPMD )
@@ -222,6 +223,11 @@ subroutine cam_run1(cam_in, cam_out)
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
+   logical, optional :: do_dp_coupling
+
+   integer :: c,i,k
+   integer :: ncol
+   real(r8), pointer, dimension(:,:) :: DSE_tot, QLV_tot
 
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
@@ -239,10 +245,28 @@ subroutine cam_run1(cam_in, cam_out)
    ! First phase of dynamics (at least couple from dynamics to physics)
    ! Return time-step for physics from dynamics.
    !----------------------------------------------------------
-   call t_barrierf ('sync_stepon_run1', mpicom)
-   call t_startf ('stepon_run1')
-   call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
-   call t_stopf  ('stepon_run1')
+   if (.not.present(do_dp_coupling)) do_dp_coupling=.false.
+
+   if (do_dp_coupling) then
+
+      call t_barrierf ('sync_stepon_run1', mpicom)
+      call t_startf ('stepon_run1')
+      call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
+      call t_stopf  ('stepon_run1')
+
+      do c=begchunk, endchunk
+         ncol = phys_state(c)%ncol
+         call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), pbuf_get_index('DSE_tot'), DSE_tot )
+         call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), pbuf_get_index('QLV_tot'), QLV_tot )
+         do i = 1,ncol
+            do k = 1,pver
+               DSE_tot(i,k) = cpair*phys_state(c)%t(i,k) + gravit*phys_state(c)%zm(i,k) + phys_state(c)%phis(i)
+               QLV_tot(i,k) = phys_state(c)%q(i,k,1)*latvap
+            end do
+         end do
+      end do
+
+   end if
 
    if (single_column) then
      call scam_use_iop_srf( cam_in)
@@ -364,6 +388,11 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
+   use time_manager,     only: get_nstep
+   use dp_coupling,      only: d_p_coupling
+   use physconst,        only: cpair, latvap, gravit
+   use physics_buffer,   only: pbuf_get_field, pbuf_get_chunk, pbuf_get_index
+   use cam_history,      only: outfld
 
    type(cam_out_t), intent(inout)        :: cam_out(begchunk:endchunk)
    type(cam_in_t) , intent(inout)        :: cam_in(begchunk:endchunk)
@@ -377,8 +406,64 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
 #endif
+
+   integer :: ncol, lchnk, nstep, c, i, k
+   integer :: DSE_ac_idx,  QLV_ac_idx
+   integer :: DSE_tot_idx, QLV_tot_idx
+   real(r8), dimension(pcols,pver)   :: DSE_diff, QLV_diff
+   real(r8), dimension(pcols,pver)   :: DSE, QLV
+   real(r8), pointer, dimension(:,:) :: DSE_ac,   QLV_ac
+   real(r8), pointer, dimension(:,:) :: DSE_tot,  QLV_tot
 !-----------------------------------------------------------------------
 ! print_step_cost
+   
+   !----------------------------------------------------------
+   ! Tendencies for MSE budget
+   !----------------------------------------------------------
+
+   ! Need to map dynamics to physics here - will be done again in cam_run1
+   call t_barrierf('sync_d_p_coupling', mpicom)
+   call d_p_coupling(phys_state, phys_tend,  pbuf2d, dyn_out )
+
+   DSE_ac_idx  = pbuf_get_index('DSE_ac')
+   QLV_ac_idx  = pbuf_get_index('QLV_ac')
+   DSE_tot_idx = pbuf_get_index('DSE_tot')
+   QLV_tot_idx = pbuf_get_index('QLV_tot')
+   nstep = get_nstep()
+   do c=begchunk, endchunk
+      ncol  = phys_state(c)%ncol
+      lchnk = phys_state(c)%lchnk
+
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), DSE_ac_idx,  DSE_ac )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), QLV_ac_idx,  QLV_ac )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), DSE_tot_idx, DSE_tot )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), QLV_tot_idx, QLV_tot )
+
+      ! Calculate updated MSE components
+      do i = 1,ncol
+         do k = 1,pver
+            DSE(i,k) = cpair*phys_state(c)%t(i,k) + gravit*phys_state(c)%zm(i,k) + phys_state(c)%phis(i)
+            QLV(i,k) = phys_state(c)%q(i,k,1)*latvap
+         end do
+      end do
+
+      ! dynamics MSE tendency
+      DSE_diff(1:ncol,:) = ( DSE(1:ncol,:) - DSE_ac(1:ncol,:) )/dtime
+      QLV_diff(1:ncol,:) = ( QLV(1:ncol,:) - QLV_ac(1:ncol,:) )/dtime
+      call outfld('DYN_DDSE', DSE_diff, ncol, lchnk )
+      call outfld('DYN_DQLV', QLV_diff, ncol, lchnk )
+
+      ! total MSE tendency
+      DSE_diff(1:ncol,:) = ( DSE(1:ncol,:) - DSE_tot(1:ncol,:) )/dtime
+      QLV_diff(1:ncol,:) = ( QLV(1:ncol,:) - QLV_tot(1:ncol,:) )/dtime
+      call outfld('TOT_DDSE', DSE_diff, ncol, lchnk )
+      call outfld('TOT_DQLV', QLV_diff, ncol, lchnk )
+
+      ! Update baseline values for total MSE tendency
+      DSE_tot = DSE
+      QLV_tot = QLV
+
+   end do
 
    !
    !----------------------------------------------------------
