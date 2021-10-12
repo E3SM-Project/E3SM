@@ -59,7 +59,7 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
     auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_SW);
     auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_LW);
     for (int time_index = 0;time_index<3; time_index++) {
-      SPAFunc::update_spa_data_from_file(spa_comm,spa_data_file, time_index+1, nswbands, nlwbands,
+      SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
                                          spa_horiz_interp, spa_data);
       Kokkos::deep_copy(ps_h,spa_data.PS);
       Kokkos::deep_copy(ccn3_h,spa_data.CCN3);

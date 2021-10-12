@@ -14,7 +14,5 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(spa_tests "${SPA_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP spa_tests_ut_np1_omp1)
 endif()
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/map_ne2np4_to_ne4np4_mono.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/map_ne2np4_to_ne4np4_mono.nc COPYONLY)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_data_for_testing.nc
                ${CMAKE_CURRENT_BINARY_DIR}/spa_data_for_testing.nc COPYONLY)

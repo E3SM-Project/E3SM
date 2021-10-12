@@ -2,10 +2,9 @@
 #define SPA_FUNCTIONS_HPP
 
 #include "share/scream_types.hpp"
-
+#include "share/util/scream_time_stamp.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream {
 namespace spa {
@@ -177,13 +176,23 @@ struct SPAFunctions
           SPAHorizInterp& spa_horiz_interp);
 
   static void update_spa_data_from_file(
-    const ekat::Comm&     comm,
     const std::string&    spa_data_file_name,
     const Int             time_index,
     const Int             nswbands,
     const Int             nlwbands,
           SPAHorizInterp& spa_horiz_interp,
           SPAData&        spa_data);
+
+  static void update_spa_timestate(
+    const std::string&     spa_data_file_name,
+    const Int              time_index,
+    const Int              nswbands,
+    const Int              nlwbands,
+          util::TimeStamp& ts,
+          SPAHorizInterp&  spa_horiz_interp,
+          SPAData&         spa_beg,
+          SPAData&         spa_end);
+    
 
 }; // struct Functions
 

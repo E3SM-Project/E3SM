@@ -278,7 +278,7 @@ void SPAFunctions<S,D>
   });
   Kokkos::fence();
 
-}
+}  // END spa_main
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
 // from a file.
@@ -340,12 +340,11 @@ void SPAFunctions<S,D>
   spa_horiz_interp.weights = view_1d<Real>(S_global);
   spa_horiz_interp.source_grid_loc = view_1d<Int>(row_global);
   spa_horiz_interp.target_grid_loc = view_1d<Int>(col_global);
-}
+}  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-    const ekat::Comm&     comm,
     const std::string&    spa_data_file_name,
     const Int             time_index,
     const Int             nswbands,
@@ -465,7 +464,42 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_data.AER_TAU_LW,aer_tau_lw_h);
 
     
-}
+} // END update_spa_data_from_file
+/*-----------------------------------------------------------------*/
+template<typename S, typename D>
+void SPAFunctions<S,D>
+::update_spa_timestate(
+  const std::string&     spa_data_file_name,
+  const Int              time_index,
+  const Int              nswbands,
+  const Int              nlwbands,
+        util::TimeStamp& ts,
+        SPAHorizInterp&  spa_horiz_interp,
+        SPAData&         spa_beg,
+        SPAData&         spa_end)
+{
+
+  // We always want to update the current time in the time_state.
+  time_state.t_now = ts.get_julian_day();
+  // Now we check if we have to update the data that changes monthly
+  // NOTE:  This means that SPA assumes monthly data to update.  Not
+  //        any other frequency.
+  if (ts.get_months() != time_state.current_month) {
+    // Update the SPA time state information
+    time_state.current_month = ts.get_months();
+    time_state.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
+    time_state.days_this_month = (Real)ts.get_dpm();
+    // Update the SPA forcing data for this month and next month
+    // Start by copying next months data to this months data structure.  
+    // NOTE: If the timestep is bigger than monthly this could cause the wrong values
+    //       to be assigned.  A timestep greater than a month is very unlikely so we
+    //       will proceed.
+    update_spa_data_from_file(spa_data_file_name,time_state.current_month,nswbands,nlwbands,spa_horiz_interp,spa_beg_data);
+    Int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
+    update_spa_data_from_file(spa_data_file_name,next_month,nswbands,nlwbands,spa_horiz_interp,spa_end_data);
+  }
+
+} // END updata_spa_timestate
 /*-----------------------------------------------------------------*/
 // A helper function to manage basic linear interpolation in time.
 // The inputs of x0 and x1 represent the data to interpolate from at
