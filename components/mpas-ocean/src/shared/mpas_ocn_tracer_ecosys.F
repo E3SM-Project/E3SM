@@ -502,7 +502,7 @@ module ocn_tracer_ecosys
       real (kind=RKIND) :: convertLengthSquaredMKStoCGS = 1.0e4_RKIND
       real (kind=RKIND) :: convertLengthSquaredCGStoMKS = 1.0e-4_RKIND
 
-      logical :: verbose = .true.
+      logical :: verbose = .false.
       character(strKIND) :: logMessage
 
 !***********************************************************************
