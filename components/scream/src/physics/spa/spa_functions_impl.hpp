@@ -336,30 +336,48 @@ void SPAFunctions<S,D>
   scorpio::eam_pio_closefile(remap_file_name);
 
   // Retain only the information needed on this rank. 
+  auto col_global_h = Kokkos::create_mirror_view(col_global);
+  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+  Kokkos::deep_copy(col_global_h,col_global);
+  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   std::vector<int> local_idx;
   std::vector<int> global_idx;
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-    int dof = col_global(idx)-1; // Note, in the remap file the indices start with 1
+    int dof = col_global_h(idx)-1; // Note, in the remap file the indices start with 1
     for (int id=0;id<dofs_gids.size();id++) {
-      if (dof == dofs_gids(id)) {
+      if (dof == dofs_gids_h(id)) {
         global_idx.push_back(idx);
         local_idx.push_back(id);
         break;
       }
     }
   }
+  Kokkos::deep_copy(dofs_gids,dofs_gids_h);
   // Now that we have the full list of indexs in the global remap data that correspond to local columns we can construct
   // the spa_horiz_weights data.   Note: This is an important step when running with multiple MPI ranks.
   spa_horiz_interp.length          = local_idx.size();
   spa_horiz_interp.weights         = view_1d<Real>("",local_idx.size());
   spa_horiz_interp.source_grid_loc = view_1d<Int>("",local_idx.size());
   spa_horiz_interp.target_grid_loc = view_1d<Int>("",local_idx.size());
+  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+  auto row_global_h = Kokkos::create_mirror_view(row_global);
+  auto S_global_h   = Kokkos::create_mirror_view(S_global);
+  Kokkos::deep_copy(weights_h        , spa_horiz_interp.weights        );
+  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
+  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
+  Kokkos::deep_copy(row_global_h,row_global);
+  Kokkos::deep_copy(S_global_h,  S_global);
   for (int idx=0;idx<local_idx.size();idx++) {
-    int ii = global_idx[idx];
-    spa_horiz_interp.weights(idx)         = S_global(ii);
-    spa_horiz_interp.source_grid_loc(idx) = row_global(ii)-1;
-    spa_horiz_interp.target_grid_loc(idx) = local_idx[idx]; //col_global(ii);
+      int ii = global_idx[idx];
+      weights_h(idx)         = S_global_h(ii);
+      source_grid_loc_h(idx) = row_global_h(ii)-1;
+      target_grid_loc_h(idx) = local_idx[idx]; 
   }
+  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
+  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
+  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
@@ -452,12 +470,30 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(aer_tau_lw_h,0.0);
 
   const Int nk_pack = ekat::npack<Spack>(spa_horiz_interp.source_grid_nlevs);
+  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+  auto PS_v_h            = Kokkos::create_mirror_view(PS_v);
+  auto CCN3_v_h          = Kokkos::create_mirror_view(CCN3_v);
+  auto AER_G_SW_v_h      = Kokkos::create_mirror_view(AER_G_SW_v);
+  auto AER_SSA_SW_v_h    = Kokkos::create_mirror_view(AER_SSA_SW_v);
+  auto AER_TAU_SW_v_h    = Kokkos::create_mirror_view(AER_TAU_SW_v);
+  auto AER_TAU_LW_v_h    = Kokkos::create_mirror_view(AER_TAU_LW_v);
+  Kokkos::deep_copy(weights_h,         spa_horiz_interp.weights);
+  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
+  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
+  Kokkos::deep_copy(PS_v_h,            PS_v);                     
+  Kokkos::deep_copy(CCN3_v_h,          CCN3_v);                   
+  Kokkos::deep_copy(AER_G_SW_v_h,      AER_G_SW_v);               
+  Kokkos::deep_copy(AER_SSA_SW_v_h,    AER_SSA_SW_v);             
+  Kokkos::deep_copy(AER_TAU_SW_v_h,    AER_TAU_SW_v);             
+  Kokkos::deep_copy(AER_TAU_LW_v_h,    AER_TAU_LW_v);             
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-    auto src_wgt = spa_horiz_interp.weights(idx);
-    int  src_col = spa_horiz_interp.source_grid_loc(idx);
-    int  tgt_col = spa_horiz_interp.target_grid_loc(idx);
+    auto src_wgt = weights_h(idx);
+    int  src_col = source_grid_loc_h(idx);
+    int  tgt_col = target_grid_loc_h(idx);
     // PS is defined only over columns
-    ps_h(tgt_col) += PS_v(src_col)*src_wgt;
+    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
     // CCN3 and all AER variables have levels
     for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
       // Note, all variables we map to are packed, while all the data we just loaded as
@@ -465,14 +501,14 @@ void SPAFunctions<S,D>
       // data.
       int pack = kk / Spack::n; 
       int kidx = kk % Spack::n;
-      ccn3_h(tgt_col,pack)[kidx] += CCN3_v(src_col,kk)*src_wgt;
+      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
       for (int n=0; n<nswbands; n++) {
-        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v(src_col,n,kk)*src_wgt;
-        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v(src_col,n,kk)*src_wgt;
-        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v(src_col,n,kk)*src_wgt;
+        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
       }
       for (int n=0; n<nlwbands; n++) {
-        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v(src_col,n,kk)*src_wgt;
+        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
       }
     }
   }

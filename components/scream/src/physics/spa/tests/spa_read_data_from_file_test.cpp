@@ -48,9 +48,12 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
       my_dofs.push_back(ii);
     }
     view_1d<int> dofs_gids("",my_dofs.size());
+    auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+    Kokkos::deep_copy(dofs_gids_h,dofs_gids);
     for (int ii=0;ii<my_dofs.size();ii++) {
-      dofs_gids(ii) = my_dofs[ii];
+      dofs_gids_h(ii) = my_dofs[ii];
     }
+    Kokkos::deep_copy(dofs_gids,dofs_gids_h);
     // Set up the set of SPA structures needed to run the test
     SPAFunc::SPAHorizInterp spa_horiz_interp;
     SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,dofs_gids,spa_horiz_interp);
@@ -80,8 +83,8 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
       Kokkos::deep_copy(aer_ssa_sw_h,spa_data.AER_SSA_SW);
       Kokkos::deep_copy(aer_tau_sw_h,spa_data.AER_TAU_SW);
       Kokkos::deep_copy(aer_tau_lw_h,spa_data.AER_TAU_LW);
-      for (int dof_i=0;dof_i<dofs_gids.size();dof_i++) {
-        int glob_i = dofs_gids(dof_i);
+      for (int dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
+        int glob_i = dofs_gids_h(dof_i);
         REQUIRE(ps_h(dof_i) == ps_func(time_index,glob_i,spa_horiz_interp.source_grid_ncols));
         for (int kk=0;kk<nlevs;kk++) {
           int kpack = kk / Spack::n;
