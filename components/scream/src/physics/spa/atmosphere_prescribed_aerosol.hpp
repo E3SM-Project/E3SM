@@ -34,6 +34,7 @@ public:
   using view_1d         = typename SPAFunc::view_1d<Spack>;
   using view_2d         = typename SPAFunc::view_2d<Spack>;
   using view_3d         = typename SPAFunc::view_3d<Spack>;
+  using view_1d_int     = typename SPAFunc::view_1d<int>;
 
   template<typename ScalarT>
   using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
@@ -95,14 +96,22 @@ protected:
   Int m_nswbands = 14;
   Int m_nlwbands = 16;
 
+  // Local grid information
+  view_1d_int m_dofs_gids;
+
   // Struct which contains local variables
   Buffer m_buffer;
+
+  // SPA specific files
+  std::string m_spa_remap_file;
+  std::string m_spa_data_file;
 
   // Structures to store the data used for interpolation
   SPAFunc::SPATimeState     SPATimeState;
   SPAFunc::SPAPressureState SPAPressureState;
   SPAFunc::SPAData          SPAData_start;
   SPAFunc::SPAData          SPAData_end;
+  SPAFunc::SPAHorizInterp   SPAHorizInterp;
   SPAFunc::SPAOutput        SPAData_out;
 
 }; // class SPA 

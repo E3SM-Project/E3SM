@@ -34,6 +34,7 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
     using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 
     std::string spa_data_file = "spa_data_for_testing.nc";
+    std::string spa_remap_file = "spa_data_for_testing.nc";
     Int max_time = 3;
     Int ncols    = 48;
     Int nlevs    = 4;
@@ -52,7 +53,7 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
     }
     // Set up the set of SPA structures needed to run the test
     SPAFunc::SPAHorizInterp spa_horiz_interp;
-    SPAFunc::get_remap_weights_from_file(spa_data_file,ncols,dofs_gids,spa_horiz_interp);
+    SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,dofs_gids,spa_horiz_interp);
     SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
     // Verify that the interpolated values match the algorithm for the data and the weights.

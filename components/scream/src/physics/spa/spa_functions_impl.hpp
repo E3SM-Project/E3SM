@@ -133,8 +133,8 @@ void SPAFunctions<S,D>
     const Int i = team.league_rank();  // SCREAM column index
 
     // Get single-column subviews of all 2D inputs, i.e. those that don't have aerosol bands
-    const auto& ps_beg_sub                 = pressure_state.ps_this_month(i);
-    const auto& ps_end_sub                 = pressure_state.ps_next_month(i);
+    const auto& ps_beg_sub                 = data_beg.PS(i);
+    const auto& ps_end_sub                 = data_end.PS(i);
     const auto& pmid_sub                   = ekat::subview(pressure_state.pmid, i);
     const auto& p_src_sub                  = ekat::subview(p_src, i);
 
@@ -490,11 +490,11 @@ template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
   const std::string&     spa_data_file_name,
-  const Int              time_index,
   const Int              nswbands,
   const Int              nlwbands,
-        util::TimeStamp& ts,
+  const util::TimeStamp& ts,
         SPAHorizInterp&  spa_horiz_interp,
+        SPATimeState&    time_state, 
         SPAData&         spa_beg,
         SPAData&         spa_end)
 {
@@ -504,19 +504,22 @@ void SPAFunctions<S,D>
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
   //        any other frequency.
-  if (ts.get_months() != time_state.current_month) {
+  const auto month = ts.get_month();
+  if (month != time_state.current_month or !time_state.inited) {
     // Update the SPA time state information
-    time_state.current_month = ts.get_months();
-    time_state.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
-    time_state.days_this_month = (Real)ts.get_dpm();
+    time_state.current_month = month;
+    time_state.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.days_this_month = util::days_in_month(ts.get_year(),month);
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.  
     // NOTE: If the timestep is bigger than monthly this could cause the wrong values
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
-    update_spa_data_from_file(spa_data_file_name,time_state.current_month,nswbands,nlwbands,spa_horiz_interp,spa_beg_data);
+    update_spa_data_from_file(spa_data_file_name,time_state.current_month,nswbands,nlwbands,spa_horiz_interp,spa_beg);
     Int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
-    update_spa_data_from_file(spa_data_file_name,next_month,nswbands,nlwbands,spa_horiz_interp,spa_end_data);
+    update_spa_data_from_file(spa_data_file_name,next_month,nswbands,nlwbands,spa_horiz_interp,spa_end);
+    // If time state was not initialized it is now:
+    time_state.inited = true;
   }
 
 } // END updata_spa_timestate

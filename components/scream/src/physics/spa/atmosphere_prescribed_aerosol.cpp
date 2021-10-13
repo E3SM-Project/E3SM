@@ -1,6 +1,7 @@
 #include "atmosphere_prescribed_aerosol.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -33,6 +34,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_dofs_gids = grid->get_dofs_gids();
 
   // Define the different field layouts that will be used for this process
 
@@ -131,17 +133,33 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SPA::initialize_impl ()
 {
-  // Initialize Time Data
-  auto ts = timestamp();
-
-  const auto month = ts.get_month();
-
-  SPATimeState.current_month = month;
-  SPATimeState.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
-  SPATimeState.days_this_month = util::days_in_month(ts.get_year(),month);
-
-  // Initialize SPA input data
+  // Initialize SPA input data: TODO: This is the HACK that we want to eventually remove.
   initialize_spa_impl();
+
+  // Retrieve the remap and data file locations from the parameter list:
+  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
+  m_spa_remap_file = m_params.get<std::string>("SPA Remap File");
+  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+
+  // Set the SPA remap weights.  
+  // TODO: We may want to provide an option to calculate weights on-the-fly. 
+  //       If so, then the EKAT_REQUIRE_MSG above will need to be removed and 
+  //       we can have a default m_spa_data_file option that is online calculation.
+  SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_num_cols,m_dofs_gids,SPAHorizInterp);
+  // Note: only the number of levels associated with this data haven't been set.  We can
+  //       take this information directly from the spa data file.
+  scorpio::register_file(m_spa_data_file,scorpio::Read);
+  SPAHorizInterp.source_grid_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+
+  // Initialize the size of the SPAData structures:
+  SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+
+  // Update the local time state information and load the first set of SPA data for interpolation:
+  auto ts = timestamp();
+  SPATimeState.inited = false;
+  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 }
 
 // =========================================================================================
@@ -149,15 +167,8 @@ void SPA::run_impl (const int /* dt */)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
-  const auto month = ts.get_month();
-
-  /* Update time data if the month has changed */
-  SPATimeState.t_now = ts.frac_of_year_in_days();
-  if (month != SPATimeState.current_month) {
-    SPATimeState.current_month = month;
-    SPATimeState.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
-    SPATimeState.days_this_month = util::days_in_month(ts.get_year(),month);
-  }
+  /* Update time state and if the month has changed, update the data.*/
+  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);

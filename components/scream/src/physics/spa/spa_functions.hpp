@@ -6,6 +6,8 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
 
+#include <numeric>
+
 namespace scream {
 namespace spa {
 
@@ -50,6 +52,8 @@ struct SPAFunctions
   // SPA structures to help manage all of the variables:
   struct SPATimeState {
     SPATimeState() = default;
+    // Whether the timestate has been initialized.
+    bool inited;
     // The current month
     Int current_month;
     // Julian Date for the beginning of the month, as defined in
@@ -67,10 +71,6 @@ struct SPAFunctions
     // Number of horizontal columns and vertical levels for the data
     Int ncols;
     Int nlevs;
-    // Surface pressure for data at the beginning of the month
-    view_1d<const Real> ps_this_month;
-    // Surface pressure for data at the beginning of next month
-    view_1d<const Real> ps_next_month;
     // Hybrid coordinate values
     view_1d<const Spack> hyam, hybm;
     // Current simulation pressure levels
@@ -186,11 +186,11 @@ struct SPAFunctions
 
   static void update_spa_timestate(
     const std::string&     spa_data_file_name,
-    const Int              time_index,
     const Int              nswbands,
     const Int              nlwbands,
-          util::TimeStamp& ts,
+    const util::TimeStamp& ts,
           SPAHorizInterp&  spa_horiz_interp,
+          SPATimeState&    time_state, 
           SPAData&         spa_beg,
           SPAData&         spa_end);
     
