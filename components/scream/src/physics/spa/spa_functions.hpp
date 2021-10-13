@@ -171,8 +171,9 @@ struct SPAFunctions
     Int nlwbands);
 
   static void get_remap_weights_from_file(
-    const std::string& remap_file_name,
-    const Int ncols_scream,
+    const std::string&    remap_file_name,
+    const Int             ncols_scream,
+    const view_1d<int>&   dofs_gids,
           SPAHorizInterp& spa_horiz_interp);
 
   static void update_spa_data_from_file(

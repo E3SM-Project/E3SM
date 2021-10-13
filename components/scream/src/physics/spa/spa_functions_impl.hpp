@@ -285,8 +285,9 @@ void SPAFunctions<S,D>
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
-    const std::string& remap_file_name,
-    const Int ncols_scream,
+    const std::string&    remap_file_name,
+    const Int             ncols_scream,
+    const view_1d<int>&   dofs_gids,
           SPAHorizInterp& spa_horiz_interp
   )
 {
@@ -335,11 +336,30 @@ void SPAFunctions<S,D>
   scorpio::eam_pio_closefile(remap_file_name);
 
   // Retain only the information needed on this rank. 
-  // TODO: We could probably calculate which entries in the remap data correspond to local dof's on this rank
-  // and then only keep those.  I leave this for future development.
-  spa_horiz_interp.weights = view_1d<Real>(S_global);
-  spa_horiz_interp.source_grid_loc = view_1d<Int>(row_global);
-  spa_horiz_interp.target_grid_loc = view_1d<Int>(col_global);
+  std::vector<int> local_idx;
+  std::vector<int> global_idx;
+  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
+    int dof = col_global(idx)-1; // Note, in the remap file the indices start with 1
+    for (int id=0;id<dofs_gids.size();id++) {
+      if (dof == dofs_gids(id)) {
+        global_idx.push_back(idx);
+        local_idx.push_back(id);
+        break;
+      }
+    }
+  }
+  // Now that we have the full list of indexs in the global remap data that correspond to local columns we can construct
+  // the spa_horiz_weights data.   Note: This is an important step when running with multiple MPI ranks.
+  spa_horiz_interp.length          = local_idx.size();
+  spa_horiz_interp.weights         = view_1d<Real>("",local_idx.size());
+  spa_horiz_interp.source_grid_loc = view_1d<Int>("",local_idx.size());
+  spa_horiz_interp.target_grid_loc = view_1d<Int>("",local_idx.size());
+  for (int idx=0;idx<local_idx.size();idx++) {
+    int ii = global_idx[idx];
+    spa_horiz_interp.weights(idx)         = S_global(ii);
+    spa_horiz_interp.source_grid_loc(idx) = row_global(ii)-1;
+    spa_horiz_interp.target_grid_loc(idx) = local_idx[idx]; //col_global(ii);
+  }
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
@@ -434,8 +454,8 @@ void SPAFunctions<S,D>
   const Int nk_pack = ekat::npack<Spack>(spa_horiz_interp.source_grid_nlevs);
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
     auto src_wgt = spa_horiz_interp.weights(idx);
-    int  src_col = spa_horiz_interp.source_grid_loc(idx)-1;
-    int  tgt_col = spa_horiz_interp.target_grid_loc(idx)-1;
+    int  src_col = spa_horiz_interp.source_grid_loc(idx);
+    int  tgt_col = spa_horiz_interp.target_grid_loc(idx);
     // PS is defined only over columns
     ps_h(tgt_col) += PS_v(src_col)*src_wgt;
     // CCN3 and all AER variables have levels

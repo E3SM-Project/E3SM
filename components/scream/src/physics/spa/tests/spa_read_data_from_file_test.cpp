@@ -31,17 +31,29 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
     scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
     // Establish the SPA function object
-    using SPAFunc         = spa::SPAFunctions<Real, DefaultDevice>;
+    using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 
     std::string spa_data_file = "spa_data_for_testing.nc";
-    Int time_index = 1;
-    Int ncols    = 2;
+    Int max_time = 3;
+    Int ncols    = 48;
     Int nlevs    = 4;
     Int nswbands = 2;
     Int nlwbands = 3;
+    // Break the test set of columns into local degrees of freedom per mpi rank
+    auto comm_size = spa_comm.size();
+    auto comm_rank = spa_comm.rank();
+    std::vector<int> my_dofs;
+    for (int ii=comm_rank;ii<ncols;ii+=comm_size) {
+      my_dofs.push_back(ii);
+    }
+    view_1d<int> dofs_gids("",my_dofs.size());
+    for (int ii=0;ii<my_dofs.size();ii++) {
+      dofs_gids(ii) = my_dofs[ii];
+    }
+    // Set up the set of SPA structures needed to run the test
     SPAFunc::SPAHorizInterp spa_horiz_interp;
-    SPAFunc::get_remap_weights_from_file(spa_data_file,ncols,spa_horiz_interp);
-    SPAFunc::SPAData spa_data(ncols, nlevs, nswbands, nlwbands);
+    SPAFunc::get_remap_weights_from_file(spa_data_file,ncols,dofs_gids,spa_horiz_interp);
+    SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
     // Verify that the interpolated values match the algorithm for the data and the weights.
     //       weights(i) = 1 / (2**i), weights(-1) = 1 / (2**(i-1)) such that sum(weights) = 1., for i=0,1,2
@@ -58,7 +70,7 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
     auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.AER_SSA_SW);
     auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_SW);
     auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_LW);
-    for (int time_index = 0;time_index<3; time_index++) {
+    for (int time_index = 0;time_index<max_time; time_index++) {
       SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
                                          spa_horiz_interp, spa_data);
       Kokkos::deep_copy(ps_h,spa_data.PS);
@@ -67,19 +79,20 @@ struct UnitWrap::UnitTest<D>::TestReadDataFile {
       Kokkos::deep_copy(aer_ssa_sw_h,spa_data.AER_SSA_SW);
       Kokkos::deep_copy(aer_tau_sw_h,spa_data.AER_TAU_SW);
       Kokkos::deep_copy(aer_tau_lw_h,spa_data.AER_TAU_LW);
-      for (int ii=0;ii<ncols;ii++) {
-        REQUIRE(ps_h(ii) == ps_func(time_index,ii,spa_horiz_interp.source_grid_ncols));
+      for (int dof_i=0;dof_i<dofs_gids.size();dof_i++) {
+        int glob_i = dofs_gids(dof_i);
+        REQUIRE(ps_h(dof_i) == ps_func(time_index,glob_i,spa_horiz_interp.source_grid_ncols));
         for (int kk=0;kk<nlevs;kk++) {
           int kpack = kk / Spack::n;
           int kidx  = kk % Spack::n;
-          REQUIRE(ccn3_h(ii,kpack)[kidx] == ccn3_func(time_index, ii, kk, spa_horiz_interp.source_grid_ncols));
+          REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, glob_i, kk, spa_horiz_interp.source_grid_ncols));
           for (int n=0;n<nswbands;n++) {
-            REQUIRE(aer_g_sw_h(ii,n,kpack)[kidx]   == aer_func(time_index,ii,n,kk,spa_horiz_interp.source_grid_ncols,0));
-            REQUIRE(aer_ssa_sw_h(ii,n,kpack)[kidx] == aer_func(time_index,ii,n,kk,spa_horiz_interp.source_grid_ncols,1));
-            REQUIRE(aer_tau_sw_h(ii,n,kpack)[kidx] == aer_func(time_index,ii,n,kk,spa_horiz_interp.source_grid_ncols,2));
+            REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,glob_i,n,kk,spa_horiz_interp.source_grid_ncols,0));
+            REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,glob_i,n,kk,spa_horiz_interp.source_grid_ncols,1));
+            REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,glob_i,n,kk,spa_horiz_interp.source_grid_ncols,2));
           }
           for (int n=0;n<nlwbands;n++) {
-            REQUIRE(aer_tau_lw_h(ii,n,kpack)[kidx] ==  aer_func(time_index,ii,n,kk,spa_horiz_interp.source_grid_ncols,3));
+            REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] ==  aer_func(time_index,glob_i,n,kk,spa_horiz_interp.source_grid_ncols,3));
           }
         }
       }

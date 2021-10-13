@@ -11,7 +11,10 @@ set(SPA_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
-  CreateUnitTest(spa_tests "${SPA_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP spa_tests_ut_np1_omp1)
+  CreateUnitTest(spa_tests "${SPA_TESTS_SRCS}" "${NEED_LIBS}" 
+    LABELS "spa"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 endif()
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_data_for_testing.nc

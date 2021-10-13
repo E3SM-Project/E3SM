@@ -38,7 +38,11 @@ struct UnitWrap::UnitTest<D>::TestReadRemapData {
     const std::string remap_file_name = "spa_data_for_testing.nc";
 
     Int target_grid_ncols = 2;
-    SPAFunc::get_remap_weights_from_file(remap_file_name,target_grid_ncols,spa_horiz_interp);
+    view_1d<int> dofs_gids("",target_grid_ncols);
+    for (int ii=0;ii<ncols;ii++) {
+      dofs_gids(ii) = ii;
+    }
+    SPAFunc::get_remap_weights_from_file(remap_file_name,target_grid_ncols,dofs_gids,spa_horiz_interp);
 
     REQUIRE(spa_horiz_interp.length==6); // The test file has 17,498 points in it
     REQUIRE(spa_horiz_interp.source_grid_ncols==3); // The test file maps ne2 (218 cols) to ne4 (866 cols)
