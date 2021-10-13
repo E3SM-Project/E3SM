@@ -324,9 +324,13 @@ void HommeDynamics::run_impl (const int dt)
     Kokkos::fence();
     homme_pre_process (dt);
 
-    // Run hommexx
-    Kokkos::fence();
-    prim_run_f90 (dt);
+    // Note: Homme's step lasts homme_dt*max(dt_remap_factor,dt_tracers_factor), and it must divide dt.
+    // We neeed to compute dt/homme_dt, and subcycle homme that many times
+    const int nsplit = get_homme_nsplit_f90(dt);
+    for (int subiter=0; subiter<nsplit; ++subiter) {
+      Kokkos::fence();
+      prim_run_f90 ();
+    }
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();

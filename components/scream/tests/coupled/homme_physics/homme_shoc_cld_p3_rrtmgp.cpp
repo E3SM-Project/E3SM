@@ -51,6 +51,13 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
+  // Time stepping parameters
+  auto& ts = ad_params.sublist("Time Stepping");
+  const auto dt = ts.get<int>("Time Step");
+  const auto start_date = ts.get<std::vector<int>>("Start Date");
+  const auto start_tod  = ts.get<std::vector<int>>("Start Time");
+  const auto nsteps     = ts.get<int>("Number of Steps");
+
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
@@ -84,14 +91,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer.get_memory(),
                   "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
-  // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
-  const auto& sp = Homme::Context::singleton().get<Homme::SimulationParams>();
-  const int nmax = get_homme_param<int>("nmax");
-  const int num_dyn_iters = nmax / (sp.qsplit*sp.rsplit);
-  const int dt = get_homme_param<Real>("dt");
-  EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
-
-  for (int i=0; i<num_dyn_iters; ++i) {
+  for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
   }
 

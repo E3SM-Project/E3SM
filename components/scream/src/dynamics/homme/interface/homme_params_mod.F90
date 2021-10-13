@@ -25,8 +25,7 @@ module homme_params_mod
     npart
 
   use cube_mod, only: rotate_grid
-  use time_mod, only: tstep, nEndStep, secpday, ndays, nmax, &
-                      smooth ! Unused in SCREAM
+  use time_mod, only: tstep, nsplit
   use thread_mod,   only: nthreads, vthreads      ! Unused in SCREAM
   use parallel_mod, only: mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
   use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor, DD_PI
@@ -46,8 +45,8 @@ module homme_params_mod
     ftype,                  &
     dt_tracer_factor,       &
     dt_remap_factor,        &
-    qsplit,                 &
     rsplit,                 &
+    qsplit,                 &
     limiter_option,         &
     moisture,               &
     use_moisture,           &
@@ -88,10 +87,12 @@ module homme_params_mod
   public :: get_homme_int_param_f90
   public :: get_homme_real_param_f90
   public :: get_homme_bool_param_f90
+  public :: get_homme_nsplit_f90
 
   public :: set_homme_int_param_f90
   public :: set_homme_real_param_f90
   public :: set_homme_bool_param_f90
+
 contains
 
   subroutine init_params_f90 (nl_fname_c) bind(c)
@@ -124,15 +125,13 @@ contains
       theta_advect_form,        &
       theta_hydrostatic_mode,   &   
       ne,                       &
-      ndays,                    &
-      nmax,                     &
+      tstep,                    &
       rotate_grid,              &
       topology,                 &         ! Mesh topology
       geometry,                 &         ! Mesh geometry
       tstep_type,               &
-      tstep,                    &
-      qsplit,                   &
-      rsplit,                   &
+      dt_tracer_factor,         &
+      dt_remap_factor,          &
       omega,                    &
       rearth,                   &
       limiter_option,           &
@@ -155,7 +154,6 @@ contains
       runtype,                  & ! Unused in SCREAM
       mesh_file,                & ! Unused in SCREAM
       integration,              & ! Unused in SCREAM
-      smooth,                   & ! Unused in SCREAM
       se_ftype
 
     namelist /vert_nl/    &
@@ -172,9 +170,8 @@ contains
     !        Set defaults         !
     !-----------------------------!
 
-    tstep = -1
-    ndays =  0
-    nmax  = 12
+    nsplit = -1
+    tstep = 0
     moisture = 'dry'
     cubed_sphere_map = 2
     partmethod = SFCURVE
@@ -225,13 +222,11 @@ contains
     call MPI_bcast(geometry, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
 
     ! Time-stepping params
-    call MPI_bcast(nmax,       1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(ndays,      1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(tstep_type, 1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(qsplit,     1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(rsplit,     1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(se_ftype,   1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(tstep,      1, MPIreal_t,    par%root, par%comm, ierr)
+    call MPI_bcast(tstep,            1, MPIreal_t,    par%root, par%comm, ierr)
+    call MPI_bcast(tstep_type,       1, MPIinteger_t, par%root, par%comm, ierr)
+    call MPI_bcast(dt_tracer_factor, 1, MPIinteger_t, par%root, par%comm, ierr)
+    call MPI_bcast(dt_remap_factor,  1, MPIinteger_t, par%root, par%comm, ierr)
+    call MPI_bcast(se_ftype,         1, MPIinteger_t, par%root, par%comm, ierr)
 
     ! Algorithmic params
     call MPI_bcast(limiter_option,         1, MPIinteger_t, par%root, par%comm, ierr)
@@ -288,27 +283,6 @@ contains
 
     use_moisture = ( moisture /= "dry") 
 
-    ! if user sets hypervis_subcycle=-1, then use automatic formula
-    if (hypervis_subcycle==-1) then
-       if (np==4) then
-          ! 1.25d23 worked out by testing, for nv==4
-          ! a little confusing:
-          ! u,v:  nu and hypervis_subcycle
-          ! T:    nu_s and hypervis_subcycle
-          ! Q:    nu and hypervis_subcycle_q
-          dt_max = 1.25d23/(nu*ne**4.0)
-          hypervis_subcycle_q = ceiling( tstep/dt_max )
-          hypervis_subcycle   = ceiling( tstep/dt_max )
-       else
-          call abortmp('hypervis_subcycle auto determine only supported for nv==4')
-       endif
-    endif
-
-    if (ndays>0) then
-      nmax = INT(ndays * (secpday/tstep))
-    end if
-    nEndStep = nmax
-
     ! set map
     if (cubed_sphere_map<0) then
        cubed_sphere_map=2  ! theta model default = element local
@@ -332,6 +306,22 @@ contains
         print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
           call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
       endif
+    endif
+
+    ! if user sets hypervis_subcycle=-1, then use automatic formula
+    if (hypervis_subcycle==-1) then
+       if (np==4) then
+          ! 1.25d23 worked out by testing, for nv==4
+          ! a little confusing:
+          ! u,v:  nu and hypervis_subcycle
+          ! T:    nu_s and hypervis_subcycle
+          ! Q:    nu and hypervis_subcycle_q
+          dt_max = 1.25d23/(nu*ne**4.0)
+          hypervis_subcycle_q = ceiling( tstep/dt_max )
+          hypervis_subcycle   = ceiling( tstep/dt_max )
+       else
+          call abortmp('hypervis_subcycle auto determine only supported for nv==4')
+       endif
     endif
 
     if (limiter_option==8 .or. limiter_option==84 .or. limiter_option == 9) then
@@ -368,8 +358,6 @@ contains
 
        write(iulog,*)"homme namelist: test_case     = ",TRIM(test_case)
        write(iulog,*)"homme namelist: omega         = ",omega
-       write(iulog,*)"homme namelist: ndays         = ",ndays
-       write(iulog,*)"homme namelist: nmax          = ",nmax
 
        write(iulog,*)"homme namelist: qsize_d = ",qsize_d
 
@@ -380,10 +368,10 @@ contains
 
        write(iulog,*)"homme namelist: theta_hydrostatic_mode = ",theta_hydrostatic_mode
        write(iulog,*)"homme namelist: transport_alg   = ",transport_alg
-       write(iulog,*)"homme namelist: tstep_type    = ",tstep_type
        write(iulog,*)"homme namelist: theta_advect_form = ",theta_advect_form
        write(iulog,*)"homme namelist: vert_remap_q_alg  = ",vert_remap_q_alg
        write(iulog,*)"homme namelist: tstep          = ",tstep
+       write(iulog,*)"homme namelist: tstep_type    = ",tstep_type
        write(iulog,*)"homme namelist: ftype          = ",ftype
        write(iulog,*)"homme namelist: limiter_option = ",limiter_option
        write(iulog,*)"homme namelist: dt_tracer_factor = ",dt_tracer_factor
@@ -427,7 +415,6 @@ contains
   function get_homme_int_param_f90 (param_name_c) result(param_value) bind(c)
     use dimensions_mod,    only: qsize, nlev, np
     use control_mod,       only: ftype
-    use time_mod,          only: nmax
     use homme_context_mod, only: elem
     !
     ! Input(s)
@@ -448,8 +435,6 @@ contains
         param_value = ftype
       case("qsize")
         param_value = qsize
-      case("nmax")
-        param_value = nmax
       case("num momentum forcings")
         dims = SHAPE(elem(1)%derived%FM)
         param_value = dims(3)
@@ -524,10 +509,42 @@ contains
 
   end function get_homme_bool_param_f90
 
+  function get_homme_nsplit_f90 (atm_dt) result(nsplit_out) bind(c)
+    use control_mod, only: compute_nsplit=>timestep_make_eam_parameters_consistent
+    use homme_context_mod, only: par
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int) :: atm_dt
+    !
+    ! Local(s)
+    !
+    integer (kind=c_int) :: nsplit_out
+    integer :: ierr, nstep_factor
+
+    ierr = compute_nsplit(par, dt_remap_factor, dt_tracer_factor, nsplit_out, nstep_factor, tstep, atm_dt)
+    if (ierr .ne. 0) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Something went wrong in timestep_make_eam_parameters_consistent.")
+    endif
+    if (nsplit .eq. -1) then
+      nsplit = nsplit_out
+    else
+      ! For now, do not allow atm_dt to change throughout the simulation.
+      ! This might actually be safe, and a potentially useful feature,
+      ! so feel free to add it
+      if (nsplit .ne. nsplit_out) then
+        call abortmp ("[get_homme_nsplit_f90]\n" // &
+                      "  Error! nsplit was already computed, but had a different value.\n" // &
+                      "  We currently do not allow dt to change during the simulation.\n")
+      endif
+    endif
+
+  end function get_homme_nsplit_f90
+
+
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
     use dimensions_mod,    only: qsize, nlev
     use control_mod,       only: ftype, use_moisture
-    use time_mod,          only: nmax
     !
     ! Input(s)
     !
@@ -553,8 +570,6 @@ contains
           call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
         endif
         if (qsize<1) use_moisture = .false.
-      case("nmax")
-        nmax = param_value
       case default
         call abortmp ("[set_homme_int_param_f90] Error! Unrecognized parameter name.")
     end select 
@@ -562,8 +577,6 @@ contains
   end subroutine set_homme_int_param_f90
 
   subroutine set_homme_real_param_f90 (param_name_c, param_value) bind(c)
-    use control_mod,    only: nu, nu_div, nu_p, nu_q, nu_s, hypervis_scaling
-    use time_mod,       only: tstep
     !
     ! Input(s)
     !
@@ -573,28 +586,13 @@ contains
     ! Local(s)
     !
     character(len=256), pointer :: param_name
-    integer :: len
+    character(len=256) :: param_val_str
 
     call c_f_pointer(param_name_c,param_name)
-    len = index(param_name, C_NULL_CHAR) -1
-    select case(param_name(1:len))
-      case("nu")
-        nu = param_value
-      case("nu_div")
-        nu_div = param_value
-      case("nu_p")
-        nu_p = param_value
-      case("nu_q")
-        nu_q = param_value
-      case("nu_s")
-        nu_s = param_value
-      case("hypervis_scaling")
-        hypervis_scaling = param_value
-      case("dt")
-        tstep = param_value
-      case default
-        call abortmp ("[set_homme_real_param_f90] Error! Unrecognized parameter name.")
-    end select 
+    write (param_val_str,'(F10.15)') param_value
+
+    call abortmp ("[set_homme_real_param_f90] Error! This method does not currently have a valid use.\n" // &
+                  "  Attempt to set " // param_name // " = " // param_val_str)
 
   end subroutine set_homme_real_param_f90
 

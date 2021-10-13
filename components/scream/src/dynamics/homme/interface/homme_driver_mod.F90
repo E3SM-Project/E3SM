@@ -160,23 +160,20 @@ contains
 
   end subroutine prim_init_model_f90 
 
-  subroutine prim_run_f90 (dt) bind(c)
+  subroutine prim_run_f90 () bind(c)
     use dimensions_mod,    only: nelemd
     use prim_driver_mod,   only: prim_run_subcycle
 
     use time_mod,          only: tstep
     use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord, par
-    !
-    ! Input(s)
-    !
-    integer (kind=c_int), intent(in) :: dt
 
     if (.not. is_model_inited) then
       call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
     endif
 
-    ! Set dt in the time mod
-    tstep = dt
+    if (tstep .le. 0) then
+      call abortmp ("Error! No time step was set in Homme yet.\n")
+    endif
 
     if (par%masterproc) print *, "HOMME step: ", tl%nstep
 
