@@ -50,7 +50,6 @@ module homme_params_mod
     limiter_option,         &
     moisture,               &
     use_moisture,           &
-    runtype,                & ! Unused in SCREAM
     max_hypervis_courant,   &
     nu,                     &
     nu_s,                   &
@@ -67,18 +66,10 @@ module homme_params_mod
     transport_alg,          &
     disable_diagnostics,    &
     test_case,              &
-    dcmip16_mu,             &
-    dcmip16_mu_s,           &
-    dcmip16_mu_q,           &
-    dcmip16_prec_type,      &
-    dcmip16_pbl_type,       &
-    integration,            & ! Unused in SCREAM
-    restartfreq,            & ! Unused in SCREAM
-    restartfile,            & ! Unused in SCREAM
     u_perturb,              &
     se_fv_phys_remap_alg,   &
+    runtype,                & ! Unused in SCREAM
     statefreq,              & ! Unused in SCREAM
-    vform,                  &
     vfile_mid,              &
     vfile_int,              &
     timestep_make_subcycle_parameters_consistent
@@ -119,8 +110,6 @@ contains
     namelist /ctl_nl/test_case, &
       u_perturb,                &
       partmethod,               &         ! mesh partitioning method
-      cubed_sphere_map,         &
-      coord_transform_method,   &
       vert_remap_q_alg,         &
       theta_advect_form,        &
       theta_hydrostatic_mode,   &   
@@ -128,12 +117,9 @@ contains
       tstep,                    &
       rotate_grid,              &
       topology,                 &         ! Mesh topology
-      geometry,                 &         ! Mesh geometry
       tstep_type,               &
       dt_tracer_factor,         &
       dt_remap_factor,          &
-      omega,                    &
-      rearth,                   &
       limiter_option,           &
       nu,                       &
       nu_s,                     &
@@ -146,18 +132,11 @@ contains
       hypervis_subcycle,        &
       hypervis_subcycle_tom,    &
       moisture,                 & ! Unused in SCREAM
-      vthreads,                 & ! Unused in SCREAM
-      nthreads,                 & ! Unused in SCREAM
       statefreq,                & ! Unused in SCREAM
-      restartfreq,              & ! Unused in SCREAM
-      restartfile,              & ! Unused in SCREAM
-      runtype,                  & ! Unused in SCREAM
       mesh_file,                & ! Unused in SCREAM
-      integration,              & ! Unused in SCREAM
       se_ftype
 
     namelist /vert_nl/    &
-      vform,              &
       vfile_mid,          &
       vfile_int
 
@@ -193,6 +172,8 @@ contains
     nl_fname = trim(nl_fname_ptr(1:str_len))
     open( unitn, file=nl_fname, status='old' )
 
+    print *, "Reading namelist options from file:", nl_fname
+
     ! Parse all namelist sections
     read (unit=unitn,nml=ctl_nl,iostat=ierr)
     if (ierr < 0) then
@@ -201,7 +182,6 @@ contains
              ' end of file or end of record condition' )
     end if
     read(unit=unitn,nml=vert_nl)
-    vform      = trim(adjustl(vform))
     vfile_mid  = trim(adjustl(vfile_mid))
     vfile_int  = trim(adjustl(vfile_int))
 
@@ -261,14 +241,7 @@ contains
     call MPI_bcast(test_case, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(moisture,  MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
 
-    call MPI_bcast(dcmip16_mu,        1, MPIreal_t   , par%root, par%comm, ierr)
-    call MPI_bcast(dcmip16_mu_s,      1, MPIreal_t   , par%root, par%comm, ierr)
-    call MPI_bcast(dcmip16_mu_q,      1, MPIreal_t   , par%root, par%comm, ierr)
-    call MPI_bcast(dcmip16_prec_type, 1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(dcmip16_pbl_type , 1, MPIinteger_t, par%root, par%comm, ierr)
-
     ! Vertical coord params
-    call MPI_bcast(vform,     MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
 
@@ -344,8 +317,6 @@ contains
           nu_p=nu                                                                             
        endif                                                                                  
     endif 
-    if(dcmip16_mu_s<0)    dcmip16_mu_s  = dcmip16_mu
-    if(dcmip16_mu_q<0)    dcmip16_mu_q  = dcmip16_mu_s
 
     !-----------------------------!
     !       Print parameters      !
@@ -397,7 +368,6 @@ contains
       write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
       write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
 
-      write(iulog,*) '  vform =',trim(vform)
       write(iulog,*) '  vfile_mid=',trim(vfile_mid)
       write(iulog,*) '  vfile_int=',trim(vfile_int)
 
@@ -522,6 +492,7 @@ contains
     integer (kind=c_int) :: nsplit_out
     integer :: ierr, nstep_factor
 
+    nsplit_out = -1
     ierr = compute_nsplit(par, dt_remap_factor, dt_tracer_factor, nsplit_out, nstep_factor, tstep, atm_dt)
     if (ierr .ne. 0) then
       call abortmp ("[get_homme_nsplit_f90] Error! Something went wrong in timestep_make_eam_parameters_consistent.")
