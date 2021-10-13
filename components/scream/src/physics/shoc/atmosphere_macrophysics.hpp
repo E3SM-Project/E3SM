@@ -87,6 +87,7 @@ public:
       const Real latvap = C::LatVap;
       const Real cpair = C::Cpair;
       const Real ggr = C::gravit;
+      const Real inv_ggr = 1/ggr;
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
@@ -96,7 +97,7 @@ public:
         // Inverse of Exner. Assert that exner != 0 when in range before computing.
         const Spack exner = PF::exner_function(p_mid(i,k));
         const Smask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).any());
+        EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
@@ -118,7 +119,7 @@ public:
         // Vertical layer thickness
         dz(i,k) = PF::calculate_dz(pseudo_density(i,k), p_mid(i,k), T_mid(i,k), qv(i,k));
 
-        rrho(i,k) = (1/ggr)*(pseudo_density(i,k)/dz(i,k));
+        rrho(i,k) = inv_ggr*(pseudo_density(i,k)/dz(i,k));
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
       });
       team.team_barrier();

@@ -241,8 +241,8 @@ struct PhysicsFunctions
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  template <typename S>
-  using view_1d = typename KT::template view_1d<S>;
+  template<typename ScalarT, typename MT = Kokkos::MemoryManaged>
+  using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
   template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
   KOKKOS_INLINE_FUNCTION
@@ -318,14 +318,15 @@ struct PhysicsFunctions
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
-           typename InputProviderT,  typename InputProviderQ>
+           typename InputProviderT,  typename InputProviderQ,
+           typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void calculate_dz (const MemberType& team,
                             const InputProviderPD& pseudo_density,
                             const InputProviderP& p_mid,
                             const InputProviderT& T_mid,
                             const InputProviderQ& qv,
-                            const view_1d<ScalarT>& dz);
+                            const view_1d<ScalarT, MT>& dz);
 
   template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
   KOKKOS_INLINE_FUNCTION
@@ -351,13 +352,13 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename InputProviderZ, typename ViewT>
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_int (const MemberType& team,
                                const int num_levs,
                                const InputProviderZ& dz,
                                const Real z_surf,
-                               const ViewT& z_int);
+                               const view_1d<ScalarT, MT>& z_int);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer height on mid points from the vertical layer interface height:
@@ -365,12 +366,12 @@ struct PhysicsFunctions
   // where
   //   z_int is the vertical layer interface height, [m]
   //-----------------------------------------------------------------------------------------------//
-  template<typename InputProvider, typename ViewT>
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_mid (const MemberType& team,
                                const int num_levs,
-                               const InputProvider& z_int,
-                               const ViewT& z_mid);
+                               const InputProviderZ& z_int,
+                               const view_1d<ScalarT, MT>& z_mid);
 
 }; // struct PhysicsFunctions
 

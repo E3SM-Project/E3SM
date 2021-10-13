@@ -139,7 +139,7 @@ protected:
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
   // Views needed for export computations
-  view_1d<device_type,Real> dz, z_int, z_mid;
+  view_2d<device_type,Real> dz, z_int, z_mid;
 
   // Views for storing export values for various fields that need to be computed
   view_1d<device_type,Real> Sa_z;

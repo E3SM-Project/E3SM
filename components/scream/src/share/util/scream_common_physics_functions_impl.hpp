@@ -286,14 +286,15 @@ calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT&
 template<typename DeviceT>
 template<typename ScalarT,
          typename InputProviderPD, typename InputProviderP,
-         typename InputProviderT,  typename InputProviderQ>
+         typename InputProviderT,  typename InputProviderQ,
+         typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
                                              const InputProviderPD& pseudo_density,
                                              const InputProviderP& p_mid,
                                              const InputProviderT& T_mid,
                                              const InputProviderQ& qv,
-                                             const view_1d<ScalarT>& dz)
+                                             const view_1d<ScalarT, MT>& dz)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dz.extent(0)),
                        [&] (const int k) {
@@ -302,13 +303,13 @@ void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
 }
 
 template<typename DeviceT>
-template<typename InputProviderZ, typename ViewT>
+template<typename ScalarT, typename InputProviderZ, typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
                                                 const int num_levs,
                                                 const InputProviderZ& dz,
                                                 const Real z_surf,
-                                                const ViewT& z_int)
+                                                const view_1d<ScalarT, MT>& z_int)
 {
   using column_ops  = ColumnOps<DeviceT,Real>;
   // Note, we set FromTop to false since we are prescribing the *bottom* elevation.
@@ -317,12 +318,12 @@ void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
 }
 
 template<typename DeviceT>
-template<typename InputProvider, typename ViewT>
+template<typename ScalarT, typename InputProvider, typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_z_mid(const MemberType& team,
                                                 const int num_levs,
                                                 const InputProvider& z_int,
-                                                const ViewT& z_mid)
+                                                const view_1d<ScalarT, MT>& z_mid)
 {
   using column_ops  = ColumnOps<DeviceT,Real>;
   column_ops::compute_midpoint_values(team,num_levs,z_int,z_mid);
