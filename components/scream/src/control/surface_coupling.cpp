@@ -308,7 +308,10 @@ void SurfaceCoupling::do_export (const bool init_phase)
     const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
     const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
 
-    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, m_num_levs);
+    // Local copy, to deal with CUDA's handling of *this.
+    const int num_levs = m_num_levs;
+
+    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_levs);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
       const int i = team.league_rank();
 
@@ -326,9 +329,9 @@ void SurfaceCoupling::do_export (const bool init_phase)
 
       // Compute vertical layer heights. Use z_int(nlevs) = z_surf = 0.0.
       const Real z_surf = 0.0;
-      PF::calculate_z_int(team, m_num_levs, dz_i, z_surf, z_int_i);
+      PF::calculate_z_int(team, num_levs, dz_i, z_surf, z_int_i);
       team.team_barrier();
-      PF::calculate_z_mid(team, m_num_levs, z_int_i, z_mid_i);
+      PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
 
       Sa_z(i)    = z_mid_i(last_entry);
       Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
