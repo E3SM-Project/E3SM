@@ -55,6 +55,10 @@ TEST_CASE ("time_stamp") {
   // Julian day = day_of_year.fraction_of_day, with day_of_year=0 at Jan 1st.
   REQUIRE (ts1.get_julian_day()==(284 + (17*3600+8*60+30)/86400.0));
 
+  REQUIRE (ts1.get_date_string()=="2021-10-12");
+  REQUIRE (ts1.get_time_string()=="17:08:30");
+  REQUIRE (ts1.to_string()=="2021-10-12 17:08:30");
+
   // Comparisons
   TS ts2 = ts1;
   ts2 += 10;

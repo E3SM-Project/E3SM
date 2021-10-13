@@ -86,16 +86,29 @@ TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
 
 std::string TimeStamp::to_string () const {
 
-  std::ostringstream ymdhms;
+  return get_date_string() + " " + get_time_string();
+}
 
-  ymdhms << std::setw(4) << std::setfill('0') << m_date[0] << "-";
-  ymdhms << std::setw(2) << std::setfill('0') << m_date[1] << "-";
-  ymdhms << std::setw(2) << std::setfill('0') << m_date[2] << " ";
-  ymdhms << std::setw(2) << std::setfill('0') << m_time[0] << ":";
-  ymdhms << std::setw(2) << std::setfill('0') << m_time[1] << ":";
-  ymdhms << std::setw(2) << std::setfill('0') << m_time[2];
+std::string TimeStamp::get_date_string () const {
 
-  return ymdhms.str();
+  std::ostringstream ymd;
+
+  ymd << std::setw(4) << std::setfill('0') << m_date[0] << "-";
+  ymd << std::setw(2) << std::setfill('0') << m_date[1] << "-";
+  ymd << std::setw(2) << std::setfill('0') << m_date[2];
+
+  return ymd.str();
+}
+
+std::string TimeStamp::get_time_string () const {
+
+  std::ostringstream hms;
+
+  hms << std::setw(2) << std::setfill('0') << m_time[0] << ":";
+  hms << std::setw(2) << std::setfill('0') << m_time[1] << ":";
+  hms << std::setw(2) << std::setfill('0') << m_time[2];
+
+  return hms.str();
 }
 
 double TimeStamp::get_julian_day () const {
