@@ -4,10 +4,10 @@ Debug:
   Atmosphere DAG Verbosity Level: 5
 
 Time Stepping:
-  Time Step: ${TEST_ATM_TIME_STEP}
+  Time Step: ${ATM_TIME_STEP}
   Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
   Start Date: [2021, 10, 12]    # Year, Month, Day
-  Number of Steps: ${TEST_N_STEPS}
+  Number of Steps: ${NUM_STEPS}
 
 Initial Conditions:
   Physics GLL:

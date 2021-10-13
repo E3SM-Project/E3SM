@@ -1,21 +1,19 @@
 #include "catch2/catch.hpp"
 
 #include "control/atmosphere_driver.hpp"
+#include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_feutils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 // Hommexx includes
 #include "Context.hpp"
-#include "SimulationParams.hpp"
-#include "Types.hpp"
 #include "FunctorsBuffersManager.hpp"
-
-#include "ekat/util/ekat_feutils.hpp"
-#include "ekat/ekat_assert.hpp"
 
 static int get_default_fpes () {
 #ifdef SCREAM_FPE

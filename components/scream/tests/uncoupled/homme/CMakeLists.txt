@@ -4,19 +4,19 @@ include (ScreamUtils)
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
+# Create the test
 set (NEED_LIBS ${dynLibName} scream_control scream_share)
 
-# Test Homme stand alone
 CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
                LABELS "dynamics;driver")
 
-# Copy yaml input file to run directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
-
 # Set AD configurable options
-SetVarDependingOnTestProfile(TEST_N_STEPS 3 24 96)
-set (TEST_ATM_TIME_STEP 1200)
+SetVarDependingOnTestProfile(NUM_STEPS 2 24 48)
+set (ATM_TIME_STEP 1800)
+
+# Configure yaml input file to run directory
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 
@@ -25,7 +25,7 @@ set (HOMME_TEST_NE 4)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
-set (HOMME_TEST_TIME_STEP 600)
+set (HOMME_TEST_TIME_STEP 300)
 SET (HOMME_THETA_FORM 1)
 SET (HOMME_TTYPE 5)
 SET (HOMME_SE_FTYPE 0)
