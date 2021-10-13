@@ -15,6 +15,8 @@
 #include "Context.hpp"
 #include "FunctorsBuffersManager.hpp"
 
+#include <iomanip>
+
 static int get_default_fpes () {
 #ifdef SCREAM_FPE
   return (FE_DIVBYZERO |
@@ -40,12 +42,12 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   auto& ts = ad_params.sublist("Time Stepping");
   const auto dt = ts.get<int>("Time Step");
   const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_tod  = ts.get<std::vector<int>>("Start Time");
+  const auto start_time  = ts.get<std::vector<int>>("Start Time");
   const auto nsteps     = ts.get<int>("Number of Steps");
 
   EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
-  util::TimeStamp t0 (start_date, start_tod);
+  util::TimeStamp t0 (start_date, start_time);
   EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
@@ -76,8 +78,11 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer.get_memory(),
                   "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
+  printf("Start time stepping loop...       [  0%%]\n");
   for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
+    std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+    std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
   }
   ad.finalize();
 
