@@ -22,7 +22,7 @@ TEST_CASE("p3-stand-alone", "") {
 
   // run params:
   const auto& num_iters = ad_params.get<int>("Number of Iterations",5);
-  const auto& dt        = ad_params.get<Real>("dt",300.0);
+  const auto& dt        = ad_params.get<int>("dt",300);
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -37,7 +37,7 @@ TEST_CASE("p3-stand-alone", "") {
   AtmosphereDriver ad;
 
   // Init and run
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,0,0},{0,0,0});
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
     if (i % 10 == 0) {

@@ -24,7 +24,7 @@ TEST_CASE("shoc-stand-alone", "") {
 
   // run params:
   const auto& num_iters = ad_params.get<int>("Number of Iterations");
-  const auto& dt        = ad_params.get<Real>("dt",300.0);
+  const auto& dt        = ad_params.get<int>("dt",300);
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -37,7 +37,7 @@ TEST_CASE("shoc-stand-alone", "") {
   AtmosphereDriver ad;
 
   // Init and run 
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,0,0},{0,0,0});
   ad.initialize(atm_comm,ad_params,time);
 
   if (atm_comm.am_i_root()) {

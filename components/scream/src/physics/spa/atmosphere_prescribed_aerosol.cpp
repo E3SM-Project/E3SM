@@ -142,7 +142,7 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const Real /* dt */)
+void SPA::run_impl (const int /* dt */)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();

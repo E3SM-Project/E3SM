@@ -317,7 +317,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   prim_init_model_f90 ();
 }
 
-void HommeDynamics::run_impl (const Real dt)
+void HommeDynamics::run_impl (const int dt)
 {
   try {
     // Prepare inputs for homme
@@ -344,7 +344,7 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
   prim_finalize_f90();
 }
 
-void HommeDynamics::homme_pre_process (const Real dt) {
+void HommeDynamics::homme_pre_process (const int dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
   using KT = KokkosTypes<DefaultDevice>;

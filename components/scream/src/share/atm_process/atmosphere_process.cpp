@@ -19,7 +19,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0) {
   initialize_impl(m_time_stamp);
 }
 
-void AtmosphereProcess::run (const Real dt) {
+void AtmosphereProcess::run (const int dt) {
   // Make sure required fields are valid
   check_required_fields();
 

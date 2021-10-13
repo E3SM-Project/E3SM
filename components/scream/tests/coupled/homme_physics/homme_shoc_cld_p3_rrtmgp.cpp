@@ -72,7 +72,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   AtmosphereDriver ad;
 
   // Init, run, and finalize
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,0,0},{0,0,0});
   ad.initialize(atm_comm,ad_params,time);
 
   // Add checks to verify AD memory buffer and Homme FunctorsBuffersManager
@@ -88,8 +88,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   const auto& sp = Homme::Context::singleton().get<Homme::SimulationParams>();
   const int nmax = get_homme_param<int>("nmax");
   const int num_dyn_iters = nmax / (sp.qsplit*sp.rsplit);
-  const double dt = get_homme_param<Real>("dt");
-
+  const int dt = get_homme_param<Real>("dt");
   EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
   for (int i=0; i<num_dyn_iters; ++i) {

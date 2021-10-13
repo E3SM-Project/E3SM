@@ -114,7 +114,7 @@ void AtmosphereProcessGroup::initialize_impl (const TimeStamp& t0) {
   }
 }
 
-void AtmosphereProcessGroup::run_impl (const Real dt) {
+void AtmosphereProcessGroup::run_impl (const int dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {

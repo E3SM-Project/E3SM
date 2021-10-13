@@ -2,6 +2,7 @@
 #define SCREAM_TIME_STAMP_HPP
 
 #include <string>
+#include <vector>
 
 namespace scream {
 namespace util {
@@ -11,18 +12,26 @@ class TimeStamp {
 public:
 
   TimeStamp();
-  // TimeStamp(const int yy, const int dd, const double ss);
-  TimeStamp(const int yy, const int mm, int dd, const double ss);
+  TimeStamp(const std::vector<int>& date,
+            const std::vector<int>& time);
+  TimeStamp(const int yy, const int mm, int dd,
+            const int h, const int min, const int sec);
   TimeStamp(const TimeStamp&) = default;
 
   // === Query methods === //
 
-  int    get_years   () const { return m_yy; }
-  int    get_months  () const { return m_mm; }
-  int    get_days    () const { return m_dd; }
-  double get_seconds () const { return m_ss; }
-  bool   is_valid    () const;
-  double  test_double () const; // Dummy double precision representation of the timestamp used for operator definitions.
+  const std::vector<int>& get_date () const { return m_date; }
+  const std::vector<int>& get_time () const { return m_time; }
+  int get_years   () const { return m_date[0]; }
+  int get_months  () const { return m_date[1]; }
+  int get_days    () const { return m_date[2]; }
+  int get_hours   () const { return m_time[0]; }
+  int get_minutes () const { return m_time[1]; }
+  int get_seconds () const { return m_time[2]; }
+
+  bool is_valid    () const;
+
+  int sec_of_day () const { return m_time[0]*3600 + m_time[1]*60 + m_time[2]; }
 
   std::string to_string () const;
   double get_julian_day () const;
@@ -33,37 +42,29 @@ public:
   TimeStamp& operator= (const TimeStamp&) = default;
 
   // This method checks that time shifts forward (i.e. that seconds is positive)
-  TimeStamp& operator+= (const double seconds);
+  TimeStamp& operator+= (const int seconds);
 
 protected:
 
-  int     m_yy;       // Year
-  int     m_mm;       // Month
-  int     m_dd;       // Day
-  double  m_ss;       // Second (of the day)
-  double  m_jd;       // Julian day 1.xx - 365.xx
+  std::vector<int> m_date;  // [year, month, day]
+  std::vector<int> m_time;  // [hour, min, sec]
 };
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
-TimeStamp operator+ (const TimeStamp& ts, const double dt);
-double operator- (const TimeStamp& ts, const TimeStamp& dt);
+TimeStamp operator+ (const TimeStamp& ts, const int dt);
+// double operator- (const TimeStamp& ts, const TimeStamp& dt);
 
 // Define here instead of inside the class, so we can call op==
 inline bool TimeStamp::is_valid () const {
   return !(*this==TimeStamp());
 }
 
-// Convert timestamp to a double for operator testing using a simple monotonic function.
-inline double TimeStamp::test_double () const {
-  return (m_yy+1)*1e4 + (m_mm+1)*1e2 + (m_dd+1) + m_ss/86400;
-}
-
 // Caclulate julian day as defined by the number of days after the beginning of the year:
 //   julian_day = sum(day_per_month(m),m=1...mm) + dd + ss/86400
 // Note the year, yy, is also an input to allow for accurate calculation during a leap year if applicable.
-double julian_day (const int yy, const int mm, const int dd, const double ss);
+double julian_day (const int yy, const int mm, const int dd, const int sec_of_day);
 
 } // namespace util
 

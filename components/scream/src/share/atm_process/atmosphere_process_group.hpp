@@ -68,7 +68,7 @@ protected:
 
   // The initialization, run, and finalization methods
   void initialize_impl (const TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void run_impl        (const int dt);
   void finalize_impl   (/* what inputs? */);
 
   void run_sequential (const Real dt);

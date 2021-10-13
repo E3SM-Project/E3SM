@@ -93,7 +93,7 @@ protected:
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
-  void run_impl (const Real /* dt */) {}
+  void run_impl (const int /* dt */) {}
 
   // Clean up
   void finalize_impl ( /* inputs */ ) {}

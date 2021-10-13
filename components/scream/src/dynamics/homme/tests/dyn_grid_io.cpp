@@ -105,7 +105,7 @@ TEST_CASE("dyn_grid_io")
   fm_ctrl->registration_begins();
 
   const int ps = HOMMEXX_PACK_SIZE;
-  util::TimeStamp ts(1,2,3,4);
+  util::TimeStamp ts({2000,1,1},{0,0,0});
 
   fm_dyn->register_field(FieldRequest(fid_dyn_1,ps));
   fm_dyn->register_field(FieldRequest(fid_dyn_2,ps));

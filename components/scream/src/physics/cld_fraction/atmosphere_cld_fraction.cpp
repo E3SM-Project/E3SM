@@ -61,7 +61,7 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void CldFraction::run_impl (const Real dt)
+void CldFraction::run_impl (const int dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 

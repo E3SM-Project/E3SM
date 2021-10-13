@@ -71,7 +71,7 @@ void ZMDeepConvection::initialize_impl (const util::TimeStamp& t0)
   zm_init_f90 (*m_raw_ptrs_in["limcnv_in"], m_raw_ptrs_in["no_deep_pbl_in"]);
 }
 // =========================================================================================
-void ZMDeepConvection::run_impl (const Real dt)
+void ZMDeepConvection::run_impl (const int dt)
 {
   std::vector<const Real*> in;
   std::vector<Real*> out;

@@ -350,7 +350,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run_impl (const Real dt)
+void SHOCMacrophysics::run_impl (const int dt)
 {
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
@@ -373,7 +373,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
-  m_nadv = ekat::impl::max(hdtime/dt,sp(1));
+  m_nadv = std::max(hdtime/dt,1);
 
   // WorkspaceManager for internal local variables
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;

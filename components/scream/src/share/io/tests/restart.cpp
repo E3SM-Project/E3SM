@@ -43,7 +43,7 @@ void randomize_fields (const FieldManager<Real>& fm, const int seed);
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
-                   const double dt);
+                   const int dt);
 
 TEST_CASE("restart","io")
 {
@@ -74,7 +74,7 @@ TEST_CASE("restart","io")
   output_manager.setup(io_comm,output_params,field_manager,gm,false);
 
   // Construct a timestamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,1,1},{0,0,0});
   const auto& out_fields = field_manager->get_groups_info().at("output")->m_fields_names;
 
   // We advance the fields, by adding dt to each entry of the fields at each time step
@@ -83,7 +83,7 @@ TEST_CASE("restart","io")
   // and a history restart files, with solution at t=15. 
 
   // Time-advance all fields
-  const Real dt = 1.0;
+  const int dt = 1;
   const int nsteps = 15;
   for (int i=0; i<nsteps; ++i) {
     time_advance(*field_manager,out_fields,dt);
@@ -167,7 +167,7 @@ TEST_CASE("restart","io")
   // restart the output from the saved history.
 
   // Create Output manager, and read the restart
-  util::TimeStamp time_res (0,0,0,15);
+  util::TimeStamp time_res ({2000,1,1},{0,0,15});
   auto output_params_res = get_om_params(io_comm,grid->name(),true);
   OutputManager output_manager_res;
   output_manager_res.setup(io_comm,output_params_res,fm_res,gm,true);
@@ -226,7 +226,7 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   fm->registration_ends();
 
   // Initialize fields to -1.0, and set initial time stamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,1,1},{0,0,0});
   fm->init_fields_time_stamp(time);
   for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
     fm->get_field(fn).deep_copy(-1.0);
@@ -321,7 +321,7 @@ ekat::ParameterList get_in_params()
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
-                   const double dt) {
+                   const int dt) {
   for (const auto& fname : fnames) {
     auto f  = fm.get_field(fname);
     f.sync_to_host();

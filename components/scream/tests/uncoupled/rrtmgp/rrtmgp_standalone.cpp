@@ -82,7 +82,7 @@ namespace scream {
         AtmosphereDriver ad;
 
         // Dummy timestamp
-        util::TimeStamp time (0,0,0,0);
+        util::TimeStamp time ({2000,0,0},{0,0,0});
 
         // Initialize the driver
         ad.initialize(atm_comm, ad_params, time);
@@ -312,7 +312,7 @@ namespace scream {
         Kokkos::fence();
 
         // Run driver
-        ad.run(300.0);
+        ad.run(300);
 
         // Check values; The correct values have been stored in the field manager, we need to
         // copy back to YAKL::Array.

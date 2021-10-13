@@ -608,7 +608,7 @@ initialize (const ekat::Comm& atm_comm,
   initialize_atm_procs ();
 }
 
-void AtmosphereDriver::run (const Real dt) {
+void AtmosphereDriver::run (const int dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 

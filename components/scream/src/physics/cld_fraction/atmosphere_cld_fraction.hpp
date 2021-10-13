@@ -51,7 +51,7 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const util::TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Keep track of field dimensions and the iteration count

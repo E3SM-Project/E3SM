@@ -17,7 +17,7 @@ TEST_CASE("spa-stand-alone", "") {
   using namespace scream::control;
 
   constexpr int num_iters = 4;
-  constexpr Real dt = 864000;
+  constexpr int dt = 864000;
 
   // Load ad parameter list
   std::string fname = "input.yaml";
@@ -42,7 +42,7 @@ TEST_CASE("spa-stand-alone", "") {
   AtmosphereDriver ad;
 
   // Init and run
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,0,0},{0,0,0});
 
   printf("Initialization...");
   ad.initialize(atm_comm,ad_params,time);

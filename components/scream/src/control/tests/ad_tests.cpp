@@ -29,7 +29,7 @@ TEST_CASE ("group_requirements","[!throws]")
   control::AtmosphereDriver ad;
 
   // Init and run a single time step
-  util::TimeStamp init_time(0,0,0,0.0);
+  util::TimeStamp init_time(2000,1,1,0,0,0);
   ad.initialize(atm_comm,ad_params,init_time);
   // Verify that after initialization field "E" matches field "A"
   auto field_mgr = ad.get_ref_grid_field_mgr();
@@ -41,7 +41,7 @@ TEST_CASE ("group_requirements","[!throws]")
     }
   }
   // Resume ad run and testing.
-  ad.run(1.0);
+  ad.run(10);
   ad.finalize ();
 
   // Cleanup atm factories and grids manager

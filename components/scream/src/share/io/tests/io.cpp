@@ -66,7 +66,7 @@ TEST_CASE("input_output_basic","io")
   output_manager.setup(io_comm,output_params,field_manager,gm,false);
 
   // Construct a timestamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,1,1},{0,0,0});
 
   //  Cycle through data and write output
   const auto& out_fields = field_manager->get_groups_info().at("output");
@@ -304,7 +304,7 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
     }
   }
   // Update timestamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,1,1},{0,0,0});
   fm->init_fields_time_stamp(time);
   // Sync back to device
   f1.sync_to_dev();

@@ -209,7 +209,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 }
 // =========================================================================================
 
-void RRTMGPRadiation::run_impl (const Real dt) {
+void RRTMGPRadiation::run_impl (const int dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;

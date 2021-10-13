@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
-#include "share/util//scream_utils.hpp"
+#include "share/util/scream_utils.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 TEST_CASE("field_layout") {
   using namespace scream;
@@ -37,4 +38,31 @@ TEST_CASE("field_layout") {
   auto superset3 = contiguous_superset(lol3);
   REQUIRE ( (superset2==tgt || superset2==tgt_rev) );
   REQUIRE ( (superset3==tgt || superset3==tgt_rev) );
+}
+
+TEST_CASE ("time_stamp") {
+  using namespace scream;
+  using TS = util::TimeStamp;
+
+  TS ts1 (2021,10,12,17,8,30);
+  REQUIRE (ts1.get_years()==2021);
+  REQUIRE (ts1.get_months()==10);
+  REQUIRE (ts1.get_days()==12);
+  REQUIRE (ts1.get_hours()==17);
+  REQUIRE (ts1.get_minutes()==8);
+  REQUIRE (ts1.get_seconds()==30);
+
+  // Julian day = day_of_year.fraction_of_day, with day_of_year=0 at Jan 1st.
+  REQUIRE (ts1.get_julian_day()==(284 + (17*3600+8*60+30)/86400.0));
+
+  // Comparisons
+  TS ts2 = ts1;
+  ts2 += 10;
+  REQUIRE (ts1<ts2);
+  REQUIRE (ts2<=ts2);
+  REQUIRE (ts2==ts2);
+
+  // Cannot rewind time
+  REQUIRE_THROWS (ts2+=-10);
+
 }

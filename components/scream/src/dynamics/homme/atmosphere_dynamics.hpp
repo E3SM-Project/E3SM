@@ -49,7 +49,7 @@ public:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  void homme_pre_process (const Real dt);
+  void homme_pre_process (const int dt);
   void homme_post_process ();
 
 #ifndef KOKKOS_ENABLE_CUDA
@@ -67,7 +67,7 @@ protected:
 
   void initialize_impl (const util::TimeStamp& t0);
 protected:
-  void run_impl        (const Real dt);
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Dynamics updates the "tracers" group, and needs to do some extra checks on the group.

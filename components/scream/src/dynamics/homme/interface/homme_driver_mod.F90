@@ -169,7 +169,7 @@ contains
     !
     ! Input(s)
     !
-    real (kind=c_double), intent(in) :: dt
+    integer (kind=c_int), intent(in) :: dt
 
     if (.not. is_model_inited) then
       call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
@@ -180,7 +180,7 @@ contains
 
     if (par%masterproc) print *, "HOMME step: ", tl%nstep
 
-    call prim_run_subcycle(elem,hybrid,1,nelemd,dt,.false.,tl,hvcoord,1)
+    call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,1)
 
   end subroutine prim_run_f90
 
