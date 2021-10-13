@@ -25,7 +25,6 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
     using physics = scream::physics::Functions<Scalar, Device>;
 
     constexpr Scalar inv_cp       = C::INV_CP;
-    constexpr Scalar rv           = C::RV;
 
     //Start with reasonable values
     //============================

@@ -24,7 +24,6 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
     Spack T_atm=2.7292E+02;
     Spack qv_sat_l=4.5879E-03;
     Spack qv_sat_i=4.5766E-03;
-    Spack epsi=6.2108E-02;
     Spack abi=2.0649E+00;
     Spack qv=5.0000E-03;
     Scalar inv_dt=1.666667e-02;
@@ -42,7 +41,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
     Spack qv_sat_i_tmp=1e-2;
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i_tmp,
 	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
-    REQUIRE( (qi2qv_sublim_tend[0]==0 || abs( qi2qv_sublim_tend[0] - (qv_sat_i_tmp[0] - qv[0])*inv_dt) <1e-8) );
+    REQUIRE( (qi2qv_sublim_tend[0]==0 || std::abs( qi2qv_sublim_tend[0] - (qv_sat_i_tmp[0] - qv[0])*inv_dt) <1e-8) );
 
     //CHECK BEHAVIOR AS DT->0?
 
