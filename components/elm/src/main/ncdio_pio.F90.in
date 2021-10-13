@@ -1585,6 +1585,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 #else
              if (single_column) status=pio_get_var(ncid,varid,start,count,data)
 
+             ! If in SCM multiple column mode, then extract data for the column closest
+             !   to the IOP lat/lon from initial condition file and propogate it to
+             !   all the columns in the domain.
              if (scm_multcols) then
 
                if (count(2) .gt. 0) then
@@ -1727,8 +1730,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     real(r8), pointer :: temp(:,:)
 #endif
 
-    {VTYPE}, allocatable :: iop_data3d(:,:,:)
     {VTYPE}, allocatable :: iop_data2d(:,:)
+    {VTYPE}, allocatable :: iop_data1d(:)
 
     integer           :: ndim1,ndim2       
     character(len=8)  :: elmlevel   ! elmlevel
@@ -1744,10 +1747,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: iodnum     ! iodesc num in list
     integer           :: start(4)   ! netcdf start index
     integer           :: count(4)   ! netcdf count index
+    integer           :: start_iop1d(1)   ! netcdf start index
+    integer           :: count_iop1d(1)   ! netcdf count index
     integer           :: start_iop2d(2)   ! netcdf start index
     integer           :: count_iop2d(2)   ! netcdf count index
-    integer           :: start_iop3d(3)   ! netcdf start index
-    integer           :: count_iop3d(3)   ! netcdf count index
     logical           :: varpresent ! if true, variable is on tape
     logical           :: scm_restart_file ! restart file in SCM mode?
     integer           :: lb1,lb2
@@ -1826,56 +1829,33 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
 
+                ! If in SCM multiple column mode, then extract data for the column closest
+                !   to the IOP lat/lon from initial condition file and propogate it to
+                !   all the columns in the domain.
                 if (scm_multcols) then
 
-                  if (start(3) .eq. 0) then
-                    start_iop2d(1:2) = start(1:2)
-                    count_iop2d(1:2) = count(1:2)
+                  if (count(2) .gt. 0) then
 
-                    allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
+                    start_iop2d(:) = start(1:2)
+                    count_iop2d(:) = count(1:2)
 
-                    status = pio_get_var(ncid, vardesc, start_iop2d, count_iop2d, iop_data2d)
-
-                    if (present(switchdim)) then
-
-                      jj=1
-                      do j = lb2, ub2
-                        do i = lb1, ub1
-                          data(i,j) = iop_data2d(jj,1)
-                        enddo
-                        jj=jj+1
-                      enddo
-
-                    else
-                      offset=0
-                      if (lb2 .eq. 0) offset=1
-                      do i = lb1, ub1
-                        do j = lb2, ub2
-                          data(i,j) = iop_data2d(1,j+offset)
-                        enddo
-                      enddo
-                    endif
-
+                    allocate(iop_data2d(count(1),count(2)))
+                    status = pio_get_var(ncid, varid, start_iop2d, count_iop2d, iop_data2d)
+                    data(:,:) = iop_data2d(1,1)
                     deallocate(iop_data2d)
+
                   else
-                    start_iop3d(1:3) = start(1:3)
-                    count_iop3d(1:3) = count(1:3)
+                    start_iop1d(:) = start(1)
+                    count_iop1d(:) = count(1)
 
-                    allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+                    allocate(iop_data1d(count(1)))
+                    status = pio_get_var(ncid, varid, start_iop1d, count_iop1d, iop_data1d)
+                    data(:,:) = iop_data1d(1)
+                    deallocate(iop_data1d)
 
-                    status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
-
-                    offset=0
-                    if (lb2 .eq. 0) offset=1
-                    do i = lb1, ub1
-                      do j = lb2, ub2
-                        data(i,j) = iop_data3d(1,j+offset,1)
-                      enddo
-                    enddo
-                    deallocate(iop_data3d)
                   endif
 
-               endif ! if scm_multcols
+                endif ! if scm_multcols
 
              endif ! if scm_multcols or single_column
           else
@@ -2022,9 +2002,13 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     !
 
+    {VTYPE}, allocatable :: iop_data3d(:,:,:)
+    {VTYPE}, allocatable :: iop_data2d(:,:)
+
     ! !LOCAL VARIABLES:
     integer, parameter               :: max_ind = 5   !index for arrays which read data from the netcdf files
     integer                          :: n_time_ind !time slice index of the "start" array
+    integer                          :: i, j, ii, jj
     integer                          :: ndim1,ndim2
     character(len=8)                 :: elmlevel   ! elmlevel
     character(len=32)                :: dimname    ! temporary      
@@ -2038,6 +2022,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: iodnum     ! iodesc num in list
     integer                          :: start(max_ind)   ! netcdf start index
     integer                          :: count(max_ind)   ! netcdf count index
+    integer                          :: start_iop2d(2)   ! netcdf start index
+    integer                          :: count_iop2d(2)   ! netcdf count index
+    integer                          :: start_iop3d(3)   ! netcdf start index
+    integer                          :: count_iop3d(3)   ! netcdf count index
     logical                          :: varpresent ! if true, variable is on tape
     logical                          :: scm_restart_file ! restart file in SCM mode
     type(iodesc_plus_type) , pointer :: iodesc_plus
@@ -2081,7 +2069,56 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 start(n_time_ind) = nt ; count(n_time_ind) = 1
 
              endif
-             status = pio_get_var(ncid, vardesc, start, count, data)
+
+             if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
+
+             ! If in SCM multiple column mode, then extract data for the column closest
+             !   to the IOP lat/lon from initial condition file and propogate it to
+             !   all the columns in the domain.
+             if (scm_multcols) then
+
+               if (start(3) .eq. 0) then
+
+                 count_iop2d(1:2) = count(1:2)
+                 start_iop2d(1:2) = start(1:2)
+
+                 allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
+
+                 status = pio_get_var(ncid, vardesc, start_iop2d, count_iop2d, iop_data2d)
+
+                 do i=lbound(data,dim=1),ubound(data,dim=1)
+                   jj=1
+                   do j=lbound(data,dim=3),ubound(data,dim=3)
+                     data(i,:,j) = iop_data2d(1,jj)
+                     jj=jj+1
+                   enddo
+                 enddo
+
+                 deallocate(iop_data2d)
+
+               else
+
+                 count_iop3d(1:3) = count(1:3)
+                 start_iop3d(1:3) = start(1:3)
+
+                 allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
+
+                 status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
+
+                 do i=lbound(data,dim=1),ubound(data,dim=1)
+                   jj=1
+                   do j=lbound(data,dim=3),ubound(data,dim=3)
+                     data(i,:,j) = iop_data3d(1,jj,1)
+                     jj=jj+1
+                   enddo
+                 enddo
+
+                 deallocate(iop_data3d)
+
+               endif
+
+            endif ! scm_multcols
+
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -2188,12 +2225,19 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: start_iop4d(4)   ! netcdf start index
     integer                          :: count_iop4d(4)   ! netcdf count index
     logical                          :: varpresent ! if true, variable is on tape
+    logical                          :: scm_restart_file ! restart file in SCM mode
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_4d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
 
-    clmlevel = dim1name      
+    clmlevel = dim1name
+
+    if (scm_multcols .or. single_column) then
+      call is_restart_file_scmmode(ncid, scm_restart_file)
+    else
+      scm_restart_file = .false.
+    endif
 
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
@@ -2202,7 +2246,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     if (flag == 'read') then
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if ((scm_multcols .or. single_column) .and. .not. scm_restart_file) then
              start(:) = 1; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
@@ -2224,7 +2268,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
              if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
              if (scm_multcols) then
-
                if (start(4) .eq. 0) then
 
                  count_iop3d(1:3) = count(1:3)
@@ -2242,7 +2285,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
                  deallocate(iop_data3d)
                else
-
                  count_iop4d(1:4) = count(1:4)
                  start_iop4d(1:4) = start(1:4)
 
