@@ -120,8 +120,18 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SPA::initialize_impl ()
 {
-  // Initialize SPA input data: TODO: This is the HACK that we want to eventually remove.
-  initialize_spa_impl();
+  // Initialize SPA pressure state stucture and set pointers for the SPA output data to
+  // field managed variables.
+  SPAPressureState.ncols         = m_num_cols;
+  SPAPressureState.nlevs         = m_num_levs;
+  SPAPressureState.hyam          = get_field_in("hyam").get_view<const Pack*>();
+  SPAPressureState.hybm          = get_field_in("hybm").get_view<const Pack*>();
+  SPAPressureState.pmid          = get_field_in("p_mid").get_view<const Pack**>();
+  SPAData_out.CCN3               = get_field_out("nc_activated").get_view<Pack**>();
+  SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
+  SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
+  SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
+  SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
 
   // Retrieve the remap and data file locations from the parameter list:
   EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
