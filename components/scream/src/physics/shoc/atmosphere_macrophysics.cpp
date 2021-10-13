@@ -359,11 +359,14 @@ void SHOCMacrophysics::run_impl (const Real dt)
 {
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
-  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
 
-  // Preprocessing of SHOC inputs
+  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+
+  // Preprocessing of SHOC inputs. Kernel contains a parallel_scan,
+  // so a special TeamPolicy is required.
   Kokkos::parallel_for("shoc_preprocess",
-                       policy,
+                       scan_policy,
                        shoc_preprocess);
   Kokkos::fence();
 
@@ -383,7 +386,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
   // WorkspaceManager for internal local variables
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
 
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
@@ -391,7 +394,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
 
   // Postprocessing of SHOC outputs
   Kokkos::parallel_for("shoc_postprocess",
-                       policy,
+                       default_policy,
                        shoc_postprocess);
   Kokkos::fence();
 }
