@@ -5,8 +5,8 @@ set (NEED_LIBS p3 scream_control scream_share)
 CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS "p3;physics")
 
 # Set AD configurable options
-SetVarDependingOnTestProfile(NUM_STEPS 2 24 48)
 set (ATM_TIME_STEP 1800)
+SetVarDependingOnTestProfile(NUM_STEPS 2 8 48)  # 1h 4h 24h
 
 # Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
