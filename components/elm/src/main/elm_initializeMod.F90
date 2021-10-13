@@ -77,7 +77,7 @@ contains
     use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
     use dynSubgridControlMod      , only: dynSubgridControl_init
-    use filterMod                 , only: allocFilters, filter_inactive_and_active
+    use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     !
@@ -409,7 +409,7 @@ contains
     use initInterpMod         , only : initInterp
     use DaylengthMod          , only : InitDaylength, daylength
     use fileutils             , only : getfil
-    use filterMod             , only : filter
+    use filterMod             , only : filter, filter_inactive_and_active
     use dynSubgridDriverMod   , only : dynSubgrid_init
     use reweightMod           , only : reweight_wrapup
     use subgridWeightsMod     , only : init_subgrid_weights_mod
