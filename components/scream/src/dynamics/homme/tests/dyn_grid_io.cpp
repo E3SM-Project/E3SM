@@ -172,7 +172,12 @@ TEST_CASE("dyn_grid_io")
   }
 
   // Next, let's load all fields from file directly into the dyn grid fm
-  io_params.set<std::string>("Filename","dyn_grid_io_np" + std::to_string(comm.size()) + ".INSTANT.Steps_x1.0001-03-04.000004.nc");
+  std::string filename = "dyn_grid_io_np" + std::to_string(comm.size())
+                       + ".INSTANT.Steps_x1." + ts.get_date_string()
+                       + "." + ts.get_time_string() + ".nc";
+  filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
+
+  io_params.set<std::string>("Filename",filename);
   AtmosphereInput input (comm,io_params,fm_dyn, gm);
   input.read_variables();
 
