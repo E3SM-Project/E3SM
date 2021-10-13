@@ -866,7 +866,7 @@ contains
     elseif ( use_fates_sp ) then
       ! If fates has satellite phenology enabled, get the monthly veg values
       ! prior to the first call to SatellitePhenology()
-       call interpMonthlyVeg(bounds_proc, canopystate_inst)
+       call interpMonthlyVeg(bounds_proc, canopystate_vars)
     end if
 
     !------------------------------------------------------------
@@ -919,7 +919,7 @@ contains
              call get_clump_bounds(nc, bounds_clump)
              call SatellitePhenology(bounds_clump, &
                   filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
-                  water_inst%waterdiagnosticbulk_inst, canopystate_inst)
+                  waterstate_vars, canopystate_vars)
           end do
           !$OMP END PARALLEL DO
        end if
