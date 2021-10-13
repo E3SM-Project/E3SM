@@ -12,7 +12,6 @@ module homme_driver_mod
   private 
 
   public :: prim_init_data_structures_f90
-  public :: prim_copy_cxx_to_f90
   public :: prim_init_model_f90
   public :: prim_run_f90
   public :: prim_finalize_f90
@@ -76,7 +75,7 @@ contains
     is_data_structures_inited = .true.
   end subroutine prim_init_data_structures_f90
 
-  subroutine prim_copy_cxx_to_f90 (copy_phis) bind (c)
+  subroutine prim_copy_cxx_to_f90 (copy_phis)
     use iso_c_binding,     only: c_ptr, c_loc
     use homme_context_mod, only: tl
     use dimensions_mod,    only: nlevp
@@ -136,6 +135,7 @@ contains
       call abortmp ("Error! 'prim_init_model_f90' has already been called.\n")
     endif
 
+    ! Needed in model init, to have correct state values (or else EOS craps out)
     call prim_copy_cxx_to_f90 (.true.)
 
     ! Notably, this inits the ref states
@@ -165,7 +165,7 @@ contains
     use prim_driver_mod,   only: prim_run_subcycle
 
     use time_mod,          only: tstep
-    use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord, par
+    use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord
 
     if (.not. is_model_inited) then
       call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
@@ -175,10 +175,7 @@ contains
       call abortmp ("Error! No time step was set in Homme yet.\n")
     endif
 
-    if (par%masterproc) print *, "HOMME step: ", tl%nstep
-
     call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,1)
-
   end subroutine prim_run_f90
 
   subroutine prim_finalize_f90 () bind(c)
