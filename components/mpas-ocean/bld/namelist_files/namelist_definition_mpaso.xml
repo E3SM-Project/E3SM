@@ -182,6 +182,41 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- transport_tests -->
+
+<entry id="config_transport_tests_vert_levels" type="integer"
+	category="transport_tests" group="transport_tests">
+Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_temperature" type="real"
+	category="transport_tests" group="transport_tests">
+Temperature of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_salinity" type="real"
+	category="transport_tests" group="transport_tests">
+Salinity of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_flow_id" type="integer"
+	category="transport_tests" group="transport_tests">
+integer id of transport test.
+
+Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- time_integration -->
 
 <entry id="config_dt" type="char*1024"
@@ -1826,7 +1861,7 @@ Default: Defined in namelist_defaults.xml
 	category="split_implicit_ts" group="split_implicit_ts">
 number of large barotropic system iterations
 
-any positive integer, but typically 1 and less than 2
+Valid values: any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2766,6 +2801,79 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_CFCTracers -->
+
+<entry id="config_use_CFCTracers" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, the 'CFCTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_bulk_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_restoring" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface restoring source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_interior_restoring" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, interior restoring source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_exponential_decay" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, exponential decay source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_idealAge_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, idealAge forcing source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_ttd_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, transit time distribution forcing source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC11" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC11 tracer is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC12" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC12 tracer is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- AM_globalStats -->
 
@@ -5841,6 +5949,64 @@ Default: Defined in namelist_defaults.xml
 Controls if P1 constituent is used in harmonic analysis
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<!-- AM_conservationCheck -->
+
+<entry id="config_AM_conservationCheck_enable" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+If true, ocean analysis member conservationCheck is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_interval" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_output_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the stream that the conservationCheck analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_to_logfile" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if the conservation check is written to the log file.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_restart_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the conservation check.
 Default: Defined in namelist_defaults.xml
 </entry>
 

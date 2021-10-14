@@ -2712,6 +2712,7 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
+        print $fh "$camsrcdir/homme/src/share/compose\n";
       }
     }
 
@@ -2826,7 +2827,7 @@ sub write_cppdefs
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
-        print $fh " -DKOKKOS_TARGET "
+        print $fh " -DKOKKOS_TARGET -DHOMME_ENABLE_COMPOSE "
     }
 
     print $fh "\n";

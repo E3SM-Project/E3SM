@@ -105,6 +105,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Do variable soil thickness -->
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
+<!-- Do downscaling to topounit -->
+<use_atm_downscaling_to_topunit>.false.</use_atm_downscaling_to_topunit>
+<precip_downscaling_method>ERMM</precip_downscaling_method>
+
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->

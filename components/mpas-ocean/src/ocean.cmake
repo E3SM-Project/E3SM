@@ -76,10 +76,12 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_interior_restoring.F
   core_ocean/shared/mpas_ocn_tracer_exponential_decay.F
   core_ocean/shared/mpas_ocn_tracer_ideal_age.F
+  core_ocean/shared/mpas_ocn_tracer_CFC.F
   core_ocean/shared/mpas_ocn_tracer_TTD.F
   core_ocean/shared/mpas_ocn_tracer_ecosys.F
   core_ocean/shared/mpas_ocn_tracer_DMS.F
   core_ocean/shared/mpas_ocn_tracer_MacroMolecules.F
+  core_ocean/shared/mpas_ocn_transport_tests.F
   core_ocean/shared/mpas_ocn_high_freq_thickness_hmix_del2.F
   core_ocean/shared/mpas_ocn_tracer_surface_flux_to_tend.F
   core_ocean/shared/mpas_ocn_test.F
@@ -218,6 +220,7 @@ list(APPEND RAW_SOURCES
   core_ocean/analysis_members/mpas_ocn_sediment_flux_index.F
   core_ocean/analysis_members/mpas_ocn_sediment_transport.F
   core_ocean/analysis_members/mpas_ocn_harmonic_analysis.F
+  core_ocean/analysis_members/mpas_ocn_conservation_check.F
   core_ocean/analysis_members/mpas_ocn_analysis_driver.F
 )
 

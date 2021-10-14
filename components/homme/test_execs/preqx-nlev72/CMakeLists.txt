@@ -2,7 +2,7 @@ preqx_setup()
 
 # Set the variables for this test executable
 #                          NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev72 preqx 4 4 72 FALSE FALSE 35)
+createTestExec(preqx-nlev72 preqx 4 4 72 FALSE FALSE 40)
 
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
