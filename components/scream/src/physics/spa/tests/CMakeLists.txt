@@ -14,6 +14,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(spa_tests "${SPA_TESTS_SRCS}" "${NEED_LIBS}" 
     LABELS "spa"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    PROPERTIES RESOURCE_LOCK "spa_unit_tests"
   )
 endif()
 
