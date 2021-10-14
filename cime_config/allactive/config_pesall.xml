@@ -7129,7 +7129,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_">
+  <grid name="a%ne120np4">
     <mach name="mira">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.*" pesize="S">
         <comment>ne120 coupled-compset on 1024 nodes</comment>
