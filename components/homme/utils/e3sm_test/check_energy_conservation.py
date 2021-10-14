@@ -36,28 +36,6 @@ def uncompress(filename):
         return filename[:-3]
     return filename
 
-def parse_tracer_index(atm_log_fn, tracer_name):
-    state = 0
-    with open(atm_log_fn, 'r') as f:
-        for ln in f:
-            if state == 0:
-                if 'Advected constituent list:' in ln: state = 1
-            elif state == 1:
-                if tracer_name in ln:
-                    toks = ln.split()
-                    tracer_idx = int(toks[0])
-                    break
-    return tracer_idx
-
-def parsetime(ln):
-    toks = ln.split()
-    val = float(toks[2])
-    return val
-
-def parseqmass(ln):
-    toks = ln.split()
-    return float(toks[-1])
-    
 def gather_energy_data(atm_log_fn):
     d = {'ttime': [], 'rr': []}
 
@@ -93,28 +71,19 @@ def conservative(start_time, time, rr, tol, verbose):
 
 #############################################################3
 
-
-#tracer_name = 'CO2_FFF'
-
-print("hereeeee ")
-
 case_dir = sys.argv[1]
 
 #uncomment in the repo!!!!!!
-#run_dir = read_atm_modelio(case_dir)
-#atm_fn = get_atm_log(run_dir)
-atm_fn = get_atm_log(".")
+run_dir = read_atm_modelio(case_dir)
+atm_fn = get_atm_log(run_dir)
+#debug in run folder
+#atm_fn = get_atm_log(".")
 
 atm_fn = uncompress(atm_fn)
 print('Using log file {}'.format(atm_fn))
-#tracer_idx = parse_tracer_index(atm_fn, tracer_name)
-#print('Tracer {} has index {}'.format(tracer_name, tracer_idx))
 d = gather_energy_data(atm_fn)
 
 good = (conservative(3,d['ttime'],d['rr'],2e-13,True))
-
-#good = (conservative('dry M', d['day'], d['dryM'], 1e-11, True) and
-#        conservative('tracer {}'.format(tracer_idx), d['day'], d['qmass'], 2e-13, True))
 
 if good:
     print('PASS')
