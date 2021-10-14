@@ -126,6 +126,22 @@ def test_branch_switch(test_obj, repo, branch_name):
     test_obj.assertEqual(get_current_head(repo=repo), branch_name)
 
 ###############################################################################
+def test_omp_spread(test_obj, output, num_places):
+###############################################################################
+    lines = output.splitlines()
+    all_places = []
+    for line in lines:
+        if "OMP_PLACES = '" in line:
+            places_str = line.split("=")[1].strip().strip("'")
+            places = [int(item.strip("{}")) for item in places_str.split(",")]
+            all_places.extend(places)
+
+    all_places.sort()
+    test_obj.assertEqual(len(all_places), num_places)
+    for idx, place in enumerate(all_places):
+        test_obj.assertEqual(idx, place)
+
+###############################################################################
 class TestBaseOuter: # Hides the TestBase class from test scanner
     class TestBase(unittest.TestCase):
 ###############################################################################
@@ -484,8 +500,19 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_mpirank_and_thread_spreading(self):
         """
-        Test that MPI ranks and threads are properly spread across a machine's computing resources (TODO)
+        Test that MPI ranks and threads are properly spread across a machine's computing resources
         """
+        if self._full and self._machine == "mappy":
+            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 40)
+
+            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 40)
+
+        else:
+            self.skipTest("Skipping full run or not on mappy")
 
     def test_jenkins_process_at(self):
         """

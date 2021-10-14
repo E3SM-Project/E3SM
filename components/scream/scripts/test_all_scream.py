@@ -27,7 +27,8 @@ class TestAllScream(object):
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
-                 make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False):
+                 make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
+                 extra_verbose=False):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -61,6 +62,7 @@ class TestAllScream(object):
         self._dry_run                 = dry_run
         self._tests_needing_baselines = []
         self._update_expired_baselines= update_expired_baselines
+        self._extra_verbose           = extra_verbose
 
         self._test_full_names = OrderedDict([
             ("dbg" , "full_debug"),
@@ -526,8 +528,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
         cmake_config += " -DSCREAM_TEST_MAX_TOTAL_THREADS={}".format(num_test_res)
+        verbosity = "-V --output-on-failure" if not self._extra_verbose else "-VV"
 
-        result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._compile_res_count[test], self._testing_res_count[test])
+        result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest {} ".format(self._compile_res_count[test], self._testing_res_count[test], verbosity)
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
         if self._baseline_dir is not None:
