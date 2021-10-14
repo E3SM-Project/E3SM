@@ -41,7 +41,9 @@ get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid);
 
-ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm);
+ekat::ParameterList get_in_params(const std::string type,
+                                  const ekat::Comm& comm,
+                                  const util::TimeStamp& t_first_write);
 
 TEST_CASE("input_output_basic","io")
 {
@@ -66,12 +68,13 @@ TEST_CASE("input_output_basic","io")
   output_manager.setup(io_comm,output_params,field_manager,gm,false);
 
   // Construct a timestamp
-  util::TimeStamp time ({2000,1,1},{0,0,0});
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});
+  util::TimeStamp time = t0;
 
   //  Cycle through data and write output
   const auto& out_fields = field_manager->get_groups_info().at("output");
   Int max_steps = 10;
-  Real dt = 1.0;
+  Int dt = 1;
   for (Int ii=0;ii<max_steps;++ii) {
     time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
@@ -119,11 +122,13 @@ TEST_CASE("input_output_basic","io")
   // Cycle through each output and make sure it is correct.
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
-  auto ins_params = get_in_params("Instant",io_comm);
-  auto avg_params = get_in_params("Average",io_comm);
-  auto min_params = get_in_params("Min",io_comm);
-  auto max_params = get_in_params("Max",io_comm);
-  auto multi_params = get_in_params("Multisnap",io_comm);
+  // NOTE: single-snap file start outputing at the final time only,
+  //       while multi-snap starts to output at the first time step
+  auto ins_params = get_in_params("Instant",io_comm,time);
+  auto avg_params = get_in_params("Average",io_comm,time);
+  auto min_params = get_in_params("Min",io_comm,time);
+  auto max_params = get_in_params("Max",io_comm,time);
+  auto multi_params = get_in_params("Multisnap",io_comm,t0+dt);
   Real tol = 100*std::numeric_limits<Real>::epsilon();
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_manager);
@@ -341,17 +346,25 @@ ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& gri
   return om_params;  
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm)
+ekat::ParameterList get_in_params(const std::string type,
+                                  const ekat::Comm& comm,
+                                  const util::TimeStamp& t_first_write)
 {
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
-  if (type == "Multisnap") {
-    auto type_ci = ekat::upper_case("Instant");
-    in_params.set<std::string>("Filename","io_multisnap_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x1.0000-01-01.000001.nc");
-  } else {
-    auto type_ci = ekat::upper_case(type);
-    in_params.set<std::string>("Filename","io_output_test_np" + std::to_string(comm.size()) +"."+type_ci+".Steps_x10.0000-01-01.000010.nc");
-  }
+  bool multisnap = type=="Multisnap";
+
+  std::string filename =
+        "io_" + std::string(multisnap ? "multisnap" : "output")
+      + "_test_np" + std::to_string(comm.size())
+      + "." + (multisnap ? ekat::upper_case("Instant") : ekat::upper_case(type))
+      + ".Steps_x1" + std::string(multisnap ? "" : "0")
+      + "." + t_first_write.get_date_string();
+  auto time_str = t_first_write.get_time_string();
+  time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
+  filename += "." + time_str + ".nc";
+
+  in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Fields",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
 }
