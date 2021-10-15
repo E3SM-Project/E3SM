@@ -1005,11 +1005,12 @@ contains
 
     do i = 0, mxpft
 
+       if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
+       
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_fates)then
-          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
