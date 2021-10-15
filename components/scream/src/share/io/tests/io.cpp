@@ -359,10 +359,7 @@ ekat::ParameterList get_in_params(const std::string type,
       + "_test_np" + std::to_string(comm.size())
       + "." + (multisnap ? ekat::upper_case("Instant") : ekat::upper_case(type))
       + ".Steps_x1" + std::string(multisnap ? "" : "0")
-      + "." + t_first_write.get_date_string();
-  auto time_str = t_first_write.get_time_string();
-  time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
-  filename += "." + time_str + ".nc";
+      + "." + t_first_write.to_string() + ".nc";
 
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Fields",{"field_1", "field_2", "field_3", "field_packed"});

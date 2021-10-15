@@ -57,7 +57,7 @@ TEST_CASE ("time_stamp") {
 
   REQUIRE (ts1.get_date_string()=="2021-10-12");
   REQUIRE (ts1.get_time_string()=="17:08:30");
-  REQUIRE (ts1.to_string()=="2021-10-12 17:08:30");
+  REQUIRE (ts1.to_string()=="2021-10-12.170830");
 
   // Comparisons
   TS ts2 = ts1;
@@ -69,4 +69,63 @@ TEST_CASE ("time_stamp") {
   // Cannot rewind time
   REQUIRE_THROWS (ts2+=-10);
 
+  // Update: check carries
+  auto ts3 = ts1 + 1;
+  REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
+  REQUIRE (ts3.get_minutes()==ts1.get_minutes());
+  REQUIRE (ts3.get_hours()==ts1.get_hours());
+  REQUIRE (ts3.get_days()==ts1.get_days());
+  REQUIRE (ts3.get_months()==ts1.get_months());
+  REQUIRE (ts3.get_years()==ts1.get_years());
+
+  ts3 += 60;
+  REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
+  REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
+  REQUIRE (ts3.get_hours()==ts1.get_hours());
+  REQUIRE (ts3.get_days()==ts1.get_days());
+  REQUIRE (ts3.get_months()==ts1.get_months());
+  REQUIRE (ts3.get_years()==ts1.get_years());
+
+  ts3 += 3600;
+  REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
+  REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
+  REQUIRE (ts3.get_hours()==ts1.get_hours()+1);
+  REQUIRE (ts3.get_days()==ts1.get_days());
+  REQUIRE (ts3.get_months()==ts1.get_months());
+  REQUIRE (ts3.get_years()==ts1.get_years());
+
+  ts3 += 86400;
+  REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
+  REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
+  REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
+  REQUIRE (ts3.get_days()==(ts1.get_days()+1));
+  REQUIRE (ts3.get_months()==ts1.get_months());
+  REQUIRE (ts3.get_years()==ts1.get_years());
+
+  ts3 += 86400*20;
+  REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
+  REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
+  REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
+  REQUIRE (ts3.get_days()==(ts1.get_days()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
+  REQUIRE (ts3.get_months()==(ts1.get_months()+1));
+  REQUIRE (ts3.get_years()==ts1.get_years());
+
+  ts3 += 86400*365;
+  REQUIRE (ts3.get_seconds()==ts1.get_seconds()+1);
+  REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
+  REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
+  REQUIRE (ts3.get_days()==(ts1.get_days()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
+  REQUIRE (ts3.get_months()==(ts1.get_months()+1));
+  REQUIRE (ts3.get_years()==(ts1.get_years()+1));
+
+  // Check update across leap date
+#ifdef EKAT_HAS_LEAP_YEAR
+  TS ts4(2024,2,28,0,0,0);
+  ts4 += 86400;
+  REQUIRE (ts4.get_months()==2);
+  REQUIRE (ts4.get_days()==29);
+  ts4 += 86400;
+  REQUIRE (ts4.get_months()==3);
+  REQUIRE (ts4.get_days()==1);
+#endif
 }

@@ -21,26 +21,27 @@ constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
 
 // Utility functions
 bool is_leap (const int yy) {
-#ifdef EKAT_HAS_LEAP_YEAR
+#ifdef SCREAM_HAS_LEAP_YEAR
   if (yy%4==0) {
     // Year is divisible by 4 (minimum requirement)
     if (yy%100 != 0) {
       // Not a centennial year => leap.
       return true;
     } else if ((yy/100)%4==0) {
-      // Centennial year, but first 2 digids divisible by 4 => leap
+      // Centennial year, AND first 2 digids divisible by 4 => leap
       return true;
     }
   }
 #else
   (void)yy;
 #endif
+  // Either leap year not enabled, or not a leap year at all
   return false;
 }
 
 int dpm (const int yy, const int mm) {
   auto& arr = is_leap(yy) ? leap_days : nonleap_days;
-  return arr[mm];
+  return arr[mm-1];
 }
 
 } // anonymous namespace
@@ -86,7 +87,10 @@ TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
 
 std::string TimeStamp::to_string () const {
 
-  return get_date_string() + " " + get_time_string();
+  auto time = get_time_string ();
+  time.erase(std::remove( time.begin(), time.end(), ':'), time.end());
+
+  return get_date_string() + "." + time;
 }
 
 std::string TimeStamp::get_date_string () const {
@@ -119,7 +123,7 @@ double julian_day (const int yy, const int mm, const int dd, const int sec_of_da
   // Initialize Julian Day
   double julianday = (dd-1) + double(sec_of_day) / 86400; // WARNING: avoid integer division
   for (int m=1;m<mm;m++) {
-    julianday += dpm(yy,m-1);
+    julianday += dpm(yy,m);
   }
   return julianday;
 }
