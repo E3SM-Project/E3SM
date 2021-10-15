@@ -76,6 +76,9 @@ module SurfaceAlbedoType
      real(r8), pointer :: albsnd_hst_col       (:,:) => null() ! col snow albedo, direct , for history files (col,bnd) [frc]
      real(r8), pointer :: albsni_hst_col       (:,:) => null() ! col snow albedo, diffuse, for history files (col,bnd) [frc]
 
+     real(r8), pointer :: fd_top_adjust        (:,:) => null() !adjustment factor for direct flux (numrad)
+     real(r8), pointer :: fi_top_adjust        (:,:) => null() !adjustment factor for diffuse flux (numrad)
+     
      real(r8), pointer :: ftdd_patch           (:,:) => null() ! patch down direct flux below canopy per unit direct flx    (numrad)
      real(r8), pointer :: ftid_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit direct flx   (numrad)
      real(r8), pointer :: ftii_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit diffuse flx  (numrad)
@@ -265,6 +268,9 @@ contains
     allocate(this%albd_patch         (begp:endp,numrad))       ; this%albd_patch         (:,:) =spval
     allocate(this%albi_patch         (begp:endp,numrad))       ; this%albi_patch         (:,:) =spval
 
+    allocate(this%fd_top_adjust      (begp:endp,numrad))       ; this%fd_top_adjust      (:,:) =spval
+    allocate(this%fi_top_adjust      (begp:endp,numrad))       ; this%fi_top_adjust      (:,:) =spval
+    
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) =spval
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) =spval
     allocate(this%ftii_patch         (begp:endp,numrad))       ; this%ftii_patch         (:,:) =spval
@@ -339,7 +345,17 @@ contains
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
          ptr_patch=this%albi_patch, default='inactive', c2l_scale_type='urbanf')
-
+	
+    this%fd_top_adjust(begp:endp,:) = spval
+    call hist_addfld2d (fname='fd_top_adjust', units='none', type2d='numrad', &
+         avgflag='A', long_name='fd_top_adjust', &
+         ptr_patch=this%fd_top_adjust)
+		 
+    this%fi_top_adjust(begp:endp,:) = spval
+    call hist_addfld2d (fname='fi_top_adjust', units='none', type2d='numrad', &
+         avgflag='A', long_name='fi_top_adjust', &
+         ptr_patch=this%fi_top_adjust)
+    
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -387,6 +403,9 @@ contains
     this%ftid_patch     (begp:endp, :) = 0.0_r8
     this%ftii_patch     (begp:endp, :) = 1.0_r8
 
+    this%fd_top_adjust  (begp:endp, :) = 1.0_r8
+    this%fi_top_adjust  (begp:endp, :) = 1.0_r8
+    
   end subroutine InitCold
 
   !---------------------------------------------------------------------
