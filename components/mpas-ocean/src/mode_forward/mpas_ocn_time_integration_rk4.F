@@ -776,7 +776,7 @@ module ocn_time_integration_rk4
 
             if (config_enable_nonhydrostatic_mode) then
                !$omp parallel
-               !$omp do schedule(runtime)               do iCe;l; = 1, nCells
+               !$omp do schedule(runtime)
                do iCell = 1, nCells
                   verticalVelocityNew(:, iCell) = verticalVelocityCur(:, iCell)
                end do

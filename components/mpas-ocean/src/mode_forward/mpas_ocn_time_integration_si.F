@@ -1,4 +1,4 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! Copyrigh t(c) 2013,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -440,7 +440,14 @@ module ocn_time_integration_si
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-
+      if (config_enable_nonhydrostatic_mode) then
+         call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
+                                             verticalVelocityTend)
+         call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                             verticalVelocityNew, 2)
+         call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                             verticalVelocityCur, 2)
+      end if
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.
 
@@ -512,7 +519,7 @@ module ocn_time_integration_si
          if(config_enable_nonhydrostatic_mode) then
             !$omp parallel
             !$omp do schedule(runtime) private(k)
-            do iCell=1,nCells
+            do iCell=1,nCellsAll
                do k = 2, maxLevelCell(iCell)
                   verticalVelocityNew(k,iCell) = verticalVelocityCur(k,iCell)
                end do
@@ -2773,7 +2780,7 @@ module ocn_time_integration_si
 
                if(config_use_two_equation_turbulence_model) then
                   !$omp parallel
-                  !$ompe do schedule(runtime) private(k, temp_h)
+                  !$omp do schedule(runtime) private(k, temp_h)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
                         temp_h = tkeCur(k,ICell) + dt * tendTKE(k,iCell)
@@ -2788,7 +2795,7 @@ module ocn_time_integration_si
 
                   if(.not. config_LES_mode) then
                      !$omp parallel
-                     !$ompe do schedule(runtime) private(k, temp_h)
+                     !$omp do schedule(runtime) private(k, temp_h)
                      do iCell = 1, nCells
                         do k = 1, maxLevelCell(iCell)
                            temp_h = glsPsiCur(k,iCell) + dt * tendglsPsi(k,iCell)

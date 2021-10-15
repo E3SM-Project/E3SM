@@ -263,7 +263,7 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, timeLevelIn
      normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
      montgomeryPotential, vertAleTransportTop, divergence, vertViscTopOfEdge, &
      inSituThermalExpansionCoeff, inSituSalineContractionCoeff, verticalVelocity, &
-     tend_verticalVelocity, normalTransportVelocity
+     tend_verticalVelocity
 
    ! Scratch Arrays
    ! normalThicknessFlux: Flux of thickness through an edge

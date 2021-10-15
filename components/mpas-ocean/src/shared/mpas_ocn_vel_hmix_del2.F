@@ -151,7 +151,7 @@ contains
          !$omp end do
          !$omp end parallel
       else
-         !$omp prallel
+         !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdgesOwned
             do k = 1, maxLevelEdgeTop(iEdge)

@@ -79,7 +79,7 @@ module ocn_vvel_vert_advection
 ! momentum
 
         !omp do schedule(runtime)
-        do iCell = 1, nCells
+        do iCell = 1, nCellsOwned
           do k=2,maxLevelCell(iCell)
             tend(k,iCell) = tend(k,iCell) - 0.5_RKIND*(verticalVelocity(k-1,iCell)**2.0 - &
                               verticalVelocity(k+1,iCell)**2.0) / (layerThickness(k-1,iCell) + &

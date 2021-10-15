@@ -721,7 +721,7 @@ module ocn_compute_nonhydrostatic_pressure
       end do
     end do
 
-    call VecAsse.mblyBegin(negOneVec, petsc_err)
+    call VecAssemblyBegin(negOneVec, petsc_err)
     call VecAssemblyEnd(negOneVec, petsc_err)
 
     call ISCreateGeneral(mpi_comm, globalM, origIndex, PETSC_COPY_VALUES, origIS, petsc_err)

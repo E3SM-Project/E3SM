@@ -745,7 +745,7 @@ module ocn_glsPsi_advection_mono
            end do
         end do
         !$omp end do
-        !$ompe end parallel
+        !$omp end parallel
 
         ! Compute advection diagnostics and monotonicity checks if requested
 #ifdef _ADV_TIMERS
