@@ -6,7 +6,7 @@ CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS "spa;
 
 # Set AD configurable options
 SetVarDependingOnTestProfile(NUM_STEPS 2 24 48)
-set (ATM_TIME_STEP 1800)
+set (ATM_TIME_STEP 864000)
 
 # Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
