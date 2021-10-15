@@ -55,7 +55,7 @@ class TestAllScream(object):
         self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
-        self._work_dir                = work_dir
+        self._work_dir                = None if work_dir is None else Path(work_dir)
         self._integration_test        = integration_test
         self._quick_rerun             = quick_rerun
         self._quick_rerun_failed      = quick_rerun_failed
