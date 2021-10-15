@@ -11,6 +11,7 @@ my @groups = qw(run_modes
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
                 rayleigh_damping
+                twoequationmodel
                 cvmix
                 gotm
                 forcing
@@ -22,6 +23,7 @@ my @groups = qw(run_modes
                 advection
                 bottom_drag
                 ocean_constants
+                nonhydrostatic_pressure
                 pressure_gradient
                 eos
                 eos_linear

@@ -92,6 +92,8 @@
 <config_mom_del2 ocn_grid="SOwISC12to60E2r4">462.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E2r1">1000.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
+<config_use_vertMom_del2>.false.</config_use_vertMom_del2>
+<config_vertMom_del2>0.0</config_vertMom_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
 <!-- hmix_del4 -->
@@ -184,6 +186,25 @@
 <config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
 <config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
 <config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
+
+<!-- twoEquationModel -->
+<config_use_two_equation_turbulence_model>.false.</config_use_two_equation_turbulence_model>
+<config_two_equation_hor_adv_order>3</config_two_equation_hor_adv_order>
+<config_two_equation_coef_3rd_order>0.25</config_two_equation_coef_3rd_order>
+<config_two_equation_vert_adv_order>3</config_two_equation_vert_adv_order>
+<config_two_equation_check_monotonicity>.false.</config_two_equation_check_monotonicity>
+<config_LES_mode>.false.</config_LES_mode>
+<smagorinsky_coefficient>0.18</smagorinsky_coefficient>
+<config_two_equation_model_choice>'epsilon'</config_two_equation_model_choice>
+<config_user_c_mu>0.5477</config_user_c_mu>
+<config_user_sigma_k>1.0</config_user_sigma_k>
+<config_user_sigma_psi>1.3</config_user_sigma_psi>
+<config_user_c_psi1>1.44</config_user_c_psi1>
+<config_user_c_psi2>1.92</config_user_c_psi2>
+<config_user_c_psi3>-0.692</config_user_c_psi3>
+<config_user_c_p>3.0</config_user_c_p>
+<config_user_c_m>1.5</config_user_c_m>
+<config_user_c_n>-1.0</config_user_c_n>
 
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
@@ -319,6 +340,9 @@
 <config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
 <config_vert_tracer_adv_order>3</config_vert_tracer_adv_order>
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
+<config_vert_vvel_adv_order>3</config_vert_vvel_adv_order>
+<config_horiz_vvel_adv_order>3</config_horiz_vvel_adv_order>
+<config_vvel_advection_use_vector_invariant_form>.false.</config_vvel_advection_use_vector_invariant_form>
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
 <config_monotonic>.true.</config_monotonic>
 
@@ -335,6 +359,18 @@
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
+
+<!-- nonhydrostatic_pressure -->
+<config_enable_nonhydrostatic_mode>.false.</config_enable_nonhydrostatic_mode>
+<config_nonhydrostatic_solve_surface_boundary_condition>'noGradient'</config_nonhydrostatic_solve_surface_boundary_condition>
+<config_enable_vertMomentum_disable_nonHydro>.false.</config_enable_vertMomentum_disable_nonHydro>
+<config_nonhydrostatic_remove_rhs_mean>.true.</config_nonhydrostatic_remove_rhs_mean>
+<config_nonhydrostatic_preconditioner>'jacobi'</config_nonhydrostatic_preconditioner>
+<config_nonhydrostatic_solver_type>'pipecgrr'</config_nonhydrostatic_solver_type>
+<config_petsc_rtol>1.0e-10</config_petsc_rtol>
+<config_petsc_atol>1.0E-20</config_petsc_atol>
+<config_petsc_maxit>10000</config_petsc_maxit>
+<config_use_constant_forced_pgf>.false.</config_use_constant_forced_pgf>
 
 <!-- pressure_gradient -->
 <config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>
@@ -416,6 +452,7 @@
 
 <!-- ALE_frequency_filtered_thickness -->
 <config_use_freq_filtered_thickness>.false.</config_use_freq_filtered_thickness>
+<config_disable_ALE>.false.</config_disable_ALE>
 <config_thickness_filter_timescale>5.0</config_thickness_filter_timescale>
 <config_use_highFreqThick_restore>.false.</config_use_highFreqThick_restore>
 <config_highFreqThick_restore_time>30.0</config_highFreqThick_restore_time>
@@ -442,6 +479,10 @@
 <config_disable_thick_sflux>.false.</config_disable_thick_sflux>
 <config_disable_vel_all_tend>.false.</config_disable_vel_all_tend>
 <config_disable_vel_coriolis>.false.</config_disable_vel_coriolis>
+<config_disable_vvel_all_tend>.false.</config_disable_vvel_all_tend>
+<config_disable_high_order_vvel_horiz_advection>.false.</config_disable_high_order_vvel_horiz_advection>
+<config_disable_vvel_coriolis>.false.</config_disable_vvel_coriolis>
+<config_disable_vvel_adv>.false.</config_disable_vvel_adv>
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
 <config_disable_vel_surface_stress>.false.</config_disable_vel_surface_stress>
@@ -504,8 +545,8 @@
 <config_use_ecosysTracers_idealAge_forcing>.false.</config_use_ecosysTracers_idealAge_forcing>
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
-<config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
+<config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
 <config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
