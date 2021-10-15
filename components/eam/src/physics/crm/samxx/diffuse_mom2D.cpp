@@ -32,6 +32,10 @@ void diffuse_mom2D(real5d &tk) {
 
   real rdx2=1.0/dx/dx;
   real rdx25=0.25*rdx2;
+  // stuff for hypverviscosity
+  real rdx16 = rdx25*rdx25;
+  // Set default timescale for damping 2-delta waves in x to 60 seconds.
+  real khyp = pow(dx,4) / tau_MomentumHyperviscosity; // Units m^4/s
   int  constexpr j = 0;
 
   if (!docolumn) {
@@ -130,6 +134,30 @@ void diffuse_mom2D(real5d &tk) {
     real rhoi = 1.0/(rhow(k+1,icrm)*adzw(k+1,icrm));
     dwdt(na-1,k+1,j,i,icrm)=dwdt(na-1,k+1,j,i,icrm)-(fw(k+2,j,i+1,icrm)-fw(k+1,j,i+1,icrm))*rhoi;
   });
+
+  // Add hyperdiffusive terms to the momentum
+#ifdef MMF_HYPERVISCOSITY
+  // if (doMomentumHyperviscosity) {
+    // do k=1,nzm
+    //   do i=1,nx
+    //     do icrm = 1 , ncrms
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      real uhv = u(k,j,i-2,icrm) - 4*u(k,j,i-1,icrm) + 6*u(k,j,i,icrm) - 4*u(k,j,i+1,icrm) + u(k,j,i+2,icrm);
+      real vhv = v(k,j,i-2,icrm) - 4*v(k,j,i-1,icrm) + 6*v(k,j,i,icrm) - 4*v(k,j,i+1,icrm) + v(k,j,i+2,icrm);
+      dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - khyp * rdx16 * uhv;
+      dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - khyp * rdx16 * vhv;
+    });
+
+    // do k=2,nzm
+    //   do i=1,nx
+    //     do icrm = 1 , ncrms
+    parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      real whv = w(k+1,j,i-2,icrm) - 4*w(k+1,j,i-1,icrm) + 6*w(k+1,j,i,icrm) - 4*w(k+1,j,i+1,icrm) + w(k+1,j,i+2,icrm);
+      dwdt(na-1,k+1,j,i,icrm) = dwdt(na-1,k+1,j,i,icrm) - khyp * rdx16 * whv; 
+    });
+
+  // }
+#endif
 
 }
 
