@@ -222,7 +222,7 @@ echo "Script to create mapping files required by mksurfdata_map"
 #----------------------------------------------------------------------
 
 # Set general query command used below
-QUERY="$dir/../../../bld/queryDefaultNamelist.pl -silent -namelist elmexp "
+QUERY="$dir/../../bld/queryDefaultNamelist.pl -silent -namelist elmexp "
 QUERY="$QUERY -justvalue -options sim_year=2000 -csmdata $INPUTDATA_PATH"
 echo "query command is $QUERY"
 
