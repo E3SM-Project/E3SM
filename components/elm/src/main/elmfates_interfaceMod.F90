@@ -55,6 +55,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_inventory_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : fates_inventory_ctrl_filename
+   use elm_varctl        , only : use_lch4
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval 
    use elm_varcon        , only : denice
@@ -106,7 +107,7 @@ module ELMFatesInterfaceMod
 
    ! Used FATES Modules
    use FatesConstantsMod     , only : ifalse
-   use FatesInterfaceTypesMod, only : fates_interface_type
+   use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
    use FatesInterfaceMod     , only : allocate_bcpconst
    use FatesInterfaceMod     , only : allocate_bcout
@@ -117,7 +118,7 @@ module ELMFatesInterfaceMod
    use FatesInterfaceMod     , only : zero_bcs
    use FatesInterfaceMod     , only : FatesInterfaceInit
 
-   use FatesHistoryInterfaceMod, only : fates_history_interface_type
+   use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
@@ -180,9 +181,6 @@ module ELMFatesInterfaceMod
       ! and its column number matching are its only members
 
       type(f2hmap_type), allocatable  :: f2hmap(:)
-
-      ! fates_hist is the interface class for the history output
-      type(fates_history_interface_type) :: fates_hist
 
       ! fates_restart is the inteface calss for restarting the model
       type(fates_restart_interface_type) :: fates_restart
@@ -249,6 +247,7 @@ contains
      integer                                        :: pass_vertsoilc
      integer                                        :: pass_ed_st3
      integer                                        :: pass_logging
+     integer                                        :: pass_ch4
      integer                                        :: pass_ed_prescribed_phys
      integer                                        :: pass_planthydro
      integer                                        :: pass_inventory_init
@@ -326,6 +325,13 @@ contains
         end if
         call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
 
+        if(use_lch4) then
+           pass_ch4 = 1
+        else
+           pass_ch4 = 0
+        end if
+        call set_fates_ctrlparms('use_ch4',ival=pass_ch4)
+        
         if(use_vertsoilc) then
            pass_vertsoilc = 1
         else
@@ -540,7 +546,8 @@ contains
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
-
+               col_pp%is_fates(c) = .true.
+               
                if(debug)then
                   write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
@@ -592,6 +599,7 @@ contains
          do s = 1, this%fates(nc)%nsites
 
             c = this%f2hmap(nc)%fcolumn(s)
+            this%fates(nc)%sites(s)%h_gid = c
             
             if (use_vertsoilc) then
                ndecomp = col_pp%nlevbed(c)
@@ -792,6 +800,12 @@ contains
       ! structures into the cohort structures.
       call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
 
+      ! ---------------------------------------------------------------------------------
+      ! Flush arrays to values defined by %flushval (see registry entry in
+      ! subroutine define_history_vars()
+      ! ---------------------------------------------------------------------------------
+      call fates_hist%flush_hvars(nc,upfreq_in=1)
+
 
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
@@ -823,9 +837,9 @@ contains
       ! Part IV: 
       ! Update history IO fields that depend on ecosystem dynamics
       ! ---------------------------------------------------------------------------------
-      call this%fates_hist%update_history_dyn( nc,                    &
-                                              this%fates(nc)%nsites, &
-                                              this%fates(nc)%sites) 
+      call fates_hist%update_history_dyn( nc,                    &
+           this%fates(nc)%nsites, &
+           this%fates(nc)%sites) 
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1325,7 +1339,8 @@ contains
                ! Convert newly read-in vectors into the FATES namelist state variables
                ! ------------------------------------------------------------------------
                call this%fates_restart%create_patchcohort_structure(nc, &
-                    this%fates(nc)%nsites, this%fates(nc)%sites, this%fates(nc)%bc_in)
+                    this%fates(nc)%nsites, this%fates(nc)%sites, this%fates(nc)%bc_in,&
+                    this%fates(nc)%bc_out)
                
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
                     this%fates(nc)%sites )
@@ -1338,7 +1353,8 @@ contains
                   
                   c = this%f2hmap(nc)%fcolumn(s)
                   this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-                       min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))                  
+                       min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
+
                   call ed_update_site( this%fates(nc)%sites(s), &
                         this%fates(nc)%bc_in(s), & 
                         this%fates(nc)%bc_out(s))
@@ -1405,9 +1421,9 @@ contains
                ! ------------------------------------------------------------------------
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
-               call this%fates_hist%update_history_dyn( nc, &
-                     this%fates(nc)%nsites,                 &
-                     this%fates(nc)%sites) 
+               call fates_hist%update_history_dyn( nc, &
+                    this%fates(nc)%nsites,                 &
+                    this%fates(nc)%sites) 
 
                
             end if
@@ -1455,7 +1471,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
-              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s) )
+              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),this%fates(nc)%bc_out(s) )
               call zero_site(this%fates(nc)%sites(s))
            end do
            
@@ -1511,8 +1527,8 @@ contains
            do s = 1,this%fates(nc)%nsites
               
               c = this%f2hmap(nc)%fcolumn(s)
-              this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-                   min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
+              this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = this%fates(nc)%bc_in(s)%nlevdecomp
+
               
               call ed_update_site(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), & 
@@ -1535,7 +1551,7 @@ contains
            ! ------------------------------------------------------------------------
            ! Update history IO fields that depend on ecosystem dynamics
            ! ------------------------------------------------------------------------
-           call this%fates_hist%update_history_dyn( nc, &
+           call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
                 this%fates(nc)%sites) 
 
@@ -2145,12 +2161,12 @@ contains
       end do
       
       ! Update history variables that track these variables
-      call this%fates_hist%update_history_hifrq(nc, &
-                               this%fates(nc)%nsites,  &
-                               this%fates(nc)%sites,   &
-                               this%fates(nc)%bc_in,   &
-                               dtime)
-
+      call fates_hist%update_history_hifrq(nc, &
+           this%fates(nc)%nsites,  &
+           this%fates(nc)%sites,   &
+           this%fates(nc)%bc_in,   &
+           dtime)
+      
       
     end associate
 end subroutine wrap_update_hifrq_hist
@@ -2255,7 +2271,7 @@ end subroutine wrap_update_hifrq_hist
    
    call hlm_bounds_to_fates_bounds(bounds_proc, fates_bounds)
 
-   call this%fates_hist%Init(nclumps, fates_bounds)
+   call fates_hist%Init(nclumps, fates_bounds)
 
    ! Define the bounds on the first dimension for each thread
    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,fates_clump)
@@ -2265,73 +2281,54 @@ end subroutine wrap_update_hifrq_hist
       
       ! thread bounds for patch
       call hlm_bounds_to_fates_bounds(bounds_clump, fates_clump)
-      call this%fates_hist%SetThreadBoundsEach(nc, fates_clump)
+      call fates_hist%SetThreadBoundsEach(nc, fates_clump)
    end do
    !$OMP END PARALLEL DO
 
    ! ------------------------------------------------------------------------------------
-   ! PART I.5: SET SOME INDEX MAPPINGS SPECIFICALLY FOR SITE<->COLUMN AND PATCH 
-   ! ------------------------------------------------------------------------------------
-   
-   !$OMP PARALLEL DO PRIVATE (nc,s,c)
-   do nc = 1,nclumps
-      
-      allocate(this%fates_hist%iovar_map(nc)%site_index(this%fates(nc)%nsites))
-      allocate(this%fates_hist%iovar_map(nc)%patch1_index(this%fates(nc)%nsites))
-      
-      do s=1,this%fates(nc)%nsites
-         c = this%f2hmap(nc)%fcolumn(s)
-         this%fates_hist%iovar_map(nc)%site_index(s)   = c
-         this%fates_hist%iovar_map(nc)%patch1_index(s) = col_pp%pfti(c)+1
-      end do
-      
-   end do
-   !$OMP END PARALLEL DO
-   
-   ! ------------------------------------------------------------------------------------
    ! PART II: USE THE JUST DEFINED DIMENSIONS TO ASSEMBLE THE VALID IO TYPES
    ! INTERF-TODO: THESE CAN ALL BE EMBEDDED INTO A SUBROUTINE IN HISTORYIOMOD
    ! ------------------------------------------------------------------------------------
-   call this%fates_hist%assemble_history_output_types()
+   call fates_hist%assemble_history_output_types()
    
    ! ------------------------------------------------------------------------------------
    ! PART III: DEFINE THE LIST OF OUTPUT VARIABLE OBJECTS, AND REGISTER THEM WITH THE
    ! HLM ACCORDING TO THEIR TYPES
    ! ------------------------------------------------------------------------------------
-   call this%fates_hist%initialize_history_vars()
-   nvar = this%fates_hist%num_history_vars()
+   call fates_hist%initialize_history_vars()
+   nvar = fates_hist%num_history_vars()
    
    do ivar = 1, nvar
       
-      associate( vname    => this%fates_hist%hvars(ivar)%vname, &
-                 vunits   => this%fates_hist%hvars(ivar)%units,   &
-                 vlong    => this%fates_hist%hvars(ivar)%long, &
-                 vdefault => this%fates_hist%hvars(ivar)%use_default, &
-                 vavgflag => this%fates_hist%hvars(ivar)%avgflag)
+      associate( vname    => fates_hist%hvars(ivar)%vname, &
+                 vunits   => fates_hist%hvars(ivar)%units,   &
+                 vlong    => fates_hist%hvars(ivar)%long, &
+                 vdefault => fates_hist%hvars(ivar)%use_default, &
+                 vavgflag => fates_hist%hvars(ivar)%avgflag)
 
-        dk_index = this%fates_hist%hvars(ivar)%dim_kinds_index
-        ioname = trim(this%fates_hist%dim_kinds(dk_index)%name)
+        dk_index = fates_hist%hvars(ivar)%dim_kinds_index
+        ioname = trim(fates_hist%dim_kinds(dk_index)%name)
         
         select case(trim(ioname))
         case(patch_r8)
            call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_patch=this%fates_hist%hvars(ivar)%r81d,    &
+                              ptr_patch=fates_hist%hvars(ivar)%r81d,    &
                               default=trim(vdefault))
            
         case(site_r8)
            call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_col=this%fates_hist%hvars(ivar)%r81d,      & 
+                              ptr_col=fates_hist%hvars(ivar)%r81d,      & 
                               default=trim(vdefault))
 
         case(patch_ground_r8,patch_size_pft_r8)
-           d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
-           dim2name = this%fates_hist%dim_bounds(d_index)%name
+           d_index = fates_hist%dim_kinds(dk_index)%dim2_index
+           dim2name = fates_hist%dim_bounds(d_index)%name
            call hist_addfld2d(fname=trim(vname),units=trim(vunits),         & ! <--- addfld2d
                               type2d=trim(dim2name),                        & ! <--- type2d
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_patch=this%fates_hist%hvars(ivar)%r82d,    & 
+                              ptr_patch=fates_hist%hvars(ivar)%r82d,    & 
                               default=trim(vdefault))
 
        case(site_ground_r8, site_size_pft_r8, site_size_r8, site_pft_r8, &
@@ -2341,12 +2338,12 @@ end subroutine wrap_update_hifrq_hist
              site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
              site_agefuel_r8)
 
-           d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
-           dim2name = this%fates_hist%dim_bounds(d_index)%name
+           d_index = fates_hist%dim_kinds(dk_index)%dim2_index
+           dim2name = fates_hist%dim_bounds(d_index)%name
            call hist_addfld2d(fname=trim(vname),units=trim(vunits),         &
                               type2d=trim(dim2name),                        &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_col=this%fates_hist%hvars(ivar)%r82d,     & 
+                              ptr_col=fates_hist%hvars(ivar)%r82d,     & 
                               default=trim(vdefault))
 
         case default
@@ -2581,7 +2578,7 @@ end subroutine wrap_update_hifrq_hist
 
    ! Update History Buffers that need to be updated after hydraulics calls
 
-   call this%fates_hist%update_history_hydraulics(nc, &
+   call fates_hist%update_history_hydraulics(nc, &
          this%fates(nc)%nsites, &
          this%fates(nc)%sites, &
          this%fates(nc)%bc_in, & 
