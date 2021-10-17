@@ -1,5 +1,4 @@
-#!/usr/bin/env
-# python3
+#!/usr/bin/env python3
 
 import os, sys, re
 #import numpy as np
@@ -63,6 +62,8 @@ def conservative(start_time, time, rr, tol, verbose):
     #stdd = np.std(np.array(rr))
     if (verbose):
         #print('RR average {:1.3e}, std {:1.3e}, min {:1.3e}, max {:1.3e}'.format(aver, std,min(rr),max(rr)))
+        print('starting index is {}'.format(start_time))
+        print('number of samples: {}'.format(len(shortarr)))
         print('RR average {:1.3e}, min {:1.3e}, max {:1.3e}'.format(aver,min(rr),max(rr)))
         #maxabs = max(abs(rr))
         maxx = abs(aver)
@@ -71,10 +72,16 @@ def conservative(start_time, time, rr, tol, verbose):
 
 #############################################################3
 
+
+print('1st sys arg {}'.format(sys.argv[1]))
+
 case_dir = sys.argv[1]
 
 #uncomment in the repo!!!!!!
 run_dir = read_atm_modelio(case_dir)
+
+print('run dir is {}'.format(run_dir))
+
 atm_fn = get_atm_log(run_dir)
 #debug in run folder
 #atm_fn = get_atm_log(".")
