@@ -634,7 +634,7 @@
     <NODENAME_REGEX>mappy</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>gnu,intel</COMPILERS>
+    <COMPILERS>gnu,gnu9,intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/mappy/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -676,16 +676,26 @@
       <modules compiler="gnu">
         <command name="load">acme-gcc/8.1.0</command>
       </modules>
+      <modules compiler="gnu9">
+        <command name="load">sems-gcc/9.2.0</command>
+      </modules>
       <modules compiler="intel">
         <command name="load">sems-intel/19.0.5</command>
       </modules>
-      <modules mpilib="mpi-serial">
+      <modules mpilib="mpi-serial" compiler="!gnu9">
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
-      <modules mpilib="!mpi-serial">
+      <modules mpilib="!mpi-serial" compiler="!gnu9">
         <command name="load">acme-openmpi/2.1.5</command>
         <command name="load">acme-netcdf/4.7.4/acme</command>
+      </modules>
+      <modules mpilib="mpi-serial" compiler="gnu9">
+        <command name="load">sems-netcdf</command>
+      </modules>
+      <modules mpilib="!mpi-serial" compiler="gnu9">
+        <command name="load">sems-openmpi/4.0.2</command>
+        <command name="load">sems-netcdf</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
