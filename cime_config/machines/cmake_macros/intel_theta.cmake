@@ -1,6 +1,6 @@
-set(CONFIG_ARGS "--host=cray")
+string(APPEND CONFIG_ARGS " --host=cray")
 string(APPEND CPPDEFS " -DARCH_MIC_KNL")
-set(FFLAGS "-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml=true")
+string(APPEND FFLAGS " -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml=true")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off")
 endif()

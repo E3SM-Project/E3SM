@@ -2,7 +2,7 @@ set(ALBANY_PATH "/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_SLASHPROC")
 endif()
-set(CXX_LIBS "-lstdc++")
+string(APPEND CXX_LIBS " -lstdc++")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2 -debug minimal -qno-opt-dynamic-align")
 endif()
