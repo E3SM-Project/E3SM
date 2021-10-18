@@ -177,10 +177,6 @@ CONTAINS
        
        call cam_instance_init(ATMID)
 
-#if defined(MMF_SAMXX)
-       call scream_session_init()
-#endif
-
        ! Set filename specifier for restart surface file
        ! (%c=caseid, $y=year, $m=month, $d=day, $s=seconds in day)
        rsfilename_spec_cam = '%c.eam' // trim(inst_suffix) // '.rs.%y-%m-%d-%s.nc'
