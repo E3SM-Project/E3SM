@@ -14,13 +14,14 @@
 namespace scream {
 namespace util {
 
-namespace {
+int days_in_month (const int yy, const int mm) {
+  constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
+  auto& arr = is_leap_year(yy) ? leap_days : nonleap_days;
+  return arr[mm-1];
+}
 
-constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
-
-// Utility functions
-bool is_leap (const int yy) {
+bool is_leap_year (const int yy) {
 #ifdef SCREAM_HAS_LEAP_YEAR
   if (yy%4==0) {
     // Year is divisible by 4 (minimum requirement)
@@ -39,12 +40,6 @@ bool is_leap (const int yy) {
   return false;
 }
 
-int dpm (const int yy, const int mm) {
-  auto& arr = is_leap(yy) ? leap_days : nonleap_days;
-  return arr[mm-1];
-}
-
-} // anonymous namespace
 
 TimeStamp::TimeStamp()
  : m_date (3,std::numeric_limits<int>::lowest())
@@ -68,7 +63,7 @@ TimeStamp::TimeStamp(const std::vector<int>& date,
 
   // Check the days and seconds numbers are non-negative.
   EKAT_REQUIRE_MSG (mm>0   && mm<=12, "Error! Month out of bounds.\n");
-  EKAT_REQUIRE_MSG (dd>0   && dd<=dpm(yy,mm), "Error! Day out of bounds.\n");
+  EKAT_REQUIRE_MSG (dd>0   && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
   EKAT_REQUIRE_MSG (sec>=0  && sec<60, "Error! Seconds out of bounds.\n");
   EKAT_REQUIRE_MSG (min>=0  && min<60, "Error! Minutes out of bounds.\n");
   EKAT_REQUIRE_MSG (hour>=0 && hour<24, "Error! Hours out of bounds.\n");
@@ -83,6 +78,10 @@ TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
  : TimeStamp({yy,mm,dd},{h,min,sec})
 {
   // Nothing to do here
+}
+
+bool TimeStamp::is_valid () const {
+  return !(*this==TimeStamp());
 }
 
 std::string TimeStamp::to_string () const {
@@ -115,21 +114,12 @@ std::string TimeStamp::get_time_string () const {
   return hms.str();
 }
 
-double TimeStamp::get_julian_day () const {
-  return julian_day(get_years(),get_months(),get_days(),sec_of_day());
-}
-
-double julian_day (const int yy, const int mm, const int dd, const int sec_of_day) {
-  // Initialize Julian Day
-  double julianday = (dd-1) + double(sec_of_day) / 86400; // WARNING: avoid integer division
-  for (int m=1;m<mm;m++) {
-    julianday += dpm(yy,m);
+double TimeStamp::frac_of_year_in_days () const {
+  double doy = (m_date[2]-1) + sec_of_day() / 86400.0; // WARNING: avoid integer division
+  for (int m=1; m<m_date[1]; ++m) {
+    doy += days_in_month(m_date[0],m);
   }
-  return julianday;
-}
-
-int TimeStamp::get_dpm () const {
-  return dpm(get_years(),get_months());
+  return doy;
 }
 
 TimeStamp& TimeStamp::operator+=(const int seconds) {
@@ -169,8 +159,8 @@ TimeStamp& TimeStamp::operator+=(const int seconds) {
   hour = hour % 24;
   dd += carry;
 
-  while (dd>dpm(yy,mm)) {
-    dd -= dpm(yy,mm);
+  while (dd>days_in_month(yy,mm)) {
+    dd -= days_in_month(yy,mm);
     ++mm;
     
     if (mm>12) {
@@ -187,19 +177,19 @@ bool operator== (const TimeStamp& ts1, const TimeStamp& ts2) {
 }
 
 bool operator< (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1.get_years()<ts2.get_years()) {
+  if (ts1.get_year()<ts2.get_year()) {
     return true;
-  } else if (ts1.get_years()==ts2.get_years()) {
-    return ts1.get_julian_day()<ts2.get_julian_day();
+  } else if (ts1.get_year()==ts2.get_year()) {
+    return ts1.frac_of_year_in_days()<ts2.frac_of_year_in_days();
   }
   return false;
 }
 
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1.get_years()<ts2.get_years()) {
+  if (ts1.get_year()<ts2.get_year()) {
     return true;
-  } else if (ts1.get_years()==ts2.get_years()) {
-    return ts1.get_julian_day()<=ts2.get_julian_day();
+  } else if (ts1.get_year()==ts2.get_year()) {
+    return ts1.frac_of_year_in_days()<=ts2.frac_of_year_in_days();
   }
   return false;
 }

@@ -133,9 +133,12 @@ void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
 {
   // Initialize Time Data
   auto ts = timestamp();
-  SPATimeState.current_month = ts.get_months();
-  SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
-  SPATimeState.days_this_month = (Real)ts.get_dpm();
+
+  const auto month = ts.get_month();
+
+  SPATimeState.current_month = month;
+  SPATimeState.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
+  SPATimeState.days_this_month = util::days_in_month(ts.get_year(),month);
 
   // Initialize SPA input data
   initialize_spa_impl();
@@ -146,12 +149,14 @@ void SPA::run_impl (const int /* dt */)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
+  const auto month = ts.get_month();
+
   /* Update time data if the month has changed */
-  SPATimeState.t_now = ts.get_julian_day();
-  if (ts.get_months() != SPATimeState.current_month) {
-    SPATimeState.current_month = ts.get_months();
-    SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
-    SPATimeState.days_this_month = (Real)ts.get_dpm();
+  SPATimeState.t_now = ts.frac_of_year_in_days();
+  if (month != SPATimeState.current_month) {
+    SPATimeState.current_month = month;
+    SPATimeState.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
+    SPATimeState.days_this_month = util::days_in_month(ts.get_year(),month);
   }
 
   // Call the main SPA routine to get interpolated aerosol forcings.

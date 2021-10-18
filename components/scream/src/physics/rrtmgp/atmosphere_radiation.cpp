@@ -284,13 +284,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
       auto ts = timestamp();
       auto orbital_year = m_orbital_year;
       if (orbital_year < 0) {
-          orbital_year = ts.get_years();
+          orbital_year = ts.get_year();
       }
       shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
                          &obliqr, &lambm0, &mvelpp);
       // Use the orbital parameters to calculate the solar declination
       double delta, eccf;
-      auto calday = ts.get_julian_day();
+      auto calday = ts.frac_of_year_in_days();
       shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                        obliqr, &delta, &eccf);
       // Now use solar declination to calculate zenith angle for all points

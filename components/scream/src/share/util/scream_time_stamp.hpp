@@ -22,9 +22,9 @@ public:
 
   const std::vector<int>& get_date () const { return m_date; }
   const std::vector<int>& get_time () const { return m_time; }
-  int get_years   () const { return m_date[0]; }
-  int get_months  () const { return m_date[1]; }
-  int get_days    () const { return m_date[2]; }
+  int get_year    () const { return m_date[0]; }
+  int get_month   () const { return m_date[1]; }
+  int get_day     () const { return m_date[2]; }
   int get_hours   () const { return m_time[0]; }
   int get_minutes () const { return m_time[1]; }
   int get_seconds () const { return m_time[2]; }
@@ -36,8 +36,7 @@ public:
   std::string to_string () const;
   std::string get_date_string () const;
   std::string get_time_string () const;
-  double get_julian_day () const;
-  int    get_dpm () const;
+  double frac_of_year_in_days () const;
 
   // === Update method(s) === //
 
@@ -52,21 +51,15 @@ protected:
   std::vector<int> m_time;  // [hour, min, sec]
 };
 
+// Overload operators for TimeStamp
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
 TimeStamp operator+ (const TimeStamp& ts, const int dt);
-// double operator- (const TimeStamp& ts, const TimeStamp& dt);
 
-// Define here instead of inside the class, so we can call op==
-inline bool TimeStamp::is_valid () const {
-  return !(*this==TimeStamp());
-}
-
-// Caclulate julian day as defined by the number of days after the beginning of the year:
-//   julian_day = sum(day_per_month(m),m=1...mm) + dd + ss/86400
-// Note the year, yy, is also an input to allow for accurate calculation during a leap year if applicable.
-double julian_day (const int yy, const int mm, const int dd, const int sec_of_day);
+// Time-related free-functions
+int days_in_month (const int year, const int month);
+bool is_leap_year (const int year);
 
 } // namespace util
 

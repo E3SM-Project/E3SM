@@ -45,15 +45,15 @@ TEST_CASE ("time_stamp") {
   using TS = util::TimeStamp;
 
   TS ts1 (2021,10,12,17,8,30);
-  REQUIRE (ts1.get_years()==2021);
-  REQUIRE (ts1.get_months()==10);
-  REQUIRE (ts1.get_days()==12);
+  REQUIRE (ts1.get_year()==2021);
+  REQUIRE (ts1.get_month()==10);
+  REQUIRE (ts1.get_day()==12);
   REQUIRE (ts1.get_hours()==17);
   REQUIRE (ts1.get_minutes()==8);
   REQUIRE (ts1.get_seconds()==30);
 
-  // Julian day = day_of_year.fraction_of_day, with day_of_year=0 at Jan 1st.
-  REQUIRE (ts1.get_julian_day()==(284 + (17*3600+8*60+30)/86400.0));
+  // Julian day = frac_of_year_in_days.fraction_of_day, with frac_of_year_in_days=0 at Jan 1st.
+  REQUIRE (ts1.frac_of_year_in_days()==(284 + (17*3600+8*60+30)/86400.0));
 
   REQUIRE (ts1.get_date_string()=="2021-10-12");
   REQUIRE (ts1.get_time_string()=="17:08:30");
@@ -74,59 +74,59 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==ts1.get_minutes());
   REQUIRE (ts3.get_hours()==ts1.get_hours());
-  REQUIRE (ts3.get_days()==ts1.get_days());
-  REQUIRE (ts3.get_months()==ts1.get_months());
-  REQUIRE (ts3.get_years()==ts1.get_years());
+  REQUIRE (ts3.get_day()==ts1.get_day());
+  REQUIRE (ts3.get_month()==ts1.get_month());
+  REQUIRE (ts3.get_year()==ts1.get_year());
 
   ts3 += 60;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==ts1.get_hours());
-  REQUIRE (ts3.get_days()==ts1.get_days());
-  REQUIRE (ts3.get_months()==ts1.get_months());
-  REQUIRE (ts3.get_years()==ts1.get_years());
+  REQUIRE (ts3.get_day()==ts1.get_day());
+  REQUIRE (ts3.get_month()==ts1.get_month());
+  REQUIRE (ts3.get_year()==ts1.get_year());
 
   ts3 += 3600;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==ts1.get_hours()+1);
-  REQUIRE (ts3.get_days()==ts1.get_days());
-  REQUIRE (ts3.get_months()==ts1.get_months());
-  REQUIRE (ts3.get_years()==ts1.get_years());
+  REQUIRE (ts3.get_day()==ts1.get_day());
+  REQUIRE (ts3.get_month()==ts1.get_month());
+  REQUIRE (ts3.get_year()==ts1.get_year());
 
   ts3 += 86400;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
-  REQUIRE (ts3.get_days()==(ts1.get_days()+1));
-  REQUIRE (ts3.get_months()==ts1.get_months());
-  REQUIRE (ts3.get_years()==ts1.get_years());
+  REQUIRE (ts3.get_day()==(ts1.get_day()+1));
+  REQUIRE (ts3.get_month()==ts1.get_month());
+  REQUIRE (ts3.get_year()==ts1.get_year());
 
   ts3 += 86400*20;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
-  REQUIRE (ts3.get_days()==(ts1.get_days()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
-  REQUIRE (ts3.get_months()==(ts1.get_months()+1));
-  REQUIRE (ts3.get_years()==ts1.get_years());
+  REQUIRE (ts3.get_day()==(ts1.get_day()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
+  REQUIRE (ts3.get_month()==(ts1.get_month()+1));
+  REQUIRE (ts3.get_year()==ts1.get_year());
 
   ts3 += 86400*365;
   REQUIRE (ts3.get_seconds()==ts1.get_seconds()+1);
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
-  REQUIRE (ts3.get_days()==(ts1.get_days()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
-  REQUIRE (ts3.get_months()==(ts1.get_months()+1));
-  REQUIRE (ts3.get_years()==(ts1.get_years()+1));
+  REQUIRE (ts3.get_day()==(ts1.get_day()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
+  REQUIRE (ts3.get_month()==(ts1.get_month()+1));
+  REQUIRE (ts3.get_year()==(ts1.get_year()+1));
 
   // Check update across leap date
 #ifdef EKAT_HAS_LEAP_YEAR
   TS ts4(2024,2,28,0,0,0);
   ts4 += 86400;
-  REQUIRE (ts4.get_months()==2);
-  REQUIRE (ts4.get_days()==29);
+  REQUIRE (ts4.get_month()==2);
+  REQUIRE (ts4.get_day()==29);
   ts4 += 86400;
-  REQUIRE (ts4.get_months()==3);
-  REQUIRE (ts4.get_days()==1);
+  REQUIRE (ts4.get_month()==3);
+  REQUIRE (ts4.get_day()==1);
 #endif
 
   // Comparisons
