@@ -67,7 +67,7 @@ public:
 
 protected:
 
-  void initialize_impl (const util::TimeStamp&) {
+  void initialize_impl () {
     // Do nothing
   }
 

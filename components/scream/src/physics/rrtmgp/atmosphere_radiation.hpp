@@ -48,7 +48,7 @@ public:
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
   // The three main interfaces for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
+  void initialize_impl ();
   void run_impl        (const int dt);
   void finalize_impl   ();
 

@@ -65,7 +65,7 @@ protected:
   // Updates p_mid
   void update_pressure ();
 
-  void initialize_impl (const util::TimeStamp& t0);
+  void initialize_impl ();
 protected:
   void run_impl        (const int dt);
   void finalize_impl   ();

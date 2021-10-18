@@ -67,7 +67,7 @@ protected:
   void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods
-  void initialize_impl (const TimeStamp& t0);
+  void initialize_impl ();
   void run_impl        (const int dt);
   void finalize_impl   (/* what inputs? */);
 

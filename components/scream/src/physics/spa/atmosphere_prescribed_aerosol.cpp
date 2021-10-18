@@ -129,7 +129,7 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
+void SPA::initialize_impl ()
 {
   // Initialize Time Data
   auto ts = timestamp();

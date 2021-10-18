@@ -234,7 +234,7 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
+  void initialize_impl ();
   void run_impl        (const int dt);
   void finalize_impl   ();
 

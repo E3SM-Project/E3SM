@@ -255,7 +255,7 @@ protected:
   }
 
   // Override this method to initialize the derived
-  virtual void initialize_impl(const TimeStamp& t0) = 0;
+  virtual void initialize_impl() = 0;
 
   // Override this method to define how the derived runs forward one step
   // (of size dt). This method is called before the timestamp is updated.

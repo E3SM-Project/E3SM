@@ -16,7 +16,7 @@ AtmosphereProcess::AtmosphereProcess (const ekat::Comm& comm, const ekat::Parame
 void AtmosphereProcess::initialize (const TimeStamp& t0) {
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
-  initialize_impl(m_time_stamp);
+  initialize_impl();
 }
 
 void AtmosphereProcess::run (const int dt) {
