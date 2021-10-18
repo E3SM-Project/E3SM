@@ -1,0 +1,16 @@
+add_subdirectory(share)
+add_subdirectory(p3)
+
+if (NOT USE_SAMXX)
+  if (SCREAM_DOUBLE_PRECISION)
+    add_subdirectory(rrtmgp)
+  else()
+    message(STATUS "WARNING: RRTMGP only supported for double precision builds; skipping")
+  endif()
+endif()
+
+add_subdirectory(shoc)
+if (SCREAM_ENABLE_EXPERIMENTAL)
+  add_subdirectory(zm)
+endif()
+add_subdirectory(cld_fraction)
