@@ -85,7 +85,7 @@ module scream_cpl_indices
     vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 1
 
     ! The following are exported from SCREAM
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_z'))       = 'z_mid'
+    scr_names_a2x(mct_avect_indexra(a2x,'Sa_z'))       = 'Sa_z'
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_u'))       = 'horiz_winds'
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_v'))       = 'horiz_winds'
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_tbot'))    = 'T_mid'
