@@ -177,7 +177,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
-void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
+void RRTMGPRadiation::initialize_impl() {
   using PC = scream::physics::Constants<Real>;
 
   // Determine orbital year. If Orbital Year is negative, use current year
@@ -209,7 +209,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 }
 // =========================================================================================
 
-void RRTMGPRadiation::run_impl (const Real dt) {
+void RRTMGPRadiation::run_impl (const int dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
@@ -284,13 +284,13 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       auto ts = timestamp();
       auto orbital_year = m_orbital_year;
       if (orbital_year < 0) {
-          orbital_year = ts.get_years();
+          orbital_year = ts.get_year();
       }
       shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
                          &obliqr, &lambm0, &mvelpp);
       // Use the orbital parameters to calculate the solar declination
       double delta, eccf;
-      auto calday = ts.get_julian_day();
+      auto calday = ts.frac_of_year_in_days();
       shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                        obliqr, &delta, &eccf);
       // Now use solar declination to calculate zenith angle for all points

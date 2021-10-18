@@ -44,9 +44,8 @@ void finalize_geometry_f90 ();
 // Prim init/run/finalize
 void prim_init_data_structures_f90 ();
 void prim_set_test_initial_conditions_f90 ();
-void prim_copy_cxx_to_f90 ();
 void prim_init_model_f90 ();
-void prim_run_f90 (const double& dt);
+void prim_run_f90 ();
 void prim_finalize_f90 ();
 
 // Grids specs
@@ -62,6 +61,7 @@ void get_dyn_grid_data_f90 (AbstractGrid::gid_type* const& gids,
 void get_phys_grid_data_f90 (const int& pg_type,
                              AbstractGrid::gid_type* const& gids,
                              double* const& lat, double* const& lon, double* const& area);
+int get_homme_nsplit_f90 (const int& atm_dt);
 
 // Parmaters getters/setters
 int get_homme_int_param_f90(const char** name);

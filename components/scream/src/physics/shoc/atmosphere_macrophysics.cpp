@@ -240,7 +240,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::initialize_impl (const util::TimeStamp& /* t0 */)
+void SHOCMacrophysics::initialize_impl ()
 {
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -355,7 +355,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run_impl (const Real dt)
+void SHOCMacrophysics::run_impl (const int dt)
 {
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
@@ -381,7 +381,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
-  m_nadv = ekat::impl::max(hdtime/dt,sp(1));
+  m_nadv = std::max(hdtime/dt,1);
 
   // WorkspaceManager for internal local variables
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;

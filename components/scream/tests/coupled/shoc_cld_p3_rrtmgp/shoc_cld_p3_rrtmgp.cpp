@@ -22,9 +22,15 @@ TEST_CASE("shoc-stand-alone", "") {
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
-  // run params:
-  const auto& num_iters = ad_params.get<int>("Number of Iterations");
-  const auto& dt        = ad_params.get<Real>("dt",300.0);
+  // Time stepping parameters
+  auto& ts = ad_params.sublist("Time Stepping");
+  const auto dt = ts.get<int>("Time Step");
+  const auto start_date = ts.get<std::vector<int>>("Start Date");
+  const auto start_time = ts.get<std::vector<int>>("Start Time");
+  const auto nsteps     = ts.get<int>("Number of Steps");
+
+  util::TimeStamp t0 (start_date, start_time);
+  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -36,28 +42,14 @@ TEST_CASE("shoc-stand-alone", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init and run 
-  util::TimeStamp time (0,0,0,0);
-  ad.initialize(atm_comm,ad_params,time);
-
-  if (atm_comm.am_i_root()) {
-    printf("Run iteration: ");
-    fflush(stdout);
-  }
-  for (int i=0; i<num_iters; ++i) {
-    if (atm_comm.am_i_root()) {
-      if ((i+1) % 10 == 0) {
-        printf("  -  %5.2f%%\nRun iteration: %d, ",(Real)i/Real(num_iters)*100,i+1);
-      } else {
-        printf("%d, ",i+1);
-      }
-      fflush(stdout);
-    }
+  // Init, run, and finalize
+  ad.initialize(atm_comm,ad_params,t0);
+  printf("Start time stepping loop...       [  0%%]\n");
+  for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
+    std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+    std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
   }
-  printf("\n");
-
-  // Finalize 
   ad.finalize();
 
   // If we got here, we were able to run shoc

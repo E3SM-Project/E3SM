@@ -67,7 +67,7 @@ public:
 
 protected:
 
-  void initialize_impl (const util::TimeStamp&) {
+  void initialize_impl () {
     // Do nothing
   }
 
@@ -75,7 +75,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void run_impl (const Real /* dt */) {
+  void run_impl (const int /* dt */) {
     const int ncols = m_grid->get_num_local_dofs();
     const int nlevs = m_grid->get_num_vertical_levels();
     auto policy = KokkosTypes<exec_space>::RangePolicy(0,ncols*nlevs);

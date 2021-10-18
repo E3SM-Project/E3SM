@@ -1,45 +1,36 @@
 INCLUDE (ScreamUtils)
 
-## Create test
-# Required libraries
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-SET (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
-
-# Test atmosphere processes.
+# Create the test
+SET (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp scream_control scream_share physics_share)
 CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS "shoc;cld;p3;rrtmgp;physics")
 
-target_include_directories(shoc_cld_p3_rrtmgp PUBLIC
-    ${SCREAM_BASE_DIR}/src/physics/rrtmgp
-    ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
-    ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
-)
+# Set AD configurable options
+set (ATM_TIME_STEP 1800)
+SetVarDependingOnTestProfile(NUM_STEPS 2 8 48)  # 1h 4h 24h
 
-## Copy yaml input file to run directory
-FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-# P3 data files
-CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-# RRTMGP data files
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/examples/all-sky/rrtmgp-allsky.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-# Basic config files
-SetVarDependingOnTestProfile(SCREAM_TEST_NUM_TIME_STEPS 3 5 10)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+# Configure yaml input file to run directory
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc
+
+## Copy input files to run directory
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+set (RRTMGP_EXT_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc
                ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc COPYONLY)
+
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+
+configure_file(${RRTMGP_EXT_DIR}/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+configure_file(${RRTMGP_EXT_DIR}/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+configure_file(${RRTMGP_EXT_DIR}/examples/all-sky/rrtmgp-allsky.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)

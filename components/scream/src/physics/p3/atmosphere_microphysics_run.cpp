@@ -2,7 +2,7 @@
 
 namespace scream {
 
-void P3Microphysics::run_impl (const Real dt)
+void P3Microphysics::run_impl (const int dt)
 {
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(

@@ -14,136 +14,158 @@
 namespace scream {
 namespace util {
 
-namespace {
+int days_in_month (const int yy, const int mm) {
+  constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
+  auto& arr = is_leap_year(yy) ? leap_days : nonleap_days;
+  return arr[mm-1];
+}
 
-constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
-
-// Utility functions
-bool is_leap (const int yy) {
-#ifdef EKAT_HAS_LEAP_YEAR
+bool is_leap_year (const int yy) {
+#ifdef SCREAM_HAS_LEAP_YEAR
   if (yy%4==0) {
     // Year is divisible by 4 (minimum requirement)
     if (yy%100 != 0) {
       // Not a centennial year => leap.
       return true;
     } else if ((yy/100)%4==0) {
-      // Centennial year, but first 2 digids divisible by 4 => leap
+      // Centennial year, AND first 2 digids divisible by 4 => leap
       return true;
     }
   }
 #else
   (void)yy;
 #endif
+  // Either leap year not enabled, or not a leap year at all
   return false;
 }
 
-int dpy (const int yy) {
-  int n = constants::days_per_nonleap_year;
-  if (is_leap(yy)) {
-    ++n;
-  }
-  return n;
-}
-
-int dpm (const int yy, const int mm) {
-  auto& arr = is_leap(yy) ? leap_days : nonleap_days;
-  return arr[mm];
-}
-
-} // anonymous namespace
 
 TimeStamp::TimeStamp()
- : m_yy (std::numeric_limits<int>::lowest())
- , m_mm (std::numeric_limits<int>::lowest())
- , m_dd (std::numeric_limits<int>::lowest())
- , m_ss (std::numeric_limits<double>::lowest())
- , m_jd (std::numeric_limits<double>::lowest())
+ : m_date (3,std::numeric_limits<int>::lowest())
+ , m_time (3,std::numeric_limits<int>::lowest())
 {
   // Nothing to do here
 }
 
-TimeStamp::TimeStamp(const int yy,
-                     const int mm,
-                     const int dd,
-                     const double ss)
- : m_yy(yy)
- , m_mm(mm)
- , m_dd(dd)
- , m_ss(ss)
+TimeStamp::TimeStamp(const std::vector<int>& date,
+                     const std::vector<int>& time)
 {
+  EKAT_REQUIRE_MSG (date.size()==3, "Error! Date should consist of three ints: [year, month, day].\n");
+  EKAT_REQUIRE_MSG (time.size()==3, "Error! Time of day should consist of three ints: [hour, min, sec].\n");
+
+  const auto yy   = date[0];
+  const auto mm   = date[1];
+  const auto dd   = date[2];
+  const auto hour = time[0];
+  const auto min  = time[1];
+  const auto sec  = time[2];
+
   // Check the days and seconds numbers are non-negative.
-  EKAT_REQUIRE_MSG (mm>=0, "Error! Month is negative.\n");
-  EKAT_REQUIRE_MSG (mm<=11, "Error! Month is too large.\n");
-  EKAT_REQUIRE_MSG (dd>=0, "Error! Day is negative.\n");
-  EKAT_REQUIRE_MSG (dd<(is_leap(m_yy) ? leap_days[mm] : nonleap_days[mm]), "Error! Day is too large.\n");
-  EKAT_REQUIRE_MSG (ss>=0, "Error! Seconds are negative.\n");
-  EKAT_REQUIRE_MSG (ss<constants::seconds_per_day, "Error! Seconds are too large.\n");
+  EKAT_REQUIRE_MSG (mm>0   && mm<=12, "Error! Month out of bounds.\n");
+  EKAT_REQUIRE_MSG (dd>0   && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
+  EKAT_REQUIRE_MSG (sec>=0  && sec<60, "Error! Seconds out of bounds.\n");
+  EKAT_REQUIRE_MSG (min>=0  && min<60, "Error! Minutes out of bounds.\n");
+  EKAT_REQUIRE_MSG (hour>=0 && hour<24, "Error! Hours out of bounds.\n");
 
-  // Adjust if input numbers are too large
-  int carry;
-  carry = static_cast<int>(std::floor(m_ss / constants::seconds_per_day));
-  m_ss  = std::fmod(m_ss, constants::seconds_per_day);
-  m_dd += carry;
+  // All good, store
+  m_date = date;
+  m_time = time;
+}
 
-  while (m_dd>dpy(m_yy)) {
-    m_dd -= dpy(m_yy);
-    ++m_yy;    
-  }
+TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
+                     const int h, const int min, const int sec)
+ : TimeStamp({yy,mm,dd},{h,min,sec})
+{
+  // Nothing to do here
+}
 
+bool TimeStamp::is_valid () const {
+  return !(*this==TimeStamp());
 }
 
 std::string TimeStamp::to_string () const {
-  const int ss = static_cast<int>(m_ss);
-  const int h =  ss / 3600;
-  const int m = (ss % 3600) / 60;
-  const int s = (ss % 3600) % 60;
 
-  std::ostringstream ymdhms;
-  ymdhms << std::setw(4) << std::setfill('0') << m_yy << "-";
-  ymdhms << std::setw(2) << std::setfill('0') << m_mm+1 << "-";
-  ymdhms << std::setw(2) << std::setfill('0') << m_dd+1 << " ";
-  ymdhms << std::setw(2) << std::setfill('0') << h << ":";
-  ymdhms << std::setw(2) << std::setfill('0') << m << ":";
-  ymdhms << std::setw(2) << std::setfill('0') << s;
-  return ymdhms.str();
+  auto time = get_time_string ();
+  time.erase(std::remove( time.begin(), time.end(), ':'), time.end());
 
+  return get_date_string() + "." + time;
 }
 
-double TimeStamp::get_julian_day () const {
-  return julian_day(m_yy,m_mm,m_dd,m_ss);
+std::string TimeStamp::get_date_string () const {
+
+  std::ostringstream ymd;
+
+  ymd << std::setw(4) << std::setfill('0') << m_date[0] << "-";
+  ymd << std::setw(2) << std::setfill('0') << m_date[1] << "-";
+  ymd << std::setw(2) << std::setfill('0') << m_date[2];
+
+  return ymd.str();
 }
 
-double julian_day (const int yy, const int mm, const int dd, const double ss) {
-  // Initialize Julian Day
-  double julianday = dd + ss;
-  for (int m=0;m<mm;m++) {
-    julianday += dpm(yy,m);
+std::string TimeStamp::get_time_string () const {
+
+  std::ostringstream hms;
+
+  hms << std::setw(2) << std::setfill('0') << m_time[0] << ":";
+  hms << std::setw(2) << std::setfill('0') << m_time[1] << ":";
+  hms << std::setw(2) << std::setfill('0') << m_time[2];
+
+  return hms.str();
+}
+
+double TimeStamp::frac_of_year_in_days () const {
+  double doy = (m_date[2]-1) + sec_of_day() / 86400.0; // WARNING: avoid integer division
+  for (int m=1; m<m_date[1]; ++m) {
+    doy += days_in_month(m_date[0],m);
   }
-  return julianday;
+  return doy;
 }
 
-int TimeStamp::get_dpm () const {
-  return dpm(m_yy,m_mm);
-}
-
-TimeStamp& TimeStamp::operator+=(const double seconds) {
+TimeStamp& TimeStamp::operator+=(const int seconds) {
   EKAT_REQUIRE_MSG(is_valid(), "Error! The time stamp contains uninitialized values.\n"
                                  "       To use this object, use operator= with a valid rhs first.\n");
 
+  auto& sec  = m_time[2];
+  auto& min  = m_time[1];
+  auto& hour = m_time[0];
+  auto& dd = m_date[2];
+  auto& mm = m_date[1];
+  auto& yy = m_date[0];
+
+  EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time, sorry.\n");
+  sec += seconds;
+
+  // Carry over
   int carry;
-  m_ss += seconds;
-  carry = static_cast<int>(std::floor(m_ss / constants::seconds_per_day));
-  m_ss  = std::fmod(m_ss, constants::seconds_per_day);
+  carry = sec / 60;
+  if (carry==0) {
+    return *this;
+  }
 
-  if (carry>0) {
+  sec = sec % 60;
+  min += carry;
+  carry = min / 60;
+  if (carry==0) {
+    return *this;
+  }
+  min = min % 60;
+  hour += carry;
+  carry = hour / 24;
 
-    m_dd += carry;
-    while ((m_dd+1)>dpm(m_yy,m_mm)) { /* Have to offset m_dd by one because it starts at 0 */
-      m_dd -= dpm(m_yy,m_mm)-1;
-      ++m_mm;
-      m_yy += m_mm / 12;
-      m_mm  = m_mm % 12;
+  if (carry==0) {
+    return *this;
+  }
+  hour = hour % 24;
+  dd += carry;
+
+  while (dd>days_in_month(yy,mm)) {
+    dd -= days_in_month(yy,mm);
+    ++mm;
+    
+    if (mm>12) {
+      ++yy;
+      mm = 1;
     }
   }
 
@@ -151,113 +173,28 @@ TimeStamp& TimeStamp::operator+=(const double seconds) {
 }
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2) {
-  return ts1.test_double()==ts2.test_double();
+  return ts1.get_date()==ts2.get_date() && ts1.get_time()==ts2.get_time();
 }
 
 bool operator< (const TimeStamp& ts1, const TimeStamp& ts2) {
-  return ts1.test_double()<ts2.test_double();
+  if (ts1.get_year()<ts2.get_year()) {
+    return true;
+  } else if (ts1.get_year()==ts2.get_year()) {
+    return ts1.frac_of_year_in_days()<ts2.frac_of_year_in_days();
+  }
+  return false;
 }
 
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
-  return ts1.test_double()<=ts2.test_double();
+  if (ts1.get_year()<ts2.get_year()) {
+    return true;
+  } else if (ts1.get_year()==ts2.get_year()) {
+    return ts1.frac_of_year_in_days()<=ts2.frac_of_year_in_days();
+  }
+  return false;
 }
 
-double operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1<ts1) {
-    return -(ts2-ts1);
-  }
-
-  constexpr int spd = constants::seconds_per_day;
-  double dt = 0;
-
-  const int y1 = ts1.get_years();
-  const int y2 = ts2.get_years();
-  const int m1 = ts1.get_months();
-  const int m2 = ts2.get_months();
-  const int d1 = ts1.get_days();
-  const int d2 = ts2.get_days();
-  const int s1 = ts1.get_seconds();
-  const int s2 = ts2.get_seconds();
-
-  if (y1!=y2) {
-    // 1. Process from ts2 till end of year
-
-    // Rest of day
-    dt += spd-s2;
-
-    // Rest of month
-    for (int d=d2+1; d<dpm(y2,m2); ++d) {
-      dt += spd;
-    }
-
-    // Rest of year
-    for (int m=m2+1; m<12; ++m) {
-      dt += spd*dpm(y2,m);
-    }
-
-    // 2. Process whole years till y1-1 (if any)
-    for (int y=y2+1; y<y1; ++y) {
-      dt += spd*dpy(y);
-    }
-
-    // 3. Process chunk of last year in ts1
-
-    // Previous months
-    for (int m=0; m<m1; ++m) {
-      dt += spd*dpm(y1,m);
-    }
-
-    // Previous days
-    for (int d=0; d<d1; ++d) {
-      dt += spd;
-    }
-
-    // Previous seconds
-    dt += s1;
-  } else if (m1!=m2) {
-    // 1. Process from ts2 till end of the month
-
-    // Rest of day
-    dt += spd-s2;
-
-    // Rest of month
-    for (int d=d2+1; d<dpm(y2,m2); ++d) {
-      dt += spd;
-    }
-
-    // 2. Process whole months till m1-1 (if any)
-    for (int m=m2+1; m<m1; ++m) {
-      dt += spd*dpm(y1,m);
-    }
-
-    // 3. Process chunk of last month in ts1
-
-    // Previous days
-    for (int d=0; d<d1; ++d) {
-      dt += spd;
-    }
-
-    // Previous seconds
-    dt += s1;
-  } else if (d1!=d2) {
-    // 1. Process from ts2 till end of the day
-    dt += spd-s2;
-
-    // 2. Process whole days till d1-1 (if any)
-    for (int d=d2+1; d<d1; ++d) {
-      dt += spd;
-    }
-
-    // 3. Process chunk of last day in ts1
-    dt += s1;
-  } else {
-    dt = s1 - s2;
-  }
-    
-  return dt;
-}
-
-TimeStamp operator+ (const TimeStamp& ts, const double dt) {
+TimeStamp operator+ (const TimeStamp& ts, const int dt) {
   TimeStamp sum = ts;
   sum += dt;
   return sum;

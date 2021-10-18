@@ -106,12 +106,8 @@ void AtmosphereOutput::init()
 /* Overload the run routine to accept a TimeStamp or floating point for the input time */
 void AtmosphereOutput::run(const util::TimeStamp& time)
 {
-  // In case it is needed for the output filename, parse the current timesnap into an appropriate string
-  std::string time_str = time.to_string();
-  std::replace( time_str.begin(), time_str.end(), ' ', '.');
-  time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
   // Pass the time in seconds and as a string to the run routine.
-  run_impl(time.get_seconds(),time_str);
+  run_impl(time.get_seconds(),time.to_string());
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::finalize() 

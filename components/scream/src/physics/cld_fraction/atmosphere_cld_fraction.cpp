@@ -52,7 +52,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 }
 
 // =========================================================================================
-void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
+void CldFraction::initialize_impl ()
 {
   // Set property checks for fields in this process
   auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
@@ -61,7 +61,7 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 // =========================================================================================
-void CldFraction::run_impl (const Real dt)
+void CldFraction::run_impl (const int dt)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 

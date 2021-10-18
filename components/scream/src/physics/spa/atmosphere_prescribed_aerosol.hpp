@@ -76,9 +76,9 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
+  void initialize_impl ();
   void initialize_spa_impl ();
-  void run_impl        (const Real dt);
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables

@@ -1,30 +1,28 @@
 include (ScreamUtils)
 
-# Needed for RRTMGP
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
-set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
+# Create the test
+set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
+CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}"
+               LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 
-# Add source files
-if (NOT SCREAM_AUTOTESTER) # TODO: This test should be reinstated once the homme+physics test is fixed.
-  CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}"
-                 LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-endif()
+# Set AD configurable options
+set (ATM_TIME_STEP 1800)
+SetVarDependingOnTestProfile(NUM_STEPS 2 8 48)  # 1h 4h 24h
 
-# Copy yaml input file to run directory
+# Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
-
 # Discretization/algorithm settings
 set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
-set (HOMME_TEST_RSPLIT 3)
-SetVarDependingOnTestProfile(HOMME_TEST_NMAX 3 24 96)
+set (HOMME_TEST_REMAP_FACTOR 3)
+set (HOMME_TEST_TRACERS_FACTOR 1)
 set (HOMME_TEST_TIME_STEP 300)
 SET (HOMME_THETA_FORM 1)
 SET (HOMME_TTYPE 5)
@@ -48,7 +46,7 @@ set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta-nmax.nl
+configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files

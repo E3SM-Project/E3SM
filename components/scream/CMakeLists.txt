@@ -205,6 +205,7 @@ set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-rela
 set(SCREAM_NUM_VERTICAL_LEV ${DEFAULT_NUM_VERTICAL_LEV} CACHE STRING
     "The number of levels used in the vertical grid."
 )
+option(SCREAM_HAS_LEAP_YEAR "Whether scream uses leap years or not" ON)
 
 ## Work out pack sizes.
 # Determine the master pack size.

@@ -108,13 +108,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   }
 }
 
-void AtmosphereProcessGroup::initialize_impl (const TimeStamp& t0) {
+void AtmosphereProcessGroup::initialize_impl () {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->initialize(t0);
+    atm_proc->initialize(timestamp());
   }
 }
 
-void AtmosphereProcessGroup::run_impl (const Real dt) {
+void AtmosphereProcessGroup::run_impl (const int dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {

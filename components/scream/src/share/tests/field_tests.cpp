@@ -73,10 +73,11 @@ TEST_CASE("field_tracking", "") {
   using namespace scream;
 
   FieldTracking track;
-  util::TimeStamp time1(0,0,0,10.0);
-  util::TimeStamp time2(0,0,0,20.0);
+  util::TimeStamp time1(2021,10,12,17,8,10);
+  util::TimeStamp time2(2021,10,12,17,8,20);
   REQUIRE_NOTHROW (track.update_time_stamp(time2));
 
+  // Cannot rewind time (yet)
   REQUIRE_THROWS  (track.update_time_stamp(time1));
 }
 

@@ -46,6 +46,9 @@
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME
 
+// Whether scream uses leap years or not
+#cmakedefine SCREAM_HAS_LEAP_YEAR
+
 // Whether experimental code should be enabled
 #cmakedefine SCREAM_ENABLE_EXPERIMENTAL
 
