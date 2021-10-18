@@ -440,14 +440,12 @@ module ocn_time_integration_si
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-      if (config_enable_nonhydrostatic_mode) then
-         call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
-                                             verticalVelocityTend)
-         call mpas_pool_get_array(statePool, 'verticalVelocity', &
-                                             verticalVelocityNew, 2)
-         call mpas_pool_get_array(statePool, 'verticalVelocity', &
-                                             verticalVelocityCur, 2)
-      end if
+      call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
+                                          verticalVelocityTend)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                          verticalVelocityNew, 2)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                          verticalVelocityCur, 2)
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.
 
@@ -535,7 +533,7 @@ module ocn_time_integration_si
             call mpas_pool_get_array(statePool,'glsPsi',glsPsiCur,1)
             !$omp parallel
             !$omp do schedule(runtime) private(k)
-            do iCell = 1, nCells
+            do iCell = 1, nCellsAll
                do k = 1, nVertLevels
                   tkeNew(k,iCell) = tkeCur(k,iCell)
                end do
@@ -546,7 +544,7 @@ module ocn_time_integration_si
             if(.not. config_LES_mode) then
                !$omp parallel
                !$omp do schedule(runtime) private(k)
-               do iCell = 1, nCells
+               do iCell = 1, nCellsAll
                   do k = 1, nVertLevels
                      glsPsiNew(k,iCell) = glsPsiCur(k,iCell)
                   end do

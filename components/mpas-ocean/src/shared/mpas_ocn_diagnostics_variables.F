@@ -141,7 +141,6 @@ module ocn_diagnostics_variables
       velocityForcingTend, &
       velocityPGFtend
 
-   real (kind=RKIND), dimension(:,:), pointer :: strainTensor
    real (kind=RKIND), dimension(:,:), pointer :: Sm, Sh
    real (kind=RKIND), dimension(:,:,:), pointer :: ugrad, vgrad, wgrad
    real (kind=RKIND), dimension(:,:,:), pointer :: tgrad, sgrad
@@ -609,6 +608,13 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
       call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
       call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
+      call mpas_pool_get_array(diagnosticsPool, 'ugrad', ugrad)
+      call mpas_pool_get_array(diagnosticsPool, 'vgrad', vgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'wgrad', wgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'tgrad', tgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'sgrad', sgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'Sm', Sm)
+      call mpas_pool_get_array(diagnosticsPool, 'Sh', Sh)
 
       call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
 
@@ -764,6 +770,11 @@ contains
          !$acc                   yPlus,                           &
          !$acc                   uStar,                           &
          !$acc                   dynamicViscosity                 &
+         !$acc                   ugrad,                           &
+         !$acc                   vgrad,                           &
+         !$acc                   wgrad,                           &
+         !$acc                   Sm,                              &
+         !$acc                   Sh,                              &
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -1010,6 +1021,11 @@ contains
          !$acc                   yPlus,                           &
          !$acc                   uStar,                           &
          !$acc                   dynamicViscosity                 &
+         !$acc                   ugrad,                           &
+         !$acc                   vgrad,                           &
+         !$acc                   wgrad,                           &
+         !$acc                   Sm,                              &
+         !$acc                   Sh,                              &
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -1212,6 +1228,11 @@ contains
                  velocityVmixTend,                &
                  yPlus,                           &
                  uStar,                           &
+                 ugrad,                           &
+                 vgrad,                           &
+                 wgrad,                           &
+                 Sh,                              &
+                 Sm,                              &
                  dynamicViscosity,                &
                  velocityHmixTend,                &
                  velocityVadvTend,                &

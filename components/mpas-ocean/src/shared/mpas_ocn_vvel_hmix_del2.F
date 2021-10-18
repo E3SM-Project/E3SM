@@ -117,7 +117,6 @@ contains
 
       integer :: iCell, iEdge, cell1, cell2
       integer :: i, k, nCells, nEdges
-      integer, pointer :: nVertLevels
 
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND) :: vvel_turb_flux, flux, r_tmp
@@ -131,7 +130,7 @@ contains
       nCells = nCellsOwned
       nEdges = nEdgesHalo( 1 )
 
-      allocate(eddyViscArr(nVertLevels, nEdges))
+      allocate(eddyViscArr(nVertLevels+1, nEdges))
 
       if(config_use_two_equation_turbulence_model) then
          ! Put viscosity into an array

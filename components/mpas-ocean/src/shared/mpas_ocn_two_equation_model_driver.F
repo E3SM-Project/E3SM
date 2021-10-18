@@ -169,7 +169,7 @@ contains
 
      !Compute the strain for the remaining terms in the tendency
      call ocn_compute_strain(velocityZonal, velocityMeridional,  &
-                verticalVelocity, activeTracers, strainTensor, layerThickness, err)
+                verticalVelocity, activeTracers, layerThickness, err)
      call ocn_compute_two_equation_molecular_viscosity(activeTracers)
 
      call ocn_tke_advection_mono_tend(tkeTend, tke, layerThickness,    &
@@ -255,6 +255,7 @@ contains
         end do
         !$omp end do
         !$omp end parallel
+        print *, 'max = ',maxval(vertDiffTopOfCell),minval(vertDiffTopOfCell)
      else
         !$omp parallel
         !$omp do schedule(runtime) private(k,length,dissipation)
@@ -337,7 +338,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_compute_strain(velocityZonal, velocityMeridional,  &
-                verticalVelocity, activeTracers, strainTensor, layerThickness, err)
+                verticalVelocity, activeTracers, layerThickness, err)
 
      real(kind=RKIND),dimension(:,:),intent(in) :: &
          velocityZonal, &  !Input: Zonal Velocity for gradients
@@ -350,10 +351,6 @@ contains
      real(kind=RKIND),dimension(:,:,:),intent(in) :: &
          activeTracers
 
-     real(kind=RKIND),dimension(:,:),intent(inout) :: &
-         strainTensor !Output: magnitude of the strain rate tensor for 
-                             !the smagorinsky closure
-
      integer, intent(in) :: err
 
      integer :: iCell, iEdge, j, k, cell1, cell2
@@ -364,7 +361,6 @@ contains
         ugrad(:,:,iCell) = 0.0_RKIND
         vgrad(:,:,iCell) = 0.0_RKIND
         tgrad(:,:,iCell) = 0.0_RKIND
-        strainTensor(:,iCell) = 0.0_RKIND
 
         do j = 1,nEdgesOnCell(iCell) !for device may be better to move next lines inside k loop
            iEdge = edgesOnCell(j,iCell)
@@ -419,15 +415,6 @@ contains
                         (0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell))))
        end do
 
-       ! next form the strain tensor (only the horizontal parts here)
-       k=1
-       strainTensor(k,iCell) = ugrad(1,k,iCell) + ugrad(2,k,iCell) + 0.5_RKIND*ugrad(3,k,iCell) + &
-                               vgrad(1,k,iCell) + vgrad(2,k,iCell) + 0.5_RKIND*vgrad(3,k,iCell)
-       do k = 2,maxLevelCell(iCell)
-          strainTensor(k,iCell) = ugrad(1,k,iCell) + ugrad(2,k,iCell) + 0.5_RKIND*(ugrad(3,k-1,iCell) + &
-                                  ugrad(3,k,iCell)) + vgrad(1,k,iCell) + vgrad(2,k,iCell) +             &
-                                  0.5_RKIND*(vgrad(3,k-1,iCell) + vgrad(3,k,iCell))
-       end do
     end do ! end cell loop
 
     ! add w part if requested 
@@ -456,11 +443,6 @@ contains
                          ((layerThickness(k,iCell)))
           end do
 
-          ! next form the strain tensor (only the horizontal parts for now
-          do k = 1,maxLevelCell(iCell)
-             strainTensor(k,iCell) = strainTensor(k,iCell) + wgrad(1,k,iCell) + wgrad(2,k,iCell) + &
-                                     wgrad(3,k,iCell)
-          end do
        end do !end icell loop
     end if !if present w 
 
@@ -600,7 +582,7 @@ contains
      !computes the molecular viscosity of water following Sharqawy et al (2010)
      real(kind=RKIND),dimension(:,:,:), intent(in) :: activeTracers
      real(kind=RKIND) :: A, B, C, dcEdgeAverage
-     real(kind=RKIND) :: A1, B1, freshwaterMu
+     real(kind=RKIND) :: tAvg, sAvg, viscAvg, A1, B1, freshwaterMu
 
      real(kind=RKIND) :: boundaryTangentialVel
      integer :: iCell, j, k
@@ -615,22 +597,39 @@ contains
         do j=1,nEdgesOnCell(iCell)
            dcEdgeAverage = dcEdgeAverage + dcEdge(edgesOnCell(j,iCell))
         end do
-        dcEdgeAverage = dcEdgeAverage / nEdgesOnCell(iCell)
-        do k = 1,nVertLevels
-           freshwaterMu = A*10.0_RKIND**(B/(activeTracers(1,k,iCell) + 273.15_RKIND - C))
-           A1 = 1.541_RKIND + 0.01998*activeTracers(1,k,iCell) - 9.52E-5_RKIND*activeTracers(1,k,iCell)**2.0
-           B1 = 7.974_RKIND - 0.07561*activeTracers(1,k,iCell) + 4.724E-4_RKIND*activeTracers(1,k,iCell)**2.0
-           dynamicViscosity(k,iCell) = freshwaterMu*(1.0_RKIND + &
-                                        A1*activeTracers(2,k,iCell) + &
-                                        B1*activeTracers(2,k,iCell)**2)
+        dcEdgeAverage = dcEdgeAverage / nEdgesOnCell(iCell) + 1.0E-15_RKIND
+        dynamicViscosity(1,iCell) = 0.0_RKIND
+        do k = 1,maxLevelCell(iCell)-1
+           tAvg = 0.5_RKIND*(activeTracers(1,k,iCell) + activeTracers(1,k+1,iCell))
+           sAvg = 0.5_RKIND*(activeTracers(2,k,iCell) + activeTracers(2,k+1,iCell)) / 1000.0_RKIND
+           viscAvg = 1.0E-15_RKIND + 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
+!           freshwaterMu = A*10.0_RKIND**(B/(tAvg + 273.15_RKIND - C))
+           freshwaterMu = 4.2844E-5 + (0.157_RKIND*(tAvg + 64.993_RKIND)**2.0 - 91.296_RKIND)**(-1.0)
+           A1 = 1.541_RKIND + 0.01998*tAvg - 9.52E-5_RKIND*tAvg**2.0
+           B1 = 7.974_RKIND - 0.07561*tAvg + 4.724E-4_RKIND*tAvg**2.0
+           dynamicViscosity(k+1,iCell) = freshwaterMu*(1.0_RKIND + &
+                                        A1*sAvg + &
+                                        B1*sAvg**2)
            boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
                                   velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
            !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
 
            uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
-                          * dynamicViscosity(k,iCell)/rho_sw)
-           yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (dynamicViscosity(k,iCell)/rho_sw)
+                          * viscAvg/rho_sw)
+           yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (viscAvg/rho_sw)
         end do
+        k=maxLevelCell(iCell)
+        dynamicViscosity(maxLevelCell(iCell)+1:nVertLevels+1,iCell) = 0.0_RKIND
+
+        viscAvg = 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
+        boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
+                                  velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
+           !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
+
+        uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
+                          * viscAvg/rho_sw)
+        yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (viscAvg/rho_sw)
+
      end do
 
      !compute ustar

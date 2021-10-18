@@ -2165,7 +2165,6 @@
     />
     <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
        description="nonHydrostatic pressure , set to zero if config_enable_nonhydrostatic_mode = .false."
-			 packages="nonHydrostaticMode"
 			 />
 	<var name="tke" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		description="Turbulence Kinetic Energy for the two equation turbulence closure"
@@ -2521,7 +2520,6 @@
 		/>
 		<var name="tendVerticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}" name_in_code="verticalVelocityTend"
 			 description="time tendency of the vertical velocity (Only active for non hydrostatic mode)"
-			 packages="nonHydrostaticMode"
 		/>
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
@@ -2951,7 +2949,7 @@
 			 description="vertical viscosity defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
-    <var name="dynamicViscosity" type="real" dimensions="nVertLevels nCells Time" units="Ns/m^2"
+    <var name="dynamicViscosity" type="real" dimensions="nVertLevelsP1 nCells Time" units="Ns/m^2"
       description="dynamic viscosity of water as a function of temperature and salinity"
       packages="forwardMode;analysisMode"
     />
