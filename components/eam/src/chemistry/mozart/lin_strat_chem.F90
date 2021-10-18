@@ -269,7 +269,7 @@ end subroutine linoz_readnl
     real(r8) ::o3_old,   n2o_old,  noy_old,  ch4_old,  h2o_old
     real(r8) ::o3_new,   n2o_new,  noy_new,  ch4_new,  h2o_new
     real(r8) ::o3_clim, ss_x
-    real(r8) :: dn2op, dn2ol, dnoyp, dnoyl, delo3, delch4, lfreq
+    real(r8) :: dn2op, dn2ol, dnoyp, dnoyl, delo3, delo3_psc, delch4, lfreq
     real(r8) :: max_sza, psc_loss, ch4max, pw
     real(r8), dimension(ncol) :: lats
     real(r8), dimension(ncol,pver) :: do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag
@@ -557,12 +557,15 @@ end subroutine linoz_readnl
                          psc_loss = exp(-linoz_cariolle_psc(i,k) &
                               * (chlorine_loading/chlorine_loading_1987)**2 &
                               * delta_t )
-!
-                         o3_new = o3_old * psc_loss
+!update from last o3_new due to gas chemisry change
+                                         
+                         delo3_psc= o3_old*(psc_loss -1._r8)
+                         o3_new =o3_new + delo3_psc !o3_new:update from gas chem loss
+                  
                       !
                       ! output diagnostic
                       !
-                         do3_linoz_psc(i,k) = (o3_new - o3_old)/delta_t
+                         do3_linoz_psc(i,k) = delo3_psc/delta_t
                       !
                       end if
                    end if
@@ -578,7 +581,8 @@ end subroutine linoz_readnl
            xvmr(i,k, h2olnz_ndx)   = h2o_new
            
 !update real o3, ch4, n2o      
-           if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   +  xvmr(i,k, o3_ndx )
+!           if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   +  xvmr(i,k, o3_ndx )
+           if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   + delo3_psc +  xvmr(i,k, o3_ndx )
            if(ch4_ndx > 0) xvmr(i,k, ch4_ndx) =  delch4  +  xvmr(i,k, ch4_ndx)
            if(n2o_ndx > 0) xvmr(i,k, n2o_ndx) =  (dn2op + dn2ol)  +  xvmr(i,k, n2o_ndx)
            if(no_ndx >0)  xvmr(i,k, no_ndx)   =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no_ndx)
@@ -655,7 +659,7 @@ end subroutine linoz_readnl
     !
     integer :: i,k,n, ll, lt0, lt, n_dl !,index_lat,index_month
     integer :: kmax
-    real(r8) :: o3col_du,delta_temp,delta_o3col,o3_old,o3_new,delta_o3
+    real(r8) :: o3col_du,delta_temp,delta_o3col,o3_old,o3_new,delta_o3,delta_o3_psc
     real(r8) :: max_sza, psc_loss
     real(r8) :: o3_clim
     real(r8), dimension(ncol) :: lats
@@ -812,12 +816,13 @@ end subroutine linoz_readnl
                       psc_loss = exp(-linoz_cariolle_psc(i,k) &
                            * (chlorine_loading/chlorine_loading_1987)**2 &
                            * delta_t )
-
-                      o3_new = o3_old * psc_loss
+                      
+                      delta_o3_psc= o3_old*(psc_loss -1._r8)
+                      o3_new= delta_o3_psc + o3_new
                       !
                       ! output diagnostic
                       !
-                      do3_linoz_psc(i,k) = (o3_new - o3_old)/delta_t
+                      do3_linoz_psc(i,k) = delta_o3_psc/delta_t
                       !
                    end if
                 end if
@@ -826,13 +831,12 @@ end subroutine linoz_readnl
           !
           ! update ozone vmr
           !
-          xvmr(i,k, o3lnz_ndx) = o3_new
-          if(o3_ndx >0) xvmr(i,k, o3_ndx) = (o3_new - o3_old) + xvmr(i,k, o3_ndx)
- 
-         
+          xvmr(i,k, o3lnz_ndx) = o3_new 
+          if(o3_ndx >0) xvmr(i,k, o3_ndx) = delta_o3 + delta_o3_psc + xvmr(i,k, o3_ndx)
+          
        end do LOOP_LEV
     end do LOOP_COL
-    !
+    o3col_du_diag(:ncol,:pver) = o3col(:ncol,:pver) * convert_to_du
     ! output
     !
     call outfld( 'LINOZ_DO3'    , do3_linoz              , ncol, lchnk )
