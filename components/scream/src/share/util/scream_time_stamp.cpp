@@ -187,19 +187,19 @@ bool operator== (const TimeStamp& ts1, const TimeStamp& ts2) {
 }
 
 bool operator< (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1.get_julian_day()<ts2.get_julian_day()) {
+  if (ts1.get_years()<ts2.get_years()) {
     return true;
-  } else if (ts1.get_julian_day()==ts2.get_julian_day()) {
-    return ts1.sec_of_day()<ts2.sec_of_day();
+  } else if (ts1.get_years()==ts2.get_years()) {
+    return ts1.get_julian_day()<ts2.get_julian_day();
   }
   return false;
 }
 
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1.get_julian_day()<ts2.get_julian_day()) {
+  if (ts1.get_years()<ts2.get_years()) {
     return true;
-  } else if (ts1.get_julian_day()==ts2.get_julian_day()) {
-    return ts1.sec_of_day()<=ts2.sec_of_day();
+  } else if (ts1.get_years()==ts2.get_years()) {
+    return ts1.get_julian_day()<=ts2.get_julian_day();
   }
   return false;
 }

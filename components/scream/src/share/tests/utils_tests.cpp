@@ -128,4 +128,9 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts4.get_months()==3);
   REQUIRE (ts4.get_days()==1);
 #endif
+
+  // Comparisons
+  REQUIRE ( TS({2021,12,31},{23,59,59}) < TS({2022,1,1},{0,0,0}));
+  REQUIRE ( TS({2022,1,1},{0,0,0}) <= TS({2022,1,1},{0,0,0}));
+  REQUIRE ( (TS({2021,12,31},{23,59,59})+1) == TS({2022,1,1},{0,0,0}));
 }
