@@ -999,37 +999,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_nr(i,:,:,k) = state(c)%q(i,m,ixnumrain)
                   crm_bm(i,:,:,k) = state(c)%q(i,m,ixrimvol)
                end if
-=======
-            ! Initialize microphysics arrays
-            if (MMF_microphysics_scheme .eq. 'sam1mom') then
-               crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-               crm_qp(i,:,:,k) = 0.0_r8
-               crm_qn(i,:,:,k) = state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-            else if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
-               crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
-               crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
-               crm_nc(i,:,:,k) = 0.0_r8
-               crm_qr(i,:,:,k) = 0.0_r8
-               crm_nr(i,:,:,k) = 0.0_r8
-               crm_ni(i,:,:,k) = 0.0_r8
-               crm_qs(i,:,:,k) = 0.0_r8
-               crm_ns(i,:,:,k) = 0.0_r8
-               crm_qg(i,:,:,k) = 0.0_r8
-               crm_ng(i,:,:,k) = 0.0_r8
-            else if (MMF_microphysics_scheme .eq. 'micro_p3') then
-               crm_qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
-               crm_qc(i,:,:,k) = state%q(i,m,ixcldliq)
-               crm_qi(i,:,:,k) = state%q(i,m,ixcldice)
-               crm_qr(i,:,:,k) = state%q(i,m,ixrain)
-               crm_qv(i,:,:,k) = state%q(i,m,1)
-               crm_qm(i,:,:,k) = state%q(i,m,ixsnow)
-               crm_nc(i,:,:,k) = state%q(i,m,ixnumliq)
-               crm_ni(i,:,:,k) = state%q(i,m,ixnumice)
-               crm_nr(i,:,:,k) = state%q(i,m,ixnumrain)
-               crm_bm(i,:,:,k) = state%q(i,m,ixnumsnow)
-            end if
->>>>>>> cleanup more files for working branch
 
             end do
          end do
@@ -1314,7 +1283,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                tracer_cnt=tracer_cnt+1
                do k=1,pver
                   do i=1,ncol
-                     edsclr_in(i,k,tracer_cnt) = max( state%q(i,k,icnst), 1.0e-12 )
+                     edsclr_in(i,k,tracer_cnt) = max( state(c)%q(i,k,icnst), 1.0e-12 )
                   end do
                end do
            end if
