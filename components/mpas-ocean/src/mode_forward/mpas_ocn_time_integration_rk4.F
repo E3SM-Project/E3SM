@@ -1029,7 +1029,6 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, normalVelocityCur
-      real (kind=RKIND), dimension(:, :), pointer :: vertAleTransportTop
       real (kind=RKIND), dimension(:, :), pointer :: verticalVelocity
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
@@ -1166,7 +1165,6 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, verticalVelocityCur
-      real (kind=RKIND), dimension(:, :), pointer :: vertAleTransportTop
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity, normalVelocityCur
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocityProvis
       real (kind=RKIND), dimension(:, :), pointer :: verticalVelocityProvis, highFreqThicknessProvis

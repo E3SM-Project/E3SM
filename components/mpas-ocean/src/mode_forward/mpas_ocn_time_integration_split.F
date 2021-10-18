@@ -477,7 +477,7 @@ module ocn_time_integration_split
       if(config_enable_nonhydrostatic_mode) then
          !$omp parallel
          !$omp do schedule(runtime) private(k)
-         do iCell = 1, nCells
+         do iCell = 1, nCellsAll
             do k = 2, maxLevelCell(iCell)
                verticalVelocityNew(k,iCell) = verticalVelocityCur(k,iCell)
             end do
