@@ -162,7 +162,7 @@ def make_file_based_on_child(filename, compiler_element):
                 for subchild in children:
                     if subchild.tag == "base":
                         assert not subchild.attrib, "No attributes allowed on a base child"
-                        file_contents += create_set_statement(subchild, varname=child.tag)
+                        file_contents += create_append_statement(subchild, child.tag)
                     elif subchild.tag == "append":
                         file_contents += create_append_statement(subchild, child.tag)
                     else:

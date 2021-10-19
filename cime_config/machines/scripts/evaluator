@@ -1,0 +1,120 @@
+#! /usr/bin/env python3
+
+"""
+Evaluate macros for problems or inefficiencies:
+1) Repitition
+2) Promotion: all children of a parent do the same thing, so do it in the parent
+3) Suspicious set, probably want append
+4) Using OS, COMPILER, or MACH with no matches in config_machines.xml
+"""
+
+import argparse, sys, os, re, pathlib
+import xml.etree.ElementTree as ET
+
+UNIVERSALS = ["universal"]
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [<path to macros>]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Evaluate cwd \033[0m
+    > {0}
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("macro_path", default=".", help="The path to the directory with macros")
+
+    parser.add_argument("-m", "--machine", help="Limit evaluation to certain machines")
+
+    parser.add_argument("-c", "--compiler", help="Limit evaluation to certain compilers")
+
+    args = parser.parse_args(args[1:])
+
+    assert (args.machine is None) or (args.compiler is None), "Do not set both -m and -c"
+
+    return args
+
+###############################################################################
+def find_machs_comps_oss(config_machines):
+###############################################################################
+    """
+    Return a dict mapping MACH -> (OS, COMPILERS), compilers, OSs
+    """
+    with open(config_machines, "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    machs = {}
+    all_comps = set()
+    oss = set()
+
+    for child in root:
+        assert child.tag == "machine", f"Unexpected child.tag {child.tag}"
+        assert "MACH" in child.attrib, f"Missing MACH attribute for child.tag {child.tag}"
+
+        mach = child.attrib["MACH"].strip()
+        assert mach not in machs, f"Repeat of mach {mach}"
+
+        found_os = False
+        found_comps = False
+        for subchild in child:
+            if subchild.tag == "OS":
+                the_os = subchild.text.strip()
+                found_os = True
+            elif subchild.tag == "COMPILERS":
+                comps = [item.strip() for item in subchild.text.strip().split(",")]
+                found_comps = True
+
+        assert found_os,    f"No OS in child.tag {child.tag}"
+        assert found_comps, f"No COMPILERS in child.tag {child.tag}"
+
+        machs[mach] = (the_os, comps)
+        all_comps.update(set(comps))
+        oss.add(the_os)
+
+    return machs, list(all_comps), list(oss)
+
+###############################################################################
+def find_suspicious_set(all_files, machs):
+###############################################################################
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                universal_macro = f"{universal}.cmake"
+                compiler_macro = f"{comp}.cmake"
+                os_macro = f"{the_os}.cmake"
+                machine_macro = f"{mach}.cmake"
+                comp_os_macro = f"{comp}_{the_os}.cmake"
+                comp_mach_macro = f"{comp}_{mach}.cmake"
+
+                x
+
+###############################################################################
+def evaluate(macro_path, machine, compiler):
+###############################################################################
+    macro_path_pl = pathlib.Path(macro_path)
+    config_machines_pl = macro_path / ".." / "config_machines.xml"
+
+    machs, all_comps, oss = find_machs_comps_oss(config_machines_pl)
+
+
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = evaluate(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
