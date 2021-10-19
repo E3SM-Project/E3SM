@@ -103,7 +103,7 @@ def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
 ###############################################################################
     baseline_sha_file = test_dir.parent/"ctest-build"/"baselines"/build_name/"baseline_git_sha"
     test_obj.assertTrue(baseline_sha_file.exists())
-    with baseline_sha_file.open("r") as fd:
+    with baseline_sha_file.open("r", encoding="utf-8") as fd:
         baseline_sha = fd.read().strip()
 
     test_obj.assertEqual(baseline_sha, expected_sha)
@@ -112,7 +112,7 @@ def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
 def add_file_and_commit(repo, filename, contents, commit_msg):
 ###############################################################################
     filepath = repo / filename
-    with filepath.open("w") as fd:
+    with filepath.open("w", encoding="utf-8") as fd:
         fd.write(contents)
 
     run_cmd_no_fail("git add {}".format(filename), from_dir=repo)
@@ -264,7 +264,7 @@ class TestUtils(TestBaseOuter.TestBase):
         self.assertEqual(ahead, 0)
 
         filepath = git_test_root / "foo"
-        with filepath.open("a") as fd:
+        with filepath.open("a", encoding="utf-8") as fd:
             fd.write("moretext")
 
         self.assertFalse(is_repo_clean(repo=git_test_root))

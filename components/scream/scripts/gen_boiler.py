@@ -546,7 +546,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
         if gb.dry_run():
             print("Would create file {} with contents:\n{}".format(filepath, contents))
         else:
-            with filepath.open("w") as fd:
+            with filepath.open("w", encoding="utf-8") as fd:
                 fd.write(contents)
 
             print("SUCCESS (Generated from scratch)")
@@ -1408,7 +1408,7 @@ class GenBoiler(object):
         else:
             origin_file = self._source_repo / get_physics_data(phys, ORIGIN_FILE)
             expect(origin_file.exists(), "Missing origin file for physics {}: {}".format(phys, origin_file))
-            db = parse_origin(origin_file.open().read(), self._subs)
+            db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
             self._db[phys] = db
             if self._verbose:
                 print("For physics {}, found:")
@@ -2364,7 +2364,7 @@ template struct Functions<Real,DefaultDevice>;
             # If freshly generated file, we're done
             pass
         else:
-            orig_lines = force_file_lines if force_file_lines else filepath.open().read().splitlines()
+            orig_lines = force_file_lines if force_file_lines else filepath.open(encoding="utf-8").read().splitlines()
             needs_rewrite = False
             gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub, force_arg_data=force_arg_data).splitlines()
 
@@ -2399,7 +2399,7 @@ template struct Functions<Real,DefaultDevice>;
                     needs_rewrite = True
 
             if needs_rewrite:
-                with filepath.open("w") as fd:
+                with filepath.open("w", encoding="utf-8") as fd:
                     fd.write("\n".join(orig_lines) + "\n")
 
                 print("SUCCESS")

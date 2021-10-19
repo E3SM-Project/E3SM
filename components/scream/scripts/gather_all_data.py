@@ -109,7 +109,7 @@ class GatherAllData(object):
                     print("Warning moving old results to {}".format(old_path))
                     os.rename(result_path, old_path)
 
-                with open(result_path, "w") as fd:
+                with open(result_path, "w", encoding="utf-8") as fd:
                     fd.write(output)
 
         print("Completed analysis on {}".format(machine))
