@@ -438,7 +438,9 @@ contains
     character(*), parameter  :: subname = '(prep_ocn_accum_avg)'
     !---------------------------------------------------------------
     print *, "_wpc1b. Start prep_ocn_accum_avg() call. x2oacc_ox_cnt = ", x2oacc_ox_cnt
+    print *, "_wpc1b. Start prep_ocn_accum_avg() call. pre trim. timer_accum = ", timer_accum
     call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
+    print *, "_wpc1b. Start prep_ocn_accum_avg() call. post trim. timer_accum = ", timer_accum
     do eoi = 1,num_inst_ocn
        ! temporary formation of average
        if (x2oacc_ox_cnt > 1) then

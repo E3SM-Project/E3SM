@@ -2649,6 +2649,7 @@ contains
 
        call t_startf('CPL:RUN_LOOP', hashint(1))
        call t_startf('CPL:CLOCK_ADVANCE')
+       print *, "_wpc_1aa. start do while loop in cime_comp_mod.F90 ", '_wpc_'
 
        !----------------------------------------------------------
        !| Advance Clock
@@ -2810,6 +2811,9 @@ contains
        !----------------------------------------------------------
        !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
        !----------------------------------------------------------
+       print *, ""
+       print *, "_wpc_000a. pre cime_run_ocn_setup_send() ocn_present = ", ocn_present
+       print *, "_wpc_000b. pre cime_run_ocn_setup_send() ocnrun_alarm = ", ocnrun_alarm
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
               trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
@@ -3892,6 +3896,9 @@ contains
     !----------------------------------------------------
     ! ocn average
     !----------------------------------------------------
+    print *, ""
+    print *, "_wpc0a. pre prep_ocn_accum_avg() iamin_CPLID = ", iamin_CPLID
+    print *, "_wpc0b. pre prep_ocn_accum_avg() ocn_prognostic = ", ocn_prognostic
     if (iamin_CPLID .and. ocn_prognostic) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
        call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
