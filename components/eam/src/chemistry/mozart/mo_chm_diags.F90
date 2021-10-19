@@ -27,7 +27,7 @@ module mo_chm_diags
   integer :: id_ccl4,id_cfc11,id_cfc113,id_ch3ccl3,id_cfc12,id_ch3cl,id_hcfc22,id_cf2clbr
   integer :: id_br,id_bro,id_hbr,id_hobr,id_ch4,id_h2o,id_h2
   integer :: id_o,id_o2,id_h
-  integer :: id_o3
+  integer :: id_o3, id_o3lnz
 
   integer, parameter :: NJEUV = neuv
   integer :: rid_jeuv(NJEUV), rid_jno_i, rid_jno
@@ -147,6 +147,7 @@ contains
     id_o       = get_spc_ndx( 'O' )
     id_o2      = get_spc_ndx( 'O2' )
     id_o3      = get_spc_ndx( 'O3' )
+    id_o3lnz   = get_spc_ndx( 'O3LNZ' )
     id_h       = get_spc_ndx( 'H' )
 
     id_pan     = get_spc_ndx( 'PAN' )
@@ -442,6 +443,8 @@ contains
     call addfld( 'SCO', horiz_only,    'A', 'DU', 'Stratospheric column ozone based on chemistry tropopause' )
     call add_default( 'SCO', 1, ' ' )
 
+    call addfld( 'TOZLNZ', horiz_only, 'A', 'DU', 'Total column Linoz ozone (O3LNZ)' )
+    call add_default( 'TOZLNZ', 1, ' ' )
   end subroutine chm_diags_inti
 
   subroutine chm_diags_inti_ac
@@ -665,58 +668,71 @@ contains
       call outfld( 'TROPMASST', wrk1d, ncol, lchnk )
     end if
 
-    ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
-    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
-    ! total column ozone
-    wrk1d(:) = 0._r8
-    do k = 1,pver ! loop from top of atmosphere to surface
-       wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
-    end do
-    call outfld( 'TOZ', wrk1d,   ncol, lchnk )
+    if (id_o3 > 0) then
+      ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
+      wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+      ! total column ozone
+      wrk1d(:) = 0._r8
+      do k = 1,pver ! loop from top of atmosphere to surface
+         wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
+      end do
+      call outfld( 'TOZ', wrk1d,   ncol, lchnk )
 
-    ! stratospheric column ozone
-    wrk1d(:) = 0._r8
-    if (.not. present(tropFlag)) then
-       do i = 1,ncol
-          do k = 1,pver
-             if (k > ltrop(i)) then
-               exit
-             end if
-             wrk1d(i) = wrk1d(i) + wrk(i,k)
-          end do
-       end do
-    else
-       do i = 1,ncol
-          do k = 1,pver
-             if (.not. tropFlag(i,k)) then
-                wrk1d(i) = wrk1d(i) + wrk(i,k)
-             end if
-          end do
-       end do
-    end if
-    call outfld( 'SCO', wrk1d,   ncol, lchnk )
+      ! stratospheric column ozone
+      wrk1d(:) = 0._r8
+      if (.not. present(tropFlag)) then
+         do i = 1,ncol
+            do k = 1,pver
+               if (k > ltrop(i)) then
+                 exit
+               end if
+               wrk1d(i) = wrk1d(i) + wrk(i,k)
+            end do
+         end do
+      else
+         do i = 1,ncol
+            do k = 1,pver
+               if (.not. tropFlag(i,k)) then
+                  wrk1d(i) = wrk1d(i) + wrk(i,k)
+               end if
+            end do
+         end do
+      end if
+      call outfld( 'SCO', wrk1d,   ncol, lchnk )
 
-    ! tropospheric column ozone
-    wrk1d(:) = 0._r8
-    if (.not. present(tropFlag)) then
-       do i = 1,ncol
-          do k = 1,pver
-             if (k <= ltrop(i)) then
-               cycle
-             end if
-             wrk1d(i) = wrk1d(i) + wrk(i,k)
-          end do
-       end do
-    else
-       do i = 1,ncol
-          do k = 1,pver
-             if (tropFlag(i,k)) then
-                wrk1d(i) = wrk1d(i) + wrk(i,k)
-             end if
-          end do
-       end do
+      ! tropospheric column ozone
+      wrk1d(:) = 0._r8
+      if (.not. present(tropFlag)) then
+         do i = 1,ncol
+            do k = 1,pver
+               if (k <= ltrop(i)) then
+                 cycle
+               end if
+               wrk1d(i) = wrk1d(i) + wrk(i,k)
+            end do
+         end do
+      else
+         do i = 1,ncol
+            do k = 1,pver
+               if (tropFlag(i,k)) then
+                  wrk1d(i) = wrk1d(i) + wrk(i,k)
+               end if
+            end do
+         end do
+      end if
+      call outfld( 'TCO', wrk1d,   ncol, lchnk )
     end if
-    call outfld( 'TCO', wrk1d,   ncol, lchnk )
+
+    if (id_o3lnz > 0) then ! Linoz ozone (O3LNZ)
+      ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
+      wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3lnz)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+      ! total column O3LNZ
+      wrk1d(:) = 0._r8
+      do k = 1,pver ! loop from top of atmosphere to surface
+         wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
+      end do
+      call outfld( 'TOZLNZ', wrk1d,   ncol, lchnk )
+    end if
 
     do m = 1,gas_pcnst
 
