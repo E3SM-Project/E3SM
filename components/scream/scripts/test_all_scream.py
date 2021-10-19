@@ -327,7 +327,7 @@ class TestAllScream(object):
     ###############################################################################
         baseline_file = (self.get_preexisting_baseline(test).parent)/"baseline_git_sha"
         if baseline_file.exists():
-            with baseline_file.open("r") as fd:
+            with baseline_file.open("r", encoding="utf-8") as fd:
                 return fd.read().strip()
 
         return None
@@ -336,7 +336,7 @@ class TestAllScream(object):
     def set_baseline_file_sha(self, test, sha):
     ###############################################################################
         baseline_file = (self.get_preexisting_baseline(test).parent)/"baseline_git_sha"
-        with baseline_file.open("w") as fd:
+        with baseline_file.open("w", encoding="utf-8") as fd:
             return fd.write(sha)
 
     ###############################################################################
@@ -512,7 +512,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # Add resource groups
         data['local'] = [{"devices":devices}]
 
-        with open("{}/ctest_resource_file.json".format(build_dir),'w') as outfile:
+        with open("{}/ctest_resource_file.json".format(build_dir),'w', encoding="utf-8") as outfile:
             json.dump(data,outfile,indent=2)
 
         return end-start

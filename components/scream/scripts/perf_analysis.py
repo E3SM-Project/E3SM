@@ -93,7 +93,7 @@ class PerfAnalysis(object):
             print("In dir {}, building with cmake command: {}\nOutput will be stored in build.perf.log".\
                   format(os.getcwd(), cmake_cmd))
 
-        with open("build.perf.log", "w") as fd:
+        with open("build.perf.log", "w", encoding="utf-8") as fd:
 
             make_cmd  = "make -j16 VERBOSE=1"
             fd.write(cmake_cmd + "\n")
@@ -173,7 +173,7 @@ class PerfAnalysis(object):
 
         cmd = self.formulate_cmd(test_exe)
         results = []
-        with open("{}.perf.log".format(os.path.split(test_exe)[1].split(" ")[0]), "w") as fd:
+        with open("{}.perf.log".format(os.path.split(test_exe)[1].split(" ")[0]), "w", encoding="utf-8") as fd:
             fd.write(cmd + "\n\n")
             fd.write("ENV: \n{}\n\n".format(run_cmd_no_fail("env")))
             for _ in range(self._num_runs):
