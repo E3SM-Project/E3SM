@@ -131,6 +131,7 @@ public:
       PF::calculate_z_int(team,nlev,dz_s,z_surf,z_int_s);
       team.team_barrier();
       PF::calculate_z_mid(team,nlev,z_int_s,z_mid_s);
+      team.team_barrier();
 
       const int nlevi_v = nlev/Spack::n;
       const int nlevi_p = nlev%Spack::n;

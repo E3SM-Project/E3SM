@@ -58,6 +58,7 @@ void SurfaceCoupling::do_export (const bool init_phase)
       PF::calculate_z_int(team, num_levs, dz_i, z_surf, z_int_i);
       team.team_barrier();
       PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
+      team.team_barrier();
 
       l_Sa_z(i)    = z_mid_i(last_entry);
       l_Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
