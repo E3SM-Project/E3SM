@@ -413,6 +413,7 @@ _TESTS = {
             "SMS_R_Ln10.ne4_ne4.FDPSCREAMA97",
             "SMS_D_Ln5.ne4_ne4.F2000SCREAMv1.scream-3min_ts",
             "ERS_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            "ERP_R_Ln10.ne4_ne4.FDPSCREAMA97",
             )
     },
 
