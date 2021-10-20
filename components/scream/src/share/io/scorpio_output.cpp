@@ -4,7 +4,6 @@
 
 #include "ekat/util/ekat_string_utils.hpp"
 
-#include <Kokkos_CopyViews.hpp>
 #include <numeric>
 #include <fstream>
 
@@ -14,11 +13,8 @@ namespace scream
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const fm_type>& field_mgr,
-                  const std::shared_ptr<const gm_type>& grids_mgr,
-                  const bool is_restarted_run, const bool is_model_restart_output)
+                  const std::shared_ptr<const gm_type>& grids_mgr)
  : m_comm      (comm)
- , m_is_model_restart_output (is_model_restart_output)
- , m_is_restarted_run (is_restarted_run)
 {
   // Parse the input parameter list
   set_params(params);
@@ -31,6 +27,22 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 }
 
 /* ---------------------------------------------------------- */
+void AtmosphereOutput::restart (const std::string& filename)
+{
+  EKAT_REQUIRE_MSG (m_avg_type!="INSTANT",
+      "Error! 'restart' called, but not appropriate for this run.\n"
+      "    - avg type: " + m_avg_type + "\n");
+
+  // Create an input stream on the fly, and init averaging data
+  ekat::ParameterList res_params("Input Parameters");
+  res_params.set<std::string>("Filename",filename);
+  res_params.set("Fields",m_fields_names);
+
+  AtmosphereInput hist_restart (m_comm,res_params,m_grid,m_host_views_1d,m_layouts);
+  hist_restart.read_variables();
+  hist_restart.finalize();
+}
+
 void AtmosphereOutput::init()
 {
   for (const auto& var_name : m_fields_names) {
@@ -40,182 +52,11 @@ void AtmosphereOutput::init()
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
 
-  // If this is "normal" output of a restarted run, and avg_type requires restart data,
-  // then we have to open the history restart file and read its data.
-  // The user can skip this (which means the Output averaging would start from scratch)
-  // by setting "Restart History" in the "Output Restart" to false.
-  if (m_is_restarted_run && m_has_restart_data) {
-
-    // TODO: add bool support to ekat::Comm MPI types
-    bool found = false;
-    std::string filename,rpointer_content;
-    if (m_comm.am_i_root()) {
-      std::ifstream rpointer_file;
-      rpointer_file.open("rpointer.atm");
-      auto testname = compute_filename_root(m_hist_restart_casename);
-      while (rpointer_file >> filename) {
-        rpointer_content += filename + "\n";
-        if (filename.find(testname) != std::string::npos) {
-          found = true;
-          break;
-        }
-      }
-    }
-
-    // Sanity check
-    m_comm.broadcast(&found,1,0);
-
-    // If the history restart file is not found, we must HOPE that it is because
-    // the last model restart step coincided with a model output step, in which case
-    // a restart history file is not written.
-    // TODO We have NO WAY of checking this from this class, but the OutputManager
-    //      *might* be able to figure out if this is the case, and perhaps set
-    //      "Restart History" to false in the input parameter list.
-    //      For now, simply print a warning.
-    if (found) {
-      // Have the root rank communicate the nc filename
-      broadcast_string(filename,m_comm,m_comm.root_rank());
-
-      // Create an input stream on the fly, and init averaging data
-      ekat::ParameterList res_params("Input Parameters");
-      res_params.set<std::string>("Filename",filename);
-      res_params.set("Fields",m_fields_names);
-
-      AtmosphereInput hist_restart (m_comm,res_params,m_grid,m_host_views_1d,m_layouts);
-      hist_restart.read_variables();
-      m_nsteps_since_last_output = hist_restart.read_int_scalar("avg_count");
-      hist_restart.finalize();
-    } else {
-      if (m_comm.am_i_root()) {
-        auto testname = compute_filename_root(m_hist_restart_casename);
-        printf ("WARNING! No restart file found in the rpointer for case\n"
-                "        %s\n"
-                "   We *assume* this is because the last model restart write step\n"
-                "   coincided with a model output step, so no history restart file\n"
-                "   was needed. So far, we cannot check this, so we simply cross our fingers...\n",
-                testname.c_str());
-        printf ("rpointer.atm content:%s\n",rpointer_content.c_str());
-      }
-    }
-  }
-
 } // init
-/* ---------------------------------------------------------- */
-/* Overload the run routine to accept a TimeStamp or floating point for the input time */
-void AtmosphereOutput::run(const util::TimeStamp& time)
-{
-  // If a new file will be written, construct the filename.
-  if (m_num_snapshots_in_file==0) {
-    // A new file has been opened and we need a new filename for it.
-    m_filename = compute_filename_root(m_casename);
-    if (m_filename_with_mpiranks) {
-      m_filename += ".np" + std::to_string(m_comm.size());
-    }
-    if (m_filename_with_time_string) {
-      m_filename += "." + time.to_string();
-    }
-  }
-
-  // Call main output function
-  run_impl(time.get_seconds());
-}
-/* ---------------------------------------------------------- */
-void AtmosphereOutput::finalize() 
-{
-  // Safety check: we should not quit the simulation with an open file.
-  // TODO: this might need to be adjusted once we test 2+ snapshots per file
-  EKAT_REQUIRE_MSG (not m_is_output_file_open,
-      "Error! AtmosphereOutput::finalize() was called while the output file was still open.\n");
-} // finalize
 /*-----*/
-void AtmosphereOutput::run_impl(const Real time) 
+void AtmosphereOutput::run (const std::string& filename, const bool is_write_step, const int nsteps_since_last_output)
 {
   using namespace scream::scorpio;
-
-  ++m_nsteps_since_last_output;
-  ++m_nsteps_since_last_checkpoint;
-  // For the RUN step we always update the local views of each field to reflect the most recent step.
-  // Following the update we have two courses of action:
-  // 1. Do nothing else, this means that the frequency of output doesn't correspond with this step.
-  // 2. Write output.
-  //   a. This is either "normal" output or "restart" output.
-  //   b. In the case of normal output we also reset the average counter.
-  //   c. A model restart is just a normal output (with avg=Instant), so that fits under this category.
-  // The other kind of output is the history restart.  This allows a restart run to also have
-  // a consistent set of history. E.g., with avg_type=Average, and the avg window was not yet completed
-  // when the model restart was written, we need to know what was the current value of avg (and avg_count)
-  // at the restart point.
-  // 1. A restart history is not necessary for,
-  //   a. Instantaneous output streams.
-  //   b. When also the model output was written during the step where model restart was written.
-  //      In other words, when the average counter is 0.
-  // Final point: a model output file, a model restart file, and an history restart file can all
-  // be distinguished by the suffix of the generated file:
-  //   '.nc': model output
-  //   '.r.nc': model restart
-  //   '.rhist.nc': history restart
-
-  // Check to see if output is expected and what kind.
-  // NOTE: for checkpoint, don't do m_nsteps_since_last_checkpoint==m_checkpoint_freq, since
-  //   - you may have skipped a checkpoint since it coincided with output step
-  //   - you can't zero m_nsteps_since_last_checkpoint if you do output, since that might
-  //     get you out of sync with the model restart output (rhist should go hand-in-hand with
-  //     model restart). E.g., if model restart (and history restart) every 3 days, but the
-  //     model output is every 7 days, over a 30-day time horizon you would have:
-  //       - model restarts at days 3,6,9,12,15,18,21,24,27,30.
-  //       - model outputs at days 7,14,21,28.
-  //       - history restarts at days 3,6,9,12,15,18,24,27,30, but not 21, cause model
-  //         restart coincided with model output.
-  //     If you zero nsteps_since_last_checkout at the 1st output, you would get history
-  //     restarts all messed up, at day 10,13, ...
-  const bool is_output_step = (m_nsteps_since_last_output == m_out_frequency);
-  const bool is_checkpoint_step = !m_is_model_restart_output && m_checkpoint_freq>0 &&
-                                   (m_nsteps_since_last_checkpoint % m_checkpoint_freq)==0 &&
-                                  !is_output_step;
-
-  // Output or checkpoint are both steps where we need to call scorpio
-  const bool is_write_step = is_output_step || is_checkpoint_step;
-  std::string filename;
-  if (is_write_step) {
-    filename = m_filename;
-    // If we are going to write an output checkpoint file, or a model restart file,
-    // we need to append to the filename ".rhist" or ".r" respectively, and add
-    // the filename to the rpointer.atm file.
-    if (m_is_model_restart_output) {
-      filename+=".r.nc";
-      if (m_comm.am_i_root()) {
-        std::ofstream rpointer;
-        rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
-        rpointer << filename << std::endl;
-      }
-    } else if (is_checkpoint_step) {
-      filename+=".rhist.nc";
-      if (m_comm.am_i_root()) {
-        std::ofstream rpointer;
-        rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
-        rpointer << filename << std::endl;
-      }
-    } else {
-      filename += ".nc";
-    }
-
-    // If it's a checkpoint file, or if there's no file open for the output, we need to open the pio file.
-    if( is_checkpoint_step or !m_is_output_file_open) {
-      new_file(filename);
-      if (is_checkpoint_step) { 
-        set_int_attribute_c2f (filename.c_str(),"avg_count",m_nsteps_since_last_output);
-      } else {
-        m_is_output_file_open = true;
-      }
-    }
-
-    // Set the time_index for this snap in the pio file.
-    pio_update_time(filename,time);
-    if (is_output_step) {
-      // We're adding one snapshot to the file
-      ++m_num_snapshots_in_file;
-    }
-  }
 
   // If needed, remap fields from their grid to the unique grid, for I/O
   if (m_remapper) {
@@ -248,7 +89,7 @@ void AtmosphereOutput::run_impl(const Real time)
         auto avg_view_1d = view_Nd_host<1>(data,dims[0]);
 
         for (int i=0; i<dims[0]; ++i) {
-          combine(new_view_1d(i), avg_view_1d(i));
+          combine(new_view_1d(i), avg_view_1d(i),nsteps_since_last_output);
         }
         break;
       }
@@ -258,7 +99,7 @@ void AtmosphereOutput::run_impl(const Real time)
         auto avg_view_2d = view_Nd_host<2>(data,dims[0],dims[1]);
         for (int i=0; i<dims[0]; ++i) {
           for (int j=0; j<dims[1]; ++j) {
-            combine(new_view_2d(i,j), avg_view_2d(i,j));
+            combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output);
         }}
         break;
       }
@@ -269,7 +110,7 @@ void AtmosphereOutput::run_impl(const Real time)
         for (int i=0; i<dims[0]; ++i) {
           for (int j=0; j<dims[1]; ++j) {
             for (int k=0; k<dims[2]; ++k) {
-              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k));
+              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output);
         }}}
         break;
       }
@@ -281,34 +122,7 @@ void AtmosphereOutput::run_impl(const Real time)
       grid_write_data_array(filename,name,data);
     }
   }
-
-  // Finish up any updates to output file and snap counter.
-  if (is_write_step) {
-    sync_outfile(filename);
-    // If snaps equals max per file, close this file and set flag to open a new one next write step.
-    if (is_output_step) {
-      if (m_num_snapshots_in_file == m_max_snapshots_per_file) {
-        m_num_snapshots_in_file = 0;
-
-        // This file is "full". Close it.
-        eam_pio_closefile(filename); 
-
-        // Make sure a new output file will be created at the next output step.
-        m_is_output_file_open = false;
-      }
-      // Zero out the Avg Count count now that snap has been written.
-      m_nsteps_since_last_output = 0;
-
-      // Since we saved, 
-    } else {
-      // A checkpoint step, close the file.
-      eam_pio_closefile(filename); 
-
-      // Zero out the checkpoint step counter
-      m_nsteps_since_last_checkpoint = 0;
-    }
-  }
-} // run_impl
+} // run
 
 /* ---------------------------------------------------------- */
 
@@ -317,16 +131,7 @@ set_params (const ekat::ParameterList& params)
 {
   // Parse the parameters that controls this output instance.
   m_casename = params.get<std::string>("Casename");
-  if (params.isParameter("Timestamp in Filename")) {
-    m_filename_with_time_string = params.get<bool>("Timestamp in Filename");
-  }
-  if (params.isParameter("MPI Ranks in Filename")) {
-    m_filename_with_mpiranks = params.get<bool>("MPI Ranks in Filename");
-  }
 
-  m_max_snapshots_per_file  = params.get<int>("Max Snapshots Per File");
-  m_out_frequency           = params.sublist("Output").get<int>("Frequency");
-  m_out_frequency_units     = params.sublist("Output").get<std::string>("Frequency Units");
 
   auto avg_type = params.get<std::string>("Averaging Type");
   m_avg_type = ekat::upper_case(avg_type);
@@ -365,7 +170,17 @@ set_params (const ekat::ParameterList& params)
   }
 
   // For each output field, ensure its dimensions are registered in the pio file
-  m_fields_names = params.get<std::vector<std::string>>("Fields");
+  using vos_t = std::vector<std::string>;
+  if (params.isParameter("Fields")) {
+    m_fields_names = params.get<vos_t>("Fields");
+  } else {
+    if (params.isParameter("Grid")) {
+      const auto& gname = params.get<std::string>("Grid");
+      if (params.isSublist("Fields") && params.sublist("Fields").isParameter(gname)) {
+        m_fields_names = params.sublist("Fields").get<vos_t>(gname);
+      }
+    }
+  }
 }
 
 void AtmosphereOutput::
@@ -373,69 +188,86 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Sanity checks
+  EKAT_REQUIRE_MSG (not m_field_mgr, "Error! Field manager was already set.\n");
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
 
-  auto fm_grid = field_mgr->get_grid();
-  auto unique_grid = fm_grid->get_unique_grid();
-  if (fm_grid->is_unique()) {
-    // The fm is defined on a unique grid. Store it, then set the grid.
-    m_field_mgr = field_mgr;
+  m_field_mgr = field_mgr;
+
+  if (not m_field_mgr->get_grid()->is_unique()) {
+    // The grid is not unique. Build a unique field manager
+    // and a remapper, and we call this method again.
+    build_remapper(grids_mgr);
   } else {
-    // The fm is not on a unique grid. We need to create a helper fm,
-    // with all the import fields defined on the unique grid,
-    // set up scorpio with the helper fm, then create a remapper
-    // from the input fm grid to the unique grid.
-    EKAT_REQUIRE_MSG (unique_grid,
-        "Error! The grid stored in the input field manager is not unique,\n"
-        "       and is not storing a unique grid.\n"
-        "    grid name: " + fm_grid->name());
-    EKAT_REQUIRE_MSG (grids_mgr,
-        "Error! The input fields manager is defined on a non-unique grid,\n"
-        "       but no grids manager was provided.\n"
-        "    grid name: " + fm_grid->name());
+    // The grid is unique. Store it (and performs some checks)
+    set_grid(m_field_mgr->get_grid());
+  }
+}
 
-    // Create the remapper and register fields from the fid's taken from the input fm
-    m_remapper = grids_mgr->create_remapper(fm_grid,unique_grid);
-    m_remapper->registration_begins();
-    for (const auto& fname : m_fields_names) {
-      auto f = field_mgr->get_field(fname);
-      const auto& src_fid = f.get_header().get_identifier();
+void AtmosphereOutput::
+build_remapper (const std::shared_ptr<const gm_type>& grids_mgr)
+{
+  EKAT_REQUIRE_MSG (grids_mgr,
+      "Error! Cannot build a remapper without a valid grids manager.\n");
 
-      m_remapper->register_field_from_src(src_fid);
-    }
-    m_remapper->registration_ends();
+  auto fm_grid = m_field_mgr->get_grid();
+  auto unique_grid = fm_grid->get_unique_grid();
 
-    // Now register the fields in the unique_fm. To generate their
-    // field identifiers, use the tgt fids from the remapper
-    auto unique_fm = std::make_shared<fm_type>(unique_grid);
-    unique_fm->registration_begins();
-    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
-      const auto& tgt_fid = m_remapper->get_tgt_field_id(i);
-      auto f = field_mgr->get_field(tgt_fid.name());
+  // The fm is not on a unique grid. We need to create a helper fm,
+  // with all the import fields defined on the unique grid,
+  // set up scorpio with the helper fm, then create a remapper
+  // from the input fm grid to the unique grid.
+  EKAT_REQUIRE_MSG (unique_grid,
+      "Error! The grid stored in the input field manager is not unique,\n"
+      "       and is not storing a unique grid.\n"
+      "    grid name: " + fm_grid->name());
 
-      const int ps = f.get_header().get_alloc_properties().get_largest_pack_size();
-      FieldRequest tgt_freq(tgt_fid,ps);
-      unique_fm->register_field(tgt_freq);
-    }
-    unique_fm->registration_ends();
-    m_field_mgr = unique_fm;
+  // Create the remapper and register fields from the fid's taken from the input fm
+  m_remapper = grids_mgr->create_remapper(fm_grid,unique_grid);
+  m_remapper->registration_begins();
+  for (const auto& fname : m_fields_names) {
+    auto f = m_field_mgr->get_field(fname);
+    const auto& src_fid = f.get_header().get_identifier();
 
-    // Finally, bind the src/tgt fields in the remapper
-    // While at it, set the same time stamp of the new field
-    // (otherwise an error is thrown during the run() call)
-    for (const auto& fname : m_fields_names) {
-      auto src = field_mgr->get_field(fname);
-      auto tgt = unique_fm->get_field(fname);
-      tgt.get_header().get_tracking().update_time_stamp(src.get_header().get_tracking().get_time_stamp());
-      m_remapper->bind_field(src,tgt);
-    }
+    m_remapper->register_field_from_src(src_fid);
+  }
+  m_remapper->registration_ends();
 
-    // This should never fail, but just in case
-    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
-        "Error! Something went wrong while building the scorpio input remapper.\n");
+  // Now register the fields in the unique_fm. To generate their
+  // field identifiers, use the tgt fids from the remapper
+  auto unique_fm = std::make_shared<fm_type>(unique_grid);
+  unique_fm->registration_begins();
+  for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+    const auto& tgt_fid = m_remapper->get_tgt_field_id(i);
+    auto f = m_field_mgr->get_field(tgt_fid.name());
+
+    const int ps = f.get_header().get_alloc_properties().get_largest_pack_size();
+    FieldRequest tgt_freq(tgt_fid,ps);
+    unique_fm->register_field(tgt_freq);
+  }
+  unique_fm->registration_ends();
+
+  // Finally, bind the src/tgt fields in the remapper
+  // While at it, set the same time stamp of the new field
+  // (otherwise an error is thrown during the run() call)
+  for (const auto& fname : m_fields_names) {
+    auto src = m_field_mgr->get_field(fname);
+    auto tgt = unique_fm->get_field(fname);
+    tgt.get_header().get_tracking().update_time_stamp(src.get_header().get_tracking().get_time_stamp());
+    m_remapper->bind_field(src,tgt);
   }
 
-  set_grid(unique_grid);
+  // This should never fail, but just in case
+  EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+      "Error! Something went wrong while building the scorpio input remapper.\n");
+
+  // Invalidate field mgr ptr, so the checks in the following call don't' throw
+  m_field_mgr = nullptr;
+
+  // Replace the field mgr with the unique one
+  // NOTE: this call to set_field_manager should not have to call build_remapper anymore.
+  //       Therefore, pass nullptr as grids manager, in case there's some bug and this function
+  //       gets called again (recursively). A nullptr will cause this function to crap out.
+  set_field_manager(unique_fm,nullptr);
 }
 
 void AtmosphereOutput::
@@ -560,9 +392,6 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     // but in the future if non-Real variables are added we will want to accomodate that.
     register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
   }
-  // Finish by registering time as a variable.
-  // TODO: Should this really be something registered during the reg. dimensions step? 
-  register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
 } // register_variables
 /* ---------------------------------------------------------- */
 std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
@@ -623,39 +452,26 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     set_dof(filename,name,var_dof.size(),var_dof.data());
     m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
-  // Set degree of freedom for "time"
-  int time_dof[1] = {0};
-  set_dof(filename,"time",0,time_dof);
 
   /* TODO: 
    * Gather DOF info directly from grid manager
   */
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::new_file(const std::string& filename)
+void AtmosphereOutput::setup_output_file(const std::string& filename)
 {
   using namespace scream::scorpio;
-
-  // Register new netCDF file for output.
-  register_file(filename,Write);
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {
     register_dimension(filename,it.first,it.first,it.second);
   }
-  // Note: time has an unknown length. Setting its "length" to 0 tells the scorpio to
-  // set this dimension as having an 'unlimited' length, thus allowing us to write
-  // as many timesnaps to file as we desire.
-  register_dimension(filename,"time","time",0);
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
   register_variables(filename);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
-
-  // Finish the definition phase for this file.
-  eam_pio_enddef (filename); 
 }
 
 std::string AtmosphereOutput::compute_filename_root (const std::string& casename) const

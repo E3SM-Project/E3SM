@@ -71,6 +71,7 @@ module scream_scorpio_interface
 #endif
 
   public :: &
+            lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
             eam_pio_enddef,              & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
@@ -1149,8 +1150,10 @@ contains
     ! file with this filename.
     call lookup_pio_atm_file(trim(filename),pio_file,found,is_open)
     if (found) then
-      if (is_open .and. purpose .ne. pio_file%purpose) then
-        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open with a different purpose.",-999)
+      if (is_open .and. (purpose .ne. file_purpose_in .or. &
+          pio_file%purpose .ne. file_purpose_in) ) then
+        ! We only allow multiple customers of the file if they all use it in read mode.
+        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
       else
         call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%isopen = .true.

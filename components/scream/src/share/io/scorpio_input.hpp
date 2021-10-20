@@ -116,23 +116,6 @@ public:
   virtual ~AtmosphereInput () = default;
 
   // --- Methods --- //
-  // Sets up the scorpio metadata to preare for reading
-  // Inputs:
-  //  - field_mgr: the FieldManager containing the Field's where the
-  //               variables from the input filed will be read into.
-  //               Fields can be padded/strided.
-  void init(const std::shared_ptr<const fm_type>& field_mgr,
-            const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
-
-  // Sets up the scorpio metadata to preare for reading
-  // Inputs:
-  //  - grid: the grid where the variables live
-  //  - host_views_1d: the 1d flattened views where data will be read into.
-  //                   These views must be contiguous (no padding/striding).
-  //  - layouts: the layout of the vars (used to reshape the views).
-  void init(const std::shared_ptr<const grid_type>& grid,
-            const std::map<std::string,view_1d_host>& host_views_1d,
-            const std::map<std::string,FieldLayout>&  layouts);
 
   // Read fields that were required via parameter list.
   void read_variables (const int time_index = -1);
@@ -141,10 +124,25 @@ public:
 
 protected:
   // Internal functions
+  // Sets up the scorpio metadata to preare for reading
+  // Inputs:
+  //  - field_mgr: the FieldManager containing the Field's where the
+  //               variables from the input filed will be read into.
+  //               Fields can be padded/strided.
+  void init();
+
+  // Sets up the scorpio metadata to preare for reading
+  // Inputs:
+  //  - host_views_1d: the 1d flattened views where data will be read into.
+  //                   These views must be contiguous (no padding/striding).
+  //  - layouts: the layout of the vars (used to reshape the views).
   void set_parameters (const ekat::ParameterList& params);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                           const std::shared_ptr<const gm_type>& grids_mgr);
+  void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
+  void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
+                  const std::map<std::string,FieldLayout>&  layouts);
 
   void init_scorpio_structures ();
   void register_variables();

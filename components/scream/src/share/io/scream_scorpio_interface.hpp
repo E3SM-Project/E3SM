@@ -69,6 +69,8 @@ extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   int  eam_pio_subsystem_comm ();
+  /* Checks if a file is already open, with the given mode */
+  bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
 } // extern "C"
