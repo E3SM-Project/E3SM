@@ -347,6 +347,13 @@ contains
              call addfld( trim(spc_name)//'_2DMSL', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after Linoz')
              call addfld( trim(spc_name)//'_2DMSS', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after surface emission')
              call addfld( trim(spc_name)//'_2DMSD', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after dry deposition')
+             call addfld( trim(spc_name)//'_2DMSE', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after explicit solver')
+             call addfld( trim(spc_name)//'_2DMSI', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after implicit solver')
+             call addfld( trim(spc_name)//'_2DMSA', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after aero_model_gasaerexch')
+             call addfld( trim(spc_name)//'_2DMSN', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after rest negative values to zero')
+             call addfld( trim(spc_name)//'_2DMSU', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after setting upper boundary values')
+             call addfld( trim(spc_name)//'_2DMSC', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after setting lower boundary values')
+             call addfld( trim(spc_name)//'_2DMSW', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after wet scaving')
              call addfld( trim(spc_name)//'_2DTDE', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDA', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to aero_model_gasaerexch')
@@ -418,6 +425,36 @@ contains
              call addfld( trim(spc_name)//'_2DTDS_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 850 hPa to surface due to surface emission')
              call addfld( trim(spc_name)//'_2DTDD_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 850 hPa to surface due to dry deposition')
              call addfld( trim(spc_name)//'_2DTDO_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 850 hPa to surface due to processes outside of chemistry')
+
+             call addfld( trim(spc_name)//'_2DMSB_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere before wet deposition and gas chem solver')           
+             call addfld( trim(spc_name)//'_2DMSL_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after Linoz')
+             call addfld( trim(spc_name)//'_2DMSS_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after surface emission')
+             call addfld( trim(spc_name)//'_2DMSD_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after dry deposition')
+             call addfld( trim(spc_name)//'_2DTDE_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to explicit solver')
+             call addfld( trim(spc_name)//'_2DTDI_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to implicit solver')
+             call addfld( trim(spc_name)//'_2DTDA_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to aero_model_gasaerexch')
+             call addfld( trim(spc_name)//'_2DTDL_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to Linoz')
+             call addfld( trim(spc_name)//'_2DTDN_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_2DTDU_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_2DTDB_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_2DTDS_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to surface emission')
+             call addfld( trim(spc_name)//'_2DTDD_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to dry deposition')
+             call addfld( trim(spc_name)//'_2DTDO_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to processes outside of chemistry')
+
+             call addfld( trim(spc_name)//'_2DMSB_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere before wet deposition and gas chem solver')           
+             call addfld( trim(spc_name)//'_2DMSL_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after Linoz')
+             call addfld( trim(spc_name)//'_2DMSS_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after surface emission')
+             call addfld( trim(spc_name)//'_2DMSD_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after dry deposition')
+             call addfld( trim(spc_name)//'_2DTDE_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to explicit solver')
+             call addfld( trim(spc_name)//'_2DTDI_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to implicit solver')
+             call addfld( trim(spc_name)//'_2DTDA_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to aero_model_gasaerexch')
+             call addfld( trim(spc_name)//'_2DTDL_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to Linoz')
+             call addfld( trim(spc_name)//'_2DTDN_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_2DTDU_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_2DTDB_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_2DTDS_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to surface emission')
+             call addfld( trim(spc_name)//'_2DTDD_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to dry deposition')
+             call addfld( trim(spc_name)//'_2DTDO_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to processes outside of chemistry')
           endif
        endif
 
@@ -452,6 +489,13 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSI', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSE', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSA', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSN', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSU', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSC', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSW', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDA', 1, ' ' )
@@ -523,6 +567,24 @@ contains
                 call add_default( trim(spc_name)//'_2DTDS_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDD_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDO_L4', 1, ' ' )
+
+             if (trim(spc_name) == 'O3' .or. trim(spc_name) == 'O3LNZ' .or. &
+                 trim(spc_name) == 'N2OLNZ' .or. trim(spc_name) == 'CH4LNZ' ) then
+                call add_default( trim(spc_name)//'_2DMSB_trop', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSL_trop', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSS_trop', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DMSD_trop', 2, ' ' )
+                call add_default( trim(spc_name)//'_2DTDE_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDI_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDA_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDL_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDN_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDU_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDB_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDS_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDD_trop', 1, ' ' )
+                call add_default( trim(spc_name)//'_2DTDO_trop', 1, ' ' )
+             endif
              endif
           endif
        endif
@@ -1167,7 +1229,7 @@ contains
 
   end subroutine het_diags
 
-  subroutine gaschmmass_diags( lchnk, ncol, vmr, vmr_old, pdeldry, mbar, rdelt, flag )
+  subroutine gaschmmass_diags( lchnk, ncol, vmr, vmr_old, pdeldry, mbar, rdelt, flag, tropFlagInt)
     !--------------------------------------------------------------------
     !	... utility routine to output gas chemistry tracer concentrations
     !--------------------------------------------------------------------
@@ -1188,6 +1250,7 @@ contains
     real(r8), intent(in)  :: mbar(ncol,pver)
     real(r8), intent(in)  :: rdelt        ! inverse of timestep (1/s)
     character(len=*), intent(in)  :: flag ! flag for diagnostic output locations
+    real(r8), optional, intent(in) :: tropFlagInt(ncol, pver)
 
     !--------------------------------------------------------------------
     !	... local variables
@@ -1195,6 +1258,7 @@ contains
     integer  :: k, m
     real(r8) :: wrk(ncol,pver)
     real(r8) :: wrk_sum(ncol)
+    real(r8) :: wrk_stra(ncol)
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
@@ -1238,7 +1302,8 @@ contains
             endif
             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
-            if (flag(1:5)=='2DMSL' .or. flag(1:5)=='2DMSS' .or. flag(1:5)=='2DMSD') then
+            !if (flag(1:5)=='2DMSL' .or. flag(1:5)=='2DMSS' .or. flag(1:5)=='2DMSD') then
+            if (flag(1:4)=='2DMS') then
                ! kg/m2
                wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
                                 *pdeldry(:ncol,:)*rgrav
@@ -1249,6 +1314,7 @@ contains
             endif
 
             wrk_sum(:ncol) = 0.0_r8
+            wrk_stra(:ncol) = 0.0_r8
             if (len(flag) >= 6 .and. flag(6:8) == '_L1') then
                do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
@@ -1264,11 +1330,21 @@ contains
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and.flag(6:8) == '_L4') then
+            elseif (len(flag) >= 6 .and. flag(6:8) == '_L4') then
                do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
+            elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
+               if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
+                   trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
+                  do k = 1, pver
+                     wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k) * tropFlagInt(:ncol,k)
+                     wrk_stra(:ncol) = wrk_stra(:ncol) + wrk(:ncol,k) * (1.0 - tropFlagInt(:ncol,k))
+                  enddo
+                  call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
+                  call outfld( trim(solsym(m))//'_'//flag(1:5)//'_stra', wrk_stra(:ncol), ncol ,lchnk )
+               endif
             else
                do k=2,pver
                   wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)

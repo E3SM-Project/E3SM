@@ -97,13 +97,6 @@ Solution Classes
  Explicit
    CO, C2H6, C3H8, CH3COCH3
    E90, O3LNZ,N2OLNZ,NOYLNZ,CH4LNZ, H2OLNZ
- End Explicit
-
- Implicit
-   O3, OH, HO2, H2O2, CH2O, CH3O2, CH3OOH
-   NO, NO2, NO3, N2O5, HNO3, HO2NO2, PAN
-   C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
-   ISOP, ISOPO2, MVKMACR, MVKO2
    DMS, SO2, H2SO4, SOAG
    so4_a1,  so4_a2,  so4_a3
    pom_a1,           pom_a3,  pom_a4
@@ -113,6 +106,13 @@ Solution Classes
    ncl_a1,  ncl_a2,  ncl_a3
    mom_a1,  mom_a2,  mom_a3,  mom_a4
    num_a1,  num_a2,  num_a3,  num_a4
+ End Explicit
+
+ Implicit
+   O3, OH, HO2, H2O2, CH2O, CH3O2, CH3OOH
+   NO, NO2, NO3, N2O5, HNO3, HO2NO2, PAN
+   C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
+   ISOP, ISOPO2, MVKMACR, MVKO2
  End Implicit
 
 End Solution Classes

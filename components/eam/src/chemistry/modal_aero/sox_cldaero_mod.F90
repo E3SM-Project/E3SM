@@ -41,6 +41,7 @@ contains
     integer :: l, m
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_verbose      ! produce verbose history output
+    logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
 
     id_msa = get_spc_ndx( 'MSA' )
     id_h2so4 = get_spc_ndx( 'H2SO4' )
@@ -54,7 +55,8 @@ contains
     endif
 
     call phys_getopts( history_aerosol_out        = history_aerosol, &
-                       history_verbose_out        = history_verbose  )
+                       history_verbose_out        = history_verbose, &  
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)
     !
     !   add to history
     !
@@ -80,11 +82,19 @@ contains
          'SO4 aqueous phase chemistry due to H2O2')
     call addfld ('AQSO4_O3',horiz_only,  'A','kg/m2/s', &
          'SO4 aqueous phase chemistry due to O3')
+!    call addfld ('SO2_2DTDC',horiz_only,  'A','kg/m2/s', &
+!         'vertically integrated tendency due to processes of cloud uptake')
+!    call addfld ('H2SO4_2DTDC',horiz_only,  'A','kg/m2/s', &
+!         'vertically integrated tendency due to processes of cloud uptake')
 
     if ( history_aerosol .and. history_verbose) then    
        call add_default ('AQSO4_H2O2', 1, ' ')
        call add_default ('AQSO4_O3', 1, ' ')    
     endif
+!    if ( history_gaschmbudget_2D ) then    
+!       call add_default ('SO2_2DTDC', 1, ' ')
+!       call add_default ('H2SO4_2DTDC', 1, ' ')    
+!    endif
   
   end subroutine sox_cldaero_init
 
@@ -224,7 +234,6 @@ contains
     real(r8), intent(inout) :: qin(:,:,:) ! xported species ( vmr )
 
     ! local vars ...
-
     real(r8) :: dqdt_aqso4(ncol,pver,gas_pcnst), &
          dqdt_aqh2so4(ncol,pver,gas_pcnst), &
          dqdt_aqhprxn(ncol,pver), dqdt_aqo3rxn(ncol,pver), &
@@ -252,7 +261,7 @@ contains
     dqdt_aqh2so4(:,:,:) = 0.0_r8
     dqdt_aqhprxn(:,:) = 0.0_r8
     dqdt_aqo3rxn(:,:) = 0.0_r8
-
+ 
     lev_loop: do k = 1,pver
        col_loop: do i = 1,ncol
           cloud: if (cldfrc(i,k) >= 1.0e-5_r8) then
