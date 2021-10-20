@@ -352,7 +352,6 @@ module ocn_time_integration_si
       ! Begin code
 
       call mpas_timer_start("si timestep")
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  Prep variables before first iteration
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -446,7 +445,7 @@ module ocn_time_integration_si
       call mpas_pool_get_array(statePool, 'verticalVelocity', &
                                           verticalVelocityNew, 2)
       call mpas_pool_get_array(statePool, 'verticalVelocity', &
-                                          verticalVelocityCur, 2)
+                                          verticalVelocityCur, 1)
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.
 
@@ -459,7 +458,6 @@ module ocn_time_integration_si
       ! have changed.  That is OK, because the barotropicForcing
       ! variable subtracts out the barotropic component from the
       ! baroclinic.
-
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1,nEdgesAll
@@ -514,8 +512,7 @@ module ocn_time_integration_si
          end if
       end do
 
-
-         if(config_enable_nonhydrostatic_mode) then
+!         if(config_enable_nonhydrostatic_mode) then
             !$omp parallel
             !$omp do schedule(runtime) private(k)
             do iCell=1,nCellsAll
@@ -525,8 +522,7 @@ module ocn_time_integration_si
             end do
             !$omp end do
             !$omp end parallel
-         end if
-
+!         end if
          if (config_use_two_equation_turbulence_model) then
             call mpas_pool_get_array(statePool,'tke',tkeNew,2)
             call mpas_pool_get_array(statePool,'tke',tkeCur,1)
@@ -666,7 +662,6 @@ module ocn_time_integration_si
          ! compute vertAleTransportTop.  Use u (rather than &
          ! normalTransportVelocity) for momentum advection.
          ! Use the most recent time level available.
-
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
          !$acc update device(layerThickEdge)
@@ -693,7 +688,6 @@ module ocn_time_integration_si
          !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
          !$acc update host(vertAleTransportTop)
 #endif
-
          call ocn_tend_vel(tendPool, statePool, forcingPool, &
                            stage1_tend_time, dt)
 
@@ -798,7 +792,6 @@ module ocn_time_integration_si
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! END baroclinic iterations on linear Coriolis term
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! Stage 2: Barotropic velocity (2D) prediction, split-implicit
@@ -1213,7 +1206,7 @@ module ocn_time_integration_si
                SIcst_r00w0 = SIcst_r00w0 + SIvec_r00(iCell) &
                                          * SIvec_w0(iCell)
             end do ! iCell
-   
+  
             SIcst_allreduce_local2(1) = SIcst_r00r0
             SIcst_allreduce_local2(2) = SIcst_r00w0
    
@@ -1246,7 +1239,7 @@ module ocn_time_integration_si
             SIcst_r00w0_global = SIcst_allreduce_global2(2)
    
             SIcst_rho0   = SIcst_r00r0_global
-            SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
+            SIcst_alpha0 = SIcst_rho0 / (1.0E-15_RKIND + SIcst_r00w0_global)
             SIcst_beta0  = 0.0_RKIND
             SIcst_omega0 = 0.0_RKIND
    
@@ -1468,7 +1461,7 @@ module ocn_time_integration_si
                SIcst_q0q0_global  = SIcst_allreduce_global9(9)
    
                ! Omega0
-               SIcst_omega0 = SIcst_q0y0_global / SIcst_y0y0_global
+               SIcst_omega0 = SIcst_q0y0_global / (1.0E-15_RKIND + SIcst_y0y0_global)
    
                ! Residual
                ! = (r1,r1) = (q0,q0) - 2*Omega*(q0,y0) + Omega**2*(y0,y0)
@@ -1584,11 +1577,11 @@ module ocn_time_integration_si
                                           + SIcst_omega0 * SIcst_alpha0 &
                                                          * SIcst_r00v0_global
     
-               SIcst_beta0 = (SIcst_alpha0/SIcst_omega0) &
-                           * (SIcst_rho1 / SIcst_rho0)
+               SIcst_beta0 = (SIcst_alpha0/(1.0E-15_RKIND + SIcst_omega0)) &
+                           * (SIcst_rho1 / (1.0E-15_RKIND + SIcst_rho0))
    
                SIcst_alpha0 = SIcst_rho1 &
-                            / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
+                            / ( 1.0E-15_RKIND + SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
                SIcst_rho0         = SIcst_rho1
@@ -2025,7 +2018,7 @@ module ocn_time_integration_si
             SIcst_r00w0_global = SIcst_allreduce_global2(2)
    
             SIcst_rho0   = SIcst_r00r0_global
-            SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
+            SIcst_alpha0 = SIcst_rho0 / (1.0E-15_RKIND + SIcst_r00w0_global)
             SIcst_beta0  = 0.0_RKIND
             SIcst_omega0 = 0.0_RKIND
    
@@ -2245,7 +2238,7 @@ module ocn_time_integration_si
                SIcst_q0q0_global  = SIcst_allreduce_global9(9)
    
                ! Omega0
-               SIcst_omega0 = SIcst_q0y0_global / SIcst_y0y0_global
+               SIcst_omega0 = SIcst_q0y0_global / (1.0E-15_RKIND + SIcst_y0y0_global)
    
                ! Residual
                resid = SIcst_q0q0_global &
@@ -2358,11 +2351,11 @@ module ocn_time_integration_si
                                           + SIcst_omega0 * SIcst_alpha0 &
                                                          * SIcst_r00v0_global
     
-               SIcst_beta0 = (SIcst_alpha0/SIcst_omega0) &
-                           * (SIcst_rho1 / SIcst_rho0)
+               SIcst_beta0 = (SIcst_alpha0/(1.0E-15_RKIND + SIcst_omega0)) &
+                           * (SIcst_rho1 / (1.0E-15_RKIND + SIcst_rho0))
    
                SIcst_alpha0 = SIcst_rho1 &
-                            / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
+                            / ( 1.0E-15_RKIND + SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
                SIcst_rho0 = SIcst_rho1
@@ -2640,7 +2633,6 @@ module ocn_time_integration_si
          ! monotonic advection.
 
          call mpas_timer_start('si thick tend')
-
          ! compute vertAleTransportTop.  Use normalTransportVelocity
          ! for advection of layerThickness and tracers.
          ! Use time level 1 values of layerThickness and
@@ -2675,7 +2667,6 @@ module ocn_time_integration_si
          call mpas_timer_stop('thick vert trans vel top')
 
          call ocn_tend_thick(tendPool, forcingPool, meshPool)
-
          call mpas_timer_stop('si thick tend')
 
          ! update halo for thickness tendencies
@@ -2694,7 +2685,6 @@ module ocn_time_integration_si
 
             if(config_enable_nonhydrostatic_mode) call ocn_tend_vvel(tendPool, statePool, &
                           forcingPool, meshPool, 2, dt)
-
             if(config_use_two_equation_turbulence_model) then
                call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
                call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
@@ -2712,7 +2702,6 @@ module ocn_time_integration_si
                           tracersGroupNew, dt, err)
             end if
          call mpas_timer_stop('si tracer tend')
-
          ! update halo for tracer tendencies
          call mpas_timer_start("si halo tracers")
 

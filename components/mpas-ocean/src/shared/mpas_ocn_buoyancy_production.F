@@ -121,7 +121,7 @@ contains
          k = 1
          diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
          buoyancyProduction = 0.5_RKIND*(gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
-                              gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid + &
+                              gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid - &
                               surfaceBuoyancyForcing(iCell)) 
 
 

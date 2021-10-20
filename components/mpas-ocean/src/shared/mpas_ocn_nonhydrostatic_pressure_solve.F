@@ -432,7 +432,6 @@ module ocn_compute_nonhydrostatic_pressure
           call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
         end do
      end do !End loop over edges
-
      ! So now do the iCell, k (and k-1 k + 1)
      k = 1
      col = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
@@ -464,7 +463,6 @@ module ocn_compute_nonhydrostatic_pressure
         insertVal = dt*areaCell(iCell)/(0.5_RKIND*(layerThickness(k,iCell) + layerThickness(k+1,iCell) + 1.0E-15_RKIND))
         call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
      end do !k loop
-
      k = maxLevelCell(iCell)
      !k-1 value
      col = (indexToCellId(iCell) - 1)*nVertLevels + (k-1) - 1
@@ -478,13 +476,10 @@ module ocn_compute_nonhydrostatic_pressure
                   surfaceBoundaryCondition*2.0_RKIND / (layerThickness(k,iCell) + 1.0E-15_RKIND))
      call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
   end do !iCell loop
-
   call MatAssemblyBegin(Amat,MAT_FINAL_ASSEMBLY,petsc_err)
   call MatAssemblyEnd(Amat,MAT_FINAL_ASSEMBLY,petsc_err)
-
   ! next fill RHS vector 'b'
   call vecZeroEntries(b,petsc_err)
-
   do iCell=1,nCellsOwned
      do k=1,maxLevelCell(iCell)
         insertVal = areaCell(iCell)*(verticalVelocityNew(k,iCell) - verticalVelocityNew(k+1,iCell))
@@ -492,7 +487,6 @@ module ocn_compute_nonhydrostatic_pressure
         call VecSetValues(b, 1, row, insertVal, ADD_VALUES, petsc_err)
      enddo
   enddo
-
   do iCell=1,nCellsOwned
         do j=1,nEdgesOnCell(iCell)
            iEdge = edgesOnCell(j,iCell)
@@ -505,7 +499,6 @@ module ocn_compute_nonhydrostatic_pressure
            end do
         end do
   end do
-
   call VecAssemblyBegin(b,petsc_err)
   call VecAssemblyEnd(b,petsc_err)
 
@@ -595,7 +588,6 @@ module ocn_compute_nonhydrostatic_pressure
         intArgs=(/petsc_err/))
       ierr = petsc_err
     endif
-
     call MatSetSizes(Amat, m, m, PETSC_DETERMINE, PETSC_DETERMINE, petsc_err)
     if(petsc_err .ne. 0) then
       call mpas_log_write("ERROR: Petsc MatSetSizes failed, error code = $i", MPAS_LOG_CRIT, &
@@ -623,7 +615,6 @@ module ocn_compute_nonhydrostatic_pressure
         intArgs=(/petsc_err/))
       ierr = petsc_err
     endif
-
     call MatGetOwnershipRange(Amat,Istart,Iend,petsc_err)
     if(petsc_err .ne. 0) then
       call mpas_log_write("ERROR: Petsc MatGetOwnershipRange failed, error_code = $i", MPAS_LOG_CRIT, &
@@ -646,7 +637,6 @@ module ocn_compute_nonhydrostatic_pressure
         intArgs=(/petsc_err/))
       ierr = petsc_err
     endif
-
 
     call VecSetSizes(b, m, globalM, petsc_err)
     if ( commsize == 1 ) then
@@ -674,7 +664,6 @@ module ocn_compute_nonhydrostatic_pressure
         intArgs=(/petsc_err/))
       ierr = petsc_err
     endif
-
     call VecGetOwnershipRange(x,first,last,petsc_err)
 
     call VecDuplicate(b, negOneVec, petsc_err)
@@ -707,7 +696,6 @@ module ocn_compute_nonhydrostatic_pressure
     else
        call VecSetType(local_x, VECMPI, petsc_err)
     end if
-
     allocate(destIndex(globalM), origIndex(globalM))
     ! Try a better way with Index Sets and Vec Scatter for some communication
     ! later move this first part to init as we don't have to do it every time FIXME!
@@ -727,6 +715,7 @@ module ocn_compute_nonhydrostatic_pressure
     call ISCreateGeneral(mpi_comm, globalM, origIndex, PETSC_COPY_VALUES, origIS, petsc_err)
     call ISCreateGeneral(mpi_comm, globalM, destIndex, PETSC_COPY_VALUES, destIS, petsc_err)
     call VecScatterCreate(x, origIS, local_x, destIS, scatter, petsc_err)
+    
 #endif
 
     end subroutine ocn_nonhydrostatic_solver_init

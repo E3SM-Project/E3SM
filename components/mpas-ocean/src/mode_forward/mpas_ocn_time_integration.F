@@ -118,6 +118,7 @@ module ocn_time_integration
       !-------------
       ! Begin code
 
+      print *, 'hihihihihi'
       ! Advance the model base on choice of time integration scheme
       select case (timeIntegratorChoice)
       case (timeIntSplitExplicit)

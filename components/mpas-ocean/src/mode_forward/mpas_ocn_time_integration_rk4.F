@@ -1171,9 +1171,6 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: tendTKE, tendglsPsi, tkeNew, glsPsiNew
       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersNew
 
-      real (kind=RKIND), dimension(:, :), pointer :: velocityMeridional, velocityZonal
-
-      real (kind=RKIND), dimension(:, :), pointer :: velocityX, velocityY, velocityZ
       logical, pointer :: config_filter_btr_mode
 
       err = 0
