@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
+#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
@@ -39,8 +40,6 @@ get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid);
-
 ekat::ParameterList get_in_params(const std::string type,
                                   const ekat::Comm& comm,
                                   const util::TimeStamp& t_first_write);
@@ -62,14 +61,24 @@ TEST_CASE("input_output_basic","io")
   int num_lcols = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid);
 
-  // Create an Output manager for testing output
-  OutputManager output_manager;
-  auto output_params = get_om_params(io_comm,grid->name());
-  output_manager.setup(io_comm,output_params,field_manager,gm,false);
-
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   util::TimeStamp time = t0;
+
+  std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
+                                         "io_test_max",    "io_test_min",
+                                         "io_test_multisnap" };
+
+  // Create an Output manager for testing output
+  std::vector<OutputManager> output_managers;
+  for (const auto& fname : fileNames) {
+    ekat::ParameterList params;
+    ekat::parse_yaml_file(fname+"_np" + std::to_string(io_comm.size()) + ".yaml",params);
+    output_managers.emplace_back();
+    auto& om = output_managers.back();
+    om.setup(io_comm,params,field_manager,gm,t0,false);
+    io_comm.barrier();
+  }
 
   //  Cycle through data and write output
   const auto& out_fields = field_manager->get_groups_info().at("output");
@@ -105,13 +114,17 @@ TEST_CASE("input_output_basic","io")
       }
       f.sync_to_dev();
     }
-    output_manager.run(time);
+    for (auto& om : output_managers) {
+      om.run(time);
+    }
   }
-  output_manager.finalize();
+  for (auto& om : output_managers) {
+    om.finalize();
+  }
+
   // Because the next test for input in this sequence relies on the same fields.  We set all field values
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
-  for (const auto& fname : out_fields->m_fields_names)
-  {
+  for (const auto& fname : out_fields->m_fields_names) {
     auto f = field_manager->get_field(fname);
     f.deep_copy(ekat::ScalarTraits<Real>::invalid());
   }
@@ -130,9 +143,6 @@ TEST_CASE("input_output_basic","io")
   auto max_params = get_in_params("Max",io_comm,time);
   auto multi_params = get_in_params("Multisnap",io_comm,t0+dt);
   Real tol = 100*std::numeric_limits<Real>::epsilon();
-  // Check instant output
-  input_type ins_input(io_comm,ins_params,field_manager);
-  ins_input.read_variables();
   auto f1 = field_manager->get_field("field_1");
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
@@ -141,6 +151,10 @@ TEST_CASE("input_output_basic","io")
   auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
+
+  // Check instant output
+  input_type ins_input(io_comm,ins_params,field_manager);
+  ins_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
   f3.sync_to_host();
@@ -224,6 +238,11 @@ TEST_CASE("input_output_basic","io")
     f4.sync_to_host();
 
     for (int ii=0;ii<num_lcols;++ii) {
+      if(std::abs(f1_host(ii)-(tt*dt+ii))>=tol) {
+        printf("f1_host(%d): %f\n",ii,f1_host(ii));
+        printf("expected: %f\n",Real(tt*dt+ii));
+      }
+
       REQUIRE(std::abs(f1_host(ii)-(tt*dt+ii))<tol);
       for (int jj=0;jj<num_levs;++jj) {
         REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
@@ -247,7 +266,6 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
   using FR = FieldRequest;
-  using SL = std::list<std::string>;
 
   // Create a fm
   auto fm = std::make_shared<FieldManager<Real>>(grid);
@@ -275,9 +293,9 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
   fm->registration_begins();
   fm->register_field(FR{fid1,"output"});
-  fm->register_field(FR{fid2,SL{"output","restart"}});
-  fm->register_field(FR{fid3,SL{"output","restart"}});
-  fm->register_field(FR{fid4,SL{"output","restart"},Pack::n}); // Register field as packed
+  fm->register_field(FR{fid2,"output"});
+  fm->register_field(FR{fid3,"output"});
+  fm->register_field(FR{fid4,"output",Pack::n}); // Register field as packed
   fm->registration_ends();
 
   // Make sure that field 4 is in fact a packed field
@@ -328,22 +346,6 @@ std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int n
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
   gm->build_grids(std::set<std::string>{"Point Grid"});
   return gm;
-}
-/*===================================================================================================================*/
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid)
-{
-  ekat::ParameterList om_params("Output Manager");
-  auto& files = om_params.sublist("Output YAML Files");
-  std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
-                                         "io_test_max",    "io_test_min",
-                                         "io_test_multisnap" };
-  for (auto& name : fileNames) {
-    name += "_np" + std::to_string(comm.size()) + ".yaml";
-  }
-
-  files.set(grid,fileNames);
-
-  return om_params;  
 }
 /*===================================================================================================================*/
 ekat::ParameterList get_in_params(const std::string type,

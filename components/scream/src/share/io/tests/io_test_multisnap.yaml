@@ -2,10 +2,11 @@
 ---
 Casename: io_multisnap_test_np${MPI_RANKS}
 Averaging Type: Instant
-Grid: Physics
+Grids: [Point Grid]
 Max Snapshots Per File: 10
-Fields: [field_1, field_2, field_3, field_packed]
-Output:
+Fields:
+  Point Grid: [field_1, field_2, field_3, field_packed]
+Output Control:
   Frequency: 1
   Frequency Units: Steps
 ...
