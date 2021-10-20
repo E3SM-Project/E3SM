@@ -371,8 +371,7 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'iussp', 'val'=>"6");
     add_default($nl, 'stk_wn', 'val'=>"0.01,0.03,0.06,0.1,0.2,0.35");
 
-    add_default($nl, 'cice0');
-    add_default($nl, 'cicen');
+    add_default($nl, 'icedisp');
     add_default($nl, 'rwndc');
 
     add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}.in'");

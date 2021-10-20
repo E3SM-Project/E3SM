@@ -154,10 +154,10 @@
                           w3nmod, w3setg, AnglD, &
                           sig, nk, zb, dmin, &
                           usspf
-      use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
+      use w3wdatmd, only: time, w3ndat, w3setw, wlv, va, ust, ice 
       use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs
       use w3idatmd, only: inflags1, w3seti, w3ninp
-      USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
+      USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN, ICEP1, ICEP5, TI1, TI5
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
       USE W3IDATMD, ONLY: TIN, ICEI
       USE W3IDATMD, ONLY: TLN, WLEV
@@ -185,7 +185,7 @@
       use seq_flds_mod
 
       use ww3_cpl_indices  , only : ww3_cpl_indices_set
-      use ww3_cpl_indices  , only : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbot, index_x2w_Si_ifrac
+      use ww3_cpl_indices  , only : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbot, index_x2w_Si_ifrac, index_x2w_si_ithick
       use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth, index_x2w_So_ssh
       use ww3_cpl_indices  , only : index_w2x_Sw_ustokes_wavenumber_1, index_w2x_Sw_vstokes_wavenumber_1, &
                                     index_w2x_Sw_ustokes_wavenumber_2, index_w2x_Sw_vstokes_wavenumber_2, &
@@ -477,10 +477,12 @@ CONTAINS
 
       inflags1 = .false.
 
-      inflags1(1) = .true. ! water levels
-      inflags1(2) = .true. ! currents
-      inflags1(3) = .true. ! winds
-      inflags1(4) = .true. ! ice concentration
+      inflags1(1)  = .true. ! water levels
+      inflags1(2)  = .true. ! currents
+      inflags1(3)  = .true. ! winds
+      inflags1(4)  = .true. ! ice concentration
+      inflags1(-7) = .true. ! ice thickness
+      inflags1(-3) = .true. ! ice floe size
 
       !--------------------------------------------------------------------
       ! Set time frame
@@ -545,6 +547,8 @@ CONTAINS
                 if (.not.exists) then 
                    write(ndso,*) ' ERROR: ww3 restart file does not exist'
                    call shr_sys_abort(' wav ERROR: restart file missing')
+                else
+                   write(ndso,*) 'Restart file: '//trim(restart_timestamp)//'.restart.ww3'//' found'
                 endif
          endif 
 
@@ -897,7 +901,7 @@ CONTAINS
 
       if ( runtype == "continue" .or. runtype == "branch") then
         ifile4 = 0                                   ! reset file counter
-        fnmpre = './'//restart_timestamp//'.'        ! add restart timestamp to file name prefix
+        fnmpre = './'//trim(restart_timestamp)//'.'  ! add restart timestamp to file name prefix
 
         ALLOCATE(MAPTST(NY,NX))
         MAPTST = MAPSTA
@@ -1095,6 +1099,10 @@ CONTAINS
       if (inflags1(4)) then
          TIN  = timen
          ICEI = def_value   ! ice frac
+         TI1 = timen
+         ICEP1 = def_value
+         TI5 = timen
+         ICEP5 = 1000.0
       endif
 
       ! this is the global fill
@@ -1182,6 +1190,9 @@ CONTAINS
 
          if (inflags1(4)) then
             ICEI(IX,IY) = x2w0%rattr(index_x2w_si_ifrac,gindex)
+            ICEP1(IX,IY) = x2w0%rattr(index_x2w_si_ithick,gindex)
+            !ICEP5(IX,IY) = x2w0%rattr(index_x2w_si_ifloe,gindex)
+
          endif
 
       enddo

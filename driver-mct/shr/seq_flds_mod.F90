@@ -2085,6 +2085,19 @@ contains
 
     endif
 
+    !------------------------------
+    ! ice<->wav only exchange 
+    !------------------------------
+
+    ! Sea ice thickness
+    call seq_flds_add(i2x_states,"Si_ithick")
+    call seq_flds_add(x2w_states,"Si_ithick")
+    longname = 'Sea ice thickness'
+    stdname  = 'sea_ice_thickness'
+    units    = 'm'
+    attname  = 'Si_ithick'
+    call metadata_set(attname, longname, stdname, units)
+
 
     !-----------------------------
     ! lnd->rof exchange

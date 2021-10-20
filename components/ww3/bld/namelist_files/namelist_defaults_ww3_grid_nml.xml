@@ -165,8 +165,8 @@ attributes to express the dependency.
  
 <!-- MISC -->
  
-<cice0>0.25</cice0>
-<cicen>0.75</cicen>
+<cice0>0.5</cice0>
+<cicen>0.5</cicen>
 <lice>0.0</lice>
 <pmove>0.500</pmove>
 <xseed>1.000</xseed>
@@ -192,7 +192,7 @@ attributes to express the dependency.
 <icehmin>0.20</icehmin>
 <icehfac>1.00</icehfac>
 <icehinit>0.50</icehinit>
-<icedisp>.false.</icedisp>
+<icedisp>.true.</icedisp>
 <icehdisp>0.60</icehdisp>
 <icesln>1.00</icesln>
 <icewind>1.00</icewind>

@@ -12,6 +12,8 @@ module ww3_cpl_indices
   integer :: index_x2w_Sa_v     
   integer :: index_x2w_Sa_tbot  
   integer :: index_x2w_Si_ifrac
+  integer :: index_x2w_Si_ithick
+  integer :: index_x2w_si_ifloe 
   integer :: index_x2w_So_t     
   integer :: index_x2w_So_u     
   integer :: index_x2w_So_v     
@@ -50,6 +52,8 @@ contains
     index_x2w_Sa_v       = mct_avect_indexra(x2w,'Sa_v')       ! Meridional wind at lowest level (see above)
     index_x2w_Sa_tbot    = mct_avect_indexra(x2w,'Sa_tbot')    ! Temperature at lowest level
     index_x2w_Si_ifrac   = mct_avect_indexra(x2w,'Si_ifrac')   ! Fractional sea ice coverage 
+    index_x2w_Si_ithick  = mct_avect_indexra(x2w,'Si_ithick')  ! Sea ice thickness
+    !index_x2w_Si_ifloe   = mct_avect_indexra(x2w,'Si_ifloe')   ! Sea ice floe size
     index_x2w_So_t       = mct_avect_indexra(x2w,'So_t')       ! Sea surface temperature
     index_x2w_So_u       = mct_avect_indexra(x2w,'So_u')       ! Zonal sea surface water velocity
     index_x2w_So_v       = mct_avect_indexra(x2w,'So_v')       ! Meridional sea surface water velocity
