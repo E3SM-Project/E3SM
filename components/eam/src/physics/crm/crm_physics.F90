@@ -44,7 +44,6 @@ module crm_physics
    integer :: ixq       = -1
    integer :: ixcldrim  = -1 
    integer :: ixrimvol  = -1
-   integer :: ixtke     = -1
 
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
@@ -68,7 +67,6 @@ module crm_physics
 
    logical :: do_prescribed_CCN        = .false.   ! Use prescribed CCN
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-   real(r8), parameter :: tke_tol = 0.0004_r8
 contains
 !===================================================================================================
 !===================================================================================================
@@ -151,11 +149,6 @@ subroutine crm_physics_register()
       call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), idx_vt_q, &
                     longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
-
-#if defined(shoc)
-   ! TKE is prognostic in SHOC and should be advected by dynamics
-   call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
-#endif
 
    !----------------------------------------------------------------------------
    ! constituents
@@ -285,10 +278,9 @@ subroutine crm_physics_register()
    if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,dims_gcm_2D,ttend_dp_idx)
 
    ! SHOC
-   call pbuf_add_field('WTHV',         'global', dtype_r8, dims_gcm_3D, idx)
    call pbuf_add_field('TKH',          'global', dtype_r8, dims_gcm_3D, idx)
    call pbuf_add_field('TK',           'global', dtype_r8, dims_gcm_3D, idx)
-   call pbuf_add_field('CMELIQ',       'physpkg',dtype_r8, dims_gcm_2D, idx)
+   ! call pbuf_add_field('CMELIQ',       'physpkg',dtype_r8, dims_gcm_2D, idx)
 
    !----------------------------------------------------------------------------
    ! miscellaneous fields previously added by offline parameterizations
@@ -495,13 +487,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('QV_PREV')     , 0._r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('T_PREV')      , 0._r8)
    
-      ! call pbuf_set_field(pbuf2d, pbuf_get_index('WTHV'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TKH'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TK'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('FICE'), 0.0_r8)
-      ! call pbuf_set_field(pbuf2d, pbuf_get_index('TKE'), tke_tol)
-      ! call pbuf_set_field(pbuf2d, pbuf_get_index('ALST'), 0.0_r8)
-      ! call pbuf_set_field(pbuf2d, pbuf_get_index('AIST'), 0.0_r8)
 
    end if
 
@@ -618,7 +606,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
    integer  :: i, icrm, icol, k, m, ii, jj, c      ! loop iterators
-   integer  :: tracer_cnt                          ! tracer count for SHOC?
    integer  :: ncol_sum                            ! ncol sum for chunk loops
    integer  :: icrm_beg, icrm_end                  ! CRM column index range for crm_history_out
    integer  :: itim                                ! pbuf field and "old time" indices
@@ -672,10 +659,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
    integer                     :: icnst
    logical                     :: lq(pcnst)
-   logical                     :: lq2(pcnst)
-
-   ! for P3/SHOC upgrade (do we need this?)
-   real(crm_rknd), dimension(pcols,pver,10) :: edsclr_in
 
    ! pointers for crm_rad data on pbuf
    real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
@@ -714,7 +697,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_bm(:,:,:,:) ! 2-mom/p3 averaged riming volume
 
    ! pbuf variables for P3/SHOC
-   real(crm_rknd), pointer :: ast(:,:)          ! Relative humidity cloud fraction
+   real(crm_rknd), pointer :: tkh(:,:)
+   real(crm_rknd), pointer :: tk(:,:)
    real(crm_rknd), pointer :: ni_activated(:,:) ! ice nucleation number
    real(crm_rknd), pointer :: npccn(:,:)        ! liquid activation number tendency
    ! real(crm_rknd), pointer :: cmeliq(:,:)
@@ -748,18 +732,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(r8) :: flx_heat(pcols)
    real(r8) :: zero_tracers(pcols,pcnst)
    real(r8) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
-
-   !\
-   ! shoc fields
-   !/
-   real(r8), pointer, dimension(:,:) :: tke_zi  ! turbulent kinetic energy, interface
-   real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
-   real(r8), pointer, dimension(:,:) :: tkh
-   real(r8), pointer, dimension(:,:) :: tk
-   real(r8), pointer, dimension(:,:) :: alst     ! liquid stratiform cloud fraction             [fraction]
-   !\
-   ! end of shoc fields
-   !/
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -877,33 +849,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pbuf_set_field(pbuf_chunk, pbuf_get_index('ICWMRSH'), 0.0_r8 )
 
    end do ! c=begchunk, endchunk
-
-   !------------------------------------------------------------------------------------------------
-   ! Tracers for P3 and SHOC (10 used in scream)
-   !------------------------------------------------------------------------------------------------
-   call cnst_get_ind('Q',       ixq) 
-   call cnst_get_ind('CLDLIQ',  ixcldliq)
-   call cnst_get_ind('CLDICE',  ixcldice)
-   call cnst_get_ind('NUMLIQ',  ixnumliq)
-   call cnst_get_ind('NUMICE',  ixnumice)
-   call cnst_get_ind('RAINQM',  ixrain)
-   call cnst_get_ind('CLDRIM',  ixcldrim)
-   call cnst_get_ind('NUMRAI',  ixnumrain)
-   call cnst_get_ind('BVRIM',   ixrimvol)
-
-   call cnst_get_ind('SHOC_TKE',ixtke)
-
-   lq2(:)         = .false.
-   lq2(ixcldliq)  = .true.
-   lq2(ixcldice)  = .true.
-   lq2(ixnumliq)  = .true.
-   lq2(ixnumice)  = .true.
-   lq2(ixrain)    = .true.
-   lq2(ixcldrim)  = .true.
-   lq2(ixnumrain) = .true.
-   lq2(ixrimvol)  = .true.
-   lq2(ixtke)     = .true.
-   lq2(ixq)       = .true.
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -1192,15 +1137,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%vl(icrm,1:pver)     = state(c)%v(i,1:pver)
             crm_input%ocnfrac(icrm)       = cam_in(c)%ocnfrac(i)
 
-            ! for SHOC
-            crm_input%shf  (icrm)         = cam_in(c)%shf (i)       ! Sensible heat flux
-            crm_input%cflx (icrm)         = cam_in(c)%cflx(i,1)     ! Latent heat flux
-            crm_input%wsx  (icrm)         = cam_in(c)%wsx (i)       ! Surface meridional momentum flux
-            crm_input%wsy  (icrm)         = cam_in(c)%wsy (i)       ! Surface zonal momentum flux  
-            crm_input%sl   (icrm,1:pver)  = state(c)%s    (i,1:pver)
-            crm_input%zm   (icrm,1:pver)  = state(c)%zm   (i,1:pver)
-            crm_input%omega(icrm,1:pver)  = state(c)%omega(i,1:pver)
-
 #if defined( MMF_ESMT )
             ! Set the input wind for ESMT
             crm_input%ul_esmt(icrm,1:pver) = state(c)%u(i,1:pver)
@@ -1263,42 +1199,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! SHOC input data
          !------------------------------------------------------------------------------------------
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('SHOC_TKE'),tke_zt)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('WTHV'),    wthv)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('TKH'),     tkh)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('TK'),      tk)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('ALST'),    alst)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('AST'),     ast)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('NPCCN'),   npccn)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('NAAI'),    ni_activated)
          ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('CMELIQ'),  cmeliq)
 
-         ! TODO: revisit how edsclr_in is handled once we nail down 
-         ! how many tracers we actuallyneed for P3/SHOC
-         tracer_cnt=0
-         do icnst=1,pcnst
-           if (lq2(icnst))  then
-               tracer_cnt=tracer_cnt+1
-               do k=1,pver
-                  do i=1,ncol
-                     edsclr_in(i,k,tracer_cnt) = max( state(c)%q(i,k,icnst), 1.0e-12 )
-                  end do
-               end do
-           end if
-         end do
-
          do i = 1,ncol
             icrm = ncol_sum + i
             do k = 1, pver
-               crm_input%tke_zt      (icrm,k)      = max(tke_tol,stat(c)e%q(i,k,ixtke))
-               crm_input%wthv        (icrm,k)      = wthv        (i,l)
                crm_input%tkh         (icrm,k)      = tkh         (i,l)
                crm_input%tk          (icrm,k)      = tk          (i,l)
-               crm_input%alst        (icrm,k)      = alst        (i,l)
-               crm_input%qtracers    (icrm,k,1:10) = edsclr_in   (i,l, 1:10)
                crm_input%npccn       (icrm,k)      = 1.0 ! npccn       (i,l)
                crm_input%ni_activated(icrm,k)      = 1.0 ! ni_activated(i,l)
-               crm_input%ast         (icrm,k)      = ast         (i,l)
             end do
          end do
 
@@ -1330,6 +1243,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%fluxt00(icrm) = shf_tmp(i)/cpair   ! K Kg/ (m2 s)
             crm_input%fluxq00(icrm) = lhf_tmp(i)/latvap  ! Kg/(m2 s)
             crm_input%wndls(icrm)   = sqrt(state(c)%u(i,pver)**2 + state(c)%v(i,pver)**2)
+
+            ! ! for SHOC?
+            ! crm_input%shf  (icrm)         = cam_in(c)%shf (i)       ! Sensible heat flux
+            ! crm_input%cflx (icrm)         = cam_in(c)%cflx(i,1)     ! Latent heat flux
+            ! crm_input%wsx  (icrm)         = cam_in(c)%wsx (i)       ! Surface meridional momentum flux
+            ! crm_input%wsy  (icrm)         = cam_in(c)%wsy (i)       ! Surface zonal momentum flux  
+
          end do
 
          !------------------------------------------------------------------------------------------
@@ -1399,14 +1319,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, crm_input%phis, &
-               crm_input%shf, crm_input%cflx, crm_input%wsx, crm_input%wsy, &
 #ifdef MMF_ESMT
                crm_input%ul_esmt, crm_input%vl_esmt,                                        &
 #endif
                crm_input%t_vt, crm_input%q_vt, crm_input%relvar, crm_input%nccn_prescribed, &
-               crm_input%t_prev, crm_input%qv_prev, crm_input%zm, crm_input%sl, crm_input%omega, &
-               crm_input%tke_zt, crm_input%wthv, crm_input%tkh, crm_input%tk, crm_input%alst, crm_input%qtracers, &
-               crm_input%npccn, crm_input%ni_activated, crm_input%ast, &
+               crm_input%t_prev, crm_input%qv_prev, &
+               crm_input%tkh, crm_input%tk, crm_input%npccn, crm_input%ni_activated, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
                crm_state%qt, crm_state%qp, crm_state%qn, crm_state%qc, crm_state%nc, crm_state%qr, &
                crm_state%nr, crm_state%qi, crm_state%ni, crm_state%qs, crm_state%ns, crm_state%qg, &
