@@ -857,6 +857,9 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/soft/apps/packages/climate/perl5/lib/perl5</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="anlgce">
@@ -921,6 +924,9 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
   </machine>
 
