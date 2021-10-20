@@ -2907,7 +2907,7 @@ end subroutine clubb_init_cnst
  
    do k=1,pver
       do i=1,ncol
-         alst(i,k) = cloud_frac(i,k)   
+         alst(i,k) = max(0._r8,cloud_frac(i,k))
          qlst(i,k) = rcm(i,k)/max(0.01_r8,alst(i,k))  ! Incloud stratus condensate mixing ratio
       enddo
    enddo
