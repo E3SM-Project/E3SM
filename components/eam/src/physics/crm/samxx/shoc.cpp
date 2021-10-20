@@ -123,8 +123,8 @@ void shoc_proc() {
     um(icol,ilev)  = crm_input_ul(plev-nzm+k,icrm);
     vm(icol,ilev)  = crm_input_vl(plev-nzm+k,icrm);
 
-//    um(icol,ilev)  = u(nzm-(k+1),j+offy_u,i+offx_u,icrm);
-//    vm(icol,ilev)  = v(nzm-(k+1),j+offy_v,i+offx_v,icrm);
+    // um(icol,ilev)  = u(nzm-(k+1),j+offy_u,i+offx_u,icrm);
+    // vm(icol,ilev)  = v(nzm-(k+1),j+offy_v,i+offx_v,icrm);
 
     thlm(icol,ilev)  = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)-(latvap/cp)*crm_state_qc(nzm-(k+1),j,i,icrm);
     thv(icol,ilev)   = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)
@@ -160,31 +160,31 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-//    dz_g(icol,ilev) = zi(k+1,icrm)-zi(k,icrm);   //compute thickness
-      dz_g(icol,ilev) = crm_input_zint(plev-nzm+k,icrm)-crm_input_zint(plev-nzm+k+1,icrm);
+    // dz_g(icol,ilev) = zi(k+1,icrm)-zi(k,icrm);   //compute thickness
+    dz_g(icol,ilev) = crm_input_zint(plev-nzm+k,icrm)-crm_input_zint(plev-nzm+k+1,icrm);
   });
 
 
   //  Define the SHOC thermodynamic grid (in units of m)
-//   wm_zt(:,pver) = 0._r8
-//   do k=1,pver
-//     do i=1,ncol
+  // wm_zt(:,pver) = 0._r8
+  // do k=1,pver
+  //   do i=1,ncol
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-//    zt_g(icol,ilev)   = z(k,icrm);
+    // zt_g(icol,ilev)   = z(k,icrm);
     zt_g(icol,ilev)   = crm_input_zmid(plev-nzm+k,icrm)-crm_input_zint(plev,icrm);
     rrho(icol,ilev)   = (1./ggr)*(pdels(icol,ilev)/dz_g(icol,ilev));
     wm_zt(icol,ilev)  = -1.*crm_input_omega(plev-nzm+k,i)/(rrho(icol,ilev)*ggr);
     shoc_s(icol,ilev) = crm_input_sl(plev-nzm+k,icrm);
   });
 
-//   do k=1,pverp
-//     do i=1,ncol
+  // do k=1,pverp
+  //   do i=1,ncol
   parallel_for( SimpleBounds<4>(nz, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-//    zi_g(icol,ilev) = zi(k,icrm);
+    // zi_g(icol,ilev) = zi(k,icrm);
     zi_g(icol,ilev) = crm_input_zint(plev+1-nz+k,icrm)-crm_input_zint(plev,icrm);
   });
 
@@ -269,12 +269,12 @@ void shoc_proc() {
      horiz_wind_3d(icol,1,ilev) = v_wind_2d(icol,ilev);
   });
 
-//  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {ncol, num_tracers, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int q, int ilev, int s) {
-//     int k = ilev*Spack::n + s;
-//     if (k < nlev) {
-//      qtracers_3d(icol,q,ilev)[s] = qtracers.myData[(icol*qtracers.dimension[1]+q)*qtracers.dimension[2]+k];   
-//     }
-//  });
+  // Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {ncol, num_tracers, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int q, int ilev, int s) {
+  //   int k = ilev*Spack::n + s;
+  //   if (k < nlev) {
+  //    qtracers_3d(icol,q,ilev)[s] = qtracers.myData[(icol*qtracers.dimension[1]+q)*qtracers.dimension[2]+k];   
+  //   }
+  // });
 
   array_to_view(qtracers.myData, ncol, num_tracers, npack, qtracers_3d);
 
@@ -322,6 +322,6 @@ void shoc_proc() {
     int ilev = k;
     sgs_field(0,k,offy_s+j,offx_s+i,icrm)      = tke(icol,nlev-(ilev+1));
     sgs_field_diag(0,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
-//    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
+    // sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
   });
 }
