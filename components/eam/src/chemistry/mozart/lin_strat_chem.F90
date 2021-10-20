@@ -540,6 +540,7 @@ end subroutine linoz_readnl
           ! PSC activation (follows Cariolle et al 1990.)
           ! use only if abs(latitude) > 40.
           !
+             delo3_psc = 0._r8
              if ( abs(lats(i)) > 40._r8  ) then   
                 if ( (chlorine_loading-chlorine_loading_bgnd) > 0._r8 ) then
                    if ( temp(i,k) <= psc_T ) then
@@ -801,6 +802,7 @@ end subroutine linoz_readnl
           !
           ! use only if abs(latitude) > 40.
           !
+          delta_o3_psc = 0._r8
           if ( abs(lats(i)) > 40._r8 ) then   
              if ( (chlorine_loading-chlorine_loading_bgnd) > 0._r8 ) then
                 if ( temp(i,k) <= psc_T ) then
