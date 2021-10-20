@@ -437,7 +437,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
-      else if (MMF_microphysics_scheme .eq. 'micro_p3') then
+      else if (MMF_microphysics_scheme .eq. 'p3') then
          call pbuf_set_field(pbuf2d, crm_nc_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
