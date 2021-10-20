@@ -139,6 +139,7 @@ contains
      real(kind=RKIND),dimension(:,:), intent(in) :: velocityZonal, velocityMeridional, &
                                                     normalVelocity, layerThickness,    &
                                                     verticalVelocity, tke, glsPsi
+
      real(kind=RKIND),dimension(:,:), intent(inout) :: tkeTend, glsPsiTend
 
      real (kind=RKIND), dimension(:,:,:), intent(in) :: activeTracers
@@ -193,8 +194,10 @@ contains
      endif
 
      call ocn_compute_two_equation_dissipation(tke, glsPsi, tkeTend, glsPsiTend)
-     call ocn_buoyancy_production_compute(tkeTend, glsPsiTend, glsPsi, tke, c_psi3, err)
-     call ocn_shear_production_compute(tkeTend, glsPsiTend, tke, glsPsi, c_psi1, err)
+     call ocn_buoyancy_production_compute(tkeTend, glsPsiTend, glsPsi, tke, c_psi3, &
+                                          surfaceBuoyancyForcing, err)
+     call ocn_shear_production_compute(tkeTend, glsPsiTend, tke, glsPsi, c_psi1, &
+                                       surfaceFrictionVelocity, c_mu, err)
 
      deallocate(normalThicknessFlux)
   end subroutine ocn_compute_two_equation_tendency
@@ -255,7 +258,6 @@ contains
         end do
         !$omp end do
         !$omp end parallel
-        print *, 'max = ',maxval(vertDiffTopOfCell),minval(vertDiffTopOfCell)
      else
         !$omp parallel
         !$omp do schedule(runtime) private(k,length,dissipation)
@@ -394,6 +396,7 @@ contains
           end do 
        end do !end n edges loop
 
+       ! instead of doing this put in surface BCs for generation
        ! compute dudz dvdz
        ugrad(3,1,iCell) = (velocityZonal(1,iCell) - velocityZonal(2,iCell)) /   &
                             (0.5_RKIND*(layerThickness(1,iCell) + layerThickness(2,iCell)))

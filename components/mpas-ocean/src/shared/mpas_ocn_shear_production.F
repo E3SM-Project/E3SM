@@ -74,7 +74,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_shear_production_compute(tkeTend, glsPsiTend, tke, glsPsi, &
-                  c_psi1, err)
+                  c_psi1, surfaceFrictionVelocity, c_mu, err)
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -87,7 +87,10 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          tke, glsPsi          !< Input: tke and psi variable at current timestep 
 
-      real (kind=RKIND), intent(in) :: c_psi1
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         surfaceFrictionVelocity 
+
+      real (kind=RKIND), intent(in) :: c_psi1, c_mu
 
       !-----------------------------------------------------------------
       !
@@ -117,7 +120,25 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(k, c_psi2, viscMid, shearProduction)
       do iCell = 1, nCellsOwned
-         do k=1,maxLevelCell(iCell)
+         k = 1
+         viscMid = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))
+         shearProduction = 0.5_RKIND*(2.0_RKIND*(viscMid*ugrad(1,k,iCell) - rho_sw*tke(k,iCell)/3.0_RKIND)* &
+                           ugrad(1,k,iCell) + viscMid*(ugrad(2,k,iCell) + vgrad(1,k,iCell))* &
+                           ugrad(2,k,iCell) + viscMid*(ugrad(3,k,iCell) + wgrad(1,k,iCell))* &
+                           ugrad(3,k,iCell) + viscMid*(ugrad(2,k,iCell) + vgrad(1,k,iCell))* &
+                           vgrad(1,k,iCell) + 2.0_RKIND*(viscMid*vgrad(2,k,iCell) -          &
+                           rho_sw*tke(k,iCell)/3.0_RKIND)*vgrad(2,k,iCell) + viscMid*(vgrad(3,k,iCell) + &
+                           wgrad(2,k,iCell))*vgrad(3,k,iCell) + viscMid*(ugrad(3,k,iCell) +  &
+                           wgrad(1,k,iCell))*wgrad(1,k,iCell) + viscMid*(vgrad(3,k,iCell) +  &
+                           wgrad(2,k,iCell))*wgrad(2,k,iCell) + 2.0_RKIND*(viscMid*wgrad(3,k,iCell) - &
+                           rho_sw*tke(k,iCell)/3.0_RKIND)*wgrad(3,k,iCell) + &
+                           surfaceFrictionVelocity(iCell)**2.0 / c_mu)
+
+         tkeTend(k,iCell) = tkeTend(k,iCell) + shearProduction
+         glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND) &
+                               *c_psi1*shearProduction
+
+         do k=2,maxLevelCell(iCell)
             viscMid = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))
             shearProduction = 2.0_RKIND*(viscMid*ugrad(1,k,iCell) - rho_sw*tke(k,iCell)/3.0_RKIND)* &
                               ugrad(1,k,iCell) + viscMid*(ugrad(2,k,iCell) + vgrad(1,k,iCell))* &
@@ -133,6 +154,7 @@ contains
             glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND) &
                                   *c_psi1*shearProduction
          end do 
+         !TODO - need a bottom drag term here.
       end do
       !$omp end do
       !$omp end parallel

@@ -1191,7 +1191,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(provisStatePool, 'tracers', tracersPool)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 1)
-            call mpas_pool_get_array(provisStatePool, 'tke', tkeNew, 1)
+      call mpas_pool_get_array(provisStatePool, 'tke', tkeNew, 1)
       call mpas_pool_get_array(provisStatePool, 'glsPsi', glsPsiNew, 1)
       call mpas_pool_get_array(tendPool, 'tendTKE', tendTKE)
       call mpas_pool_get_array(tendPool, 'tendglsPsi', tendglsPsi)
@@ -1225,6 +1225,7 @@ module ocn_time_integration_rk4
                             includeHalos = .true.)
 !halo exchange??
 
+      call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, 2)
       call ocn_compute_two_equation_tendency(tendTKE, tendglsPsi, tkeNew, glsPsiNew, velocityZonal,&
                                      velocityMeridional, normalVelocityProvis, verticalVelocityProvis, &
                                      layerThicknessCur, activeTracersNew, dt, err)

@@ -1622,6 +1622,8 @@ module ocn_time_integration_split
          if(config_use_two_equation_turbulence_model) then
             call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
             call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)!
+            call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, 2)
+
             call ocn_compute_two_equation_tendency(tendTKE, tendglsPsi, tkeNew, glsPsiNew, velocityZonal, &
                        velocityMeridional, normalVelocityNew, verticalVelocityNew, layerThicknessNew, &
                        tracersGroupNew, dt, err)

@@ -327,6 +327,7 @@ module ocn_time_integration_si
          iter,       &! Number of solver iterations
          siLargeIter  ! Index of the large btr system iteration
 
+
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
@@ -2703,6 +2704,9 @@ module ocn_time_integration_si
                call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
                call mpas_pool_get_array(statePool, 'tke', tkeNew, 2)
                call mpas_pool_get_array(statePool, 'glsPsi', glsPsiNew, 2)
+               !Note we need the virtual fluxes from KPP for the k-psi formulation
+               call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, 2)
+
                call ocn_compute_two_equation_tendency(tendTKE, tendglsPsi, tkeNew, glsPsiNew, velocityZonal, &
                           velocityMeridional, normalVelocityNew, verticalVelocityNew, layerThicknessNew, &
                           tracersGroupNew, dt, err)

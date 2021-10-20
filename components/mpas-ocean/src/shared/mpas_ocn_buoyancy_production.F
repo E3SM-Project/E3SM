@@ -68,7 +68,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_buoyancy_production_compute(tkeTend, glsPsiTend, glsPsi, tke, c_psi3, err)!{{{
+   subroutine ocn_buoyancy_production_compute(tkeTend, glsPsiTend, glsPsi, &
+                                              tke, c_psi3, surfaceBuoyancyForcing, &
+                                              err)!{{{
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -80,6 +82,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          glsPsi, tke
+
+      real (kind=RKIND), dimension(:), intent(in) :: surfaceBuoyancyForcing
+
       real (kind=RKIND), intent(in) :: c_psi3
       !-----------------------------------------------------------------
       !
@@ -113,7 +118,18 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(k, diffMid, c_psi3, buoyancyProduction)
       do iCell = 1, nCellsOwned
-         do k=1,maxLevelCell(iCell)
+         k = 1
+         diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
+         buoyancyProduction = 0.5_RKIND*(gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
+                              gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid + &
+                              surfaceBuoyancyForcing(iCell)) 
+
+
+         tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction
+         glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND)* &
+                               c_psi3*buoyancyProduction
+
+         do k=2,maxLevelCell(iCell)
             diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
             buoyancyProduction = gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
                                  gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid
