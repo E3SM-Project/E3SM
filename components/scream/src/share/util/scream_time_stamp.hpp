@@ -32,6 +32,7 @@ public:
   bool is_valid    () const;
 
   int sec_of_day () const { return m_time[0]*3600 + m_time[1]*60 + m_time[2]; }
+  int seconds_from (const TimeStamp& ts) const;
 
   std::string to_string () const;
   std::string get_date_string () const;
@@ -56,6 +57,9 @@ bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
 TimeStamp operator+ (const TimeStamp& ts, const int dt);
+
+// Difference (in seconds) between two timestamps
+long long operator- (const TimeStamp& ts1, const TimeStamp& ts2);
 
 // Time-related free-functions
 int days_in_month (const int year, const int month);

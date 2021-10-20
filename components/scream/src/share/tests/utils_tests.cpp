@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 
+#include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
@@ -43,6 +44,8 @@ TEST_CASE("field_layout") {
 TEST_CASE ("time_stamp") {
   using namespace scream;
   using TS = util::TimeStamp;
+
+  constexpr auto spd = constants::seconds_per_day;
 
   TS ts1 (2021,10,12,17,8,30);
   REQUIRE (ts1.get_year()==2021);
@@ -94,7 +97,7 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts3.get_month()==ts1.get_month());
   REQUIRE (ts3.get_year()==ts1.get_year());
 
-  ts3 += 86400;
+  ts3 += spd;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
@@ -102,7 +105,7 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts3.get_month()==ts1.get_month());
   REQUIRE (ts3.get_year()==ts1.get_year());
 
-  ts3 += 86400*20;
+  ts3 += spd*20;
   REQUIRE (ts3.get_seconds()==(ts1.get_seconds()+1));
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
@@ -110,7 +113,7 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts3.get_month()==(ts1.get_month()+1));
   REQUIRE (ts3.get_year()==ts1.get_year());
 
-  ts3 += 86400*365;
+  ts3 += spd*365;
   REQUIRE (ts3.get_seconds()==ts1.get_seconds()+1);
   REQUIRE (ts3.get_minutes()==(ts1.get_minutes()+1));
   REQUIRE (ts3.get_hours()==(ts1.get_hours()+1));
@@ -121,10 +124,10 @@ TEST_CASE ("time_stamp") {
   // Check update across leap date
 #ifdef EKAT_HAS_LEAP_YEAR
   TS ts4(2024,2,28,0,0,0);
-  ts4 += 86400;
+  ts4 += spd;
   REQUIRE (ts4.get_month()==2);
   REQUIRE (ts4.get_day()==29);
-  ts4 += 86400;
+  ts4 += spd;
   REQUIRE (ts4.get_month()==3);
   REQUIRE (ts4.get_day()==1);
 #endif
@@ -133,4 +136,16 @@ TEST_CASE ("time_stamp") {
   REQUIRE ( TS({2021,12,31},{23,59,59}) < TS({2022,1,1},{0,0,0}));
   REQUIRE ( TS({2022,1,1},{0,0,0}) <= TS({2022,1,1},{0,0,0}));
   REQUIRE ( (TS({2021,12,31},{23,59,59})+1) == TS({2022,1,1},{0,0,0}));
+
+  // Difference
+  auto ts5 = ts1 + 3600;
+  REQUIRE ( (ts5-ts1)==3600 );
+  auto ts6 = ts1 + spd;
+  REQUIRE ( (ts6-ts1)==spd );
+  auto ts7 = ts1 + spd*10;
+  REQUIRE ( (ts7-ts1)==spd*10 );
+  auto ts8 = ts1 + spd*100;
+  REQUIRE ( (ts8-ts1)==spd*100 );
+  auto ts9 = ts1 + spd*1000;
+  REQUIRE ( (ts9-ts1)==spd*1000 );
 }
