@@ -112,7 +112,11 @@ contains
        enddo
     endif
 
-    
+    elemin%derived%FM(:,:,1:3,:) = 0.0    
+elemin%derived%FQ(:,:,:,:) =0.0
+elemin%derived%FT(:,:,:) = 0.0
+
+
   end subroutine hs_forcing
 
   function hs_v_forcing(hvcoord,ps,v,npts,nlevels) result(hs_v_frc)

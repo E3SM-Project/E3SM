@@ -147,11 +147,11 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  if (test_name=="jw_baroclinic") {
+  //if (test_name=="jw_baroclinic") {
     params.test_case = TestCase::JW_BAROCLINIC;
-  } else {
-    Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  }
+  //} else {
+  //  Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
+  //}
 
   // Now this structure can be used safely
   params.params_set = true;

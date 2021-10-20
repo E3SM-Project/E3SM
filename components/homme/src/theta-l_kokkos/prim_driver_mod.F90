@@ -343,7 +343,8 @@ contains
 
   subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
-    use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics
+    use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics, &
+                               dt_remap_factor, dt_tracer_factor
     use dimensions_mod, only : nelemd
     use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
@@ -353,7 +354,7 @@ contains
     use hybrid_mod,     only : hybrid_t
     use hybvcoord_mod,  only : hvcoord_t
     use kinds,          only : real_kind
-    use time_mod,       only : timelevel_t, nextOutputStep, nsplit
+    use time_mod,       only : timelevel_t, nextOutputStep, nsplit, TimeLevel_Qdp
     use control_mod,    only : statefreq
     use parallel_mod,   only : abortmp
     use perf_mod,       only : t_startf, t_stopf
@@ -361,6 +362,9 @@ contains
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
 #ifndef SCREAM
     use theta_f2c_mod,  only : push_forcing_to_c
+#endif
+#if !defined(CAM) && !defined(SCREAM)
+    use test_mod,       only : compute_test_forcing
 #endif
     !
     ! Inputs
@@ -383,6 +387,9 @@ contains
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
 
+    integer :: n0_qdp, np1_qdp
+    real(kind=real_kind) :: dt_remap
+
     if (nets/=1 .or. nete/=nelemd) then
       call abortmp ('We don''t allow to call C routines from a horizontally threaded region')
     endif
@@ -398,6 +405,22 @@ contains
     if (disable_diagnostics) then
       compute_diagnostics = .false.
     endif
+
+    !dt_q = dt*dt_tracer_factor
+    if (dt_remap_factor == 0) then
+       dt_remap = dt
+    else
+       dt_remap = dt*dt_remap_factor
+    end if
+
+    call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
+
+!call from driver mod
+!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+
+#if !defined(CAM) && !defined(SCREAM)
+!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+#endif
 
 #ifndef SCREAM
     ! Scream already computes all forcing using the same pointers
