@@ -275,7 +275,7 @@ OPTIONS
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
-     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 | micro_p3].
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 | p3].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samomp | samxx]
@@ -2531,8 +2531,8 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_SAM1MOM\n";
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_M2005\n";
-          } elsif ($MMF_microphysics_scheme eq 'micro_p3') {
-#              print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
+          } elsif ($MMF_microphysics_scheme eq 'p3') {
+              # print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
           }
 
           # turbulence closure
@@ -2558,8 +2558,8 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_SAM1MOM\n";
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
               print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_M2005\n";
-          } elsif ($MMF_microphysics_scheme eq 'micro_p3') {
-          #    print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
+          } elsif ($MMF_microphysics_scheme eq 'p3') {
+              # print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
           }
 
           # turbulence closure
