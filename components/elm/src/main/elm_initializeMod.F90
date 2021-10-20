@@ -661,6 +661,10 @@ contains
        call SatellitePhenologyInit(bounds_proc)
     end if
 
+    if (use_fates_sp) then
+       call SatellitePhenologyInit(bounds_proc)
+    end if
+
     if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
        ! Must do this also when drydeposition is used so that estimates of monthly
        ! differences in LAI can be computed
