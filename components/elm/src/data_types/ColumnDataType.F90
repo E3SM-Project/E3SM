@@ -5372,6 +5372,11 @@ contains
          ptr_col=this%qflx_lat_aqu, c2l_scale_type='urbanf')
 #endif 
 
+   this%qflx_adv(begc:endc,:) = spval
+   call hist_addfld2d (fname='QFLX_ADV',  units='mm/s', type2d='levgrnd', &
+      avgflag='A', long_name='Vertical flow across soil layers', &
+      ptr_col=this%qflx_adv, c2l_scale_type='urbanf')
+
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
          avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &

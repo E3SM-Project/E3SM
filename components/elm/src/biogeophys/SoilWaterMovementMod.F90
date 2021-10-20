@@ -378,6 +378,7 @@ contains
          qflx_infl         =>    col_wf%qflx_infl       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)
          qflx_rootsoi_col  =>    col_wf%qflx_rootsoi    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
          qflx_tran_veg_col_sat   =>    col_wf%qflx_tran_veg_sat, & ! Output: [real(r8) (:)   ]
+         qflx_adv          =>    col_wf%qflx_adv        , & ! Output: [real(r8) (:,:) ] ! advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
 
          t_soisno          =>    col_es%t_soisno        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
@@ -923,6 +924,19 @@ contains
             if(h2osoi_liq(c,j)<0._r8)then
                qflx_deficit(c) = qflx_deficit(c) - h2osoi_liq(c,j)
             endif
+         enddo
+      enddo
+
+      ! Save cross-layer flow for use in advective flux calculations (Ben Sulman)
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         nlevbed = nlev2bed(c)
+         qflx_adv(c,0) = qin(c,1) ! Layer zero is flow out of space above top layer, i.e. infiltration
+         do j = 1, nlevbed
+            qflx_adv(c,j) = qout(c,j)
+         enddo
+         do j = nlevbed+1, nlevgrnd
+            qflx_adv(c,j) = 0.0_r8
          enddo
       enddo
 
