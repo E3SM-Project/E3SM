@@ -1745,7 +1745,7 @@ contains
     ! use reading a restart as a surrogate from whether this is a startup run
 
     skip_ocean_run = .true.
-    if ( read_restart) skip_ocean_run = .false.
+    !if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
     cpl2ocn_first = .true.
 
@@ -2753,9 +2753,13 @@ contains
 
        if (ocnrun_alarm) ocnrun_count = ocnrun_count + 1
        if (ocnrun_count > 1) skip_ocean_run = .false.
+       print *, "_wpc111a. in driver time step loop. skip_ocean_run = ", skip_ocean_run
+       print *, "_wpc111b. in driver time step loop. ocnrun_alarm = ", ocnrun_alarm
+       print *, "_wpc111c. in driver time step loop. ocnrun_count = ", ocnrun_count
        if (skip_ocean_run) then
           ocnrun_alarm = .false.
           ocnnext_alarm = .false.
+          print *, "_wpc111d. in driver time step loop. ocnrun_alarm = ", ocnrun_alarm
        endif
 
        if (iamroot_CPLID) then
