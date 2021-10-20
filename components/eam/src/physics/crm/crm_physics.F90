@@ -168,10 +168,10 @@ subroutine crm_physics_register()
    call cnst_add(cnst_names(6),  mwh2o, cpair, 0._r8, ixsnow,   longname='Grid box averaged snow amount',      is_convtran1=.true.)
    call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixnumrain,longname='Grid box averaged rain number',      is_convtran1=.true.)
    call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixnumsnow,longname='Grid box averaged snow number',      is_convtran1=.true.)
-#if defined(p3)
-   call cnst_add(cnst_names(9),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged riming amount',  is_convtran1=.true.)
-   call cnst_add(cnst_names(10), mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged riming volume',  is_convtran1=.true.)
-#endif
+   if ( MMF_microphysics_scheme .eq. 'p3' ) then
+      call cnst_add(cnst_names(9),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged riming amount',  is_convtran1=.true.)
+      call cnst_add(cnst_names(10), mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged riming volume',  is_convtran1=.true.)
+   end if
    !----------------------------------------------------------------------------
    ! Register MMF history variables
    !----------------------------------------------------------------------------
@@ -392,14 +392,12 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain, ixnumsnow /)) ) then
          ! number concentrations
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', cnst_longname(mm))
-#if defined(micro_p3)
        else if ( mm == ixcldrim ) then
           ! mass mixing ratios
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm) )
        else if ( mm == ixrimvol ) then
           ! number concentrations
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'm3/kg', cnst_longname(mm) )
-#endif
       else
          call endrun( "crm_physics_init: Could not call addfld for constituent with unknown units.")
       endif
@@ -413,10 +411,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    call addfld(apcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' after physics'  )
    call addfld(bpcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
    call addfld(bpcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
-#if defined(micro_p3)
-    call addfld(apcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' after physics'  )
-    call addfld(bpcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' before physics' )
-#endif
+   if ( MMF_microphysics_scheme .eq. 'p3' ) then
+     call addfld(apcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' after physics'  )
+     call addfld(bpcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' before physics' )
+   end if
 
    if (use_MMF_VT) then
       ! initialize variance transport tracers
