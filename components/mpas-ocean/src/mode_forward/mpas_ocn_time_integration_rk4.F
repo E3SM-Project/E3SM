@@ -540,7 +540,6 @@ module ocn_time_integration_rk4
         ! In RK4 notation, we are computing the right hand side f(t,y),
         ! which is the same as k_j / h.
         call mpas_timer_start("RK4 vel/thick tendency computations")
-
         block => domain % blocklist
         do while (associated(block))
            call ocn_time_integrator_rk4_compute_vel_tends( block, dt, rk_substep_weights(rk_step), err )
@@ -550,7 +549,6 @@ module ocn_time_integration_rk4
          endif
            block => block % next
         end do
-
         call mpas_timer_stop("RK4 vel/thick tendency computations")
 
 
@@ -563,16 +561,15 @@ module ocn_time_integration_rk4
            end do
            call mpas_timer_stop("RK4 vvel tendency computations")
         end if
-
         if (config_use_two_equation_turbulence_model) then
            call mpas_timer_start("RK4 tke psi tendency computations")
            block => domain % blocklist
            do while (associated(block))
              call ocn_time_integrator_rk4_compute_tke_psi_tends( block, dt, rk_substep_weights(rk_step), err )
+             block => block % next
            end do
            call mpas_timer_stop("RK4 tke psi tendency computations")
         end if
-
         ! Update halos for prognostic variables.
 
         call mpas_timer_start("RK4 vel/thick prognostic halo update")
@@ -592,7 +589,6 @@ module ocn_time_integration_rk4
            call ocn_time_integrator_rk4_compute_tracer_tends( block, dt, rk_substep_weights(rk_step), err )
            block => block % next
         end do
-
         call mpas_timer_stop("RK4 tracer tendency computations")
 
         call mpas_timer_start("RK4 tracer prognostic halo update")
@@ -644,7 +640,6 @@ module ocn_time_integration_rk4
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! END RK loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       ! verify that cells are not dry at conclusion of time step
       if (config_use_wetting_drying) then
         call mpas_timer_start("RK4- check wet cells")
@@ -667,7 +662,6 @@ module ocn_time_integration_rk4
       !  A little clean up at the end: rescale tracer fields and compute diagnostics for new state
       !
       call mpas_timer_start("RK4-cleanup phase")
-
       ! Rescale tracers
       block => domain % blocklist
       do while(associated(block))
@@ -683,7 +677,6 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
          call ocn_compute_two_equation_diff(tkeNew, glsPsiNew, layerThicknessNew, dt, err)
       end if
-
       call mpas_timer_start("RK4-implicit vert mix")
       ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done,
       ! this leads to lack of volume conservation.  It is required because halo updates in RK4 are only
@@ -708,7 +701,6 @@ module ocn_time_integration_rk4
       end do
 
       call mpas_timer_stop("RK4-implicit vert mix halos")
-
       if (config_use_two_equation_turbulence_model) then
          call mpas_timer_start("Two equation model diff compute")
          block => domain % blocklist
@@ -764,7 +756,6 @@ module ocn_time_integration_rk4
                  layerThicknessNew, layerThickEdge, nonhydrostaticPressure, nonhydrostaticPressureOld, &
                  nhPressureCorrection, dt)
       end if
-
          if (config_prescribe_velocity) then
             !$omp parallel
             !$omp do schedule(runtime) 
@@ -816,7 +807,6 @@ module ocn_time_integration_rk4
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
-
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
@@ -866,7 +856,6 @@ module ocn_time_integration_rk4
          !$omp end parallel
 
          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 2)
-
          if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(meshPool)
          end if

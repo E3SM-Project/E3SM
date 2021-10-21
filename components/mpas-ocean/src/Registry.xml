@@ -2529,11 +2529,11 @@
 			 description="time tendency of sea-surface height"
 			 packages="forwardMode"
 		/>
-		<var name="tendTKE" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-3}" name_in_code="tendTKE"
+		<var name="tendTKE" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-3}" name_in_code="tendTKE"
 			 description="time tendency of turbulence kinetic energy"
 			 packages="forwardMode"
 			 />
-		<var name="tendglsPsi" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-4}" name_in_code="tendglsPsi"
+		<var name="tendglsPsi" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-4}" name_in_code="tendglsPsi"
 		  description="time tendency of psi variable from Umlauf and Burchard (2003)"
 		  />
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"

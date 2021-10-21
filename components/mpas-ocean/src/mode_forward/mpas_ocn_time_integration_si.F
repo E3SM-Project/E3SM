@@ -1237,9 +1237,9 @@ module ocn_time_integration_si
    
             SIcst_r00r0_global = SIcst_allreduce_global2(1)
             SIcst_r00w0_global = SIcst_allreduce_global2(2)
-   
+  
             SIcst_rho0   = SIcst_r00r0_global
-            SIcst_alpha0 = SIcst_rho0 / (1.0E-15_RKIND + SIcst_r00w0_global)
+            SIcst_alpha0 = SIcst_rho0 / (SIcst_r00w0_global)
             SIcst_beta0  = 0.0_RKIND
             SIcst_omega0 = 0.0_RKIND
    
@@ -1461,7 +1461,7 @@ module ocn_time_integration_si
                SIcst_q0q0_global  = SIcst_allreduce_global9(9)
    
                ! Omega0
-               SIcst_omega0 = SIcst_q0y0_global / (1.0E-15_RKIND + SIcst_y0y0_global)
+               SIcst_omega0 = SIcst_q0y0_global / (SIcst_y0y0_global)
    
                ! Residual
                ! = (r1,r1) = (q0,q0) - 2*Omega*(q0,y0) + Omega**2*(y0,y0)
@@ -1577,11 +1577,11 @@ module ocn_time_integration_si
                                           + SIcst_omega0 * SIcst_alpha0 &
                                                          * SIcst_r00v0_global
     
-               SIcst_beta0 = (SIcst_alpha0/(1.0E-15_RKIND + SIcst_omega0)) &
-                           * (SIcst_rho1 / (1.0E-15_RKIND + SIcst_rho0))
+               SIcst_beta0 = (SIcst_alpha0/(SIcst_omega0)) &
+                           * (SIcst_rho1 / (SIcst_rho0))
    
                SIcst_alpha0 = SIcst_rho1 &
-                            / ( 1.0E-15_RKIND + SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
+                            / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
                SIcst_rho0         = SIcst_rho1
@@ -2018,7 +2018,7 @@ module ocn_time_integration_si
             SIcst_r00w0_global = SIcst_allreduce_global2(2)
    
             SIcst_rho0   = SIcst_r00r0_global
-            SIcst_alpha0 = SIcst_rho0 / (1.0E-15_RKIND + SIcst_r00w0_global)
+            SIcst_alpha0 = SIcst_rho0 / (SIcst_r00w0_global)
             SIcst_beta0  = 0.0_RKIND
             SIcst_omega0 = 0.0_RKIND
    
@@ -2238,7 +2238,7 @@ module ocn_time_integration_si
                SIcst_q0q0_global  = SIcst_allreduce_global9(9)
    
                ! Omega0
-               SIcst_omega0 = SIcst_q0y0_global / (1.0E-15_RKIND + SIcst_y0y0_global)
+               SIcst_omega0 = SIcst_q0y0_global / (SIcst_y0y0_global)
    
                ! Residual
                resid = SIcst_q0q0_global &
@@ -2351,11 +2351,11 @@ module ocn_time_integration_si
                                           + SIcst_omega0 * SIcst_alpha0 &
                                                          * SIcst_r00v0_global
     
-               SIcst_beta0 = (SIcst_alpha0/(1.0E-15_RKIND + SIcst_omega0)) &
-                           * (SIcst_rho1 / (1.0E-15_RKIND + SIcst_rho0))
+               SIcst_beta0 = (SIcst_alpha0/(SIcst_omega0)) &
+                           * (SIcst_rho1 / (SIcst_rho0))
    
                SIcst_alpha0 = SIcst_rho1 &
-                            / ( 1.0E-15_RKIND + SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
+                            / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
                                              - SIcst_beta0 * SIcst_omega0  &
                                                            * SIcst_r00z0_global )
                SIcst_rho0 = SIcst_rho1
