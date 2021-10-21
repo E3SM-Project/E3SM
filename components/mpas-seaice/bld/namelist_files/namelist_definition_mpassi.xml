@@ -872,7 +872,7 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_special_boundaries_zero_tracers" type="logical"
+<entry id="config_use_special_boundaries_tracers" type="logical"
 	category="column_tracers" group="column_tracers">
 Zero out tracers in given boundary cells.
 
