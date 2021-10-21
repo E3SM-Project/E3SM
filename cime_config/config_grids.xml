@@ -844,7 +844,7 @@
       <mask>oQU480</mask>
     </model_grid>
 
-    <model_grid alias="ne4pg2_oQU480" compset="(EAM.+ELM.+MPASO)">
+    <model_grid alias="ne4pg2_oQU480">
       <grid name="atm">ne4np4.pg2</grid>
       <grid name="lnd">ne4np4.pg2</grid>
       <grid name="ocnice">oQU480</grid>
@@ -1420,6 +1420,16 @@
     <model_grid alias="ne1024pg2_r0125_oRRS18to6v3">
       <grid name="atm">ne1024np4.pg2</grid>
       <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne1024pg2_oRRS18to6v3">
+      <grid name="atm">ne1024np4.pg2</grid>
+      <grid name="lnd">ne1024np4.pg2</grid>
       <grid name="ocnice">oRRS18to6v3</grid>
       <grid name="rof">r0125</grid>
       <grid name="glc">null</grid>
@@ -3316,6 +3326,10 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne1024np4.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+    </gridmap>
 
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/conusx4v1/map_conusx4v1_to_oEC60to30v3_mono.200514.nc</map>
@@ -3906,6 +3920,11 @@
     <gridmap lnd_grid="ne240np4" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne240np4/map_ne240np4_nomask_to_0.5x0.5_nomask_aave_da_c110922.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne240np4/map_0.5x0.5_nomask_to_ne240np4_nomask_aave_da_c121019.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne1024np4.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="0.23x0.31" rof_grid="r05">

@@ -223,6 +223,8 @@ contains
     !
     ! !USES:
     use pio, only : pio_iotype_pnetcdf, pio_iotype_netcdf
+    use elm_instance,   only: lnd_id
+    use shr_pio_mod,    only: shr_pio_getioformat
     !
     ! !ARGUMENTS:
     class(file_desc_t), intent(inout) :: file    ! PIO file descriptor
@@ -236,6 +238,7 @@ contains
     logical :: l_avoid_pnetcdf  ! local version of avoid_pnetcdf
     integer :: my_io_type
     integer :: ierr
+    integer :: mode             ! IO mode according to netcdf format used
     !-----------------------------------------------------------------------
 
     l_avoid_pnetcdf = .false.
@@ -255,7 +258,8 @@ contains
        end if
     end if
 
-    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
+    mode = shr_pio_getioformat(lnd_id)
+    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,mode))
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( ' ncd_pio_createfile ERROR: Failed to open file to write: '//trim(fname))
@@ -2178,22 +2182,22 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical,optional   , intent(in)    :: switchdim  ! switch level dimension and first dim 
     !
     ! !LOCAL VARIABLES:
-    integer :: k,m,n,cnt                     ! indices
-    integer :: basetype                      ! pio basetype
-    integer :: gsmap_lsize                   ! local size of gsmap
-    integer :: gsmap_gsize                   ! global size of gsmap
-    integer :: fullsize                      ! size of entire array on cdf
-    integer :: gsize                         ! global size of elmlevel
-    integer :: vsize                         ! other dimensions
-    integer :: vsize1, vsize2                ! other dimensions
-    integer :: status                        ! error status
-    logical :: found                         ! true => found created iodescriptor
-    integer :: ndims_file                    ! temporary
+    integer   :: k,m,n,cnt                     ! indices
+    integer   :: basetype                      ! pio basetype
+    integer   :: gsmap_lsize                   ! local size of gsmap
+    integer*8 :: gsmap_gsize                   ! global size of gsmap
+    integer*8 :: fullsize                      ! size of entire array on cdf
+    integer*8 :: gsize                         ! global size of elmlevel
+    integer*8 :: vsize                         ! other dimensions
+    integer   :: vsize1, vsize2                ! other dimensions
+    integer   :: status                        ! error status
+    logical   :: found                         ! true => found created iodescriptor
+    integer   :: ndims_file                    ! temporary
     character(len=64) dimname_file           ! dimension name on file
     character(len=64) dimname_iodesc         ! dimension name from io descriptor
     type(mct_gsMap),pointer       :: gsmap   ! global seg map
     integer, pointer,dimension(:) :: gsmOP   ! gsmap ordered points
-    integer, pointer  :: compDOF(:)
+    integer*8, pointer  :: compDOF(:)
     character(len=32) :: subname = 'ncd_getiodesc'
     !------------------------------------------------------------------------
 
@@ -2278,7 +2282,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     vsize = fullsize / gsize
     if (mod(fullsize,gsize) /= 0) then
-       write(iulog,*) subname,' ERROR in vsize ',fullsize,gsize,vsize
+       write(iulog,*) subname,' ERROR in vsize ',fullsize,gsize,vsize,ndims,dims
        call shr_sys_abort(errMsg(__FILE__, __LINE__))
     endif
 

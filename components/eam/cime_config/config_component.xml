@@ -43,8 +43,6 @@
       <value compset=""               >-mach $MACH</value>
       <value compset="_EAM"          >-phys default</value>
       <value compset="_EAM%MAM4"     >-chem trop_mam4</value>
-      <value compset="_EAM%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
-      <value compset="_EAM%AV1C-H01A">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%CMIP6"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value>
@@ -116,20 +114,13 @@
       <value compset="2000(?:SOI)?_EAM%MOZM"   >2000_cam5_trop_moz_mam3</value>
       <value compset="1850(?:SOI)?_EAM%PM"     >1850_cam5_pm</value>
       <value compset="2000(?:SOI)?_EAM.*PLMOD" >2000_cam5_plmod</value>
-      <value compset="1850(?:SOI)?_EAM.*AV1C-L" >1850_cam5_av1c-04p2</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6"  >1850_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6-1pctCO2</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"  >1950_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
-      <value compset="2010S_EAM.*CMIP6"  >2010S_cam5_CMIP6</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"  >2010_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-L" >2000_cam5_av1c-04p2</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-L.*_BGC%B" >2000_cam5_av1c-04p2_bgc</value>
-      <value compset="2000(?:SOI)?_EAM.*AV1C-H01A">2000_cam5_av1c-h01a</value>
-      <value compset="20TR(?:SOI)?_EAM.*AV1C-L">20TR_cam5_av1c-04p2</value>
-      <value compset="20TR(?:SOI)?_EAM.*AV1C-L.*_BGC%B">20TR_cam5_av1c-04p2_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"  >20TR_eam_CMIP6</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_cam5_CMIP6</value>
@@ -150,8 +141,8 @@
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_EAM%RCE"      >RCEMIP_EAMv1</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="2000(?:SOI)?_EAM%MMF[1XO]">2000_cam5_av1c-04p2-MMF-1mom</value>
-      <value compset="2000(?:SOI)?_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF[1XO]">2010_mmf_1mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF2"    >2010_mmf_2mom</value>
       <value compset="_EAM%MMF.*-RCE"    >RCEMIP_EAMv1</value>
       <value compset="_EAM%MMF.*-AQUA"   >aquaplanet_MMF-1mom</value>
       <value compset="AR97_EAM%MMF.*-SCM"   >scam_arm97_MMF-1mom</value>
