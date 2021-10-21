@@ -112,9 +112,9 @@ contains
        enddo
     endif
 
-    elemin%derived%FM(:,:,1:3,:) = 0.0    
+!    elemin%derived%FM(:,:,1:3,:) = 0.0    
 elemin%derived%FQ(:,:,:,:) =0.0
-elemin%derived%FT(:,:,:) = 0.0
+!elemin%derived%FT(:,:,:) = 0.0
 
 
   end subroutine hs_forcing

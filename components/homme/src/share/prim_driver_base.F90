@@ -1100,7 +1100,7 @@ contains
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
        ! homme.
-!       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+       call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
 
        call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
@@ -1331,7 +1331,7 @@ contains
 
 #ifndef CAM
     ! Compute test forcing over tracer time step.
-!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
+    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
 #endif
 
 #ifdef CAM
