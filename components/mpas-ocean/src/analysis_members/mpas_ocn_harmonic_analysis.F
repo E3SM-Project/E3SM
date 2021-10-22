@@ -432,7 +432,7 @@ contains
              endif
            enddo
 
-           call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_harmonicAnalysis_output_stream, ierr=err_tmp)
+           call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_harmonicAnalysis_output_stream, forceWriteNow=.true., ierr=err_tmp)
 
            ! increment to indicate the system has been solved
            leastSquaresSolution = leastSquaresSolution + 1
