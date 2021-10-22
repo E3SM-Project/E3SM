@@ -207,22 +207,22 @@ extern "C" void rrtmgp_run_sw (
     aer_tau_bnd_host           .deep_copy_to(aer_tau_bnd           );
     aer_ssa_bnd_host           .deep_copy_to(aer_ssa_bnd           );
     aer_asm_bnd_host           .deep_copy_to(aer_asm_bnd           );
-    allsky_flux_up_host        .deep_copy_to(allsky_flux_up        );
-    allsky_flux_dn_host        .deep_copy_to(allsky_flux_dn        );
-    allsky_flux_dn_dir_host    .deep_copy_to(allsky_flux_dn_dir    );
-    allsky_flux_net_host       .deep_copy_to(allsky_flux_net       );
-    clrsky_flux_up_host        .deep_copy_to(clrsky_flux_up        );
-    clrsky_flux_dn_host        .deep_copy_to(clrsky_flux_dn        );
-    clrsky_flux_dn_dir_host    .deep_copy_to(clrsky_flux_dn_dir    );
-    clrsky_flux_net_host       .deep_copy_to(clrsky_flux_net       );
-    allsky_bnd_flux_up_host    .deep_copy_to(allsky_bnd_flux_up    );
-    allsky_bnd_flux_dn_host    .deep_copy_to(allsky_bnd_flux_dn    );
-    allsky_bnd_flux_dn_dir_host.deep_copy_to(allsky_bnd_flux_dn_dir);
-    allsky_bnd_flux_net_host   .deep_copy_to(allsky_bnd_flux_net   );
-    clrsky_bnd_flux_up_host    .deep_copy_to(clrsky_bnd_flux_up    );
-    clrsky_bnd_flux_dn_host    .deep_copy_to(clrsky_bnd_flux_dn    );
-    clrsky_bnd_flux_dn_dir_host.deep_copy_to(clrsky_bnd_flux_dn_dir);
-    clrsky_bnd_flux_net_host   .deep_copy_to(clrsky_bnd_flux_net   );
+    //allsky_flux_up_host        .deep_copy_to(allsky_flux_up        );
+    //allsky_flux_dn_host        .deep_copy_to(allsky_flux_dn        );
+    //allsky_flux_dn_dir_host    .deep_copy_to(allsky_flux_dn_dir    );
+    //allsky_flux_net_host       .deep_copy_to(allsky_flux_net       );
+    //clrsky_flux_up_host        .deep_copy_to(clrsky_flux_up        );
+    //clrsky_flux_dn_host        .deep_copy_to(clrsky_flux_dn        );
+    //clrsky_flux_dn_dir_host    .deep_copy_to(clrsky_flux_dn_dir    );
+    //clrsky_flux_net_host       .deep_copy_to(clrsky_flux_net       );
+    //allsky_bnd_flux_up_host    .deep_copy_to(allsky_bnd_flux_up    );
+    //allsky_bnd_flux_dn_host    .deep_copy_to(allsky_bnd_flux_dn    );
+    //allsky_bnd_flux_dn_dir_host.deep_copy_to(allsky_bnd_flux_dn_dir);
+    //allsky_bnd_flux_net_host   .deep_copy_to(allsky_bnd_flux_net   );
+    //clrsky_bnd_flux_up_host    .deep_copy_to(clrsky_bnd_flux_up    );
+    //clrsky_bnd_flux_dn_host    .deep_copy_to(clrsky_bnd_flux_dn    );
+    //clrsky_bnd_flux_dn_dir_host.deep_copy_to(clrsky_bnd_flux_dn_dir);
+    //clrsky_bnd_flux_net_host   .deep_copy_to(clrsky_bnd_flux_net   );
 
 
     // Populate gas concentrations object
@@ -334,19 +334,19 @@ extern "C" void rrtmgp_run_sw (
     fluxes_allsky.bnd_flux_net.deep_copy_to(allsky_bnd_flux_net);
 
     // TODO: Only copy out the outputs
-    gas_vmr               .deep_copy_to(gas_vmr_host               );
-    pmid                  .deep_copy_to(pmid_host                  );
-    tmid                  .deep_copy_to(tmid_host                  );
-    pint                  .deep_copy_to(pint_host                  );
-    coszrs                .deep_copy_to(coszrs_host                );
-    albedo_dir            .deep_copy_to(albedo_dir_host            );
-    albedo_dif            .deep_copy_to(albedo_dif_host            );
-    cld_tau_gpt           .deep_copy_to(cld_tau_gpt_host           );
-    cld_ssa_gpt           .deep_copy_to(cld_ssa_gpt_host           );
-    cld_asm_gpt           .deep_copy_to(cld_asm_gpt_host           );
-    aer_tau_bnd           .deep_copy_to(aer_tau_bnd_host           );
-    aer_ssa_bnd           .deep_copy_to(aer_ssa_bnd_host           );
-    aer_asm_bnd           .deep_copy_to(aer_asm_bnd_host           );
+    //gas_vmr               .deep_copy_to(gas_vmr_host               );
+    //pmid                  .deep_copy_to(pmid_host                  );
+    //tmid                  .deep_copy_to(tmid_host                  );
+    //pint                  .deep_copy_to(pint_host                  );
+    //coszrs                .deep_copy_to(coszrs_host                );
+    //albedo_dir            .deep_copy_to(albedo_dir_host            );
+    //albedo_dif            .deep_copy_to(albedo_dif_host            );
+    //cld_tau_gpt           .deep_copy_to(cld_tau_gpt_host           );
+    //cld_ssa_gpt           .deep_copy_to(cld_ssa_gpt_host           );
+    //cld_asm_gpt           .deep_copy_to(cld_asm_gpt_host           );
+    //aer_tau_bnd           .deep_copy_to(aer_tau_bnd_host           );
+    //aer_ssa_bnd           .deep_copy_to(aer_ssa_bnd_host           );
+    //aer_asm_bnd           .deep_copy_to(aer_asm_bnd_host           );
     allsky_flux_up        .deep_copy_to(allsky_flux_up_host        );
     allsky_flux_dn        .deep_copy_to(allsky_flux_dn_host        );
     allsky_flux_dn_dir    .deep_copy_to(allsky_flux_dn_dir_host    );
