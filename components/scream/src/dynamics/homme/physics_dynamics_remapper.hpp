@@ -485,17 +485,21 @@ initialize_device_variables()
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
     h_phys_layout(i) = etoi(phys_lt);
 
-    // Store allocation properties
+    // Store allocation properties. Only allow packed views for 3D physics fields.
+    const bool is_phys_field_3d = (h_phys_layout(i) == etoi(LayoutType::Scalar3D) ||
+                                   h_phys_layout(i) == etoi(LayoutType::Vector3D));
     const auto& phys_alloc_prop = ph.get_alloc_properties();
     const auto& dyn_alloc_prop  = dh.get_alloc_properties();
-    if (phys_alloc_prop.template is_compatible<pack_type>() &&
+    if (is_phys_field_3d &&
+        phys_alloc_prop.template is_compatible<pack_type>() &&
         dyn_alloc_prop.template  is_compatible<pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::PackAlloc;
 
       // Store dimensions of phys/dyn view
       compute_view_dims<pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
       compute_view_dims<pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
-    } else if (phys_alloc_prop.template is_compatible<small_pack_type>() &&
+    } else if (is_phys_field_3d &&
+               phys_alloc_prop.template is_compatible<small_pack_type>() &&
                dyn_alloc_prop.template  is_compatible<small_pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
 
