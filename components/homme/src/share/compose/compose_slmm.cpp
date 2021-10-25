@@ -234,7 +234,11 @@ void slmm_finalize () {
 }
 } // namespace homme
 
+static bool in_charge_of_kokkos = false;
+
 static void initialize_kokkos () {
+  if (Kokkos::is_initialized()) return;
+  in_charge_of_kokkos = true;
   std::vector<char*> args;
 #ifdef KOKKOS_ENABLE_CUDA
   int nd;
@@ -284,7 +288,8 @@ void kokkos_init () {
 
 void kokkos_finalize () {
   amb::dev_init_threads();
-  Kokkos::finalize();
+  if (in_charge_of_kokkos && Kokkos::is_initialized())
+    Kokkos::finalize();
   amb::dev_fin_threads();
 }
 
