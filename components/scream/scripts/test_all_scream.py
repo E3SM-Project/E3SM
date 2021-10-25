@@ -28,7 +28,7 @@ class TestAllScream(object):
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
-                 extra_verbose=False):
+                 extra_verbose=False, limit_test_regex=None):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -63,6 +63,7 @@ class TestAllScream(object):
         self._tests_needing_baselines = []
         self._update_expired_baselines= update_expired_baselines
         self._extra_verbose           = extra_verbose
+        self._limit_test_regex        = limit_test_regex
 
         self._test_full_names = OrderedDict([
             ("dbg" , "full_debug"),
@@ -548,6 +549,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         work_dir = self._work_dir/name
         result += "-DBUILD_WORK_DIR={} ".format(work_dir)
         result += "-DBUILD_NAME_MOD={} ".format(name)
+        if self._limit_test_regex:
+            result += "-DINCLUDE_REGEX={} ".format(self._limit_test_regex)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
