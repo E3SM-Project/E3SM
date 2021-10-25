@@ -431,8 +431,7 @@ CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_,
     cdr_over_super_levels(threed && Alg::is_caas(alg)),
     caas_in_suplev(alg == Alg::qlt_super_level_local_caas && nsublev > 1),
     hard_zero(hard_zero_),
-    p(p_), inited_tracers_(false),
-    run(cdr_alg_ != 42)
+    p(p_), run(cdr_alg_ != 42), inited_tracers_(false)
 {
   const Int n_id_in_suplev = caas_in_suplev ? 1 : nsublev;
   if (Alg::is_qlt(alg)) {
