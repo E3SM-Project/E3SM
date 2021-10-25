@@ -168,7 +168,7 @@ protected:
   bool m_has_restart_data;
   
   // Frequency of checkpoint writes
-  int m_checkpoint_freq;
+  int m_checkpoint_freq = 0;            // A value of 0 means "no checkpointing"
   std::string m_checkpoint_freq_units;
 
   // Whether this run is the restart of a previous run (in which case, we might load an output checkpoint)
