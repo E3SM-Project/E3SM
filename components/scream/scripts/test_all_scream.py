@@ -237,6 +237,7 @@ class TestAllScream(object):
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("SCREAM_TEST_PROFILE", "SHORT"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
