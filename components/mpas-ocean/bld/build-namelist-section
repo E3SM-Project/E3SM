@@ -39,6 +39,15 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
+###################################
+# Namelist group: transport_tests #
+###################################
+
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
+
 ####################################
 # Namelist group: time_integration #
 ####################################
@@ -362,9 +371,9 @@ add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
-####################################
+#####################################
 # Namelist group: split_implicit_ts #
-####################################
+#####################################
 
 add_default($nl, 'config_btr_si_preconditioner');
 add_default($nl, 'config_btr_si_tolerance');
@@ -1066,4 +1075,16 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_K1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
+
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
 

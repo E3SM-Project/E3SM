@@ -451,8 +451,6 @@ endif()
 # endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
-# We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
-# if they are added to LDFLAGS in CONFIG_ARGS.
 if (USE_CXX)
   if (CXX_LIBS)
     set(SLIBS "${SLIBS} ${CXX_LIBS}")
