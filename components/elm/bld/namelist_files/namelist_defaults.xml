@@ -308,7 +308,7 @@ lnd/clm2/surfdata_map/surfdata_10x15_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_numaIA"       sim_year="2000" use_crop=".true." >
 lnd/clm2/surfdata_map/surfdata_1x1_numaIA_mp24_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_smallvilleIA" sim_year="2000" use_crop=".true." >
-lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c210617.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c210930.nc</fsurdat>
 
 <fsurdat hgrid="5x5_amazon"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
