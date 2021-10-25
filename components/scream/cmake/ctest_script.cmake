@@ -54,7 +54,7 @@ else ()
         set(INCLUDE_REGEX "resource_spread_thread")
       elseif (DEFINED ENV{SCREAM_TEST_RANK_SPREAD})
         set(INCLUDE_REGEX "resource_spread_rank")
-      else()
+      elseif(NOT INCLUDE_REGEX)
         set(INCLUDE_REGEX ".") # all
       endif()
 

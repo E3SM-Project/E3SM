@@ -125,6 +125,9 @@ OR
     parser.add_argument("-x", "--extra-verbose", action="store_true",
                         help="Have ctest run in extra-verbose mode, which should print full output from all tests")
 
+    parser.add_argument("--limit-test-regex",
+                        help="Limit ctest to running only tests that match this regex")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################
