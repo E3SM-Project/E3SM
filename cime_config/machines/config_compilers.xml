@@ -2303,45 +2303,6 @@ flags should be captured within MPAS CMake files.
   <SFC MPILIB="mpi-serial">gfortran</SFC>-->
 </compiler>
 
-<compiler MACH="spock" COMPILER="gnu">
-  <FFLAGS>
-    <append> -fallow-argument-mismatch -Wno-implicit-interface  -fallow-invalid-boz</append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </FFLAGS>
-  <CXX_LIBS>
-    <base>-lstdc++</base>
-  </CXX_LIBS>
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2  </append>
-  </CFLAGS>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF_DIR}</PNETCDF_PATH>
-  <MPICC> cc  </MPICC>
-  <MPICXX> CC </MPICXX>
-  <MPIFC> ftn </MPIFC>
-  <SCC> cc </SCC>
-  <SCXX> CC </SCXX>
-  <SFC> ftn </SFC>
-</compiler>
-
-<compiler MACH="spock" COMPILER="cray">
-  <CFLAGS>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-  </CFLAGS>
-  <FFLAGS>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-  </LDFLAGS>
-  <MPICC> cc  </MPICC>
-  <MPICXX> CC </MPICXX>
-  <MPIFC> ftn </MPIFC>
-  <SCC> cc </SCC>
-  <SCXX> CC </SCXX>
-  <SFC> ftn </SFC>
-</compiler>
-
 <compiler MACH="gcp" COMPILER="gnu">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
