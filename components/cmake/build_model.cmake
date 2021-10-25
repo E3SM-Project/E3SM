@@ -105,6 +105,25 @@ function(build_model COMP_CLASS COMP_NAME)
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
+    # Add rrtmgp++ source code if asked for
+    if (USE_RRTMGPXX)
+      message(STATUS "Building RRTMGPXX")
+      # Build the static rrtmgpxx library
+      set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp ${RRTMGPXX_BIN})
+      # Build the interface code
+      set(RRTMGPXX_INTERFACE_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_interface)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp ${RRTMGPXX_INTERFACE_BIN})
+      # Interface code needs some additional headers
+      include_directories(
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/fluxes_byband
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp
+      )
+      # Add the source files for the interface code to the main E3SM build
+      set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
+      set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
+    endif()
   endif()
 
   #-------------------------------------------------------------------------------
@@ -247,6 +266,9 @@ function(build_model COMP_CLASS COMP_NAME)
       endif()
       if (USE_SAMXX)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      endif()
+      if (USE_RRTMGPXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
       endif()
     endif()
     if (USE_KOKKOS)
