@@ -316,15 +316,15 @@ void slmm_init_impl (
 
 void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   slmm_assert(homme::g_csl_mpi);
-  if (ko::OnGpu<ko::MachineTraits::DES>::value) {
+  if (ko::OnGpu<ko::MachineTraits::DES>::value)
     *sendsz = *recvsz = 0;
-    return;
+  else {
+    homme::Int s = 0, r = 0;
+    for (const auto e : homme::g_csl_mpi->sendsz) s += e;
+    for (const auto e : homme::g_csl_mpi->recvsz) r += e;
+    *sendsz = s;
+    *recvsz = r;
   }
-  homme::Int s = 0, r = 0;
-  for (const auto e : homme::g_csl_mpi->sendsz) s += e;
-  for (const auto e : homme::g_csl_mpi->recvsz) r += e;
-  *sendsz = s;
-  *recvsz = r;
 }
 
 void slmm_init_plane (homme::Real Sx, homme::Real Sy, homme::Real Lx, homme::Real Ly) {

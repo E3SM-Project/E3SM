@@ -484,11 +484,10 @@ void CDR<MT>::init_tracers (const bool need_conservation) {
 
 template <typename MT>
 void CDR<MT>::get_buffers_sizes (size_t& s1, size_t &s2) {
-  if (ko::OnGpu<ko::MachineTraits::DES>::value) {
+  if (ko::OnGpu<ko::MachineTraits::DES>::value)
     s1 = s2 = 0;
-    return;
-  }
-  cdr->get_buffers_sizes(s1, s2);
+  else
+    cdr->get_buffers_sizes(s1, s2);
 }
 
 template <typename MT>
