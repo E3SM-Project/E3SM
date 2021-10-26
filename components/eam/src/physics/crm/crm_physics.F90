@@ -231,7 +231,6 @@ subroutine crm_physics_register()
    end if
 
    if (MMF_microphysics_scheme .eq. 'p3') then
-      call pbuf_add_field('CRM_QV',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_BM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('QV_PREV',   'global', dtype_r8,dims_gcm_2D,idx)
@@ -693,7 +692,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_qg(:,:,:,:) ! 2-mom/p3 number concentration of snow
    real(crm_rknd), pointer :: crm_ng(:,:,:,:) ! 2-mom/p3 mass mixing ratio of graupel
    real(crm_rknd), pointer :: crm_qc(:,:,:,:) ! 2-mom/p3 number concentration of graupel
-   real(crm_rknd), pointer :: crm_qv(:,:,:,:) ! 2-mom/p3 
    real(crm_rknd), pointer :: crm_qm(:,:,:,:) ! 2-mom/p3 averaged riming density
    real(crm_rknd), pointer :: crm_bm(:,:,:,:) ! 2-mom/p3 averaged riming volume
 
@@ -897,7 +895,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QG'), crm_qg)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NG'), crm_ng)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
          end if
@@ -936,7 +933,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_qr(i,:,:,k) = state(c)%q(i,m,ixrain)
-                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)
                   crm_qm(i,:,:,k) = state(c)%q(i,m,ixcldrim)
                   crm_nc(i,:,:,k) = state(c)%q(i,m,ixnumliq)
                   crm_ni(i,:,:,k) = state(c)%q(i,m,ixnumice)
@@ -1039,7 +1035,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end if
          
          if (MMF_microphysics_scheme .eq. 'p3') then
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('T_PREV'), t_prev)
@@ -1070,7 +1065,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
-               crm_state%qv      (icrm,:,:,:) = crm_qv (i,:,:,:)
                crm_state%qm      (icrm,:,:,:) = crm_qm (i,:,:,:)
                crm_state%bm      (icrm,:,:,:) = crm_bm (i,:,:,:)
                crm_state%t_prev  (icrm,:,:,:) = t_prev (i,:,:,:)
@@ -1317,39 +1311,52 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
-      call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
-               crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
-               crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, crm_input%phis, &
+      call crm(ncrms, ncrms, ztodt, pver, &
+               crm_input%bflxls, crm_input%wndls, &
+               crm_input%zmid, crm_input%zint, &
+               crm_input%pmid, crm_input%pint, crm_input%pdel, 
+               crm_input%ul, crm_input%vl, crm_input%tl, &
+               crm_input%qccl, crm_input%qiil, crm_input%ql, &
+               crm_input%tau00, crm_input%phis, &
 #ifdef MMF_ESMT
-               crm_input%ul_esmt, crm_input%vl_esmt,                                        &
+               crm_input%ul_esmt, crm_input%vl_esmt, &
 #endif
-               crm_input%t_vt, crm_input%q_vt, crm_input%relvar, crm_input%nccn_prescribed, &
-               crm_input%tkh, crm_input%tk, crm_input%npccn, crm_input%ni_activated, &
-               crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
-               crm_state%qt, crm_state%qp, crm_state%qn, crm_state%qc, crm_state%nc, crm_state%qr, &
-               crm_state%nr, crm_state%qi, crm_state%ni, crm_state%qs, crm_state%ns, crm_state%qg, &
-               crm_state%ng, crm_state%qv, crm_state%qm, crm_state%bm, crm_state%t_prev, crm_state%qv_prev, &
-               crm_rad%qrad, crm_rad%temperature, crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
+               crm_input%t_vt, crm_input%q_vt, &
+               crm_input%relvar, crm_input%nccn_prescribed, &
+               crm_input%tkh, crm_input%tk, &
+               crm_input%npccn, crm_input%ni_activated, &
+               crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
+               crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
+               crm_state%qc, crm_state%nc, crm_state%qr, crm_state%nr, &
+               crm_state%qi, crm_state%ni, crm_state%qs, crm_state%ns, &
+               crm_state%qg, crm_state%ng, crm_state%qm, crm_state%bm, &
+               crm_state%t_prev, crm_state%qv_prev, &
+               crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
+               crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
                crm_output%subcycle_factor, crm_output%prectend, crm_output%precstend, &
                crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
                crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
-               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
-               crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
-               crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
-               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
-               crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
-               crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
+               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, 
+               crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, 
+               crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, 
+               crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, &
+               crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, 
+               crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, &
+               crm_output%qt_ls, crm_output%t_ls, &
+               crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
                crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
-               crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
-               crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
-               crm_output%precsl, crm_output%prec_crm,                         &
+               crm_output%tk, crm_output%tkh, &
+               crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%z0m, crm_output%taux, crm_output%tauy, &
+               crm_output%precc, crm_output%precl, crm_output%precsc, &
+               crm_output%precsl, crm_output%prec_crm, &
 #ifdef MMF_ESMT
-               crm_output%u_tend_esmt, crm_output%v_tend_esmt,                 &
+               crm_output%u_tend_esmt, crm_output%v_tend_esmt, &
 #endif
                crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
@@ -1630,7 +1637,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
          end if
          if (MMF_microphysics_scheme .eq. 'p3') then
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('T_PREV'), t_prev)
@@ -1660,7 +1666,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_ng(i,:,:,:) = crm_state%ng(icrm,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
-               crm_qv     (i,:,:,:) = crm_state%qv     (icrm,:,:,:)
                crm_qm     (i,:,:,:) = crm_state%qm     (icrm,:,:,:)
                crm_bm     (i,:,:,:) = crm_state%bm     (icrm,:,:,:)
                crm_t_prev (i,:,:,:) = crm_state%t_prev (icrm,:,:,:)
