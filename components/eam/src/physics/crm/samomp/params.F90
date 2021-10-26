@@ -66,8 +66,6 @@ module params
 
   real(crm_rknd), allocatable :: uhl(:)      ! current large-scale velocity in x near sfc
   real(crm_rknd), allocatable :: vhl(:)      ! current large-scale velocity in y near sfc
-  real(crm_rknd), allocatable :: taux0(:)    ! surface stress in x, m2/s2
-  real(crm_rknd), allocatable :: tauy0(:)    ! surface stress in y, m2/s2
 contains
   subroutine allocate_params(ncrms)
     implicit none
@@ -79,8 +77,6 @@ contains
     allocate(land      (ncrms))
     allocate(uhl       (ncrms))
     allocate(vhl       (ncrms))
-    allocate(taux0     (ncrms))
-    allocate(tauy0     (ncrms))
 
     !$omp target enter data map(alloc: fcor )
     !$omp target enter data map(alloc: fcorz)
@@ -89,8 +85,6 @@ contains
     !$omp target enter data map(alloc: land)
     !$omp target enter data map(alloc: uhl)
     !$omp target enter data map(alloc: vhl)
-    !$omp target enter data map(alloc: taux0)
-    !$omp target enter data map(alloc: tauy0)
 
     fcor  = 0
     fcorz = 0
@@ -99,8 +93,6 @@ contains
     land = .false.
     uhl = 0
     vhl = 0
-    taux0 = 0
-    tauy0 = 0
   end subroutine allocate_params
 
   subroutine deallocate_params()
@@ -113,8 +105,6 @@ contains
     !$omp target exit data map(delete: land)
     !$omp target exit data map(delete: uhl)
     !$omp target exit data map(delete: vhl)
-    !$omp target exit data map(delete: taux0)
-    !$omp target exit data map(delete: tauy0)
 
     deallocate(fcor )
     deallocate(fcorz)
@@ -123,8 +113,6 @@ contains
     deallocate(land)
     deallocate(uhl)
     deallocate(vhl)
-    deallocate(taux0)
-    deallocate(tauy0)
   end subroutine deallocate_params
 
   subroutine update_device_params()
@@ -135,8 +123,6 @@ contains
     !$omp target update to( land)
     !$omp target update to( uhl)
     !$omp target update to( vhl)
-    !$omp target update to( taux0)
-    !$omp target update to( tauy0)
   end subroutine update_device_params
 
   subroutine update_host_params()
@@ -147,7 +133,5 @@ contains
     !$omp target update from( land)
     !$omp target update from( uhl)
     !$omp target update from( vhl)
-    !$omp target update from( taux0)
-    !$omp target update from( tauy0)
   end subroutine update_host_params
 end module params

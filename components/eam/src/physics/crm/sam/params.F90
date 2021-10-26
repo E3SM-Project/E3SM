@@ -66,8 +66,6 @@ module params
 
   real(crm_rknd), allocatable :: uhl(:)      ! current large-scale velocity in x near sfc
   real(crm_rknd), allocatable :: vhl(:)      ! current large-scale velocity in y near sfc
-  real(crm_rknd), allocatable :: taux0(:)    ! surface stress in x, m2/s2
-  real(crm_rknd), allocatable :: tauy0(:)    ! surface stress in y, m2/s2
 
 
 contains
@@ -84,8 +82,6 @@ contains
     allocate(land      (ncrms))
     allocate(uhl       (ncrms))
     allocate(vhl       (ncrms))
-    allocate(taux0     (ncrms))
-    allocate(tauy0     (ncrms))
 
     call prefetch(fcor )
     call prefetch(fcorz)
@@ -94,8 +90,6 @@ contains
     call prefetch(land)
     call prefetch(uhl)
     call prefetch(vhl)
-    call prefetch(taux0)
-    call prefetch(tauy0)
 
     fcor  = 0
     fcorz = 0
@@ -104,8 +98,6 @@ contains
     land = .false.
     uhl = 0
     vhl = 0
-    taux0 = 0
-    tauy0 = 0
   end subroutine allocate_params
 
   
@@ -118,8 +110,6 @@ contains
     deallocate(land)
     deallocate(uhl)
     deallocate(vhl)
-    deallocate(taux0)
-    deallocate(tauy0)
   end subroutine deallocate_params
 
 
