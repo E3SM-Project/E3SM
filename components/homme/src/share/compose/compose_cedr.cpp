@@ -358,7 +358,7 @@ struct ReproSumReducer :
         send = typename RealList::HostMirror("send", nlocal*count);
         recv = typename RealList::HostMirror("recv", count);
       }
-      cedr_assert(send.size() == nlocal*count);
+      cedr_assert(static_cast<int>(send.size()) == nlocal*count);
       ko::deep_copy(send, ConstRealList(sendbuf, nlocal*count));
       sendptr = send.data();
       rcvptr = recv.data();
