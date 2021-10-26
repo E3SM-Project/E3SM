@@ -272,7 +272,7 @@ int main (int argc, char** argv) {
   }
 
   bool generate = false, use_fortran = false;
-  scream::Real tol = 0;
+  scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int timesteps = 6;
   Int dt = 300;
   Int ncol = 3;
