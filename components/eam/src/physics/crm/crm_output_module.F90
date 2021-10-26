@@ -130,9 +130,6 @@ module crm_output_module
       real(crm_rknd), allocatable :: t_ls         (:,:)  ! tend of lwse  due to large-scale           [kg/kg/s] ???
       real(crm_rknd), allocatable :: prectend     (:)    ! column integrated tend in precip water+ice [kg/m2/s]
       real(crm_rknd), allocatable :: precstend    (:)    ! column integrated tend in precip ice       [kg/m2/s]
-      real(crm_rknd), allocatable :: taux     (:)    ! zonal CRM surface stress perturbation      [N/m2]
-      real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
-      real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
 
    end type crm_output_type
@@ -290,9 +287,6 @@ contains
       if (.not. allocated(output%t_ls         )) allocate(output%t_ls         (ncol,nlev))
       if (.not. allocated(output%prectend     )) allocate(output%prectend     (ncol))
       if (.not. allocated(output%precstend    )) allocate(output%precstend    (ncol))
-      if (.not. allocated(output%taux         )) allocate(output%taux         (ncol))
-      if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
-      if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
       if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
       call prefetch(output%sltend  )
@@ -339,9 +333,6 @@ contains
       call prefetch(output%t_ls          )
       call prefetch(output%prectend      )
       call prefetch(output%precstend     )
-      call prefetch(output%taux          )
-      call prefetch(output%tauy          )
-      call prefetch(output%z0m           )
       call prefetch(output%subcycle_factor )
 
       ! Initialize 
@@ -457,9 +448,6 @@ contains
       output%t_ls          = 0
       output%prectend      = 0
       output%precstend     = 0
-      output%taux      = 0
-      output%tauy      = 0
-      output%z0m           = 0
       output%subcycle_factor = 0
 
    end subroutine crm_output_initialize
@@ -576,9 +564,6 @@ contains
       if (allocated(output%t_ls)) deallocate(output%t_ls)
       if (allocated(output%prectend)) deallocate(output%prectend)
       if (allocated(output%precstend)) deallocate(output%precstend)
-      if (allocated(output%taux)) deallocate(output%taux)
-      if (allocated(output%tauy)) deallocate(output%tauy)
-      if (allocated(output%z0m)) deallocate(output%z0m)
       if (allocated(output%subcycle_factor)) deallocate(output%subcycle_factor)
 
    end subroutine crm_output_finalize

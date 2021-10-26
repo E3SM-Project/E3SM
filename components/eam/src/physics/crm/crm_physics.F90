@@ -1352,7 +1352,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 #endif /* MMF_MOMENTUM_FEEDBACK */
                crm_output%tk, crm_output%tkh, &
                crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
-               crm_output%z0m, crm_output%taux, crm_output%tauy, &
                crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm, &
 #ifdef MMF_ESMT

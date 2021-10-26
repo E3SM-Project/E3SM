@@ -90,12 +90,7 @@ void post_timeloop() {
   auto &crm_output_qpi          = :: crm_output_qpi;
   auto &crm_output_tk           = :: crm_output_tk;
   auto &crm_output_tkh          = :: crm_output_tkh;
-  auto &crm_output_z0m          = :: crm_output_z0m;
-  auto &crm_output_taux         = :: crm_output_taux;
-  auto &crm_output_tauy         = :: crm_output_tauy;
   auto &z0                      = :: z0;
-  auto &taux0                   = :: taux0;
-  auto &tauy0                   = :: tauy0;
   auto &crm_output_qc_mean      = :: crm_output_qc_mean;
   auto &crm_output_qi_mean      = :: crm_output_qi_mean;
   auto &crm_output_qr_mean      = :: crm_output_qr_mean;
@@ -414,13 +409,6 @@ void post_timeloop() {
       crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
    });
   }
-
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    crm_output_z0m (icrm) = z0(icrm);
-    crm_output_taux(icrm) = taux0(icrm) / nstop;
-    crm_output_tauy(icrm) = tauy0(icrm) / nstop;
-  });
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {

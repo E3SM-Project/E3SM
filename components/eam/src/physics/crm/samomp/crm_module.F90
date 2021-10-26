@@ -293,9 +293,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   real(crm_rknd), pointer :: crm_output_t_ls(:,:)
   real(crm_rknd), pointer :: crm_output_prectend (:)
   real(crm_rknd), pointer :: crm_output_precstend(:)
-  real(crm_rknd), pointer :: crm_output_taux(:)
-  real(crm_rknd), pointer :: crm_output_tauy(:)
-  real(crm_rknd), pointer :: crm_output_z0m(:)
   real(crm_rknd), pointer :: crm_output_subcycle_factor(:) 
 
 #ifdef MAML
@@ -1399,12 +1396,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       enddo
     enddo
   enddo
-  !$omp target teams distribute parallel do
-  do icrm = 1 , ncrms
-    crm_output_z0m (icrm) = z0   (icrm)
-    crm_output_taux(icrm) = taux0(icrm) / dble(nstop)
-    crm_output_tauy(icrm) = tauy0(icrm) / dble(nstop)
-  enddo
 
   !---------------------------------------------------------------
   !  Diagnostics:
@@ -1951,9 +1942,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     crm_output_t_ls       => crm_output%t_ls(:,:)
     crm_output_prectend   => crm_output%prectend(:)
     crm_output_precstend  => crm_output%precstend(:)
-    crm_output_taux       => crm_output%taux(:)
-    crm_output_tauy       => crm_output%tauy(:)
-    crm_output_z0m        => crm_output%z0m(:)
 #ifdef MAML
     ! MAML variables
     crm_output_crm_pcp   => crm_output%crm_pcp(:,:,:)
@@ -2126,9 +2114,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target enter data map(alloc: crm_output_t_ls)
     !$omp target enter data map(alloc: crm_output_prectend)
     !$omp target enter data map(alloc: crm_output_precstend)
-    !$omp target enter data map(alloc: crm_output_taux)
-    !$omp target enter data map(alloc: crm_output_tauy)
-    !$omp target enter data map(alloc: crm_output_z0m)
     !$omp target enter data map(alloc: crm_output_subcycle_factor)
 
   end subroutine allocate_crm
@@ -2278,9 +2263,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target exit data map(delete: crm_output_t_ls          )
     !$omp target exit data map(delete: crm_output_prectend      )
     !$omp target exit data map(delete: crm_output_precstend     )
-    !$omp target exit data map(delete: crm_output_taux          )
-    !$omp target exit data map(delete: crm_output_tauy          )
-    !$omp target exit data map(delete: crm_output_z0m           )
     !$omp target exit data map(delete: crm_output_subcycle_factor )
 
     deallocate( t00)
@@ -2496,9 +2478,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target update from (crm_output_t_ls)
     !$omp target update from (crm_output_prectend)
     !$omp target update from (crm_output_precstend)
-    !$omp target update from (crm_output_taux)
-    !$omp target update from (crm_output_tauy)
-    !$omp target update from (crm_output_z0m)
     !$omp target update from (crm_output_subcycle_factor)
 
     !$omp target update from( crm_rad_temperature )
