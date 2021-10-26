@@ -1320,12 +1320,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       enddo
     enddo
   enddo
-  !$acc parallel loop async(asyncid)
-  do icrm = 1 , ncrms
-    crm_output%z0m (icrm) = z0   (icrm)
-    crm_output%taux(icrm) = taux0(icrm) / dble(nstop)
-    crm_output%tauy(icrm) = tauy0(icrm) / dble(nstop)
-  enddo
 
   !---------------------------------------------------------------
   !  Diagnostics:
