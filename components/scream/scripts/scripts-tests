@@ -126,7 +126,7 @@ def test_branch_switch(test_obj, repo, branch_name):
     test_obj.assertEqual(get_current_head(repo=repo), branch_name)
 
 ###############################################################################
-def test_omp_spread(test_obj, output, num_places):
+def test_omp_spread(test_obj, output, num_places, begin=0):
 ###############################################################################
     lines = output.splitlines()
     all_places = []
@@ -137,9 +137,9 @@ def test_omp_spread(test_obj, output, num_places):
             all_places.extend(places)
 
     all_places.sort()
-    test_obj.assertEqual(len(all_places), num_places)
+    test_obj.assertEqual(len(all_places), num_places - begin)
     for idx, place in enumerate(all_places):
-        test_obj.assertEqual(idx, place)
+        test_obj.assertEqual(idx + begin, place, msg=f"Idx {idx} was not in sequential order in {all_places}")
 
 ###############################################################################
 class TestBaseOuter: # Hides the TestBase class from test scanner
@@ -510,6 +510,14 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
 
         else:
             self.skipTest("Skipping full run or not on mappy")

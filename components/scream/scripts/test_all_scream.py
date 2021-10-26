@@ -1,10 +1,11 @@
-from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil
 from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
     cleanup_repo, merge_git_ref, checkout_git_ref, git_refs_difference, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
-    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported
+    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported, \
+    get_available_cpu_count, logical_cores_per_physical_core
 
 check_minimum_python_version(3, 4)
 
@@ -12,6 +13,9 @@ import os, shutil
 import concurrent.futures as threading3
 import itertools
 import json
+
+ensure_psutil()
+import psutil
 
 from collections import OrderedDict
 from pathlib import Path
@@ -75,6 +79,25 @@ class TestAllScream(object):
             ("cov" , "coverage"),
         ])
 
+        self._tests_cmake_args = {
+            "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                    ("SCREAM_DOUBLE_PRECISION", "False"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
+                     ("SCREAM_PACK_SIZE", "1"),
+                     ("SCREAM_SMALL_PACK_SIZE", "1"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "opt" : [("CMAKE_BUILD_TYPE", "Release")],
+            "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_VALGRIND", "True")],
+            "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
+            "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_COVERAGE", "True")],
+        }
+
         if self._quick_rerun_failed:
             self._quick_rerun = True
 
@@ -133,6 +156,59 @@ class TestAllScream(object):
         self._original_commit = get_current_commit()
 
         print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
+
+        ###################################
+        #  Compilation/testing resources  #
+        ###################################
+
+        # Deduce how many compilation resources per test
+        if make_parallel_level > 0:
+            make_max_jobs = make_parallel_level
+            print("Note: honoring requested value for make parallel level: {}".format(make_max_jobs))
+        else:
+            make_max_jobs = get_mach_compilation_resources()
+            print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
+
+        if ctest_parallel_level > 0:
+            ctest_max_jobs = ctest_parallel_level
+            print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        elif "CTEST_PARALLEL_LEVEL" in os.environ:
+            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
+        else:
+            ctest_max_jobs = get_mach_testing_resources(self._machine)
+            print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
+
+        self._testing_res_count = dict(zip(self._tests, [ctest_max_jobs]*len(self._tests)))
+        self._compile_res_count = dict(zip(self._tests, [make_max_jobs ]*len(self._tests)))
+
+        if self._parallel:
+            # We need to be aware that other builds may be running too.
+            # (Do not oversubscribe the machine)
+            make_physical_cores_per_test = get_available_cpu_count(logical=False) // len(self._tests)
+            log_per_phys = logical_cores_per_physical_core()
+
+            make_jobs_per_test  = make_physical_cores_per_test * log_per_phys
+            ctest_jobs_per_test = ctest_max_jobs // len(self._tests)
+
+            # The current system of selecting cores explicitly with taskset will not work
+            # if we try to oversubscribe. We would need to implement some kind of wrap-around
+            # mechanism
+            if make_jobs_per_test == 0 or ctest_jobs_per_test == 0:
+                expect(False, "test-all-scream does not currently support oversubscription. "
+                              "Either run fewer test types or turn off parallel testing")
+
+            self._testing_res_count = dict(zip(self._tests, [ctest_jobs_per_test]*len(self._tests)))
+            self._compile_res_count = dict(zip(self._tests, [make_jobs_per_test ]*len(self._tests)))
+
+            for test in self._tests:
+                print("Test {} can use {} jobs to compile, and {} jobs for test".format(test,self._compile_res_count[test],self._testing_res_count[test]))
+
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        # Need to happen before compiler probing
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine, ctest_j=ctest_max_jobs)
 
         ###################################
         #      Compute baseline info      #
@@ -207,44 +283,6 @@ class TestAllScream(object):
         if self._update_expired_baselines:
             self.baselines_are_expired()
 
-        ##################################################
-        #   Deduce how many testing resources per test   #
-        ##################################################
-
-        if ctest_parallel_level > 0:
-            ctest_max_jobs = ctest_parallel_level
-            print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
-        elif "CTEST_PARALLEL_LEVEL" in os.environ:
-            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
-            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
-        else:
-            ctest_max_jobs = get_mach_testing_resources(self._machine)
-            print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
-
-        # Unless the user claims to know what he/she is doing, we setup the env.
-        if not self._preserve_env:
-            # Setup the env on this machine
-            setup_mach_env(self._machine, ctest_j=ctest_max_jobs)
-
-        self._tests_cmake_args = {
-            "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                     ("EKAT_DEFAULT_BFB", "True")],
-            "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                    ("SCREAM_DOUBLE_PRECISION", "False"),
-                     ("EKAT_DEFAULT_BFB", "True")],
-            "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
-                     ("SCREAM_PACK_SIZE", "1"),
-                     ("SCREAM_SMALL_PACK_SIZE", "1"),
-                     ("EKAT_DEFAULT_BFB", "True")],
-            "opt" : [("CMAKE_BUILD_TYPE", "Release")],
-            "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_VALGRIND", "True")],
-            "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
-            "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_COVERAGE", "True")],
-        }
-
         ############################################
         #    Deduce compilers if needed/possible   #
         ############################################
@@ -260,47 +298,6 @@ class TestAllScream(object):
             self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
             self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
             self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
-
-        ###################################
-        #  Compilation/testing resources  #
-        ###################################
-
-        self._testing_res_count = dict(zip(self._tests, [ctest_max_jobs]*len(self._tests)))
-
-        # Deduce how many compilation resources per test
-        if make_parallel_level > 0:
-            make_max_jobs = make_parallel_level
-            print("Note: honoring requested value for make parallel level: {}".format(make_max_jobs))
-        else:
-            make_max_jobs = get_mach_compilation_resources(self._machine)
-            print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
-
-        self._compile_res_count = dict(zip(self._tests, [make_max_jobs]*len(self._tests)))
-
-        if self._parallel:
-            # We need to be aware that other builds may be running too.
-            # (Do not oversubscribe the machine)
-            make_remainder = make_max_jobs % len(self._tests)
-            make_count     = make_max_jobs // len(self._tests)
-            ctest_remainder = ctest_max_jobs % len(self._tests)
-            ctest_count     = ctest_max_jobs // len(self._tests)
-
-            # In case we have more items in self._tests than cores/gpus (unlikely)
-            if make_count == 0:
-                make_count = 1
-            if ctest_count == 0:
-                ctest_count = 1
-
-            for test in self._tests:
-                self._compile_res_count[test] = make_count
-                if self._tests.index(test)<make_remainder:
-                    self._compile_res_count[test] = make_count + 1
-
-                self._testing_res_count[test] = ctest_count
-                if self._tests.index(test)<ctest_remainder:
-                    self._testing_res_count[test] = ctest_count + 1
-
-                print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
     ###############################################################################
     def create_tests_dirs(self, root, clean):
@@ -465,16 +462,27 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         return result
 
     ###############################################################################
-    def get_taskset_id(self, test):
+    def get_taskset_range(self, test, for_compile=True):
     ###############################################################################
-        # Note: we need to loop through the whole list, since the compile_res_count
-        #       might not be the same for all test.
+        expect(for_compile or not is_cuda_machine(self._machine),
+               "Should not be using taskset ranges based on physical cores for non cuda machine")
 
-        it = itertools.takewhile(lambda name: name!=test, self._tests)
-        offset = sum(self._compile_res_count[prevs] for prevs in it)
+        this_process = psutil.Process()
+        affinity_cp = list(this_process.cpu_affinity())
+        affinity_cp.sort()
 
-        start = offset
-        end   = offset + self._compile_res_count[test] - 1
+        res_count = self._compile_res_count if for_compile else self._testing_res_count
+
+        if self._parallel:
+            it = itertools.takewhile(lambda name: name!=test, self._tests)
+            offset = sum(res_count[prevs] for prevs in it)
+        else:
+            offset = 0
+
+        start = affinity_cp[offset]
+        for i in range(1, res_count[test]):
+            expect(affinity_cp[offset+i] == start+i, "Could not get contiguous range for test {}".format(test))
+            end = affinity_cp[offset+i]
 
         return start, end
 
@@ -493,22 +501,18 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # on correct cores with taskset. On GPU, however, these ids are used to select
         # the kokkos device where the tests are run on.
 
-        if self._parallel:
-            it = itertools.takewhile(lambda name: name!=test, self._tests)
-            start = sum(self._testing_res_count[prevs] for prevs in it)
-            end   = start + self._testing_res_count[test]
-        else:
-            start = 0
-            end   = self._testing_res_count[test]
+        start, end = self.get_taskset_range(test, for_compile=not is_cuda_machine(self._machine))
 
         data = {}
 
         # This is the only version numbering supported by ctest, so far
         data['version'] = {"major":1,"minor":0}
 
+        # We add leading zeroes to ensure that ids will sort correctly
+        # both alphabetically and numerically
         devices = []
-        for res_id in range(start,end):
-            devices.append({"id":str(res_id)})
+        for res_id in range(start,end+1):
+            devices.append({"id":f"{res_id:05d}"})
 
         # Add resource groups
         data['local'] = [{"devices":devices}]
@@ -554,9 +558,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
-        # multiple concurrent instances of ctest, we have to help it.
+        # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
+        # taskset range even though the ctest script is also running the tests
         if self._parallel:
-            start, end = self.get_taskset_id(test)
+            start, end = self.get_taskset_range(test)
             result = "taskset -c {}-{} sh -c '{}'".format(start,end,result)
 
         return result
@@ -588,7 +593,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             else:
                 cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
                 if self._parallel:
-                    start, end = self.get_taskset_id(test)
+                    start, end = self.get_taskset_range(test)
                     cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
                 stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
