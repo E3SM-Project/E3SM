@@ -203,6 +203,7 @@ private:
 #ifdef KOKKOS_ENABLE_CUDA
   COMPOSE_INLINE_FUNCTION static T& unused () {
     static T unused = 0;
+    assert(0);
     return unused;
   }
 #endif
