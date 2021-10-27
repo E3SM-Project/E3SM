@@ -1323,7 +1323,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 #endif
                crm_input%t_vt, crm_input%q_vt, &
                crm_input%relvar, crm_input%nccn_prescribed, &
-               crm_input%tkh, crm_input%tk, &
                crm_input%npccn, crm_input%ni_activated, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
                crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
@@ -1336,8 +1335,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%subcycle_factor, crm_output%prectend, crm_output%precstend, &
                crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
                crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
-               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, 
-               crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, 
+               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, &
+               crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, &
                crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, 
                crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, &
                crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, 

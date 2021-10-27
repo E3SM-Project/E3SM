@@ -21,7 +21,6 @@ module cpp_interface_mod
 #endif
                    crm_input_t_vt, crm_input_q_vt, &
                    crm_input_relvar, crm_input_nccn_prescribed, &
-                   crm_input_tkh, crm_input_tk, &
                    crm_input_npccn, crm_input_ni_activated, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, &
                    crm_state_temperature, crm_state_qt, crm_state_qp, crm_state_qn, &
@@ -80,7 +79,6 @@ module cpp_interface_mod
 #endif
                                       crm_input_t_vt, crm_input_q_vt, &
                                       crm_input_relvar, crm_input_nccn_prescribed,  &
-                                      crm_input_tkh, crm_input_tk, &
                                       crm_input_npccn, crm_input_ni_activated, 
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, &
                                       crm_state_temperature, crm_state_qt, crm_state_qp, crm_state_qn, &

@@ -733,7 +733,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
 #endif
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p,
                             real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
-                            real *crm_input_tkh_p, real *crm_input_tk_p,
                             real *crm_input_npccn_p, real *crm_input_ni_activated_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
                             real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
@@ -772,8 +771,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   realHost2d crm_input_nccn_prescribed = realHost2d( "crm_input_nccn_prescribed",crm_input_nccn_prescribed_p                  , plev       , pcols);
   realHost2d crm_input_npccn           = realHost2d( "crm_input_npccn          ",crm_input_npccn_p                            , plev       , pcols);
   realHost2d crm_input_ni_activated    = realHost2d( "crm_input_ni_activated   ",crm_input_ni_activated_p                     , plev       , pcols);
-  realHost2d crm_input_tkh             = realHost2d( "crm_input_tkh            ",crm_input_tkh_p                              , plev       , pcols);
-  realHost2d crm_input_tk              = realHost2d( "crm_input_tk             ",crm_input_tk_p                               , plev       , pcols);
   
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_v_wind          = realHost4d( "crm_state_v_wind        ",crm_state_v_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
@@ -835,8 +832,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   ::crm_input_npccn           = real2d( "crm_input_npccn"                           , plev       , pcols);
   ::crm_input_ni_activated    = real2d( "crm_input_ni_activated"                    , plev       , pcols);
   ::crm_input_tke_zt          = real2d( "crm_input_tke_zt"                          , plev       , pcols);
-  ::crm_input_tkh             = real2d( "crm_input_tkh"                             , plev       , pcols);
-  ::crm_input_tk              = real2d( "crm_input_tk"                              , plev       , pcols);
 
   ::crm_state_u_wind          = real4d( "crm_state_u_wind        ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_v_wind          = real4d( "crm_state_v_wind        ", crm_nz, crm_ny    , crm_nx    , pcols);
@@ -971,9 +966,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   crm_input_nccn_prescribed.deep_copy_to(::crm_input_nccn_prescribed);
   crm_input_npccn          .deep_copy_to(::crm_input_npccn);
   crm_input_ni_activated   .deep_copy_to(::crm_input_ni_activated);
-  crm_input_tke_zt         .deep_copy_to(::crm_input_tke_zt);
-  crm_input_tkh            .deep_copy_to(::crm_input_tkh);
-  crm_input_tk             .deep_copy_to(::crm_input_tk);
 
   crm_state_u_wind        .deep_copy_to(::crm_state_u_wind        );
   crm_state_v_wind        .deep_copy_to(::crm_state_v_wind        );
@@ -1502,8 +1494,6 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_nccn_prescribed = real2d();
   ::crm_input_npccn           = real2d();
   ::crm_input_ni_activated    = real2d();
-  ::crm_input_tkh             = real2d();
-  ::crm_input_tk              = real2d();
 
   ::crm_state_u_wind          = real4d();
   ::crm_state_v_wind          = real4d();
@@ -2013,8 +2003,6 @@ real2d crm_input_relvar;
 real2d crm_input_nccn_prescribed;
 real2d crm_input_npccn;
 real2d crm_input_ni_activated;
-real2d crm_input_tkh;
-real2d crm_input_tk;
 
 real4d crm_state_u_wind;
 real4d crm_state_v_wind;

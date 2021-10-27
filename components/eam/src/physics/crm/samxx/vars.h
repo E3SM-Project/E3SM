@@ -65,7 +65,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
 #endif
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p,
                             real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
-                            real *crm_input_tkh_p, real *crm_input_tk_p,
                             real *crm_input_npccn_p, real *crm_input_ni_activated_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
                             real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
@@ -429,8 +428,6 @@ extern real2d crm_input_relvar;
 extern real2d crm_input_nccn_prescribed;
 extern real2d crm_input_npccn;
 extern real2d crm_input_ni_activated;
-extern real2d crm_input_tkh;
-extern real2d crm_input_tk;
 
 extern real4d crm_state_u_wind;
 extern real4d crm_state_v_wind;
@@ -519,8 +516,6 @@ extern real2d crm_output_q_vt_ls;
 extern real2d crm_output_ultend; 
 extern real2d crm_output_vltend; 
 #endif
-extern real4d crm_output_tk;
-extern real4d crm_output_tkh; 
 extern real4d crm_output_qcl; 
 extern real4d crm_output_qci; 
 extern real4d crm_output_qpl; 
