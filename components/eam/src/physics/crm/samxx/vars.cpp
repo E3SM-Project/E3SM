@@ -765,24 +765,29 @@ void finalize() {
 
 
 
-void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
-                            real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, real *crm_input_ul_p, real *crm_input_vl_p, 
-                            real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p,
-                            real *crm_input_phis_p, real *crm_input_shf_p, real *crm_input_cflx_p, real *crm_input_wsx_p, real *crm_input_wsy_p,
+void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
+                            real *crm_input_zmid_p, real *crm_input_zint_p,
+                            real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p,
+                            real *crm_input_ul_p, real *crm_input_vl_p, real *crm_input_tl_p,
+                            real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p,
+                            real *crm_input_tau00_p, real *crm_input_phis_p,
 #ifdef MMF_ESMT
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif
-                            real *crm_input_t_vt_p, real *crm_input_q_vt_p, real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
-                            real *crm_input_t_prev_p, real *crm_input_qv_prev_p, real *crm_input_zm_p, real *crm_input_sl_p, real *crm_input_omega_p,
-                            real *crm_input_tke_zt_p, real *crm_input_wthv_p, real *crm_input_tkh_p, real *crm_input_tk_p,  real *crm_input_alst_p,
-                            real *crm_input_qtracers_p, real *crm_input_npccn_p, real *crm_input_ni_activated_p, real *crm_input_ast_p,  
-                            real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                            real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_state_qc_p, real *crm_state_nc_p,
-                            real *crm_state_qr_p, real *crm_state_nr_p, real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p,
-                            real *crm_state_ns_p, real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qv_p, real *crm_state_qm_p,
-                            real *crm_state_bm_p, real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p, 
-                            real *lat0_p, real *long0_p, int *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
-                            real *crm_output_cllow_p) {
+                            real *crm_input_t_vt_p, real *crm_input_q_vt_p,
+                            real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
+                            real *crm_input_t_prev_p, real *crm_input_qv_prev_p,
+                            real *crm_input_tkh_p, real *crm_input_tk_p,
+                            real *crm_input_npccn_p, real *crm_input_ni_activated_p,
+                            real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
+                            real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                            real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                            real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p, real *crm_state_ns_p,
+                            real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                            real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
+                            real *lat0_p, real *long0_p, int *gcolp_p,
+                            real *crm_output_cltot_p, real *crm_output_clhgh_p,
+                            real *crm_output_clmed_p, real *crm_output_cllow_p) {
 
   // Wrap the pointers we're going to copy to device Arrays
   realHost1d crm_input_bflxls          = realHost1d( "crm_input_bflxls         ",crm_input_bflxls_p                                         , pcols);

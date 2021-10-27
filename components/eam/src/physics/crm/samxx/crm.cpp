@@ -66,23 +66,29 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev,
   crm_accel_uv = crm_accel_uv_in;
   microphysics_scheme = microphysics_scheme_in;
 
-  create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
-                         crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 
-                         crm_input_tl_p, crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p, crm_input_tau00_p, 
+  create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p,
+                         crm_input_zmid_p, crm_input_zint_p,
+                         crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p,
+                         crm_input_ul_p, crm_input_vl_p, crm_input_tl_p,
+                         crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p,
+                         crm_input_tau00_p, crm_input_phis_p,
 #ifdef MMF_ESMT
                          crm_input_ul_esmt_p, crm_input_vl_esmt_p,
 #endif 
-                         crm_input_t_vt_p, crm_input_q_vt_p, crm_input_relvar_p, crm_input_nccn_prescribed_p,
-                         crm_input_tkh_p, crm_input_tk_p,crm_input_npccn_p, crm_input_ni_activated_p,
-                         crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
-                         crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_state_qc_p, crm_state_nc_p, 
-                         crm_state_qr_p, crm_state_nr_p, crm_state_qi_p,           
-                         crm_state_ni_p, crm_state_qs_p, crm_state_ns_p, crm_state_qg_p, crm_state_ng_p,
-                         crm_state_qv_p, crm_state_qm_p, crm_state_bm_p, 
+                         crm_input_t_vt_p, crm_input_q_vt_p,
+                         crm_input_relvar_p, crm_input_nccn_prescribed_p,
+                         crm_input_tkh_p, crm_input_tk_p,
+                         crm_input_npccn_p, crm_input_ni_activated_p,
+                         crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p,
+                         crm_state_temperature_p, crm_state_qt_p, crm_state_qp_p, crm_state_qn_p,
+                         crm_state_qc_p, crm_state_nc_p, crm_state_qr_p, crm_state_nr_p,
+                         crm_state_qi_p, crm_state_ni_p, crm_state_qs_p, crm_state_ns_p,
+                         crm_state_qg_p, crm_state_ng_p, crm_state_qm_p, crm_state_bm_p,
                          crm_state_t_prev_p, crm_state_qv_prev_p,
                          crm_rad_qrad_p, crm_output_subcycle_factor_p, 
-                         lat0_p, long0_p, gcolp_p, crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, 
-                         crm_output_cllow_p);
+                         lat0_p, long0_p, gcolp_p,
+                         crm_output_cltot_p, crm_output_clhgh_p,
+                         crm_output_clmed_p, crm_output_cllow_p);
 
   copy_outputs(crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
                crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, 
