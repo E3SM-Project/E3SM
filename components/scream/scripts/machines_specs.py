@@ -144,7 +144,7 @@ def get_available_cpu_count(logical=True):
     will include hyperthreads, logical=False will return only physical cores
     """
     affinity_len = len(psutil.Process().cpu_affinity())
-    if logical:
+    if not logical:
         hyperthread_ratio = logical_cores_per_physical_core()
         return int(affinity_len / hyperthread_ratio)
     else:

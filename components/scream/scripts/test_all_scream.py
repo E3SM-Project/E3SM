@@ -464,9 +464,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
     def get_taskset_range(self, test, for_compile=True):
     ###############################################################################
-        expect(for_compile or not is_cuda_machine(self._machine),
-               "Should not be using taskset ranges based on physical cores for a cuda machine")
-
         this_process = psutil.Process()
         affinity_cp = list(this_process.cpu_affinity())
         affinity_cp.sort()
@@ -480,6 +477,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             offset = 0
 
         start = affinity_cp[offset]
+        end = start
         for i in range(1, res_count[test]):
             expect(affinity_cp[offset+i] == start+i, "Could not get contiguous range for test {}".format(test))
             end = affinity_cp[offset+i]
@@ -520,7 +518,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         with open("{}/ctest_resource_file.json".format(build_dir),'w', encoding="utf-8") as outfile:
             json.dump(data,outfile,indent=2)
 
-        return end-start
+        return (end-start)+1
 
     ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
