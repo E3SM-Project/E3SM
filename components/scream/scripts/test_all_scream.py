@@ -241,6 +241,7 @@ class TestAllScream(object):
                       ("SCREAM_TEST_PROFILE", "SHORT"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("SCREAM_TEST_PROFILE", "SHORT"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("EKAT_ENABLE_COVERAGE", "True")],

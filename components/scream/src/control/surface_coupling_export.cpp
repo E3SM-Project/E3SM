@@ -27,6 +27,12 @@ void SurfaceCoupling::do_export (const bool init_phase)
     const auto& T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
     const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
     const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
+    const auto l_dz            = dz;
+    const auto l_z_int         = z_int;
+    const auto l_z_mid         = z_mid;
+    const auto l_Sa_z          = Sa_z;
+    const auto l_Sa_ptem       = Sa_ptem;
+    const auto l_Sa_dens       = Sa_dens;
 
     // Local copy, to deal with CUDA's handling of *this.
     const int num_levs = m_num_levs;
@@ -39,9 +45,9 @@ void SurfaceCoupling::do_export (const bool init_phase)
       const auto T_mid_i          = ekat::subview(T_mid, i);
       const auto p_mid_i          = ekat::subview(p_mid, i);
       const auto pseudo_density_i = ekat::subview(pseudo_density, i);
-      const auto dz_i             = ekat::subview(dz, i);
-      const auto z_int_i          = ekat::subview(z_int, i);
-      const auto z_mid_i          = ekat::subview(z_mid, i);
+      const auto dz_i             = ekat::subview(l_dz, i);
+      const auto z_int_i          = ekat::subview(l_z_int, i);
+      const auto z_mid_i          = ekat::subview(l_z_mid, i);
 
       // Compute vertical layer thickness
       PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
@@ -53,9 +59,9 @@ void SurfaceCoupling::do_export (const bool init_phase)
       team.team_barrier();
       PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
 
-      Sa_z(i)    = z_mid_i(last_entry);
-      Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
-      Sa_dens(i) = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
+      l_Sa_z(i)    = z_mid_i(last_entry);
+      l_Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
+      l_Sa_dens(i) = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
     });
   }
 
