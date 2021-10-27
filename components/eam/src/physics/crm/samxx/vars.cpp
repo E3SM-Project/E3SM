@@ -1502,18 +1502,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_nccn_prescribed = real2d();
   ::crm_input_npccn           = real2d();
   ::crm_input_ni_activated    = real2d();
-  ::crm_input_t_prev          = real2d();
-  ::crm_input_qv_prev         = real2d();
-  ::crm_input_zm              = real2d();
-  ::crm_input_sl              = real2d();
-  ::crm_input_ast             = real2d();
-  ::crm_input_omega           = real2d();
-  ::crm_input_tke_zt          = real2d();
-  ::crm_input_wthv            = real2d();
   ::crm_input_tkh             = real2d();
   ::crm_input_tk              = real2d();
-  ::crm_input_alst            = real2d();
-  ::crm_input_qtracers        = real3d();
 
   ::crm_state_u_wind          = real4d();
   ::crm_state_v_wind          = real4d();
@@ -1535,6 +1525,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_state_qv              = real4d();
   ::crm_state_qm              = real4d();
   ::crm_state_bm              = real4d();
+  ::crm_state_t_prev          = real2d();
+  ::crm_state_qv_prev         = real2d();
 
   ::crm_rad_qrad              = real4d();
   ::crm_rad_temperature       = real4d();
@@ -2021,18 +2013,8 @@ real2d crm_input_relvar;
 real2d crm_input_nccn_prescribed;
 real2d crm_input_npccn;
 real2d crm_input_ni_activated;
-real2d crm_input_t_prev;
-real2d crm_input_qv_prev;
-real2d crm_input_zm;
-real2d crm_input_sl;
-real2d crm_input_ast;
-real2d crm_input_omega;
-real2d crm_input_tke_zt;
-real2d crm_input_wthv;
 real2d crm_input_tkh;
 real2d crm_input_tk;
-real2d crm_input_alst;
-real3d crm_input_qtracers;
 
 real4d crm_state_u_wind;
 real4d crm_state_v_wind;
@@ -2054,6 +2036,8 @@ real4d crm_state_ng;
 real4d crm_state_qv;
 real4d crm_state_qm;
 real4d crm_state_bm;
+real2d crm_state_t_prev;
+real2d crm_state_qv_prev;
 
 real4d crm_rad_qrad;
 real4d crm_rad_temperature;
