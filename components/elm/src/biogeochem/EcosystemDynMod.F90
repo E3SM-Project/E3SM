@@ -296,6 +296,7 @@ contains
     use CropType              , only: crop_type
     use elm_varpar            , only: crop_prog
     use AllocationMod         , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
+    use AllocationMod         , only: EvaluateSupplStatus
     use NitrogenDynamicsMod   , only: NitrogenLeaching
     use PhosphorusDynamicsMod       , only: PhosphorusLeaching
     use NitrogenDynamicsMod         , only: NitrogenFixation_balance
@@ -444,6 +445,13 @@ contains
           num_soilc, filter_soilc, num_soilp, filter_soilp, &
           soilstate_vars, canopystate_vars, cnstate_vars)
 
+    !-------------------------------------------------------------------------------------------------
+    ! This subroutine evaluates the current state of N and P supplementation
+    ! and cross-refs with active modules, to decide on which processes should
+    ! be activated.
+    !-------------------------------------------------------------------------------------------------
+    call EvaluateSupplStatus()
+    
     !-------------------------------------------------------------------------------------------------
     ! Allocation1 is always called (w/ or w/o use_elm_interface)
     ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
