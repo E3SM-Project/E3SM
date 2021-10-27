@@ -177,7 +177,7 @@ contains
 
     character*32             :: appname ! to register moab app
     integer                  :: rmapid  ! external id to identify the moab app
-    integer                  :: ierr ! 
+    integer                  :: ierr, type_grid ! 
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -343,8 +343,9 @@ contains
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
           endif
-
-          call moab_map_init_rcfile(mbrmapro, rof(1), ocn(1), &
+ ! integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+          type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ? 
+          call moab_map_init_rcfile(mbrmapro, mboxid, type_grid, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
