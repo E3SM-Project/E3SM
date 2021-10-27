@@ -38,6 +38,6 @@
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
 <check_finidat_fsurdat_consistency>.false.</check_finidat_fsurdat_consistency>
 <do_harvest use_cn=".true.">.true.</do_harvest>
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2015_c210903.nc</fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/surfdata_ne120np4_SSP5_RCP85_simyr2015_c210903.nc</fsurdat>
 
 </namelist_defaults>
