@@ -333,7 +333,7 @@ contains
     enddo
 
     call c2g( bounds, &
-         waterstate_vars%wslake_col(bounds%begc:bounds%endc), &
+         col_ws%wslake_col(bounds%begc:bounds%endc), &
          lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
