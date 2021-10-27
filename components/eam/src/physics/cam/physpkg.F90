@@ -103,6 +103,7 @@ module physpkg
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
   logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 
   !======================================================================= 
 contains
@@ -184,7 +185,8 @@ subroutine phys_register
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods, &
                       history_gaschmbudget_out = history_gaschmbudget, &
-                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -273,12 +275,12 @@ subroutine phys_register
 
        ! NB: has to be after chem_register to use tracer names
        ! Fields for gas chemistry tracers
-       if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
          call chm_diags_inti_ac() ! to get aer_species
          do m = 1,gas_pcnst
             if (.not. any( aer_species == m )) then
               spc_name = trim(solsym(m))
-              if (history_gaschmbudget) then
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
                 gas_ac_name(m) = 'ac_'//spc_name
                 call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
               end if
