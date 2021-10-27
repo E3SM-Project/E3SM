@@ -115,26 +115,24 @@ void sgs_init() {
   auto &dz             = ::dz;
   auto &ncrms          = ::ncrms;
 
-  if (nrestart == 0) {
-    // for (int l=0; l<nsgs_fields; l++) {
-    //  for (int k=0; k<nzm; k++) {
-    //    for (int j=0; j<dimy_s; j++) {
-    //      for (int i=0; i<dimx_s; i++) {
-    //        for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
-      sgs_field(l,k,j,i,icrm) = 0.0;
-    });
+  // for (int l=0; l<nsgs_fields; l++) {
+  //  for (int k=0; k<nzm; k++) {
+  //    for (int j=0; j<dimy_s; j++) {
+  //      for (int i=0; i<dimx_s; i++) {
+  //        for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
+    sgs_field(l,k,j,i,icrm) = 0.0;
+  });
 
-    // for (int k=0; k<nsgs_fields_diag; k++) {
-    //  for (int k=0; k<nzm; k++) {
-    //    for (int j=0; j<dimy_d; j++) {
-    //      for (int i=0; i<dimx_d; i++) {
-    //        for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , 
-                  YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
-      sgs_field_diag(l,k,j,i,icrm) = 0.0;
-    });
-  }
+  // for (int k=0; k<nsgs_fields_diag; k++) {
+  //  for (int k=0; k<nzm; k++) {
+  //    for (int j=0; j<dimy_d; j++) {
+  //      for (int i=0; i<dimx_d; i++) {
+  //        for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , 
+                YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
+    sgs_field_diag(l,k,j,i,icrm) = 0.0;
+  });
 
   if (les) {
     // for (int k=0; k<nzm; k++) {

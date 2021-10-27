@@ -353,18 +353,16 @@ void micro_init() {
   a_pr = 1.0/(tprmax-tprmin);
   a_gr = 1.0/(tgrmax-tgrmin);
 
-  if (nrestart == 0) {
-    // for (int l=0; l<nmicro_fields; k++) {
-    //   for (int j=0; j<ny; j++) {
-    //     for (int i=0; i<nx; i++) {
-    //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
-      fluxbmk(l,j,i,icrm) = 0.0;
-      fluxtmk(l,j,i,icrm) = 0.0;
-    });
-    if (docloud || dosmoke) {
-      micro_diagnose();
-    }
+  // for (int l=0; l<nmicro_fields; k++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
+    fluxbmk(l,j,i,icrm) = 0.0;
+    fluxtmk(l,j,i,icrm) = 0.0;
+  });
+  if (docloud || dosmoke) {
+    micro_diagnose();
   }
 
   // for (int l=0; l<nmicro_fields; k++) {
