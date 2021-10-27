@@ -38,12 +38,6 @@ extern "C" void setparm() {
   dosmagor = true;
   advect_sgs = !dosmagor;
 
-  if (navgmom_x < 0 || navgmom_y < 0) {
-    nstatmom        = 1;
-    nstatmomstart    = 99999999;
-    nstatmomend      = 999999999;
-  }
-
   if (rank==0) {
     masterproc = true;
   } else {

@@ -207,7 +207,6 @@ void pre_timeloop() {
 
 //-----------------------------------------------
 
-  dostatis  = false;    // no statistics are collected.
   idt_gl    = 1.0/dt_glob;
   ptop      = plev-nzm+1;
   factor_xy = 1.0/( (real) nx * (real) ny );

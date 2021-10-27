@@ -65,7 +65,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
 #endif
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p,
                             real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
-                            real *crm_input_t_prev_p, real *crm_input_qv_prev_p,
                             real *crm_input_tkh_p, real *crm_input_tk_p,
                             real *crm_input_npccn_p, real *crm_input_ni_activated_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
@@ -73,6 +72,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                             real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p, real *crm_state_ns_p,
                             real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                            real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
                             real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
                             real *lat0_p, real *long0_p, int *gcolp_p,
                             real *crm_output_cltot_p, real *crm_output_clhgh_p,
@@ -161,62 +161,13 @@ extern int  rankse                   ;
 extern int  ranksw                   ;
 extern bool dompi                    ;
 extern bool masterproc               ;
-extern bool dostatis                 ;
-extern bool dostatisrad              ;
-extern int  nstatis                  ;
 extern bool compute_reffc            ;
 extern bool compute_reffi            ;
-extern bool notopened2D              ;
-extern bool notopened3D              ;
-extern bool notopenedmom             ;
 extern real dx                       ;
 extern real dy                       ;
-extern bool doconstdz                ;
 extern int  nstop                    ;
-extern int  nelapse                  ;
 extern real dt                       ;
-extern real day0                     ;
-extern int  nrad                     ;
-extern int  nrestart                 ;
-extern int  nstat                    ;
-extern int  nstatfrq                 ;
-extern bool restart_sep              ;
-extern int  nrestart_skip            ;
-extern bool output_sep               ;
-extern bool doisccp                  ;
-extern bool domodis                  ;
-extern bool domisr                   ;
-extern bool dosimfilesout            ;
-extern bool doSAMconditionals        ;
-extern bool dosatupdnconditionals    ;
-extern bool doscamiopdata            ;
-extern bool dozero_out_day0          ;
-extern int  nsave3Dstart             ;
-extern int  nsave3Dend               ;
-extern bool save3Dbin                ;
-extern bool save3Dsep                ;
-extern real qnsave3D                 ;
-extern bool dogzip3D                 ;
-extern bool rad3Dout                 ;
-extern int  nsave2D                  ;
-extern int  nsave2Dstart             ;
-extern int  nsave2Dend               ;
-extern bool save2Dbin                ;
-extern bool save2Dsep                ;
-extern bool save2Davg                ;
-extern bool dogzip2D                 ;
-extern int  nstatmom                 ;
-extern int  nstatmomstart            ;
-extern int  nstatmomend              ;
-extern bool savemomsep               ;
-extern bool savemombin               ;
-extern int  nmovie                   ;
-extern int  nmoviestart              ;
-extern int  nmovieend                ;
-extern bool isInitialized_scamiopdata;
-extern bool wgls_holds_omega         ;
 
-extern bool dosubsidence    ;
 extern real ug              ;
 extern real vg              ;
 extern bool les             ;
@@ -468,10 +419,6 @@ extern real2d crm_input_qiil  ;
 extern real2d crm_input_ql    ;
 extern real1d crm_input_tau00 ;
 extern real1d crm_input_phis  ;
-extern real1d crm_input_shf   ; 
-extern real1d crm_input_cflx ;
-extern real1d crm_input_wsx  ;
-extern real1d crm_input_wsy  ;
 #ifdef MMF_ESMT
 extern real2d crm_input_ul_esmt;
 extern real2d crm_input_vl_esmt;
@@ -482,18 +429,8 @@ extern real2d crm_input_relvar;
 extern real2d crm_input_nccn_prescribed;
 extern real2d crm_input_npccn;
 extern real2d crm_input_ni_activated;
-extern real2d crm_input_t_prev;
-extern real2d crm_input_qv_prev;
-extern real2d crm_input_zm;
-extern real2d crm_input_sl;
-extern real2d crm_input_ast;
-extern real2d crm_input_omega;
-extern real2d crm_input_wthv;
-extern real2d crm_input_tke_zt;
 extern real2d crm_input_tkh;
 extern real2d crm_input_tk;
-extern real2d crm_input_alst;
-extern real3d crm_input_qtracers;
 
 extern real4d crm_state_u_wind;
 extern real4d crm_state_v_wind;
@@ -516,6 +453,8 @@ extern real4d crm_state_ng;
 extern real4d crm_state_qv;
 extern real4d crm_state_qm;
 extern real4d crm_state_bm;
+extern real2d crm_state_t_prev;
+extern real2d crm_state_qv_prev;
 
 extern real4d crm_rad_qrad;
 extern real4d crm_rad_temperature;
@@ -592,10 +531,6 @@ extern real1d crm_output_precsc;
 extern real1d crm_output_precsl; 
 extern real3d crm_output_prec_crm;
 
-extern real2d zm;
-extern real2d sl;
-extern real2d ast;
-extern real2d omega;
 extern real2d nc_nuceat_tend;
 extern real2d nccn_prescribed;
 extern real2d relvar;
