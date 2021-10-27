@@ -109,6 +109,13 @@ module AllocationMod
   !$acc declare create(arepr(:)            )
   !$acc declare create(aroot(:)            )
 
+  logical :: do_eval_suppstat = .true. ! If this is true, continue to re-evaluate
+                                       ! the status of supplementation and use that
+                                       ! to toggle and update which processes are active.
+                                       ! This will get set to false
+                                       ! after ad_carbon_only is complete.
+  
+   
   logical :: crop_supln  = .false.    !Prognostic crop receives supplemental Nitrogen
   
   real(r8), allocatable,target :: veg_rootc_bigleaf(:,:)        ! column-level fine-root biomas kgc/m3
@@ -983,10 +990,7 @@ contains
    real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
    real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
 
-   logical :: do_eval_suppstat = .true. ! If this is true, continue to re-evaluate
-                                        ! the status of supplementation and use that
-                                        ! to toggle and update which processes are active. This will get set to false
-                                        ! after ad_carbon_only is complete.
+
    
    !-----------------------------------------------------------------------
 
