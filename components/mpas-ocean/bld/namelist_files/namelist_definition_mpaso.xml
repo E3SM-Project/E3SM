@@ -2537,17 +2537,17 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
+<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, couple ecosys fields with sea ice
+if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
+<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, get river nutrient fluxes from coupler instead of from monthly forcing file
+if true, couple ecosys fields with sea ice
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2743,6 +2743,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tracer_forcing_idealAgeTracers -->
 
 <entry id="config_use_idealAgeTracers" type="logical"
@@ -2801,79 +2802,81 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tracer_forcing_CFCTracers -->
 
 <entry id="config_use_CFCTracers" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, the 'CFCTracers' category is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, the 'CFCGRP' category is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_surface_bulk_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_surface_restoring" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, surface restoring source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface restoring source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_interior_restoring" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, interior restoring source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, interior restoring source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_exponential_decay" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, exponential decay source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, exponential decay source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_idealAge_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, idealAge forcing source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, idealAge forcing source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_ttd_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, transit time distribution forcing source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, transit time distribution forcing source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFC11" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, CFC11 tracer is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC11 is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFC12" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, CFC12 tracer is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC12 is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- AM_globalStats -->
 
@@ -5951,6 +5954,7 @@ Controls if P1 constituent is used in harmonic analysis
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- AM_conservationCheck -->
 
