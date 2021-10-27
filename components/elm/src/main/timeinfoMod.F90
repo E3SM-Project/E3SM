@@ -15,7 +15,7 @@ module timeinfoMod
   integer  :: jday_mod  = 1            ! day into year?
   real(r8) :: thiscalday_mod  = 1.0_r8  ! day number including hours
   real(r8) :: nextsw_cday_mod = 1.0_r8 !nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
-  logical  :: end_cd_mod = 0           ! end of current day
+  logical  :: end_cd_mod = .false.     ! end of current day
   logical  :: doalb = .false.
   !$acc declare copyin(dtime_mod,dayspyr_mod, year_curr, year_prev, &
   !$acc mon_curr, mon_prev, day_curr, day_prev, secs_curr, secs_prev, nstep_mod, &

@@ -70,7 +70,7 @@ contains
          seaice_run_prescribed_ice
 
     use seaice_special_boundaries, only: &
-         seaice_set_special_boundaries_zero_tracers
+         seaice_set_special_boundaries_tracers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -170,7 +170,7 @@ contains
     call seaice_check_state(domain)
 
     ! tracer special boundaries
-    call seaice_set_special_boundaries_zero_tracers(domain)
+    call seaice_set_special_boundaries_tracers(domain)
 
   end subroutine seaice_timestep!}}}
 

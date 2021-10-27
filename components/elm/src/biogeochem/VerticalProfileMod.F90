@@ -74,6 +74,7 @@ contains
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
     integer  :: c, j, fc, p, fp, pi
     integer  :: alt_ind
+    integer  :: nlevbed
     ! debugging temp variables
     real(r8) :: froot_prof_sum
     real(r8) :: croot_prof_sum
@@ -87,6 +88,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                               & 
+         nlev2bed             => col_pp%nlevbed                            , & ! Input: [integer (:)     ]  number of layers to bedrock
          rootfr               => soilstate_vars%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
          
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)                              
@@ -139,12 +141,25 @@ contains
                ! use beta distribution parameter from Jackson et al., 1996
                do fp = 1,num_soilp
                   p = filter_soilp(fp)
+                  c = veg_pp%column(p)
+                  nlevbed = nlev2bed(c)
+                  rootfr_tot = 0._r8
                   if (veg_pp%itype(p) /= noveg) then
                      do j = 1, nlevdecomp
-                        cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
+                        if (j <= nlevbed) then
+                           cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
                              rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
                              / dzsoi_decomp(j)
+                           rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
+                        else
+                           cinput_rootfr(p,j) = 0._r8
+                        end if
                      end do
+                     if (nlevbed < nlevdecomp) then
+                        do j = 1, nlevbed
+                           cinput_rootfr(p,j) = cinput_rootfr(p,j) / rootfr_tot
+                        end do
+                     end if
                   else
                      cinput_rootfr(p,1) = 1._r8 / dzsoi_decomp(1)
                   endif
@@ -163,12 +178,18 @@ contains
          do fp = 1,num_soilp
             p = filter_soilp(fp)
             c = veg_pp%column(p)
+            nlevbed = nlev2bed(c)
             ! integrate rootfr over active layer of soil column
             rootfr_tot = 0._r8
             surface_prof_tot = 0._r8
             do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
-               surface_prof_tot = surface_prof_tot + surface_prof(j)  * dzsoi_decomp(j)
+               if (nlevbed < nlevdecomp) then
+                  surface_prof_tot = surface_prof_tot + exp(log(surface_prof(j)) * zisoi(nlevdecomp) / &
+                  	zisoi(nlevbed)) * dzsoi_decomp(j)
+               else
+                  surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
+               end if
             end do
             if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
                ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
@@ -177,8 +198,17 @@ contains
                   froot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
                   croot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
                   ! set all surface processes to shallower profile
-                  leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
-                  stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                  if (j <= nlevbed) then
+                     if (nlevbed < nlevdecomp) then
+                        leaf_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        	surface_prof_tot
+                        stem_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        	surface_prof_tot
+                     else
+                        leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                        stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                     end if
+                  end if
                end do
             else
                ! if fully frozen, or no roots, put everything in the top layer
@@ -210,18 +240,22 @@ contains
          ! repeat for column-native profiles: Ndep and Nfix
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+            nlevbed = nlev2bed(c)
             rootfr_tot = 0._r8
             surface_prof_tot = 0._r8
             ! redo column ntegration over active layer for column-native profiles
-            do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+            alt_ind = min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+            do j = 1, min(alt_ind, nlevbed)
                rootfr_tot = rootfr_tot + col_cinput_rootfr(c,j) * dzsoi_decomp(j)
                surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
             end do
             if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
                do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                   nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
-                  ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
-                  pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  if (j <= nlevbed) then
+                     ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                     pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  end if
                end do
             else
                nfixation_prof(c,1) = 1./dzsoi_decomp(1)
@@ -263,7 +297,7 @@ contains
             write(iulog, *) 'nfixation_prof: ', nfixation_prof(c,:)
             write(iulog, *) 'ndep_prof: ', ndep_prof(c,:)
             write(iulog, *) 'pdep_prof: ', pdep_prof(c,:)
-            write(iulog, *) 'cinput_rootfr: ', cinput_rootfr(c,:)
+            write(iulog, *) 'cinput_rootfr: ', col_cinput_rootfr(c,:)
             write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
             write(iulog, *) 'surface_prof: ', surface_prof(:)
             write(iulog, *) 'npfts(c): ', col_pp%npfts(c)

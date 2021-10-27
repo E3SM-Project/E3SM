@@ -314,8 +314,8 @@ contains
          ! tendencies.
          usePlanetVorticity = .false.
 
-      case ('semi_implicit')
-         ! For semi-implicit, Coriolis tendency uses eta/h because
+      case ('split_implicit')
+         ! For split implicit, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.

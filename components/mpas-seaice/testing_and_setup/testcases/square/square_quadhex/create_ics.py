@@ -9,6 +9,8 @@ def wind_velocity(x, y, Lx, Ly):
     t = 0.0#21600.0
     tau = 4.0 * 24.0 * 3600.0
 
+    print(Lx, Ly)
+
     u = 5.0 + (math.sin((2.0 * math.pi * t) / tau) - 3.0) * math.sin((2.0 * math.pi * x) / Lx) * math.sin((math.pi * y) / Ly)
     v = 5.0 + (math.sin((2.0 * math.pi * t) / tau) - 3.0) * math.sin((2.0 * math.pi * y) / Ly) * math.sin((math.pi * x) / Lx)
     #u = 5.0

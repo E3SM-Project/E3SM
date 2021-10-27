@@ -154,16 +154,14 @@ def strain_hist(axis):
         for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
             iVertex = verticesOnCell[iCell,iVertexOnCell]
 
-            if (latVertex[iVertex] > math.radians(20.0)):
+            if (math.fabs(latVertex[iVertex]) > math.radians(20.0)):
 
                 strain11UWachDiffHist.append(math.fabs(strain11varWachspressDiff[iCell,iVertexOnCell]))
                 strain11UPWLDiffHist.append(math.fabs(strain11varPWLDiff[iCell,iVertexOnCell]))
 
     # weak
     for iCell in range(0,nCells):
-
-        if (latCell[iCell] > math.radians(20.0)):
-
+        if (math.fabs(latCell[iCell]) > math.radians(20.0)):
             strain11UWeakDiffHist.append(math.fabs(strain11weakWeakDiff[iCell]))
 
     # plot
@@ -171,11 +169,12 @@ def strain_hist(axis):
     axis.hist(strain11UPWLDiffHist,  50, range=[0.0,0.125], histtype='step', lw=1, color='blue',  label='PWL')
     axis.hist(strain11UWeakDiffHist, 50, range=[0.0,0.125], histtype='step', lw=1, color='green', label='Weak')
 
-    axis.set_yscale('log', nonpositive='clip')
+    #axis.set_yscale('log', nonpositive='clip')
+    axis.set_yscale('log')
     #axis.set_xscale('log', nonpositive='clip')
 
-    axis.set_title(r'(a) $\dot{\epsilon}_{11}$')
-    axis.set_xlabel("Error")
+    axis.set_title(r'(a) $\dot{\epsilon}_{11}$', loc="left")
+    axis.set_xlabel("Abs. error")
     axis.set_ylabel("Frequency")
 
     axis.legend(["Wachs.","PWL","Weak"], frameon=False, fontsize=8)
@@ -296,7 +295,7 @@ def stress_divergence_hist(axis):
 
     for iVertex in range(0,nVertices):
 
-        if (latVertex[iVertex] > math.radians(20.0)):
+        if (math.fabs(latVertex[iVertex]) > math.radians(20.0)):
 
             stressDivergenceUWachDiffHist.append(math.fabs(stressDivergenceUWachDiff[iVertex]))
             stressDivergenceUPWLDiffHist.append(math.fabs(stressDivergenceUPWLDiff[iVertex]))
@@ -312,11 +311,13 @@ def stress_divergence_hist(axis):
     axis.hist(stressDivergenceUPWLAltDiffHist,  50, range=[0.0,1.0], histtype='step', lw=1, color='darkorange',    label='PWL Alt')
     axis.hist(stressDivergenceUWeakDiffHist,    50, range=[0.0,1.0], histtype='step', lw=1, color='green',         label='Weak')
 
-    axis.set_yscale('log', nonpositive='clip')
+    #axis.set_yscale('log', nonpositive='clip')
+    axis.set_yscale('log')
 
-    axis.set_title(r'(b) $(\nabla \cdot \sigma)_u$')
-    axis.set_xlabel("Error")
-    axis.set_ylabel("Frequency")
+    axis.set_title(r'(b) $(\nabla \cdot \sigma)_u$', loc="left")
+    axis.set_xlabel("Abs. error")
+    axis.set_ylabel(None)
+    #axis.set_ylabel("Frequency")
 
     axis.legend(["Wachs.","PWL","Wachs. Alt","PWL Alt","Weak"], frameon=False, fontsize=8)
 
@@ -326,18 +327,28 @@ def stress_divergence_hist(axis):
 
 def spherical_operators_hist():
 
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
+    cm = 1/2.54  # centimeters in inches
+    plt.rc('font',family="Times New Roman")
+    plt.rc('mathtext',fontset="stix")
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 8
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.3,3))
+    fig, axes = plt.subplots(1, 2, figsize=(15*cm,7*cm))
 
     strain_hist(axes[0])
 
     stress_divergence_hist(axes[1])
 
-    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-    plt.savefig("spherical_operators_hist.png",dpi=400)
+    plt.tight_layout(pad=0.2, w_pad=0.2, h_pad=0.2)
+    plt.savefig("spherical_operators_hist.png",dpi=300)
     plt.savefig("spherical_operators_hist.eps")
 
 #-------------------------------------------------------------------------------

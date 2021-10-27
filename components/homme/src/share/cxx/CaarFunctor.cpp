@@ -24,6 +24,7 @@
 namespace Homme {
 
 CaarFunctor::CaarFunctor()
+  : is_setup(true)
 {
   Elements&         elements   = Context::singleton().get<Elements>();
   Tracers&          tracers    = Context::singleton().get<Tracers>();
@@ -41,10 +42,22 @@ CaarFunctor::CaarFunctor(const Elements &elements, const Tracers &tracers,
                          const HybridVCoord &hvcoord,
                          const SphereOperators &sphere_ops,
                          const SimulationParams& params)
+  : is_setup(true)
 {
   // Build functor impl
   m_caar_impl.reset(new CaarFunctorImpl(elements, tracers, ref_FE, hvcoord,
                                         sphere_ops, params));
+}
+
+// This constructor is useful for using buffer functionality without
+// having all other Functor information available.
+// If this constructor is used, the setup() function must be called
+// before using any other CaarFunctor functions.
+CaarFunctor::CaarFunctor(const int num_elems, const SimulationParams& params)
+  : is_setup(false)
+{
+  // Build functor impl
+  m_caar_impl.reset(new CaarFunctorImpl(num_elems, params));
 }
 
 CaarFunctor::~CaarFunctor ()
@@ -54,6 +67,19 @@ CaarFunctor::~CaarFunctor ()
   // deleter, which needs to know the size of the stored type, and which
   // would be called from the implicitly declared default destructor, which
   // would be in the header file, where CaarFunctorImpl type is incomplete.
+}
+
+void CaarFunctor::setup(const Elements &elements, const Tracers &tracers,
+                        const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+                        const SphereOperators &sphere_ops)
+{
+  assert (m_caar_impl);
+
+  // Sanity check
+  assert (!is_setup);
+
+  m_caar_impl->setup(elements, tracers, ref_FE, hvcoord, sphere_ops);
+  is_setup = true;
 }
 
 int CaarFunctor::requested_buffer_size () const {
@@ -68,6 +94,10 @@ void CaarFunctor::init_buffers(const FunctorsBuffersManager& fbm) {
 
 void CaarFunctor::init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
   assert (m_caar_impl);
+
+  // The Functor needs to be fully setup to use this function
+  assert (is_setup);
+
   m_caar_impl->init_boundary_exchanges(bm_exchange);
 }
 
@@ -75,6 +105,9 @@ void CaarFunctor::set_rk_stage_data (const RKStageData& data)
 {
   // Sanity check (should NEVER happen)
   assert (m_caar_impl);
+
+  // The Functor needs to be fully setup
+  assert (is_setup);
 
   // Forward inputs to impl
   m_caar_impl->set_rk_stage_data(data);
@@ -84,6 +117,9 @@ void CaarFunctor::run (const RKStageData& data)
 {
   // Sanity check (should NEVER happen)
   assert (m_caar_impl);
+
+  // The Functor needs to be fully setup
+  assert (is_setup);
 
   // Run functor
   m_caar_impl->run(data);

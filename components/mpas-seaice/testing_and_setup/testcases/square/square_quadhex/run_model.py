@@ -14,6 +14,7 @@ def run_model():
         MPAS_SEAICE_TESTCASES_RUN_COMMAND = ""
 
     operatorMethods = ["wachspress","pwl","weak","wachsavg","pwlavg","weakwachs","weakpwl"]
+    #operatorMethods = ["none"]
 
     gridTypes = ["hex","quad"]
     #gridTypes = ["quad"]
@@ -28,6 +29,7 @@ def run_model():
     #                 "0640x0640"]}
     grids = {"hex" :["0082x0094"],
              "quad":["0080x0080"]}
+    #grids = {"quad":["0080x0080"]}
 
 
     #subcycleNumbers = [120,240,480,960,1920,3840,7680,15360,30720]
@@ -91,6 +93,11 @@ def run_model():
                                                         "config_stress_divergence_scheme":"variational",
                                                         "config_variational_basis":"pwl",
                                                         "config_elastic_subcycle_number":subcycleNumber}}
+                    elif (operatorMethod == "none"):
+                        nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                                        "config_stress_divergence_scheme":"variational",
+                                                        "config_variational_basis":"wachspress",
+                                                        "config_elastic_subcycle_number":subcycleNumber}}
 
 
                     f90nml.patch("namelist.seaice.square", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, subcycleNumber))
@@ -99,7 +106,7 @@ def run_model():
                     os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, subcycleNumber))
                     os.system("ln -s streams.seaice.square streams.seaice")
 
-                    os.system("%s ../../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
+                    os.system("%s ../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
 
                     os.system("mv output output_%s_%s_%s_%i" %(gridType, operatorMethod, grid, subcycleNumber))
 

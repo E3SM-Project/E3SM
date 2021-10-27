@@ -1,0 +1,1 @@
+./xmlchange --append -id CAM_CONFIG_OPTS -val " -cppdefs ' -DMMF_FIXED_SUBCYCLE ' "

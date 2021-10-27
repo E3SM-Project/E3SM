@@ -283,7 +283,7 @@ def stress_divergence_map():
     plt.hist(stressDivergenceUPWLDiffHist,  50, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
     plt.hist(stressDivergenceUWeakDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
 
-    plt.yscale('log', nonpositive='clip')
+    plt.yscale('log')
 
     plt.xlabel("Error")
     plt.ylabel("Frequency")

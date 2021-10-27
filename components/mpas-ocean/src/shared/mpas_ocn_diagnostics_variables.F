@@ -188,11 +188,11 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
-   real (kind=RKIND), dimension(:), pointer :: CGvec_r0,CGvec_r00,CGvec_r1 ,CGvec_rh0,CGvec_rh1,CGvec_ph0,CGvec_ph1
-   real (kind=RKIND), dimension(:), pointer :: CGvec_v0,CGvec_v1 ,CGvec_s0 ,CGvec_s1 ,CGvec_sh0,CGvec_sh1
-   real (kind=RKIND), dimension(:), pointer :: CGvec_t0,CGvec_t1 ,CGvec_q0 ,CGvec_q1 ,CGvec_qh0
-   real (kind=RKIND), dimension(:), pointer :: CGvec_w0,CGvec_w1 ,CGvec_wh0,CGvec_wh1,CGvec_y0
-   real (kind=RKIND), dimension(:), pointer :: CGvec_z0,CGvec_z1 ,CGvec_zh0,CGvec_zh1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_r0,SIvec_r00,SIvec_r1 ,SIvec_rh0,SIvec_rh1,SIvec_ph0,SIvec_ph1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_v0,SIvec_s0 ,SIvec_s1 ,SIvec_sh0,SIvec_sh1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_t0,SIvec_t1 ,SIvec_q0 ,SIvec_q1 ,SIvec_qh0
+   real (kind=RKIND), dimension(:), pointer :: SIvec_w0,SIvec_w1 ,SIvec_wh0,SIvec_wh1,SIvec_y0
+   real (kind=RKIND), dimension(:), pointer :: SIvec_z0,SIvec_z1 ,SIvec_zh0,SIvec_zh1
 
    !--------------------------------------------------------------------
    !
@@ -586,34 +586,33 @@ contains
                 surfacePressure)
 
       ! Semi-implicit Array Pointer retrievals
-      if (trim(config_time_integrator) == 'semi_implicit') then
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r0', CGvec_r0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r1', CGvec_r1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v0', CGvec_v0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v1', CGvec_v1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w0', CGvec_w0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w1', CGvec_w1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_q0', CGvec_q0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s0', CGvec_s0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s1', CGvec_s1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t1', CGvec_t1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_y0', CGvec_y0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z0', CGvec_z0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z1', CGvec_z1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r00', CGvec_r00)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh0', CGvec_rh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh1', CGvec_rh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh0', CGvec_wh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh1', CGvec_wh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph0', CGvec_ph0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph1', CGvec_ph1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_qh0', CGvec_qh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh0', CGvec_sh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh1', CGvec_sh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh0', CGvec_zh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh1', CGvec_zh1)
+      if (trim(config_time_integrator) == 'split_implicit') then
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r0', SIvec_r0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r1', SIvec_r1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_v0', SIvec_v0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_w0', SIvec_w0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_w1', SIvec_w1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t0', SIvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_q0', SIvec_q0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_s0', SIvec_s0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_s1', SIvec_s1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t0', SIvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t1', SIvec_t1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_y0', SIvec_y0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_z0', SIvec_z0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_z1', SIvec_z1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r00', SIvec_r00)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_rh0', SIvec_rh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_rh1', SIvec_rh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_wh0', SIvec_wh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_wh1', SIvec_wh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_ph0', SIvec_ph0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_ph1', SIvec_ph1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_qh0', SIvec_qh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_sh0', SIvec_sh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_sh1', SIvec_sh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh0', SIvec_zh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh1', SIvec_zh1)
       end if
 
       ! Copy diagnostic variables to accelerator
@@ -764,35 +763,35 @@ contains
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          !$acc enter data copyin(                       &
-         !$acc                   CGvec_r0,              &
-         !$acc                   CGvec_r00,             &
-         !$acc                   CGvec_r1,              &
-         !$acc                   CGvec_rh0,             &
-         !$acc                   CGvec_rh1,             &
-         !$acc                   CGvec_ph0,             &
-         !$acc                   CGvec_ph1,             &
-         !$acc                   CGvec_v0,              &
-         !$acc                   CGvec_v1,              &
-         !$acc                   CGvec_s0,              &
-         !$acc                   CGvec_s1,              &
-         !$acc                   CGvec_sh0,             &
-         !$acc                   CGvec_sh1,             &
-         !$acc                   CGvec_t0,              &
-         !$acc                   CGvec_t1,              &
-         !$acc                   CGvec_q0,              &
-         !$acc                   CGvec_q1,              &
-         !$acc                   CGvec_qh0,             &
-         !$acc                   CGvec_w0,              &
-         !$acc                   CGvec_w1,              &
-         !$acc                   CGvec_wh0,             &
-         !$acc                   CGvec_wh1,             &
-         !$acc                   CGvec_y0,              &
-         !$acc                   CGvec_z0,              &
-         !$acc                   CGvec_z1,              &
-         !$acc                   CGvec_zh0,             &
-         !$acc                   CGvec_zh1,             &
+         !$acc                   SIvec_r0,              &
+         !$acc                   SIvec_r00,             &
+         !$acc                   SIvec_r1,              &
+         !$acc                   SIvec_rh0,             &
+         !$acc                   SIvec_rh1,             &
+         !$acc                   SIvec_ph0,             &
+         !$acc                   SIvec_ph1,             &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_s0,              &
+         !$acc                   SIvec_s1,              &
+         !$acc                   SIvec_sh0,             &
+         !$acc                   SIvec_sh1,             &
+         !$acc                   SIvec_t0,              &
+         !$acc                   SIvec_t1,              &
+         !$acc                   SIvec_q0,              &
+         !$acc                   SIvec_q1,              &
+         !$acc                   SIvec_qh0,             &
+         !$acc                   SIvec_w0,              &
+         !$acc                   SIvec_w1,              &
+         !$acc                   SIvec_wh0,             &
+         !$acc                   SIvec_wh1,             &
+         !$acc                   SIvec_y0,              &
+         !$acc                   SIvec_z0,              &
+         !$acc                   SIvec_z1,              &
+         !$acc                   SIvec_zh0,             &
+         !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
@@ -1001,35 +1000,35 @@ contains
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          !$acc exit data delete(                        &
-         !$acc                   CGvec_r0,              &
-         !$acc                   CGvec_r00,             &
-         !$acc                   CGvec_r1,              &
-         !$acc                   CGvec_rh0,             &
-         !$acc                   CGvec_rh1,             &
-         !$acc                   CGvec_ph0,             &
-         !$acc                   CGvec_ph1,             &
-         !$acc                   CGvec_v0,              &
-         !$acc                   CGvec_v1,              &
-         !$acc                   CGvec_s0,              &
-         !$acc                   CGvec_s1,              &
-         !$acc                   CGvec_sh0,             &
-         !$acc                   CGvec_sh1,             &
-         !$acc                   CGvec_t0,              &
-         !$acc                   CGvec_t1,              &
-         !$acc                   CGvec_q0,              &
-         !$acc                   CGvec_q1,              &
-         !$acc                   CGvec_qh0,             &
-         !$acc                   CGvec_w0,              &
-         !$acc                   CGvec_w1,              &
-         !$acc                   CGvec_wh0,             &
-         !$acc                   CGvec_wh1,             &
-         !$acc                   CGvec_y0,              &
-         !$acc                   CGvec_z0,              &
-         !$acc                   CGvec_z1,              &
-         !$acc                   CGvec_zh0,             &
-         !$acc                   CGvec_zh1,             &
+         !$acc                   SIvec_r0,              &
+         !$acc                   SIvec_r00,             &
+         !$acc                   SIvec_r1,              &
+         !$acc                   SIvec_rh0,             &
+         !$acc                   SIvec_rh1,             &
+         !$acc                   SIvec_ph0,             &
+         !$acc                   SIvec_ph1,             &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_s0,              &
+         !$acc                   SIvec_s1,              &
+         !$acc                   SIvec_sh0,             &
+         !$acc                   SIvec_sh1,             &
+         !$acc                   SIvec_t0,              &
+         !$acc                   SIvec_t1,              &
+         !$acc                   SIvec_q0,              &
+         !$acc                   SIvec_q1,              &
+         !$acc                   SIvec_qh0,             &
+         !$acc                   SIvec_w0,              &
+         !$acc                   SIvec_w1,              &
+         !$acc                   SIvec_wh0,             &
+         !$acc                   SIvec_wh1,             &
+         !$acc                   SIvec_y0,              &
+         !$acc                   SIvec_z0,              &
+         !$acc                   SIvec_z1,              &
+         !$acc                   SIvec_zh0,             &
+         !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
@@ -1190,34 +1189,34 @@ contains
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
-         nullify(CGvec_r0,              &
-                 CGvec_r00,             &
-                 CGvec_r1,              &
-                 CGvec_rh0,             &
-                 CGvec_rh1,             &
-                 CGvec_ph0,             &
-                 CGvec_ph1,             &
-                 CGvec_v0,              &
-                 CGvec_v1,              &
-                 CGvec_s0,              &
-                 CGvec_s1,              &
-                 CGvec_sh0,             &
-                 CGvec_sh1,             &
-                 CGvec_t0,              &
-                 CGvec_t1,              &
-                 CGvec_q0,              &
-                 CGvec_q1,              &
-                 CGvec_qh0,             &
-                 CGvec_w0,              &
-                 CGvec_w1,              &
-                 CGvec_wh0,             &
-                 CGvec_wh1,             &
-                 CGvec_y0,              &
-                 CGvec_z0,              &
-                 CGvec_z1,              &
-                 CGvec_zh0,             &
-                 CGvec_zh1,             &
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
+         nullify(SIvec_r0,              &
+                 SIvec_r00,             &
+                 SIvec_r1,              &
+                 SIvec_rh0,             &
+                 SIvec_rh1,             &
+                 SIvec_ph0,             &
+                 SIvec_ph1,             &
+                 SIvec_v0,              &
+                 SIvec_v0,              &
+                 SIvec_s0,              &
+                 SIvec_s1,              &
+                 SIvec_sh0,             &
+                 SIvec_sh1,             &
+                 SIvec_t0,              &
+                 SIvec_t1,              &
+                 SIvec_q0,              &
+                 SIvec_q1,              &
+                 SIvec_qh0,             &
+                 SIvec_w0,              &
+                 SIvec_w1,              &
+                 SIvec_wh0,             &
+                 SIvec_wh1,             &
+                 SIvec_y0,              &
+                 SIvec_z0,              &
+                 SIvec_z1,              &
+                 SIvec_zh0,             &
+                 SIvec_zh1,             &
                  barotropicCoriolisTerm)
       end if
 

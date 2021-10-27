@@ -60,7 +60,7 @@ def run_model():
             os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, gridSize))
             os.system("ln -s streams.seaice.stress_divergence streams.seaice")
 
-            os.system("%s ../../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
+            os.system("%s ../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
 
             os.system("mv output output_%s_%i" %(operatorMethod, gridSize))
 

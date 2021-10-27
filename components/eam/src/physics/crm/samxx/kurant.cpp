@@ -68,6 +68,10 @@ void kurant () {
 
   ncycle = max(ncycle,max(1,static_cast<int>(ceil(cfl/0.7))));
 
+#ifdef MMF_FIXED_SUBCYCLE
+  ncycle = max_ncycle;
+#endif
+
   if(ncycle > max_ncycle) {
     std::cout << "\nkurant() - the number of cycles exceeded max_ncycle = "<< max_ncycle << std::endl;
     exit(-1);

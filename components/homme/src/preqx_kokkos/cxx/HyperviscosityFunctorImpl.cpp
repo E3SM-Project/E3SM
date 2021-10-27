@@ -20,14 +20,23 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
- , m_state      (state)
- , m_derived    (derived)
- , m_geometry   (geometry)
- , m_sphere_ops (Context::singleton().get<SphereOperators>())
- , m_policy_update_states (0, state.num_elems()*NP*NP*NUM_LEV)
- , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(state.num_elems()))
- , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(state.num_elems()))
+ : HyperviscosityFunctorImpl(geometry.num_elems(),params)
+{
+  setup(geometry,state,derived);
+}
+
+HyperviscosityFunctorImpl::
+HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
+  : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+  , m_num_elems(num_elems)
+  , m_policy_update_states (0, num_elems*NP*NP*NUM_LEV)
+  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(num_elems))
+  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(num_elems))
+{
+  init_params(params);
+}
+
+void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 {
   // Sanity check
   assert(params.params_set);
@@ -46,6 +55,16 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
   }
+}
+
+void HyperviscosityFunctorImpl::setup(const ElementsGeometry&     geometry,
+                                      const ElementsState&        state,
+                                      const ElementsDerivedState& derived)
+{
+  m_state = state;
+  m_derived = derived;
+  m_geometry = geometry;
+  m_sphere_ops = Context::singleton().get<SphereOperators>();
 
   // Allocate buffers in the sphere operators
   m_sphere_ops.allocate_buffers(m_policy_first_laplace);

@@ -35,8 +35,8 @@ void Tracers::init(const int num_elems, const int num_tracers)
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
   qlim = decltype(qlim)("qlim", num_elems);
 
-  Q = decltype(Q)("tracers concentration", num_elems);
-  fq = decltype(fq)("fq",num_elems);
+  Q = decltype(Q)("tracers concentration", num_elems,num_tracers);
+  fq = decltype(fq)("fq",num_elems,num_tracers);
 
   m_inited = true;
 }

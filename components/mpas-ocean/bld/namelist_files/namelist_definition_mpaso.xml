@@ -182,6 +182,41 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- transport_tests -->
+
+<entry id="config_transport_tests_vert_levels" type="integer"
+	category="transport_tests" group="transport_tests">
+Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_temperature" type="real"
+	category="transport_tests" group="transport_tests">
+Temperature of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_salinity" type="real"
+	category="transport_tests" group="transport_tests">
+Salinity of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_flow_id" type="integer"
+	category="transport_tests" group="transport_tests">
+integer id of transport test.
+
+Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- time_integration -->
 
 <entry id="config_dt" type="char*1024"
@@ -196,7 +231,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1804,10 +1839,10 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 
 <entry id="config_btr_si_preconditioner" type="char*1024"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Type of preconditioner for the barotropic mode solver
 
 Valid values: ras, block_jacobi, jacobi, none
@@ -1815,24 +1850,24 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_tolerance" type="real"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Tolerance for the barotropic mode solver
 
 Valid values: any positive real, but typically less than 1.0e-9
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_si_outer_iter" type="integer"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-number of outer iterations
+<entry id="config_n_btr_si_large_iter" type="integer"
+	category="split_implicit_ts" group="split_implicit_ts">
+number of large barotropic system iterations
 
-Valid values: any positive integer, but typically 2
+Valid values: any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_partition_match_mode" type="logical"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
+	category="split_implicit_ts" group="split_implicit_ts">
+If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2510,6 +2545,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, get river nutrient fluxes from coupler instead of from monthly forcing file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output
@@ -2700,6 +2743,137 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_idealAgeTracers -->
+
+<entry id="config_use_idealAgeTracers" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, the 'idealAgeTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_interior_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, interior restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_exponential_decay" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, exponential decay source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, idealAge forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, transit time distribution forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<!-- tracer_forcing_CFCTracers -->
+
+<entry id="config_use_CFCTracers" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, the 'CFCTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_bulk_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_restoring" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface restoring source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_interior_restoring" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, interior restoring source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_exponential_decay" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, exponential decay source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_idealAge_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, idealAge forcing source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_ttd_forcing" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, transit time distribution forcing source is applied to tracers in 'CFCTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC11" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC11 tracer is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC12" type="logical"
+        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC12 tracer is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- AM_globalStats -->
 
@@ -5775,6 +5949,64 @@ Default: Defined in namelist_defaults.xml
 Controls if P1 constituent is used in harmonic analysis
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<!-- AM_conservationCheck -->
+
+<entry id="config_AM_conservationCheck_enable" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+If true, ocean analysis member conservationCheck is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_interval" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_output_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the stream that the conservationCheck analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_to_logfile" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if the conservation check is written to the log file.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_restart_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the conservation check.
 Default: Defined in namelist_defaults.xml
 </entry>
 

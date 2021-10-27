@@ -2,6 +2,7 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
+                transport_tests
                 time_integration
                 hmix
                 hmix_del2
@@ -28,7 +29,7 @@ my @groups = qw(run_modes
                 eos_wright
                 split_timestep_share
                 split_explicit_ts
-                semi_implicit_ts
+                split_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug

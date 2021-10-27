@@ -195,6 +195,9 @@ flags should be captured within MPAS CMake files.
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
   </CPPDEFS>
+  <CPPDEFS>
+    <append DEBUG="TRUE"> -DYAKL_DEBUG </append>
+  </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
     <base> -fdefault-real-8 </base>
@@ -241,6 +244,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
  Notes:  (see xlf user's guide for the details)
@@ -412,6 +421,10 @@ flags should be captured within MPAS CMake files.
     <base> -time </base>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -time -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <!-- http://www.pgroup.com/resources/docs.htm                                              -->
     <!-- Notes:  (see pgi man page & user's guide for the details) -->
@@ -485,15 +498,19 @@ flags should be captured within MPAS CMake files.
     <base> -time </base>
     <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -time -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </CXXFLAGS>
   <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </append>
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI </append>
   </CPPDEFS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="TRUE"> -mp </append>
     <append COMP_NAME="eam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -524,101 +541,6 @@ flags should be captured within MPAS CMake files.
   <SCC> pgcc </SCC>
   <SCXX> pgc++ </SCXX>
   <SFC> pgf95 </SFC>
-</compiler>
-
-<compiler OS="AIX" COMPILER="ibm">
-  <CFLAGS>
-    <append> -qarch=auto -qtune=auto -qcache=auto </append>
-  </CFLAGS>
-  <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
-  <FFLAGS>
-    <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append COMP_NAME="eam"> -qspill=6000 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
-    <append> -bdatapsize:64K -bstackpsize:64K -btextpsize:32K </append>
-  </LDFLAGS>
-  <MPICC> mpcc_r </MPICC>
-  <MPIFC> mpxlf2003_r </MPIFC>
-  <SCC> cc_r </SCC>
-  <SFC> xlf2003_r </SFC>
-  <SLIBS>
-    <append> -lmassv -lessl </append>
-    <append DEBUG="FALSE"> -lmass </append>
-  </SLIBS>
-</compiler>
-
-<compiler OS="BGL" COMPILER="ibm">
-  <CFLAGS>
-    <base> -O3 -qstrict </base>
-    <append> -qtune=440 -qarch=440d </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append> -qtune=440 -qarch=440d </append>
-    <append DEBUG="FALSE"> -O3 -qstrict -Q </append>
-    <append DEBUG="TRUE"> -qinitauto=FF911299 -qflttrap=ov:zero:inv:en </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-  <MLIBS>
-    <base> -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts </base>
-  </MLIBS>
-  <MPICC> blrts_xlc </MPICC>
-  <MPIFC> blrts_xlf2003 </MPIFC>
-  <MPI_LIB_NAME> mpich.rts </MPI_LIB_NAME>
-  <MPI_PATH> /bgl/BlueLight/ppcfloor/bglsys</MPI_PATH>
-  <SCC> blrts_xlc </SCC>
-  <SFC> blrts_xlf2003 </SFC>
-</compiler>
-
-<compiler OS="BGP" COMPILER="ibm">
-  <CFLAGS>
-    <append> -qtune=450 -qarch=450 -I/bgsys/drivers/ppcfloor/arch/include/</append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>-qspillsize=2500 -qtune=450 -qarch=450 </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-</compiler>
-
-<compiler OS="BGQ" COMPILER="ibm">
-  <CFLAGS>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX  </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <base> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qphsinfo </base>
-    <append DEBUG="FALSE"> -O3 -qstrict -Q </append>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
 </compiler>
 
 <compiler OS="CNL">
@@ -677,9 +599,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -693,6 +612,26 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
   <SZIP_PATH>$ENV{SZIP_PATH}</SZIP_PATH>
+  <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
+</compiler>
+
+<compiler MACH="anlgce" COMPILER="gnu">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append> -fallow-argument-mismatch -fallow-invalid-boz </append>
+  </FFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs} -lblas -llapack</append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
   <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
 </compiler>
 
@@ -717,7 +656,7 @@ flags should be captured within MPAS CMake files.
 <compiler COMPILER="gnu" MACH="eddi">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <FFLAGS>
@@ -751,6 +690,9 @@ flags should be captured within MPAS CMake files.
   <LDFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
   </LDFLAGS>
+  <MPICC  MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
@@ -760,83 +702,26 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="anvil" COMPILER="intel18">
-  <CPPDEFS>
-    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
-  </CPPDEFS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
-    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
-    <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
-  </SLIBS>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <CFLAGS>
-    <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
-    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
-    <append DEBUG="FALSE"> -O2 -debug minimal </append>
-    <append DEBUG="TRUE"> -O0 -g </append>
-  </CFLAGS>
-  <CXXFLAGS>
-    <base> -std=c++14 -fp-model source </base>
-    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
-    <append DEBUG="TRUE"> -O0 -g </append>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CXXFLAGS>
-  <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
-    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
-    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
-    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
-  </LDFLAGS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="chrysalis" COMPILER="intel">
   <CPPDEFS>
     <append COMP_NAME="gptl">-DHAVE_SLASHPROC</append>
   </CPPDEFS>
+  <CFLAGS>
+    <append>-static-intel</append>
+    <append> -march=core-avx2 </append>
+    <append DEBUG="FALSE"> -O3 </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <append>-static-intel</append>
+    <append> -axCORE-AVX2 </append>
+    <append DEBUG="FALSE"> -O3 </append>
+  </CXXFLAGS>
   <FFLAGS>
-    <append DEBUG="FALSE">-O2 -debug minimal -qno-opt-dynamic-align</append>
+    <append>-static-intel</append>
+    <append> -axCORE-AVX2 </append>
+    <append DEBUG="FALSE">-O3 -qno-opt-dynamic-align</append>
   </FFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SLIBS>
@@ -845,12 +730,6 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <CFLAGS>
-    <append>-static-intel</append>
-  </CFLAGS>
-  <FFLAGS>
-    <append>-static-intel</append>
-  </FFLAGS>
   <LDFLAGS>
     <append>-static-intel </append>
   </LDFLAGS>
@@ -915,11 +794,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="blues" COMPILER="pgigpu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
-    <append> -DGPU </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
@@ -927,16 +802,41 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,deepcopy,nonvvm -Mcuda -Minfo=accel </append>
   </LDFLAGS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -llapack -lblas </append>
+    <append>$SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="swing" COMPILER="pgigpu">
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+  </CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append> -Minline -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,deepcopy,nonvvm -Mcuda -Minfo=accel </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
     <append>$SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
@@ -1001,7 +901,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cascade" COMPILER="intel">
   <CONFIG_ARGS>
-    <base> --host=Linux --enable-filesystem-hints=lustre</base>
+    <base> --enable-filesystem-hints=lustre</base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
@@ -1040,9 +940,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1062,9 +959,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1084,9 +978,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -kind=byte </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1106,9 +997,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1130,9 +1018,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1160,9 +1045,6 @@ flags should be captured within MPAS CMake files.
     <base>-lstdc++</base>
   </CXX_LIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
   </CPPDEFS>
@@ -1186,9 +1068,6 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cori-haswell" COMPILER="intel">
   <ALBANY_PATH>/global/cfs/cdirs/e3sm/software/albany-trilinos/albany-install-2020-08-07</ALBANY_PATH>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
@@ -1223,12 +1102,12 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="cori-knl" COMPILER="intel">
   <ALBANY_PATH>/global/homes/m/mperego/e3sm-software/albany-trilinos/albany-install-2021-01-05</ALBANY_PATH>
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
@@ -1276,9 +1155,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1365,9 +1241,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1418,9 +1291,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1443,9 +1313,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1467,9 +1334,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1492,9 +1356,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
@@ -1575,9 +1436,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1598,9 +1456,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append> -xCORE-AVX2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
@@ -1634,9 +1489,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1659,6 +1511,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1666,14 +1519,12 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+    <append > -DTHRUST_IGNORE_CUB_VERSION_CHECK </append>
   </CPPDEFS>
   <SLIBS>
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
@@ -1693,6 +1544,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append> -O3 -arch sm_70 --use_fast_math </append>
@@ -1701,9 +1553,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="summit" COMPILER="ibm">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1721,7 +1570,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1732,7 +1581,9 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="summit" COMPILER="ibmgpu">
@@ -1742,6 +1593,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <append> -DFORTRAN_SAME -DCPRIBM</append>
     <append COMP_NAME="eam"> -DUSE_CBOOL </append>
@@ -1771,9 +1628,6 @@ flags should be captured within MPAS CMake files.
     <base> -qsuffix=f=f90:cpp=F90  </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <LDFLAGS>
     <append> -Wl,--relax -Wl,--allow-multiple-definition </append>
     <append>-qsmp -qoffload -lcudart -L$ENV{CUDA_DIR}/lib64</append>
@@ -1783,7 +1637,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1794,16 +1648,15 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
@@ -1826,6 +1679,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1833,18 +1687,11 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-    <CPPDEFS>
-    <append> -DGPU </append>
+  <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel </append>
@@ -1865,6 +1712,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1872,9 +1720,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1897,6 +1742,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -1904,9 +1750,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
@@ -1924,6 +1767,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
     <append> -O3 -arch sm_70 --use_fast_math </append>
@@ -1932,9 +1776,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="ascent" COMPILER="ibm">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1952,7 +1793,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/ascent/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -1963,7 +1804,9 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="ascent" COMPILER="ibmgpu">
@@ -1973,6 +1816,12 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CXXFLAGS>
   <CPPDEFS>
     <append> -DFORTRAN_SAME -DCPRIBM</append>
     <append COMP_NAME="eam"> -DUSE_CBOOL </append>
@@ -2003,9 +1852,6 @@ flags should be captured within MPAS CMake files.
     <base> -qsuffix=f=f90:cpp=F90  </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <LDFLAGS>
     <append> -Wl,--relax -Wl,--allow-multiple-definition </append>
     <append>-qsmp -qoffload -lcudart -L$ENV{CUDA_DIR}/lib64</append>
@@ -2015,7 +1861,7 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+    <base>-L/sw/ascent/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
   </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
@@ -2026,16 +1872,15 @@ flags should be captured within MPAS CMake files.
   <SCXX> xlc++_r </SCXX>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
 <compiler MACH="ascent" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
@@ -2058,6 +1903,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -2065,18 +1911,11 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-    <CPPDEFS>
-    <append> -DGPU </append>
+  <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
-  </FFLAGS>
-  <FFLAGS>
-    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
   </FFLAGS>
   <LDFLAGS>
     <append> -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel </append>
@@ -2097,6 +1936,7 @@ flags should be captured within MPAS CMake files.
   <SFC> pgfortran </SFC>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
@@ -2104,9 +1944,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DNO_SHR_VMATH -DCNL </append>
   </CPPDEFS>
@@ -2129,9 +1966,6 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DNO_SHR_VMATH -DCNL </append>
   </CPPDEFS>
@@ -2151,9 +1985,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="theta" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
     <append DEBUG="TRUE"> -O0 </append>
@@ -2172,7 +2003,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="theta" COMPILER="intel">
   <CONFIG_ARGS>
-    <base> --host=Linux </base>
+    <base> --host=cray </base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DARCH_MIC_KNL </append>
@@ -2192,9 +2023,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="tulip" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -2209,9 +2037,6 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="theta" COMPILER="cray">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O1 </append>
   </CFLAGS>
@@ -2257,9 +2082,6 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
@@ -2319,9 +2141,6 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
@@ -2357,9 +2176,6 @@ flags should be captured within MPAS CMake files.
 <!-- CRL  End of "oneapi-ifx" compiler -->
 
 <compiler MACH="jlse" COMPILER="gnu">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
@@ -2471,7 +2287,7 @@ flags should be captured within MPAS CMake files.
 <compiler MACH="modex" COMPILER="gnu">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
@@ -2485,6 +2301,32 @@ flags should be captured within MPAS CMake files.
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <!--<SCC MPILIB="mpi-serial">gcc</SCC>
   <SFC MPILIB="mpi-serial">gfortran</SFC>-->
+</compiler>
+
+<compiler MACH="gcp" COMPILER="gnu">
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CPPDEFS>
+     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
+  </CPPDEFS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
+    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
+  </FFLAGS>
+
+  <SLIBS>
+    <append> -L$ENV{HDF5_PATH}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff</append>
+    <append> -L$ENV{CURL_PATH}/lib -lcurl -lblas -llapack</append>
+    <append> -L$ENV{LAPACK_PATH}/lib64 -lblas -llapack</append>
+    <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf</append>
+  </SLIBS>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="userdefined">

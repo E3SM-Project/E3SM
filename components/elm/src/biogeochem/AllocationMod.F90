@@ -36,6 +36,7 @@ module AllocationMod
   use elm_varctl          , only : NFIX_PTASE_plant
   use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
   use elm_varctl      , only: iulog
+  use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
   
   !
   implicit none
@@ -106,14 +107,8 @@ module AllocationMod
 
   logical :: crop_supln  = .false.    !Prognostic crop receives supplemental Nitrogen
   
-  real(r8), allocatable        :: decompmicc(:)                 ! column-level soil microbial decomposer biomass gC/m3
-  integer,  allocatable        :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ELM-BL w/ ECA
-
   real(r8), allocatable,target :: veg_rootc_bigleaf(:,:)        ! column-level fine-root biomas kgc/m3
   integer,  pointer :: ft_index_bigleaf(:)                      ! array holding the pft index of each competitor
-  real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nh4 demand per competitor per soil layer
-  real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
-  real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
 
   ! ECA parameters
   ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance                                         
@@ -211,7 +206,7 @@ contains
     use elm_varctl      , only : carbonnitrogen_only  
     use elm_varctl      , only : carbonphosphorus_only
 
-    use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
+
     use elm_varpar      , only: nlevdecomp
     !
     ! !ARGUMENTS:
@@ -241,19 +236,7 @@ contains
     ! Allocate scratch space for ECA and FATES/ECA
 
     if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
-       allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
-       if (use_fates) then
-          max_comps = size(elm_fates%fates(1)%bc_out(1)%ft_index)
-          allocate(filter_pcomp(max_comps)) 
-          do f = 1,max_comps
-             filter_pcomp(f) = f
-          end do
-          allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
-          allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
-          allocate(plant_pdemand_vr_fates(max_comps,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
-       else
-          max_comps = bounds%endp-bounds%begp+1
-          allocate(filter_pcomp(max_comps)); filter_pcomp(:) = -1
+       if (.not.use_fates) then
           allocate(ft_index_bigleaf(bounds%begp:bounds%endp)); ft_index_bigleaf(bounds%begp:bounds%endp) = -1
           allocate(veg_rootc_bigleaf(bounds%begp:bounds%endp,1:nlevdecomp)); veg_rootc_bigleaf(bounds%begp:bounds%endp,1:nlevdecomp) = nan
        end if
@@ -351,6 +334,7 @@ contains
     use elm_varctl      , only : carbonphosphorus_only!
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
+    use pftvarcon        , only: percrop
     use elm_varpar       , only: nlevdecomp
     use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
     !
@@ -642,7 +626,7 @@ contains
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
 
-            if (croplive(p)) then
+            if (croplive(p) .and. percrop(ivt(p)) == 0.0_r8 ) then
                ! same phases appear in subroutine CropPhenology
 
                ! Phase 1 completed:
@@ -749,6 +733,22 @@ contains
                   aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
                   arepr(p) = 0._r8    ! a few lines down
                end if
+
+               f1 = aroot(p) / aleaf(p)
+               f3 = astem(p) / aleaf(p)
+               f5 = arepr(p) / aleaf(p)
+               g1 = 0.25_r8
+
+            else if (croplive(p) .and. percrop(ivt(p)) == 1.0_r8) then
+               arepr(p) = 0._r8
+               aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+                    (arooti(ivt(p)) - arootf(ivt(p))) *  &
+                    min(1._r8, hui(p)/gddmaturity(p))))
+               fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+                    exp(-bfact(ivt(p))*hui(p)/gddmaturity(p))) / &      ! replacing huigrain with gddmaturity since huigrain does not exist for perennial crops
+                    (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+               aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
+               astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
 
                f1 = aroot(p) / aleaf(p)
                f3 = astem(p) / aleaf(p)
@@ -907,7 +907,8 @@ contains
    real(r8) :: excess_immob_nh4_vr(1:nlevdecomp) ! nh4 excess flux, if soil microbes are more P limited
    real(r8) :: excess_immob_no3_vr(1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
    real(r8) :: excess_immob_p_vr(1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
-
+   real(r8) :: decompmicc(1:nlevdecomp)          ! column-level soil microbial decomposer biomass gC/m3
+   
    real(r8) :: fpi_no3_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
    real(r8) :: fpi_nh4_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
 
@@ -921,9 +922,13 @@ contains
                         ! layer onto a fates uptake layer
 
    ! Fractional uptake profiles, that are proportional to root density
-   real(r8):: nuptake_prof(bounds%begc:bounds%endc,1:nlevdecomp)    
+   real(r8):: nuptake_prof(bounds%begc:bounds%endc,1:nlevdecomp)
    real(r8):: puptake_prof(bounds%begc:bounds%endc,1:nlevdecomp)
-
+   integer,  allocatable :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ELM-BL w/ ECA 
+   real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nh4 demand per competitor per soil layer
+   real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
+   real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
+   
    integer  :: nc   ! clump index
    integer  :: pci, pcf                        ! (I)nitial and (F)inal plant competitor index
    real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array
@@ -1054,17 +1059,28 @@ contains
         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, puptake_prof)
 
-     elseif ((nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') .and. .not. use_fates) then
+     elseif (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
 
-        do fp=1,num_soilp
-           p = filter_soilp(fp)
-           smin_nh4_to_plant_patch(p) = 0.0_r8
-           smin_no3_to_plant_patch(p) = 0.0_r8
-           sminn_to_plant_patch(p) = 0.0_r8
-           sminp_to_plant_patch(p) = 0.0_r8
-        end do
+        if(use_fates)then
+           n_pcomp = size(elm_fates%fates(1)%bc_out(1)%ft_index) ! max number of plant competitors
+           allocate(filter_pcomp(n_pcomp));filter_pcomp(:) = -1
+           allocate(plant_nh4demand_vr_fates(n_pcomp,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
+           allocate(plant_no3demand_vr_fates(n_pcomp,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
+           allocate(plant_pdemand_vr_fates(n_pcomp,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
+        else
+           n_pcomp = bounds%endp-bounds%begp+1   ! max number of plant competitors
+           allocate(filter_pcomp(n_pcomp));filter_pcomp(:) = -1
+           do fp=1,num_soilp
+              p = filter_soilp(fp)
+              smin_nh4_to_plant_patch(p) = 0.0_r8
+              smin_no3_to_plant_patch(p) = 0.0_r8
+              sminn_to_plant_patch(p) = 0.0_r8
+              sminp_to_plant_patch(p) = 0.0_r8
+           end do
+        end if
 
      end if
+
 
 
      col_loop: do fc=1,num_soilc
@@ -1572,11 +1588,14 @@ contains
      end do col_loop
 
  
-     if ((nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') .and. .not.use_fates) then
-        do fp=1,num_soilp
-           p = filter_soilp(fp)
-           sminn_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + smin_no3_to_plant_patch(p)
-        end do
+     if ((nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC')) then
+        deallocate(filter_pcomp)
+        if(.not.use_fates)then
+           do fp=1,num_soilp
+              p = filter_soilp(fp)
+              sminn_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + smin_no3_to_plant_patch(p)
+           end do
+        end if
      end if
 
      ! sum up N fluxes to immobilization
@@ -1728,9 +1747,14 @@ contains
             
          end if
       end do
-      
-         
+
+      if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
+         deallocate(plant_nh4demand_vr_fates)
+         deallocate(plant_no3demand_vr_fates)
+         deallocate(plant_pdemand_vr_fates)
       end if
+      
+    end if  ! if(use_fates)
 
     end associate
  end subroutine Allocation2_ResolveNPLimit

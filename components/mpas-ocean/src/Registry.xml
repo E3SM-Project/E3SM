@@ -20,9 +20,6 @@
 		<dim name="maxEdges2" units="unitless"
 			 description="Two times the largest number of edges any polygon within the grid has."
 		/>
-		<dim name="nAdvectionCells" definition="maxEdges2+0" units="unitless"
-			 description="The largest number of advection cells for any edge."
-		/>
 		<dim name="nVertices" units="unitless"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
@@ -179,6 +176,24 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
+  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3" units="unitless"
+      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+      possible_values="Any positive integer number greater than 0."
+    />
+    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+      description="Temperature of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="PSU"
+      description="Salinity of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0" units="unitless"
+     description="integer id of transport test."
+     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
+    />
+  </nml_record>
 
 
 	<!--*************************************-->
@@ -191,7 +206,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit" units="unitless"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
 		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
@@ -1149,7 +1164,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="semi_implicit_ts" mode="forward">
+	<nml_record name="split_implicit_ts" mode="forward">
 		<nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
 					description="Type of preconditioner for the barotropic mode solver"
 					possible_values="ras, block_jacobi, jacobi, none"
@@ -1158,12 +1173,12 @@
 					description="Tolerance for the barotropic mode solver"
 					possible_values="any positive real, but typically less than 1.0e-9"
 		/>
-		<nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
-					description="number of outer iterations"
-					possible_values="any positive integer, but typically 2"
-		/>
+                <nml_option name="config_n_btr_si_large_iter" type="integer" default_value="1" units="unitless"
+                                        description="number of large barotropic system iterations"
+                                        possible_values="any positive integer, but typically 1 and less than 2"
+                />
 		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false." units="unitless"
-					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
+					description="If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -1371,7 +1386,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
-		<package name="semiImplicitTimePKG" description="This package includes variables required for semi-implicit time integrators."/>
+		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="variableBottomDragPKG" description="This package includes varibles required for variable bottom drag."/>
@@ -2013,8 +2028,11 @@
 			 description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
-
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
+		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
@@ -2232,30 +2250,6 @@
 		<var name="oceanFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="fraction of each cell containing ocean, used to determine which cells are culled as land."
 			 packages="initMode"
-		/>
-		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
-			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs3rd" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Wegihting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCellsForEdge" type="integer" dimensions="nAdvectionCells nEdges" units="unitless"
-			 description="List of cells used to reconstruct a cell quantity at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="nAdvCellsForEdge" type="integer" dimensions="nEdges" units="unitless"
-			 description="Number of cells used in reconstruction of cell center quantities at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="highOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask for high order advection. Values are 1 if high order is used, and 0 if not."
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
@@ -2944,121 +2938,117 @@
 		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height adjusted by sea surface pressure"
 		/>
-		<!-- FIELD semi_implicit time stepping -->
+		<!-- FIELD split_implicit time stepping -->
 		<var name="barotropicCoriolisTerm" type="real" dimensions="nEdges Time" units="m s^{-2}"
-			description="f * uPerp for the semi-implicit time stepping"
+			description="f * uPerp for the split-implicit time stepping"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_rh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_rh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r00" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r00" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_ph0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_ph1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_v0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_s0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_s1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_sh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_sh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_w0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_w1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_wh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_wh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_q0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_q1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_qh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_qh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_z0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_z1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_zh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_zh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_t0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_t1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
-			packages="semiImplicitTimePKG"
-		/>
-		<var name="CGvec_y0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_y0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
 	</var_struct>
@@ -3189,10 +3179,10 @@
 		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="seaIceFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="icebergFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
 		/>
 
@@ -3739,4 +3729,5 @@
 #ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
 #endif
+
 </registry>

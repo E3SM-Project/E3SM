@@ -38,6 +38,8 @@ SET(HOMME_TESTS
   thetanh-nhgw-slice.cmake
   preqx-nhgw-slice.cmake
   sweqx-dbvor.cmake
+  thetanh-moist-bubble.cmake
+  thetanh-dry-bubble.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})
@@ -83,6 +85,7 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
      theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
+     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
   )
   set(HOMME_THETA_TESTS_WITH_PROFILE "")
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})

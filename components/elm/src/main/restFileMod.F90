@@ -60,6 +60,7 @@ module restFileMod
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
+  use TopounitDataType     , only : top_es
   use LandunitDataType     , only : lun_es, lun_ws
   use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
@@ -224,6 +225,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='define')
     
     call veg_wf%Restart (bounds, ncid, flag='define')
+
+    call top_es%Restart (bounds, ncid, flag='define')
     
     call lun_es%Restart (bounds, ncid, flag='define')
 
@@ -359,6 +362,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='write')
 
     call veg_wf%Restart (bounds, ncid, flag='write')
+
+    call top_es%Restart (bounds, ncid, flag='write')
 
     call lun_es%Restart (bounds, ncid, flag='write')
 
@@ -597,6 +602,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='read')
 
     call veg_wf%Restart (bounds, ncid, flag='read')
+
+    call top_es%Restart (bounds, ncid, flag='read')
 
     call lun_es%Restart (bounds, ncid, flag='read')
 
@@ -1116,8 +1123,9 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub, mxpft_nc
     use pftvarcon , only : pftname_len, pftname
+    use elm_varctl,  only : use_crop
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
@@ -1131,6 +1139,7 @@ contains
     !-----------------------------------------------------------------------
     
     do ptype = natpft_lb, mxpft
+       if(.not. use_crop .and. ptype > mxpft_nc) EXIT ! exit the do loop
        attname = att_prefix // pftname(ptype)
        call ncd_putatt(ncid, ncd_global, attname, ptype)
     end do

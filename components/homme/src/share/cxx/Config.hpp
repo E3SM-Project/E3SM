@@ -43,4 +43,11 @@
 # define HOMMEXX_CUDA_MAX_WARP_PER_TEAM 1
 #endif
 
+#if defined KOKKOS_COMPILER_GNU
+// See https://github.com/kokkos/kokkos-kernels/issues/129
+# define ConstExceptGnu
+#else
+# define ConstExceptGnu const
+#endif
+
 #endif // HOMMEXX_CONFIG_HPP

@@ -25,7 +25,7 @@ def run_model():
         os.system("ln -s namelist.seaice.ridging_island namelist.seaice")
         os.system("ln -s streams.seaice.ridging_island streams.seaice")
 
-        os.system("%s ../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
+        os.system("%s ../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
 
         os.system("mv output output_%s" %(islandType))
 

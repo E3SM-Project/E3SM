@@ -151,9 +151,9 @@ module CNPBudgetMod
        '   desorption of secondary mineral to labile', &
        '          soil mineral pool loss to leaching', &
        '                                   fire loss', &
-       '                                solution ???', &
-       '                                  labile ???', &
-       '                                scondary ???', &
+       '                               solution_???_', &
+       '                                 labile_???_', &
+       '                               scondary_???_', &
        '   decomposition loss from 1-yr crop product', &
        '  decomposition loss from 10-yr crop product', &
        ' decomposition loss from 100-yr crop product', &
