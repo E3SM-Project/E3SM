@@ -465,7 +465,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     def get_taskset_range(self, test, for_compile=True):
     ###############################################################################
         expect(for_compile or not is_cuda_machine(self._machine),
-               "Should not be using taskset ranges based on physical cores for non cuda machine")
+               "Should not be using taskset ranges based on physical cores for a cuda machine")
 
         this_process = psutil.Process()
         affinity_cp = list(this_process.cpu_affinity())
