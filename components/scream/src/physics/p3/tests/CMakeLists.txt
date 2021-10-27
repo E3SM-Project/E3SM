@@ -56,22 +56,16 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                  LABELS "p3;physics")
 endif()
 
-# Set inf tolerance for release builds. This will effectively disable all baseline
-# checking, but we still want to ensure things run without crashing
-if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
-  set(TOL_FLAG "--tol inf")
-endif()
-
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
 
 CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} -f -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-f -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
