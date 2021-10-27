@@ -1188,8 +1188,8 @@ contains
         call eam_pio_createHeader(pio_file%pioFileDesc)
         pio_file%purpose = file_purpose_out
       elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%purpose = file_purpose_in
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
         ! Update the numRecs to match the number of recs in this file.
         ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
         if (ierr.ne.0) then
