@@ -115,11 +115,17 @@ function(build_model COMP_CLASS COMP_NAME)
       set(RRTMGPXX_INTERFACE_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_interface)
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp ${RRTMGPXX_INTERFACE_BIN})
       # Interface code needs some additional headers
-      include_directories(
+      target_include_directories(rrtmgp_interface PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/fluxes_byband
           ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
           ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp
       )
+      # The interface code needs to know about the NETCDF includes defined
+      # above. The easiest way I know of to do this is to pass all of the
+      # accumulated includes to the target.
+      # TODO: this can go away if the above NETCDF section is refactored to
+      # use find_library instead of appending to INCLDIR.
+      target_include_directories(rrtmgp_interface PRIVATE ${INCLDIR})
       # Add the source files for the interface code to the main E3SM build
       set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
       set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
