@@ -476,7 +476,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             affinity_cp = list(this_process.cpu_affinity())
         else:
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
-            affinity_cp = list(range(res_count))
+            affinity_cp = list(range(res_count[test]))
 
         affinity_cp.sort()
 
