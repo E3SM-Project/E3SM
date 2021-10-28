@@ -1440,16 +1440,11 @@ else {
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
         # Advected tracers for MMF - same for 1-mom and 2-mom (1-mom ignores number concentration)
-        # - cloud liquid amount
-        # - cloud ice amount
-        # - cloud liquid number
-        # - cloud ice number
-        # - precipitating rain amount
-        # - precipitating snow amount
-        # - precipitating rain number
-        # - precipitating snow number
         if (defined $opts{'use_MMF'}) {
-            $nadv += 8;
+            my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+            if ($MMF_microphysics_scheme eq 'sam1mom') { $nadv += 8; }
+            if ($MMF_microphysics_scheme eq 'm2005')   { $nadv += 8; }
+            if ($MMF_microphysics_scheme eq 'p3')      { $nadv += 8; }
             if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
         }
 
@@ -2531,8 +2526,6 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_SAM1MOM\n";
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
               print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_M2005\n";
-          } elsif ($MMF_microphysics_scheme eq 'p3') {
-              # print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
           }
 
           # turbulence closure
@@ -2558,8 +2551,6 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_SAM1MOM\n";
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
               print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_M2005\n";
-          } elsif ($MMF_microphysics_scheme eq 'p3') {
-              # print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_P3\n";
           }
 
           # turbulence closure
