@@ -179,6 +179,8 @@ class TestAllScream(object):
             ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
+        self._ctest_max_jobs = ctest_max_jobs
+
         self._testing_res_count = dict(zip(self._tests, [ctest_max_jobs]*len(self._tests)))
         self._compile_res_count = dict(zip(self._tests, [make_max_jobs ]*len(self._tests)))
 
@@ -476,7 +478,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             affinity_cp = list(this_process.cpu_affinity())
         else:
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
-            affinity_cp = list(range(res_count[test]))
+            affinity_cp = list(self._ctest_max_jobs)
 
         affinity_cp.sort()
 
