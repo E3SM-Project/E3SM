@@ -475,8 +475,8 @@ registration_ends ()
       }
     }
   }
-  groups_to_bundle.sort();
-  copied_groups.sort();
+  ::scream::sort(groups_to_bundle);
+  ::scream::sort(copied_groups);
   groups_to_bundle.unique();
   copied_groups.unique();
 
@@ -558,7 +558,7 @@ registration_ends ()
       LOL_t groups_fields;
       for (const auto& gn : cluster) {
         groups_fields.push_back(m_field_groups.at(gn)->m_fields_names);
-        groups_fields.back().sort();
+        ::scream::sort(groups_fields.back());
       }
 
       auto cluster_ordered_fields = contiguous_superset(groups_fields);

@@ -23,6 +23,19 @@ etoi (const EnumT e) {
   return static_cast<typename std::underlying_type<EnumT>::type>(e);
 }
 
+// Utility function, to work around a funcky gcc8+cuda10 issue,
+// where calling sort() on a length-2 list returns a length-1 list.
+template<typename T>
+void sort (std::list<T>& l) {
+  if (l.size()==2) {
+    if (l.back()<l.front()) {
+      std::swap(l.front(),l.back());
+    }
+    return;
+  }
+  l.sort();
+};
+
 // This routine tries to find an arrangment of elements that allow each
 // of the input groups to be a contiguous subarray of the global arrangement.
 // E.g., given the groups of elments
@@ -96,13 +109,15 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
   };
 
   // Would be nice if list::sort and list::unique returned the list,
-  // so one could chain them into operations. Since they don't, use a lambda.
-  auto sort = [] (const std::list<T>& l) {
+  // so one could chain them into operations. Since they don't, use lambdas.
+  // Also, we don't want to modify input list just to check uniqueness,
+  // so create copies.
+  auto sort = [] (const std::list<T>& l) -> std::list<T> {
     auto copy = l;
-    copy.sort();
+    ::scream::sort(copy);
     return copy;
   };
-  auto unique = [] (const std::list<T>& l) {
+  auto unique = [] (const std::list<T>& l) -> std::list<T> {
     auto copy = l;
     copy.unique();
     return copy;
