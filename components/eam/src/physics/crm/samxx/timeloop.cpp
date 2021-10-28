@@ -96,10 +96,10 @@ void timeloop() {
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
-//#if defined(shoc)
-        shoc_proc();
+// #if defined(shoc)
+//         shoc_proc();
 //#else
-//        sgs_proc();
+       sgs_proc();
 //#endif
       }
 
