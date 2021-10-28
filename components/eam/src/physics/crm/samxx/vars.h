@@ -69,8 +69,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
                             real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
                             real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
-                            real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p, real *crm_state_ns_p,
-                            real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                            real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                             real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
                             real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
                             real *lat0_p, real *long0_p, int *gcolp_p,
@@ -78,11 +77,12 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_output_clmed_p, real *crm_output_cllow_p)
 
 void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                  real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_state_qc_p, real *crm_state_nc_p,
-                  real *crm_state_qr_p, real *crm_state_nr_p, real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p,
-                  real *crm_state_ns_p, real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qv_p, real *crm_state_qm_p,
-                  real *crm_state_bm_p, real *crm_rad_temperature_p, 
-                  real *crm_rad_qv_p, real *crm_rad_qc_p, real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
+                  real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                  real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                  real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                  real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
+                  real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p, 
+                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
                   real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                   real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                   real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
@@ -109,11 +109,12 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
 
 
 void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                              real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_state_qc_p, real *crm_state_nc_p,
-                              real *crm_state_qr_p, real *crm_state_nr_p, real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qs_p,
-                              real *crm_state_ns_p, real *crm_state_qg_p, real *crm_state_ng_p, real *crm_state_qv_p, real *crm_state_qm_p,
-                              real *crm_state_bm_p, real *crm_rad_temperature_p, 
-                              real *crm_rad_qv_p, real *crm_rad_qc_p, real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
+                              real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                              real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                              real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                              real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
+                              real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
+                              real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
                               real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                               real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                               real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
@@ -443,11 +444,6 @@ extern real4d crm_state_qr;
 extern real4d crm_state_nr;
 extern real4d crm_state_qi;
 extern real4d crm_state_ni;
-extern real4d crm_state_qs;
-extern real4d crm_state_ns;
-extern real4d crm_state_qg;
-extern real4d crm_state_ng;
-extern real4d crm_state_qv;
 extern real4d crm_state_qm;
 extern real4d crm_state_bm;
 extern real2d crm_state_t_prev;

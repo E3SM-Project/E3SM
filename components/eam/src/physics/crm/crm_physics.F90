@@ -1339,8 +1339,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
                crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
                crm_state%qc, crm_state%nc, crm_state%qr, crm_state%nr, &
-               crm_state%qi, crm_state%ni, crm_state%qs, crm_state%ns, &
-               crm_state%qg, crm_state%ng, crm_state%qm, crm_state%bm, &
+               crm_state%qi, crm_state%ni, crm_state%qm, crm_state%bm, &
                crm_state%t_prev, crm_state%qv_prev, &
                crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
                crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
