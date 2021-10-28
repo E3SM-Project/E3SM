@@ -22,6 +22,9 @@ module prim_driver_mod
   public :: prim_init_ref_states_views
   public :: prim_init_diags_views
 
+  logical, private :: compute_forcing_and_push_to_c
+  logical, private :: push_to_f
+
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
@@ -406,7 +409,8 @@ contains
       compute_diagnostics = .false.
     endif
 
-    !dt_q = dt*dt_tracer_factor
+    call init_logic_for_push_to_c()
+
     if (dt_remap_factor == 0) then
        dt_remap = dt
     else
@@ -415,21 +419,14 @@ contains
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-!call from driver mod
-!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-
-#if !defined(CAM) && !defined(SCREAM)
-    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
-#endif
-
-#ifndef SCREAM
-    ! Scream already computes all forcing using the same pointers
-    ! stored in Hommexx, so the forcing is already up to date
-    call t_startf('push_to_cxx')
-    call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
-                           elem_derived_FPHI, elem_derived_FQ)
-    call t_stopf('push_to_cxx')
-#endif
+    if (compute_forcing_and_push_to_c) then
+!    if ( .true. ) then
+      call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+      call t_startf('push_to_cxx')
+      call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
+                             elem_derived_FPHI, elem_derived_FQ)
+      call t_stopf('push_to_cxx')
+    endif
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
@@ -439,7 +436,11 @@ contains
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+    call init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics)
+
+    if (push_to_f) then
+!    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+!    if (.true.) then
       ! Set pointers to states
       elem_state_v_ptr         = c_loc(elem_state_v)
       elem_state_w_i_ptr       = c_loc(elem_state_w_i)
@@ -507,4 +508,63 @@ contains
     enddo
 
   end subroutine setup_element_pointers
+
+
+!the next 2 routines have logic for push to/from F and for forcing routine
+!
+!there are 3 cases:
+!
+!performance:
+! (no forcing, no push to c) -> (subcycle) -> (no push to f)
+!
+!test without forcing (can be performant if output is only at the end):
+! (no forcing, no push to c) -> (subcycle) -> (push to f only for output/diagnostics)
+!
+!test with forcing (not performant):
+! (always forcing and push to c) -> (subcycle) -> (always push to f)
+
+  subroutine init_logic_for_push_to_c()
+
+    use control_mod, only: test_with_forcing
+
+    compute_forcing_and_push_to_c = .false.
+
+    ! Scream already computes all forcing using the same pointers
+    ! stored in Hommexx, so the forcing is already up to date
+#if defined(HOMMEXX_BENCHMARK_NOFORCING) || defined(SCREAM)
+
+#else
+    if(test_with_forcing)then
+       compute_forcing_and_push_to_c = .true.
+    endif
+#endif
+
+  end subroutine init_logic_for_push_to_c
+
+
+  subroutine init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics)
+
+    use control_mod, only: test_with_forcing
+    use time_mod,    only : timelevel_t
+
+    type (TimeLevel_t),   intent(in) :: tl
+    integer,              intent(in) :: statefreq, nextOutputStep
+    logical,              intent(in) :: compute_diagnostics
+
+#ifdef HOMMEXX_BENCHMARK_NOFORCING
+    push_to_f = .false.
+#else
+     
+    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then 
+       push_to_f = .true.
+    endif
+    if (test_with_forcing) then
+       push_to_f = .true.
+    endif
+
+#endif
+
+  end subroutine init_logic_for_push_to_f
+
+
 end module
