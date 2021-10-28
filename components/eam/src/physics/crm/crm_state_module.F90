@@ -27,13 +27,15 @@ module crm_state_module
       real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperuture
       real(crm_rknd), allocatable :: qt(:,:,:,:)           ! CRM total water
 
-      ! 2-moment microphsics variables
+      ! 2-moment microphsics variables (both p3 and m2005)
       real(crm_rknd), allocatable :: qc(:,:,:,:)   ! mass mixing ratio of cloud water
       real(crm_rknd), allocatable :: nc(:,:,:,:)   ! number concentration of cloud water
       real(crm_rknd), allocatable :: qr(:,:,:,:)   ! mass mixing ratio of rain
       real(crm_rknd), allocatable :: nr(:,:,:,:)   ! number concentration of rain
       real(crm_rknd), allocatable :: qi(:,:,:,:)   ! mass mixing ratio of cloud ice
       real(crm_rknd), allocatable :: ni(:,:,:,:)   ! number concentration of cloud ice
+
+      ! for m2005 only
       real(crm_rknd), allocatable :: qs(:,:,:,:)   ! mass mixing ratio of snow
       real(crm_rknd), allocatable :: ns(:,:,:,:)   ! number concentration of snow
       real(crm_rknd), allocatable :: qg(:,:,:,:)   ! mass mixing ratio of graupel
@@ -97,25 +99,17 @@ contains
          if (.not. allocated(state%qc))          allocate(state%qc(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qi))          allocate(state%qi(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qr))          allocate(state%qr(ncrms,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(state%qs))          allocate(state%qs(ncrms,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(state%qg))          allocate(state%qg(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%nc))          allocate(state%nc(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%ni))          allocate(state%ni(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%nr))          allocate(state%nr(ncrms,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(state%ns))          allocate(state%ns(ncrms,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(state%ng))          allocate(state%ng(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qm))          allocate(state%qm(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%bm))          allocate(state%bm(ncrms,crm_nx,crm_ny,crm_nz))
          call prefetch(state%qc)
          call prefetch(state%qi)
          call prefetch(state%qr)
-         call prefetch(state%qs)
-         call prefetch(state%qg)
          call prefetch(state%nc)
          call prefetch(state%ni)
          call prefetch(state%nr)
-         call prefetch(state%ns)
-         call prefetch(state%ng)
          call prefetch(state%qm)
          call prefetch(state%bm)
       end if
