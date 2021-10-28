@@ -149,13 +149,9 @@ contains
          if (allocated(state%qc)) deallocate(state%qc)
          if (allocated(state%qi)) deallocate(state%qi)
          if (allocated(state%qr)) deallocate(state%qr)
-         if (allocated(state%qs)) deallocate(state%qs)
-         if (allocated(state%qg)) deallocate(state%qg)
          if (allocated(state%nc)) deallocate(state%nc)
          if (allocated(state%ni)) deallocate(state%ni)
          if (allocated(state%nr)) deallocate(state%nr)
-         if (allocated(state%ns)) deallocate(state%ns)
-         if (allocated(state%ng)) deallocate(state%ng)
          if (allocated(state%qm)) deallocate(state%qm)
          if (allocated(state%bm)) deallocate(state%bm)
       end if
