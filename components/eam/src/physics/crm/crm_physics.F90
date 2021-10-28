@@ -28,8 +28,13 @@ module crm_physics
    integer, public :: ncrms = -1 ! total number of CRMs summed over all chunks in task
 
    ! Constituent names
-   character(len=8), parameter :: cnst_names(10) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                                                    'RAINQM', 'SNOWQM','NUMRAI','NUMSNO', 'CLDRIM','BVRIM '/)
+#if defined(p3)
+   character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
+                                                    'RAINQM','NUMRAI', 'CLDRIM','BVRIM '/)
+#else
+   character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
+                                                    'RAINQM', 'SNOWQM','NUMRAI','NUMSNO'/)
+#endif
 
    integer :: ixcldliq  = -1   ! cloud liquid amount index
    integer :: ixcldice  = -1   ! cloud ice amount index
@@ -153,17 +158,24 @@ subroutine crm_physics_register()
    !----------------------------------------------------------------------------
    ! constituents
    !----------------------------------------------------------------------------
-   call cnst_add(cnst_names(1),  mwdry, cpair, 0._r8, ixcldliq, longname='Grid box averaged cld liquid amount',is_convtran1=.true.)
-   call cnst_add(cnst_names(2),  mwdry, cpair, 0._r8, ixcldice, longname='Grid box averaged cld ice amount',   is_convtran1=.true.)
-   call cnst_add(cnst_names(3),  mwh2o, cpair, 0._r8, ixnumliq, longname='Grid box averaged cld liquid number',is_convtran1=.true.)
-   call cnst_add(cnst_names(4),  mwh2o, cpair, 0._r8, ixnumice, longname='Grid box averaged cld ice number',   is_convtran1=.true.)
-   call cnst_add(cnst_names(5),  mwh2o, cpair, 0._r8, ixrain,   longname='Grid box averaged rain amount',      is_convtran1=.true.)
-   call cnst_add(cnst_names(6),  mwh2o, cpair, 0._r8, ixsnow,   longname='Grid box averaged snow amount',      is_convtran1=.true.)
-   call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixnumrain,longname='Grid box averaged rain number',      is_convtran1=.true.)
-   call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixnumsnow,longname='Grid box averaged snow number',      is_convtran1=.true.)
    if ( MMF_microphysics_scheme .eq. 'p3' ) then
-      call cnst_add(cnst_names(9),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged riming amount',  is_convtran1=.true.)
-      call cnst_add(cnst_names(10), mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged riming volume',  is_convtran1=.true.)
+      call cnst_add(cnst_names(1),  mwdry, cpair, 0._r8, ixcldliq, longname='Grid box averaged cld liquid amount',is_convtran1=.true.)
+      call cnst_add(cnst_names(2),  mwdry, cpair, 0._r8, ixcldice, longname='Grid box averaged cld ice amount',   is_convtran1=.true.)
+      call cnst_add(cnst_names(3),  mwh2o, cpair, 0._r8, ixnumliq, longname='Grid box averaged cld liquid number',is_convtran1=.true.)
+      call cnst_add(cnst_names(4),  mwh2o, cpair, 0._r8, ixnumice, longname='Grid box averaged cld ice number',   is_convtran1=.true.)
+      call cnst_add(cnst_names(5),  mwh2o, cpair, 0._r8, ixrain,   longname='Grid box averaged rain amount',      is_convtran1=.true.)
+      call cnst_add(cnst_names(6),  mwh2o, cpair, 0._r8, ixnumrain,longname='Grid box averaged rain number',      is_convtran1=.true.)
+      call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged rime amount',      is_convtran1=.true.)
+      call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged rime volume',      is_convtran1=.true.)
+   else
+      call cnst_add(cnst_names(1),  mwdry, cpair, 0._r8, ixcldliq, longname='Grid box averaged cld liquid amount',is_convtran1=.true.)
+      call cnst_add(cnst_names(2),  mwdry, cpair, 0._r8, ixcldice, longname='Grid box averaged cld ice amount',   is_convtran1=.true.)
+      call cnst_add(cnst_names(3),  mwh2o, cpair, 0._r8, ixnumliq, longname='Grid box averaged cld liquid number',is_convtran1=.true.)
+      call cnst_add(cnst_names(4),  mwh2o, cpair, 0._r8, ixnumice, longname='Grid box averaged cld ice number',   is_convtran1=.true.)
+      call cnst_add(cnst_names(5),  mwh2o, cpair, 0._r8, ixrain,   longname='Grid box averaged rain amount',      is_convtran1=.true.)
+      call cnst_add(cnst_names(6),  mwh2o, cpair, 0._r8, ixsnow,   longname='Grid box averaged snow amount',      is_convtran1=.true.)
+      call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixnumrain,longname='Grid box averaged rain number',      is_convtran1=.true.)
+      call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixnumsnow,longname='Grid box averaged snow number',      is_convtran1=.true.)
    end if
    !----------------------------------------------------------------------------
    ! Register MMF history variables
