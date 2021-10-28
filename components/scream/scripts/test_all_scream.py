@@ -469,11 +469,16 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
     def get_taskset_range(self, test, for_compile=True):
     ###############################################################################
-        this_process = psutil.Process()
-        affinity_cp = list(this_process.cpu_affinity())
-        affinity_cp.sort()
-
         res_count = self._compile_res_count if for_compile else self._testing_res_count
+
+        if for_compile:
+            this_process = psutil.Process()
+            affinity_cp = list(this_process.cpu_affinity())
+        else:
+            # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
+            affinity_cp = list(range(res_count))
+
+        affinity_cp.sort()
 
         if self._parallel:
             it = itertools.takewhile(lambda name: name!=test, self._tests)
