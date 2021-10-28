@@ -31,13 +31,22 @@ Gcam case name
 Configuration file for gcam model
 </entry>
 
-<entry id="base_co2_file"
+<entry id="base_co2_surface_file"
 	type="char*256"
 	category="gcam"
 	input_pathname="abs"
 	group="gcam_inparm"
 	valid_values="">
 Initial co2 surface emissions file
+</entry>
+
+<entry id="base_co2_aircraft_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial co2 aircraft emissions file
 </entry>
 
 <entry id="base_npp_file"
@@ -56,6 +65,14 @@ Initial npp values file
 	group="gcam_inparm"
 	valid_values="">
 Initial hr values file
+</entry>
+
+<entry id="base_pft_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">                                                                                                                                      Initial pft weights values file
 </entry>
 
 <entry id="gcam2elm_co2_mapping_file"
@@ -227,6 +244,22 @@ Number of emission sectors
 	group="gcam_inparm"
 	valid_values="">
 Number of emission regions
+</entry>
+
+<entry id="base_co2emis_surface"
+	type="real*8"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Surface CO2 emissions in base year
+</entry>
+
+<entry id="base_co2emis_aircraft"
+	type="real*8"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Aircraft CO2 emissions in base year
 </entry>
 
 </namelist_definition>
