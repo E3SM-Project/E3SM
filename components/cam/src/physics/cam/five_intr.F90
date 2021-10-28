@@ -164,7 +164,7 @@ module five_intr
     ! Define PBUF for prognostics
 ! HHLEE test global -> physpkg
     call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
-    call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx) 
+    call pbuf_add_field('Q_FIVE',       'physpkg', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx) 
     call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
     call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
     
