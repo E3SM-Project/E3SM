@@ -16,10 +16,13 @@ zonal_mean_xy_files += get_all_files_in_dir(
 )
 
 zonal_mean_2d_files = get_all_files_in_dir(
-    "e3sm_diags/driver/default_diags", "zonal_mean_2d*"
+    "e3sm_diags/driver/default_diags", "zonal_mean_2d_model*"
 )
 zonal_mean_2d_files += get_all_files_in_dir(
     "e3sm_diags/driver/default_diags/legacy_diags", "zonal_mean_2d*"
+)
+zonal_mean_2d_stratosphere_files = get_all_files_in_dir(
+    "e3sm_diags/driver/default_diags", "zonal_mean_2d_stratosphere*"
 )
 
 meridional_mean_2d_files = get_all_files_in_dir(
@@ -71,6 +74,10 @@ INSTALL_PATH = "share/e3sm_diags/"
 data_files = [
     (os.path.join(INSTALL_PATH, "zonal_mean_xy"), zonal_mean_xy_files),
     (os.path.join(INSTALL_PATH, "zonal_mean_2d"), zonal_mean_2d_files),
+    (
+        os.path.join(INSTALL_PATH, "zonal_mean_2d_stratosphere"),
+        zonal_mean_2d_stratosphere_files,
+    ),
     (
         os.path.join(INSTALL_PATH, "meridional_mean_2d"),
         meridional_mean_2d_files,

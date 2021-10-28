@@ -15,6 +15,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.sets = [
             "zonal_mean_xy",
             "zonal_mean_2d",
+            "zonal_mean_2d_stratosphere",
             "meridional_mean_2d",
             "lat_lon",
             "polar",

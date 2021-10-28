@@ -25,6 +25,7 @@ SET_TO_VIEWER = {
     "polar": default_viewer.create_viewer,
     "zonal_mean_xy": default_viewer.create_viewer,
     "zonal_mean_2d": mean_2d_viewer.create_viewer,
+    "zonal_mean_2d_stratosphere": mean_2d_viewer.create_viewer,
     "meridional_mean_2d": mean_2d_viewer.create_viewer,
     "cosp_histogram": default_viewer.create_viewer,
     "area_mean_time_series": area_mean_time_series_viewer.create_viewer,

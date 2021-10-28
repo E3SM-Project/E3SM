@@ -115,7 +115,7 @@ def run_all_sets(html_prefix, d):
         "JJA",
     ]  # Default setting: seasons = ["ANN", "DJF", "MAM", "JJA", "SON"]
 
-    param.results_dir = os.path.join(html_prefix, "v2_5_0_all_sets")
+    param.results_dir = os.path.join(html_prefix, "v2_6_0_all_sets")
     param.multiprocessing = True
     param.num_workers = 5
 
@@ -192,6 +192,7 @@ def run_all_sets(html_prefix, d):
         "lat_lon",
         "zonal_mean_xy",
         "zonal_mean_2d",
+        "zonal_mean_2d_stratosphere",
         "polar",
         "cosp_histogram",
         "meridional_mean_2d",

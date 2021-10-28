@@ -9,10 +9,12 @@ from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
 from .tc_analysis_parameter import TCAnalysisParameter
 from .zonal_mean_2d_parameter import ZonalMean2dParameter
+from .zonal_mean_2d_stratosphere_parameter import ZonalMean2dStratosphereParameter
 
 SET_TO_PARAMETERS = {
     "zonal_mean_xy": CoreParameter,
     "zonal_mean_2d": ZonalMean2dParameter,
+    "zonal_mean_2d_stratosphere": ZonalMean2dStratosphereParameter,
     "meridional_mean_2d": MeridionalMean2dParameter,
     "lat_lon": CoreParameter,
     "polar": CoreParameter,

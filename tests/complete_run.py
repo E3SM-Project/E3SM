@@ -2,7 +2,7 @@ import os
 import unittest
 
 # This test should be run with the latest E3SM Diags tutorial code.
-from examples.run_v2_5_0_all_sets_E3SM_machines_updated_imports import run_lcrc
+from examples.run_v2_6_0_all_sets_E3SM_machines import run_lcrc
 from tests.integration.test_diags import compare_images
 
 # Due to the large amount of data required to run, this test will be run manually on Anvil

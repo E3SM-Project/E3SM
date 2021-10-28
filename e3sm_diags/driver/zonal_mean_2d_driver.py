@@ -64,7 +64,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag(parameter):
+def run_diag(parameter, default_plevs=ZonalMean2dParameter().plevs):
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")
@@ -140,13 +140,13 @@ def run_diag(parameter):
 
             # For variables with a z-axis.
             if mv1.getLevel() and mv2.getLevel():
-                # Since the default is now stored in ZonalMean2dParameter,
+                # Since the default is now stored in `default_plevs`,
                 # we must get it from there if the plevs param is blank.
                 plevs = parameter.plevs
                 if (isinstance(plevs, numpy.ndarray) and not plevs.all()) or (
                     not isinstance(plevs, numpy.ndarray) and not plevs
                 ):
-                    plevs = ZonalMean2dParameter().plevs
+                    plevs = default_plevs
 
                 # print('Selected pressure level: {}'.format(plevs))
 
