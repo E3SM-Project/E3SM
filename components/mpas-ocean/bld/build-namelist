@@ -1058,9 +1058,9 @@ add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
 add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
 
-###############################################
+##################################################
 # Namelist group: tracer_forcing_idealAgeTracers #
-###############################################
+##################################################
 
 add_default($nl, 'config_use_idealAgeTracers');
 add_default($nl, 'config_use_idealAgeTracers_surface_bulk_forcing');
@@ -1070,9 +1070,9 @@ add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
 add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
 add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
 
-###############################################
+#############################################
 # Namelist group: tracer_forcing_CFCTracers #
-###############################################
+#############################################
 
 add_default($nl, 'config_use_CFCTracers');
 add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
@@ -1611,8 +1611,8 @@ add_default($nl, 'config_AM_sedimentTransport_use_lat_lon_coords');
 
 add_default($nl, 'config_AM_harmonicAnalysis_enable');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_interval');
-add_default($nl, 'config_AM_harmonicAnalysis_start');
-add_default($nl, 'config_AM_harmonicAnalysis_end');
+add_default($nl, 'config_AM_harmonicAnalysis_start_delay');
+add_default($nl, 'config_AM_harmonicAnalysis_duration');
 add_default($nl, 'config_AM_harmonicAnalysis_output_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_restart_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_on_startup');
