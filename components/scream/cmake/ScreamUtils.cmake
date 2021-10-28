@@ -31,7 +31,7 @@ macro (SetVarDependingOnTestProfile var_name val_short val_medium val_long)
 endmacro()
 
 function(CreateUnitTest target_name target_srcs scream_libs)
-  set(options EXCLUDE_MAIN_CPP SERIAL)
+  set(options EXCLUDE_MAIN_CPP SERIAL PRINT_OMP_AFFINITY)
   set(oneValueArgs EXE_ARGS DEP)
   set(multiValueArgs
     MPI_RANKS THREADS
@@ -65,6 +65,9 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   endif()
   if (CreateUnitTest_SERIAL)
     list(APPEND cut_options SERIAL)
+  endif()
+  if (CreateUnitTest_PRINT_OMP_AFFINITY)
+    list(APPEND cut_options PRINT_OMP_AFFINITY)
   endif()
   if (CreateUnitTest_DEP)
     list(APPEND cut_options DEP ${CreateUnitTest_DEP})

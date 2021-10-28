@@ -133,11 +133,20 @@ def test_omp_spread(test_obj, output, num_places, begin=0):
     for line in lines:
         if "OMP_PLACES = '" in line:
             places_str = line.split("=")[1].strip().strip("'")
-            places = [int(item.strip("{}")) for item in places_str.split(",")]
+            try:
+                places = [int(item.strip("{}")) for item in places_str.split(",")]
+            except ValueError as e:
+                test_obj.assertTrue(False, msg=f"Line {line} had value error: {str(e)}")
+
+            # Should be sequential
+            for idx, place in enumerate(places):
+                if idx != 0:
+                    test_obj.assertEqual(place, places[0]+idx)
+
             all_places.extend(places)
 
     all_places.sort()
-    test_obj.assertEqual(len(all_places), num_places - begin)
+    test_obj.assertEqual(len(all_places), num_places - begin, msg=f"{output}")
     for idx, place in enumerate(all_places):
         test_obj.assertEqual(idx + begin, place, msg=f"Idx {idx} was not in sequential order in {all_places}")
 
@@ -503,19 +512,19 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that MPI ranks and threads are properly spread across a machine's computing resources
         """
         if self._full and self._machine == "mappy":
-            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 48, begin=8)
 
-            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 48, begin=8)
 
