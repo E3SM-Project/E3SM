@@ -1277,7 +1277,7 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
-    <model_grid alias="ne120pg2_r0125_oRRS18to6v3" compset="(DOCN|XOCN|SOCN|AQP1)">
+    <model_grid alias="ne120pg2_r0125_oRRS18to6v3">
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">oRRS18to6v3</grid>
@@ -1355,6 +1355,16 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg2_r05_EC30to60E2r2">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
     </model_grid>
 
     <model_grid alias="ne240_ne240" compset="(DOCN|XOCN|SOCN|AQP1)">

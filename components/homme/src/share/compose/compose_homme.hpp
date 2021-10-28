@@ -142,7 +142,13 @@ struct HommeFormatArray {
     static_assert(rank == 2, "rank 2 array");
     assert(i >= 0);
     assert(ie_data_ptr[ie]);
+    // These routines are not used on the GPU, but they can be called from
+    // KOKKOS_FUNCTIONs on CPU in GPU builds. Avoid nvcc warnings as follows:
+#ifdef __CUDA_ARCH__
+    return unused();
+#else
     return *(ie_data_ptr[ie] + i);
+#endif
   }
   COMPOSE_FORCEINLINE_FUNCTION 
   T& operator() (const Int& ie, const Int& k, const Int& lev) const {
@@ -151,7 +157,11 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev);
+#ifdef __CUDA_ARCH__
+    return unused();
+#else
     return *(ie_data_ptr[ie] + lev*np2 + k);
+#endif
   }
   COMPOSE_FORCEINLINE_FUNCTION 
   T& operator() (const Int& ie, const Int& q_or_timelev, const Int& k,
@@ -162,7 +172,11 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev, q_or_timelev);
+#ifdef __CUDA_ARCH__
+    return unused();
+#else
     return *(ie_data_ptr[ie] + (q_or_timelev*nlev + lev)*np2 + k);
+#endif
   }
   COMPOSE_FORCEINLINE_FUNCTION 
   T& operator() (const Int& ie, const Int& timelev, const Int& q, const Int& k,
@@ -174,7 +188,11 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev, q, timelev);
+#ifdef __CUDA_ARCH__
+    return unused();
+#else
     return *(ie_data_ptr[ie] + ((timelev*qsized + q)*nlev + lev)*np2 + k);
+#endif
   }
 
 private:
@@ -182,10 +200,18 @@ private:
   std::vector<T*> ie_data_ptr;
   const Int nlev, qsized, ntimelev;
 
+#ifdef KOKKOS_ENABLE_CUDA
+  COMPOSE_INLINE_FUNCTION static T& unused () {
+    static T unused = 0;
+    assert(0);
+    return unused;
+  }
+#endif
+
   COMPOSE_FORCEINLINE_FUNCTION
   void check (Int ie, Int k = -1, Int lev = -1, Int q_or_timelev = -1,
               Int timelev = -1) const {
-#ifdef COMPOSE_BOUNDS_CHECK
+#if defined COMPOSE_BOUNDS_CHECK && ! defined __CUDA_ARCH__
     assert(ie >= 0 && ie < static_cast<Int>(ie_data_ptr.size()));
     if (k >= 0) assert(k < np2);
     if (lev >= 0) assert(lev < nlev);

@@ -49,6 +49,9 @@
 [submodule "components/mpas-ocean/src/BGC"]
 	path = components/mpas-ocean/src/BGC
 	url = git@github.com:E3SM-Project/Ocean-BGC.git
+[submodule "MARBL"]
+	path = components/mpas-ocean/src/MARBL
+	url = git@github.com:E3SM-Project/MARBL.git
 [submodule "components/mpas-ocean/src/gotm"]
 	path = components/mpas-ocean/src/gotm
 	url = git@github.com:E3SM-Project/GOTMcode.git
