@@ -1,0 +1,25 @@
+set(PHYSICS_SHARE_SRCS
+  physics_share_f2c.F90
+  physics_share.cpp
+  physics_test_data.cpp
+  physics_utils.F90
+  scream_abortutils.F90
+  wv_sat_scream.F90
+  micro_p3_utils.F90
+  debug_info.F90
+)
+
+# Add ETI source files if not on CUDA
+if (NOT CUDA_BUILD)
+  list(APPEND PHYSICS_SHARE_SRCS
+  physics_saturation.cpp)
+endif()
+
+add_library(physics_share ${PHYSICS_SHARE_SRCS})
+set_target_properties(physics_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+target_link_libraries(physics_share scream_share)
+target_compile_options(physics_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

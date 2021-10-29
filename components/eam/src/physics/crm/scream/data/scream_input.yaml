@@ -1,0 +1,98 @@
+%YAML 1.1
+---
+Atmosphere Driver:
+
+  Atmosphere Processes:
+    Number of Entries: 5
+    Schedule Type: Sequential
+    Process 0:
+      Process Name: Homme
+      Grid:         Dynamics
+    Process 1:
+      Process Name: SHOC
+      Grid: Physics GLL
+    Process 2:
+      Process Name: CldFraction
+      Grid: Physics GLL
+    Process 3:
+      Process Name: P3
+      Grid: Physics GLL
+    Process 4:
+      Process Name: RRTMGP
+      Grid: Physics GLL
+      active_gases:
+      - h2o
+      - co2
+      - o3
+      - n2o
+      - co
+      - ch4
+      - o2
+      - n2
+
+  Grids Manager:
+    Type: Dynamics Driven
+    Reference Grid: Physics GLL
+    Dynamics Driven:
+      Dynamics Namelist File Name: ./data/namelist.nl
+
+  Initial Conditions:
+    Physics GLL:
+      Filename: ./data/init_ne4np4.nc
+      # Set X_prev = X
+      T_mid_prev: T_mid
+      horiz_winds_prev: horiz_winds
+      w_int: 0.0 # Start from zero vert velocity
+      w_int_prev: 0.0
+    Dynamics:
+      tracers: tracers, Physics GLL
+
+SCREAM:
+
+  Start Date: 01-01-2000 # For CIME cases, do NOT set this! It will be set by CIME's RUN_STARTDATE
+
+  Input Files:
+    input_root                  : default # this will default to DIN_LOC_ROOT for the current machine
+
+
+# Note: HOMME settings will be translated into data/namelist.nl
+HOMME:
+  ctl_nl:
+    partmethod        : 4
+    cubed_sphere_map  : 0
+    topology          : cube
+    test_case         : jw_baroclinic
+    u_perturb         : 1
+    rotate_grid       : 0
+    ne                : 4
+    ndays             : 1
+    statefreq         : 9999
+    mesh_file         : /dev/null
+    tstep             : 300
+    rsplit            : 2
+    qsplit            : 1
+    integration       : explicit
+    smooth            : 0
+    nu                : 7.0e+15
+    nu_div            : 1.0e+15
+    nu_p              : 7.0e+15
+    nu_q              : 7.0e+15
+    nu_s              : -1
+    nu_top            : 2.5e+5
+    se_ftype          : 0
+    limiter_option    : 9
+    vert_remap_q_alg  : 1
+    hypervis_scaling  : 0
+    hypervis_order    : 2
+    hypervis_subcycle : 2
+    hypervis_subcycle_tom : 0
+    theta_hydrostatic_mode : false
+    theta_advect_form : 0
+    tstep_type        : 10
+
+  vert_nl:
+    vform     : ccm
+    vfile_mid : ./data/scream-72m.ascii
+    vfile_int : ./data/scream-72i.ascii
+
+...
