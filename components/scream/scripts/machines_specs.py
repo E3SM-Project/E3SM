@@ -170,7 +170,7 @@ def get_mach_testing_resources(machine):
     if is_cuda_machine(machine):
         return int(run_cmd_no_fail("nvidia-smi -L | wc -l"))
     else:
-        return get_available_cpu_count(logical=False)
+        return get_available_cpu_count()
 
 ###############################################################################
 def is_cuda_machine(machine):

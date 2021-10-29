@@ -5,7 +5,7 @@ from git_utils import get_current_head, get_current_commit, get_current_branch, 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
     get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported, \
-    get_available_cpu_count, logical_cores_per_physical_core
+    logical_cores_per_physical_core
 
 check_minimum_python_version(3, 4)
 
@@ -162,21 +162,28 @@ class TestAllScream(object):
         ###################################
 
         # Deduce how many compilation resources per test
+        make_max_jobs = get_mach_compilation_resources()
         if make_parallel_level > 0:
+            expect(make_parallel_level <= make_max_jobs,
+                   "Requested make_parallel_level {} is more than max available {}".format(make_parallel_level, make_max_jobs))
             make_max_jobs = make_parallel_level
             print("Note: honoring requested value for make parallel level: {}".format(make_max_jobs))
         else:
-            make_max_jobs = get_mach_compilation_resources()
             print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
 
+        ctest_max_jobs = get_mach_testing_resources(self._machine)
         if ctest_parallel_level > 0:
+            expect(ctest_parallel_level <= ctest_max_jobs,
+                   "Requested ctest_parallel_level {} is more than max available {}".format(ctest_parallel_level, ctest_max_jobs))
             ctest_max_jobs = ctest_parallel_level
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
         elif "CTEST_PARALLEL_LEVEL" in os.environ:
-            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            env_val = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            expect(env_val <= ctest_max_jobs,
+                   "CTEST_PARALLEL_LEVEL env {} is more than max available {}".format(env_val, ctest_max_jobs))
+            ctest_max_jobs = env_val
             print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
         else:
-            ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
         self._ctest_max_jobs = ctest_max_jobs
@@ -187,11 +194,11 @@ class TestAllScream(object):
         if self._parallel:
             # We need to be aware that other builds may be running too.
             # (Do not oversubscribe the machine)
-            make_physical_cores_per_test = get_available_cpu_count(logical=False) // len(self._tests)
             log_per_phys = logical_cores_per_physical_core()
 
-            make_jobs_per_test  = make_physical_cores_per_test * log_per_phys
-            ctest_jobs_per_test = ctest_max_jobs // len(self._tests)
+            # Avoid splitting physical cores across test types
+            make_jobs_per_test  = ((make_max_jobs // log_per_phys) * log_per_phys) // len(self._tests)
+            ctest_jobs_per_test = ((ctest_max_jobs // log_per_phys) * log_per_phys) // len(self._tests)
 
             # The current system of selecting cores explicitly with taskset will not work
             # if we try to oversubscribe. We would need to implement some kind of wrap-around
@@ -473,12 +480,12 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
         res_count = self._compile_res_count if for_compile else self._testing_res_count
 
-        if for_compile:
-            this_process = psutil.Process()
-            affinity_cp = list(this_process.cpu_affinity())
-        else:
+        if not for_compile and is_cuda_machine(self._machine):
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
             affinity_cp = list(self._ctest_max_jobs)
+        else:
+            this_process = psutil.Process()
+            affinity_cp = list(this_process.cpu_affinity())
 
         affinity_cp.sort()
 
@@ -507,11 +514,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # res group is where we usually bind an individual MPI rank.
         # The id of the res groups on is offset so that it is unique across all builds
 
-        # Note: on CPU, the actual ids are pointless, since ctest job is already places
-        # on correct cores with taskset. On GPU, however, these ids are used to select
-        # the kokkos device where the tests are run on.
-
-        start, end = self.get_taskset_range(test, for_compile=not is_cuda_machine(self._machine))
+        start, end = self.get_taskset_range(test, for_compile=False)
 
         data = {}
 
