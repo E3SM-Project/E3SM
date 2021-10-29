@@ -198,7 +198,10 @@ class TestAllScream(object):
 
             # Avoid splitting physical cores across test types
             make_jobs_per_test  = ((make_max_jobs  // len(self._tests)) // log_per_phys) * log_per_phys
-            ctest_jobs_per_test = ((ctest_max_jobs // len(self._tests)) // log_per_phys) * log_per_phys
+            if is_cuda_machine(self._machine):
+                ctest_jobs_per_test = ctest_max_jobs // len(self._tests)
+            else:
+                ctest_jobs_per_test = ((ctest_max_jobs // len(self._tests)) // log_per_phys) * log_per_phys
 
             # The current system of selecting cores explicitly with taskset will not work
             # if we try to oversubscribe. We would need to implement some kind of wrap-around
