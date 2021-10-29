@@ -151,7 +151,7 @@ contains
     do k = 1,nlev
        s1%p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*s1%ps
        s1%dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-            (hvcoord%hybi(k+1) - hvcoord%hybi(k))*s1%ps
+                      (hvcoord%hybi(k+1) - hvcoord%hybi(k))*s1%ps
     end do
     s1%z = zero
     s1%zi = zero
@@ -236,13 +236,6 @@ contains
     ! Set FV tendencies.
     if (tendency) then
        do ie = nets,nete
-          if (ftype == 0) then
-             do k = 1,nlev
-                wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                                (hvcoord%hybi(k+1) - hvcoord%hybi(k))* &
-                                reshape(pg_data%ps(:,ie), (/nf,nf/))
-             end do
-          end if
           do j = 1,nf
              do i = 1,nf
                 col = nf*(j-1) + i
@@ -252,13 +245,7 @@ contains
                 pg_data%T(col,:,ie) = f/dt
                 ! no moisture adjustment => no dp3d adjustment
                 pg_data%q(col,:,1,ie) = zero
-                if (ftype == 0) then
-                   do q = 2,qsize
-                      pg_data%q(col,:,q,ie) = f*wg(i,j,:)/dt
-                   end do
-                else
-                   pg_data%q(col,:,2:qsize,ie) = pg_data%q(col,:,2:qsize,ie) + f
-                end if
+                pg_data%q(col,:,2:qsize,ie) = pg_data%q(col,:,2:qsize,ie) + f
              end do
           end do
        end do
@@ -266,17 +253,22 @@ contains
        ! Test that if tendencies are 0, then the original fields are unchanged.
        pg_data%T = zero
        pg_data%uv = zero
-       if (ftype == 0) pg_data%q = zero
     end if
 
     ! FV -> GLL.
-    call gfr_fv_phys_to_dyn(hybrid, nt2, dt, hvcoord, elem, nets, nete, &
+    call gfr_fv_phys_to_dyn(hybrid, nt2, hvcoord, elem, nets, nete, &
          pg_data%T, pg_data%uv, pg_data%q)
     call gfr_f2g_dss(hybrid, elem, nets, nete)
-    call gfr_pg1_reconstruct(hybrid, nt2, dt, hvcoord, elem, nets, nete)
+    call gfr_pg1_reconstruct(hybrid, nt2, hvcoord, elem, nets, nete)
 
     ! Apply the tendencies.
     do ie = nets,nete
+       if (ftype == 0) then
+          do q = 1, qsize
+             elem(ie)%derived%FQ(:,:,:,q) = elem(ie)%state%dp3d(:,:,:,nt1)* &
+                  (elem(ie)%derived%FQ(:,:,:,q) - elem(ie)%state%Q(:,:,:,q))/dt
+          end do
+       end if
        call applyCAMforcing_tracers(elem(ie), hvcoord, nt2, nt2, dt, logical(ftype /= 0))
     end do
     call applyCAMforcing_dynamics(elem, hvcoord, nt2, dt, nets, nete)
@@ -360,13 +352,13 @@ contains
           end if
        end do
        call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
+       rd = sqrt(global_shared_sum(1)/global_shared_sum(2))
+       msg = ''
+       if (.not. tendency .and. rd > 5*eps) then
+          nerr = nerr + 1
+          msg = ' ERROR'
+       end if
        if (hybrid%masterthread) then
-          rd = sqrt(global_shared_sum(1)/global_shared_sum(2))
-          msg = ''
-          if (.not. tendency .and. rd > 5*eps) then
-             nerr = nerr + 1
-             msg = ' ERROR'
-          end if
           write(iulog, '(a,i3,a,i3,es12.4,a8)') 'gfrt> test1 q l2', q, ' of', qsize, rd, msg
        end if
     end do
@@ -426,28 +418,18 @@ contains
     ! original is Q.
     qmin1 = one; qmax1 = -one
     do ie = nets,nete
-       if (ftype == 0) then
-          do k = 1,nlev
-             wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                  (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
-          end do
-       end if
        pg_data%q(:nf2,:,:,ie) = two*pg_data%q(:nf2,:,:,ie)
        do q = 2,qsize
           qmin1(q) = min(qmin1(q), minval(elem(ie)%state%Q(:,:,1,q)))
           qmax1(q) = max(qmax1(q), maxval(elem(ie)%state%Q(:,:,1,q)))
           qmin1(q) = min(qmin1(q), minval(pg_data%q(:nf2,1,q,ie)))
           qmax1(q) = max(qmax1(q), maxval(pg_data%q(:nf2,1,q,ie)))
-          if (ftype == 0) then
-             pg_data%q(:nf2,:,q,ie) = &
-                  half*reshape(wg(:nf,:nf,:), (/nf2,nlev/))*pg_data%q(:nf2,:,q,ie)/dt
-          end if
        end do
     end do
-    call gfr_fv_phys_to_dyn(hybrid, nt2, dt, hvcoord, elem, nets, nete, &
+    call gfr_fv_phys_to_dyn(hybrid, nt2, hvcoord, elem, nets, nete, &
          pg_data%T, pg_data%uv, pg_data%q)
     call gfr_f2g_dss(hybrid, elem, nets, nete)
-    call gfr_pg1_reconstruct(hybrid, nt2, dt, hvcoord, elem, nets, nete)
+    call gfr_pg1_reconstruct(hybrid, nt2, hvcoord, elem, nets, nete)
     ! Don't apply forcings; rather, the forcing fields now have the
     ! remapped quantities we want to compare against the original.
     do q = 2, qsize+3
@@ -485,11 +467,6 @@ contains
                 global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
              end if
           else
-             if (ftype == 0) then
-                elem(ie)%derived%FQ(:,:,:,q) = elem(ie)%state%Q(:,:,:,q) + &
-                     dt*elem(ie)%derived%FQ(:,:,:,q)/ &
-                     elem(ie)%state%dp3d(:,:,:,nt1)
-             end if
              ! Extrema in level 1.
              qmin2 = min(qmin2, minval(elem(ie)%derived%FQ(:,:,1,q)))
              qmax2 = max(qmax2, maxval(elem(ie)%derived%FQ(:,:,1,q)))
@@ -512,21 +489,24 @@ contains
        qmax1(q) = ParallelMax(qmax1(q), hybrid)
        qmin2 = ParallelMin(qmin2, hybrid)
        qmax2 = ParallelMax(qmax2, hybrid)
-       if (hybrid%masterthread) then
-          rd = sqrt(global_shared_sum(1)/global_shared_sum(2))
-          write(iulog, '(a,i3,a,i3,es12.4)') 'gfrt> test3 q l2', q, ' of', qsize, rd
-          b = max(abs(qmin1(q)), abs(qmax1(q)))
-          if (q <= qsize .and. qmin2 < qmin1(q) - 5*eps*b .or. &
-               qmax2 > qmax1(q) + 5*eps*b) then
-             nerr = nerr + 1
+       rd = sqrt(global_shared_sum(1)/global_shared_sum(2))
+       if (hybrid%masterthread) &
+            write(iulog, '(a,i3,a,i3,es12.4)') 'gfrt> test3 q l2', q, ' of', qsize, rd
+       b = max(abs(qmin1(q)), abs(qmax1(q)))
+       if (q <= qsize .and. qmin2 < qmin1(q) - 5*eps*b .or. &
+            qmax2 > qmax1(q) + 5*eps*b) then
+          nerr = nerr + 1
+          if (hybrid%masterthread) then
              write(iulog, '(a,i3,es12.4,es12.4,es12.4,es12.4,a)') 'gfrt> test3 q extrema', &
                   q, qmin1(q), qmin2-qmin1(q), qmax2-qmax1(q), qmax1(q), ' ERROR'
           end if
-          if (domass) then
-             a = global_shared_sum(3)
-             b = global_shared_sum(4)
-             if (abs(b - a) > 5*eps*abs(a)) then
-                nerr = nerr + 1
+       end if
+       if (domass) then
+          a = global_shared_sum(3)
+          b = global_shared_sum(4)
+          if (abs(b - a) > 5*eps*abs(a)) then
+             nerr = nerr + 1
+             if (hybrid%masterthread) then
                 write(iulog, '(a,i3,es12.4,es12.4,es12.4,a)') 'gfrt> test3 q mass', &
                      q, a, b, abs(b - a)/abs(a), ' ERROR'
              end if
@@ -536,9 +516,10 @@ contains
   end function run
 
   function gfr_check_api(hybrid, nets, nete, hvcoord, elem) result(nerr)
-    ! Drive run. Check nphys 1 through 4, ftypes 1 and 2, and pg1 with
+    ! Drive run. Check nphys 1 through 4, ftypes 0 and 2, and pg1 with
     ! and without the OOA boost.
 
+    use kinds, only: iulog
     use hybvcoord_mod, only: hvcoord_t
     use control_mod, only: ftype
     use gllfvremap_mod
@@ -572,6 +553,8 @@ contains
                 call init(nphys)
              end if
              !$omp barrier
+
+             if (hybrid%masterthread) write(iulog, '(a,i2)') 'gfrt> ftype', ftype
 
              nerr = nerr + run(hybrid, hvcoord, elem, nets, nete, nphys, .false.)
              nerr = nerr + run(hybrid, hvcoord, elem, nets, nete, nphys, .true.)
