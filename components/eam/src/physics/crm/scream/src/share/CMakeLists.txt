@@ -1,18 +1,9 @@
-if (DEFINED ENV{SCREAM_FAKE_ONLY})
-  set(SHARE_SRC
-    scream_config.cpp
-    scream_session.cpp
-    util/scream_test_session.cpp
-    util/scream_time_stamp.cpp
-    )
-else()
-  set(SHARE_SRC
-    scream_config.cpp
-    scream_session.cpp
-    util/scream_test_session.cpp
-    util/scream_time_stamp.cpp
-    )
-endif()
+set(SHARE_SRC
+  scream_config.cpp
+  scream_session.cpp
+  util/scream_test_session.cpp
+  util/scream_time_stamp.cpp
+  )
 
 add_library(scream_share ${SHARE_SRC})
 target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BINARY_DIR}/src)
