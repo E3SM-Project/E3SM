@@ -198,7 +198,6 @@ contains
                                           surfaceBuoyancyForcing, err)
      call ocn_shear_production_compute(tkeTend, glsPsiTend, tke, glsPsi, c_psi1, &
                                        surfaceFrictionVelocity, c_mu, err)
-
      deallocate(normalThicknessFlux)
   end subroutine ocn_compute_two_equation_tendency
 
@@ -229,7 +228,7 @@ contains
      real(kind=RKIND), intent(in) :: dt
 
      real(kind=RKIND) :: length, dissipation, length_grid, length_stable, dcAv
-     integer :: j, iCell, k, nCells, nEdges, iEdge
+     integer :: j, iCell, k, nCells, nEdges, iEdge, spot(2)
 
      !compute new diffusivity based on older values
      call ocn_canuto_structure_function_compute(Sm, Sh, tke, glsPsi, c_p, c_m, c_n, c_mu)
@@ -249,7 +248,8 @@ contains
               !compute length scale
               !define the viscosity
               length_grid = sqrt(dcAv * 0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)))
-              length_stable = 0.76_RKIND*sqrt(tke(k,iCell))/(sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
+              length_stable = 0.76_RKIND*sqrt(tke(k,iCell))/ &
+                              (sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
                                                              1.0E-15_RKIND)
               length = min(length_grid, length_stable)
               vertViscTopOfCell(k,iCell) = smagorinsky_coefficient*length*sqrt(tke(k,iCell))
@@ -276,9 +276,19 @@ contains
      end if
 
      call ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,dt)
-     call ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,dt)
+     if(.not. config_LES_mode) then
+        call ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,dt)
+     end if
 
      if (config_LES_mode) then
+       if(minval(tke) < 0) then
+         spot = minloc(tke)
+         print *, 'tke = ', tke(:,spot(2))
+         print *, 'vdiff = ',vertViscTopOfCell(:,spot(2))
+         print *, 'dyn = ',dynamicViscosity(:,spot(2))
+         print *, 'minval = ',minval(tke)
+         print *, 'minloc = ',minloc(tke)
+       endif
         !$omp parallel
         !$omp do schedule(runtime) private(k,dcAv,iEdge,length_grid,length_stable,length)
         do iCell=1,nCells
@@ -292,10 +302,11 @@ contains
               !compute length scale
               !define the viscosity
               length_grid = sqrt(dcAv * 0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)))
-              length_stable = 0.76_RKIND*sqrt(tke(k,iCell))/(sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
+              length_stable = 0.76_RKIND*sqrt(max(tke(k,iCell),0.0_RKIND))/(sqrt(max(BruntVaisalaFreqTop(k,iCell),0.0_RKIND)) + &
                                                              1.0E-15_RKIND)
               length = min(length_grid, length_stable)
-              vertViscTopOfCell(k,iCell) = smagorinsky_coefficient*length*sqrt(tke(k,iCell))
+              vertViscTopOfCell(k,iCell) = smagorinsky_coefficient*length*sqrt(tke(k,iCell)) + &
+                              dynamicViscosity(k,iCell)/rho_sw
               vertDiffTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) !Assume turbulent Pr of 1
            end do
         end do
@@ -613,6 +624,11 @@ contains
            dynamicViscosity(k+1,iCell) = freshwaterMu*(1.0_RKIND + &
                                         A1*sAvg + &
                                         B1*sAvg**2)
+          if(dynamicViscosity(k+1,iCell) < 0) then
+            print *, activeTracers(1,:,iCell)
+            print *, 'hi',k, tavg,savg, viscavg, freshwaterMu, A1, B1, dynamicViscosity(k+1,iCell)
+            stop
+          endif
            boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
                                   velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
            !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?

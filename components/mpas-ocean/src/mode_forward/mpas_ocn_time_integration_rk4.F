@@ -1606,7 +1606,7 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime)
          do iCell = 1, nCells
-            tkeNew(:, iCell) = tkeNew(:, iCell) + rkWeight * tendTKE(:, iCell)
+            tkeNew(:, iCell) = max(tkeNew(:, iCell) + rkWeight * tendTKE(:, iCell),0.0_RKIND)
          end do
          !$omp end do
          !$omp end parallel
@@ -1615,7 +1615,7 @@ module ocn_time_integration_rk4
             !$omp parallel
             !$omp do schedule(runtime)
             do iCell = 1, nCells
-               glsPsiNew(:, iCell) = glsPsiNew(:, iCell) + rkWeight * tendglsPsi(:, iCell)
+               glsPsiNew(:, iCell) = max(glsPsiNew(:, iCell) + rkWeight * tendglsPsi(:, iCell),0.0_RKIND)
             end do
             !$omp end do 
             !$omp end parallel
