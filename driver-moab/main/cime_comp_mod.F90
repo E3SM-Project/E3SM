@@ -1960,6 +1960,9 @@ contains
     !  need to finish up the computation of the atm - land map ( point cloud)
     if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)
 
+    !  need to finish up the migration of mesh for rof 2 ocn map ( read from file)
+    if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
+
     !----------------------------------------------------------
     !| Update aream in domains where appropriate
     !----------------------------------------------------------

@@ -8,6 +8,9 @@ module prep_rof_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm
   use seq_comm_mct,     only: CPLID, ROFID, logunit
+  use seq_comm_mct,     only: mrofid ! id for rof comp 
+  use seq_comm_mct,     only: mbrmapro ! iMOAB id of moab instance of map read from rof2ocn map file 
+  use seq_comm_mct,     only: mbrxoid  ! iMOAB id for rof instance on coupler for ocn 
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use shr_log_mod     , only: errMsg => shr_log_errMsg
@@ -48,6 +51,7 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Sa2r
   public :: prep_rof_get_mapper_Fa2r
 
+  public :: prep_rof_ocn_moab 
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -252,6 +256,77 @@ contains
 
   end subroutine prep_rof_init
 
+  subroutine prep_rof_ocn_moab(infodata)
+!---------------------------------------------------------------
+    ! Description
+    ! After loading of rof 2 ocn map, migrate the rof mesh to coupler
+    !  and create the comm graph between rof comp and rof instance on coupler 
+    !   this is a similar call compared to prep_atm_ocn_moab, that 
+    !  computes the comm graph after intersection
+    !
+    ! Arguments
+   type(seq_infodata_type) , intent(in)    :: infodata
+
+   character(*), parameter          :: subname = '(prep_rof_ocn_moab)'
+   integer :: ierr
+
+   logical                          :: rof_present    ! .true.  => rof is present
+   logical                          :: ocn_present    ! .true.  => ocn is present
+   integer                  :: id_join
+   integer                  :: rank_on_cpl ! just for debugging
+   integer                  :: mpicom_join
+   integer                  :: context_id ! used to define context for coverage (this case, runoff on coupler)
+   integer                  :: rof_id
+
+   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> rof-ocn, to migrate map mesh
+   integer                  :: mpigrp_rof   !  component group pes (rof ) == rof group
+   integer                  :: typeA   ! type for computing graph, in this case it is 2 (point cloud)
+   integer                  :: direction ! will be 1, source to coupler
+   character*32             :: prefix_output ! for writing a coverage file for debugging
+
+   integer, external ::   iMOAB_MigrateMapMeshFortran, iMOAB_WriteLocalMesh
+
+   call seq_infodata_getData(infodata, &
+        rof_present=rof_present,       &
+        ocn_present=ocn_present)
+
+ !  it involves initial rof app; mhid; also migrate rof mesh on coupler pes, in ocean context, mbrxoid
+ !  map between rof 2 ocn is in  mbrmapro ; 
+ ! after this, the sending of tags from rof pes to coupler pes will use the new par comm graph, that has more precise info about
+ ! how to get mpicomm for joint rof + coupler
+   id_join = rof(1)%cplcompid
+   rof_id   = rof(1)%compid
+  
+   context_id = rof(1)%cplcompid ! maybe it should be clear it is for ocean ?
+   call seq_comm_getData(ID_join,mpicom=mpicom_join) ! this is joint comm
+
+   call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+   call seq_comm_getData(rof_id, mpigrp=mpigrp_rof)    !  component group pes, from rof id ( also ROFID(1) )
+   typeA = 2 ! point cloud
+   direction = 1 ! 
+   ierr = iMOAB_MigrateMapMeshFortran (mrofid, mbrmapro, mbrxoid, mpicom_join, mpigrp_rof, &
+      mpigrp_CPLID, typeA, rof_id, id_join, direction)
+   
+   if (ierr .ne. 0) then
+     write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
+     call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
+   endif
+   write(logunit,*) subname,' migrate mesh for map rof 2 ocn '
+#ifdef MOABDEBUG
+   call seq_comm_getData(CPLID ,mpicom=mpicom_CPLID)
+   if (mbrxoid.ge.0) then  ! we are on coupler PEs
+      call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
+      prefix_output = "rof_cov"//CHAR(0)
+      if (rank_on_cpl .lt. 16) then
+         ierr = iMOAB_WriteLocalMesh(mbrxoid, prefix_output)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
+          endif
+      endif
+   endif
+#endif
+  
+  end subroutine prep_rof_ocn_moab
   !================================================================================================
 
   subroutine prep_rof_accum_lnd(timer)
