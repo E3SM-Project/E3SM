@@ -5,12 +5,10 @@ set(SHOC_SRCS
   shoc_iso_c.f90
   shoc_iso_f.f90
   shoc.F90
-  atmosphere_macrophysics.cpp
 )
 
 set(SHOC_HEADERS
   shoc.hpp
-  atmosphere_macrophysics.hpp
   shoc_constants.hpp
 )
 

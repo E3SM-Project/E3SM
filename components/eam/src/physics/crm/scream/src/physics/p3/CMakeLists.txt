@@ -7,12 +7,6 @@ set(P3_SRCS
   micro_p3.F90
 )
 
-if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
-  list(APPEND P3_SRCS
-    atmosphere_microphysics.cpp
-    atmosphere_microphysics_run.cpp)
-endif()
-
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   list(APPEND P3_SRCS
