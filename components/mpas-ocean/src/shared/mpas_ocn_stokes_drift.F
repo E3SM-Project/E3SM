@@ -187,7 +187,7 @@ contains
                                                zonalWavenumberCoeff, &
                                                meridionalWavenumberCoeff, &
                                                alpha, &
-                                               langmuirNumber)!{{{
+                                               langmuirNumberMLAvgProjected)!{{{
 
       !-----------------------------------------------------------------
       ! Input variables
@@ -206,7 +206,7 @@ contains
       !-----------------------------------------------------------------
 
       real(kind=RKIND), intent(out) :: alpha
-      real(kind=RKIND), intent(out) :: langmuirNumber
+      real(kind=RKIND), intent(out) :: langmuirNumberMLAvgProjected
 
       !-----------------------------------------------------------------
       ! Local variables
@@ -216,8 +216,13 @@ contains
       real(kind=RKIND) :: stokesDriftMagnitudeSurface
       real(kind=RKIND) :: stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg
       real(kind=RKIND) :: stokesDriftMagnitudeMLAvg
+      real(kind=RKIND) :: langmuirNumberMLAvg
+      real(kind=RKIND) :: langmuirNumberTurb
       real(kind=RKIND) :: theta_ww
       real(kind=RKIND) :: denominator
+      real(kind=RKIND) :: z0
+      real(kind=RKIND), parameter :: small = 1e-10_RKIND
+      real(kind=RKIND), parameter :: kappa = 0.4_RKIND
 
       !-----------------------------------------------------------------
 
@@ -231,26 +236,33 @@ contains
 
       ! Calulate Stokes drift mangnitudes
 
-      stokesDriftMagnitudeSurface = sqrt(stokesDriftZonalSurface**2 + stokesDriftMeridionalSurface**2)
+      stokesDriftMagnitudeSurface = max(sqrt(stokesDriftZonalSurface**2 + stokesDriftMeridionalSurface**2),small)
 
-      stokesDriftMagnitudeMLAvg = sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2)
+      stokesDriftMagnitudeMLAvg = max(sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2),small)
+
+
+      ! Calculate Langmuir numbers
+
+      langmuirNumberTurb = sqrt(surfaceFrictionVelocity/stokesDriftMagnitudeSurface)
+
+      langmuirNumberMLAvg = sqrt(surfaceFrictionVelocity/stokesDriftMagnitudeMLAvg)
 
 
       ! Calculate angle between wind and Langmuir cells
 
       theta_ww = atan2(stokesDriftMeridionalMLAvg, stokesDriftZonalMLAvg) - atan2(windStressMeridional, windStressZonal)
 
-      denominator = surfaceFrictionVelocity/(0.4_RKIND*max(stokesDriftMagnitudeSurface,1e-10_RKIND)) &
-                  * log(max(abs(boundaryLayerDepth/(4.0_RKIND*max(significantWaveHeight,1e-10_RKIND))),1.0_RKIND)) &
+      z0 = 4.0_RKIND*max(significantWaveHeight,small)
+
+      denominator = langmuirNumberTurb**2/kappa &
+                  * log(max(abs(boundaryLayerDepth/z0),1.0_RKIND)) &
                   + cos(theta_ww)
       alpha = atan(sin(theta_ww)/denominator)
 
 
       ! Calculate surface layer averaged, projected Langmuir number
 
-      langmuirNumber = sqrt(surfaceFrictionVelocity*abs(cos(alpha)) &
-                            / max(stokesDriftMagnitudeMLAvg*abs(cos(theta_ww-alpha)),1e-10_RKIND))
-
+      langmuirNumberMLAvgProjected = langmuirNumberMLAvg*sqrt(abs(cos(alpha))/(abs(cos(theta_ww-alpha))+small))
 
       !-----------------------------------------------------------------
 
@@ -291,7 +303,7 @@ contains
 
       !-----------------------------------------------------------------
 
-      enhancementFactor = min(5.0_RKIND,abs(cos(alpha)))    &
+      enhancementFactor = min(2.0_RKIND,abs(cos(alpha)))    &
                         * sqrt(1.0_RKIND                    &
                         + (1.5_RKIND*langmuirNumber)**(-2)  &
                         + (5.4_RKIND*langmuirNumber)**(-4)) 
