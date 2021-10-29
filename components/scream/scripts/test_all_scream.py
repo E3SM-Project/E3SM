@@ -197,8 +197,8 @@ class TestAllScream(object):
             log_per_phys = logical_cores_per_physical_core()
 
             # Avoid splitting physical cores across test types
-            make_jobs_per_test  = ((make_max_jobs // log_per_phys) * log_per_phys) // len(self._tests)
-            ctest_jobs_per_test = ((ctest_max_jobs // log_per_phys) * log_per_phys) // len(self._tests)
+            make_jobs_per_test  = ((make_max_jobs  // len(self._tests)) // log_per_phys) * log_per_phys
+            ctest_jobs_per_test = ((ctest_max_jobs // len(self._tests)) // log_per_phys) * log_per_phys
 
             # The current system of selecting cores explicitly with taskset will not work
             # if we try to oversubscribe. We would need to implement some kind of wrap-around
@@ -482,7 +482,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         if not for_compile and is_cuda_machine(self._machine):
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
-            affinity_cp = list(self._ctest_max_jobs)
+            affinity_cp = list(range(self._ctest_max_jobs))
         else:
             this_process = psutil.Process()
             affinity_cp = list(this_process.cpu_affinity())
