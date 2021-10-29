@@ -1,3 +1,395 @@
+10/29/2021
+
+* So I think we are at the point where we are bombing for non-bug reasons -
+  my current theory is that we are not supplying a finidat initialization
+  file, so that leads to the negative flux from the methane model, and that
+  leads to us failing the carbon balance check (we aren't conserving carbon
+  mass from timestep to timestep).  
+
+* Here is what I'm seeing: 
+
+ Beginning timestep   : 2015-01-01_00:00:00
+ --WARNING-- skipping CN balance check for first timestep
+ --WARNING-- skipping CN balance check for first timestep
+    Completed timestep: 2015-01-01_00:00:00
+ Beginning timestep   : 2015-01-01_00:30:00
+ --WARNING-- skipping CN balance check for first timestep
+ Note: sink > source in ch4_tran, sources are changing  quickly relative to diff
+ usion timestep, and/or diffusion is rapid.
+ Latdeg,Londeg=   19.8947368421052        205.000000000000     
+ This typically occurs when there is a larger than normal  diffusive flux.
+ If this occurs frequently, consider reducing land model (or  methane model) tim
+ estep, or reducing the max. sink per timestep in the methane model.
+ Negative conc. in ch4tran. c,j,deficit (mol):        2907           2
+   12.3179796521575     
+ --WARNING-- skipping CN balance check for first timestep
+    Completed timestep: 2015-01-01_00:30:00
+ Beginning timestep   : 2015-01-01_01:00:00
+    Completed timestep: 2015-01-01_01:00:00
+ Beginning timestep   : 2015-01-01_01:30:00
+ column cbalance error =  -2.980232238769531E-007        2907
+ Latdeg,Londeg         =    19.8947368421052        205.000000000000     
+ input                 =   0.000000000000000E+000
+ output                =   5.744097029181580E-007
+ er                    =    386336967.241103        386336967.241101     
+ fire                  =   0.000000000000000E+000
+ hrv_to_atm            =   0.000000000000000E+000
+ hrv_to_prod10         =   0.000000000000000E+000
+ hrv_to_prod100        =   0.000000000000000E+000
+ leach                 =   0.000000000000000E+000
+ begcb                 =   -3756.59607498606     
+ endcb                 =   -386340723.837178       -386334545.774726     
+ delta store           =   -386336967.241103     
+ ENDRUN:
+ ERROR in EcosystemBalanceCheckMod.F90 at line 289                              
+ 
+
+10/27/2021
+
+* Most (or all?) of the NaNs I'm seeing come from the vegetation variables,
+  and from calculating a summary to write out to a history file -
+  otherwise, these variables/structure elements don't seem to be used for
+  anything in the code.
+
+  My conjecture is these are hooks for further development - they get
+  initialized to NaN and then never considered again (at least in this old
+  version of clm).  This would imply that there are a bunch of history
+  files being written with NaNs in the summary fields, but apparently
+  nobody looks at those, either.
+
+* Latest error - still in vegetation calculation, but this time we end up
+  with a negative lw flux in veg_ef%eflx_lwrad_out, which causes the
+  conversion back to temperature in lnd2atm_minimal() (c. line 115 of
+  lnd2atmMod.F90, at the end of the function) to crash, since it takes the
+  fourth root (or sqrt(sqrt(flx)), technically).  
+
+  I'm doing some detailed write statements to find out what is going on -
+  see ~/zlnd_v2/lnd.log.eflx_lwrad_out.analysis.  The tags are this:
+
+    TRS4 - just before the p2g() call for eflux_lwrad_out (other variables
+    	   use this, so I needed a tag to find the pertinent output).
+	   (lnd2atmMod.F90) 
+
+    TRS3 - (subgridAveMod.F90, p2g_1d())
+           variables used in the p2g conversion, for gridcell (g) = 2907,
+           where the negative flux happens.  The columns are:
+
+	   p, c, l, g, parr(p), scale_c2l(c), scale_l2g(l), garr(g), sumwt(g)
+
+	   parr(p) is the veg_nf p-indexed input variable (in this case
+	   veg_nf%eflux_lwrad_out), and garr(g) is the output g-indexed
+	   variable we are building. (Above, garr(g) is the current,
+	   pre-calculation value, before adding in this patch's
+	   contribution.) 
+
+	   garr(g) is set to zero if sumwt(g) is zero, so it resets at
+	   the start of each patch loop.
+
+    TRS5 - the value of garr(g) after the above calculation.
+
+  We iterate over several patches (p) to build up the g-based average, so
+  as the sumwt(g) approaches 1.0 we approach the final value, and at the
+  end that's what's used in the flux->T calculation that's crashing.
+
+* It looks like we do an initialization, then the first time step, then
+  tries another time step.  But!  The problem seems to be in the CN balance
+  check, that they skip for the first timestep.  We end up with a negative
+  flux in the methane model (and maybe elsewhere, but this is where it
+  crashes).  Here's the note in the log:
+
+     Beginning timestep   : 2015-01-01_00:30:00
+     --WARNING-- skipping CN balance check for first timestep
+     Note: sink > source in ch4_tran, sources are changing  quickly relative to diff
+     usion timestep, and/or diffusion is rapid.
+     Latdeg,Londeg=   19.8947368421052        205.000000000000     
+     This typically occurs when there is a larger than normal  diffusive flux.
+     If this occurs frequently, consider reducing land model (or  methane model) tim
+     estep, or reducing the max. sink per timestep in the methane model.
+     Negative conc. in ch4tran. c,j,deficit (mol):        2907           2
+
+* To me, this suggests that we aren't initializing things very well, so
+  that second timestep leads to a too-rapid diffusion and we get a negative
+  flux.  This *might* imply that we need better initialization, or it might
+  just be normal and the (flux)^-4 calculation with a negative flux just
+  leads to an NaN somewhere that nobody cares about, at least in this
+  initial step.
+
+* Okay, so we'll just trap out the flux^-4 calc for flux < 0, and continue on.
+
+10/22/2021
+
+* veg_nf%livestemn_to_litter(p)
+  veg_pf%livestemp_to_litter(p)
+
+  Both set to NaN.
+
+* Other NaNs in dyngrid stuff, and veg_cs% functions - grep for 'TRS'
+  comments.
+
+* lnd2atmMod.F90, line 109, lnd2atm_vars%eflx_lwrad_out_grc(g) is large and
+  negative for g = 2907 (out of 1:5663), value = -146196.658095096.
+
+  The calculation takes the 4th root, so this crashes.
+
+  See the output of :
+  /compyfs/d3a230/e3sm_scratch/zlnd_v2/run/lnd.log.239063.211022-130553
+
+  This comes after a p2g() call, so check veg_ef%eflx_lwrad_out(), which is
+  (possibly) an input to that transformation function.
+
+10/5/2021
+
+* Heh, lots of notes I got to track down somewhere else.
+
+* Kate's current build is in /compyfs/d3x132/zlnd_v2, there's a readme with
+  some configuration information.
+
+* Building Kate's branch:
+
+  mkdir E3SM_current
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_current
+  cd E3SM_current
+  git checkout kvcalvin/gcam/active-gcam
+  git submodule update --init --recursive
+
+  # Submodule checkout:
+  # giac branch: kvcalvin/working
+  # gcam branch: e3sm-integration
+
+  cd components/gcam/src
+  git checkout kvcalvin/working
+  cd iac/gcam
+  git checkout e3sm-integration
+
+  cd ~/E3SM_current/cime
+
+  ./create_newcase --project e3sm --case ~/zlnd_v2 --compset ZLND --res f19_g16
+
+  cd ~/zlnd_v2
+
+  ./xmlchange --id "RUN_STARTDATE" --val "2015-01-01"
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id NTASKS --val 1
+  ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
+  ./xmlchange -id "IAC_NCPL" -val 1
+  ./xmlchange -id "STOP_OPTION" -val "nyears"
+  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+
+  cp /compyfs/d3x132/iac_E3SM_working_Z/user_nl_gcam .
+
+  ./case.setup --reset
+  ./case.setup 
+
+  cp -r /compyfs/d3x132/e3sm_scratch/zlnd_v2/input /compyfs/d3a230/e3sm_scratch/zlnd_v2
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/log_conf.xml /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/iac_in /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/gcamo_base.csv /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/glm.fut.conf /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/iESM_Dyn_CropPast.nc /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/mksurf_landuse_iESM_720x360.nc /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/restart.* /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/surfdata_360x720* /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/surfdata_iESM_dyn.nc /compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+
+  ./case.build --clean-all
+  ./case.build 
+  ./case.submit
+
+3/16/2021
+
+* Git merge strategy syntax, for git pull etc.
+
+  git merge -s recursive -Xtheirs # short options
+  git merge --strategy recursive --strategy-option theirs # long options
+
+* Trying to update the e3sm-integration branch for iac/gcam:
+
+  # save definitions.h and wrapper.cpp print changes, and revert
+  # so the pull won't complain
+  git stash 
+
+  # Try to pull the latest branch, and hope their are no merge issues. 
+  git pull origin e3sm-integration
+
+* Sadly, that didn't work, for whatever reason - lots of merge issues.
+  First, reset --hard to get back to my unpulled, unmerged, unfubar'd code,
+  then try a vanila git pull:
+
+  git reset --hard
+  git pull
+
+* Finally, try to use the merge strategy above - hopefully, blast
+  everything I have that conflicts and grab just the latest stuff in the
+  e3sm-integration repo. 
+
+  git reset --hard
+  git pull -s recursive -Xtheirs
+
+3/11/2021
+
+* Okay, so the easiest thing is to just copy over from the E3SM_test
+  directory:
+
+  cd ~/E3SM_gcam_core_submodule/components/gcam/src
+  cp ~/E3SM_test/components/gcam/src/iac/bld/giac.template iac/bld/giac.template 
+  cp ~/E3SM_test/components/gcam/src/iac/bld/iac_glm_namelist_items.txt iac/bld/iac_glm_namelist_items.txt
+  cp ~/E3SM_test/components/gcam/src/iac/coupling/gcam2glm_mod.F90 iac/coupling/gcam2glm_mod.F90 
+  cp ~/E3SM_test/components/gcam/src/iac/coupling/updateannuallanduse_v2.c iac/coupling/updateannuallanduse_v2.c 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm.conf iac/glm/glm.conf 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm.fut.conf iac/glm/glm.fut.conf 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm_future.c iac/glm/glm_future.c 
+
+* The gcam_comp_mod, gcam_var_mod, iac_data_mod, iac_init_mod are my branch
+  changes, so we are simply trying to merge in the giac-update changes that
+  matter - the glm stuff that Alan added that I didn't properly bring over
+  to my compy branch but that I haven't otherwise touched.
+
+* Kate's email from 2/25/21 on errors:
+
+=====
+@Xcall gcam_init_mod
+
+  I can get this to successfully complete with the changes I made + the
+  hardcoding of strings as they go into GCAM. I think if we can null
+  terminate the strings in fortran this problem will be solved without any
+  workarounds. 
+
+@ call gcam2glm_init_mod
+
+  This fails on line 172 of gcam2glm_mod.F90. It looks like it can’t open a
+  netCDF file, but I can’t tell which file or why it won’t open. 
+
+  The solution here is to move everything to namelists rather than the
+  silly cdata structure - so use gcam_var_mod read and set the variables
+  there - mods to gcam2glm
+
+@ call glm_init_mod
+
+  This fails on line 88 of glm_comp_mod.F90. It says “Attempt to use
+  pointer GLMI when it is not associated with a target” 
+
+@ call iac_domain_mct
+
+  This fails on this line “call mct_gGrid_importIAttr(dom_z,"mask"
+  ,idata,lsize)” because it cannot find the attribute “mask” 
+
+@ call iac_export
+
+  I get a bunch of errors here all essentially related to indices being out
+  of range. It does not like that LAT starts at -90 (it wants it to start
+  at 1) or that LON starts at 0 (it wants it to start at 1). I tried
+  offsetting both, but then it gets out of range on the high end (sees
+  index 193 when only defined until 192). Similarly, the statement
+  iac_ctl%lat(g) will fail because g reaches 193 and should stop at
+  192. And, index_z2x_Sz_pct_pft(p) starts at 0 and it wants it to start at
+  1. 
+ 
+3/10/2021
+
+* Here's the output of 'git diff working' when checking out the giac-update
+  branch of gcam-core in the ~/E3SM_test/components/gcam/src directory:
+
+=========
+  [d3a230@compy01 coupling]$ egrep '\+\+\+' *.diff
+  +++ b/.gitmodules
+  +++ b/iac/bld/giac.template
+  +++ b/iac/bld/iac_glm_namelist_items.txt
+  +++ b/iac/coupling/gcam2glm_mod.F90
+  +++ b/iac/coupling/gcam_comp_mod.F90
+  +++ b/iac/coupling/gcam_var_mod.F90
+  +++ b/iac/coupling/iac_data_mod.F90
+  +++ b/iac/coupling/iac_init_mod.F90
+  +++ b/iac/coupling/updateannuallanduse_v2.c
+  +++ b/iac/gcam
+  +++ b/iac/glm/glm.conf
+  +++ b/iac/glm/glm.fut.conf
+  +++ /dev/null
+  +++ /dev/null
+  +++ b/iac/glm/glm_future.c
+=========
+
+* Argh.  This is so hard to keep track of.  But I *think* this means we
+  need to copy the gcam2glm_mod.F90, updateannuallanduse_v2.c,
+  glm_future.c, and the glm comp files from E3SM_test (giac-update branch)
+  to E3SM_gcam_core_submodule (working branch), then commit and push.
+
+* Also, check on the diffs of these others - maybe need the giac.template
+  and iac_glm_namelist_items.txt, too, especially if they don't exist in
+  gcam_core. 
+
+2/10/2021
+
+* Here are the xmlchanges you want to do after newcase for zero level
+  debugging: 
+
+    ./xmlchange --id STOP_N --val 1
+    ./xmlchange --id DEBUG --val TRUE
+    ./xmlchange --id NTASKS --val 1
+
+* So, here are my build instructions for my branch.  Also, check out
+  ~/NOTES.build, for an ever so slightly more generic version, to make it
+  easier to do a bunch of tests:
+
+  mkdir E3SM_test
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_test
+  cd E3SM_test
+  git checkout shippert/gcam/active-gcam-submod
+  git submodule update --init --recursive
+
+  # Modify definitions.h here if necessary
+  cd cime/scripts
+  ./create_newcase --project e3sm --case ~/iac_E3SM_test_Z --compset Z --res f19_g16
+
+  cd ~/iac_E3SM_test_Z/
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id NTASKS --val 1
+  ./case.setup
+  ./case.build 
+
+  ./case.submit
+
+2/3/2021
+
+* Kate's pnnl id is d3x132
+
+  /compyfs/d3x132/gcam-e3sm/cpl/data
+
+  for config files.
+
+12/1/2020
+
+* Man, it's been a frustrating couple of weeks - I can't get the namelist
+  defaults to work, and the compy system is now balking at mpi_bcast.  I'm
+  trying to restrict the number of tasks via:
+
+  ./xmlchange --id NTASKS --val 4
+
+  ...and hopefully that will help setup the right mpi_bcast setup 
+
+* ./pelayout says how things are configured.
+
+* Might need to do stuff like 
+
+  ./xmlchange --id NTASKS_IAC --val 1
+
+  ...etc.
+
+* The reason I'm restricting the ntasks is I'm getting this message:
+
+  MPIR_Bcast_binomial(265)..............: message sizes do not match across processes in the collective routine: Received 98 but expected 4096)
+
+* The former pe layout had 40 tasks for each component, which is excessive,
+  and that adds up to 360 tasks so I don't know where the 98 is coming
+  from.  And I certainly don't know why it expects 4096 - perhaps the IAC
+  bcast I've got setup doesn't have something initialized like it should
+  be. 
+
+! Ah, wait! It's the *message size*, not the number of procs - we are
+  telling it we are sending 4096 bits but only sending 98.  I've got
+  something initialized wrong.
+
 11/10/2020
 
 * Email from Alan way back when:
@@ -89,11 +481,18 @@
 
 * Once again, for compy:
 
-  mkdir E3SM_gcam_core_submodule   git clone git@github.com:E3SM-Project/E3SM.git E3SM_gcam_core_submodule   cd E3SM_gcam_core_submodule/   git checkout shippert/gcam/active-gcam-submod   git submodule update --init --recursive
+  mkdir E3SM_gcam_core_submodule
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_gcam_core_submodule
+  cd E3SM_gcam_core_submodule/
+  git checkout shippert/gcam/active-gcam-submod
+  git submodule update --init --recursive
 
-  cd cime/scripts   ./create_newcase --project e3sm --case ~/iac_ZLND_test --compset Z --res f19_g16
+  cd cime/scripts
+  ./create_newcase --project e3sm --case ~/iac_ZLND_test --compset Z --res f19_g16
 
-   cd ~/iac_ZLND_test/    ./case.setup    ./case.build 
+  cd ~/iac_ZLND_test/
+  ./case.setup
+  ./case.build 
 
 * If you do the submodule update *before* checking out the branch, you get   a bunch of git errors, probably because master has a ton of new   submodules that muck up everything.  I think they've moved CIME and other   stuff in to a submod.  Whatever, just do this in order.
 
@@ -184,7 +583,14 @@
 
 * Ah, I think I know how to set environment variables - it's hidden in the   xml stuff, which you modify with ./xmlchange:
 
-    ./xmlchange --id STOP_N --val 1     ./xmlchange --id DEBUG --val TRUE     ./xmlchange --id ROOTPE_CPL --val 2     ./xmlchange --id NTASKS --val 4     ./xmlchange --id NTASKS_ATM --val 2     ./xmlchange --id NTASKS_CPL --val 2     ./xmlchange --id NTASKS_ESP --val 1     ./xmlchange --id NTASKS_OCN --val 2
+    ./xmlchange --id STOP_N --val 1
+    ./xmlchange --id DEBUG --val TRUE
+    ./xmlchange --id ROOTPE_CPL --val 2
+    ./xmlchange --id NTASKS --val 4
+    ./xmlchange --id NTASKS_ATM --val 2
+    ./xmlchange --id NTASKS_CPL --val 2
+    ./xmlchange --id NTASKS_ESP --val 1
+    ./xmlchange --id NTASKS_OCN --val 2
 
 * This was under the "debugging on a workstation with ddd" in the   confluence page, but tihs does sound familiar.  So, this is how you set   up the ntasks and stuff like that, but (mainly), how to turn on DEBUG and   a few other things.  My guess is "STOP_N" tells you how many steps to   run, so limiting it to one makes a lot of sense in a debugging context.
 

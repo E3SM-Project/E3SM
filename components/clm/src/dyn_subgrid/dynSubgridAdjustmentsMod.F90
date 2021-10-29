@@ -18,7 +18,7 @@ module dynSubgridAdjustmentsMod
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
   use clm_varpar             , only : ndecomp_pools, nlevdecomp
-  use clm_varctl             , only : use_crop
+  use clm_varctl             , only : use_crop, iulog
   use clm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynColumnStateUpdaterMod, only : column_state_updater_type
@@ -850,7 +850,7 @@ contains
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j
+    integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
 
@@ -868,9 +868,16 @@ contains
                var         = col_ns%decomp_npools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          col_ns%dyn_nbal_adjustments(begc:endc) = &
-               col_ns%dyn_nbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+          ! TRS Check the first element to see if it is NaN - this is
+          ! causing problems for us while debugging.  I am not sure if
+          ! col_ns%dyn_nbal_adjustments being NaN is an actual problem
+          ! or not, but it bombs out while debugging so we have to trap
+          ! for it
+          if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+             col_ns%dyn_nbal_adjustments(begc:endc) = &
+                  col_ns%dyn_nbal_adjustments(begc:endc) + &
+                  adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+          endif
 
        end do
     end do
@@ -882,9 +889,12 @@ contains
             var         = col_ns%ntrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+          col_ns%dyn_nbal_adjustments(begc:endc) = &
+               col_ns%dyn_nbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
 
        call column_state_updater%update_column_state_no_special_handling( &
            bounds      = bounds                          , &
@@ -892,9 +902,12 @@ contains
            var         = col_ns%sminn_vr(begc:endc, j) , &
            adjustment  = adjustment_one_level(begc:endc))
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-           col_ns%dyn_nbal_adjustments(begc:endc) + &
-           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+          col_ns%dyn_nbal_adjustments(begc:endc) = &
+               col_ns%dyn_nbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
     end do
 
   end subroutine dyn_col_ns_Adjustments
@@ -1294,10 +1307,12 @@ contains
                var         = col_ps%decomp_ppools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
+          ! TRS NaN trap, for debugging
+          if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+             col_ps%dyn_pbal_adjustments(begc:endc) =      &
+                  col_ps%dyn_pbal_adjustments(begc:endc) + &
+                  adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+          endif
        end do
     end do
 
@@ -1308,9 +1323,12 @@ contains
             var         = col_ps%ptrunc_vr(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+          col_ps%dyn_pbal_adjustments(begc:endc) =      &
+               col_ps%dyn_pbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
 
        call column_state_updater%update_column_state_no_special_handling( &
             bounds      = bounds,                                         &
@@ -1318,9 +1336,12 @@ contains
             var         = col_ps%solutionp_vr(begc:endc,j),             &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+          col_ps%dyn_pbal_adjustments(begc:endc) =      &
+               col_ps%dyn_pbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
 
        call column_state_updater%update_column_state_no_special_handling( &
             bounds      = bounds,                                         &
@@ -1328,9 +1349,13 @@ contains
             var         = col_ps%labilep_vr(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+          col_ps%dyn_pbal_adjustments(begc:endc) =      &
+               col_ps%dyn_pbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
 
        call column_state_updater%update_column_state_no_special_handling( &
             bounds      = bounds,                                         &
@@ -1338,9 +1363,12 @@ contains
             var         = col_ps%secondp_vr(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! TRS NaN trap, for debugging
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+          col_ps%dyn_pbal_adjustments(begc:endc) =      &
+               col_ps%dyn_pbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       endif
     end do
 
   end subroutine dyn_col_ps_Adjustments

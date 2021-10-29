@@ -3589,9 +3589,11 @@ module VegetationDataType
          this%totvegc_abg(bounds%begp:bounds%endp), &
          col_cs%totvegc_abg(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%cropseedc_deficit(bounds%begp:bounds%endp), &
-         col_cs%cropseedc_deficit(bounds%begc:bounds%endc))
+    if (use_crop) then 
+       call p2c(bounds, num_soilc, filter_soilc, &
+            this%cropseedc_deficit(bounds%begp:bounds%endp), &
+            col_cs%cropseedc_deficit(bounds%begc:bounds%endc))
+    endif
 
   end subroutine veg_cs_summary
     
@@ -4229,9 +4231,11 @@ module VegetationDataType
         this%totpftn(bounds%begp:bounds%endp), &
         col_ns%totpftn(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseedn_deficit(bounds%begp:bounds%endp), &
-        col_ns%cropseedn_deficit(bounds%begc:bounds%endc))
+   if (use_crop) then 
+      call p2c(bounds, num_soilc, filter_soilc, &
+           this%cropseedn_deficit(bounds%begp:bounds%endp), &
+           col_ns%cropseedn_deficit(bounds%begc:bounds%endc))
+   endif
   
   end subroutine veg_ns_summary
 
@@ -4959,9 +4963,11 @@ module VegetationDataType
         this%totpftp(bounds%begp:bounds%endp), &
         col_ps%totpftp(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseedp_deficit(bounds%begp:bounds%endp), &
-        col_ps%cropseedp_deficit(bounds%begc:bounds%endc))
+   if (use_crop) then 
+      call p2c(bounds, num_soilc, filter_soilc, &
+           this%cropseedp_deficit(bounds%begp:bounds%endp), &
+           col_ps%cropseedp_deficit(bounds%begc:bounds%endc))
+   endif
 
   end subroutine veg_ps_summary
   
@@ -9774,10 +9780,16 @@ module VegetationDataType
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
 
-       this%sen_nloss_litter(p) = &
-           this%livestemn_to_litter(p)            + &
-           this%leafn_to_litter(p)                + &
-           this%frootn_to_litter(p)
+      ! TRS - NaN trap for debugging
+      if (.not. isnan(this%sen_nloss_litter(p)) .and.  &
+           .not. isnan(this%livestemn_to_litter(p)) .and. &
+           .not. isnan(this%leafn_to_litter(p)) .and. &
+           .not. isnan(this%frootn_to_litter(p))) then 
+         this%sen_nloss_litter(p) = &
+              this%livestemn_to_litter(p)            + &
+              this%leafn_to_litter(p)                + &
+              this%frootn_to_litter(p)
+      endif
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
@@ -10873,11 +10885,17 @@ module VegetationDataType
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
 
-       this%sen_ploss_litter(p) = &
-           this%livestemp_to_litter(p)            + &
-           this%leafp_to_litter(p)                + &
-           this%frootp_to_litter(p)
-    end do
+      ! TRS - NaN trap
+      if (.not. isnan(this%sen_ploss_litter(p)) .and. &
+          .not. isnan(this%livestemp_to_litter(p)) .and. &
+          .not. isnan(this%leafp_to_litter(p)) .and. &
+          .not. isnan( this%frootp_to_litter(p))) then 
+         this%sen_ploss_litter(p) = &
+              this%livestemp_to_litter(p)            + &
+              this%leafp_to_litter(p)                + &
+              this%frootp_to_litter(p)
+      endif
+   end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
          this%fire_ploss(bounds%begp:bounds%endp), &

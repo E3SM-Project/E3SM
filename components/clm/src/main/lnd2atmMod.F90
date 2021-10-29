@@ -70,7 +70,7 @@ contains
     type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars 
     !
     ! !LOCAL VARIABLES:
-    integer :: g                                    ! index
+    integer :: g, p                                    ! index
     
     !------------------------------------------------------------------------
 
@@ -98,13 +98,28 @@ contains
          lnd2atm_vars%albi_grc   (bounds%begg:bounds%endg, :), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
+    ! TRS - debugging print
+    !write(iulog, *) 'TRS4 - begin p2g eflx_lwrad_out'
+
     call p2g(bounds, &
          veg_ef%eflx_lwrad_out (bounds%begp:bounds%endp), &
          lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     do g = bounds%begg,bounds%endg
-       lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))
+
+       ! TRS - debugging prints
+       !if (g .eq. 2907) then 
+       !   write(iulog, *) 'TRS ', g, bounds%begg,bounds%endg,&
+       !        lnd2atm_vars%eflx_lwrad_out_grc(g), &
+       !        sb, lnd2atm_vars%t_rad_grc(g)
+       !endif
+       
+       ! TRS - trap out negative fluxes, which are happening in early
+       ! time steps and causing a crash.
+       if (lnd2atm_vars%eflx_lwrad_out_grc(g) .ge. 0._r8) then 
+          lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))
+       endif 
     end do
 
   end subroutine lnd2atm_minimal
