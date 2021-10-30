@@ -3594,8 +3594,8 @@
     <CIME_OUTPUT_ROOT>/data/hp210190/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/data/hp210190/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/data/hp210190/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/data/hp210190/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/data/hp210190/baselines/chrys/$COMPILER</BASELINE_ROOT>
+    <DOUT_S_ROOT>/data/hp210190/$USER/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/data/hp210190/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/data/hp210190/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
@@ -3618,12 +3618,15 @@
       </arguments>
     </mpirun>
     <module_system type="soft">
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <cmd_path lang="csh">source /vol0004/apps/oss/spack/share/spack/setup-env.csh ; spack</cmd_path>
-      <cmd_path lang="sh">source /vol0004/apps/oss/spack/share/spack/setup-env.sh ; spack</cmd_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh;. /data/hp210190/soft/spack/share/spack/setup-env.sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh;. /data/hp210190/soft/spack/share/spack/setup-env.csh</init_path>
+      <cmd_path lang="csh">spack</cmd_path>
+      <cmd_path lang="sh">spack</cmd_path>
       <modules compiler="gnu">
+        <command name="load">cmake        @3.18.4%gcc@8.3.1 arch=linux-rhel8-a64fx</command>
+        <command name="load">netlib-lapack@3.8.0 %gcc@8.3.1 arch=linux-rhel8-a64fx</command>
         <command name="load">/zhgccy5</command><!-- zhgccy5 mpich-tofu@master%gcc@8.3.1 arch=linux-rhel8-a64fx -->
+        <command name="find">--loaded</command>
       </modules>
       <modules compiler="fj">
         <!--command name="load">lang/tcsds-1.2.33</command-->
@@ -3637,6 +3640,10 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE> 
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="PERL5LIB">/data/hp210190/soft/perl5/lib/perl5:/home/hp210190/u02380/perl5/lib/perl5</env>
+      <env name="OMPI_MCA_plm_ple_numanode_assign_policy">share_band</env>
+    </environment_variables>
     <environment_variables compiler="gnu">
       <env name="NETCDF_PATH">/data/hp210190/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.3.1</env>
     </environment_variables>
