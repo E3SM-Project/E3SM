@@ -21,7 +21,7 @@ from utils import run_cmd, check_minimum_python_version, expect, ensure_pylint, 
 
 check_minimum_python_version(3, 4)
 
-from machines_specs import is_machine_supported, is_cuda_machine, get_all_supported_machines
+from machines_specs import is_machine_supported, is_cuda_machine
 
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
@@ -126,20 +126,29 @@ def test_branch_switch(test_obj, repo, branch_name):
     test_obj.assertEqual(get_current_head(repo=repo), branch_name)
 
 ###############################################################################
-def test_omp_spread(test_obj, output, num_places):
+def test_omp_spread(test_obj, output, num_places, begin=0):
 ###############################################################################
     lines = output.splitlines()
     all_places = []
     for line in lines:
         if "OMP_PLACES = '" in line:
             places_str = line.split("=")[1].strip().strip("'")
-            places = [int(item.strip("{}")) for item in places_str.split(",")]
+            try:
+                places = [int(item.strip("{}")) for item in places_str.split(",")]
+            except ValueError as e:
+                test_obj.assertTrue(False, msg=f"Line {line} had value error: {str(e)}")
+
+            # Should be sequential
+            for idx, place in enumerate(places):
+                if idx != 0:
+                    test_obj.assertEqual(place, places[0]+idx)
+
             all_places.extend(places)
 
     all_places.sort()
-    test_obj.assertEqual(len(all_places), num_places)
+    test_obj.assertEqual(len(all_places), num_places - begin, msg=f"{output}")
     for idx, place in enumerate(all_places):
-        test_obj.assertEqual(idx, place)
+        test_obj.assertEqual(idx + begin, place, msg=f"Idx {idx} was not in sequential order in {all_places}")
 
 ###############################################################################
 class TestBaseOuter: # Hides the TestBase class from test scanner
@@ -156,8 +165,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._full        = CONFIG["full"]
             self._jenkins     = CONFIG["jenkins"]
 
-            if self._full or self._jenkins:
-                expect(self._machine is not None, "Full/Jenkins runs require a machine")
+            expect(self._machine is not None, "Runs require a machine")
 
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
@@ -170,9 +178,6 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             return "{}{}".format(cmd.replace("$machine", machine).replace("$results", str(self._results)),
                                  " --dry-run" if (dry_run and "--dry-run" not in cmd) else "")
 
-        def get_machines(self):
-            return [self._machine] if self._machine else get_all_supported_machines()
-
         def test_doctests(self):
             run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
 
@@ -182,19 +187,15 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
 
         def test_gen_baseline(self):
             if self._generate:
-                machines = self.get_machines()
-                for machine in machines:
-                    for cmd in self._cmds:
-                        run_cmd_store_output(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
+                for cmd in self._cmds:
+                    run_cmd_store_output(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
             else:
                 self.skipTest("Skipping dry run baseline generation")
 
         def test_cmp_baseline(self):
             if self._compare:
-                machines = self.get_machines()
-                for machine in machines:
-                    for cmd in self._cmds:
-                        run_cmd_check_baseline(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
+                for cmd in self._cmds:
+                    run_cmd_check_baseline(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
             else:
                 self.skipTest("Skipping dry run baseline comparison")
 
@@ -503,13 +504,21 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test that MPI ranks and threads are properly spread across a machine's computing resources
         """
         if self._full and self._machine == "mappy":
-            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd("./test-all-scream -x -e OMP_DISPLAY_ENV=True -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
 
         else:
             self.skipTest("Skipping full run or not on mappy")
@@ -613,10 +622,10 @@ OR
     > {0} TestTestAllScream.test_pylint
 
     \033[1;32m# Do a dry-run generation for test_all_scream \033[0m
-    > {0} -g TestTestAllScream
+    > {0} -g TestTestAllScream -m $machine
 
     \033[1;32m# Do a dry-run comparison for test_all_scream \033[0m
-    > {0} -c TestTestAllScream
+    > {0} -c TestTestAllScream -m $machine
 
     \033[1;32m# Do a full test run of test_all_scream \033[0m
     > {0} -f -m $machine TestTestAllScream
@@ -625,14 +634,14 @@ OR
     > {0} -f -m $machine
 
     \033[1;32m# Do a dry-run generation for everything \033[0m
-    > {0} -g
+    > {0} -g -m $machine
 
     \033[1;32m# Do a dry-run comparison for comparison \033[0m
-    > {0} -c
+    > {0} -c -m $machine
 
     \033[1;32m# Run every possible test. This should be done before a PR is issued \033[0m
-    > {0} -g # You likely want to do this for a reference commit
-    > {0} -c
+    > {0} -g -m $machine # You likely want to do this for a reference commit
+    > {0} -c -m $machine
     > {0} -f -m $machine
 
     \033[1;32m# Test Jenkins script \033[0m
