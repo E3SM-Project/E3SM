@@ -539,7 +539,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use dyn_grid,           only: fv_nphys
   use cam_history,        only: addfld, add_default, horiz_only 
   use crm_physics,        only: crm_physics_init 
-  use cpp_interface_mod,  only: scream_session_init
   use vertical_diffusion, only: vertical_diffusion_init
   use cloud_diagnostics,  only: cloud_diagnostics_init
   use modal_aero_calcsize,   only: modal_aero_calcsize_init
@@ -653,10 +652,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call conv_water_init
 
   call crm_physics_init(phys_state, pbuf2d, species_class)
-
-#if defined(MMF_SAMXX)
-  call scream_session_init()
-#endif
 
   call sslt_rebin_init()
   call tropopause_init()
@@ -1024,12 +1019,6 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   call t_startf ('crm_physics_final')
   call crm_physics_final()
   call t_stopf ('crm_physics_final')
-
-#if defined(MMF_SAMXX)
-  call t_startf ('scream_session_finalize')
-  call scream_session_finalize()
-  call t_stopf ('scream_session_finalize')
-#endif
 
   call t_startf ('print_cost_p')
   call print_cost_p
