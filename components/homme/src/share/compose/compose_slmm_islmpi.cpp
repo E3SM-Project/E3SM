@@ -566,7 +566,7 @@ void comm_lid_on_rank (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
     mpi::waitany(count, reqs.data(), &idx);
     const Int* rmtlids = recv.data() + recvptr[idx];
     const auto& gids = rank2rmtgids.at(recvrank[idx]);
-    slmm_assert(recvptr[idx+1] - recvptr[idx] == gids.size());
+    slmm_assert(recvptr[idx+1] - recvptr[idx] == static_cast<int>(gids.size()));
     Int i = 0;
     for (auto gid: gids)
       gid2rmt_owning_lid[gid] = rmtlids[i++];

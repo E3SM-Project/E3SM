@@ -325,25 +325,26 @@ module ocn_time_average_coupled
               + CO2_gas_flux(iCell) ) / ( nAccumulatedCoupled + 1)
 
            avgOceanSurfacePhytoC(1,iCell) = ( avgOceanSurfacePhytoC(1,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%diatC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(diatC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfacePhytoC(2,iCell) = ( avgOceanSurfacePhytoC(2,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%spC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
-           avgOceanSurfacePhytoC(3,iCell) = ( avgOceanSurfacePhytoC(3,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%phaeoC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(spC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
+! Currently no Phaeo in MARBL
+!          avgOceanSurfacePhytoC(3,iCell) = ( avgOceanSurfacePhytoC(3,iCell) * nAccumulatedCoupled &
+!             + ecosysTracers(phaeoC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfacePhytoC(3,iCell) = 0.0_RKIND
 
            avgOceanSurfaceDIC(iCell) = ( avgOceanSurfaceDIC(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%dic_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(dic_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceSiO3(iCell) = ( avgOceanSurfaceSiO3(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%sio3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(sio3_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceNO3(iCell) = ( avgOceanSurfaceNO3(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%no3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(no3_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceNH4(iCell) = ( avgOceanSurfaceNH4(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%nh4_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(nh4_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceFeDissolved(iCell) = ( avgOceanSurfaceFeDissolved(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%fe_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
-!maltrud need to renormalize
+              + ecosysTracers(fe_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceDOCr(iCell) = ( avgOceanSurfaceDOCr(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%donr_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(docr_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
 
            avgOceanSurfaceFeParticulate(iCell) = 0.0_RKIND
 

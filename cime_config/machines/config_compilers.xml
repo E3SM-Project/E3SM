@@ -606,101 +606,6 @@ flags should be captured within MPAS CMake files.
   <SFC> pgf95 </SFC>
 </compiler>
 
-<compiler OS="AIX" COMPILER="ibm">
-  <CFLAGS>
-    <append> -qarch=auto -qtune=auto -qcache=auto </append>
-  </CFLAGS>
-  <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
-  <FFLAGS>
-    <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append COMP_NAME="eam"> -qspill=6000 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
-    <append> -bdatapsize:64K -bstackpsize:64K -btextpsize:32K </append>
-  </LDFLAGS>
-  <MPICC> mpcc_r </MPICC>
-  <MPIFC> mpxlf2003_r </MPIFC>
-  <SCC> cc_r </SCC>
-  <SFC> xlf2003_r </SFC>
-  <SLIBS>
-    <append> -lmassv -lessl </append>
-    <append DEBUG="FALSE"> -lmass </append>
-  </SLIBS>
-</compiler>
-
-<compiler OS="BGL" COMPILER="ibm">
-  <CFLAGS>
-    <base> -O3 -qstrict </base>
-    <append> -qtune=440 -qarch=440d </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append> -qtune=440 -qarch=440d </append>
-    <append DEBUG="FALSE"> -O3 -qstrict -Q </append>
-    <append DEBUG="TRUE"> -qinitauto=FF911299 -qflttrap=ov:zero:inv:en </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-  <MLIBS>
-    <base> -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts </base>
-  </MLIBS>
-  <MPICC> blrts_xlc </MPICC>
-  <MPIFC> blrts_xlf2003 </MPIFC>
-  <MPI_LIB_NAME> mpich.rts </MPI_LIB_NAME>
-  <MPI_PATH> /bgl/BlueLight/ppcfloor/bglsys</MPI_PATH>
-  <SCC> blrts_xlc </SCC>
-  <SFC> blrts_xlf2003 </SFC>
-</compiler>
-
-<compiler OS="BGP" COMPILER="ibm">
-  <CFLAGS>
-    <append> -qtune=450 -qarch=450 -I/bgsys/drivers/ppcfloor/arch/include/</append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX -DnoI8 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>-qspillsize=2500 -qtune=450 -qarch=450 </append>
-    <append> -qextname=flush </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-</compiler>
-
-<compiler OS="BGQ" COMPILER="ibm">
-  <CFLAGS>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DLINUX  </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <base> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qphsinfo </base>
-    <append DEBUG="FALSE"> -O3 -qstrict -Q </append>
-    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
-  </LDFLAGS>
-</compiler>
-
 <compiler OS="CNL">
   <CMAKE_OPTS>
     <append MPILIB="!impi"> -DCMAKE_SYSTEM_NAME=Catamount </append>
@@ -773,6 +678,26 @@ flags should be captured within MPAS CMake files.
   <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
 </compiler>
 
+<compiler MACH="anlgce" COMPILER="gnu">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append> -fallow-argument-mismatch -fallow-invalid-boz </append>
+  </FFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs} -lblas -llapack</append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
+</compiler>
+
 <compiler MACH="anvil" COMPILER="gnu">
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
@@ -794,7 +719,7 @@ flags should be captured within MPAS CMake files.
 <compiler COMPILER="gnu" MACH="eddi">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <FFLAGS>
@@ -2463,7 +2388,7 @@ flags should be captured within MPAS CMake files.
 <compiler MACH="modex" COMPILER="gnu">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
@@ -2482,7 +2407,7 @@ flags should be captured within MPAS CMake files.
 <compiler MACH="gcp" COMPILER="gnu">
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CPPDEFS>
-     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
+     <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE -DHAVE_SLASHPROC</append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>

@@ -178,18 +178,24 @@ QLT<ES>::QLT (const cedr::mpi::Parallel::Ptr& p, const cedr::Int& ncells,
   : cedr::qlt::QLT<ES>(p, ncells, tree, options)
 {
   if (vertical_levels) {
-    cedr_throw_if(ko::OnGpu<ES>::value,
-                  "QLT does not yet support vertical_levels on gpu.");
-    vld_ = std::make_shared<VerticalLevelsData>(vertical_levels);
+    if (ko::OnGpu<ES>::value)
+      cedr_throw_if(ko::OnGpu<ES>::value,
+                    "QLT does not yet support vertical_levels on gpu.");
+    else
+      vld_ = std::make_shared<VerticalLevelsData>(vertical_levels);
   }
 }
 
 template <typename ES>
 void QLT<ES>::run () {
-  if (ko::OnGpu<ES>::value) {
+  if (ko::OnGpu<ES>::value)
     Super::run();
-    return;
-  }
+  else
+    runimpl();
+}
+
+template <typename ES>
+void QLT<ES>::runimpl () {
   static const int mpitag = 42;
   using cedr::Int;
   using cedr::Real;

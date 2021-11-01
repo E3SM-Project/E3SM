@@ -20,17 +20,15 @@ static int calc_nslot (const int nelemd) {
 }
 
 ComposeTransportImpl::ComposeTransportImpl ()
-  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
-    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
-    m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
+  : m_tp_ne(1,1,1), m_tp_ne_qsize(1,1,1), m_tp_ne_hv_q(1,1,1), // throwaway settings
+    m_tu_ne(m_tp_ne), m_tu_ne_qsize(m_tp_ne_qsize), m_tu_ne_hv_q(m_tp_ne_hv_q)
 {
   setup();
 }
 
 ComposeTransportImpl::ComposeTransportImpl (const int num_elems)
-  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
-    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
-    m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
+  : m_tp_ne(1,1,1), m_tp_ne_qsize(1,1,1), m_tp_ne_hv_q(1,1,1), // throwaway settings
+    m_tu_ne(m_tp_ne), m_tu_ne_qsize(m_tp_ne_qsize), m_tu_ne_hv_q(m_tp_ne_hv_q)
 {}
 
 void ComposeTransportImpl::setup () {

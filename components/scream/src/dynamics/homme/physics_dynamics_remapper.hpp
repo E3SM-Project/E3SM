@@ -163,7 +163,7 @@ protected:
   KOKKOS_FUNCTION
   void set_dyn_to_zero(const MT& team) const;
 
-  template <typename ScalarT, typename MT>
+  template <typename MT>
   KOKKOS_FUNCTION
   void local_remap_fwd_2d (const MT& team) const;
 
@@ -171,7 +171,7 @@ protected:
   KOKKOS_FUNCTION
   void local_remap_fwd_3d (const MT& team) const;
 
-  template <typename ScalarT, typename MT>
+  template <typename MT>
   KOKKOS_FUNCTION
   void local_remap_bwd_2d (const MT& team) const;
 
@@ -485,17 +485,21 @@ initialize_device_variables()
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
     h_phys_layout(i) = etoi(phys_lt);
 
-    // Store allocation properties
+    // Store allocation properties. Only allow packed views for 3D physics fields.
+    const bool is_phys_field_3d = (h_phys_layout(i) == etoi(LayoutType::Scalar3D) ||
+                                   h_phys_layout(i) == etoi(LayoutType::Vector3D));
     const auto& phys_alloc_prop = ph.get_alloc_properties();
     const auto& dyn_alloc_prop  = dh.get_alloc_properties();
-    if (phys_alloc_prop.template is_compatible<pack_type>() &&
+    if (is_phys_field_3d &&
+        phys_alloc_prop.template is_compatible<pack_type>() &&
         dyn_alloc_prop.template  is_compatible<pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::PackAlloc;
 
       // Store dimensions of phys/dyn view
       compute_view_dims<pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
       compute_view_dims<pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
-    } else if (phys_alloc_prop.template is_compatible<small_pack_type>() &&
+    } else if (is_phys_field_3d &&
+               phys_alloc_prop.template is_compatible<small_pack_type>() &&
                dyn_alloc_prop.template  is_compatible<small_pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
 
@@ -898,7 +902,7 @@ setup_boundary_exchange () {
 }
 
 template<typename RealType>
-template <typename ScalarT, typename MT>
+template <typename MT>
 KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
 local_remap_fwd_2d (const MT& team) const
@@ -910,11 +914,11 @@ local_remap_fwd_2d (const MT& team) const
   switch (phys_layout(i)) {
     case etoi(LayoutType::Scalar2D):
     {
-      auto phys = reshape<ScalarT,1> (phys_ptrs(i), phys_dims(i));
+      auto phys = reshape<RealType,1> (phys_ptrs(i), phys_dims(i));
 
       const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols);
       if (is_state_field_dev(i)) {
-        auto dyn = reshape<ScalarT,4> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,4> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
@@ -922,7 +926,7 @@ local_remap_fwd_2d (const MT& team) const
         };
         Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = reshape<ScalarT,3> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,3> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
@@ -934,11 +938,11 @@ local_remap_fwd_2d (const MT& team) const
     }
     case etoi(LayoutType::Vector2D):
     {
-      auto phys = reshape<ScalarT,2> (phys_ptrs(i), phys_dims(i));
+      auto phys = reshape<RealType,2> (phys_ptrs(i), phys_dims(i));
 
       const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_p[1]);
       if (is_state_field_dev(i)) {
-        auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,5> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int idx) {
           const int icol = idx/dim_p[1];
@@ -949,7 +953,7 @@ local_remap_fwd_2d (const MT& team) const
         };
         Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = reshape<ScalarT,4> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,4> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int idx) {
           const int icol = idx/dim_p[1];
@@ -1049,7 +1053,7 @@ local_remap_fwd_3d (const MT& team) const
 }
 
 template<typename RealType>
-template <typename ScalarT, typename MT>
+template <typename MT>
 KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
 local_remap_bwd_2d (const MT& team) const
@@ -1065,14 +1069,14 @@ local_remap_bwd_2d (const MT& team) const
   switch (phys_dims(i).size) {
     case 1:
     {
-      auto phys = reshape<ScalarT,1> (phys_ptrs(i), phys_dims(i));
+      auto phys = reshape<RealType,1> (phys_ptrs(i), phys_dims(i));
 
       if (is_state_field_dev(i)) {
-        auto dyn = reshape<ScalarT,4> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,4> (dyn_ptrs(i), dyn_dims(i));
 
         phys(icol) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2]);
       } else {
-        auto dyn = reshape<ScalarT,3> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,3> (dyn_ptrs(i), dyn_dims(i));
 
         phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
       }
@@ -1080,18 +1084,18 @@ local_remap_bwd_2d (const MT& team) const
     }
     case 2:
     {
-      auto phys = reshape<ScalarT,2> (phys_ptrs(i), phys_dims(i));
+      auto phys = reshape<RealType,2> (phys_ptrs(i), phys_dims(i));
 
       const auto tr = Kokkos::TeamThreadRange(team, dim_p[1]);
       if (is_state_field_dev(i)) {
-        auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,5> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int idim) {
           phys(icol,idim) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2]);
         };
         Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = reshape<ScalarT,4> (dyn_ptrs(i), dyn_dims(i));
+        auto dyn = reshape<RealType,4> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int idim) {
           phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
@@ -1215,22 +1219,10 @@ operator()(const RemapFwdTag&, const MT& team) const
   switch (phys_layout(i)) {
     case etoi(LayoutType::Scalar2D):
     case etoi(LayoutType::Vector2D):
-      if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
-        set_dyn_to_zero<pack_type>(team);
-        team.team_barrier();
+      set_dyn_to_zero<Real>(team);
+      team.team_barrier();
 
-        local_remap_fwd_2d<pack_type>(team);
-      } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        set_dyn_to_zero<small_pack_type>(team);
-        team.team_barrier();
-
-        local_remap_fwd_2d<small_pack_type>(team);
-      } else {
-        set_dyn_to_zero<Real>(team);
-        team.team_barrier();
-
-        local_remap_fwd_2d<Real>(team);
-      }
+      local_remap_fwd_2d(team);
       break;
     case etoi(LayoutType::Scalar3D):
     case etoi(LayoutType::Vector3D):
@@ -1270,13 +1262,7 @@ operator()(const RemapBwdTag&, const MT& team) const
   switch (phys_layout(i)) {
     case etoi(LayoutType::Scalar2D):
     case etoi(LayoutType::Vector2D):
-      if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
-        local_remap_bwd_2d<pack_type>(team);
-      } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        local_remap_bwd_2d<small_pack_type>(team);
-      } else {
-        local_remap_bwd_2d<Real>(team);
-      }
+      local_remap_bwd_2d(team);
       break;
     case etoi(LayoutType::Scalar3D):
     case etoi(LayoutType::Vector3D):

@@ -867,6 +867,77 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/soft/apps/packages/climate/perl5/lib/perl5</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="anlgce">
+    <DESC>ANL CELS General Computing Environment (Linux) workstation</DESC>
+    <NODENAME_REGEX>compute-(240|386)-[0-9][0-9]</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <SAVE_TIMING_DIR>/scratch/$ENV{USER}/e3sm/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/scratch/$ENV{USER}/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/nfs/gce/projects/climate/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/nfs/gce/projects/climate/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/nfs/gce/projects/climate/e3sm/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="mpich">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/perl</init_path>
+      <init_path lang="bash">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/bash</init_path>
+      <init_path lang="sh">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">module</cmd_path>
+      <cmd_path lang="bash">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">autoconf/2.69-tz6eue5</command>
+        <command name="load">automake/1.16.3-fm5m6qc</command>
+        <command name="load">libtool/2.4.6-jdxbjft</command>
+        <command name="load">m4/1.4.19-wq3bm42</command>
+        <command name="load">cmake/3.20.5-yjp2hz6</command>
+        <command name="load">gcc/11.1.0-5ikoznk</command>
+        <command name="load">zlib/1.2.11-smoyzzo</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables mpilib="mpich">
+      <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
+      <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
+      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
+      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.1c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="sandiatoss3">
@@ -2671,8 +2742,8 @@
         <command name="purge"/>
 	<command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	<command name="load">xml-libxml</command>
-	<command name="load">python/2.7</command>
+	<command name="load">xml-libxml/2.0116</command>
+	<command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
@@ -2750,8 +2821,8 @@
 	<command name="purge"/>
         <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-        <command name="load">xml-libxml</command>
-        <command name="load">python/2.7</command>
+	<command name="load">xml-libxml/2.0116</command>
+        <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>

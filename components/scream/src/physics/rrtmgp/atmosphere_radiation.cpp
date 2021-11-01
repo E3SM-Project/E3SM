@@ -267,6 +267,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto lw_flux_up      = m_buffer.lw_flux_up;
   auto lw_flux_dn      = m_buffer.lw_flux_dn;
 
+  constexpr auto stebol = PC::stebol;
+  const auto ncol = m_ncol;
+  const auto nlay = m_nlay;
   // Copy data from the FieldManager to the YAKL arrays
   {
     // Determine the cosine zenith angle
@@ -330,13 +333,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
       // data is ordered surface to toa.
       const auto T_int = ekat::subview(d_tint, i);
       const auto P_mid = ekat::subview(d_pmid, i);
-      const int itop = (P_mid(0) < P_mid(m_nlay-1)) ? 0 : m_nlay-1;
+      const int itop = (P_mid(0) < P_mid(nlay-1)) ? 0 : nlay-1;
       const Real bc_top = T_mid(itop);
-      const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/PC::stebol));
+      const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/stebol));
       if (itop == 0) {
-          CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_top, bc_bot, T_int);
+          CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot, T_int);
       } else {
-          CO::compute_interface_values_linear(team, m_nlay, T_mid, dz, bc_bot, bc_top, T_int);
+          CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top, T_int);
       }
       team.team_barrier();
 
@@ -346,7 +349,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(i);
       sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(i);
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
         p_lay(i+1,k+1)       = d_pmid(i,k);
         t_lay(i+1,k+1)       = d_tmid(i,k);
         p_del(i+1,k+1)       = d_pdel(i,k);
@@ -359,8 +362,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
         t_lev(i+1,k+1)       = d_tint(i,k);
       });
 
-      p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
-      t_lev(i+1,m_nlay+1) = d_tint(i,m_nlay);
+      p_lev(i+1,nlay+1) = d_pint(i,nlay);
+      t_lev(i+1,nlay+1) = d_tint(i,nlay);
     });
   }
   Kokkos::fence();
@@ -372,10 +375,12 @@ void RRTMGPRadiation::run_impl (const int dt) {
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+    const auto gas_mol_weights = m_gas_mol_weights;
+
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
-        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& i) {
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
       });
     });
     Kokkos::fence();
@@ -393,7 +398,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
       int i = icol+1;
       lwp(i,k) *= 1e3;
       iwp(i,k) *= 1e3;
@@ -435,7 +440,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
       int i = icol+1;
       rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
       t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
@@ -450,8 +455,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay+1), [&] (const int& k) {
-        if (k < m_nlay) d_tmid(i,k) = t_lay(i+1,k+1);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+        if (k < nlay) d_tmid(i,k) = t_lay(i+1,k+1);
 
         d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
         d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);

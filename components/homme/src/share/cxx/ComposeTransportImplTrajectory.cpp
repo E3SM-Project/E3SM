@@ -446,7 +446,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
       const auto dep_pts = Homme::subview(m_dep_pts, ie);
       const auto f = [&] (const int i, const int j, const int k) {
         // dp = p1 - dt v/scale_factor
-        Scalar dp[3], r = 0;
+        Scalar dp[3];
         for (int d = 0; d < 3; ++d) {
           const auto vel_cart = (vec_sphere2cart(0,d,i,j)*vstar(0,i,j,k) +
                                  vec_sphere2cart(1,d,i,j)*vstar(1,i,j,k));
