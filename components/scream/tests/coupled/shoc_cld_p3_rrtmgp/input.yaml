@@ -41,4 +41,9 @@ Initial Conditions:
     Load Longitude: true
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
+
+# The parameters for I/O control
+SCORPIO:
+  Output YAML Files:
+    Point Grid: ["shoc_cld_p3_rrtmgp_output_np${MPI_RANKS}.yaml"]
 ...

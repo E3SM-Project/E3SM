@@ -106,8 +106,12 @@ void AtmosphereOutput::init()
 /* Overload the run routine to accept a TimeStamp or floating point for the input time */
 void AtmosphereOutput::run(const util::TimeStamp& time)
 {
-  // Pass the time in seconds and as a string to the run routine.
-  run_impl(time.get_seconds(),time.to_string());
+  if (m_filename_with_time_string) {
+    // Pass the time in seconds and as a string to the run routine.
+    run_impl(time.get_seconds(),time.to_string());
+  } else {
+    run_impl(time.get_seconds(),"");
+  }
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::finalize() 
@@ -169,7 +173,10 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   if (is_write_step) {
     if (m_num_snapshots_in_file==0) {
       // A new file has been opened and we need a new filename for it.
-      m_filename = compute_filename_root(m_casename) + "." + time_str;
+      m_filename = compute_filename_root(m_casename);
+      if (!time_str.empty()) {
+        m_filename += "." + time_str;
+      }
     }
     filename = m_filename;
     // If we are going to write an output checkpoint file, or a model restart file,
@@ -311,6 +318,9 @@ set_params (const ekat::ParameterList& params)
 {
   // Parse the parameters that controls this output instance.
   m_casename = params.get<std::string>("Casename");
+  if (params.isParameter("Timestamp in Filename")) {
+    m_filename_with_time_string = params.get<bool>("Timestamp in Filename");
+  }
 
   m_max_snapshots_per_file  = params.get<int>("Max Snapshots Per File");
   m_out_frequency           = params.sublist("Output").get<int>("Frequency");
