@@ -36,7 +36,10 @@ module physics_utils
 contains
 
   pure function calculate_drymmr_from_wetmmr(ncols, wetmmr, qv_wet) result (drymmr)
-    !Compute drymmr for any wetmmr constituent using wet water vapor mixing ratio(qv_wet)
+    !Computes drymmr (mass of a constituent divided by mass of dry air; commonly known as mixing ratio)
+    !for any wetmmr constituent (mass of a constituent divided by mass of dry air plus water
+    !vapor) using qv_wet (mass of water vapor divided by mass of dry air plus
+    !water vapor; see specific humidity).
 
     use ppgrid, only: pcols, pver
 
@@ -50,18 +53,22 @@ contains
     !return variable
     real(rtype) :: drymmr(pcols,pver) !dry mmr of a constituent
 
+    !Assign uninitialized columns using "huge"
+    drymmr(:,:) = huge(1.0_rtype)
+
     !Compute drymmr
     drymmr(:ncols,:) = wetmmr(:ncols,:)/(1.0_rtype - qv_wet(:ncols,:))
-
-    !Since pcols can be > ncols, assign uninitialized columns using "huge"
-    drymmr(ncols+1:pcols,:) = huge(1.0_rtype)
 
   end function calculate_drymmr_from_wetmmr
 
 
   pure function calculate_wetmmr_from_drymmr(ncols, drymmr, qv_dry) result (wetmmr)
-    !Compute wetmmr for any drymmr constituent using dry water vapor mixing ratio(qv_dry)
-    
+
+    !Computes wetmmr (mass of a constituent divided by mass of dry air plus water vapor)
+    !for any drymmr constituent (mass of a constituent divided by mass of dry air;
+    !commonly known as mixing ratio) using qv_dry (mass of water vapor divided by mass
+    !of dry air)
+
     use ppgrid, only: pcols, pver
 
     implicit none
@@ -74,11 +81,11 @@ contains
     !return variable
     real(rtype) :: wetmmr(pcols,pver) !wet mmr of a constituent
 
+    !Assign uninitialized columns using "huge"
+    wetmmr(:,:) = huge(1.0_rtype)
+
     !Compute wetmmr
     wetmmr(:ncols,:) = drymmr(:ncols,:)/(1.0_rtype + qv_dry(:ncols,:))
-
-    !Since pcols can be > ncols, assign uninitialized columns using "huge"
-    wetmmr(ncols+1:pcols,:) = huge(1.0_rtype)
 
   end function calculate_wetmmr_from_drymmr
 
