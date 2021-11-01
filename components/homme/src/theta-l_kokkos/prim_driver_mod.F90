@@ -391,7 +391,7 @@ contains
     type (c_ptr) :: elem_derived_omega_p_ptr
 
     integer :: n0_qdp, np1_qdp
-    real(kind=real_kind) :: dt_remap
+    real(kind=real_kind) :: dt_remap, dt_q
 
     if (nets/=1 .or. nete/=nelemd) then
       call abortmp ('We don''t allow to call C routines from a horizontally threaded region')
@@ -411,6 +411,7 @@ contains
 
     call init_logic_for_push_to_c()
 
+    dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
        dt_remap = dt
     else
@@ -421,7 +422,7 @@ contains
 
     if (compute_forcing_and_push_to_c) then
 !    if ( .true. ) then
-      call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
+      call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
       call t_startf('push_to_cxx')
       call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                              elem_derived_FPHI, elem_derived_FQ)
