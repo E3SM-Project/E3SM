@@ -225,14 +225,12 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
-    if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
-    }
-    HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
-        elem_derived_FQ, num_elems);
-    sync_to_device(fq_f90, tracers.fq);
+  if (tracers.fq.data() == nullptr) {
+    tracers.fq = decltype(tracers.fq)("fq", num_elems);
   }
+  HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
+      elem_derived_FQ, num_elems);
+  sync_to_device(fq_f90, tracers.fq);
 }
 
 void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)
