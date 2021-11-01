@@ -500,6 +500,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         else:
             offset = 0
 
+        expect(offset < len(affinity_cp),
+               f"Offset {offset} out of bounds (max={len(affinity_cp)}) for test {test}\naffinity_cp: {affinity_cp}")
         start = affinity_cp[offset]
         end = start
         for i in range(1, res_count[test]):
