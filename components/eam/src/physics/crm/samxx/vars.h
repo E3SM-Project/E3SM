@@ -64,13 +64,12 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p,
-                            real *crm_input_relvar_p, real *crm_input_nccn_prescribed_p,
-                            real *crm_input_npccn_p, real *crm_input_ni_activated_p,
+                            real *crm_input_nccn_p, real *crm_input_nc_nuceat_tend_p, real *crm_input_ni_activated_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
                             real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
                             real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                             real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
-                            real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
+                            real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                             real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
                             real *lat0_p, real *long0_p, int *gcolp_p,
                             real *crm_output_cltot_p, real *crm_output_clhgh_p,
@@ -80,7 +79,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
                   real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                   real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
-                  real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
+                  real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                   real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p, 
                   real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
                   real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
@@ -112,7 +111,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
                               real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                               real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
-                              real *crm_state_t_prev_p, real *crm_state_qv_prev_p,
+                              real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                               real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
                               real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
                               real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
@@ -425,9 +424,8 @@ extern real2d crm_input_vl_esmt;
 #endif
 extern real2d crm_input_t_vt ;
 extern real2d crm_input_q_vt ;
-extern real2d crm_input_relvar;
-extern real2d crm_input_nccn_prescribed;
-extern real2d crm_input_npccn;
+extern real2d crm_input_nccn;
+extern real2d crm_input_nc_nuceat_tend;
 extern real2d crm_input_ni_activated;
 
 extern real4d crm_state_u_wind;
@@ -447,7 +445,7 @@ extern real4d crm_state_ni;
 extern real4d crm_state_qm;
 extern real4d crm_state_bm;
 extern real2d crm_state_t_prev;
-extern real2d crm_state_qv_prev;
+extern real2d crm_state_q_prev;
 
 extern real4d crm_rad_qrad;
 extern real4d crm_rad_temperature;
@@ -522,9 +520,8 @@ extern real1d crm_output_precsc;
 extern real1d crm_output_precsl; 
 extern real3d crm_output_prec_crm;
 
+extern real2d nccn;
 extern real2d nc_nuceat_tend;
-extern real2d nccn_prescribed;
-extern real2d relvar;
 extern real2d ni_activated;
 extern real2d diag_eff_radius_qc;
 extern real2d diag_eff_radius_qi;
@@ -534,7 +531,7 @@ extern real2d qr_evap_tend;
 extern real2d mu;
 extern real2d lambdac;
 extern real4d t_prev;
-extern real4d qv_prev;
+extern real4d q_prev;
 
 extern real2d  qv2qi_depos_tend;
 extern real2d  precip_liq_surf;

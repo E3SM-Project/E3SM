@@ -44,6 +44,10 @@ module crm_state_module
       ! p3 microphysics variables not included above
       real(crm_rknd), allocatable :: qm(:,:,:,:) ! averaged riming density
       real(crm_rknd), allocatable :: bm(:,:,:,:) ! averaged riming volume
+
+      ! "previous" state variables needed for P3
+      real(crm_rknd), allocatable :: t_prev(:,:,:,:)  ! previous CRM time step temperature
+      real(crm_rknd), allocatable :: q_prev(:,:,:,:) ! previous CRM time step water vapor
       
       ! 1-moment microphsics variables
       real(crm_rknd), allocatable :: qp(:,:,:,:)   ! mass mixing ratio of precipitating condensate
@@ -104,6 +108,8 @@ contains
          if (.not. allocated(state%nr))          allocate(state%nr(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qm))          allocate(state%qm(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%bm))          allocate(state%bm(ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%t_prev))      allocate(state%t_prev(ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%q_prev))      allocate(state%q_prev(ncrms,crm_nx,crm_ny,crm_nz))
          call prefetch(state%qc)
          call prefetch(state%qi)
          call prefetch(state%qr)
@@ -112,6 +118,8 @@ contains
          call prefetch(state%nr)
          call prefetch(state%qm)
          call prefetch(state%bm)
+         call prefetch(state%t_prev)
+         call prefetch(state%q_prev)
       end if
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (.not. allocated(state%qp))          allocate(state%qp(ncrms,crm_nx,crm_ny,crm_nz))
@@ -154,6 +162,8 @@ contains
          if (allocated(state%nr)) deallocate(state%nr)
          if (allocated(state%qm)) deallocate(state%qm)
          if (allocated(state%bm)) deallocate(state%bm)
+         if (allocated(state%t_prev)) deallocate(state%t_prev)
+         if (allocated(state%q_prev)) deallocate(state%q_prev)
       end if
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (allocated(state%qp)) deallocate(state%qp)
