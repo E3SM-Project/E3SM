@@ -1718,6 +1718,10 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
+# MMF needs to disable the SL transport for certain configurations
+# and to simply this we use this flag to disable the  compose library
+my $disable_compose = 'FALSE';
+
 # Building for MMF/super-parameterization
 if (defined $opts{'use_MMF'}) {
     my $crm_nx = $cfg_ref->get('crm_nx');
@@ -1758,7 +1762,12 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_MMF_VT'}) {
         $cfg_cppdefs .= " -DMMF_VT "
     }
-
+    # For now, the P3/SHOC build still tries to build Kokkos, 
+    # so just disable COMPOSE and use Eulerian tracer transport
+    $disable_compose = 'TRUE'
+    # if ( $crm eq 'samxx' and $MMF_microphysics_scheme eq 'p3' ) {
+    #   $disable_compose = 'TRUE'
+    # }
 }
 
 # Configure CAM to produce IOP files for SCAM
@@ -2637,7 +2646,9 @@ sub write_filepath
       elsif($opts{'dyn_target'} eq 'theta-l') {
         print $fh "$camsrcdir/homme/src/theta-l\n";
         print $fh "$camsrcdir/homme/src/theta-l/share\n";
-##        print $fh "$camsrcdir/homme/src/share/compose\n";
+        if ($disable_compose eq 'False') {
+          print $fh "$camsrcdir/homme/src/share/compose\n";
+        }
       }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
@@ -2756,8 +2767,12 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
-##        print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
-       print $fh " -DMODEL_THETA_L  "
+       if ($disable_compose eq 'False') {
+         print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+       } else {
+         print $fh " -DMODEL_THETA_L  "
+       }
+       
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
