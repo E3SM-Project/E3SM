@@ -44,8 +44,8 @@ module crm_physics
    integer :: ixsnow    = -1   ! snow index
    integer :: ixnumrain = -1   ! rain number index
    integer :: ixnumsnow = -1   ! snow number index
-   integer :: ixcldrim  = -1   ! ice rime amount index
-   integer :: ixrimvol  = -1   ! ice rime volume index
+   integer :: ixcldrim  = -1   ! ice rime mass mixing ratio index
+   integer :: ixrimvol  = -1   ! ice rime volume mixing ratio index
    integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
    integer :: idx_vt_q  = -1   ! CRM variance transport - total water
    
@@ -69,6 +69,9 @@ module crm_physics
    integer :: crm_ni_rad_idx   = -1
    integer :: crm_qs_rad_idx   = -1
    integer :: crm_ns_rad_idx   = -1
+
+   integer :: crm_t_prev_idx   = -1
+   integer :: crm_q_prev_idx   = -1
 
    logical :: do_prescribed_CCN        = .false.   ! Use prescribed CCN
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
@@ -245,8 +248,8 @@ subroutine crm_physics_register()
    if (MMF_microphysics_scheme .eq. 'p3') then
       call pbuf_add_field('CRM_QM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_BM',    'global', dtype_r8,dims_crm_3D,idx)
-      call pbuf_add_field('QV_PREV',   'global', dtype_r8,dims_gcm_2D,idx)
-      call pbuf_add_field('T_PREV',    'global', dtype_r8,dims_gcm_2D,idx)
+      call pbuf_add_field('CRM_T_PREV','global', dtype_r8,dims_gcm_2D,crm_t_prev_idx)
+      call pbuf_add_field('CRM_Q_PREV','global', dtype_r8,dims_gcm_2D,crm_q_prev_idx)
 
       ! ! are these just diagnostic outputs from P3?
       ! call pbuf_add_field('LS_FLXPRC',  'physpkg',dtype_r8, dims_gcm_2D, idx)
@@ -256,7 +259,6 @@ subroutine crm_physics_register()
       ! call pbuf_add_field('CV_REFFLIQ', 'physpkg',dtype_r8, dims_gcm_2D, idx)
       ! call pbuf_add_field('CV_REFFICE', 'physpkg',dtype_r8, dims_gcm_2D, idx)
 
-      call pbuf_add_field('RELVAR',     'global',dtype_r8, dims_gcm_2D, idx)
       ! call pbuf_add_field('ACCRE_ENHAN','global',dtype_r8, dims_gcm_2D, idx)
    end if
 
@@ -290,8 +292,8 @@ subroutine crm_physics_register()
    if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,dims_gcm_2D,ttend_dp_idx)
 
    ! SHOC
-   call pbuf_add_field('TKH',          'global', dtype_r8, dims_gcm_3D, idx)
-   call pbuf_add_field('TK',           'global', dtype_r8, dims_gcm_3D, idx)
+   ! call pbuf_add_field('TKH',          'global', dtype_r8, dims_gcm_3D, idx)
+   ! call pbuf_add_field('TK',           'global', dtype_r8, dims_gcm_3D, idx)
    ! call pbuf_add_field('CMELIQ',       'physpkg',dtype_r8, dims_gcm_2D, idx)
 
    !----------------------------------------------------------------------------
@@ -494,10 +496,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
       ! Do we need these for P3/SHOC?
 
-      call pbuf_set_field(pbuf2d, pbuf_get_index('RELVAR')     , 2._r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('ACCRE_ENHAN'), micro_mg_accre_enhan_fac)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('QV_PREV')     , 0._r8)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('T_PREV')      , 0._r8)
+      call pbuf_set_field(pbuf2d, crm_q_prev_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_t_prev_idx, 0._r8)
    
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TKH'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TK'), 0.0_r8)
@@ -710,14 +711,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    ! pbuf variables for P3/SHOC
    real(crm_rknd), pointer :: tkh(:,:)
    real(crm_rknd), pointer :: tk(:,:)
-   real(crm_rknd), pointer :: ni_activated(:,:) ! ice nucleation number
-   real(crm_rknd), pointer :: npccn(:,:)        ! liquid activation number tendency
+   ! real(crm_rknd), pointer :: ni_activated(:,:) ! ice nucleation number
+   ! real(crm_rknd), pointer :: npccn(:,:)        ! liquid activation number tendency
    ! real(crm_rknd), pointer :: cmeliq(:,:)
    
-   real(crm_rknd), pointer :: relvar(:,:)       ! cloud liquid relative variance [-]
    ! real(crm_rknd), pointer :: qr_evap_tend(:,:) ! precipitation evaporation rate
 
-   real(crm_rknd), pointer :: qv_prev(:,:)      ! qv from previous for p3
+   real(crm_rknd), pointer :: q_prev(:,:)       ! qv from previous for p3
    real(crm_rknd), pointer :: t_prev(:,:)       ! t from previous for p3
 
    real(crm_rknd), pointer :: ccn_trcdat(:,:)   ! CCN concentration
@@ -734,7 +734,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
    ! energy checking variables
    real(r8) :: zero(pcols)                    ! array of zeros
-   real(r8) :: zero_sc(pcols*psubcols)        ! array of zeros
    real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
    real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
    real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
@@ -941,7 +940,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qg(i,:,:,k) = 0.0_r8
                   crm_ng(i,:,:,k) = 0.0_r8
                else if (MMF_microphysics_scheme .eq. 'p3') then
-                  crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state%q(i,m,ixcldliq)
+                  crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_qr(i,:,:,k) = state(c)%q(i,m,ixrain)
@@ -1049,8 +1048,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          if (MMF_microphysics_scheme .eq. 'p3') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('T_PREV'), t_prev)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('QV_PREV'),qv_prev)
+            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, t_prev)
+            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, q_prev)
          end if
 
          ! copy pbuf data into crm_state
@@ -1077,10 +1076,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
-               crm_state%qm      (icrm,:,:,:) = crm_qm (i,:,:,:)
-               crm_state%bm      (icrm,:,:,:) = crm_bm (i,:,:,:)
-               crm_state%t_prev  (icrm,:,:,:) = t_prev (i,:,:,:)
-               crm_state%qv_prev (icrm,:,:,:) = qv_prev(i,:,:,:)
+               crm_state%qm      (icrm,:,:,:) = crm_qm(i,:,:,:)
+               crm_state%bm      (icrm,:,:,:) = crm_bm(i,:,:,:)
+               crm_state%t_prev  (icrm,:,:,:) = t_prev(i,:,:,:)
+               crm_state%q_prev  (icrm,:,:,:) = q_prev(i,:,:,:)
             end if
          end do ! i=1,ncol
 
@@ -1169,20 +1168,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ! P3 input data
          !------------------------------------------------------------------------------------------
          if (MMF_microphysics_scheme .eq. 'p3') then
-            
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('RELVAR'),  relvar)
 
-            if (do_prescribed_CCN) call pbuf_get_field(pbuf_chunk, pbuf_get_index(ccn_names(1)), ccn_trcdat)
-
-            do i = 1,ncol
-               icrm = ncol_sum + i
-               do k = 1, pver
-                  crm_input%relvar (icrm,k) = relvar (i,k)
-                  if (do_prescribed_CCN) 
-                     crm_input%nccn_prescribed(icrm,k) = ccn_trcdat(i,k)
-                  end if
+            if (do_prescribed_CCN) then
+               call pbuf_get_field(pbuf_chunk, pbuf_get_index(ccn_names(1)), ccn_trcdat)
+               do i = 1,ncol
+                  icrm = ncol_sum + i
+                  do k = 1, pver
+                     crm_input%nccn(icrm,k) = ccn_trcdat(i,k)
+                  end do
                end do
-            end do
+            end if
 
             ! ! P3 outputs???
             ! call pbuf_get_field(pbuf, pbuf_get_index('QME'),          qme)
@@ -1206,19 +1201,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! SHOC input data
          !------------------------------------------------------------------------------------------
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('TKH'),     tkh)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('TK'),      tk)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('NPCCN'),   npccn)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('NAAI'),    ni_activated)
+         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('TKH'),     tkh)
+         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('TK'),      tk)
+         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NPCCN'),   npccn)
+         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NAAI'),    ni_activated)
          ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('CMELIQ'),  cmeliq)
 
          do i = 1,ncol
             icrm = ncol_sum + i
             do k = 1, pver
-               crm_input%tkh         (icrm,k)      = tkh         (i,l)
-               crm_input%tk          (icrm,k)      = tk          (i,l)
-               crm_input%npccn       (icrm,k)      = 1.0 ! npccn       (i,l)
-               crm_input%ni_activated(icrm,k)      = 1.0 ! ni_activated(i,l)
+               ! crm_input%shoc_tke         (icrm,k)      = shoc_tke     (i,l)
+               ! crm_input%shoc_tk          (icrm,k)      = shoc_tk      (i,l)
+               crm_input%nc_nuceat_tend   (icrm,k)      = 1.0 ! npccn       (i,l)
+               crm_input%ni_activated     (icrm,k)      = 1.0 ! ni_activated(i,l)
             end do
          end do
 
@@ -1334,13 +1329,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_input%ul_esmt, crm_input%vl_esmt, &
 #endif
                crm_input%t_vt, crm_input%q_vt, &
-               crm_input%relvar, crm_input%nccn_prescribed, &
-               crm_input%npccn, crm_input%ni_activated, &
+               crm_input%nccn, crm_input%nc_nuceat_tend, crm_input%ni_activated, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
                crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
                crm_state%qc, crm_state%nc, crm_state%qr, crm_state%nr, &
                crm_state%qi, crm_state%ni, crm_state%qm, crm_state%bm, &
-               crm_state%t_prev, crm_state%qv_prev, &
+               crm_state%t_prev, crm_state%q_prev, &
                crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
                crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
                crm_output%subcycle_factor, crm_output%prectend, crm_output%precstend, &
@@ -1648,8 +1642,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          if (MMF_microphysics_scheme .eq. 'p3') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('T_PREV'), t_prev)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('QV_PREV'),qv_prev)
+            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, t_prev)
+            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, q_prev)
          end if
 
          do i = 1,ncol
@@ -1675,10 +1669,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_ng(i,:,:,:) = crm_state%ng(icrm,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
-               crm_qm     (i,:,:,:) = crm_state%qm     (icrm,:,:,:)
-               crm_bm     (i,:,:,:) = crm_state%bm     (icrm,:,:,:)
-               crm_t_prev (i,:,:,:) = crm_state%t_prev (icrm,:,:,:)
-               crm_qv_prev(i,:,:,:) = crm_state%qv_prev(icrm,:,:,:)
+               crm_qm    (i,:,:,:) = crm_state%qm    (icrm,:,:,:)
+               crm_bm    (i,:,:,:) = crm_state%bm    (icrm,:,:,:)
+               crm_t_prev(i,:,:,:) = crm_state%t_prev(icrm,:,:,:)
+               crm_q_prev(i,:,:,:) = crm_state%q_prev(icrm,:,:,:)
             end if
          end do
 

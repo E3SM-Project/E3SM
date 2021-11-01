@@ -20,13 +20,12 @@ module cpp_interface_mod
                    crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
                    crm_input_t_vt, crm_input_q_vt, &
-                   crm_input_relvar, crm_input_nccn_prescribed, &
-                   crm_input_npccn, crm_input_ni_activated, &
+                   crm_input_nccn, crm_input_nc_nuceat_tend, crm_input_ni_activated, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, &
                    crm_state_temperature, crm_state_qt, crm_state_qp, crm_state_qn, &
                    crm_state_qc, crm_state_nc, crm_state_qr, crm_state_nr, &
                    crm_state_qi, crm_state_ni, crm_state_qm, crm_state_bm, &
-                   crm_state_t_prev, crm_state_qv_prev, &
+                   crm_state_t_prev, crm_state_q_prev, &
                    crm_rad_qrad, crm_rad_temperature, crm_rad_qv, &
                    crm_rad_qc, crm_rad_qi, crm_rad_cld, &
                    crm_output_subcycle_factor, crm_output_prectend, crm_output_precstend, &
@@ -77,13 +76,12 @@ module cpp_interface_mod
                                       crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
                                       crm_input_t_vt, crm_input_q_vt, &
-                                      crm_input_relvar, crm_input_nccn_prescribed,  &
-                                      crm_input_npccn, crm_input_ni_activated, 
+                                      crm_input_nccn, crm_input_nc_nuceat_tend, crm_input_ni_activated, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, &
                                       crm_state_temperature, crm_state_qt, crm_state_qp, crm_state_qn, &
                                       crm_state_qc, crm_state_nc, crm_state_qr, crm_state_nr, &
                                       crm_state_qi, crm_state_ni, crm_state_qm, crm_state_bm, &
-                                      crm_state_t_prev, crm_state_qv_prev, &
+                                      crm_state_t_prev, crm_state_q_prev, &
                                       crm_rad_qrad, crm_rad_temperature, crm_rad_qv, &
                                       crm_rad_qc, crm_rad_qi, crm_rad_cld, &
                                       crm_output_subcycle_factor, crm_output_prectend, crm_output_precstend, &
