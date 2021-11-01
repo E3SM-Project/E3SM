@@ -725,6 +725,9 @@ diffCprncOutput() {
     # Parse the output file to determine if they were identical
     DIFF_RESULT=`grep -ae 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
 
+
+# Dimension time differs
+
     if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
       # check for missing variables
       NUMVARS_RESULT=`grep -ae 'were not found on' ${cprncOutputFile} | awk '{ print $5 }'`

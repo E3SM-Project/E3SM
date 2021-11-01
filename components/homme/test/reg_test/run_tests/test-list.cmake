@@ -90,9 +90,11 @@ IF (BUILD_HOMME_THETA_KOKKOS)
   )
   
   #manually added, create namelists and cmake files for F and cxx by hand
+  #all have to be named theta-f* to make setup work (this could be fixed)
   SET(TESTS_WITHOUT_AUTO
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
-     theta-f1-tt10-HS
+     theta-fhs1
+     theta-fhs2
   )
 
   #all tests that will be used for cxx-vs-F bfb testing
