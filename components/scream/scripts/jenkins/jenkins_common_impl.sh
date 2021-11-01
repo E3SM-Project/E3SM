@@ -94,9 +94,9 @@ if [ $skip_testing -eq 0 ]; then
   if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
     # since we aren't changing HEADs
-    ./scripts/scripts-tests -g
+    ./scripts/scripts-tests -g -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
-    ./scripts/scripts-tests -c
+    ./scripts/scripts-tests -c -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
 
     ./scripts/scripts-tests -f -m $SCREAM_MACHINE
