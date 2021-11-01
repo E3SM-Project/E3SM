@@ -190,6 +190,13 @@ protected:
   // to close the out file, and open a new one.
   int m_max_snapshots_per_file;
   int m_num_snapshots_in_file = 0;
+
+  // Whether this output file will attach a time string to the output filename.
+  // Note: The default is true.  This feature should only be used by experienced
+  // users, attaching a time stamp to each file ensures that in runs with multiple
+  // outputs old output isn't accidentally overwritten.  This option is primarily
+  // used for unit testing.
+  bool m_filename_with_time_string = true;
 };
 
 // ===================== IMPLEMENTATION ======================== //

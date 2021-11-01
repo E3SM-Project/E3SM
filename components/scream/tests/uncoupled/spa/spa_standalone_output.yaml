@@ -1,0 +1,18 @@
+%YAML 1.1
+---
+Casename: spa_standalone_output_np${MPI_RANKS}
+Timestamp in Filename: false
+Averaging Type: Instant
+Grid: Physics
+Max Snapshots Per File: 1
+Fields:
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_lw
+  - aero_tau_sw
+  - nc_activated
+  - p_mid
+Output:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+...
