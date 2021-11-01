@@ -9,7 +9,7 @@ import psutil
 #             batch submit prefix,            # string shell commmand prefix
 #             pre-existing baselines root dir # string path)
 MACHINE_METADATA = {
-    "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.19.3 python/3.7.3",
+    "blake"    : (["module purge", "module load python/3.8.8/gcc/10.2.0", "module unload gcc/10.2.0", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.19.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/blake/bin:$PATH",
