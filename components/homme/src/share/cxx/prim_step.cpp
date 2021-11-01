@@ -135,7 +135,6 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_DEBUG ||
                              params.ftype == ForcingAlg::FORCING_2);
   apply_forcing = forcing_0or2;
-  apply_test_forcing();
 #endif
 
   if (apply_forcing) {
