@@ -33,6 +33,10 @@ fi
 if [ $skip_testing -eq 0 ]; then
   # User did not request to skip tests. Proceed with testing.
 
+  cd $JENKINS_SCRIPT_DIR/../..
+
+  source scripts/jenkins/${NODE_NAME}_setup
+
   # Check machine-specific skipping
   if [[ $skip_mappy == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     echo "Tests were skipped, since the Github label 'AT: Skip mappy' was found.\n"
@@ -44,10 +48,6 @@ if [ $skip_testing -eq 0 ]; then
     echo "Tests were skipped, since the Github label 'AT: Skip blake' was found.\n"
     exit 0
   fi
-
-  cd $JENKINS_SCRIPT_DIR/../..
-
-  source scripts/jenkins/${NODE_NAME}_setup
 
   if [[ "$(whoami)" == "e3sm-jenkins" ]]; then
       git config --local user.email "jenkins@ignore.com"
