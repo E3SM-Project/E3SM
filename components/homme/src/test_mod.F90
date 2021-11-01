@@ -70,8 +70,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test1_2');
     case('dcmip2012_test1_3');
     case('dcmip2012_test2_0');
-    case('dcmip2012_test2_1');
-    case('dcmip2012_test2_2');
+    case('dcmip2012_test2_1'); test_with_forcing = .true. ;
+    case('dcmip2012_test2_2'); test_with_forcing = .true. ;
     case('dcmip2012_test3');
     case('dcmip2012_test4');
     case('dcmip2016_test1');    call dcmip2016_init();  test_with_forcing = .true. ;
@@ -79,9 +79,9 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
        call dcmip2016_init();  test_with_forcing = .true. ;
     case('dcmip2016_test2');    call dcmip2016_init();  test_with_forcing = .true. ;
     case('dcmip2016_test3');    call dcmip2016_init();  test_with_forcing = .true. ;
-    case('mtest1');
-    case('mtest2');
-    case('mtest3');
+    case('mtest1'); test_with_forcing = .true. ;
+    case('mtest2'); test_with_forcing = .true. ;
+    case('mtest3'); test_with_forcing = .true. ;
     case('held_suarez0'); test_with_forcing = .true. ;
     case('jw_baroclinic');
     case('planar_hydro_gravity_wave');
