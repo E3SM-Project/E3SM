@@ -7,6 +7,9 @@ module cpp_interface_mod
   use iso_c_binding
   implicit none
 
+  public :: scream_session_init
+  public :: scream_session_finalize
+
   interface
 
     subroutine crm(ncrms_in, pcols_in, dt_gl, plev, &
@@ -113,14 +116,15 @@ module cpp_interface_mod
 
 
     subroutine setparm() bind(C,name="setparm")
+      ! Do nothing
     end subroutine setparm
 
     subroutine scream_session_init() bind(C,name="scream_session_init")
-
+      ! Do nothing
     end subroutine scream_session_init
 
     subroutine scream_session_finalize() bind(C,name="scream_session_finalize")
-
+      ! Do nothing
     end subroutine scream_session_finalize
 
   end interface

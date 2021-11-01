@@ -248,8 +248,8 @@ subroutine crm_physics_register()
    if (MMF_microphysics_scheme .eq. 'p3') then
       call pbuf_add_field('CRM_QM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_BM',    'global', dtype_r8,dims_crm_3D,idx)
-      call pbuf_add_field('CRM_T_PREV','global', dtype_r8,dims_gcm_2D,crm_t_prev_idx)
-      call pbuf_add_field('CRM_Q_PREV','global', dtype_r8,dims_gcm_2D,crm_q_prev_idx)
+      call pbuf_add_field('CRM_T_PREV','global', dtype_r8,dims_crm_3D,crm_t_prev_idx)
+      call pbuf_add_field('CRM_Q_PREV','global', dtype_r8,dims_crm_3D,crm_q_prev_idx)
 
       ! ! are these just diagnostic outputs from P3?
       ! call pbuf_add_field('LS_FLXPRC',  'physpkg',dtype_r8, dims_gcm_2D, idx)
@@ -343,6 +343,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    use constituents,          only: cnst_add, pcnst, sflxnam, apcnst, bpcnst, pcnst, &
                                     cnst_name, cnst_get_ind,cnst_longname
    use read_spa_data,         only: is_spa_active
+#if defined(MMF_SAMXX)
+  use cpp_interface_mod,  only: scream_session_init
+#endif
    use error_messages,        only: handle_errmsg
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
@@ -387,6 +390,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
     endif
 
    call crm_history_init(species_class)
+
+#if defined(MMF_SAMXX)
+   call scream_session_init()
+#endif
 
    ! Register contituent history variables (previously added by micro_mg_cam.F90)
    ncnst = size(cnst_names)
@@ -513,8 +520,10 @@ end subroutine crm_physics_init
 
 subroutine crm_physics_final()
 #if defined(MMF_SAMXX)
-   use gator_mod, only: gator_finalize
+   use gator_mod,         only: gator_finalize
+   use cpp_interface_mod, only: scream_session_finalize
    call gator_finalize()
+   call scream_session_finalize()
 #endif
 end subroutine crm_physics_final
 
@@ -717,8 +726,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    
    ! real(crm_rknd), pointer :: qr_evap_tend(:,:) ! precipitation evaporation rate
 
-   real(crm_rknd), pointer :: q_prev(:,:)       ! qv from previous for p3
-   real(crm_rknd), pointer :: t_prev(:,:)       ! t from previous for p3
+   real(crm_rknd), pointer :: crm_q_prev(:,:,:,:)       ! qv from previous for p3
+   real(crm_rknd), pointer :: crm_t_prev(:,:,:,:)       ! t from previous for p3
 
    real(crm_rknd), pointer :: ccn_trcdat(:,:)   ! CCN concentration
 
@@ -1048,8 +1057,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          if (MMF_microphysics_scheme .eq. 'p3') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
-            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, t_prev)
-            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, q_prev)
+            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
+            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
          end if
 
          ! copy pbuf data into crm_state
@@ -1078,8 +1087,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             if (MMF_microphysics_scheme .eq. 'p3') then
                crm_state%qm      (icrm,:,:,:) = crm_qm(i,:,:,:)
                crm_state%bm      (icrm,:,:,:) = crm_bm(i,:,:,:)
-               crm_state%t_prev  (icrm,:,:,:) = t_prev(i,:,:,:)
-               crm_state%q_prev  (icrm,:,:,:) = q_prev(i,:,:,:)
+               crm_state%t_prev  (icrm,:,:,:) = crm_t_prev(i,:,:,:)
+               crm_state%q_prev  (icrm,:,:,:) = crm_q_prev(i,:,:,:)
             end if
          end do ! i=1,ncol
 
@@ -1642,8 +1651,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          if (MMF_microphysics_scheme .eq. 'p3') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
-            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, t_prev)
-            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, q_prev)
+            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
+            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
          end if
 
          do i = 1,ncol
