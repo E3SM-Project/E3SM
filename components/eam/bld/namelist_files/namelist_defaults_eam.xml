@@ -1337,10 +1337,22 @@
 
 <!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
-<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q>
+<!-- <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q> -->
 
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
-<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
+<!-- <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q> -->
+
+<!-- Workaround for Kokkos conflict - when running the MMF with P3 we need 
+  to switch to Eulerian transport until SL transport can run on GPUs -->
+<!-- <transport_alg       use_MMF="1" dyn_target="theta-l" MMF_microphysics_scheme="p3">0</transport_alg> -->
+<!-- <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" MMF_microphysics_scheme="p3">1</hypervis_subcycle_q> -->
+<!-- <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" MMF_microphysics_scheme="p3">1</dt_tracer_factor> -->
+
+<!-- For now, the P3/SHOC build still tries to build Kokkos,  -->
+<!-- so just disable COMPOSE and use Eulerian tracer transport -->
+<transport_alg       use_MMF="1" dyn_target="theta-l">0</transport_alg>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l">1</hypervis_subcycle_q>
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l">1</dt_tracer_factor>
 
 
 <!-- ================================================================== -->
