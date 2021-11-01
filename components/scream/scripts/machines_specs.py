@@ -96,11 +96,17 @@ def assert_machine_supported(machine):
 ###############################################################################
 def get_mach_env_setup_command(machine, ctest_j=None):
 ###############################################################################
+    """
+    ctest_j=None -> probe for hardware for testing resources
+    ctest_j=-1   -> Skip CTEST_PARALLEL_LEVEL
+    """
     assert_machine_supported(machine)
 
     mach_custom_env = MACHINE_METADATA[machine][0]
-    ctest_j = get_mach_testing_resources(machine) if ctest_j is None else ctest_j
-    mach_custom_env.append("export CTEST_PARALLEL_LEVEL={}".format(ctest_j))
+    if ctest_j != -1:
+        ctest_j = get_mach_testing_resources(machine) if ctest_j is None else ctest_j
+        mach_custom_env.append("export CTEST_PARALLEL_LEVEL={}".format(ctest_j))
+
     if not is_cuda_machine(machine):
         mach_custom_env.append("export OMP_PROC_BIND=spread")
 
