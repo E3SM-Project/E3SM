@@ -57,7 +57,7 @@
       <value compset="_EAM%MMF"        >-use_MMF -crm_adv MPDATA -nlev 60 -crm_nz 50 </value>
       <value compset="_EAM%MMF"        >-crm_dx 2000 -crm_dt 10 </value>
       <value compset="_EAM%MMF"        >-crm_nx 64 -crm_nx_rad 4 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF"        >-rad rrtmgp </value>
+      <value compset="_EAM%MMF"        >-rad rrtmgp -rrtmgpxx</value>
       <value compset="_EAM%MMF[12]"    >-crm sam</value>
       <value compset="_EAM%MMFXX"      >-crm samxx</value>
       <value compset="_EAM%MMFOMP"     >-crm samomp</value>
