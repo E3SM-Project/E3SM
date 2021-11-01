@@ -9,6 +9,9 @@ import psutil
 #             batch submit prefix,            # string shell commmand prefix
 #             pre-existing baselines root dir # string path)
 MACHINE_METADATA = {
+    # NOTE: blake must use a different minor version of python than weaver
+    # this is so pip installs do not go into the same location for both machines.
+    # We have found some python modules are not shareable between these two machinse.
     "blake"    : (["module purge", "module load python/3.8.8/gcc/10.2.0", "module unload gcc/10.2.0", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.19.3",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
