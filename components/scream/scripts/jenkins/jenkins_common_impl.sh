@@ -7,6 +7,9 @@ IFS=';' read -r -a labels <<< "$PR_LABELS";
 skip_testing=0
 test_scripts=0
 test_cime=0
+skip_mappy=0
+skip_weaver=0
+skip_blake=0
 if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
@@ -17,12 +20,30 @@ if [ ${#labels[@]} -gt 0 ]; then
       test_scripts=1
     elif [ "$label" == "CIME" ]; then
       test_cime=1
+    elif [ "$label" == "AT: Skip mappy" ]; then
+      skip_mappy=1
+    elif [ "$label" == "AT: Skip weaver" ]; then
+      skip_weaver=1
+    elif [ "$label" == "AT: Skip blake" ]; then
+      skip_blake=1
     fi
   done
 fi
 
 if [ $skip_testing -eq 0 ]; then
   # User did not request to skip tests. Proceed with testing.
+
+  # Check machine-specific skipping
+  if [[ $skip_mappy == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip mappy' was found.\n"
+    exit 0
+  elif [[ $skip_weaver == 1 && "$SCREAM_MACHINE" == "weaver" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip weaver' was found.\n"
+    exit 0
+  elif [[ $skip_blake == 1 && "$SCREAM_MACHINE" == "blake" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip blake' was found.\n"
+    exit 0
+  fi
 
   cd $JENKINS_SCRIPT_DIR/../..
 
