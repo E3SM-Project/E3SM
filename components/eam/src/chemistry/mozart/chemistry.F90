@@ -1554,7 +1554,7 @@ end function chem_is_active
 
              if (gaschmbudget_2D_L1_e .lt. gaschmbudget_2D_L1_s .or. gaschmbudget_2D_L2_e .lt. gaschmbudget_2D_L2_s .or. &
                  gaschmbudget_2D_L3_e .lt. gaschmbudget_2D_L3_s .or. gaschmbudget_2D_L4_e .lt. gaschmbudget_2D_L4_s ) then
-                   call endrun('chem_readnl: ERROR 2D chem diags layers')
+                   call endrun('chem_readnl: ERROR 2D chem diags layers, layer ending index is less than starting index')
              end if
 
              do k= gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e ! 0-90 hPa
@@ -1592,6 +1592,7 @@ end function chem_is_active
              call outfld(trim(solsym(n))//'_2DTDO_L3', Diff_layers(:ncol,3), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DTDO_L4', Diff_layers(:ncol,4), pcols, lchnk)
 
+             ! for the tropospheric budget diagnostics
              if (trim(solsym(n))=='O3' .or. trim(solsym(n))=='O3LNZ' .or. &
                  trim(solsym(n))=='N2OLNZ' .or. trim(solsym(n))=='CH4LNZ') then
                 ftem_layers = 0.0_r8
@@ -1599,21 +1600,16 @@ end function chem_is_active
                 do k=1,pver
                    ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k) * tropFlagInt(:ncol,k)
                    gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k) * tropFlagInt(:ncol,k)
-                   ftem_layers(:ncol,2) = ftem_layers(:ncol,2) + ftem(:ncol,k) * (1.0 - tropFlagInt(:ncol,k))
-                   gas_ac_layers(:ncol,2) = gas_ac_layers(:ncol,2) + gas_ac(:ncol,k) * (1.0 - tropFlagInt(:ncol,k))
                 end do
                 call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
-                call outfld(trim(solsym(n))//'_2DMSB_stra', ftem_layers(:ncol,2), pcols, lchnk )
 
                 if( nstep == 0 ) then
                    Diff_layers(:ncol,:) = 0.0_r8
                 else
                    Diff_layers(:ncol,:) = 0.0_r8
                    Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
-                   Diff_layers(:ncol,2) = (ftem_layers(:ncol,2) - gas_ac_layers(:ncol,2))/dt
                 end if
                 call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
-                call outfld(trim(solsym(n))//'_2DTDO_stra', Diff_layers(:ncol,2), pcols, lchnk)
              end if
 
            end if ! history_gaschmbudget_2D_levels

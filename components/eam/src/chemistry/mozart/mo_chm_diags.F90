@@ -442,20 +442,6 @@ contains
              call addfld( trim(spc_name)//'_2DTDD_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to dry deposition')
              call addfld( trim(spc_name)//'_2DTDO_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to processes outside of chemistry')
 
-             call addfld( trim(spc_name)//'_2DMSB_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere before wet deposition and gas chem solver')           
-             call addfld( trim(spc_name)//'_2DMSL_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after Linoz')
-             call addfld( trim(spc_name)//'_2DMSS_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after surface emission')
-             call addfld( trim(spc_name)//'_2DMSD_stra', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in stratosphere after dry deposition')
-             call addfld( trim(spc_name)//'_2DTDE_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to explicit solver')
-             call addfld( trim(spc_name)//'_2DTDI_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to implicit solver')
-             call addfld( trim(spc_name)//'_2DTDA_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to aero_model_gasaerexch')
-             call addfld( trim(spc_name)//'_2DTDL_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to Linoz')
-             call addfld( trim(spc_name)//'_2DTDN_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to reset negative values to zero')
-             call addfld( trim(spc_name)//'_2DTDU_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to setting upper boundary values')
-             call addfld( trim(spc_name)//'_2DTDB_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to setting lower boundary values')
-             call addfld( trim(spc_name)//'_2DTDS_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to surface emission')
-             call addfld( trim(spc_name)//'_2DTDD_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to dry deposition')
-             call addfld( trim(spc_name)//'_2DTDO_stra', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in stratosphere due to processes outside of chemistry')
           endif
        endif
 
@@ -1274,7 +1260,6 @@ contains
     integer  :: k, m
     real(r8) :: wrk(ncol,pver)
     real(r8) :: wrk_sum(ncol)
-    real(r8) :: wrk_stra(ncol)
     logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     logical  :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
@@ -1330,7 +1315,6 @@ contains
             endif
 
             wrk_sum(:ncol) = 0.0_r8
-            wrk_stra(:ncol) = 0.0_r8
             if (len(flag) >= 6 .and. flag(6:8) == '_L1') then
                do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
@@ -1356,10 +1340,8 @@ contains
                    trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
                   do k = 1, pver
                      wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k) * tropFlagInt(:ncol,k)
-                     wrk_stra(:ncol) = wrk_stra(:ncol) + wrk(:ncol,k) * (1.0 - tropFlagInt(:ncol,k))
                   enddo
                   call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-                  call outfld( trim(solsym(m))//'_'//flag(1:5)//'_stra', wrk_stra(:ncol), ncol ,lchnk )
                endif
             else
                do k=2,pver
