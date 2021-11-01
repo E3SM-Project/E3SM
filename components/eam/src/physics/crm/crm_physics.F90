@@ -462,6 +462,8 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_q_prev_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_t_prev_idx,0._r8)
       end if
 
       call pbuf_set_field(pbuf2d, pbuf_get_index('CLDO')       , 0._r8)
@@ -500,13 +502,8 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
       if (use_gw_convect) call pbuf_set_field(pbuf2d, ttend_dp_idx, 0._r8)
 
-
       ! Do we need these for P3/SHOC?
-
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('ACCRE_ENHAN'), micro_mg_accre_enhan_fac)
-      call pbuf_set_field(pbuf2d, crm_q_prev_idx, 0._r8)
-      call pbuf_set_field(pbuf2d, crm_t_prev_idx, 0._r8)
-   
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TKH'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('TK'), 0.0_r8)
       ! call pbuf_set_field(pbuf2d, pbuf_get_index('FICE'), 0.0_r8)
@@ -1178,15 +1175,22 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          if (MMF_microphysics_scheme .eq. 'p3') then
 
-            if (do_prescribed_CCN) then
-               call pbuf_get_field(pbuf_chunk, pbuf_get_index(ccn_names(1)), ccn_trcdat)
-               do i = 1,ncol
-                  icrm = ncol_sum + i
-                  do k = 1, pver
-                     crm_input%nccn(icrm,k) = ccn_trcdat(i,k)
-                  end do
+            ! if (do_prescribed_CCN) call pbuf_get_field(pbuf_chunk, pbuf_get_index(ccn_names(1)), ccn_trcdat)
+            ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NPCCN'),   npccn)
+            ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NAAI'),    ni_activated)
+            do i = 1,ncol
+               icrm = ncol_sum + i
+               do k = 1, pver
+                  ! if (do_prescribed_CCN) then
+                  !    crm_input%nccn(icrm,k) = ccn_trcdat(i,k)
+                  ! else
+                  !    ???
+                  ! end if
+                  crm_input%nccn          (icrm,k) = 1.0
+                  crm_input%nc_nuceat_tend(icrm,k) = 1.0 ! npccn       (i,l)
+                  crm_input%ni_activated  (icrm,k) = 1.0 ! ni_activated(i,l)
                end do
-            end if
+            end do
 
             ! ! P3 outputs???
             ! call pbuf_get_field(pbuf, pbuf_get_index('QME'),          qme)
@@ -1210,21 +1214,21 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! SHOC input data
          !------------------------------------------------------------------------------------------
-         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('TKH'),     tkh)
-         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('TK'),      tk)
-         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NPCCN'),   npccn)
-         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('NAAI'),    ni_activated)
-         ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('CMELIQ'),  cmeliq)
+         ! if (MMF_sgs_scheme .eq. 'shoc') then
 
-         do i = 1,ncol
-            icrm = ncol_sum + i
-            do k = 1, pver
-               ! crm_input%shoc_tke         (icrm,k)      = shoc_tke     (i,l)
-               ! crm_input%shoc_tk          (icrm,k)      = shoc_tk      (i,l)
-               crm_input%nc_nuceat_tend   (icrm,k)      = 1.0 ! npccn       (i,l)
-               crm_input%ni_activated     (icrm,k)      = 1.0 ! ni_activated(i,l)
-            end do
-         end do
+            ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('SHOC_TKE'),     tkh)
+            ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('SHOC_TK'),      tk)
+            ! ! call pbuf_get_field(pbuf_chunk, pbuf_get_index('CMELIQ'),  cmeliq)
+
+            ! do i = 1,ncol
+            !    icrm = ncol_sum + i
+            !    do k = 1, pver
+            !       crm_input%shoc_tke(icrm,k) = shoc_tke     (i,l)
+            !       crm_input%shoc_tk (icrm,k) = shoc_tk      (i,l)
+            !    end do
+            ! end do
+
+         ! end if
 
          !------------------------------------------------------------------------------------------
          ! Set surface flux variables
