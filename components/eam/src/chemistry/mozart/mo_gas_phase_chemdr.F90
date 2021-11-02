@@ -1047,6 +1047,7 @@ contains
 
 !
     ! LINOZ
+    ! col_dens(:,:,1) is for O3; col_dens(:,:,1) is for O2; col_dens(:,:,1) is for O3LNZ
     if (masterproc)write(iulog,*)'do_lin_strat_chem=',do_lin_strat_chem,'linoz_v2=',linoz_v2,'linoz_v3=',linoz_v3
     
     xsfc(:,:)=0    
@@ -1055,13 +1056,13 @@ contains
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry )
           endif
         else
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, tropFlag=tropFlag )
           endif
           call fstrat_efold_decay(ncol, vmr, delt, troplev, tropFlag=tropFlag) !if chemuci is on
        endif
