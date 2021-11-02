@@ -1,0 +1,22 @@
+%YAML 1.1
+---
+Casename: homme_output_np${MPI_RANKS}
+Timestamp in Filename: false
+Averaging Type: Instant
+Grid: Physics GLL
+Max Snapshots Per File: 1
+Fields:
+  - T_mid
+  - qv
+  - ps
+  - p_int
+  - p_mid
+  - pseudo_density
+  - horiz_winds
+  - w_int
+  - phi_int
+ 
+Output:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+...
