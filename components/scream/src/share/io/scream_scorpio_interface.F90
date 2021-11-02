@@ -740,7 +740,9 @@ contains
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
     if (found) then
       if (pio_atm_file%num_customers .eq. 1) then
-        call PIO_syncfile(pio_atm_file%pioFileDesc)
+        if (pio_atm_file%purpose .eq. file_purpose_out) then
+          call PIO_syncfile(pio_atm_file%pioFileDesc)
+        endif
         call PIO_closefile(pio_atm_file%pioFileDesc)
         pio_atm_file%isopen = .false.
         pio_atm_file%purpose = file_purpose_not_set
@@ -1155,10 +1157,10 @@ contains
         ! We only allow multiple customers of the file if they all use it in read mode.
         call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
       else
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%isopen = .true.
         pio_file%purpose = purpose
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%num_customers = pio_file%num_customers + 1
+        pio_file%isopen = .true.
       endif
     endif
 
@@ -1172,6 +1174,7 @@ contains
       pio_file%isopen = .true.
       pio_file%numRecs = 0
       pio_file%num_customers = 1
+      pio_file%isopen = .true.
       if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
         call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
         call eam_pio_createHeader(pio_file%pioFileDesc)
