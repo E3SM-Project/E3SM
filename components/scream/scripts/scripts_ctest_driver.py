@@ -49,7 +49,9 @@ class ScriptsCtestDriver(object):
 
         self._work_dir.mkdir(parents=True)
 
-        setup_mach_env(self._machine)
+        # Load env, but do not set CTEST_PARALLEL_JOBS. This code runs on login
+        # nodes, so resource probing will not always be accurate.
+        setup_mach_env(self._machine, ctest_j=-1)
 
     ###############################################################################
     def generate_ctest_config(self, extra_configs):
