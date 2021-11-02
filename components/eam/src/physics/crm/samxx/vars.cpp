@@ -1211,7 +1211,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
 #ifdef MMF_MOMENTUM_FEEDBACK
                               real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
-                              real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
+                              real *crm_output_tk_p, real *crm_output_tkh_p,
+                              real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                               real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
                               real *crm_output_precsl_p, real *crm_output_prec_crm_p, 
 #ifdef MMF_ESMT

@@ -73,7 +73,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
                             real *lat0_p, real *long0_p, int *gcolp_p,
                             real *crm_output_cltot_p, real *crm_output_clhgh_p,
-                            real *crm_output_clmed_p, real *crm_output_cllow_p)
+                            real *crm_output_clmed_p, real *crm_output_cllow_p);
 
 void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                   real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
@@ -97,7 +97,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
 #ifdef MMF_MOMENTUM_FEEDBACK
                   real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
-                  real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
+                  real *crm_output_tk_p, real *crm_output_tkh_p,
+                  real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p,
                   real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
                   real *crm_output_precsl_p, real *crm_output_prec_crm_p, 
 #ifdef MMF_ESMT
@@ -129,13 +130,14 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
 #ifdef MMF_MOMENTUM_FEEDBACK
                               real *crm_output_ultend_p, real *crm_output_vltend_p, 
 #endif
-                              real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
+                              real *crm_output_tk_p, real *crm_output_tkh_p,
+                              real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p,
                               real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
                               real *crm_output_precsl_p, real *crm_output_prec_crm_p, 
 #ifdef MMF_ESMT
                               real *crm_output_u_tend_esmt_p, real *crm_output_v_tend_esmt_p,
 #endif
-	                      real *crm_clear_rh_p);
+	                            real *crm_clear_rh_p);
 
 
                             
@@ -564,9 +566,6 @@ extern real crm_run_time;
 extern real icrm_run_time;
 extern real dt_glob;
 
-
 extern bool crm_accel_ceaseflag;
 
 extern int igstep;
-
-
