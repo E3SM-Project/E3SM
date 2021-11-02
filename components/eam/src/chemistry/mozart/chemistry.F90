@@ -1376,7 +1376,8 @@ end function chem_is_active
     use physconst,           only : rga
     use phys_control,        only : phys_getopts
     use mo_chem_utls,        only : get_spc_ndx
-    
+    use cam_abortutils,      only: endrun
+ 
     implicit none
 
 !-----------------------------------------------------------------------
@@ -1406,6 +1407,7 @@ end function chem_is_active
     integer  :: tropLev(pcols)
     integer  :: tmp_tropLev(pcols)
     logical  :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+    real(r8) :: tropFlagInt(pcols,pver)   ! 3D tropospheric level flag integer, troposphere 1, others 0
     real(r8) :: ncldwtr(pcols,pver)                ! droplet number concentration (#/kg)
     real(r8), pointer :: pblh(:)
     real(r8), pointer :: prain(:,:)
@@ -1415,10 +1417,22 @@ end function chem_is_active
     real(r8), pointer :: cldtop(:)
     real(r8), pointer, dimension(:) :: gas_ac_2D
     real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: gas_ac_layers(pcols,4)
     real(r8) :: Diff(pcols,pver) ! tmp space
+    real(r8) :: Diff_layers(pcols,4) ! tmp space
     real(r8) :: ftem(pcols,pver) ! tmp space
+    real(r8) :: ftem_layers(pcols,4) ! tmp space
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D
+    logical :: history_gaschmbudget_2D_levels
+    integer :: gaschmbudget_2D_L1_s
+    integer :: gaschmbudget_2D_L1_e
+    integer :: gaschmbudget_2D_L2_s
+    integer :: gaschmbudget_2D_L2_e
+    integer :: gaschmbudget_2D_L3_s
+    integer :: gaschmbudget_2D_L3_e
+    integer :: gaschmbudget_2D_L4_s
+    integer :: gaschmbudget_2D_L4_e
     integer ::  gas_ac_idx
     integer :: nstep
 
@@ -1432,7 +1446,16 @@ end function chem_is_active
     nstep = get_nstep()
 
     call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
-                   history_gaschmbudget_2D_out = history_gaschmbudget_2D)
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                      gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                      gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                      gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                      gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                      gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                      gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                      gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                      gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
     chem_dt = chem_freq*dt
 
@@ -1464,7 +1487,7 @@ end function chem_is_active
     if (e90_ndx <= 0) then
       call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
     else
-      call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag)
+      call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag, tropFlagInt)
     end if
 
     tim_ndx = pbuf_old_tim_idx()
@@ -1478,7 +1501,7 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! output gas concentration and tendency
 !-----------------------------------------------------------------------
-    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+    if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
       do m = 1,pcnst
          n = map2chm(m)
          if (n > 0 .and. (.not. any( aer_species == n ))) then
@@ -1502,10 +1525,11 @@ end function chem_is_active
            end if
            !
            if (history_gaschmbudget_2D) then
-             do k=2,pver
-               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+             ftem_layers = 0.0_r8
+             do k=1,pver
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
              end do
-             call outfld(trim(solsym(n))//'_2DMSB', ftem(:ncol,1), pcols, lchnk )
+             call outfld(trim(solsym(n))//'_2DMSB', ftem_layers(:ncol,1), pcols, lchnk )
 
              gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
@@ -1516,10 +1540,80 @@ end function chem_is_active
                 !end if
 
              else
-                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))/dt
+                Diff(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_2D(:ncol))/dt
              end if
              call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
            end if
+           ! HHLEE 20210923
+           if (history_gaschmbudget_2D_levels ) then
+             ftem_layers = 0.0_r8
+             gas_ac_layers = 0.0_r8
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+
+             if (gaschmbudget_2D_L1_e .lt. gaschmbudget_2D_L1_s .or. gaschmbudget_2D_L2_e .lt. gaschmbudget_2D_L2_s .or. &
+                 gaschmbudget_2D_L3_e .lt. gaschmbudget_2D_L3_s .or. gaschmbudget_2D_L4_e .lt. gaschmbudget_2D_L4_s ) then
+                   call endrun('chem_readnl: ERROR 2D chem diags layers, layer ending index is less than starting index')
+             end if
+
+             do k= gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e ! 0-90 hPa
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e ! 90-300 hPa
+               ftem_layers(:ncol,2) = ftem_layers(:ncol,2) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,2) = gas_ac_layers(:ncol,2) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e ! 300-850 hPa
+               ftem_layers(:ncol,3) = ftem_layers(:ncol,3) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,3) = gas_ac_layers(:ncol,3) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e ! 850 hPa - surface
+               ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
+             end do
+             call outfld(trim(solsym(n))//'_2DMSB_L1', ftem_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L2', ftem_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L3', ftem_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L4', ftem_layers(:ncol,4), pcols, lchnk)
+
+             if( nstep == 0 ) then
+                Diff_layers(:ncol,:) = 0.0_r8
+             else
+                Diff_layers(:ncol,:) = 0.0_r8
+                Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
+                Diff_layers(:ncol,2) = (ftem_layers(:ncol,2) - gas_ac_layers(:ncol,2))/dt
+                Diff_layers(:ncol,3) = (ftem_layers(:ncol,3) - gas_ac_layers(:ncol,3))/dt
+                Diff_layers(:ncol,4) = (ftem_layers(:ncol,4) - gas_ac_layers(:ncol,4))/dt
+             end if
+             call outfld(trim(solsym(n))//'_2DTDO_L1', Diff_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L2', Diff_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L3', Diff_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L4', Diff_layers(:ncol,4), pcols, lchnk)
+
+             ! for the tropospheric budget diagnostics
+             if (trim(solsym(n))=='O3' .or. trim(solsym(n))=='O3LNZ' .or. &
+                 trim(solsym(n))=='N2OLNZ' .or. trim(solsym(n))=='CH4LNZ') then
+                ftem_layers = 0.0_r8
+                gas_ac_layers = 0.0_r8
+                do k=1,pver
+                   ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k) * tropFlagInt(:ncol,k)
+                   gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k) * tropFlagInt(:ncol,k)
+                end do
+                call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
+
+                if( nstep == 0 ) then
+                   Diff_layers(:ncol,:) = 0.0_r8
+                else
+                   Diff_layers(:ncol,:) = 0.0_r8
+                   Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
+                end if
+                call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
+             end if
+
+           end if ! history_gaschmbudget_2D_levels
+
          end if
       end do
     end if
@@ -1528,7 +1622,9 @@ end function chem_is_active
 ! call Neu wet dep scheme
 !-----------------------------------------------------------------------
     call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdeldry,state%zi,state%t,dt, &
-         prain, nevapr, cldfr, cmfdqr, ptend%q)
+         prain, nevapr, cldfr, cmfdqr, ptend%q, history_gaschmbudget_2D_levels, &
+         gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e, gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e, &
+         gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e, gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e )
 
 !-----------------------------------------------------------------------
 ! compute tendencies and surface fluxes
@@ -1547,7 +1643,8 @@ end function chem_is_active
                           chem_dt, state%ps, xactive_prates, do_cloudj_photolysis, &
                           fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag)
+                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &
+                          tropFlagInt=tropFlagInt)
 
     call t_stopf( 'chemdr' )
 
