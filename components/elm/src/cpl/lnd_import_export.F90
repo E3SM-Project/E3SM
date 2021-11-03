@@ -338,8 +338,13 @@ contains
             !Figure out the closest point and which zone file to open
             mindist=99999
             do g3 = 1,ng
-              thisdist = 100*((latixy(g3) - ldomain%latc(g))**2 + &
-                              (longxy(g3) - ldomain%lonc(g))**2)**0.5
+              if (ldomain%lonc(g) < 0) then 
+                thisdist = 100*((latixy(g3) - ldomain%latc(g))**2 + &
+                                (longxy(g3) - 360.0_r8 - ldomain%lonc(g))**2)**0.5
+              else
+                thisdist = 100*((latixy(g3) - ldomain%latc(g))**2 + &
+                                (longxy(g3) - ldomain%lonc(g))**2)**0.5
+              end if
               if (thisdist .lt. mindist) then 
                 mindist = thisdist
                 ztoget = zone_map(g3)
@@ -751,7 +756,7 @@ contains
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
             end if
           end if
-        end if
+        !end if
 
           !figure out which point to get
           if (atm2lnd_vars%loaded_bypassdata == 0) then 
