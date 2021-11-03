@@ -1987,7 +1987,8 @@ contains
             ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + iceFluxDIC(iCell)
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell)
+               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell) &
+               + iceFluxDOC(3,iCell)
 ! this is just a placeholder
             ecosysSurfaceFlux(donr_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)

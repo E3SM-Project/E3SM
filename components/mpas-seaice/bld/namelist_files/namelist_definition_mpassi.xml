@@ -955,6 +955,14 @@ Valid values: false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_macromolecules" type="logical"
+	category="biogeochemistry" group="biogeochemistry">
+Use ocean macromolecule to determine DOC fractions in ice-ocean coupling
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_ammonium" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
 Use the ammonium tracer
