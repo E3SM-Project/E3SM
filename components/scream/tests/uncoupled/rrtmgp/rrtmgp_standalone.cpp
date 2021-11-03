@@ -21,7 +21,7 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Load ad parameter list
-  std::string fname = "input_np" + std::to_string(atm_comm.size()) + ".yaml";
+  std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 

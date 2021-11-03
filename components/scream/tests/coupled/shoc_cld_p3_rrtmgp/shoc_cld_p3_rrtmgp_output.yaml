@@ -1,7 +1,8 @@
 %YAML 1.1
 ---
-Casename: shoc_cld_p3_rrtmgp_output_np${MPI_RANKS}
+Casename: shoc_cld_p3_rrtmgp_output
 Timestamp in Filename: false
+MPI Ranks in Filename: true
 Averaging Type: Instant
 Grid: Physics
 Max Snapshots Per File: 1

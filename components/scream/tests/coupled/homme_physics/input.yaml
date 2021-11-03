@@ -50,5 +50,5 @@ Grids Manager:
 # The parameters for I/O control
 SCORPIO:
   Output YAML Files:
-    Physics GLL: ["homme_shoc_cld_p3_rrtmgp_output_np${MPI_RANKS}.yaml"]
+    Physics GLL: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
 ...

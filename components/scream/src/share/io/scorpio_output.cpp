@@ -107,12 +107,20 @@ void AtmosphereOutput::init()
 /* Overload the run routine to accept a TimeStamp or floating point for the input time */
 void AtmosphereOutput::run(const util::TimeStamp& time)
 {
-  if (m_filename_with_time_string) {
-    // Pass the time in seconds and as a string to the run routine.
-    run_impl(time.get_seconds(),time.to_string());
-  } else {
-    run_impl(time.get_seconds(),"");
+  // If a new file will be written, construct the filename.
+  if (m_num_snapshots_in_file==0) {
+    // A new file has been opened and we need a new filename for it.
+    m_filename = compute_filename_root(m_casename);
+    if (m_filename_with_mpiranks) {
+      m_filename += ".np" + std::to_string(m_comm.size());
+    }
+    if (m_filename_with_time_string) {
+      m_filename += "." + time.to_string();
+    }
   }
+
+  // Call main output function
+  run_impl(time.get_seconds());
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::finalize() 
@@ -123,7 +131,7 @@ void AtmosphereOutput::finalize()
       "Error! AtmosphereOutput::finalize() was called while the output file was still open.\n");
 } // finalize
 /*-----*/
-void AtmosphereOutput::run_impl(const Real time, const std::string& time_str) 
+void AtmosphereOutput::run_impl(const Real time) 
 {
   using namespace scream::scorpio;
 
@@ -172,13 +180,6 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   const bool is_write_step = is_output_step || is_checkpoint_step;
   std::string filename;
   if (is_write_step) {
-    if (m_num_snapshots_in_file==0) {
-      // A new file has been opened and we need a new filename for it.
-      m_filename = compute_filename_root(m_casename);
-      if (!time_str.empty()) {
-        m_filename += "." + time_str;
-      }
-    }
     filename = m_filename;
     // If we are going to write an output checkpoint file, or a model restart file,
     // we need to append to the filename ".rhist" or ".r" respectively, and add
@@ -321,6 +322,9 @@ set_params (const ekat::ParameterList& params)
   m_casename = params.get<std::string>("Casename");
   if (params.isParameter("Timestamp in Filename")) {
     m_filename_with_time_string = params.get<bool>("Timestamp in Filename");
+  }
+  if (params.isParameter("MPI Ranks in Filename")) {
+    m_filename_with_mpiranks = params.get<bool>("MPI Ranks in Filename");
   }
 
   m_max_snapshots_per_file  = params.get<int>("Max Snapshots Per File");

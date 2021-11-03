@@ -27,7 +27,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     CreateUnitTest(
         rrtmgp_standalone "rrtmgp_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
         MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-        PROPERTIES FIXTURES_SETUP rrtmgp_main
+        PROPERTIES FIXTURES_SETUP rrtmgp_generate_output_nc_files
     )
 
     # Copy yaml input file to run directory
@@ -55,13 +55,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     set (ATM_TIME_STEP 1800)
 
     ## Copy (and configure) yaml files needed by tests
-    foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
+    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+                   ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
+    CONFIGURE_FILE(rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
       
-      CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-                     ${CMAKE_CURRENT_BINARY_DIR}/input_np${MPI_RANKS}.yaml)
-      CONFIGURE_FILE(rrtmgp_standalone_output.yaml rrtmgp_standalone_output_np${MPI_RANKS}.yaml)
-      
-    endforeach()
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rrtmgp_init_ne2np4.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_init_ne2np4.nc COPYONLY)
 
@@ -73,8 +70,8 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     BuildCprnc()
     SET (BASE_TEST_NAME "rrtmgp")
     foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-      set (SRC_FILE "${BASE_TEST_NAME}_standalone_output_np${MPI_RANKS}.INSTANT.Steps_x${NUM_STEPS}.nc")
-      set (TGT_FILE "${BASE_TEST_NAME}_standalone_output_np1.INSTANT.Steps_x${NUM_STEPS}.nc")
+      set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+      set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
       configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake
                       ${CMAKE_CURRENT_BINARY_DIR}/CprncTest_np${MPI_RANKS}.cmake @ONLY)
       set(TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
@@ -83,7 +80,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
       set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
                 RESOURCE_LOCK ${BASE_TEST_NAME}
-                FIXTURES_REQUIRED rrtmgp_main)
+                FIXTURES_REQUIRED rrtmgp_generate_output_nc_files)
     endforeach()
   endif()
 endif()
