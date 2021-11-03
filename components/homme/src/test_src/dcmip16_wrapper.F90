@@ -803,6 +803,15 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   call gfr_f2g_dss(hybrid, elem, nets, nete)
   call gfr_pg1_reconstruct(hybrid, nt, hvcoord, elem, nets, nete)
 
+  call toy_init(rcd)
+  do ie = nets,nete
+     do i = 1,2
+        wrk4(:,:,:,i) = elem(ie)%state%Q(:,:,:,i+3)
+     end do
+     call toy_rcd(wrk4, rcd)
+  end do
+  call toy_print(hybrid, tl%nstep, rcd)
+
   if (ftype == 0) then
      ! Convert FQ from state to Qdp tendency.
      do ie = nets,nete
@@ -816,20 +825,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
         end do
      end do
   end if
-
-  call toy_init(rcd)
-  do ie = nets,nete
-     do k = 1,nlev
-        dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
-     end do
-     ! Since ftype is 0, FQ is the tendency. Convert to state.
-     do i = 1,2
-        wrk4(:,:,:,i) = elem(ie)%state%Q(:,:,:,i+3) + dt*elem(ie)%derived%FQ(:,:,:,i+3)/dp
-     end do
-     call toy_rcd(wrk4, rcd)
-  end do  
-  call toy_print(hybrid, tl%nstep, rcd)
 
   ! DSS precl
   do ie = nets,nete
