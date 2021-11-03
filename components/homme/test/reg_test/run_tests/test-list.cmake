@@ -95,6 +95,7 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
      theta-fhs1
      theta-fhs2
+     theta-fhs3
   )
 
   #all tests that will be used for cxx-vs-F bfb testing
