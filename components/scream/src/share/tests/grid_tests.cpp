@@ -29,6 +29,8 @@ TEST_CASE("point_grid", "") {
   REQUIRE(grid->get_num_local_dofs()  == num_local_cols);
   REQUIRE(grid->get_num_global_dofs() == num_global_cols);
   REQUIRE(grid->is_unique());
+  REQUIRE(grid->get_global_min_dof()==0);
+  REQUIRE(grid->get_global_max_dof()==(grid->get_num_global_dofs()-1));
 
   auto lid_to_idx = grid->get_lid_to_idx_map();
   auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
