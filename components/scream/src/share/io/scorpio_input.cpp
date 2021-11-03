@@ -123,6 +123,9 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
   EKAT_REQUIRE_MSG (grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
+  EKAT_REQUIRE_MSG (
+      (grid->get_global_max_dof()-grid->get_global_min_dof()+1)==grid->get_num_global_dofs(),
+      "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
   EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
       "Error! PIO interface requires the size of the IO MPI group to be\n"
@@ -397,24 +400,35 @@ get_var_dof_offsets(const FieldLayout& layout)
   std::vector<int> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
-  // These are not the dofs global ids (which are just labels, and can be whatever,
-  // and in fact are not even contiguous when Homme generates the dof gids).
-  // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
-  // correspond to the 3rd,4th,5th, and 6th dofs globally.
+  // Since we order the global array based on dof gid, and we *assume* (we actually
+  // check this during set_grid) that the grid global gids are in the interval
+  // [gid_0, gid_0+num_global_dofs), the offset is simply given by
+  // (dof_gid-gid_0)*column_size (for partitioned arrays).
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_grid->get_num_local_dofs();
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    Int col_size = layout.size() / num_cols;
+    int col_size = layout.size() / num_cols;
 
-    // Compute the number of columns owned by all previous ranks.
-    int offset = 0;
-    m_comm.scan(&num_cols,&offset,1,MPI_SUM);
-    offset -= num_cols;
+    auto dofs = m_grid->get_dofs_gids();
+    auto dofs_h = Kokkos::create_mirror_view(dofs);
+    Kokkos::deep_copy(dofs_h,dofs);
 
-    // Compute offsets of all my dofs
-    std::iota(var_dof.begin(), var_dof.end(), offset*col_size);
+    // Precompute tis *before* the loop, since it involves expensive collectives.
+    // Besides, the loop might have different length on different ranks, so
+    // computing it inside might cause deadlocks.
+    auto min_gid = m_grid->get_global_min_dof();
+    for (int icol=0; icol<num_cols; ++icol) {
+      // Get chunk of var_dof to fill
+      auto start = var_dof.begin()+icol*col_size;
+      auto end   = start+col_size;
+
+      // Compute start of the column offset, then fill column adding 1 to each entry
+      auto gid = dofs_h(icol);
+      auto offset = (gid-min_gid)*col_size;
+      std::iota(start,end,offset);
+    }
   } else {
     // This field is *not* defined over columns, so it is not partitioned.
     std::iota(var_dof.begin(),var_dof.end(),0);
