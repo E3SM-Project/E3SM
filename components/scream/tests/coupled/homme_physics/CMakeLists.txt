@@ -15,7 +15,7 @@ CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_L
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 8 48)  # 1h 4h 24h
+SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
