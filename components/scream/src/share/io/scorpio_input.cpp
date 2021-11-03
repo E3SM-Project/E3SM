@@ -415,7 +415,7 @@ get_var_dof_offsets(const FieldLayout& layout)
     auto dofs_h = Kokkos::create_mirror_view(dofs);
     Kokkos::deep_copy(dofs_h,dofs);
 
-    // Precompute tis *before* the loop, since it involves expensive collectives.
+    // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
     // computing it inside might cause deadlocks.
     auto min_gid = m_grid->get_global_min_dof();
