@@ -447,7 +447,7 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
   EKAT_REQUIRE_MSG (
-      (grid->get_global_max_dof()-grid->get_global_min_dof()+1)==grid->get_num_global_dofs(),
+      (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
   EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
@@ -590,7 +590,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
     // computing it inside might cause deadlocks.
-    auto min_gid = m_grid->get_global_min_dof();
+    auto min_gid = m_grid->get_global_min_dof_gid();
     for (int icol=0; icol<num_cols; ++icol) {
       // Get chunk of var_dof to fill
       auto start = var_dof.begin()+icol*col_size;

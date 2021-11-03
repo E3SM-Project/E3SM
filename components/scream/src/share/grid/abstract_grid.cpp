@@ -154,7 +154,7 @@ AbstractGrid::get_unique_grid () const {
 }
 
 AbstractGrid::gid_type
-AbstractGrid::get_global_min_dof () const
+AbstractGrid::get_global_min_dof_gid () const
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global min dof.\n");
@@ -174,7 +174,7 @@ AbstractGrid::get_global_min_dof () const
   return global_min;
 }
 AbstractGrid::gid_type
-AbstractGrid::get_global_max_dof () const
+AbstractGrid::get_global_max_dof_gid () const
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global max dof.\n");
