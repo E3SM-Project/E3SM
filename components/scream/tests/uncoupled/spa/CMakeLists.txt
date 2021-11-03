@@ -20,7 +20,7 @@ CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS ${TES
 )
 
 # Set AD configurable options
-SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)
+SetVarDependingOnTestProfile(NUM_STEPS 2 1 48)
 set (ATM_TIME_STEP 864000)
 
 ## Copy (and configure) yaml files needed by tests

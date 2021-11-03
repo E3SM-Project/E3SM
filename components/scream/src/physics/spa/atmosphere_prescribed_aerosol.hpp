@@ -96,8 +96,9 @@ protected:
   Int m_nswbands = 14;
   Int m_nlwbands = 16;
 
-  // Local grid information
+  // DOF information
   view_1d_int m_dofs_gids;
+  Int m_total_global_dofs; // Needed to make sure that remap data matches grid.
 
   // Struct which contains local variables
   Buffer m_buffer;

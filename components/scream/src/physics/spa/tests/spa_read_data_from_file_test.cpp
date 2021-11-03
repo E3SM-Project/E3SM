@@ -51,7 +51,6 @@ TEST_CASE("spa_read_data","spa")
   }
   view_1d<int> dofs_gids("",my_dofs.size());
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int ii=0;ii<my_dofs.size();ii++) {
     dofs_gids_h(ii) = my_dofs[ii];
   }
@@ -62,7 +61,7 @@ TEST_CASE("spa_read_data","spa")
   SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
   // Verify that the interpolated values match the algorithm for the data and the weights.
-  //       weights(i) = 1 / (2**i), weights(-1) = 1 / (2**(i-1)) such that sum(weights) = 1., for i=0,1,2
+  //       weights(i) = 1 / (2**i), weights(-1) = 1 / (2**(ncols-1)) such that sum(weights) = 1., for i=0,1,2
   //       FOR t=1,2,3; i=0,1,2; b=1,2 or 1,2,3 and k=0,1,2,3
   //       p(t,i) = (t+1) * (i+1)*100
   //       ccn3(t,i,k) = (i+1)*100 + t*10 + k

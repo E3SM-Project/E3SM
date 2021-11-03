@@ -5,6 +5,7 @@ SET (NEED_LIBS spa scream_io physics_share scream_share)
 CreateUnitTest(spa_read_data_test "spa_read_data_from_file_test.cpp" "${NEED_LIBS}"
   LABELS "spa"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  PROPERTIES RESOURCE_LOCK "spa_unit_tests"
 )
 CreateUnitTest(spa_read_remap_test "spa_read_remap_from_file_test.cpp" "${NEED_LIBS}"
   LABELS "spa"

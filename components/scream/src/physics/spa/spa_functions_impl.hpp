@@ -106,6 +106,7 @@ void SPAFunctions<S,D>
   auto& t_beg = time_state.t_beg_month;
   auto& t_len = time_state.days_this_month;
 
+
   // For now we require that the Data in and the Data out have the same number of columns.
   EKAT_REQUIRE(ncols_atm==pressure_state.ncols);
 
