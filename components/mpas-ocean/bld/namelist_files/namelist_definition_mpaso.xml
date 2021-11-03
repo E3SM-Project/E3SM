@@ -5843,19 +5843,19 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_start" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_start_delay" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis begins
+Number of days after start of simulation when harmonic analysis begins. This is referenced relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_end" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_duration" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis ends
+Length of harmonic analysis period. The analysis begins after config_AM_harmonicAnalysis_start_delay days and ends after config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration days relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

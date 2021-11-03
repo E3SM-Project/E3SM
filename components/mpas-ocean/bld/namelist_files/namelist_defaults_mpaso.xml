@@ -1002,8 +1002,8 @@
 <!-- AM_harmonicAnalysis -->
 <config_AM_harmonicAnalysis_enable>.false.</config_AM_harmonicAnalysis_enable>
 <config_AM_harmonicAnalysis_compute_interval>'output_interval'</config_AM_harmonicAnalysis_compute_interval>
-<config_AM_harmonicAnalysis_start>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_start>
-<config_AM_harmonicAnalysis_end>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_end>
+<config_AM_harmonicAnalysis_start_delay>20</config_AM_harmonicAnalysis_start_delay>
+<config_AM_harmonicAnalysis_duration>90</config_AM_harmonicAnalysis_duration>
 <config_AM_harmonicAnalysis_output_stream>'harmonicAnalysisOutput'</config_AM_harmonicAnalysis_output_stream>
 <config_AM_harmonicAnalysis_restart_stream>'harmonicAnalysisRestart'</config_AM_harmonicAnalysis_restart_stream>
 <config_AM_harmonicAnalysis_compute_on_startup>.false.</config_AM_harmonicAnalysis_compute_on_startup>
