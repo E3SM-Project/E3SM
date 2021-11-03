@@ -71,7 +71,7 @@ MACHINE_METADATA = {
 if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
     sys.path.append(str(pathlib.Path("~/.cime").expanduser()))
     from scream_mach_specs import MACHINE_METADATA as LOCAL_MD # pylint: disable=import-error
-    if len(LOCAL_MD) == 6:
+    if len(LOCAL_MD) == 4:
         MACHINE_METADATA["local"] = LOCAL_MD
     else:
         print("WARNING! File '~/.cime/scream_mach_specs.py' was found, but the MACHINE_METADATA in there is badly formatted. Ignoring it.")
