@@ -358,7 +358,7 @@ contains
     real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
     real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
-    !real(r8) ,pointer  :: hai(:)                        ! read in - hksat_adj: saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
+    real(r8) ,pointer  :: hai(:)                        ! read in - hksat_adj: saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
     !real(r8) ,pointer  :: hksat3d(:,:)                  ! read in - hksat obs: saturated hydraulic conductivity observed profile
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
