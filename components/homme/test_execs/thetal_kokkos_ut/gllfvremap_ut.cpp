@@ -89,7 +89,7 @@ static void clean (HybridVCoord& h) {
     const Real a = Real(i)/(nh-1);
     bi(nh0+i) = (1-a)*0.02 + a*1;
   }
-  assert(b(n-1) == 1);
+  assert(bi(n-1) == 1);
 
   Real etai[n];
   for (int i = 0; i < n; ++i) {

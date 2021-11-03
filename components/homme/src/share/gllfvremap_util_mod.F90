@@ -79,15 +79,13 @@ contains
     deallocate(pg_data%ps, pg_data%zs, pg_data%T, pg_data%uv, pg_data%omega_p, pg_data%q)
   end subroutine finish
 
-  subroutine set_state(s, hvcoord, nt1, nt2, ntq, elem)
+  subroutine set_state(s, nt1, nt2, ntq, elem)
     ! Convenience wrapper to set_elem_state.
 
     use physical_constants, only: g
     use element_ops, only: set_elem_state
-    use hybvcoord_mod, only: hvcoord_t
 
     type (State_t), intent(in) :: s
-    type (hvcoord_t), intent(in) :: hvcoord
     integer, intent(in) :: nt1, nt2, ntq
     type (element_t), intent(inout) :: elem
 
@@ -116,7 +114,7 @@ contains
     type (State_t) :: s1
     type (cartesian3D_t) :: p
     real(kind=real_kind) :: wr(np,np,nlev,2)
-    integer :: i, j, k, q, d, tl
+    integer :: i, j, k, q, tl
 
     elem%state%Q(:,:,:,1) = zero ! moisture tracer is 0
     do j = 1,np
@@ -156,12 +154,12 @@ contains
     s1%z = zero
     s1%zi = zero
     ! a bit of a kludge
-    call set_state(s1, hvcoord, nt1, nt2, nt1, elem)
+    call set_state(s1, nt1, nt2, nt1, elem)
     call get_field(elem, 'rho', wr(:,:,:,1), hvcoord, nt1, nt1)
     s1%w = -elem%derived%omega_p/(wr(:,:,:,1)*g)
     s1%wi(:,:,:nlev) = s1%w
     s1%wi(:,:,nlevp) = s1%w(:,:,nlev)
-    call set_state(s1, hvcoord, nt1, nt2, nt1, elem)
+    call set_state(s1, nt1, nt2, nt1, elem)
     do q = 1,qsize
        do tl = nt1,nt2
           elem%state%Qdp(:,:,:,q,tl) = &
@@ -198,11 +196,11 @@ contains
 
     character(32) :: msg
     type (cartesian3D_t) :: p
-    real(kind=real_kind) :: wg(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
+    real(kind=real_kind) :: wg(np,np,nlev), tend(np,np,nlev), f, a, b, rd, &
          qmin1(qsize+3), qmax1(qsize+3), qmin2, qmax2, mass1, mass2, &
          wg1(np,np,nlev), wg2(np,np,nlev), dt, pressure(np,np,nlev), &
          p_fv(np*np,nlev), wf1(np*np,nlev), wf2(np*np,nlev), wf3(np*np)
-    integer :: nf, nf2, nt1, nt2, ie, i, j, k, d, q, qi, tl, col, nerr
+    integer :: nf, nf2, nt1, nt2, ie, i, j, k, q, qi, col, nerr
     logical :: domass
 
     nerr = 0
@@ -458,12 +456,13 @@ contains
                      sum(wg*elem(ie)%state%v(:,:,qi,:,nt1)**2)
              else
                 call get_temperature(elem(ie), wg1, hvcoord, nt1)
+                call get_field(elem(ie), 'p', wg2, hvcoord, nt1, -1)
                 global_shared_buf(ie,1) = sum(wg*(elem(ie)%derived%FT - wg1)**2)
-                global_shared_buf(ie,2) = sum(wg*wg1**2)                
-                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                global_shared_buf(ie,2) = sum(wg*wg1**2)
+                wg1 = wg1*(p0/wg2)**kappa
                 global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
                 wg1 = elem(ie)%derived%FT
-                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                wg1 = wg1*(p0/wg2)**kappa
                 global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
              end if
           else
@@ -504,7 +503,12 @@ contains
        if (domass) then
           a = global_shared_sum(3)
           b = global_shared_sum(4)
-          if (abs(b - a) > 5*eps*abs(a)) then
+          f = 5
+#ifdef HOMMEXX_BFB_TESTING
+          ! Errors in bfb_pow mean mass conservation holds to only ~1e-6.
+          if (q == qsize+3) f = 1.0e11_real_kind
+#endif
+          if (abs(b - a) > f*eps*abs(a)) then
              nerr = nerr + 1
              if (hybrid%masterthread) then
                 write(iulog, '(a,i3,es12.4,es12.4,es12.4,a)') 'gfrt> test3 q mass', &
@@ -592,7 +596,7 @@ contains
 
 #ifndef CAM
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:), latlon(:,:,:)
-    integer :: unit, nf2, vari, phisidx, ie, i, j, k
+    integer :: nf2, vari, ie, i, j, k
     logical :: square, augment
     character(len=varname_len) :: fieldnames(5)
 
@@ -643,7 +647,7 @@ contains
 
   function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
 #ifndef CAM
-    use common_io_mod, only: varname_len,infilenames
+    use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
          gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
     use interpolate_driver_mod, only: read_physgrid_topo_file, write_physgrid_smoothed_phis_file, &
