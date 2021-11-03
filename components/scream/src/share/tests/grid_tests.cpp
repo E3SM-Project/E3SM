@@ -30,6 +30,11 @@ TEST_CASE("point_grid", "") {
   REQUIRE(grid->get_num_global_dofs() == num_global_cols);
   REQUIRE(grid->is_unique());
 
+  // Point grids should have (global) gids spanning the interval [min_gid, min_gid+num_global_dofs)
+  const auto max_gid = grid->get_global_max_dof_gid();
+  const auto min_gid = grid->get_global_min_dof_gid();
+  REQUIRE( (max_gid-min_gid+1)==grid->get_num_global_dofs() );
+
   auto lid_to_idx = grid->get_lid_to_idx_map();
   auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
   Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);

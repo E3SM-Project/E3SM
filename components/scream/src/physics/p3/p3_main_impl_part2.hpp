@@ -116,14 +116,14 @@ void Functions<S,D>
     const auto range_mask = range_pack < nk;
       
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
-    const auto skip_all = ( ( qc(k) < qsmall && qr(k) < qsmall && qi(k) < qsmall )
-			    && ( T_atm(k) < T_zerodegc && qv_supersat_i(k) < -0.05 ) 
-			    || !range_mask );
+    const auto skip_all = ( !range_mask ||
+        (qc(k)<qsmall && qr(k)<qsmall && qi(k)<qsmall &&
+         T_atm(k)<T_zerodegc && qv_supersat_i(k)< -0.05) );
     
-    const auto not_skip_all = !skip_all;
     if (skip_all.all()) {
       return; // skip all process rates
     }
+    const auto not_skip_all = !skip_all;
 
     // All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
 

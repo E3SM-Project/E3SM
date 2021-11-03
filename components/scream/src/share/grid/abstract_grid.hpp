@@ -107,6 +107,8 @@ public:
   // The number of dofs on this MPI rank
   int get_num_local_dofs  () const { return m_num_local_dofs;  }
   gid_type get_num_global_dofs () const { return m_num_global_dofs; }
+  gid_type get_global_min_dof_gid () const;
+  gid_type get_global_max_dof_gid () const;
 
   // Set the dofs list
   // NOTE: this method must be called on all ranks in the stored comm.
