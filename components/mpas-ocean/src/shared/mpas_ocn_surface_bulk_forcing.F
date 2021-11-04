@@ -312,10 +312,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, nEdges
+      integer :: iCell, nCells
       integer, dimension(:), pointer :: nCellsArray
-
-      integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux

@@ -781,7 +781,7 @@ contains
 
       real (kind=RKIND) :: zTop, zBot
 
-      integer :: iCell, iLevel, iTracer, numColumns, column, autotroph, n
+      integer :: iCell, iLevel, numColumns, column, autotroph, n
 
       err = 0
 
@@ -1697,7 +1697,7 @@ contains
       type (mpas_pool_type), pointer :: ecosysAuxiliary,  &  ! additional forcing fields
                                         ecosysSeaIceCoupling
 
-      integer :: numColumns, column, iCell, iTracer, iLevelSurface, n
+      integer :: numColumns, column, iCell, iLevelSurface, n
 
 ! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
@@ -2162,7 +2162,7 @@ contains
          riverFluzDOC
 
       ! scalars
-      integer :: nTracers, numColumnsMax, iLevel, n, marbl_actual_tracer_cnt
+      integer :: nTracers, numColumnsMax, iLevel, n
 
       ! scalar pointers
       integer, pointer :: nVertLevels, index_dummy, nCellsSolve
