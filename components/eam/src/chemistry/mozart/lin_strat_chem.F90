@@ -11,7 +11,8 @@ module lin_strat_chem
 !       --added prescribed O3LBS in netcdf file (prescribed CMIP6 historical surface ozone below 925 mb). And Linoz surface ozone are relaxed to this profile in 2-days within the last 9 surface layers
 !      added 30-day e-fold decay subroutine (lin_strat_efold_decay) for ChemUCI tropospheric species assigned to the namelist, fstrat_efold_list   
 !     20 Sep 2021 -- Qi Tang (LLNL), -- added 3D tropopause
-!     26 Oct 2021 -- Hsiang-He Lee (LLNL) -- run both O3 and O3linoz in subrountine 
+!     04 Nov 2021 -- Hsiang-He Lee (LLNL) -- Added flags for two sets of Linoz chemistry to run either O3/CH4x/N2Ox/NOYx set or 
+!                    O3LNZ/N2OLNZ/NOYLNZ/CH4LNZ to get LINOZ tendecies 
 
 
   use shr_kind_mod , only : r8 => shr_kind_r8
@@ -185,19 +186,19 @@ end subroutine linoz_readnl
 
     ! define additional output
 
-    call addfld( 'LINOZ_DO3LNZ'    , (/ 'lev' /), 'A', '/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_DO3LNZ_PSC', (/ 'lev' /), 'A', '/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
-    call addfld( 'LINOZ_2DDO3LNZ'    , horiz_only, 'A', 'DU/s'     , 'ozone 2D DU tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_2DDO3LNZ_PSC', horiz_only, 'A', 'DU/s'     , 'ozone 2D DU loss by PSCs using Carille et al. (1990)' )
-    call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state ozone in LINOZ'                        )
+    call addfld( 'LINOZ_DO3LNZ'    , (/ 'lev' /), 'A', '/s'     , 'O3LNZ vmr tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_DO3LNZ_PSC', (/ 'lev' /), 'A', '/s'     , 'O3LNZ vmr loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_2DDO3LNZ'    , horiz_only, 'A', 'DU/s'     , 'O3LNZ 2D DU tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_2DDO3LNZ_PSC', horiz_only, 'A', 'DU/s'     , 'O3LNZ 2D DU loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state O3 in LINOZ'                        )
     call addfld( 'LINOZ_O3COL'  , (/ 'lev' /), 'A', 'DU'     , 'ozone column above'                                 )
     call addfld( 'LINOZ_O3CLIM' , (/ 'lev' /), 'A', 'mol/mol', 'climatology of ozone in LINOZ'                      )
     call addfld( 'LINOZ_SZA'    ,    horiz_only, 'A', 'degrees', 'solar zenith angle in LINOZ'                      )
-    call addfld( 'LINOZ_O3SFCSINK',  horiz_only, 'A', 'Tg/yr/m2'   ,   'surface o3lnz sink in LINOZ with an e-fold to a fixed concentration' )
-    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
-    call addfld( 'LINOZ_2DDO3'  , horiz_only, 'A', 'DU/s'     , 'ozone 2D DU tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_2DDO3_PSC', horiz_only, 'A', 'DU/s'     , 'ozone 2D DU loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_O3SFCSINK',  horiz_only, 'A', 'Tg/yr/m2'   ,   'surface ozone sink in LINOZ with an e-fold to a fixed concentration' )
+    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '/s'     , 'O3 vmr tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '/s'     , 'O3 vmr loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_2DDO3'  , horiz_only, 'A', 'DU/s'     , 'O3 2D DU tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_2DDO3_PSC', horiz_only, 'A', 'DU/s'     , 'O3 2D DU loss by PSCs using Carille et al. (1990)' )
     if(linoz_v3)then
     call addfld( 'LINOZ_NOYSFCSINK', horiz_only, 'A', 'Tg/yr/m2'   , 'surface noylnz sink in LINOZ v3 with an e-fold to a fixed concentration' )
     call addfld( 'LINOZ_N2OSFCSRC',  horiz_only, 'A', 'Tg/yr/m2'   , 'surface n2o source in LINOZ v3 with an e-fold to a fixed concentration' )
@@ -267,7 +268,7 @@ end subroutine linoz_readnl
     real(r8), intent(inout), dimension(ncol ,pver,gas_pcnst) :: xvmr      ! volume mixing ratio for all
     real(r8), intent(in)   , dimension(ncol ,pver) :: h2ovmr              ! h2o vapor volume mixing ratio 
     real(r8), intent(inout)                        :: xsfc(4,ncol)        ! surface o3,n2o,noy,ch4 from linoz table
-    real(r8), intent(in)   , dimension(ncol ,pver) :: o3col               ! Linoz ozone column above box (mol/cm^2)
+    real(r8), intent(in)   , dimension(ncol ,pver) :: o3col               ! ozone column above box, can be either "O3" column or "O3LNZ" column (mol/cm^2)
     real(r8), intent(in)   , dimension(pcols,pver) :: temp                ! temperature (K)
     real(r8), intent(in)   , dimension(ncol )      :: sza                 ! local solar zenith angle
     real(r8), intent(in)   , dimension(pcols,pver) :: pmid                ! midpoint pressure (Pa)
