@@ -460,7 +460,7 @@ contains
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
-    use lnd2iacMod            , only : lnd2iac_type 
+    !use lnd2iacMod            , only : lnd2iac_type ! avd this isn't needed 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use clm_varctl                          , only : use_clm_interface, use_pflotran
     use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
@@ -961,24 +961,26 @@ contains
     call t_stopf('init_clm_interface_data & pflotran')
     !------------------------------------------------------------
 
+
+    ! avd - this isn't needed because these values are passed as needed
     !------------------------------------------------------------       
     ! Initialize lnd2iac, to send to iac.  Not sure this is 
     ! necessary, given our yearly iac timestep, but we'll do it anyway
     ! just in case.
     !------------------------------------------------------------       
     ! Find right logical
-    if (iac_active) then  
-       !Threading probably okay
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
-       do nc = 1,nclumps
-          call get_clump_bounds(nc, bounds_clump)
+    !if (iac_active) then  
+    !   !Threading probably okay
+    !   !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+    !   do nc = 1,nclumps
+    !      call get_clump_bounds(nc, bounds_clump)
 
-          call t_startf('init_lnd2iac')
-          call lnd2iac_vars%update_lnd2iac(bounds_clump)
-          call t_stopf('init_lnd2iac')
-       end do
+    !      call t_startf('init_lnd2iac')
+    !      call lnd2iac_vars%update_lnd2iac(bounds_clump)
+    !      call t_stopf('init_lnd2iac')
+    !   end do
        !$OMP END PARALLEL DO
-    end if
+    !end if
 
     !------------------------------------------------------------       
     ! Write log output for end of initialization

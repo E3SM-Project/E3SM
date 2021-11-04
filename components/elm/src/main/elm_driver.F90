@@ -82,6 +82,7 @@ module clm_driver
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
   use lnd2iacMod             , only : lnd2iac_type
+  use iac2lndMod             , only : iac2lnd_type
   !
   use seq_drydep_mod         , only : n_drydep, drydep_method, DD_XLND
   use DryDepVelocity         , only : depvel_compute
@@ -121,6 +122,7 @@ module clm_driver
   use clm_instMod            , only : glc2lnd_vars
   use clm_instMod            , only : lnd2glc_vars
   use clm_instMod            , only : lnd2iac_vars
+  use clm_instMod            , only : iac2lnd_vars
   use clm_instMod            , only : soil_water_retention_curve
   use clm_instMod            , only : chemstate_vars
   use clm_instMod            , only : alm_fates
@@ -410,7 +412,7 @@ contains
        grc_cs, grc_cf ,&
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
        nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
-       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
+       phosphorusstate_vars,phosphorusflux_vars, crop_vars, iac2lnd_vars)
     call t_stopf('dyn_subgrid')
 
     if (.not. use_fates)then

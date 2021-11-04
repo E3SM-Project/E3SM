@@ -364,12 +364,13 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     integer :: glc_nec
-    integer :: iac_npft = 17
+    integer :: iac_npft
+    integer :: iac_nharvest
 
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields, &
-         iac_npft
+         iac_npft, iac_nharvest
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -2133,6 +2134,8 @@ contains
     
     ! lnd/iac coupling needs one field in each class per pft
     ! Note that this ends up as 17*4=68 coupled fields...
+    ! also send harvest fraction from iac to land
+    ! use the same loop and index string
     do i = 1,iac_npft
 
        ! Zero offset the tags, since that's how we access them in lnd and iac
@@ -2168,8 +2171,8 @@ contains
 
        ! iac->lnd 
 
-       ! This is currently the only thing we send back from gcam, but I
-       ! wonder if landuse and landfrac should go as well - just to
+       ! This is pft for beginning of model year + 1
+       ! ts wonders if landfrac should go as well - just to
        ! verify that we are all using the same values.
        call seq_flds_add(z2x_states,trim('Sz_pct_pft' //pftstr))
        call seq_flds_add(x2l_states,trim('Sz_pct_pft' //pftstr))
@@ -2180,6 +2183,31 @@ contains
        attname  = 'Sz_pct_pft' //pftstr
        attname  = trim(attname)
        call metadata_set(attname, longname, stdname, units)
+
+       ! Need to send the beginning model year pft data as well
+       call seq_flds_add(z2x_states,trim('Sz_pct_pft_prev' //pftstr))
+       call seq_flds_add(x2l_states,trim('Sz_pct_pft_prev' //pftstr))
+       longname = 'Previous percent pft of vegetated land unit for pft ' //pftstr
+       stdname  = 'iac_pct_pft_prev' //pftstr
+       stdname  = trim(stdname)
+       units    = 'percent'
+       attname  = 'Sz_pct_pft_prev' //pftstr
+       attname  = trim(attname)
+       call metadata_set(attname, longname, stdname, units)     
+  
+       ! send the harvest data also, these are for model year
+       if (i <= iac_nharvest) then
+          call seq_flds_add(z2x_states,trim('Sz_harvest_frac' //pftstr))
+          call seq_flds_add(x2l_states,trim('Sz_harvest_frac' //pftstr))
+          longname = 'Harvest fraction of vegetated land unit for category ' //pftstr
+          stdname  = 'iac_harvest_frac' //pftstr
+          stdname  = trim(stdname)
+          units    = 'fraction'
+          attname  = 'Sz_harvest_frac' //pftstr
+          attname  = trim(attname)
+          call metadata_set(attname, longname, stdname, units)
+       end if
+
     end do 
 
     ! iac->atm flux.  Probably need to switch for correct

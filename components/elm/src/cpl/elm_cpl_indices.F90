@@ -24,6 +24,8 @@ module elm_cpl_indices
 
   integer, public :: iac_npft ! Number of veg pfts (index 0 for bare ground)
   integer , parameter, private :: iac_npft_max = 30  ! just for allocation
+  integer, public :: iac_nharvest ! Number of harvest variables
+  integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
 
   ! lnd -> drv (required)
 
@@ -128,7 +130,12 @@ module elm_cpl_indices
   
   integer, public ::index_x2l_Sg_icemask
   integer, public ::index_x2l_Sg_icemask_coupled_fluxes
-  
+
+  ! IAC -> lnd
+  integer, public ::index_x2l_Sz_pct_pft(0:iac_npft_max)  = 0
+  integer, public ::index_x2l_Sz_pct_pft_prev(0:iac_npft_max)  = 0 
+  integer, public ::index_x2l_Sz_harvest_frac(0:iac_nharvest_max)  = 0
+ 
   integer, public :: nflds_x2l = 0
 
   !-----------------------------------------------------------------------
@@ -335,16 +342,35 @@ contains
     ! IAC coupling
     !---------------------------------
 
-    ! Probably need to compare with namelist 
-    iac_npft = numpft
-! KVC: this has a different value than in iac. Need to align. Doing manually now
-iac_npft = 17
-    do p = 1,iac_npft
-       write(cpft,'(I0)') p-1
+    ! avd - this is called before the pft number is set
+    ! and these are indexed from zero on this elm side 
+    ! KVC: this has a different value than in iac. Need to align. Doing manually now
+    iac_npft = 17
+    ! avd - hardcode this for now, but should be able to get it from namelist like
+    ! in the iac
+    iac_nharvest = 5
+    do p = 0,iac_npft-1
+       write(cpft,'(I0)') p
        cpft=trim(cpft)
        index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
        index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
        index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+       
+       ! iac pfts to land
+       name = 'Sz_pct_pft' // cpft
+       index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
+       name = 'Sz_pct_pft_prev' // cpft
+       index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
+
+       ! iac harvest to land
+       ! these name labels start at 1
+       if (p < iac_nharvest) then
+         write(cpft,'(I0)') p+1
+         cpft=trim(cpft)
+         name = 'Sz_harvest_frac' // cpft
+         index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
+       end if
+
     enddo
 
     call mct_aVect_clean(x2l)

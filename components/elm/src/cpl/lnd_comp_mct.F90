@@ -2,9 +2,9 @@ module lnd_comp_mct
   
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
-  !  Interface of the active land model component of CESM the ELM (E3SM Land Model)
-  !  with the main E3SM driver. This is a thin interface taking E3SM driver information
-  !  in MCT (Model Coupling Toolkit) format and converting it to use by ELM.
+  !  Interface of the active land model component of CESM the CLM (Community Land Model)
+  !  with the main CESM driver. This is a thin interface taking CESM driver information
+  !  in MCT (Model Coupling Toolkit) format and converting it to use by CLM.
   !
   ! !uses:
   use shr_kind_mod     , only : r8 => shr_kind_r8
@@ -19,9 +19,9 @@ module lnd_comp_mct
   private                     ! by default make data private
   !
   ! !public member functions:
-  public :: lnd_init_mct      ! elm initialization
-  public :: lnd_run_mct       ! elm run phase
-  public :: lnd_final_mct     ! elm finalization/cleanup
+  public :: lnd_init_mct      ! clm initialization
+  public :: lnd_run_mct       ! clm run phase
+  public :: lnd_final_mct     ! clm finalization/cleanup
   !
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
@@ -48,6 +48,7 @@ contains
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
+    use elm_varctl , only : clm_varctl_set_iac_active_only
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
     use domainMod        , only : ldomain
@@ -91,6 +92,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
+    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -265,6 +267,10 @@ contains
        call endrun( sub//' ERROR: atmosphere model MUST send aerosols to CLM' )
     end if
 
+    ! set elm flag denoting active IAC/GCAM component
+    call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
+    call clm_varctl_set_iac_active_only(iac_active)
+
     ! Initialize clm gsMap, clm domain and clm attribute vectors
 
     call get_proc_bounds( bounds )
@@ -300,7 +306,7 @@ contains
     end if
 
     ! Create land export state 
-
+    ! note that lnd2iac_vars is not set yet
     if (atm_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
@@ -350,14 +356,14 @@ contains
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-    use elm_instMod     , only : lnd2iac_var
+    use elm_instMod     , only : lnd2iac_var, iac2lnd_vars
     use elm_driver      ,  only : elm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
-    use elm_varctl      ,  only : iulog
-    use elm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
+    use clm_varctl      ,  only : iulog
+    use clm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
     use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel
     use seq_cdata_mod   ,  only : seq_cdata, seq_cdata_setptrs
@@ -382,11 +388,11 @@ contains
     integer      :: mon_sync             ! Sync current month
     integer      :: day_sync             ! Sync current day
     integer      :: tod_sync             ! Sync current time of day (sec)
-    integer      :: ymd                  ! ELM current date (YYYYMMDD)
-    integer      :: yr                   ! ELM current year
-    integer      :: mon                  ! ELM current month
-    integer      :: day                  ! ELM current day
-    integer      :: tod                  ! ELM current time of day (sec)
+    integer      :: ymd                  ! CLM current date (YYYYMMDD)
+    integer      :: yr                   ! CLM current year
+    integer      :: mon                  ! CLM current month
+    integer      :: day                  ! CLM current day
+    integer      :: tod                  ! CLM current time of day (sec)
     integer      :: dtime                ! time step increment (sec)
     integer      :: nstep                ! time step index
     logical      :: rstwr_sync           ! .true. ==> write restart file before returning
@@ -396,7 +402,7 @@ contains
     logical      :: dosend               ! true => send data back to driver
     logical      :: doalb                ! .true. ==> do albedo calculation on this time step
     real(r8)     :: nextsw_cday          ! calday from clock of next radiation computation
-    real(r8)     :: caldayp1             ! elm calday plus dtime offset
+    real(r8)     :: caldayp1             ! clm calday plus dtime offset
     integer      :: shrlogunit,shrloglev ! old values for share log unit and log level
     integer      :: lbnum                ! input to memory diagnostic
     integer      :: g,i,lsz              ! counters
@@ -457,10 +463,11 @@ contains
     ! Perform downscaling if appropriate
 
     
-    ! Map to elm (only when state and/or fluxes need to be updated)
+    ! Map to clm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars
+                     iac2lnd_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run
