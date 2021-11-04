@@ -529,7 +529,9 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
-CFLAGS+=$(CPPDEFS)
+# Enable support of larger static arrrays for the double precision LUT
+CFLAGS+= -mcmodel=medium
+CFLAGS+= $(CPPDEFS)
 
 # Instead of appending CFLAGS, prepend it, so that the C++ standards overwrite 
 CXXFLAGS := $(CFLAGS) $(CXXFLAGS)
