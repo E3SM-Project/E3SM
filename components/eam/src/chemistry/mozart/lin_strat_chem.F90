@@ -173,11 +173,11 @@ end subroutine linoz_readnl
     no2_ndx  =   get_spc_ndx('NO2')
     hno3_ndx =   get_spc_ndx('HNO3')
 
-!   if(masterproc)then
-!    write(iulog,*)'in subroutine lin_strat_chem_inti'
-!    write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
-!    write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
-!   end if
+   !if(masterproc)then
+   ! write(iulog,*)'in subroutine lin_strat_chem_inti'
+   ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
+   ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
+   !end if
     
 !     
 !   initialize the linoz data
@@ -339,13 +339,12 @@ end subroutine linoz_readnl
        h2o_vmr =  xvmr(:,:,h2olnz_ndx)
     else
         o3_vmr =  xvmr(:,:, o3_ndx)
-       n2o_vmr =  xvmr(:,:,n2o_ndx)
+       n2o_vmr =  xvmr(:,:,n2olnz_ndx)
        noy_vmr =  xvmr(:,:,noylnz_ndx)
        ch4_vmr =  xvmr(:,:,ch4_ndx)
        h2o_vmr =  xvmr(:,:,h2olnz_ndx)
     endif
     ! associate the field pointers
-       
     !
     !Linoz climatological data 
        linoz_o3_clim      => fields(o3_clim_ndx)      %data(:,:,lchnk )
