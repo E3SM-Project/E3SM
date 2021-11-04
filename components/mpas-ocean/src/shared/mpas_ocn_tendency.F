@@ -117,7 +117,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_thick(tendPool, forcingPool, meshPool)!{{{
+   subroutine ocn_tend_thick(statePool, tendPool, forcingPool, meshPool)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -132,7 +132,8 @@ contains
 
       type (mpas_pool_type), intent(inout) :: &
          tendPool,          &!< [inout] Pool with accumulated tendencies
-         forcingPool         !< [inout] Forcing information
+         forcingPool,       &!< [inout] Forcing information
+         statePool
 
       ! pointers for the actual output variables within the pools above
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
@@ -142,7 +143,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          tendThick,        &! accumulated layer thickness tendency
          fractionAbsorbed, &! fraction of sfc flux absorbed
-         fractionAbsorbedRunoff ! fraction of runoff flux absorbed
+         fractionAbsorbedRunoff, & ! fraction of runoff flux absorbed
+         layerThickness
 
       !-----------------------------------------------------------------
       ! local variables
@@ -167,6 +169,9 @@ contains
                                              fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', &
                                              fractionAbsorbedRunoff)
+
+      call mpas_pool_get_array(statePool, 'layerThickness', &
+                                           layerThickness, 2)
 
       !
       ! layer thickness tendency: 
@@ -205,7 +210,7 @@ contains
       ! for explanation of divergence operator.
       !
       call ocn_thick_hadv_tend(meshPool, normalTransportVelocity, &
-                               layerThickEdge, tendThick, err)
+                               layerThickness, layerThickEdge, tendThick, err)
 
       ! Compute vertical advection term -d/dz(hw)
       call ocn_thick_vadv_tend(meshPool, vertAleTransportTop, &

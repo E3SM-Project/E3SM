@@ -70,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_hadv_tend(meshPool, normalVelocity, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_thick_hadv_tend(meshPool, normalVelocity, layerThickness, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,7 +82,7 @@ contains
          normalVelocity    !< Input: velocity
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: thickness at edge
+         layerThickness, layerThicknessEdge     !< Input: thickness at edge
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -156,9 +156,14 @@ contains
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
+          cell1 = cellsOnEdge(1, iEdge)
+          cell2 = cellsOnEdge(2, iEdge)
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+!            flux = max(0.0_RKIND,normalVelocity(k,iEdge))*dvEdge(iEdge)*layerThickness(k,cell1) + &
+!                   min(0.0_RKIND,normalVelocity(k,iEdge))*dvEdge(iEdge)*layerThickness(k,cell2)
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+
           end do
         end do
       end do

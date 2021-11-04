@@ -1058,7 +1058,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, nhPressureCorrection, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, meshPool)
+      call ocn_tend_thick(statePool, tendPool, forcingPool, meshPool)
 
 
    end subroutine ocn_time_integrator_rk4_compute_thick_tends
@@ -1286,7 +1286,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, nhPressureCorrection, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, meshPool)
+      call ocn_tend_thick(statePool, tendPool, forcingPool, meshPool)
 
       if (config_filter_btr_mode) then
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, meshPool, 1)

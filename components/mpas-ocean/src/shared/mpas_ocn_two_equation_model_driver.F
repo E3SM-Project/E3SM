@@ -179,7 +179,7 @@ contains
                                       nAdvCellsForEdge, advCellsForEdge,&
                                       advMaskHighOrder)
 
-        call ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err) 
+     call ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err) 
 
      if (.not. config_LES_mode) then
 
