@@ -278,6 +278,12 @@ TEST_CASE("forcing", "forcing") {
 
   SECTION ("states") {
 
+    // Set theta_hydrostatic_mode in simulation parameters, since it is
+    // used later in the ForcingFunctor setup. If you don't set it, the FF
+    // will have conditional jumps depending on uninited memory
+    auto& p = Context::singleton().get<SimulationParams>();
+    p.theta_hydrostatic_mode = false;
+
     // Reset state and forcing to the original random values
     std::cout << "Testing dynamics forcing.\n";
 
