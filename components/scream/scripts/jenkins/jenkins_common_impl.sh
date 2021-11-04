@@ -107,6 +107,9 @@ if [ $skip_testing -eq 0 ]; then
   if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream -c -b master
     if [[ $? != 0 ]]; then fails=$fails+1; fi
+
+    ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
   if [[ $fails > 0 ]]; then
