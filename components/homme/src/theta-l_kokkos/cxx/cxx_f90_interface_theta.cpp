@@ -226,7 +226,7 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (tracers.fq.data() == nullptr) {
-    tracers.fq = decltype(tracers.fq)("fq", num_elems);
+    tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
   }
   HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
       elem_derived_FQ, num_elems);
