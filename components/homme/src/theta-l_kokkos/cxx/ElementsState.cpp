@@ -185,10 +185,11 @@ void ElementsState::randomize(const int seed,
 
   std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
+  std::uniform_real_distribution<Real> pdf_vtheta_dp(100.0, 1000.0);
 
   genRandArray(m_v,         engine, random_dist);
   genRandArray(m_w_i,       engine, random_dist);
-  genRandArray(m_vtheta_dp, engine, random_dist);
+  genRandArray(m_vtheta_dp, engine, pdf_vtheta_dp);
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
