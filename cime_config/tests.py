@@ -41,7 +41,7 @@ _TESTS = {
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "SMS_Lm1.f09_f09.IELM.elm-solar_rad"
+            "ERS.f09_f09.IELM.elm-solar_rad"
             )
         },
 
