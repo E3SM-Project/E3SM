@@ -411,9 +411,15 @@ _TESTS = {
             "PEM.ne4pg2_ne4pg2.F2010-SCREAM-HR",
             "PEM.ne4pg2_ne4pg2.F2010-SCREAM-LR",
             "SMS_R_Ln10.ne4_ne4.FDPSCREAMA97",
-            "SMS_D_Ln5.ne4_ne4.F2000SCREAMv1.scream-3min_ts",
             "ERS_R_Ln10.ne4_ne4.FDPSCREAMA97",
             "ERP_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            )
+    },
+
+    "e3sm_scream_v1" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4_ne4.F2000SCREAMv1.scream-3min_ts",
             )
     },
 
