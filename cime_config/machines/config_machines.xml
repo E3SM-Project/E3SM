@@ -3587,7 +3587,7 @@
     <NODENAME_REGEX>fn01sv.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu,fj</COMPILERS>
-    <MPILIBS>mpich,fujitsu</MPILIBS>
+    <MPILIBS>fujitsu</MPILIBS>
     <PROJECT>hp210190</PROJECT>
     <SAVE_TIMING_DIR>/data/hp210190/</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -3606,26 +3606,20 @@
     <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>mpiexec</executable>
-      <arguments>
-        <arg name="num_tasks">-n {{ total_tasks }} </arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">-n {{ total_tasks }} -std e3sm.log.$LID </arg>
       </arguments>
     </mpirun>
     <module_system type="soft">
-      <init_path lang="sh">/usr/share/Modules/init/sh;. /data/hp210190/soft/spack/share/spack/setup-env.sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh;. /data/hp210190/soft/spack/share/spack/setup-env.csh</init_path>
+      <init_path lang="sh">/vol0004/apps/oss/spack-v0.16/share/spack/setup-env.sh</init_path>
+      <init_path lang="csh">/vol0004/apps/oss/spack-v0.16/share/spack/setup-env.csh</init_path>
       <cmd_path lang="csh">spack</cmd_path>
       <cmd_path lang="sh">spack</cmd_path>
       <modules compiler="gnu">
+        <command name="unload">--all</command>
         <command name="load">cmake        @3.18.4%gcc@8.3.1 arch=linux-rhel8-a64fx</command>
-        <command name="load">netlib-lapack@3.8.0 %gcc@8.3.1 arch=linux-rhel8-a64fx</command>
-        <command name="load">/zhgccy5</command><!-- zhgccy5 mpich-tofu@master%gcc@8.3.1 arch=linux-rhel8-a64fx -->
+        <command name="load">fujitsu-mpi  @4.5.0 %gcc@8.3.1 arch=linux-rhel8-a64fx</command>
         <command name="find">--loaded</command>
       </modules>
       <modules compiler="fj">
@@ -3646,6 +3640,7 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="NETCDF_PATH">/data/hp210190/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.3.1</env>
+      <env name="LAPACK_PATH">/data/hp210190/soft/spack-v0.16/opt/spack/linux-rhel8-a64fx/gcc-8.3.1/netlib-lapack-3.8.0-jhmofiqoky6ajxmda5caawfhqnrirmm5</env>
     </environment_variables>
     <environment_variables compiler="fj">
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>

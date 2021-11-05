@@ -181,7 +181,7 @@
     <directives>
       <directive> -L "node={{ num_nodes }}"</directive>
       <directive> -L "elapse={{ job_wallclock_time }}"</directive>
-      <directive> --mpi "proc={{ tasks_per_node }}"</directive>
+      <directive> --mpi "proc={{ total_tasks }}"</directive>
       <directive> -s </directive>
     </directives>
   </batch_system>
