@@ -1386,7 +1386,7 @@ flags should be captured within MPAS CMake files.
   <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
   <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
   <CUDA_FLAGS>
-    <append> -O2 -arch sm_80 --use_fast_math </append>
+    <append> -ccbin CC -O2 -arch sm_80 --use_fast_math </append>
   </CUDA_FLAGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
