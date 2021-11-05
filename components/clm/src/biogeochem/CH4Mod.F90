@@ -3086,8 +3086,9 @@ contains
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
-                    errMsg(__FILE__, __LINE__))
+               ! TRS - turn off abort
+               !call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
+               !     errMsg(__FILE__, __LINE__))
             end if
 
             source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
@@ -3569,8 +3570,9 @@ contains
                  nstep,c,errch4(c)
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-            call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
-                 errMsg(__FILE__, __LINE__))
+            ! TRS - turn off abort for debugging 
+            !call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
+            !     errMsg(__FILE__, __LINE__))
          end if
       end do
 

@@ -285,8 +285,8 @@ contains
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
-
-            call endrun(msg=errMsg(__FILE__, __LINE__))
+            ! TRS - turn off abort for debugging
+            ! call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_fates
 
@@ -467,7 +467,8 @@ contains
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+         ! TRS - turn off abort for debugging
+         ! call endrun(msg=errMsg(__FILE__, __LINE__))
 
 
       end if
@@ -653,7 +654,8 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+         ! TRS - turn off abort for debugging
+         ! call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 
     end associate
