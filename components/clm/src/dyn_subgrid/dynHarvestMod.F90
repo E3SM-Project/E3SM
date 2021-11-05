@@ -59,8 +59,8 @@ module dynHarvestMod
   
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
-  real(r8) , allocatable   :: harvest(:) ! harvest rates
-  logical                  :: do_harvest ! whether we're in a period when we should do harvest
+  real(r8) , allocatable , public   :: harvest(:) ! harvest rates
+  logical , public                  :: do_cn_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
 contains
@@ -155,12 +155,12 @@ contains
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
-          do_harvest = .false.
+          do_cn_harvest = .false.
        else
-          ! Note that do_harvest stays true even past the end of the time series. This
+          ! Note that do_cn_harvest stays true even past the end of the time series. This
           ! means that harvest rates will be maintained at the rate given in the last
           ! year of the file for all years past the end of this specified time series.
-          do_harvest = .true.
+          do_cn_harvest = .true.
           allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
@@ -362,7 +362,7 @@ contains
       ! and convert to rate per second
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
-         if (do_harvest) then
+         if (do_cn_harvest) then
             am = harvest(g)
             m  = am/(days_per_year * secspday)
          else
