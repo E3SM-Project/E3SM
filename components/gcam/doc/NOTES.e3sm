@@ -1,3 +1,25 @@
+11/5/2021
+
+* Alan's branches:
+
+  E3SM: aldivi/gcam/active-gcam/iac2land_transfer
+  GIAC: aldivi/mksurfdat_update_7oct
+
+  Kate's branch:
+
+  E3SM: kvcalvin/gcam/active-gcam
+
+  My current branch:
+
+  E3SM: shippert/gcam/active-gcam-debug
+
+* I *think* you can pull a branch that you are not on without changing
+  locally, by this:
+
+  git pull origin aldivi/gcam/active-gcam/iac2land_transfer
+
+  Then you can git merge with that branch to do a full merge.
+
 10/29/2021
 
 * So I think we are at the point where we are bombing for non-bug reasons -
