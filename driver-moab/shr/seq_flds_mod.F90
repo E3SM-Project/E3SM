@@ -2136,6 +2136,11 @@ contains
     ! Note that this ends up as 17*4=68 coupled fields...
     ! also send harvest fraction from iac to land
     ! use the same loop and index string
+  
+    ! avd - drv_in is rewritten so set these manually
+    iac_npft = 17
+    iac_nharvest = 5
+ 
     do i = 1,iac_npft
 
        ! Zero offset the tags, since that's how we access them in lnd and iac
