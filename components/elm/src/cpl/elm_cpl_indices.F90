@@ -363,10 +363,7 @@ contains
        index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
 
        ! iac harvest to land
-       ! these name labels start at 1
        if (p < iac_nharvest) then
-         write(cpft,'(I0)') p+1
-         cpft=trim(cpft)
          name = 'Sz_harvest_frac' // cpft
          index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
        end if
