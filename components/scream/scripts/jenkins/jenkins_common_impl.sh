@@ -61,13 +61,13 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   AUTOTESTER_CMAKE=""
-  # If this is a nightly run, we do NOT want this script to stop on the first failed command
-  # since that will prevent subsequent dashboard submissions
+  # Now that we are starting to run things that we expect could fail, we
+  # do not want the script to exit on any fail since this will prevent
+  # later tests from running.
   set +e
   if [ -n "$PULLREQUESTNUM" ]; then
       SUBMIT="" # We don't submit AT runs
       AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
-      set -e # This is an AT run, not nightly, so it's OK to stop on first fail
   fi
 
   declare -i fails=0
@@ -106,6 +106,9 @@ if [ $skip_testing -eq 0 ]; then
   # Run SCREAM CIME suite
   if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream -c -b master
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
+
+    ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
     if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
