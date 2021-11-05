@@ -347,7 +347,7 @@ void AtmosphereOutput::register_views()
     // would be strided).
     bool can_alias_field_view =
         m_avg_type=="Instant" &&
-        field.get_header().get_alloc_properties().get_padding()==1 &&
+        field.get_header().get_alloc_properties().get_padding()==0 &&
         field.get_header().get_parent().expired();
 
     const auto size = m_layouts.at(name).size();
