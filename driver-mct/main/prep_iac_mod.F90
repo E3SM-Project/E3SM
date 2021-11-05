@@ -171,7 +171,7 @@ contains
     ! Local Variables
     integer :: eli
     type(mct_aVect), pointer :: l2x_lx
-    character(*), parameter  :: subname = '(prep_rof_accum)'
+    character(*), parameter  :: subname = '(prep_iac_accum)'
     !---------------------------------------------------------------
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
