@@ -129,7 +129,7 @@ protected:
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   void new_file(const std::string& filename);
-  void run_impl(const Real time, const std::string& time_str);
+  void run_impl(const Real time);
   std::string compute_filename_root (const std::string& casename) const;
   void combine (const Real& new_val, Real& curr_val) const;
 
@@ -197,6 +197,11 @@ protected:
   // outputs old output isn't accidentally overwritten.  This option is primarily
   // used for unit testing.
   bool m_filename_with_time_string = true;
+  // Where this output file will attach the number of mpi_ranks used in the simulation
+  // to the output file name.  The default is false.  This feature is useful when running
+  // multirank tests where we are interested in saving output with different ranks to the
+  // same generic filename.
+  bool m_filename_with_mpiranks = false;
 };
 
 // ===================== IMPLEMENTATION ======================== //

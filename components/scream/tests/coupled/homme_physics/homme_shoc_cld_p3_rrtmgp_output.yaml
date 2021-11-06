@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
-Casename: shoc_cld_p3_rrtmgp_output
+Casename: homme_shoc_cld_p3_rrtmgp_output
 Timestamp in Filename: false
 MPI Ranks in Filename: true
 Averaging Type: Instant
-Grid: Physics
+Grid: Physics GLL
 Max Snapshots Per File: 1
 Fields:
   - T_mid
@@ -37,6 +37,9 @@ Fields:
   - SW_flux_up
   - SW_flux_dn
   - SW_flux_dn_dir
+  - horiz_winds_prev
+  - phi_int
+  - ps
   - omega
   - p_int
   - p_mid

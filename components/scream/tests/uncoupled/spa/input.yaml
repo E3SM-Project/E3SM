@@ -31,5 +31,5 @@ Initial Conditions:
 # The parameters for I/O control
 SCORPIO:
   Output YAML Files:
-    Point Grid: ["spa_standalone_output_np${MPI_RANKS}.yaml"]
+    Point Grid: ["spa_standalone_output.yaml"]
 ...

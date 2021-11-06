@@ -1,18 +1,22 @@
 %YAML 1.1
 ---
-Casename: spa_standalone_output
+Casename: homme_standalone_output
 Timestamp in Filename: false
 MPI Ranks in Filename: true
 Averaging Type: Instant
-Grid: Physics
+Grid: Physics GLL
 Max Snapshots Per File: 1
 Fields:
-  - aero_g_sw
-  - aero_ssa_sw
-  - aero_tau_lw
-  - aero_tau_sw
-  - nc_activated
+  - T_mid
+  - qv
+  - ps
+  - p_int
   - p_mid
+  - pseudo_density
+  - horiz_winds
+  - w_int
+  - phi_int
+ 
 Output:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
