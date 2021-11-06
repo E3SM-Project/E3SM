@@ -197,7 +197,7 @@ module CNPBudgetMod
        ' Total wood product', &
        '    Truncation sink', &
        '  Crop seed deficit', &
-       '              TOTAL'  &
+       '     Grid-level Err'  &
        /)
 
   ! N
@@ -860,7 +860,9 @@ contains
     ! !LOCAL VARIABLES:
     integer :: f, s, s_beg, s_end ! data array indicies
     real(r8) :: time_integrated_flux, state_net_change
+    real(r8) :: relative_error
     real(r8), parameter :: error_tol = 0.01_r8
+    real(r8), parameter :: relative_error_tol = 1.e-10_r8 ! [%]
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -896,7 +898,7 @@ contains
             budg_stateG(s_end,ip)*unit_conversion, &
             (budg_stateG(s_end,ip) - budg_stateG(s_beg,ip))*unit_conversion
     end do
-    write(iulog,C_FS_2)'Grid-level Err',0._r8, budg_stateG(s_c_error,ip) *unit_conversion, &
+    write(iulog,C_FS_2)c_s_name(c_s_name_size),0._r8, budg_stateG(s_c_error,ip) *unit_conversion, &
        budg_stateG(s_c_error,ip) *unit_conversion
 
 
@@ -917,10 +919,13 @@ contains
     state_net_change = (budg_stateG(s_totc_end, ip) - budg_stateG(s_totc_beg, ip))*unit_conversion + &
          budg_stateG(s_c_error,ip) *unit_conversion
 
-    if (abs(time_integrated_flux - state_net_change) > error_tol) then
+    relative_error = abs(time_integrated_flux - state_net_change)/(budg_stateG(s_totc_end, ip)*unit_conversion) * 100._r8
+
+    if (relative_error > relative_error_tol) then
        write(iulog,*)'time integrated flux = ',time_integrated_flux
        write(iulog,*)'net change in state  = ',state_net_change
-       write(iulog,*)'error                = ',abs(time_integrated_flux - state_net_change)
+       write(iulog,*)'current state        = ',budg_stateG(s_totc_end, ip)
+       write(iulog,*)'relative error [%]   = ',relative_error
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
