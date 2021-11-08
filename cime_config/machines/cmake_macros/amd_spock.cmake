@@ -1,0 +1,4 @@
+string(APPEND SLIBS " -L$ENV{PNETCDF_DIR}/lib -lpnetcdf")
+set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
+set(PIO_FILESYSTEM_HINTS "gpfs")
+
