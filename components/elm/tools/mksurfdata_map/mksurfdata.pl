@@ -510,7 +510,7 @@ EOF
             $fh->open( ">$nl" ) or die "** can't open file: $nl\n";
 	    print "CSMDATA is $CSMDATA \n";
             print $fh <<"EOF";
-&clmexp
+&elmexp
  nglcec            = $glc_nec
  mksrf_fgrid       = '$griddata'
  map_fpft          = '$map{'veg'}'
