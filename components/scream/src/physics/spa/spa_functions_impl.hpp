@@ -337,14 +337,16 @@ void SPAFunctions<S,D>
   scorpio::eam_pio_closefile(remap_file_name);
 
   // Retain only the information needed on this rank. 
-  auto col_global_h = Kokkos::create_mirror_view(col_global);
+  auto col_global_h = Kokkos::create_mirror_view(col_global); // Note, in remap files col -> row (src -> tgt)
+  auto row_global_h = Kokkos::create_mirror_view(row_global);
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(col_global_h,col_global);
+  Kokkos::deep_copy(row_global_h,row_global);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   std::vector<int> local_idx;
   std::vector<int> global_idx;
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-    int dof = col_global_h(idx)-1; // Note, in the remap file the indices start with 1
+    int dof = row_global_h(idx)-1; // Note, in the remap file the indices start with 1
     for (int id=0;id<dofs_gids.size();id++) {
       if (dof == dofs_gids_h(id)) {
         global_idx.push_back(idx);
@@ -363,17 +365,15 @@ void SPAFunctions<S,D>
   auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
   auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
   auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  auto row_global_h = Kokkos::create_mirror_view(row_global);
-  auto S_global_h   = Kokkos::create_mirror_view(S_global);
+  auto S_global_h        = Kokkos::create_mirror_view(S_global);
   Kokkos::deep_copy(weights_h        , spa_horiz_interp.weights        );
   Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
   Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
-  Kokkos::deep_copy(row_global_h,row_global);
   Kokkos::deep_copy(S_global_h,  S_global);
   for (int idx=0;idx<local_idx.size();idx++) {
       int ii = global_idx[idx];
       weights_h(idx)         = S_global_h(ii);
-      source_grid_loc_h(idx) = row_global_h(ii)-1;
+      source_grid_loc_h(idx) = col_global_h(ii)-1;
       target_grid_loc_h(idx) = local_idx[idx]; 
   }
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
