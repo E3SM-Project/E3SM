@@ -50,6 +50,7 @@ module ocn_tendency
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_CFC
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -512,6 +513,8 @@ contains
          err,                &! internal error flag 
          timeLevel,          &! time level to use for state variables
          indxTemp, indxSalt, &! tracer index for temperature, salinity
+         indxCFC11,          &! tracer index for CFC11
+         indxCFC12,          &! tracer index for CFC12
          nTracersGroup,      &! number of tracers in each tracer group
          nTracersEcosys       ! number of ecosystem tracers
 
@@ -542,6 +545,8 @@ contains
       ! pointers for retrieving data from pools
       integer, pointer :: &
          indexTemperature, indexSalinity ! tracer index for temp,salt
+      integer, pointer :: &
+         indexCFC11, indexCFC12 ! tracer indicies for CFCs
 
       logical, pointer :: & ! option configuration flags
          config_use_tracerGroup, &
@@ -636,9 +641,22 @@ contains
       ! allocate and transfer data not specific to tracer groups
       allocate(normalThicknessFlux(nVertLevels, nEdgesAll+1))
 
+      !$acc enter data create(normalThicknessFlux) &
+      !$acc            copyin(layerThickness)
+      !TEMPORARY - once diagnotics module ported, these should already
+      !            be on the device
+      !$acc update device (normalTransportVelocity, layerThickEdge, &
+      !$acc                vertAleTransportTop)
+
       ! compute transport velocity to use for all tracers
+#ifdef MPAS_OPENACC
+      !$acc parallel loop collapse(2) &
+      !$acc    present(normalThicknessFlux, normalTransportVelocity, &
+      !$acc            layerThickEdge)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iEdge = 1,nEdgesAll
       do k = 1,nVertLevels
          normalThicknessFlux(k,iEdge) = &
@@ -646,8 +664,10 @@ contains
                  layerThickEdge(k, iEdge)
       end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
       !
       ! Start computation of tracer tendencies.
@@ -863,6 +883,31 @@ contains
          endif ! MacroMolecules
 
          !
+         ! compute CFC surface fluxes, there are no interior sources/sinks
+         !
+         if ( groupName == 'CFCTracers' ) then
+
+            call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                     activeTracers, timeLevel)
+
+            indxCFC11 = 0
+            indxCFC12 = 0
+            if (config_use_CFC11) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC11', indexCFC11)
+              indxCFC11 = indexCFC11 ! convert to int scalar due to problems with int scalar pointers
+            endif
+            if (config_use_CFC12) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC12', indexCFC12)
+              indxCFC12 = indexCFC12 ! convert to int scalar due to problems with int scalar pointers
+            endif
+                                                 
+            call ocn_tracer_CFC_surface_flux_compute(activeTracers, &
+                                        tracerGroup, forcingPool,  &
+                                        nTracersGroup, nCellsOwned, &
+                                        indxTemp, indxSalt, tracerGroupSurfaceFlux, indxCFC11, indxCFC12, err)
+         endif ! CFC
+
+         !
          ! ocean surface restoring
          !
          if (config_use_tracerGroup_surface_restoring) then
@@ -974,9 +1019,9 @@ contains
          !
          if (config_use_tracerGroup_idealAge_forcing) then
             call mpas_timer_start("ideal age " // groupName)
-            call mpas_log_write( &
-                        "WARNING: ideal age not fully tested", &
-                        MPAS_LOG_WARN)
+            if (trim(groupName) /= 'idealAgeTracers') call mpas_log_write( &
+                                                      "WARNING: ideal age not fully tested", &
+                                                      MPAS_LOG_WARN)
 
             call mpas_pool_get_subpool(forcingPool, &
                                        'tracersIdealAgeFields', &
@@ -1023,6 +1068,9 @@ contains
             call mpas_timer_stop("TTD " // groupName)
          endif ! TTD
 
+         !$acc enter data &
+         !$acc    copyin(tracerGroup, tracerGroupTend)
+
          !
          ! Accumulate tendencies for all tracers
          ! First is the horizontal advection term
@@ -1031,8 +1079,17 @@ contains
          ! routine
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
-                            layerThickness, dt, meshPool, tracerGroupTend, &
-                            groupName)
+                            layerThickness, dt, tracerGroupTend, &
+                            computeBudgets)
+
+         !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
+         !$acc              activeTracerHorizontalAdvectionTendency, &
+         !$acc              activeTracerVerticalAdvectionTopFlux, &
+         !$acc              activeTracerVerticalAdvectionTendency)
+
+         !$acc exit data &
+         !$acc    copyout(tracerGroupTend) &
+         !$acc    delete(tracerGroup)
 
          !
          ! Add horizontal tracer diffusion,
@@ -1220,6 +1277,8 @@ contains
       end if ! active only
       end if ! member is field
       end do ! loop over tracer groups
+
+      !$acc exit data delete (normalThicknessFlux, layerThickness)
 
       deallocate(normalThicknessFlux)
 

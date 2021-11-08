@@ -40,6 +40,7 @@ public :: &
    radiation_nextsw_cday, &! calendar day of next radiation calculation
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
+   radiation_final,       &! deallocate
    radiation_readnl,      &! read radiation namelist
    radiation_tend          ! moved from radctl.F90
 
@@ -812,10 +813,17 @@ end function radiation_nextsw_cday
   end subroutine radiation_init
 
 !===============================================================================
+
+  subroutine radiation_final()
+    ! Do any needed clean-up and deallocation before model exit. Empty for now
+    ! but required for consistency with RRTMGPXX interface.
+  end subroutine radiation_final
+  
+!===============================================================================
   
   subroutine radiation_tend(state,ptend, pbuf, &
        cam_out, cam_in, &
-       landfrac,landm,icefrac,snowh, &
+       landfrac,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
        fsds, net_flx, is_cmip6_volc, dt)
 
@@ -876,7 +884,6 @@ end function radiation_nextsw_cday
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: dt               ! time step(s)
-    real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
@@ -1114,7 +1121,7 @@ end function radiation_nextsw_cday
     call get_rlon_all_p(lchnk, ncol, clon)
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
 
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+    call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0

@@ -31,7 +31,6 @@ module ocn_init_routines
    use mpas_rbf_interpolation
    use mpas_vector_operations
    use mpas_vector_reconstruction
-   use mpas_tracer_advection_helpers
 
    use ocn_diagnostics
    use ocn_diagnostics_variables
@@ -103,7 +102,7 @@ contains
       integer :: i, iEdge, iCell, k
       integer :: err1
 
-      integer, dimension(:,:), pointer :: highOrderAdvectionMaskTmp, boundaryCellTmp
+      integer, dimension(:,:), pointer :: boundaryCellTmp
       integer, dimension(:,:), pointer :: edgeSignOnCellTmp, edgeSignOnVertexTmp
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
@@ -126,22 +125,11 @@ contains
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', highOrderAdvectionMaskTmp)
       call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCellTmp)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-      call mpas_initialize_deriv_two(meshPool, derivTwo, err)
-      call mpas_tracer_advection_coefficients(meshPool, &
-          config_horiz_tracer_adv_order, derivTwo, advCoefs, &
-          advCoefs3rd, nAdvCellsForEdge, advCellsForEdge, &
-          err1, maxLevelCell, highOrderAdvectionMaskTmp, &
-          boundaryCellTmp)
-      err = ior(err, err1)
-
-      ! Update ocn_mesh variables for highOrderAdvectionMask
-      highOrderAdvectionMask = real(highOrderAdvectionMaskTmp, kind=RKIND)
 
       if (.not. config_do_restart) then
          do iCell=1,nCells

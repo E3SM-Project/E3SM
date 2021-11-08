@@ -35,15 +35,12 @@
 <aerodep_flx_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
 <aerodep_flx_cycle_yr>1</aerodep_flx_cycle_yr>
 
-<!-- 2000 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) 
+<!-- 2000 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
 <!-- <co2vmr>368.865e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
 <ch4vmr>1751.022e-9</ch4vmr>
 <n2ovmr>315.85e-9</n2ovmr>
 <f11vmr>676.0526e-12</f11vmr>
 <f12vmr>537.05e-12</f12vmr> -->
-
-<!-- For Polar mods -->
-<liqcf_fix>.false.</liqcf_fix>
 
 <!-- For comprehensive history -->
 <history_aerosol>.true.</history_aerosol>
