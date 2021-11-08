@@ -222,8 +222,6 @@ TEST_CASE("field", "") {
     const int ivar = 2;
 
     auto f2 = f1.subfield(idim,ivar);
-    auto v4d = f1.get_view<Real****>();
-    auto v3d = f2.get_view<Real***>();
 
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_view<Real****>());
@@ -235,6 +233,49 @@ TEST_CASE("field", "") {
         for (int k=0; k<d1[3]; ++k) {
           REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
+  }
+
+  // Dynamic Subfields
+  SECTION ("dynamic_subfield") {
+    const int vec_dim = 10;
+    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
+    std::vector<int> d1 = {3,vec_dim,2,24};
+
+    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+
+    Field<Real> f1(fid1);
+    f1.allocate_view();
+    randomize(f1,engine,pdf);
+
+    const int idim = 1;
+    const int ivar = 0;
+
+    auto f2 = f1.subfield(idim,ivar,/* dynamic = */ true);
+
+    // Cannot reset subview idx of non-subfield fields
+    REQUIRE_THROWS(f1.get_header().get_alloc_properties().reset_subview_idx(0));
+
+    // subview idx out of bounds
+    auto& f2_ap = f2.get_header().get_alloc_properties();
+    REQUIRE_THROWS(f2_ap.reset_subview_idx(-1));
+    REQUIRE_THROWS(f2_ap.reset_subview_idx(vec_dim));
+
+    // Fill f1 with random numbers, and verify corresponding subviews get same values
+    randomize(f1,engine,pdf);
+
+    for (int ivar_dyn=0; ivar_dyn<vec_dim; ++ivar_dyn) {
+      // Reset slice idx
+      f2_ap.reset_subview_idx(ivar_dyn);
+      REQUIRE(f2_ap.get_subview_info().slice_idx==ivar_dyn);
+
+      auto v4d_h = f1.get_view<Real****,Host>();
+      auto v3d_h = f2.get_view<Real***,Host>();
+      for (int i=0; i<d1[0]; ++i)
+        for (int j=0; j<d1[2]; ++j)
+          for (int k=0; k<d1[3]; ++k) {
+            REQUIRE (v4d_h(i,ivar_dyn,j,k)==v3d_h(i,j,k));
+          }
+    }
   }
 
   SECTION ("vector_component") {
