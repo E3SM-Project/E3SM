@@ -65,14 +65,9 @@ HOMME:
     u_perturb         : 1
     rotate_grid       : 0
     ne                : 4
-    ndays             : 1
     statefreq         : 9999
     mesh_file         : /dev/null
     tstep             : 300
-    rsplit            : 2
-    qsplit            : 1
-    integration       : explicit
-    smooth            : 0
     nu                : 7.0e+15
     nu_div            : 1.0e+15
     nu_p              : 7.0e+15
@@ -89,9 +84,10 @@ HOMME:
     theta_hydrostatic_mode : false
     theta_advect_form : 0
     tstep_type        : 10
+    dt_remap_factor   : 3
+    dt_tracer_factor  : 1
 
   vert_nl:
-    vform     : ccm
     vfile_mid : ./data/scream-72m.ascii
     vfile_int : ./data/scream-72i.ascii
 

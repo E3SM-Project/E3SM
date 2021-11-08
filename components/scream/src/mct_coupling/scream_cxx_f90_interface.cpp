@@ -175,11 +175,17 @@ void scream_init_atm (const int& start_ymd,
     auto& atm_comm = ad.get_comm();
 
     // Recall that e3sm uses the int YYYYMMDD to store a date
-    if (atm_comm.am_i_root()) std::cout << "start_ymd: " << start_ymd << "\n";
-    const int dd = start_ymd % 100;
-    const int mm = (start_ymd / 100) % 100;
-    const int yy = start_ymd / 10000;
-    util::TimeStamp t0 (yy,mm,dd,start_tod);
+    if (atm_comm.am_i_root()) {
+      std::cout << "start_ymd: " << start_ymd << "\n";
+      std::cout << "start_tod: " << start_tod << "\n";
+    }
+    const int yy  = start_ymd / 10000;
+    const int mm  = (start_ymd / 100) % 100;
+    const int dd  = start_ymd % 100;
+    const int hr  =  start_tod / 3600;
+    const int min = (start_tod % 3600) / 60;
+    const int sec = (start_tod % 3600) % 60;
+    util::TimeStamp t0 (yy,mm,dd,hr,min,sec);
 
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)
