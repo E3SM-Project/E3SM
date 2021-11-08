@@ -385,7 +385,7 @@ sub check_for_perl_utils {
   my $cfgdir = shift;
 
   # Determine E3SM root directory and perl5lib root directory
-  my $cesmroot = abs_path( "$cfgdir/../../../");
+  my $cesmroot = abs_path( "$cfgdir/../../");
   my $perl5lib_dir = "$cesmroot/cime/utils/perl5lib";
 
   # The root diretory for the perl SetupTools.pm module
