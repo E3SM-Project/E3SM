@@ -455,7 +455,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # The output coming from all tests at the same time will be a mixed-up mess
         # unless we tell test-launcher to buffer all output
         if self._extra_verbose:
-            result += " -DEKAT_TEST_LAUNCHER_NO_BUFFER=True "
+            result += " -DEKAT_TEST_LAUNCHER_BUFFER=True "
 
         # User-requested config options
         custom_opts_keys = []
