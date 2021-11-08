@@ -68,16 +68,16 @@ TEST_CASE("spa_read_remap_data","spa")
   view_1d<Real> wgts("",tgt_grid_ncols);
   Kokkos::deep_copy(wgts,0.0);
   for (int i=0; i<spa_horiz_interp.length; i++) {
-    col_sum += spa_horiz_interp.target_grid_loc[i];
-    row_sum += spa_horiz_interp.source_grid_loc[i];
+    row_sum += spa_horiz_interp.target_grid_loc[i];
+    col_sum += spa_horiz_interp.source_grid_loc[i];
     wgt_sum += spa_horiz_interp.weights[i];
     wgts(spa_horiz_interp.target_grid_loc[i]) += spa_horiz_interp.weights[i];
   }
   // Note, for our test problem the column sum is sum(0...tgt_grid_ncols-1)*src_grid_ncols,
   //       and the                     row sum is sum(0...src_grid_ncols-1)*tgt_grid_ncols. 
   //       Each set of weights should add up to 1.0 for each ncol, so total weights=tgt_grid_ncols
-  REQUIRE(col_sum == (tgt_grid_ncols*(tgt_grid_ncols-1))/2*src_grid_ncols);
-  REQUIRE(row_sum == (src_grid_ncols*(src_grid_ncols-1)/2*tgt_grid_ncols));
+  REQUIRE(row_sum == (tgt_grid_ncols*(tgt_grid_ncols-1))/2*src_grid_ncols);
+  REQUIRE(col_sum == (src_grid_ncols*(src_grid_ncols-1)/2*tgt_grid_ncols));
   REQUIRE(std::abs(wgt_sum - 1.0*tgt_grid_ncols) < tol);
   // The sum of remap weights should always be 1.0
   for (int i=0; i<tgt_grid_ncols; i++) {
