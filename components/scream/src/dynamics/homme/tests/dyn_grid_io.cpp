@@ -162,7 +162,7 @@ TEST_CASE("dyn_grid_io")
 
   OutputManager output;
   // AtmosphereOutput output(comm,io_params,fm_dyn,gm);
-  output.setup (comm, io_params, fm_dyn, gm, t0, false);
+  output.setup (comm, io_params, fm_dyn, gm, t0, false, false);
   output.run(t0);
   output.finalize();
 

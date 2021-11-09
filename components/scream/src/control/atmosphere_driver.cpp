@@ -249,28 +249,27 @@ void AtmosphereDriver::create_fields()
 void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  // For each grid in the grids manager, grab a homonymous sublist of the
-  // "Output Managers" atm params sublist (might be empty), and create
-  // an output manager for that grid.
   auto& io_params = m_atm_params.sublist("Scorpio");
-  if (io_params.isSublist("Output YAML Files")) {
-    for (auto it : m_grids_manager->get_repo()) {
-      auto fm = m_field_mgrs.at(it.first);
-      auto& this_grid_io_params = io_params.sublist(it.first);
-      // If there's a restart output sublist in 'Scorpio', copy it into the
-      // param list of this grid
-      if (io_params.isSublist("Model Restart")) {
-        this_grid_io_params.sublist("Model Restart") = io_params.sublist("Model Restart");
-      }
-      m_output_managers[it.first].setup(m_atm_comm,this_grid_io_params,m_field_mgrs,m_grids_manager,m_current_ts,restarted_run);
-    }
+
+  std::cout << "Initializing Output managers...\n";
+  // Build one manager per output yaml file
+  using vos_t = std::vector<std::string>;
+  const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});
+  for (const auto& fname : output_yaml_files) {
+    ekat::ParameterList params;
+    ekat::parse_yaml_file(fname,params);
+    m_output_managers.emplace_back();
+    auto& om = m_output_managers.back();
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run);
   }
 
   // Check for model restart output
-  if (io_params.isSublist("Model Restart Output")) {
-    auto restart_pl = io_params.sublist("Model Restart Output");
+  if (io_params.isSublist("Model Restart")) {
+    auto restart_pl = io_params.sublist("Model Restart");
     // Signal that this is not a normal output, but the model restart one
-    restart_pl.set<bool>("Model Restart",true);
+    m_output_managers.emplace_back();
+    auto& om = m_output_managers.back();
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
   }
 
   m_ad_status |= s_output_inited;
@@ -660,7 +659,7 @@ void AtmosphereDriver::run (const int dt) {
 
   // Update output streams
   for (auto& out_mgr : m_output_managers) {
-    out_mgr.second.run(m_current_ts);
+    out_mgr.run(m_current_ts);
   }
 
   if (m_surface_coupling) {
@@ -673,7 +672,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
-    out_mgr.second.finalize();
+    out_mgr.finalize();
   }
   m_output_managers.clear();
 

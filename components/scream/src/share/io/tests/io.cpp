@@ -76,7 +76,7 @@ TEST_CASE("input_output_basic","io")
     ekat::parse_yaml_file(fname+"_np" + std::to_string(io_comm.size()) + ".yaml",params);
     output_managers.emplace_back();
     auto& om = output_managers.back();
-    om.setup(io_comm,params,field_manager,gm,t0,false);
+    om.setup(io_comm,params,field_manager,gm,t0,false,false);
     io_comm.barrier();
   }
 

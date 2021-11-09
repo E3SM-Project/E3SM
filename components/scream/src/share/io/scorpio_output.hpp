@@ -128,7 +128,7 @@ public:
 protected:
 
   // Internal functions
-  void set_params (const ekat::ParameterList& params);
+  void set_params (const ekat::ParameterList& params, const std::string& grid_name);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                           const std::shared_ptr<const gm_type>& grids_mgr);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
@@ -139,9 +139,6 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  void new_file(const std::string& filename);
-  void run_impl(const Real time);
-  std::string compute_filename_root (const std::string& casename) const;
   void combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const;
 
   // --- Internal variables --- //

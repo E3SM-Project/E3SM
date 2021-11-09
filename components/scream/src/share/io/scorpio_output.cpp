@@ -16,8 +16,14 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const gm_type>& grids_mgr)
  : m_comm      (comm)
 {
+  EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
+  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+
+  // Set grid, and possibly create a remapper
+  set_grid(field_mgr->get_grid());
+
   // Parse the input parameter list
-  set_params(params);
+  set_params(params,field_mgr->get_grid()->name());
 
   // Sets the intermal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
@@ -29,9 +35,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::restart (const std::string& filename)
 {
-  EKAT_REQUIRE_MSG (m_avg_type!="INSTANT",
-      "Error! 'restart' called, but not appropriate for this run.\n"
-      "    - avg type: " + m_avg_type + "\n");
 
   // Create an input stream on the fly, and init averaging data
   ekat::ParameterList res_params("Input Parameters");
@@ -127,12 +130,9 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 /* ---------------------------------------------------------- */
 
 void AtmosphereOutput::
-set_params (const ekat::ParameterList& params)
+set_params (const ekat::ParameterList& params, const std::string& grid_name)
 {
   // Parse the parameters that controls this output instance.
-  m_casename = params.get<std::string>("Casename");
-
-
   auto avg_type = params.get<std::string>("Averaging Type");
   m_avg_type = ekat::upper_case(avg_type);
   auto valid_avg_types = {"INSTANT", "MAX", "MIN", "AVERAGE"};
@@ -140,45 +140,13 @@ set_params (const ekat::ParameterList& params)
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-  m_has_restart_data = (m_avg_type!="INSTANT");
-
-  if (m_has_restart_data) {
-    // This avg_type needs to save  some info in order to restart the output.
-    // E.g., we might save 30-day avg value for field F, but due to job size
-    // break the run into three 10-day runs. We then need to save the state of
-    // our averaging in a "restart" file (e.g., the current avg and avg_count).
-    // If checkpoint_freq=0, we do not perform checkpointing of the output.
-    // NOTE: we may not need to *read* restart data (if this is not a restart run),
-    //       but we might still want to save it. Viceversa, we might not want
-    //       to save it, but still want to read it (a restarted run, where we
-    //       don't want to save additional restart files).
-    if (params.isSublist("Restart")) {
-      const auto& pl = params.sublist("Restart");
-      m_is_restarted_run     &= pl.isParameter("Perform Restart") ?
-                                pl.get<bool>("Perform Restart") : true;;
-      m_hist_restart_casename = pl.isParameter("Casename") ? 
-                                pl.get<std::string>("Casename") : m_casename;
-    }
-
-    if (params.isSublist("Checkpointing")) {
-      const auto& pl = params.sublist("Checkpointing"); 
-      m_checkpoint_freq       = pl.isParameter("Frequency") ? 
-                                pl.get<int>("Frequency") : 0;
-      m_checkpoint_freq_units = pl.isParameter("Frequency Units") ?
-                                pl.get<std::string>("Frequency Units") : m_out_frequency_units;
-    }
-  }
-
   // For each output field, ensure its dimensions are registered in the pio file
   using vos_t = std::vector<std::string>;
   if (params.isParameter("Fields")) {
     m_fields_names = params.get<vos_t>("Fields");
   } else {
-    if (params.isParameter("Grid")) {
-      const auto& gname = params.get<std::string>("Grid");
-      if (params.isSublist("Fields") && params.sublist("Fields").isParameter(gname)) {
-        m_fields_names = params.sublist("Fields").get<vos_t>(gname);
-      }
+    if (params.isSublist("Fields") && params.sublist("Fields").isParameter(grid_name)) {
+      m_fields_names = params.sublist("Fields").get<vos_t>(grid_name);
     }
   }
 }
@@ -195,11 +163,8 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
 
   if (not m_field_mgr->get_grid()->is_unique()) {
     // The grid is not unique. Build a unique field manager
-    // and a remapper, and we call this method again.
+    // and build the remapper, and we call this method again.
     build_remapper(grids_mgr);
-  } else {
-    // The grid is unique. Store it (and performs some checks)
-    set_grid(m_field_mgr->get_grid());
   }
 }
 
@@ -276,20 +241,27 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
   // Sanity checks
   EKAT_REQUIRE_MSG (not m_grid, "Error! Grid pointer was already set.\n");
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (grid->is_unique(),
+
+  auto io_grid = grid;
+  if (not grid->is_unique()) {
+    io_grid = grid->get_unique_grid();
+    EKAT_REQUIRE_MSG (io_grid,
+        "Error! Input grid wasn't unique, and did not store a unique grid.\n");
+  }
+  EKAT_REQUIRE_MSG (io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
   EKAT_REQUIRE_MSG (
-      (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
+      (io_grid->get_global_max_dof_gid()-io_grid->get_global_min_dof_gid()+1)==io_grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
+  EKAT_REQUIRE_MSG(m_comm.size()<=io_grid->get_num_global_dofs(),
       "Error! PIO interface requires the size of the IO MPI group to be\n"
       "       no greater than the global number of columns.\n"
       "       Consider decreasing the size of IO MPI group.\n");
 
   // The grid is good. Store it.
-  m_grid = grid;
+  m_grid = io_grid;
 }
 
 void AtmosphereOutput::register_dimensions(const std::string& name)
@@ -472,14 +444,6 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
-}
-
-std::string AtmosphereOutput::compute_filename_root (const std::string& casename) const
-{
-  return casename + "." +
-         m_avg_type + "." +
-         m_out_frequency_units + "_x" +
-         std::to_string(m_out_frequency);
 }
 
 } // namespace scream

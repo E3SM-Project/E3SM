@@ -72,12 +72,14 @@ public:
               const std::shared_ptr<fm_type>& field_mgr,
               const std::shared_ptr<const gm_type>& grids_mgr,
               const util::TimeStamp& t0,
+              const bool is_model_restart_output,
               const bool is_restarted_run);
 
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
               const std::shared_ptr<const gm_type>& grids_mgr,
               const util::TimeStamp& t0,
+              const bool is_model_restart_output,
               const bool is_restarted_run);
   void run(util::TimeStamp& current_ts);
   void finalize();

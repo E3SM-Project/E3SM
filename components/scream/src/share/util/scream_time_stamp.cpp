@@ -128,8 +128,9 @@ double TimeStamp::frac_of_year_in_days () const {
 }
 
 TimeStamp& TimeStamp::operator+=(const int seconds) {
-  EKAT_REQUIRE_MSG(is_valid(), "Error! The time stamp contains uninitialized values.\n"
-                                 "       To use this object, use operator= with a valid rhs first.\n");
+  EKAT_REQUIRE_MSG(is_valid(),
+      "Error! The time stamp contains uninitialized values.\n"
+      "       To use this object, use operator= with a valid rhs first.\n");
 
   auto& sec  = m_time[2];
   auto& min  = m_time[1];

@@ -18,12 +18,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
        const std::shared_ptr<const gm_type>& grids_mgr,
        const util::TimeStamp& t0,
+       const bool is_model_restart_output,
        const bool is_restarted_run)
 {
   using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
   map_t fms;
   fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(io_comm,params,fms,grids_mgr,t0,is_restarted_run);
+  setup(io_comm,params,fms,grids_mgr,t0,is_model_restart_output,is_restarted_run);
 }
 
 void OutputManager::
@@ -31,11 +32,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
        const std::shared_ptr<const gm_type>& grids_mgr,
        const util::TimeStamp& t0,
+       const bool is_model_restart_output,
        const bool is_restarted_run)
 {
   m_io_comm = io_comm;
   m_t0      = t0;
   m_is_restarted_run = is_restarted_run;
+  m_is_model_restart_output = is_model_restart_output;
 
   // Check for model restart output
   set_params(params,field_mgrs);
@@ -62,14 +65,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (field_mgrs.find(gname)!=field_mgrs.end(),
         "Error! Output requested on grid '" + gname + "', but no field manager is available for such grid.\n");
 
-    auto stream_params = params;
-    stream_params.set("Grid",gname);
-    auto output = std::make_shared<output_type>(m_io_comm,stream_params,field_mgrs.at(gname),grids_mgr);
+    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
     m_output_streams.push_back(output);
   }
 
   // Check if we need to restart the output history
-  const auto has_restart_data = (m_avg_type!="INSTANT");
+  const auto has_restart_data = (m_avg_type!="INSTANT" || m_output_control.frequency>1);
   if (has_restart_data) {
     // This avg_type needs to save some info in order to restart the output.
     // E.g., we might save 30-day avg value for field F, but due to job size
@@ -79,14 +80,15 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     //       of disabling the restart. Also, the user might want to change the
     //       casename, so allow to specify a different casename for the restart file.
     bool perform_restart = is_restarted_run;
-    std::string hist_restart_casename;
+    std::string hist_restart_casename = m_casename;
 
     if (m_params.isSublist("Restart")) {
       const auto& pl = params.sublist("Restart");
       perform_restart &= pl.isParameter("Perform Restart") ?
-                         pl.get<bool>("Perform Restart") : true;;
-      hist_restart_casename = pl.isParameter("Casename") ? 
-                              pl.get<std::string>("Casename") : m_casename;
+                         pl.get<bool>("Perform Restart") : true;
+      if (pl.isParameter("Casename")) {
+        hist_restart_casename = pl.get<std::string>("Casename");
+      }
     }
 
     if (m_params.isSublist("Checkpoint Control")) {
@@ -105,15 +107,19 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     if (perform_restart) {
       bool found = false;
-      std::string filename;
+      std::string content,filename,line;
       if (m_io_comm.am_i_root()) {
         std::ifstream rpointer_file;
         rpointer_file.open("rpointer.atm");
-        while (rpointer_file >> filename) {
-          if (filename.find(hist_restart_casename) != std::string::npos &&
-              filename.find("rhist") != std::string::npos) {
+        // Note: keep swallowing line, even after the first match, since we never wipe
+        //       rpointer.atm, so it might contain multiple matches, and we want to pick
+        //       the last one (which is the last restart file that was written).
+        while (rpointer_file >> line) {
+          content += filename + "\n";
+          if (line.find(hist_restart_casename) != std::string::npos &&
+              line.find("rhist") != std::string::npos) {
             found = true;
-            break;
+            filename = line;
           }
         }
       }
@@ -127,7 +133,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // in the input parameter list
       EKAT_REQUIRE_MSG (found,
           "Error! Output restart requested, but the no history restart file found in 'rpointer.atm'.\n"
-          "   restart file name root: " + hist_restart_casename + "\n");
+          "   restart file name root: " + hist_restart_casename + "\n"
+          "   rpointer content:\n" + content);
 
       // Have the root rank communicate the nc filename
       broadcast_string(filename,m_io_comm,m_io_comm.root_rank());
@@ -142,6 +149,17 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       res_params.set<std::string>("Filename",filename);
       AtmosphereInput hist_restart (m_io_comm,res_params);
       m_output_control.nsteps_since_last_write = hist_restart.read_int_scalar("avg_count");
+
+      // We write 'time' in the nc file as 'seconds since t0'. But if this is a
+      // restarted run, the t0 currently stored is the start timestamp of *this* run,
+      // while we want t0 to be the start timestamp of the *original* run.
+      // Since we save the start time/date in the nc file, load them, and reset m_t0
+      int start_date = hist_restart.read_int_scalar("start_date"); // YYYYMMDD
+      int start_time = hist_restart.read_int_scalar("start_time"); // HHMMSS
+
+      std::vector<int> date = {start_date/10000, (start_date/100) % 100, start_date % 100};
+      std::vector<int> time = {start_time/10000, (start_time/100) % 100, start_time % 100};
+      m_t0 = util::TimeStamp(date,time);
     }
   }
 }
@@ -210,6 +228,10 @@ void OutputManager::run(util::TimeStamp& timestamp)
       if (is_checkpoint_step) { 
         set_int_attribute_c2f (filename.c_str(),"avg_count",m_output_control.nsteps_since_last_write);
       }
+      auto t0_date = m_t0.get_date()[0]*10000 + m_t0.get_date()[1]*100 + m_t0.get_date()[2];
+      auto t0_time = m_t0.get_time()[0]*10000 + m_t0.get_time()[1]*100 + m_t0.get_time()[2];
+      set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
+      set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
       filespecs.is_open = true;
     }
 
@@ -219,7 +241,7 @@ void OutputManager::run(util::TimeStamp& timestamp)
     if (m_is_model_restart_output || is_checkpoint_step) {
       if (m_io_comm.am_i_root()) {
         std::ofstream rpointer;
-        rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
+        rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append to it
         rpointer << filename << std::endl;
       }
     }
@@ -240,11 +262,6 @@ void OutputManager::run(util::TimeStamp& timestamp)
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
 
-    // If we wrote an output, the checkpoint counter needs to be reset
-    if (is_output_step) {
-      m_checkpoint_control.nsteps_since_last_write = 0;
-    }
-
     // Finish up any updates to output file
     sync_outfile(filename);
 
@@ -255,12 +272,14 @@ void OutputManager::run(util::TimeStamp& timestamp)
       filespecs.is_open = false;
       control.nsteps_since_last_write = 0;
     }
+
+    // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
+    m_checkpoint_control.nsteps_since_last_write = 0;
   }
 }
 /*===============================================================================================*/
 void OutputManager::finalize()
 {
-  // 
   // Swapping with an empty mgr is the easiest way to cleanup.
   OutputManager other;
   std::swap(*this,other);
@@ -280,8 +299,6 @@ set_params (const ekat::ParameterList& params,
             const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
 {
   m_params = params;
-  m_is_model_restart_output = m_params.get<bool>("Model Restart",false);
-
   if (m_is_model_restart_output) {
     using vos_t = std::vector<std::string>;
 
@@ -298,12 +315,13 @@ set_params (const ekat::ParameterList& params,
     auto& fields_pl = m_params.sublist("Fields");
     for (const auto& it : field_mgrs) {
       auto restart_group = it.second->get_groups_info().at("RESTART");
-      auto& fnames = fields_pl.get<vos_t>(it.first);
-      EKAT_REQUIRE_MSG (fnames.size()==0,
-        "Error! For restart output, don't specify the fields names. We can create this info internally.\n");
+      vos_t fnames;
+      EKAT_REQUIRE_MSG (not fields_pl.isParameter(it.first),
+        "Error! For restart output, don't specify the fields names. We will create this info internally.\n");
       for (const auto& n : restart_group->m_fields_names) {
         fnames.push_back(n);
       }
+      fields_pl.set(it.first,fnames);
     }
     m_casename = m_params.get<std::string>("Casename", "scream_restart");
   } else {
