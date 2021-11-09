@@ -5,6 +5,7 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
 
 #include <numeric>
 
@@ -48,6 +49,9 @@ struct SPAFunctions
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
+  template <int N>
+  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+  using view_1d_host = view_Nd_host<1>;
   /* ------------------------------------------------------------------------------------------- */
   // SPA structures to help manage all of the variables:
   struct SPATimeState {
@@ -143,6 +147,8 @@ struct SPAFunctions
       source_grid_loc = view_1d<Int>("",length_);
       target_grid_loc = view_1d<Int>("",length_);
     }
+    // Comm group used for SPA
+    ekat::Comm m_comm;
     // Number of weights in remap data
     Int length;
     // Number of columns and levels on source grid

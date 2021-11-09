@@ -149,6 +149,7 @@ void SPA::initialize_impl ()
   //       take this information directly from the spa data file.
   scorpio::register_file(m_spa_data_file,scorpio::Read);
   SPAHorizInterp.source_grid_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  SPAHorizInterp.m_comm = m_comm;
 
   // Initialize the size of the SPAData structures:
   SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
