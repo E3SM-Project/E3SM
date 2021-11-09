@@ -1520,6 +1520,10 @@ end subroutine clubb_init_cnst
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
 
+
+   real(r8) :: inv_exner_clubb_surf
+
+
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
@@ -2028,6 +2032,10 @@ end subroutine clubb_init_cnst
 
       !  Surface fluxes provided by host model
       wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
+#if 1
+      inv_exner_clubb_surf = 1._r8/((state1%pmid(i,pver)/p0_clubb)**(rair/cpair)) !phl Option 2
+      wpthlp_sfc = wpthlp_sfc*inv_exner_clubb_surf
+#endif
       wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/rho_ds_zm(1)                              ! Latent heat flux
       upwp_sfc   = real(cam_in%wsx(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface meridional momentum flux
       vpwp_sfc   = real(cam_in%wsy(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface zonal momentum flux
@@ -2539,6 +2547,10 @@ end subroutine clubb_init_cnst
 
    enddo  ! end column loop
    call t_stopf('adv_clubb_core_col_loop')
+
+
+   call outfld('fixerCLUBB', te_a(:)-te_b(:), pcols, lchnk )
+
 
    ! Add constant to ghost point so that output is not corrupted
    if (clubb_do_adv) then
