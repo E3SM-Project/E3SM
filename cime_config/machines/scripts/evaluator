@@ -268,7 +268,17 @@ def find_PRO(macro_path_pl, machs):
 def find_MIS(macro_path_pl, machs):
 ###############################################################################
     warnings = []
-    warnings.append("This warning is not yet implemented")
+    macro_files = set([item for item in macro_path_pl.glob("*.cmake") if item.name != "Macros.cmake"])
+    for mach, data in machs.items():
+        the_os = data[0]
+        for comp in data[1]:
+            compiler_macro  = macro_path_pl / f"{comp}.cmake"
+            comp_mach_macro = macro_path_pl / f"{comp}_{mach}.cmake"
+            if compiler_macro not in macro_files:
+                warnings.append(f"No macro {compiler_macro} for compiler {comp} used by machine {mach}")
+            if comp_mach_macro not in macro_files:
+                warnings.append(f"No macro {comp_mach_macro} for compiler {comp} and machine {mach}")
+
     return warnings
 
 ###############################################################################
