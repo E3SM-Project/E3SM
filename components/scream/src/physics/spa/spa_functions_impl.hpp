@@ -366,9 +366,6 @@ void SPAFunctions<S,D>
   auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
   auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
   auto S_global_h        = Kokkos::create_mirror_view(S_global);
-  Kokkos::deep_copy(weights_h        , spa_horiz_interp.weights        );
-  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
-  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
   Kokkos::deep_copy(S_global_h,  S_global);
   for (int idx=0;idx<local_idx.size();idx++) {
       int ii = global_idx[idx];
@@ -379,6 +376,7 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
   Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+  spa_horiz_interp.m_comm.barrier();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
@@ -527,6 +525,7 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_data.AER_TAU_SW,aer_tau_sw_h);
   Kokkos::deep_copy(spa_data.AER_TAU_LW,aer_tau_lw_h);
 
+  spa_horiz_interp.m_comm.barrier();
     
 } // END update_spa_data_from_file
 /*-----------------------------------------------------------------*/

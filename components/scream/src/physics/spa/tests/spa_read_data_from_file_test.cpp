@@ -106,7 +106,7 @@ TEST_CASE("spa_read_data","spa")
   }
   
   // All Done 
-  scorpio::eam_pio_finalize();
+//  scorpio::eam_pio_finalize();
 } // run_property
 
 // Some helper functions for the require statements:
