@@ -1,8 +1,6 @@
 %YAML 1.1
 ---
 Casename: shoc_standalone_output
-Timestamp in Filename: false
-MPI Ranks in Filename: true
 Averaging Type: Instant
 Grid: Point Grid
 Max Snapshots Per File: 1
@@ -22,7 +20,9 @@ Fields:
   - p_mid
   - phis
   - pseudo_density
-Output:
+Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
 ...

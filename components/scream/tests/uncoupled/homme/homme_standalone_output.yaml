@@ -1,8 +1,6 @@
 %YAML 1.1
 ---
 Casename: homme_standalone_output
-Timestamp in Filename: false
-MPI Ranks in Filename: true
 Averaging Type: Instant
 Grid: Physics GLL
 Max Snapshots Per File: 1
@@ -17,7 +15,9 @@ Fields:
   - w_int
   - phi_int
  
-Output:
+Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
 ...

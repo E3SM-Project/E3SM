@@ -93,7 +93,7 @@ set_params(const ekat::ParameterList& atm_params)
 {
   // I can't think of a scenario where changing the params is useful,
   // so let's forbid it, for now.
-  check_ad_status (~s_params_set);
+  check_ad_status (s_params_set, false);
 
   m_atm_params = atm_params;
 
@@ -252,10 +252,25 @@ void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   // For each grid in the grids manager, grab a homonymous sublist of the
   // "Output Managers" atm params sublist (might be empty), and create
   // an output manager for that grid.
-  auto& io_params = m_atm_params.sublist("SCORPIO");
-  for (auto it : m_grids_manager->get_repo()) {
-    auto fm = m_field_mgrs.at(it.first);
-    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,m_grids_manager,restarted_run);
+  auto& io_params = m_atm_params.sublist("Scorpio");
+  if (io_params.isSublist("Output YAML Files")) {
+    for (auto it : m_grids_manager->get_repo()) {
+      auto fm = m_field_mgrs.at(it.first);
+      auto& this_grid_io_params = io_params.sublist(it.first);
+      // If there's a restart output sublist in 'Scorpio', copy it into the
+      // param list of this grid
+      if (io_params.isSublist("Model Restart")) {
+        this_grid_io_params.sublist("Model Restart") = io_params.sublist("Model Restart");
+      }
+      m_output_managers[it.first].setup(m_atm_comm,this_grid_io_params,m_field_mgrs,m_grids_manager,m_current_ts,restarted_run);
+    }
+  }
+
+  // Check for model restart output
+  if (io_params.isSublist("Model Restart Output")) {
+    auto restart_pl = io_params.sublist("Model Restart Output");
+    // Signal that this is not a normal output, but the model restart one
+    restart_pl.set<bool>("Model Restart",true);
   }
 
   m_ad_status |= s_output_inited;
@@ -463,8 +478,7 @@ initialize_fields (const util::TimeStamp& t0)
         lat_lon_params.set("Fields",fnames);
         lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
 
-        AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params);
-        lat_lon_reader.init(grid,host_views,layouts);
+        AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params,grid,host_views,layouts);
         lat_lon_reader.read_variables();
         lat_lon_reader.finalize();
         for (auto& fname : fnames) {
