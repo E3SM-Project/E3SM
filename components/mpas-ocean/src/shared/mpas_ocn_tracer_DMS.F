@@ -173,7 +173,7 @@ contains
       !-----------------------------------------------------------------
 
       ! source/sink wants cm instead of m
-      real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
+      real (kind=RKIND) :: convertLengthScale = 100.0_RKIND
 
       integer :: iCell, iLevel, iTracer, numColumns, column, iLevelSurface
 

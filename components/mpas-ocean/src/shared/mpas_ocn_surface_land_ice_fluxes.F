@@ -423,8 +423,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: tracersPool
-
       integer :: iCell, nCells
       integer, dimension(:), pointer :: nCellsArray
 
@@ -811,11 +809,9 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, eta, &
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, &
                          dTf_dS
     integer :: iCell
-
-    logical :: coupled
 
     real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
 

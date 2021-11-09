@@ -2100,7 +2100,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Diables tendencies on the velocity field from the Coriolis force and momentum advection.
+Disables tendencies on the velocity field from the Coriolis force and momentum advection.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
