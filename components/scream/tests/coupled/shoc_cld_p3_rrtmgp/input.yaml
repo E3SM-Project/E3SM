@@ -43,7 +43,6 @@ Initial Conditions:
     surf_sens_flux: 0.0
 
 # The parameters for I/O control
-SCORPIO:
-  Output YAML Files:
-    Point Grid: ["shoc_cld_p3_rrtmgp_output.yaml"]
+Scorpio:
+  Output YAML Files: ["shoc_cld_p3_rrtmgp_output.yaml"]
 ...

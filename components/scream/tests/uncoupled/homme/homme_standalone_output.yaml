@@ -2,18 +2,18 @@
 ---
 Casename: homme_standalone_output
 Averaging Type: Instant
-Grid: Physics GLL
 Max Snapshots Per File: 1
 Fields:
-  - T_mid
-  - qv
-  - ps
-  - p_int
-  - p_mid
-  - pseudo_density
-  - horiz_winds
-  - w_int
-  - phi_int
+  Dynamics:
+    - T_mid
+    - qv
+    - ps
+    - p_int
+    - p_mid
+    - pseudo_density
+    - horiz_winds
+    - w_int
+    - phi_int
  
 Output Control:
   Frequency: ${NUM_STEPS}
