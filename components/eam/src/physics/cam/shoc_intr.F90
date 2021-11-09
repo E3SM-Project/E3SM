@@ -1086,13 +1086,16 @@ end function shoc_implements_cnst
     !  setting ice_cloud_fraction to 1 currently set 1e-8 kg/kg but can be
     !  changed based on what we think is sensible. 
 
+    liq_cloud_frac = 0.0_r8
+    ice_cloud_frac = 0.0_r8
+    precip_ice_frac = 0.0_r8
  
     do k=1,pver
       do i=1,ncol
         cloud_frac(i,k) = min(ast(i,k)+deepcu(i,k),1.0_r8)
         liq_cloud_frac(i,k) = alst(i,k)
         if (state1%q(i,k,ixcldice) .ge. 1.0e-8_r8) then 
-           if (state1%q(i,k,ixnumice) .ge. state1%q(i,k,ixcldice)*1.0e9_r8) then
+           if (state1%q(i,k,ixnumice) .ge. state1%q(i,k,ixcldice)*5.0e7_r8) then
               ice_cloud_frac(i,k) = 1.0_r8
            else
               precip_ice_frac(i,k) = 1.0_r8
