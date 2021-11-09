@@ -354,7 +354,7 @@
 &AM_temperatures
     config_AM_temperatures_enable = false
     config_AM_temperatures_compute_interval = 'dt'
-    config_AM_temperatures_output_stream = 'output'
+    config_AM_temperatures_output_stream = 'none'
     config_AM_temperatures_compute_on_startup = false
     config_AM_temperatures_write_on_startup = false
 /
@@ -369,7 +369,7 @@
 &AM_ridgingDiagnostics
     config_AM_ridgingDiagnostics_enable = false
     config_AM_ridgingDiagnostics_compute_interval = 'dt'
-    config_AM_ridgingDiagnostics_output_stream = 'output'
+    config_AM_ridgingDiagnostics_output_stream = 'none'
     config_AM_ridgingDiagnostics_compute_on_startup = false
     config_AM_ridgingDiagnostics_write_on_startup = false
 /
@@ -384,7 +384,7 @@
 &AM_geographicalVectors
     config_AM_geographicalVectors_enable = false
     config_AM_geographicalVectors_compute_interval = 'dt'
-    config_AM_geographicalVectors_output_stream = 'output'
+    config_AM_geographicalVectors_output_stream = 'none'
     config_AM_geographicalVectors_compute_on_startup = false
     config_AM_geographicalVectors_write_on_startup = false
 /
