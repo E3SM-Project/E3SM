@@ -222,8 +222,6 @@ TEST_CASE("field", "") {
     const int ivar = 2;
 
     auto f2 = f1.subfield(idim,ivar);
-    auto v4d = f1.get_view<Real****>();
-    auto v3d = f2.get_view<Real***>();
 
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_view<Real****>());
@@ -235,6 +233,49 @@ TEST_CASE("field", "") {
         for (int k=0; k<d1[3]; ++k) {
           REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
+  }
+
+  // Dynamic Subfields
+  SECTION ("dynamic_subfield") {
+    const int vec_dim = 10;
+    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
+    std::vector<int> d1 = {3,vec_dim,2,24};
+
+    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+
+    Field<Real> f1(fid1);
+    f1.allocate_view();
+    randomize(f1,engine,pdf);
+
+    const int idim = 1;
+    const int ivar = 0;
+
+    auto f2 = f1.subfield(idim,ivar,/* dynamic = */ true);
+
+    // Cannot reset subview idx of non-subfield fields
+    REQUIRE_THROWS(f1.get_header().get_alloc_properties().reset_subview_idx(0));
+
+    // subview idx out of bounds
+    auto& f2_ap = f2.get_header().get_alloc_properties();
+    REQUIRE_THROWS(f2_ap.reset_subview_idx(-1));
+    REQUIRE_THROWS(f2_ap.reset_subview_idx(vec_dim));
+
+    // Fill f1 with random numbers, and verify corresponding subviews get same values
+    randomize(f1,engine,pdf);
+
+    for (int ivar_dyn=0; ivar_dyn<vec_dim; ++ivar_dyn) {
+      // Reset slice idx
+      f2_ap.reset_subview_idx(ivar_dyn);
+      REQUIRE(f2_ap.get_subview_info().slice_idx==ivar_dyn);
+
+      auto v4d_h = f1.get_view<Real****,Host>();
+      auto v3d_h = f2.get_view<Real***,Host>();
+      for (int i=0; i<d1[0]; ++i)
+        for (int j=0; j<d1[2]; ++j)
+          for (int k=0; k<d1[3]; ++k) {
+            REQUIRE (v4d_h(i,ivar_dyn,j,k)==v3d_h(i,j,k));
+          }
+    }
   }
 
   SECTION ("vector_component") {
@@ -310,19 +351,25 @@ TEST_CASE("field_mgr", "") {
 
   const int ncols = 4;
   const int nlevs = 7;
+  const int subview_dim = 1;
+  const int subview_slice = 0;
 
   std::vector<FieldTag> tags1 = {COL,LEV};
   std::vector<FieldTag> tags2 = {EL,GP,GP};
+  std::vector<FieldTag> tags3 = {COL,CMP,LEV};
 
   std::vector<int> dims1 = {ncols,nlevs};
   std::vector<int> dims2 = {2,4,4};
   std::vector<int> dims3 = {ncols,nlevs+1};
+  std::vector<int> dims4 = {ncols,10,nlevs};
 
   const auto km = 1000*m;
 
   FID fid1("field_1", {tags1, dims1},  m/s, "phys");
   FID fid2("field_2", {tags1, dims1},  m/s, "phys");
   FID fid3("field_3", {tags1, dims1},  m/s, "phys");
+  FID fid4("field_4", {tags3, dims4},  m/s, "phys");
+  FID fid5("field_5", {tags1, dims1},  m/s, "phys");
 
   FID bad1("field_1", {tags2, dims2},  m/s, "dyn");  // Bad grid
   FID bad2("field_2", {tags1, dims1}, km/s, "phys"); // Bad units
@@ -343,11 +390,15 @@ TEST_CASE("field_mgr", "") {
   field_mgr.register_field(FR{fid3,"group_4"});
   field_mgr.register_field(FR{fid3,SL{"group_1","group_2","group_3"}});
   field_mgr.register_field(FR{fid2,"group_4"});
+  field_mgr.register_field(FR{fid4});
+  field_mgr.register_field(FR{fid5,FR{fid4},subview_dim,subview_slice,true}); // Register a dynamic subfield
 
   // === Invalid registration calls === //
   REQUIRE_THROWS(field_mgr.register_field(FR{bad1}));
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{fid5,FR{fid4},1,0,false})); // Cannot register inconsistent subfields
+
   field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
@@ -355,12 +406,14 @@ TEST_CASE("field_mgr", "") {
 
   // Check registration is indeed closed
   REQUIRE (field_mgr.repository_state()==RepoState::Closed);
-  REQUIRE (field_mgr.size()==3);
+  REQUIRE (field_mgr.size()==5);
 
   // Get all fields
   auto f1 = field_mgr.get_field(fid1.name());
   auto f2 = field_mgr.get_field(fid2.name());
   auto f3 = field_mgr.get_field(fid3.name());
+  auto f4 = field_mgr.get_field(fid4.name());
+  auto f5 = field_mgr.get_field(fid5.name());
   REQUIRE_THROWS(field_mgr.get_field("bad")); // Not in the field_mgr
   REQUIRE(f1.get_header().get_identifier()==fid1);
 
@@ -408,6 +461,20 @@ TEST_CASE("field_mgr", "") {
 
   REQUIRE (f1_padding==ekat::PackInfo<Pack::n>::padding(nlevs));
   REQUIRE (f2_padding==ekat::PackInfo<16>::padding(nlevs));
+
+  // Verify f5 is a subfield of f4
+  auto f5_ap = f5.get_header().get_alloc_properties();
+  REQUIRE (f5_ap.is_subfield());
+  REQUIRE (f5_ap.is_dynamic_subfield());
+  REQUIRE (f5_ap.get_subview_info().dim_idx==subview_dim);
+  REQUIRE (f5_ap.get_subview_info().slice_idx==subview_slice);
+
+  // Fill f4 with random numbers, and verify corresponding subview of f5 gets same values.
+  auto engine = setup_random_test(&comm);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.0,1.0);
+  randomize(f5,engine,pdf);
+  REQUIRE (views_are_equal(f5,f4.get_component(subview_slice)));
 }
 
 TEST_CASE("tracers_bundle", "") {
