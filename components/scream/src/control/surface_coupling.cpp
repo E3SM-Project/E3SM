@@ -353,15 +353,15 @@ get_col_info(const std::shared_ptr<const FieldHeader>& fh,
                      "Error! SurfaceCoupling expects all subfields to have parents "
                      "with LayoutType::Vector3D.\n");
 
-    const auto& idx = fh->get_alloc_properties().get_subview_idx();
+    const auto& sv_info = fh->get_alloc_properties().get_subview_info();
 
     // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
     // Field class only allows idim=0,1. But we should never be in the case of idim=0, here.
     // If we have idim=0, it means that the parent field did not have COL as tag[0].
-    EKAT_REQUIRE_MSG(idx.first==1, "Error! Bizarre scenario discovered. Contact developers.\n");
+    EKAT_REQUIRE_MSG(sv_info.dim_idx==1, "Error! Bizarre scenario discovered. Contact developers.\n");
 
     // Additional col_offset
-    col_offset += idx.second*parent->get_alloc_properties().get_last_extent();
+    col_offset += sv_info.slice_idx*parent->get_alloc_properties().get_last_extent();
 
     // Additional product for col_stride
     col_stride *= parent->get_identifier().get_layout().dim(1);
