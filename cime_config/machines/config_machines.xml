@@ -96,6 +96,21 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
 
+
+      <modules>
+        <command name="load">PrgEnv-amd</command>
+        <command name="load">cray-python</command>
+        <command name="load">subversion</command>
+        <command name="load">git</command>
+        <command name="load">cmake</command>
+        <command name="load">zlib</command>
+        <command name="load">cray-libsci</command>
+        <command name="load">cray-hdf5-parallel</command>
+        <command name="load">cray-netcdf-hdf5parallel</command>
+        <command name="load">cray-parallel-netcdf</command>
+      </modules>
+<!--
+
       <modules>
         <command name="purge"/>
         <command name="load">DefApps</command>
@@ -127,6 +142,8 @@
         <command name="load">cray-netcdf-hdf5parallel/4.7.4.5</command>
         <command name="load">cray-parallel-netcdf/1.12.1.5</command>
       </modules>
+
+-->
 
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>

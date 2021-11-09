@@ -11,6 +11,8 @@
 #include "private.h" /* MAX_CHARS, bool */
 #include "gptl.h"    /* function prototypes and HAVE_MPI logic*/
 
+#define FORTRANUNDERSCORE 1
+
 #if ( defined FORTRANCAPS )
 
 #define gptlinitialize GPTLINITIALIZE
