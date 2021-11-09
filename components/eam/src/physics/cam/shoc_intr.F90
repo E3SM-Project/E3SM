@@ -408,6 +408,9 @@ end function shoc_implements_cnst
     call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
     call addfld('BRUNT',(/'lev'/), 'A', 's-1', 'Brunt frequency')
     call addfld('RELVAR',(/'lev'/), 'A', 'kg/kg', 'SHOC cloud liquid relative variance')
+    call addfld('ICE_CLOUD_FRAC',(/'lev'/), 'A', '', 'Ice number aware cloud fraction')
+    call addfld('PRECIP_ICE_FRAC',(/'lev'/), 'A', '', 'Precipitating ice fraction')
+    call addfld('LIQ_CLOUD_FRAC',(/'lev'/), 'A', '', 'Liquid cloud fraction')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -430,6 +433,9 @@ end function shoc_implements_cnst
     call add_default('CONCLD',1,' ')
     call add_default('BRUNT',1,' ')
     call add_default('RELVAR',1,' ')
+    call add_default('ICE_CLOUD_FRAC',1,' ')
+    call add_default('PRECIP_ICE_FRAC',1,' ')
+    call add_default('LIQ_CLOUD_FRAC',1,' ')
 
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
@@ -569,6 +575,9 @@ end function shoc_implements_cnst
    real(r8) :: dz_g(pcols,pver)
    real(r8) :: zi_g(pcols,pverp)
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
+   real(r8) :: ice_cloud_frac(pcols,pver)          ! ice number aware cloud fraction, 0 or 1
+   real(r8) :: precip_ice_frac(pcols,pver)        ! precipitating ice fraction, 0 or 1
+   real(r8) :: liq_cloud_frac(pcols,pver)        ! precipitating ice fraction, 0 or 1 
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx, host_dy
@@ -598,6 +607,7 @@ end function shoc_implements_cnst
  
    real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
    real(r8) :: wtracer_sfc(pcols,edsclr_dim)
+
   
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
@@ -1069,11 +1079,25 @@ end function shoc_implements_cnst
     enddo
    
     !  Probably need to add deepcu cloud fraction to the cloud fraction array, else would just 
-    !  be outputting the shallow convective cloud fraction 
+    !  be outputting the shallow convective cloud fraction
+ 
+    !  Add liq, ice, and precipitating ice fractions here. These are purely
+    !  diagnostic outputs and do not impact the rest of the code. The qi threshold for
+    !  setting ice_cloud_fraction to 1 currently set 1e-8 kg/kg but can be
+    !  changed based on what we think is sensible. 
 
+ 
     do k=1,pver
       do i=1,ncol
         cloud_frac(i,k) = min(ast(i,k)+deepcu(i,k),1.0_r8)
+        liq_cloud_frac(i,k) = alst(i,k)
+        if (state1%q(i,k,ixcldice) .ge. 1.0e-8_r8) then 
+           if (state1%q(i,k,ixnumice) .ge. state1%q(i,k,ixcldice)*1.0e9_r8) then
+              ice_cloud_frac(i,k) = 1.0_r8
+           else
+              precip_ice_frac(i,k) = 1.0_r8
+           endif
+        endif
       enddo
     enddo
    
@@ -1118,6 +1142,9 @@ end function shoc_implements_cnst
     call outfld('BRUNT',brunt_out,pcols,lchnk)
     call outfld('RELVAR',relvar,pcols,lchnk)
     call outfld('SHOC_QL',rcm,pcols,lchnk)
+    call outfld('ICE_CLOUD_FRAC',ice_cloud_frac,pcols,lchnk)
+    call outfld('PRECIP_ICE_FRAC',precip_ice_frac,pcols,lchnk)
+    call outfld('LIQ_CLOUD_FRAC',liq_cloud_frac,pcols,lchnk)
 
 #endif    
     return         
