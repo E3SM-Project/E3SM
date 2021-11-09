@@ -1,11 +1,8 @@
 #! /usr/bin/env python3
 
 """
-Evaluate macros for problems or inefficiencies:
-1) Repitition
-2) Promotion: all children of a parent do the same thing, so do it in the parent
-3) Suspicious set, probably want append
-4) Using OS, COMPILER, or MACH with no matches in config_machines.xml
+Intended to be like pylint except for our cmake macros
+(Evaluate macros for problems or inefficiencies.)
 """
 
 import argparse, sys, os, re, pathlib
@@ -20,18 +17,33 @@ IF_RE     = re.compile(r'^\s*if\s*[(]([^)]+)[)]\s*$')
 ENDIF_RE  = re.compile(r'^\s*endif')
 EXE_RE    = re.compile(r'^\s*execute_process')
 
+WARNING_SET = {
+    "REP" : "Repitition: either a repeated item in an append or setting to same value as parent",
+    "PRO" : "Promotion: all children of a parent do the same thing, so do it in the parent",
+    "SET" : "Suspicious set: probably want append",
+    "UNU" : "Unused: Using OS, COMPILER, or MACH with no matches in config_machines.xml",
+    "MIS" : "Missing: Having a machine/comp in config_machines.xml with no specialization in Macros"
+}
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
+    warning_help = ""
+    for k, v in WARNING_SET.items():
+        warning_help += f"  {k} => {v}\n"
+
     parser = argparse.ArgumentParser(
         usage="""\n{0} [<path to macros>]
 OR
 {0} --help
 
+Available warnings (CODE => Decription)
+{1}
+
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Evaluate cwd \033[0m
     > {0}
-""".format(os.path.basename(args[0])),
+        """.format(os.path.basename(args[0]), warning_help),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -42,14 +54,35 @@ OR
 
     parser.add_argument("-c", "--compiler", help="Limit evaluation to certain compilers")
 
+    parser.add_argument("-d", "--disable", default=[], action="append", choices=list(WARNING_SET.keys()),
+                        help="Disable these warning codes. Assumes all other codes are on.")
+
+    parser.add_argument("-e", "--enable", default=[], action="append", choices=list(WARNING_SET.keys()),
+                        help="Enable these warning codes. Assumes all other codes are off.")
+
     args = parser.parse_args(args[1:])
 
     assert (args.machine is None) or (args.compiler is None), "Do not set both -m and -c"
+    assert (args.disable == []) or (args.enable == []), "Do not set both -d and -e"
+
+    if args.disable:
+        args.codes_to_check = list(set(WARNING_SET.keys()) - set(args.disable))
+    elif args.enable:
+        args.codes_to_check = list(args.enable)
+    else:
+        args.codes_to_check = list(WARNING_SET.keys())
+
+    delattr(args, "disable")
+    delattr(args, "enable")
+
+    if "UNU" in args.codes_to_check:
+        assert args.machine is None and args.compiler is None, \
+            "Cannot use UNU check with -c or -m options. Please disable"
 
     return args
 
 ###############################################################################
-def find_machs_comps_oss(config_machines):
+def find_machs_comps_oss(config_machines, machine=None):
 ###############################################################################
     """
     Return a dict mapping MACH -> (OS, COMPILERS), compilers, OSs
@@ -74,6 +107,9 @@ def find_machs_comps_oss(config_machines):
 
         mach = child.attrib["MACH"].strip()
         assert mach not in machs, f"Repeat of mach {mach}"
+
+        if machine is not None and mach != machine:
+            continue
 
         found_os = False
         found_comps = False
@@ -149,7 +185,7 @@ def get_all_macros(macro_path_pl, universal, the_os, mach, comp):
     return results
 
 ###############################################################################
-def find_suspicious_set(macro_path_pl, machs):
+def find_SET(macro_path_pl, machs):
 ###############################################################################
     warnings = []
     for universal in UNIVERSALS:
@@ -167,12 +203,11 @@ def find_suspicious_set(macro_path_pl, machs):
                     mixes = sets & appends
                     if mixes:
                         warnings.append(f"Macro {macro_pl} began to mix sets and appends for vars: {', '.join(mixes)}")
-                        print(warnings[-1])
 
     return warnings
 
 ###############################################################################
-def find_unused_macros(macro_path_pl, machs):
+def find_UNU(macro_path_pl, machs):
 ###############################################################################
     warnings = []
     unused_macro_files = set([item for item in macro_path_pl.glob("*.cmake") if item.name != "Macros.cmake"])
@@ -184,22 +219,73 @@ def find_unused_macros(macro_path_pl, machs):
                 unused_macro_files = unused_macro_files - set(macro_pls)
 
     for unused_macro_file in unused_macro_files:
-        warnings.append(f"Macro {unused_macro_file} is unused")
-        print(warnings[-1])
+        warnings.append(f"Macro {unused_macro_file} is unused by anything in config_machines.xml")
 
     return warnings
 
 ###############################################################################
-def evaluate(macro_path, machine=None, compiler=None):
+def find_REP(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                sets    = {}
+                appends = {}
+                for macro_pl in macro_pls:
+                    curr_settings, curr_appends = parse_macro(macro_pl)
+                    for var, val in curr_settings:
+                        if var in sets:
+                            if sets[var] == val:
+                                warnings.append(f"Macro {macro_pl} has redundant set of {var} to {val}")
+                            else:
+                                sets[var] = val
+                        else:
+                            sets[var] = val
+
+                    for var, vals in curr_appends:
+                        if var in appends:
+                            potential_repeats = set(appends[var].split()) & set(vals.split())
+                            if potential_repeats:
+                                warnings.append(f"Macro {macro_pl} has redundant set of {var}, repeated items are to {', '.join(potential_repeats)}")
+
+                            appends[var] += vals
+                        else:
+                            appends[var] = vals
+
+    return warnings
+
+###############################################################################
+def find_PRO(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    warnings.append("This warning is not yet implemented")
+    return warnings
+
+###############################################################################
+def find_MIS(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    warnings.append("This warning is not yet implemented")
+    return warnings
+
+###############################################################################
+def evaluate(macro_path, codes_to_check, machine=None, compiler=None):
 ###############################################################################
     macro_path_pl = pathlib.Path(macro_path)
     config_machines_pl = macro_path_pl / ".." / "config_machines.xml"
 
-    machs, all_comps, oss = find_machs_comps_oss(config_machines_pl)
+    machs, all_comps, oss = find_machs_comps_oss(config_machines_pl, machine=machine)
 
     warnings = []
-    warnings.extend(find_suspicious_set(macro_path_pl, machs))
-    warnings.extend(find_unused_macros(macro_path_pl, machs))
+    for warning_code in codes_to_check:
+        warnings.extend([f"{warning_code}: {item}"
+                         for item in globals()[f"find_{warning_code}"](macro_path_pl, machs)])
+
+    for warning in warnings:
+        print(warning)
 
     return warnings == []
 
