@@ -375,6 +375,7 @@ contains
     integer                      :: dim_ii
     integer                      :: ierr
     logical                      :: found,is_open,var_found
+    character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
 
@@ -422,6 +423,8 @@ contains
         ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
         call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
+        hist_var%pio_decomp_tag = trim(hist_var%pio_decomp_tag)//"_"//trim(dimlen_str)
       end do
 
       ! Register Variable with PIO
@@ -488,6 +491,7 @@ contains
     integer                      :: dim_ii
     integer                      :: ierr
     logical                      :: found,is_open,var_found
+    character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
 
@@ -536,6 +540,8 @@ contains
         ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
         call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
+        hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
       end do
 
       ! Register Variable with PIO
@@ -1341,7 +1347,48 @@ contains
       call errorHandle( "eam_grid_read_darra_1d: Error reading variable "//trim(varname)//" unsupported dtype", -999)
     end if
 
+
   end subroutine grid_read_darray_1d
+!=====================================================================!
+  subroutine convert_int_2_str(int_in,str_out)
+    integer, intent(in)           :: int_in
+    character(len=*), intent(out) :: str_out
+
+    character(len=8) :: fmt_str
+
+    if (int_in < 0) then
+      fmt_str = "(A1,"
+    else
+      fmt_str = "("
+    end if
+
+    if (abs(int_in)<10) then
+      fmt_str = trim(fmt_str)//"I1)"
+    elseif (abs(int_in)<1e2) then
+      fmt_str = trim(fmt_str)//"I2)"
+    elseif (abs(int_in)<1e3) then
+      fmt_str = trim(fmt_str)//"I3)"
+    elseif (abs(int_in)<1e4) then
+      fmt_str = trim(fmt_str)//"I4)"
+    elseif (abs(int_in)<1e5) then
+      fmt_str = trim(fmt_str)//"I5)"
+    elseif (abs(int_in)<1e6) then
+      fmt_str = trim(fmt_str)//"I6)"
+    elseif (abs(int_in)<1e7) then
+      fmt_str = trim(fmt_str)//"I7)"
+    elseif (abs(int_in)<1e8) then
+      fmt_str = trim(fmt_str)//"I8)"
+    elseif (abs(int_in)<1e9) then
+      fmt_str = trim(fmt_str)//"I9)"
+    endif
+    
+    if (int_in < 0) then
+      write(str_out,fmt_str) "n", int_in
+    else
+      write(str_out,fmt_str) int_in
+    end if 
+
+  end subroutine convert_int_2_str
 !=====================================================================!
 
 end module scream_scorpio_interface
