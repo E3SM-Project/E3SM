@@ -190,11 +190,13 @@ public:
   //     to store a stride for the slowest dimension.
   //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
   field_type subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-                       const int idim, const int k, const bool dynamic = false) const;
-  field_type subfield (const std::string& sf_name, const int idim, const int k, const bool dynamic = false) const;
+                       const int idim, const int index, const bool dynamic = false) const;
+  field_type subfield (const std::string& sf_name, const int idim,
+                       const int index, const bool dynamic = false) const;
   field_type subfield (const int idim, const int k, const bool dynamic = false) const;
 
   // If this field is a vector field, get a subfield for the ith component.
+  // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
   field_type get_component (const int i, const bool dynamic = false);
 
@@ -578,7 +580,7 @@ deep_copy (const RT value) {
 template<typename RealType>
 Field<RealType> Field<RealType>::
 subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-          const int idim, const int k, const bool dynamic) const {
+          const int idim, const int index, const bool dynamic) const {
 
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
@@ -600,7 +602,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
   field_type sf;
-  sf.m_header = create_subfield_header(sf_id,m_header,idim,k,dynamic);
+  sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_view_d = m_view_d;
   sf.m_view_h = m_view_h;
   sf.m_prop_checks = std::make_shared<property_check_list>();
@@ -610,15 +612,15 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const std::string& sf_name, const int idim, const int k, const bool dynamic) const {
+subfield (const std::string& sf_name, const int idim, const int index, const bool dynamic) const {
   const auto& id = m_header->get_identifier();
-  return subfield(sf_name,id.get_units(),idim,k,dynamic);
+  return subfield(sf_name,id.get_units(),idim,index,dynamic);
 }
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const int idim, const int k, const bool dynamic) const {
-  return subfield(m_header->get_identifier().name(),idim,k,dynamic);
+subfield (const int idim, const int index, const bool dynamic) const {
+  return subfield(m_header->get_identifier().name(),idim,index,dynamic);
 }
 
 template<typename RealType>
