@@ -2,6 +2,7 @@
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/scream_io_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -147,7 +148,7 @@ protected:
   std::shared_ptr<remapper_type>              m_remapper;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
-  std::string       m_avg_type;
+  OutputAvgType     m_avg_type;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>            m_fields_names;
@@ -166,16 +167,24 @@ protected:
 // model time steps since the last output step.
 inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const
 {
-  if (m_avg_type=="INSTANT" || nsteps_since_last_output == 1) {
+  if (nsteps_since_last_output==1) {
     curr_val = new_val;
   } else {
-    // Update local view given the averaging type.
-    if (m_avg_type == "AVERAGE") {
-      curr_val = (curr_val*(nsteps_since_last_output-1) + new_val)/(nsteps_since_last_output);
-    } else if (m_avg_type == "MAX") {
-      curr_val = std::max(curr_val,new_val);
-    } else if (m_avg_type == "Min") {
-      curr_val = std::min(curr_val,new_val);
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        curr_val = new_val;
+        break;
+      case OutputAvgType::Max:
+        curr_val = std::max(curr_val,new_val);
+        break;
+      case OutputAvgType::Min:
+        curr_val = std::min(curr_val,new_val);
+        break;
+      case OutputAvgType::Average:
+        curr_val = (curr_val*(nsteps_since_last_output-1) + new_val)/(nsteps_since_last_output);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
     }
   }
 }

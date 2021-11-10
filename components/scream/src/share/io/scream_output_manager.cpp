@@ -75,7 +75,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   }
 
   // Check if we need to restart the output history
-  const auto has_restart_data = (m_avg_type!="INSTANT" || m_output_control.frequency>1);
+  const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant || m_output_control.frequency>1);
   if (has_restart_data) {
     // This avg_type needs to save some info in order to restart the output.
     // E.g., we might save 30-day avg value for field F, but due to job size
@@ -294,7 +294,7 @@ std::string OutputManager::
 compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const
 {
   return m_casename + "." +
-         m_avg_type + "." +
+         e2str(m_avg_type) + "." +
          control.frequency_units+ "_x" +
          std::to_string(control.frequency) +
          (file_specs.filename_with_mpiranks ? ".np" + std::to_string(m_io_comm.size()) : "");
@@ -309,8 +309,9 @@ set_params (const ekat::ParameterList& params,
     using vos_t = std::vector<std::string>;
 
     // We build some restart parameters internally
-    m_avg_type = ekat::upper_case(m_params.get<std::string>("Averaging Type","Instant"));
-    EKAT_REQUIRE_MSG (m_avg_type=="INSTANT",
+    auto avg_type = params.get<std::string>("Averaging Type");
+    m_avg_type = str2avg(avg_type);
+    EKAT_REQUIRE_MSG (m_avg_type==OutputAvgType::Instant,
         "Error! For restart output, the averaging type must be 'Instant'.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
     m_output_file_specs.max_snapshots_in_file = m_params.get("Max Snapshots Per File",1);
@@ -331,7 +332,12 @@ set_params (const ekat::ParameterList& params,
     }
     m_casename = m_params.get<std::string>("Casename", "scream_restart");
   } else {
-    m_avg_type = ekat::upper_case(m_params.get<std::string>("Averaging Type"));
+    auto avg_type = params.get<std::string>("Averaging Type");
+    m_avg_type = str2avg(avg_type);
+    EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
+        "Error! Unsupported averaging type '" + avg_type + "'.\n"
+        "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
+
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
     m_casename = m_params.get<std::string>("Casename");
   }

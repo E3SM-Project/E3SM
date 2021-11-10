@@ -103,7 +103,7 @@ protected:
   std::string       m_casename;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
-  std::string       m_avg_type;
+  OutputAvgType     m_avg_type;
 
   // Whether this OutputManager handles a model restart file, or normal model output.
   bool m_is_model_restart_output;

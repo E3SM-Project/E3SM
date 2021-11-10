@@ -318,7 +318,7 @@ void AtmosphereOutput::register_views()
     // and that it is not a subfield of another field (or else the view
     // would be strided).
     bool can_alias_field_view =
-        m_avg_type=="Instant" &&
+        m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
         field.get_header().get_parent().expired();
 
