@@ -188,8 +188,8 @@ void OutputManager::run(util::TimeStamp& timestamp)
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       // Compute new file name
-      filename = compute_filename_root(control);
-      if (m_params.get("Timestamp in Filename", true)) {
+      filename = compute_filename_root(control,filespecs);
+      if (filespecs.filename_with_time_string) {
         filename += "." + timestamp.to_string();
       }
       if (is_output_step) {
@@ -286,12 +286,13 @@ void OutputManager::finalize()
 }
 
 std::string OutputManager::
-compute_filename_root (const IOControl& control) const
+compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const
 {
   return m_casename + "." +
          m_avg_type + "." +
          control.frequency_units+ "_x" +
-         std::to_string(control.frequency);
+         std::to_string(control.frequency) +
+         (file_specs.filename_with_mpiranks ? ".np" + std::to_string(m_io_comm.size()) : "");
 }
 
 void OutputManager::

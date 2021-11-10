@@ -86,7 +86,7 @@ public:
 
 protected:
 
-  std::string compute_filename_root (const IOControl& control) const;
+  std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;
 
   // Craft the restart parameter list
   void set_params (const ekat::ParameterList& params,
