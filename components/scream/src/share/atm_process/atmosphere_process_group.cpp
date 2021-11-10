@@ -145,6 +145,12 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 
 void AtmosphereProcessGroup::
 set_required_field (const Field<const Real>& f) {
+  if (m_group_schedule_type==ScheduleType::Parallel) {
+    // In parallel splitting, all required fields are *actual* inputs,
+    // and the base class impl is fine.
+    AtmosphereProcess::set_required_field(f);
+  }
+
   // Find the first process that requires this group
   const auto& fid = f.get_header().get_identifier();
   int first_proc_that_needs_f = -1;
@@ -161,11 +167,11 @@ set_required_field (const Field<const Real>& f) {
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  // Loop over all the fields in the group, and see if they are all computed
-  // by a previous process. If so, then this group is not a "required" group
-  // for this group.
-  // NOTE: the case where the group itself is computed by a previous atm proc
-  // is already handled during `set_grids` (see process_required_group).
+  // Loop over all the fields in the FieldGroup (FG), and see if they are all computed
+  // by a previous process. If so, then this FG is not a "required" FG
+  // for this AtmosphereProcessGroup.
+  // NOTE: the case where the FG itself is computed by a previous atm proc
+  //       is already handled during `set_grids` (see process_required_group).
   // NOTE: we still check also the groups computed by the previous procs,
   //       in case they contain some of the fields in this group.
   bool computed = false;
@@ -207,6 +213,12 @@ endloop:
 
 void AtmosphereProcessGroup::
 set_required_group (const FieldGroup<const Real>& group) {
+  if (m_group_schedule_type==ScheduleType::Parallel) {
+    // In parallel splitting, all required group are *actual* inputs,
+    // and the base class impl is fine.
+    AtmosphereProcess::set_required_group(group);
+  }
+
   // Find the first process that requires this group
   int first_proc_that_needs_group = -1;
   for (int iproc=0; iproc<m_group_size; ++iproc) {

@@ -111,7 +111,7 @@ public:
   // corresponding set_xyz_impl method(s).
   // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the views in the field/group are allocated by now.
-  // Note: you are *unlikely* to need to override these method. In 99.99% of the cases,
+  // Note: you are *unlikely* to need to override these methods. In 99.99% of the cases,
   //       overriding the corresponding _impl method should be enough. The class
   //       AtmosphereProcessGroup is the big exception to this, since it needs
   //       to perform some extra action *before* setting the field/group.
