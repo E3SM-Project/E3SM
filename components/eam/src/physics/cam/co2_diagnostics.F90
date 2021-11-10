@@ -278,7 +278,8 @@ contains
                   'name='//trim(cnst_name(c_i(m)))//' gavg dry, wet, sfc, air ', &
                   mass_dry_mean(c_i(m)), mass_wet_mean(c_i(m)), &
                   sfc_flux_mean(c_i(m)), air_flux_mean(c_i(m))
-66             format (a32,i2,a36,1p,4e25.13)
+66             format (a32,i2,a36,1p,4e25.15)
+!old version66             format (a32,i2,a36,1p,4e25.13)
          end do
 
       endif
