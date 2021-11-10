@@ -4,13 +4,12 @@ Casename: spa_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Point Grid:
-    - aero_g_sw
-    - aero_ssa_sw
-    - aero_tau_lw
-    - aero_tau_sw
-    - nc_activated
-    - p_mid
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_lw
+  - aero_tau_sw
+  - nc_activated
+  - p_mid
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps

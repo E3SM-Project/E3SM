@@ -44,6 +44,10 @@
  *      - field_name_2
  *        ...
  *      - field_name_N
+ *  Note: an alternative way of specifying Fields names is to have
+ *    Grid: STRING
+ *    Fields:
+ *      $GRID: [field_name1,...,field_name_N]
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *

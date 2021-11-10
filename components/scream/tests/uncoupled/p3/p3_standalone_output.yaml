@@ -4,31 +4,30 @@ Casename: p3_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Point Grid:
-    - T_mid
-    - T_prev_micro_step
-    - qv
-    - qc
-    - qr
-    - qi
-    - qm
-    - nc
-    - nr
-    - ni
-    - bm
-    - qv_prev_micro_step
-    - eff_radius_qc
-    - eff_radius_qi
-    - micro_liq_ice_exchange
-    - micro_vap_liq_exchange
-    - micro_vap_ice_exchange
-    - cldfrac_tot
-    - inv_qc_relvar
-    - nc_activated
-    - nc_nuceat_tend
-    - ni_activated
-    - p_mid
-    - pseudo_density
+  - T_mid
+  - T_prev_micro_step
+  - qv
+  - qc
+  - qr
+  - qi
+  - qm
+  - nc
+  - nr
+  - ni
+  - bm
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - micro_liq_ice_exchange
+  - micro_vap_liq_exchange
+  - micro_vap_ice_exchange
+  - cldfrac_tot
+  - inv_qc_relvar
+  - nc_activated
+  - nc_nuceat_tend
+  - ni_activated
+  - p_mid
+  - pseudo_density
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps

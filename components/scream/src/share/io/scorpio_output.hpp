@@ -27,7 +27,6 @@
  *  Casename:                     STRING
  *  Averaging Type:               STRING
  *  Max Snapshots Per File:       INT                   (default: 1)
- *  Grids:                        ARRAY OF STRINGS
  *  Fields:
  *     GRID_NAME_1:               ARRAY OF STRINGS
  *     GRID_NAME_2:               ARRAY OF STRINGS

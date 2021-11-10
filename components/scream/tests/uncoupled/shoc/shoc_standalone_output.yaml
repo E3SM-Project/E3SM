@@ -4,22 +4,21 @@ Casename: shoc_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Point Grid:
-    - T_mid
-    - cldfrac_liq
-    - eddy_diff_mom
-    - horiz_winds
-    - qv
-    - qc
-    - sgs_buoy_flux
-    - tke
-    - inv_qc_relvar
-    - pbl_height
-    - omega
-    - p_int
-    - p_mid
-    - phis
-    - pseudo_density
+  - T_mid
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - qv
+  - qc
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  - omega
+  - p_int
+  - p_mid
+  - phis
+  - pseudo_density
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps

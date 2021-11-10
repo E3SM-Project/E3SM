@@ -56,17 +56,22 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
 
   // For each grid, create a separate output stream.
-  const auto& fields_pl = m_params.sublist("Fields");
-  for (auto it=fields_pl.params_names_cbegin(); it!=fields_pl.params_names_cend(); ++it) {
-    const auto& gname = *it;
-    EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
-        "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
-
-    EKAT_REQUIRE_MSG (field_mgrs.find(gname)!=field_mgrs.end(),
-        "Error! Output requested on grid '" + gname + "', but no field manager is available for such grid.\n");
-
-    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
+  if (field_mgrs.size()==1) {
+    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.begin()->second,grids_mgr);
     m_output_streams.push_back(output);
+  } else {
+    const auto& fields_pl = m_params.sublist("Fields");
+    for (auto it=fields_pl.params_names_cbegin(); it!=fields_pl.params_names_cend(); ++it) {
+      const auto& gname = *it;
+      EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
+          "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
+
+      EKAT_REQUIRE_MSG (field_mgrs.find(gname)!=field_mgrs.end(),
+          "Error! Output requested on grid '" + gname + "', but no field manager is available for such grid.\n");
+
+      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
+      m_output_streams.push_back(output);
+    }
   }
 
   // Check if we need to restart the output history
