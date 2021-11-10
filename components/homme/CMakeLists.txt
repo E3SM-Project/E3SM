@@ -177,23 +177,22 @@ IF (${HOMME_USE_KOKKOS})
 
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
 
-################!!!!!!!!!!!! ?????????????
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
-#  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
-#    SET (HOMMEXX_HIP_SPACE ON)
-#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
-#    SET (HOMMEXX_CUDA_SPACE ON)
-#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
-#    SET (HOMMEXX_OPENMP_SPACE ON)
-#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
-#    SET (HOMMEXX_THREADS_SPACE ON)
-#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
-#    SET (HOMMEXX_SERIAL_SPACE ON)
-#  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
-#    SET (HOMMEXX_DEFAULT_SPACE ON)
-#  ELSE()
-#    MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
-#  ENDIF()
+  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
+    SET (HOMMEXX_HIP_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+    SET (HOMMEXX_CUDA_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
+    SET (HOMMEXX_OPENMP_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
+    SET (HOMMEXX_THREADS_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
+    SET (HOMMEXX_SERIAL_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
+    SET (HOMMEXX_DEFAULT_SPACE ON)
+  ELSE()
+    MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
+  ENDIF()
 
   # Execution space parameters. 8 is a nice size for V100.
   SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE STRING "Minimum number of warps to get 100% occoupancy on GPU")
@@ -269,7 +268,6 @@ IF (${HOMME_USE_KOKKOS})
   endif()
 
   IF (CUDA_BUILD OR HIP)
-    message("HERE WE ARE--------------------------------------------")
     SET (DEFAULT_VECTOR_SIZE 1)
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
@@ -411,10 +409,10 @@ IF (${HOMME_USE_KOKKOS})
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
-#IF (HOMMEXX_BFB_TESTING)
+IF (HOMMEXX_BFB_TESTING)
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
-#ENDIF ()
+ENDIF ()
 
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.
