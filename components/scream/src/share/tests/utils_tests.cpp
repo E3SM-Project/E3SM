@@ -57,6 +57,7 @@ TEST_CASE ("time_stamp") {
 
   // Julian day = frac_of_year_in_days.fraction_of_day, with frac_of_year_in_days=0 at Jan 1st.
   REQUIRE (ts1.frac_of_year_in_days()==(284 + (17*3600+8*60+30)/86400.0));
+  REQUIRE (ts1.get_num_steps()==0);
 
   REQUIRE (ts1.get_date_string()=="2021-10-12");
   REQUIRE (ts1.get_time_string()=="17:08:30");
@@ -120,6 +121,8 @@ TEST_CASE ("time_stamp") {
   REQUIRE (ts3.get_day()==(ts1.get_day()+1+20-31)); // Add 20 days, subtract Oct 31 days (carry)
   REQUIRE (ts3.get_month()==(ts1.get_month()+1));
   REQUIRE (ts3.get_year()==(ts1.get_year()+1));
+
+  REQUIRE (ts3.get_num_steps()==6);
 
   // Check update across leap date
 #ifdef EKAT_HAS_LEAP_YEAR

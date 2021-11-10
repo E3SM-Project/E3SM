@@ -50,10 +50,12 @@ TimeStamp::TimeStamp()
 }
 
 TimeStamp::TimeStamp(const std::vector<int>& date,
-                     const std::vector<int>& time)
+                     const std::vector<int>& time,
+                     const int num_steps)
 {
   EKAT_REQUIRE_MSG (date.size()==3, "Error! Date should consist of three ints: [year, month, day].\n");
   EKAT_REQUIRE_MSG (time.size()==3, "Error! Time of day should consist of three ints: [hour, min, sec].\n");
+  EKAT_REQUIRE_MSG (num_steps>=0,   "Error! Number of steps should be a non-negative number.\n");
 
   const auto yy   = date[0];
   const auto mm   = date[1];
@@ -72,11 +74,13 @@ TimeStamp::TimeStamp(const std::vector<int>& date,
   // All good, store
   m_date = date;
   m_time = time;
+  m_num_steps = num_steps;
 }
 
 TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
-                     const int h, const int min, const int sec)
- : TimeStamp({yy,mm,dd},{h,min,sec})
+                     const int h, const int min, const int sec,
+                     const int num_steps)
+ : TimeStamp({yy,mm,dd},{h,min,sec},num_steps)
 {
   // Nothing to do here
 }
@@ -127,6 +131,12 @@ double TimeStamp::frac_of_year_in_days () const {
   return doy;
 }
 
+void TimeStamp::set_num_steps (const int num_steps) {
+  EKAT_REQUIRE_MSG (m_num_steps==0,
+      "Error! Cannot reset m_num_steps once the count started.\n");
+  m_num_steps = num_steps;
+}
+
 TimeStamp& TimeStamp::operator+=(const int seconds) {
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
@@ -139,7 +149,8 @@ TimeStamp& TimeStamp::operator+=(const int seconds) {
   auto& mm = m_date[1];
   auto& yy = m_date[0];
 
-  EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time, sorry.\n");
+  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
+  ++m_num_steps;
   sec += seconds;
 
   // Carry over

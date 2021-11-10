@@ -13,9 +13,11 @@ public:
 
   TimeStamp();
   TimeStamp(const std::vector<int>& date,
-            const std::vector<int>& time);
+            const std::vector<int>& time,
+            const int num_steps = 0);
   TimeStamp(const int yy, const int mm, int dd,
-            const int h, const int min, const int sec);
+            const int h, const int min, const int sec,
+            const int num_steps = 0);
   TimeStamp(const TimeStamp&) = default;
 
   // === Query methods === //
@@ -28,6 +30,7 @@ public:
   int get_hours   () const { return m_time[0]; }
   int get_minutes () const { return m_time[1]; }
   int get_seconds () const { return m_time[2]; }
+  int get_num_steps () const { return m_num_steps; }
 
   bool is_valid    () const;
 
@@ -41,6 +44,10 @@ public:
 
   // === Update method(s) === //
 
+  // Set the counter for the number of steps. Must be called while m_num_steps==0,
+  // for safety reasons (do not alter num steps while the count started).
+  void set_num_steps (const int num_steps);
+
   TimeStamp& operator= (const TimeStamp&) = default;
 
   // This method checks that time shifts forward (i.e. that seconds is positive)
@@ -50,6 +57,8 @@ protected:
 
   std::vector<int> m_date;  // [year, month, day]
   std::vector<int> m_time;  // [hour, min, sec]
+
+  int m_num_steps = 0; // Number of steps since simulation started
 };
 
 // Overload operators for TimeStamp
