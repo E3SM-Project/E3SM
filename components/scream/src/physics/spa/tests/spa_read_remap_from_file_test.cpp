@@ -19,6 +19,8 @@ using namespace spa;
 
 template <typename S>
 using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
+template <typename S>
+using view_1d_host = typename KokkosTypes<HostDevice>::template view_1d<S>;
 
 TEST_CASE("spa_read_remap_data","spa")
 {
@@ -65,14 +67,24 @@ TEST_CASE("spa_read_remap_data","spa")
   Int col_sum = 0;
   Int row_sum = 0;
   Real wgt_sum = 0.0;
-  view_1d<Real> wgts("",tgt_grid_ncols);
+  view_1d_host<Real> wgts("",tgt_grid_ncols);
   Kokkos::deep_copy(wgts,0.0);
+  auto weights_h = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+  Kokkos::deep_copy(weights_h,spa_horiz_interp.weights);
+  auto target_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+  Kokkos::deep_copy(target_h,spa_horiz_interp.target_grid_loc);
   for (int i=0; i<spa_horiz_interp.length; i++) {
-    row_sum += spa_horiz_interp.target_grid_loc[i];
-    col_sum += spa_horiz_interp.source_grid_loc[i];
-    wgt_sum += spa_horiz_interp.weights[i];
-    wgts(spa_horiz_interp.target_grid_loc[i]) += spa_horiz_interp.weights[i];
+    wgts(target_h[i]) += weights_h[i];
   }
+  Kokkos::parallel_reduce("", spa_horiz_interp.length, KOKKOS_LAMBDA (const int& i, Int& lsum) {
+    lsum += spa_horiz_interp.target_grid_loc[i];
+  },row_sum);
+  Kokkos::parallel_reduce("", spa_horiz_interp.length, KOKKOS_LAMBDA (const int& i, Int& lsum) {
+    lsum += spa_horiz_interp.source_grid_loc[i];
+  },col_sum);
+  Kokkos::parallel_reduce("", spa_horiz_interp.length, KOKKOS_LAMBDA (const int& i, Real& lsum) {
+    lsum += spa_horiz_interp.weights[i];
+  },wgt_sum);
   // Note, for our test problem the column sum is sum(0...tgt_grid_ncols-1)*src_grid_ncols,
   //       and the                     row sum is sum(0...src_grid_ncols-1)*tgt_grid_ncols. 
   //       Each set of weights should add up to 1.0 for each ncol, so total weights=tgt_grid_ncols

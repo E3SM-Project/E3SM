@@ -413,9 +413,9 @@ void SPAFunctions<S,D>
   auto loc_comm = spa_horiz_interp.m_comm.split(spa_horiz_interp.m_comm.rank());
   auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs,loc_comm);
   PointGrid::dofs_list_type dof_gids("",spa_horiz_interp.source_grid_ncols);
-  for (int ii=0;ii<spa_horiz_interp.source_grid_ncols;ii++) {
+  Kokkos::parallel_for("", spa_horiz_interp.source_grid_ncols, KOKKOS_LAMBDA (const int& ii) {
     dof_gids(ii) = ii;
-  }
+  });
   grid->set_dofs(dof_gids);
 
   using namespace ShortFieldTagsNames;
