@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+Casename: model_output_baseline
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  Physics GLL:
+    Fields Names:
+      - T_mid
+      - qv
+      - horiz_winds
+  Dynamics:
+    Fields Names:
+      - Qdp_dyn
+      - v_dyn
+Output Control:
+  Frequency: 2
+  Frequency Units: Steps
+...
