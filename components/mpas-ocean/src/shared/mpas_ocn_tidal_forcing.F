@@ -201,19 +201,14 @@ contains
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
       integer, pointer, dimension(:) :: minLevelCell, maxLevelCell
-      integer, pointer :: nVertLevels
-      real (kind=RKIND) :: dt
 
-      type (MPAS_time_type) :: currentTime
       real (kind=RKIND), pointer, dimension(:)     :: ssh
-      real (kind=RKIND), pointer, dimension(:,:)   :: zMid
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
 
       ! local variables
       real (kind=RKIND) :: totalDepth, tidalHeight
 
-      character (len=StrKIND), pointer :: simulationStartTime, xtime
-      type (MPAS_Time_type) :: startTime, xtime_timeType, simulationStartTime_timeType
+      character (len=StrKIND), pointer :: xtime
 
       if ( .not. tidalfluxOn ) return
 

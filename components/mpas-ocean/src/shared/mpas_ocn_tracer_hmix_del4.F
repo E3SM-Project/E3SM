@@ -115,7 +115,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, num_tracers, nCells, nEdges
+      integer :: iEdge, num_tracers, nCells
       integer :: iTracer, k, iCell, cell1, cell2, i
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
@@ -123,7 +123,7 @@ contains
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: invAreaCell1, invAreaCell2, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
+      real (kind=RKIND) :: invAreaCell1, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
