@@ -33,7 +33,7 @@ namespace control {
  *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
  *  4) Register all fields and all groups from all atm procs inside the field managers, and proceed
  *     to allocate fields. Each field manager (there is one FM per grid) will take care of
- *     accommodate all requests for packing as well as (if possible) bundling of groups.
+ *     accommodating all requests for packing as well as (if possible) bundling of groups.
  *     For more details, see the documentation in the share/field/field_request.hpp header.
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
  *     FieldIdentifiers for their input/output fields and FieldGroupInfo for their input/output
@@ -55,6 +55,17 @@ namespace control {
  *     they can set up remappers from the reference grid to the grid they operate on. They can
  *     also utilize their input fields to perform initialization of some internal data structure.
  *
+ * For more info see header comments in the proper files:
+ *  - for field                -> src/share/field/field.hpp
+ *  - for field manager        -> src/share/field/field_manager.hpp
+ *  - for field groups         -> src/share/field/field_group.hpp
+ *  - for field/group requests -> src/share/field/field_request.hpp
+ *  - for grid                 -> src/share/grid/abstract_grid.hpp
+ *  - for grid manager         -> src/share/grid/grids_manager.hpp
+ *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
+ *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
+ *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp
+ *  - for output manager       -> src/share/io/scream_output_manager.hpp
  */
 
 AtmosphereDriver::
