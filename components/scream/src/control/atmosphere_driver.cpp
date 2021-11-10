@@ -251,7 +251,6 @@ void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
-  std::cout << "Initializing Output managers...\n";
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
   const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});

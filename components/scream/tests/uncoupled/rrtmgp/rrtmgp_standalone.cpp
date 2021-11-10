@@ -49,11 +49,15 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   // Init and run
   ad.initialize(atm_comm,ad_params,t0);
 
-  printf("Start time stepping loop...       [  0%%]\n");
+  if (atm_comm.am_i_root()) {
+    printf("Start time stepping loop...       [  0%%]\n");
+  }
   for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
-    std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
-    std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+    if (atm_comm.am_i_root()) {
+      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+    }
   }
 
   // TODO: get the field repo from the driver, and go get (one of)
