@@ -403,7 +403,7 @@ protected:
   void finalize_impl   ();
 
   // SHOC updates the 'tracers' group.
-  void set_updated_group_impl (const FieldGroup<Real>& group);
+  void set_computed_group_impl (const FieldGroup<Real>& group);
 
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;

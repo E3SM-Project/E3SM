@@ -98,7 +98,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
 // =========================================================================================
 void SHOCMacrophysics::
-set_updated_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup<Real>& group)
 {
   EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
                    "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");

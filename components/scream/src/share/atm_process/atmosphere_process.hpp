@@ -40,23 +40,19 @@ namespace scream
  *   - If an AP 'updates' a field (i.e., f = f + delta), then it should make
  *     sure that f is listed both as required and computed field. This helps
  *     the AD to check that all the AP's dependencies are met.
- *   - Most AP's will require a single grid. However, the special concrete
- *     class AtmosphereProcessGroup can store AP's running on different grids.
- *   - When a derived class implements the set methods for required/computed
- *     fields, it should make sure to set itself as customer/provider of
- *     the field. The methods add_me_as_provider/customer can be used on the
- *     input field to achieve this result.
- *   - An AP can claim to require or update a group of fields. This can be useful
+ *   - An AP can claim to require or compute a group of fields. This can be useful
  *     if the AP performs the *same* action on a bunch of fields, with no
  *     knowledge of what fields are (e.g., advect them, or apply fix/limiter).
- *     For each group, the AP must specify the group name and the grid name.
- *     If the same group is needed on multiple grids, the AP will issue a separate
- *     request for each grid. An AP that needs this feature must override the
- *     get_X_groups and the set_X_groups (with X=required and/or updated).
- *     Notice that it makes no sense to have computed_groups: if an AP computes
- *     a group of fields that are not an input (i.e., not updated fields), then
- *     it must know the names and layouts of the fields, which means it can handle
- *     all these fields directly in [set,get]_computed_fields.
+ *   - Fields and groups must be requested via FieldRequest and GroupRequest
+ *     respectively (see field_request.hpp). To add a request, use the methods
+ *     add_field<RT>(..) and add_group<RT>(..), with RT=Required, Updated, or
+ *     Computed (Updated = Required + Computed).
+ *   - If the same group is needed on multiple grids, the AP will issue a separate
+ *     request for each grid.
+ *   - Notice that it is unlikely that an AP computes a group, without requiring
+ *     it as an input (it should probably know what's in the group that it computes).
+ *     Nevertheless, to simplify the code (treat fields and groups similarly),
+ *     we expose required and computed groups, just like fields.
  */
 
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
@@ -115,10 +111,14 @@ public:
   // corresponding set_xyz_impl method(s).
   // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the views in the field/group are allocated by now.
-  void set_required_field (const Field<const Real>& f);
-  void set_computed_field (const Field<Real>& f);
-  void set_required_group (const FieldGroup<const Real>& group);
-  void set_updated_group (const FieldGroup<Real>& group);
+  // Note: you are *unlikely* to need to override these methods. In 99.99% of the cases,
+  //       overriding the corresponding _impl method should be enough. The class
+  //       AtmosphereProcessGroup is the big exception to this, since it needs
+  //       to perform some extra action *before* setting the field/group.
+  virtual void set_required_field (const Field<const Real>& f);
+  virtual void set_computed_field (const Field<Real>& f);
+  virtual void set_required_group (const FieldGroup<const Real>& group);
+  virtual void set_computed_group (const FieldGroup<Real>& group);
 
   // These methods checks that all the in/out fields of this atm process are valid.
   // For each field, these routines run all the property checks stored in the field.
@@ -138,7 +138,7 @@ public:
   const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
   const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
   const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::set<GroupRequest>& get_updated_group_requests  () const { return m_updated_group_requests; }
+  const std::set<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -153,7 +153,7 @@ public:
   bool requires_field (const FieldIdentifier& id) const;
   bool computes_field (const FieldIdentifier& id) const;
   bool requires_group (const std::string& name, const std::string& grid) const;
-  bool updates_group (const std::string& name, const std::string& grid) const;
+  bool computes_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }
@@ -167,7 +167,7 @@ protected:
   enum RequestType {
     Required,
     Computed,
-    Updated
+    Updated   // For convenience, triggers Required+Computed
   };
 
   // Derived classes can used these method, so that if we change how fields/groups
@@ -248,10 +248,16 @@ protected:
   template<RequestType RT>
   void add_group (const GroupRequest& req)
   {
-    static_assert(RT==Required || RT==Updated,
+    // Since we use C-style enum, let's avoid invalid integers casts
+    static_assert(RT==Required || RT==Updated || RT==Computed,
         "Error! Invalid request type in call to add_group.\n");
-    auto& groups = RT==Required ? m_required_group_requests : m_updated_group_requests;
-    groups.emplace(req);
+    if (RT==Updated) {
+      add_group<Required>(req);
+      add_group<Computed>(req);
+    } else {
+      auto& groups = RT==Required ? m_required_group_requests : m_computed_group_requests;
+      groups.emplace(req);
+    }
   }
 
   // Override this method to initialize the derived
@@ -273,7 +279,7 @@ protected:
   void add_me_as_customer (const Field<const Real>& f);
 
   // The base class already registers the required/computed/updated fields/groups in
-  // the set_required/computed_field and set_required/updated_group routines.
+  // the set_required/computed_field and set_required/computed_group routines.
   // These impl methods provide a way for derived classes to add more specialized
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
@@ -281,7 +287,7 @@ protected:
   virtual void set_required_field_impl (const Field<const Real>& /* f */) {}
   virtual void set_computed_field_impl (const Field<      Real>& /* f */) {}
   virtual void set_required_group_impl (const FieldGroup<const Real>& /* group */) {}
-  virtual void set_updated_group_impl  (const FieldGroup<      Real>& /* group */) {}
+  virtual void set_computed_group_impl (const FieldGroup<      Real>& /* group */) {}
 
   // The Base class already runs all registered field checks for all fields.
   // Similar to the set_required/computed_field_impl comment above, it is
@@ -354,7 +360,7 @@ private:
   std::set<FieldRequest>   m_required_field_requests;
   std::set<FieldRequest>   m_computed_field_requests;
   std::set<GroupRequest>   m_required_group_requests;
-  std::set<GroupRequest>   m_updated_group_requests;
+  std::set<GroupRequest>   m_computed_group_requests;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.

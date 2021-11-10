@@ -60,6 +60,11 @@ public:
   // Initialize memory buffer for each process
   void initialize_atm_memory_buffer (ATMBufferManager& memory_buffer);
 
+  // The APG class needs to perform special checks before establishing whether
+  // a required group/field is indeed a required group for this APG
+  void set_required_field (const Field<const Real>& field);
+  void set_required_group (const FieldGroup<const Real>& group);
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
@@ -75,10 +80,10 @@ protected:
   void run_parallel   (const Real dt);
 
   // The methods to set the fields/groups in the right processes of the group
-  void set_required_group_impl (const FieldGroup<const Real>& group);
-  void set_updated_group_impl (const FieldGroup<Real>& group);
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
+  void set_required_group_impl (const FieldGroup<const Real>& group);
+  void set_computed_group_impl (const FieldGroup<      Real>& group);
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
   std::string       m_group_name;

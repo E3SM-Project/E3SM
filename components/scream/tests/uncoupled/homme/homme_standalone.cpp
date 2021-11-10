@@ -73,9 +73,10 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   // are the same size and reference the same memory.
   auto& fbm  = Homme::Context::singleton().get<Homme::FunctorsBuffersManager>();
   auto& memory_buffer = ad.get_memory_buffer();
-  EKAT_ASSERT_MSG(fbm.allocated_size()*sizeof(Real) == (long unsigned int)memory_buffer.allocated_bytes(),
+  REQUIRE (memory_buffer);
+  EKAT_ASSERT_MSG(fbm.allocated_size()*sizeof(Real) == (long unsigned int)memory_buffer->allocated_bytes(),
                   "Error! AD memory buffer and Homme FunctorsBuffersManager have mismatched sizes.");
-  EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer.get_memory(),
+  EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer->get_memory(),
                   "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
   printf("Start time stepping loop...       [  0%%]\n");

@@ -178,7 +178,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 }
 
 void HommeDynamics::
-set_updated_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup<Real>& group)
 {
   const auto& name = group.m_info->m_group_name;
   EKAT_REQUIRE_MSG(name=="tracers",
