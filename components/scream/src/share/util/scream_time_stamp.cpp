@@ -248,7 +248,7 @@ long long operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
     diff += spd - ts2.sec_of_day();
     diff += spd*(days_in_month(y2,m2)-d2);
 
-    // Whole montsh in (m2,m1)
+    // Whole months in (m2,m1)
     for (int m=m2+1; m<m1; ++m) {
       diff += spd*days_in_month(y1,m);
     }

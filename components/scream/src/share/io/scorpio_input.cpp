@@ -25,7 +25,7 @@ AtmosphereInput (const ekat::Comm& comm,
                  const std::shared_ptr<const gm_type>& grids_mgr)
  : AtmosphereInput(comm,params)
 {
-  // Sets the intermal field mgr, and possibly sets up the remapper
+  // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
 
   // Init scorpio internal structures
@@ -106,7 +106,7 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
       const auto& fid = fh.get_identifier();
       const auto& fl  = fid.get_layout();
 
-      // Store tha layout
+      // Store the layout
       m_layouts.emplace(name,fl);
 
       // If we can alias the field's host view, do it.
