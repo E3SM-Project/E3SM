@@ -156,12 +156,9 @@ team_num_threads_vectors_for_gpu (
   if (tp.prefer_threads) {
     const int num_threads = ( (tp.max_threads_usable > num_device_threads) ?
                               num_device_threads :
-			      tp.max_threads_usable );
-
+                              tp.max_threads_usable );
     return std::make_pair( num_threads,
                            prevpow2(num_device_threads / num_threads) );
-
-
   } else {
     const int num_vectors = prevpow2( (tp.max_vectors_usable > num_device_threads) ?
                                       num_device_threads :
@@ -187,7 +184,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
   // fewer than 4 warps/thread block limits the thread occupancy to that
   // number/4. That seems to be in Cuda specs, but I don't know of a function
   // that provides this number. Use a configuration option that defaults to 4.
-  const int min_num_warps = 4; //HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
+  const int min_num_warps = HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
 #ifdef KOKKOS_ENABLE_CUDA
   const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
