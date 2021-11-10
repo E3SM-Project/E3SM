@@ -109,6 +109,7 @@ module ColumnDataType
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
     real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (used??)
+    real(r8), pointer :: wslake_col         (:)   => null() ! col lake water storage (mm H2O)
     ! Derived water and ice state variables for soil/snow column, depth varying
     real(r8), pointer :: h2osoi_liqvol      (:,:) => null() ! volumetric liquid water content (-nlevsno+1:nlevgrnd) (m3/m3)
     real(r8), pointer :: h2osoi_icevol      (:,:) => null() ! volumetric ice content (-nlevsno+1:nlevgrnd) (m3/m3)
@@ -1285,6 +1286,7 @@ contains
   !------------------------------------------------------------------------
   subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
     !
+    use elm_varctl  , only : use_lake_wat_storage
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc
@@ -1305,9 +1307,10 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = nan
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = nan
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = nan
-    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan
-    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan
-    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan
+    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan   
+    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan 
+    allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = nan
+    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = nan
     allocate(this%h2osoi_icevol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_icevol      (:,:) = nan
     allocate(this%h2osoi_liq_old     (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_old     (:,:) = nan
@@ -1508,11 +1511,21 @@ contains
           avgflag='A', long_name='imbalance in snow depth (liquid water)', &
            ptr_col=this%errh2osno, c2l_scale_type='urbanf')
 
+
+    this%wslake_col(begc:endc) = spval
+    if (use_lake_wat_storage) then
+       call hist_addfld1d(fname='WSLAKE', units='mm', &
+         avgflag='A', long_name='lake water storage', &
+         ptr_col=this%wslake_col)
+    end if
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ws
     !-----------------------------------------------------------------------
 
     ! Arrays that are initialized from input arguments
+    this%wslake_col(begc:endc) = 0._r8
+
     do c = begc,endc
        l = col_pp%landunit(c)
        this%h2osno(c)                 = h2osno_input(c)
@@ -1685,6 +1698,7 @@ contains
     ! Read/Write column water state information to/from restart file.
     !
     ! !USES:
+    use elm_varctl, only : use_lake_wat_storage
     !
     ! !ARGUMENTS:
     class(column_water_state) :: this
@@ -1808,6 +1822,12 @@ contains
             dim1name='column', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%wf)
+    end if
+
+    if (use_lake_wat_storage) then
+       call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
+         dim1name='column', long_name='lake water storage', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%wslake_col)
     end if
 
     ! Determine volumetric soil water (for read only)
