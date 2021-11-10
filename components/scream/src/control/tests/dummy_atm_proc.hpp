@@ -55,6 +55,10 @@ public:
       add_field<Required>("A",layout,ekat::units::m,m_grid->name());
       add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
       add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
+      // These are not used at run time, but we use them to test
+      // the initialization of IC fields
+      add_field<Required>("V",layout_vec,ekat::units::m,m_grid->name());
+      add_field<Required>("Z",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
       add_field<Computed>("A",layout,ekat::units::m,m_grid->name());
       add_group<Required>("The Group",m_grid->name());
