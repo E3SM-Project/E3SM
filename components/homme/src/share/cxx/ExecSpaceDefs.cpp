@@ -124,8 +124,6 @@ team_num_threads_vectors_for_gpu (
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
-#if 0
-
   int num_warps;
   if (tp.prefer_larger_team) {
     const int num_warps_usable =
@@ -160,10 +158,6 @@ team_num_threads_vectors_for_gpu (
                               num_device_threads :
 			      tp.max_threads_usable );
 
-//TP(16,64)    for 120*64, 64
-//TP(16,64)    for 16*32, 16
-//
-//printf("tp. prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
     return std::make_pair( num_threads,
                            prevpow2(num_device_threads / num_threads) );
 
@@ -173,15 +167,12 @@ team_num_threads_vectors_for_gpu (
                                       num_device_threads :
                                       tp.max_vectors_usable );
 
-//printf("NOT tp. prefer_threads: %4d %4d \n",num_device_threads / num_vectors,
-//                           num_vectors);
-
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
-#endif
   
-return std::make_pair( 16,4 );
+//manual override for HIP  
+//return std::make_pair( 16,4 );
 
 
 }
@@ -211,32 +202,13 @@ team_num_threads_vectors (const int num_parallel_iterations,
 # else
   const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM; //Kokkos::Impl::cuda_internal_maximum_grid_count();
 # endif
-#else
 
-#if HIP_BUILD
-
-//to make sure this is active, it is
-//#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
-
-//however slow, combination 16*32 and 16 below ran with all ne
-
+#elif HIP_BUILD
 
   //use 64 wavefronts per CU and 120 CUs
   const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
   const int max_num_warps = 40;   //cores per CU, SM  ///HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
   const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
-
-//warpsize is 64 for hip
-//printf(" warpsize----------: %4d \n",num_threads_warp);
-//printf("        on GPU? %d  \n", OnGpu<ExecSpace>::value);
-
-//shows host
-//#if __HIP_DEVICE_COMPILE__ == 1
-//  printf("DEVICEEEEEEEEEEEEEEE \n");
-//#endif
-//#ifndef __HIP_DEVICE_COMPILE__
-//  printf("HOSTTTTT \n");
-//#endif
 
 #else
 
