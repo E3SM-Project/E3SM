@@ -4,7 +4,7 @@ Casename: homme_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Dynamics:
+  Physics GLL:
     - T_mid
     - qv
     - ps
