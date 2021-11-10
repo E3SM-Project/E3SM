@@ -124,6 +124,7 @@ team_num_threads_vectors_for_gpu (
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
+#if !HIP_BUILD 
   int num_warps;
   if (tp.prefer_larger_team) {
     const int num_warps_usable =
@@ -173,10 +174,10 @@ team_num_threads_vectors_for_gpu (
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
-  
+#else  
 //manual override for HIP  
-//return std::make_pair( 16,4 );
-
+return std::make_pair( 16,4 );
+#endif
 
 }
 
