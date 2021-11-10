@@ -158,7 +158,7 @@ team_num_threads_vectors_for_gpu (
                               num_device_threads :
                               tp.max_threads_usable );
 
-printf("tp.prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
+//printf("tp.prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
 
     return std::make_pair( num_threads,
                            prevpow2(num_device_threads / num_threads) );
@@ -167,8 +167,8 @@ printf("tp.prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads
                                       num_device_threads :
                                       tp.max_vectors_usable );
 
-printf("NOT tp. prefer_threads: %4d %4d \n",num_device_threads / num_vectors,
-                           num_vectors);
+//printf("NOT tp. prefer_threads: %4d %4d \n",num_device_threads / num_vectors,
+//                           num_vectors);
 
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
