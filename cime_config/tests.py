@@ -182,8 +182,8 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010",
+            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
+            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 
