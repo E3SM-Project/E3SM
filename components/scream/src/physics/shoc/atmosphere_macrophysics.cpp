@@ -240,7 +240,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::initialize_impl ()
+void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 {
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these

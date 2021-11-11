@@ -95,7 +95,7 @@ public:
   // TODO: should we check that initialize/finalize are called once per simulation?
   //       Whether it's a needed check depends on what resources we init/free, and how.
   // TODO: should we check that initialize has been called, when calling run/finalize?
-  void initialize (const TimeStamp& t0);
+  void initialize (const TimeStamp& t0, const RunType run_type);
   void run (const int dt);
   void finalize   (/* what inputs? */);
 
@@ -261,7 +261,7 @@ protected:
   }
 
   // Override this method to initialize the derived
-  virtual void initialize_impl() = 0;
+  virtual void initialize_impl(const RunType run_type) = 0;
 
   // Override this method to define how the derived runs forward one step
   // (of size dt). This method is called before the timestamp is updated.

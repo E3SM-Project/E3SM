@@ -89,7 +89,7 @@ protected:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize_impl () {}
+  void initialize_impl (const RunType /* run_type */ ) {}
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.

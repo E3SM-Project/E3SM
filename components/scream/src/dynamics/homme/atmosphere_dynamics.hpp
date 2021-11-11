@@ -68,8 +68,8 @@ protected:
   // Updates p_mid
   void update_pressure ();
 
-  void initialize_impl ();
 
+  void initialize_impl (const RunType run_type);
 protected:
   void run_impl        (const int dt);
   void finalize_impl   ();

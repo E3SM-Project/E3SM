@@ -266,7 +266,7 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   fbm.allocate(buffer_manager.get_memory(), buffer_manager.allocated_bytes()/sizeof(Real));
 }
 
-void HommeDynamics::initialize_impl ()
+void HommeDynamics::initialize_impl (const RunType /* run_type) */
 {
   const auto& dgn = m_dyn_grid->name();
   const auto& rgn = m_ref_grid->name();

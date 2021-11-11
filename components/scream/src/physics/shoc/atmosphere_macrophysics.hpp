@@ -398,7 +398,7 @@ public:
 protected:
 
   // The three main interfaces for the subcomponent
-  void initialize_impl ();
+  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 

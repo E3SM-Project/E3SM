@@ -120,7 +120,7 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SPA::initialize_impl ()
+void SPA::initialize_impl (const RunType /* run_type */)
 {
   // Initialize SPA pressure state stucture and set pointers for the SPA output data to
   // field managed variables.

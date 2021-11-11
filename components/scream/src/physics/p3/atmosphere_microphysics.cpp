@@ -175,7 +175,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void P3Microphysics::initialize_impl ()
+void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();

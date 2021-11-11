@@ -66,7 +66,7 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
 }
 
 // =========================================================================================
-void ZMDeepConvection::initialize_impl ()
+void ZMDeepConvection::initialize_impl (const RunType /* run_type */)
 {
   zm_init_f90 (*m_raw_ptrs_in["limcnv_in"], m_raw_ptrs_in["no_deep_pbl_in"]);
 }

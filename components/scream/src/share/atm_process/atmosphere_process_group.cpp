@@ -108,9 +108,9 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   }
 }
 
-void AtmosphereProcessGroup::initialize_impl () {
+void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->initialize(timestamp());
+    atm_proc->initialize(timestamp(),run_type);
   }
 }
 

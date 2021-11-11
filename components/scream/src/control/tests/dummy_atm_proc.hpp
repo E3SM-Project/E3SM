@@ -70,7 +70,7 @@ public:
 
 protected:
 
-  void initialize_impl () {
+  void initialize_impl (const RunType /* run_type */) {
     // Do nothing
   }
 
