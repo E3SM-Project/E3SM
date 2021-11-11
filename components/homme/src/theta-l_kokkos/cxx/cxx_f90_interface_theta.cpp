@@ -39,7 +39,8 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor)
@@ -96,6 +97,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nu_top                        = nu_top;
   params.hypervis_order                = hypervis_order;
   params.hypervis_subcycle             = hypervis_subcycle;
+  params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = disable_diagnostics;
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);

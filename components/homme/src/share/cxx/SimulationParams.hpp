@@ -53,6 +53,7 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
+  int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
 
@@ -83,6 +84,7 @@ inline void SimulationParams::print () {
   printf ("   nu_div: %f\n", nu_div);
   printf ("   hypervis_order: %d\n", hypervis_order);
   printf ("   hypervis_subcycle: %d\n", hypervis_subcycle);
+  printf ("   hypervis_subcycle_tom: %d\n", hypervis_subcycle_tom);
   printf ("   hypervis_scaling: %f\n", hypervis_scaling);
   printf ("   nu_ratio1: %f\n", nu_ratio1);
   printf ("   nu_ratio2: %f\n", nu_ratio2);

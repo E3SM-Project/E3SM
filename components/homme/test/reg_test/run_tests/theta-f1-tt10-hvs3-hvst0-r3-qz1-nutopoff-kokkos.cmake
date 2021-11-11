@@ -3,7 +3,7 @@
 #or              theta-form0-ttype5-hvs1-hvst0-r3-q1-nutop0-samenu-kokkos
 #adding BB to each var to avoid unwanted substitutions
 
-SET(TEST_NAME theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff-kokkos)
+SET(TEST_NAME theta-f1-tt10-hvs3-hvst0-r3-qz1-nutopoff-kokkos)
 # The specifically compiled executable that this test uses
 SET(EXEC_NAME theta-nlev128-kokkos)
 
@@ -26,7 +26,7 @@ SET (HOMME_TEST_HVSCALING 0) #const HV for now, tensor is tested in preqx
 #mod
 SET (HOMME_THETA_FORM 1)
 SET (HOMME_TTYPE 10)
-SET (HOMME_TEST_HVS 1)
+SET (HOMME_TEST_HVS 3)
 SET (HOMME_TEST_HVS_TOM 0)
 SET (HOMME_TEST_RSPLIT 3)
 SET (HOMME_TEST_QSIZE 1)
