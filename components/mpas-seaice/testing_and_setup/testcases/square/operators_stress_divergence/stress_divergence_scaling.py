@@ -282,9 +282,9 @@ def L2_norm_integral_triangle(numerical, nVertices, cellsOnVertex, xCell, yCell,
             else:
                 analytical = divvIntegral
 
-            norm  = norm  + weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
+            norm  = norm  + areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
 
-            denom = denom + weights[iWeight] * areaTriangle[iVertex] * math.pow(analytical,2)
+            denom = denom + areaTriangle[iVertex] * math.pow(analytical,2)
 
     norm = math.sqrt(norm / denom)
 
@@ -381,9 +381,9 @@ def L2_norm_integral_square(numerical, nVertices, cellsOnVertex, xCell, yCell, a
             else:
                 analytical = divvIntegral
 
-            norm  = norm  + weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
+            norm  = norm  + areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
 
-            denom = denom + weights[iWeight] * areaTriangle[iVertex] * math.pow(analytical,2)
+            denom = denom + areaTriangle[iVertex] * math.pow(analytical,2)
 
     norm = math.sqrt(norm / denom)
 
