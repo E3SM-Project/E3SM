@@ -18,11 +18,13 @@ ENDIF_RE  = re.compile(r'^\s*endif')
 EXE_RE    = re.compile(r'^\s*execute_process')
 
 WARNING_SET = {
-    "REP" : "Repitition: either a repeated item in an append or setting to same value as parent",
+    "REP" : "Repitition: a redundant setting to same value as parent",
+    "APP" : "Append: a repeated token in an append",
     "PRO" : "Promotion: all children of a parent do the same thing, so do it in the parent",
     "SET" : "Suspicious set: probably want append",
     "UNU" : "Unused: Using OS, COMPILER, or MACH with no matches in config_machines.xml",
-    "MIS" : "Missing: Having a machine/comp in config_machines.xml with no specialization in Macros"
+    "MIS" : "Missing: Having a machine/comp in config_machines.xml with no specialization in Macros",
+    "IFS" : "Ifs: Conditionals can be combined"
 }
 
 ###############################################################################
@@ -135,10 +137,11 @@ def parse_macro(macro_path):
 ###############################################################################
     """
     Parse one of our cmake macros, return (settings, appends), both lists
-    of (varname, value) tuples.
+    of (conditional, varname, value) tuples.
     """
     settings = []
     appends  = []
+    active_conditional = None
     with macro_path.open("r") as fd:
         for line in fd.readlines():
             line = line.strip()
@@ -151,12 +154,18 @@ def parse_macro(macro_path):
 
                 if set_m:
                     var, val = set_m.groups()
-                    settings.append((var, val))
+                    settings.append((active_conditional, var, val))
                 elif append_m:
                     var, val = append_m.groups()
-                    appends.append((var, val))
-                elif if_m or endif_m or exe_m:
-                    pass # for now
+                    appends.append((active_conditional, var, val))
+                elif if_m:
+                    assert active_conditional is None, "Nested conditionals not supported at the moment"
+                    active_conditional = if_m.groups()[0]
+                elif endif_m:
+                    assert active_conditional is not None, "Endif with no conditional?"
+                    active_conditional = None
+                elif exe_m:
+                    pass
                 else:
                     assert False, f"In {macro_path}, Could not parse line: {line}"
 
@@ -197,8 +206,8 @@ def find_SET(macro_path_pl, machs):
                 appends = set()
                 for macro_pl in macro_pls:
                     curr_settings, curr_appends = parse_macro(macro_pl)
-                    sets.update   ([var for var, val in curr_settings])
-                    appends.update([var for var, val in curr_appends])
+                    sets.update   ([var for _, var, _ in curr_settings])
+                    appends.update([var for _, var, _ in curr_appends])
 
                     mixes = sets & appends
                     if mixes:
@@ -232,28 +241,57 @@ def find_REP(macro_path_pl, machs):
             the_os = data[0]
             for comp in data[1]:
                 macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
-                sets    = {}
-                appends = {}
+                sets    = {} # var -> {condition -> vals}
                 for macro_pl in macro_pls:
-                    curr_settings, curr_appends = parse_macro(macro_pl)
-                    for var, val in curr_settings:
+                    curr_settings = parse_macro(macro_pl)[0]
+                    for cond, var, val in curr_settings:
                         if var in sets:
-                            if sets[var] == val:
-                                warnings.append(f"Macro {macro_pl} has redundant set of {var} to {val}")
-                            else:
-                                sets[var] = val
-                        else:
-                            sets[var] = val
+                            cond_dict = sets[var]
+                            conds_to_check = [None] if cond is None else [cond, None]
+                            for cond_to_check in conds_to_check:
+                                if cond_to_check in cond_dict:
+                                    prev_val = cond_dict[cond_to_check]
+                                    if prev_val == val:
+                                        warnings.append(f"Macro {macro_pl} has redundant set of {var} to {val}")
 
-                    for var, vals in curr_appends:
+                            cond_dict[cond] = val
+
+                        else:
+                            sets[var] = {cond:val}
+
+    return warnings
+
+###############################################################################
+def find_APP(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                appends = {} # var -> {condition -> vals}
+                for macro_pl in macro_pls:
+                    curr_appends = parse_macro(macro_pl)[1]
+                    for cond, var, vals in curr_appends:
+                        val_tokens = vals.split()
                         if var in appends:
-                            potential_repeats = set(appends[var].split()) & set(vals.split())
-                            if potential_repeats:
-                                warnings.append(f"Macro {macro_pl} has redundant set of {var}, repeated items are to {', '.join(potential_repeats)}")
+                            cond_dict = appends[var]
+                            conds_to_check = [None] if cond is None else [cond, None]
+                            for cond_to_check in conds_to_check:
+                                if cond_to_check in cond_dict:
+                                    prev_vals = cond_dict[cond_to_check]
+                                    potential_repeats = set(val_tokens) & set(prev_vals)
+                                    if potential_repeats:
+                                        warnings.append(f"Macro {macro_pl} has redundant appends for {var}, repeated items are to {', '.join(potential_repeats)}")
 
-                            appends[var] += vals
+                            if cond in cond_dict:
+                                cond_dict[cond] += val_tokens
+                            else:
+                                cond_dict[cond] = val_tokens
+
                         else:
-                            appends[var] = vals
+                            appends[var] = {cond:val_tokens}
 
     return warnings
 
@@ -262,6 +300,39 @@ def find_PRO(macro_path_pl, machs):
 ###############################################################################
     warnings = []
     warnings.append("This warning is not yet implemented")
+    return warnings
+
+###############################################################################
+def find_IFS(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                for macro_pl in macro_pls:
+                    with macro_pl.open("r") as fd:
+                        last_closed_if = None
+                        active_conditional = None
+                        for line in fd.readlines():
+                            line = line.strip()
+                            if line != "":
+                                if_m     = IF_RE.match(line)
+                                endif_m  = ENDIF_RE.match(line)
+
+                                if if_m:
+                                    if last_closed_if == if_m.groups()[0]:
+                                        warnings.append(f"Could have merged ifs for {last_closed_if} in {macro_pl}")
+
+                                    assert active_conditional is None, "Nested conditionals not supported at the moment"
+                                    active_conditional = if_m.groups()[0]
+                                elif endif_m:
+                                    last_closed_if = active_conditional
+                                    active_conditional = None
+                                else:
+                                    last_closed_if = None
+
     return warnings
 
 ###############################################################################
