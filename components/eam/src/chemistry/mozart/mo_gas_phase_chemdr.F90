@@ -1056,7 +1056,7 @@ contains
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ')
+                       !call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ')
                        !pass in column O3 
                        call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'CHEM')
           endif
@@ -1064,9 +1064,9 @@ contains
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ', tropFlag=tropFlag)
+                       !call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ', tropFlag=tropFlag)
                        !pass in column O3 
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'CHEM')
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'CHEM',tropFlag=tropFlag)
           endif
           call fstrat_efold_decay(ncol, vmr, delt, troplev, tropFlag=tropFlag) !if chemuci is on
        endif

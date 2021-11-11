@@ -658,6 +658,11 @@ end subroutine linoz_readnl
         call outfld( 'LINOZ_2DDO3LNZ'    , twod_do3_linoz             , ncol, lchnk )
         call outfld( 'LINOZ_2DDO3LNZ_PSC', twod_do3_linoz_psc         , ncol, lchnk )
      else
+        call outfld( 'LINOZ_SSO3'   , ss_o3                  , ncol, lchnk )
+        call outfld( 'LINOZ_O3COL'  , o3col_du_diag          , ncol, lchnk )
+        call outfld( 'LINOZ_O3CLIM' , o3clim_linoz_diag      , ncol, lchnk )
+        call outfld( 'LINOZ_SZA'    ,(sza*radians_to_degrees), ncol, lchnk )
+
         call outfld( 'LINOZ_DO3'         , do3_linoz              , ncol, lchnk )
         call outfld( 'LINOZ_DO3_PSC'     , do3_linoz_psc          , ncol, lchnk )
         call outfld( 'LINOZ_2DDO3'       , twod_do3_linoz              , ncol, lchnk )
