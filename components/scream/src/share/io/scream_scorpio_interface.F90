@@ -71,6 +71,7 @@ module scream_scorpio_interface
 #endif
 
   public :: &
+            lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
             eam_pio_enddef,              & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
@@ -739,7 +740,9 @@ contains
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
     if (found) then
       if (pio_atm_file%num_customers .eq. 1) then
-        call PIO_syncfile(pio_atm_file%pioFileDesc)
+        if (pio_atm_file%purpose .eq. file_purpose_out) then
+          call PIO_syncfile(pio_atm_file%pioFileDesc)
+        endif
         call PIO_closefile(pio_atm_file%pioFileDesc)
         pio_atm_file%isopen = .false.
         pio_atm_file%purpose = file_purpose_not_set
@@ -1149,13 +1152,15 @@ contains
     ! file with this filename.
     call lookup_pio_atm_file(trim(filename),pio_file,found,is_open)
     if (found) then
-      if (is_open .and. purpose .ne. pio_file%purpose) then
-        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open with a different purpose.",-999)
+      if (is_open .and. (purpose .ne. file_purpose_in .or. &
+          pio_file%purpose .ne. file_purpose_in) ) then
+        ! We only allow multiple customers of the file if they all use it in read mode.
+        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
       else
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%isopen = .true.
         pio_file%purpose = purpose
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%num_customers = pio_file%num_customers + 1
+        pio_file%isopen = .true.
       endif
     endif
 
@@ -1169,6 +1174,7 @@ contains
       pio_file%isopen = .true.
       pio_file%numRecs = 0
       pio_file%num_customers = 1
+      pio_file%isopen = .true.
       if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
         call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
         call eam_pio_createHeader(pio_file%pioFileDesc)

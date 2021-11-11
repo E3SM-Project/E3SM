@@ -7,7 +7,7 @@
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scorpio_output.hpp"
+#include "share/io/scream_output_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field_manager.hpp"
@@ -105,7 +105,7 @@ TEST_CASE("dyn_grid_io")
   fm_ctrl->registration_begins();
 
   const int ps = HOMMEXX_PACK_SIZE;
-  util::TimeStamp ts({2000,1,1},{0,0,0});
+  util::TimeStamp t0({2000,1,1},{0,0,0});
 
   fm_dyn->register_field(FieldRequest(fid_dyn_1,ps));
   fm_dyn->register_field(FieldRequest(fid_dyn_2,ps));
@@ -122,9 +122,9 @@ TEST_CASE("dyn_grid_io")
   fm_dyn->registration_ends();
   fm_phys->registration_ends();
   fm_ctrl->registration_ends();
-  fm_dyn->init_fields_time_stamp(ts);
-  fm_phys->init_fields_time_stamp(ts);
-  fm_ctrl->init_fields_time_stamp(ts);
+  fm_dyn->init_fields_time_stamp(t0);
+  fm_phys->init_fields_time_stamp(t0);
+  fm_ctrl->init_fields_time_stamp(t0);
 
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
@@ -154,14 +154,16 @@ TEST_CASE("dyn_grid_io")
   ekat::ParameterList io_params;
   io_params.set<int>("Max Snapshots Per File",1);
   io_params.set<std::string>("Averaging Type","Instant");
+  io_params.set<std::vector<std::string>>("Grids",{"Dynamics"});
   io_params.set<std::string>("Casename","dyn_grid_io_np" + std::to_string(comm.size()));
-  io_params.set<std::vector<std::string>>("Fields",fnames);
-  io_params.sublist("Output").set<int>("Frequency",1);
-  io_params.sublist("Output").set<std::string>("Frequency Units","Steps");
+  io_params.sublist("Fields").set<std::vector<std::string>>("Dynamics",fnames);
+  io_params.sublist("Output Control").set<int>("Frequency",1);
+  io_params.sublist("Output Control").set<std::string>("Frequency Units","Steps");
 
-  AtmosphereOutput output(comm,io_params,fm_dyn,gm);
-  output.init();
-  output.run(ts);
+  OutputManager output;
+  // AtmosphereOutput output(comm,io_params,fm_dyn,gm);
+  output.setup (comm, io_params, fm_dyn, gm, t0, false, false);
+  output.run(t0);
   output.finalize();
 
   // Clear the content of the dyn fields, to avoid seeing the same numbers
@@ -173,11 +175,12 @@ TEST_CASE("dyn_grid_io")
 
   // Next, let's load all fields from file directly into the dyn grid fm
   std::string filename = "dyn_grid_io_np" + std::to_string(comm.size())
-                       + ".INSTANT.Steps_x1." + ts.get_date_string()
-                       + "." + ts.get_time_string() + ".nc";
+                       + ".INSTANT.Steps_x1." + t0.get_date_string()
+                       + "." + t0.get_time_string() + ".nc";
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   io_params.set<std::string>("Filename",filename);
+  io_params.set<std::string>("Grid",dyn_grid->name());
   AtmosphereInput input (comm,io_params,fm_dyn, gm);
   input.read_variables();
 

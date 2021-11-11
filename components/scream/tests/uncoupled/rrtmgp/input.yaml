@@ -35,7 +35,6 @@ Initial Conditions:
     Load Longitude: true
 
 # The parameters for I/O control
-SCORPIO:
-  Output YAML Files:
-    Point Grid: ["rrtmgp_standalone_output.yaml"]
+Scorpio:
+  Output YAML Files: ["rrtmgp_standalone_output.yaml"]
 ...

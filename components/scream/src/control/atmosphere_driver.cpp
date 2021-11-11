@@ -93,7 +93,7 @@ set_params(const ekat::ParameterList& atm_params)
 {
   // I can't think of a scenario where changing the params is useful,
   // so let's forbid it, for now.
-  check_ad_status (~s_params_set);
+  check_ad_status (s_params_set, false);
 
   m_atm_params = atm_params;
 
@@ -249,13 +249,26 @@ void AtmosphereDriver::create_fields()
 void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  // For each grid in the grids manager, grab a homonymous sublist of the
-  // "Output Managers" atm params sublist (might be empty), and create
-  // an output manager for that grid.
-  auto& io_params = m_atm_params.sublist("SCORPIO");
-  for (auto it : m_grids_manager->get_repo()) {
-    auto fm = m_field_mgrs.at(it.first);
-    m_output_managers[it.first].setup(m_atm_comm,io_params,fm,m_grids_manager,restarted_run);
+  auto& io_params = m_atm_params.sublist("Scorpio");
+
+  // Build one manager per output yaml file
+  using vos_t = std::vector<std::string>;
+  const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});
+  for (const auto& fname : output_yaml_files) {
+    ekat::ParameterList params;
+    ekat::parse_yaml_file(fname,params);
+    m_output_managers.emplace_back();
+    auto& om = m_output_managers.back();
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run);
+  }
+
+  // Check for model restart output
+  if (io_params.isSublist("Model Restart")) {
+    auto restart_pl = io_params.sublist("Model Restart");
+    // Signal that this is not a normal output, but the model restart one
+    m_output_managers.emplace_back();
+    auto& om = m_output_managers.back();
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
   }
 
   m_ad_status |= s_output_inited;
@@ -463,8 +476,7 @@ initialize_fields (const util::TimeStamp& t0)
         lat_lon_params.set("Fields",fnames);
         lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
 
-        AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params);
-        lat_lon_reader.init(grid,host_views,layouts);
+        AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params,grid,host_views,layouts);
         lat_lon_reader.read_variables();
         lat_lon_reader.finalize();
         for (auto& fname : fnames) {
@@ -646,7 +658,7 @@ void AtmosphereDriver::run (const int dt) {
 
   // Update output streams
   for (auto& out_mgr : m_output_managers) {
-    out_mgr.second.run(m_current_ts);
+    out_mgr.run(m_current_ts);
   }
 
   if (m_surface_coupling) {
@@ -659,7 +671,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
-    out_mgr.second.finalize();
+    out_mgr.finalize();
   }
   m_output_managers.clear();
 

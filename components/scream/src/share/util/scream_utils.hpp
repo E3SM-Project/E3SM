@@ -3,6 +3,7 @@
 
 #include <ekat/ekat_assert.hpp>
 #include <ekat/kokkos/ekat_kokkos_types.hpp>
+#include <ekat/mpi/ekat_comm.hpp>
 
 #include <iterator>
 #include <list>
@@ -21,6 +22,13 @@ std::enable_if<std::is_enum<EnumT>::value,
               >::type
 etoi (const EnumT e) {
   return static_cast<typename std::underlying_type<EnumT>::type>(e);
+}
+
+inline void broadcast_string (std::string& s, const ekat::Comm& comm, const int root) {
+  int size = s.size();
+  comm.broadcast(&size,1,root);
+  s.resize(size);
+  comm.broadcast(&s.front(),size,root);
 }
 
 // Utility function, to work around a funcky gcc8+cuda10 issue,

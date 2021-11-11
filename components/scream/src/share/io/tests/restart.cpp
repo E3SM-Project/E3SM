@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream> 
 
+#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "scream_config.h"
 #include "share/scream_types.hpp"
@@ -35,8 +36,6 @@ backup_fm(const std::shared_ptr<FieldManager<Real>>& src);
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check);
-
 ekat::ParameterList get_in_params();
 
 void randomize_fields (const FieldManager<Real>& fm, const int seed);
@@ -68,14 +67,16 @@ TEST_CASE("restart","io")
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
-  // Create an Output manager for testing output
-  OutputManager output_manager;
-  auto output_params = get_om_params(io_comm,grid->name(),false);
-  output_manager.setup(io_comm,output_params,field_manager,gm,false);
-
   // Construct a timestamp
-  util::TimeStamp time ({2000,1,1},{0,0,0});
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});
   const auto& out_fields = field_manager->get_groups_info().at("output")->m_fields_names;
+
+  // Create an Output manager for testing output
+  std::string param_filename = "io_test_restart_np" + std::to_string(io_comm.size()) + ".yaml";
+  ekat::ParameterList output_params;
+  ekat::parse_yaml_file(param_filename,output_params);
+  OutputManager output_manager;
+  output_manager.setup(io_comm,output_params,field_manager,gm,t0,false,false);
 
   // We advance the fields, by adding dt to each entry of the fields at each time step
   // The restart data is written every 5 time steps, while the output freq is 10.
@@ -85,6 +86,7 @@ TEST_CASE("restart","io")
   // Time-advance all fields
   const int dt = 1;
   const int nsteps = 15;
+  auto time = t0;
   for (int i=0; i<nsteps; ++i) {
     time_advance(*field_manager,out_fields,dt);
     time += dt;
@@ -168,9 +170,10 @@ TEST_CASE("restart","io")
 
   // Create Output manager, and read the restart
   util::TimeStamp time_res ({2000,1,1},{0,0,15});
-  auto output_params_res = get_om_params(io_comm,grid->name(),true);
+  ekat::ParameterList output_params_res;
+  ekat::parse_yaml_file(param_filename,output_params_res);
   OutputManager output_manager_res;
-  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,true);
+  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,t0,false,true);
 
   // Run 5 more steps from the restart, to get to the next output step.
   // We should be generating the same output file as before.
@@ -281,20 +284,6 @@ std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int n
   return gm;
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check)
-{
-  ekat::ParameterList om_params("Output Manager");
-  auto& files = om_params.sublist("Output YAML Files");
-  std::vector<std::string> fileNames (1);
-  fileNames[0] = std::string("io_test_restart") + (check ? "_check" : "") + "_np" + std::to_string(comm.size()) + ".yaml";
-  files.set(grid,fileNames);
-  auto& res_sub = om_params.sublist("Model Restart");
-  res_sub.sublist("Output").set<int>("Frequency",5);
-  res_sub.sublist("Output").set<std::string>("Frequency Units","Steps");
-
-  return om_params;  
-}
-/*===================================================================================================================*/
 ekat::ParameterList get_in_params()
 {
   ekat::ParameterList in_params("Input Parameters");
@@ -305,7 +294,7 @@ ekat::ParameterList get_in_params()
   EKAT_REQUIRE_MSG (rpointer_file.is_open(), "Error! Could not open rpointer.atm file.\n");
   bool found = false;
   while (rpointer_file >> filename) {
-    if (filename.find(".r.") != std::string::npos) {
+    if (filename.find(".rhist.") != std::string::npos) {
       found = true;
       break;
   }}

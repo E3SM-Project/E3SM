@@ -29,7 +29,6 @@ foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
   configure_file(io_test_min.yaml io_test_min_np${MPI_RANKS}.yaml)
   configure_file(io_test_multisnap.yaml io_test_multisnap_np${MPI_RANKS}.yaml)
   configure_file(io_test_restart.yaml io_test_restart_np${MPI_RANKS}.yaml)
-  configure_file(io_test_restart_check.yaml io_test_restart_check_np${MPI_RANKS}.yaml)
 endforeach()
 
 # Make the restart check test run *after* the individual restart tests,

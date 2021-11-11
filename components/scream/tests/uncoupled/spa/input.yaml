@@ -29,7 +29,6 @@ Initial Conditions:
     Filename: spa_init_ne2np4.nc
 
 # The parameters for I/O control
-SCORPIO:
-  Output YAML Files:
-    Point Grid: ["spa_standalone_output.yaml"]
+Scorpio:
+  Output YAML Files: ["spa_standalone_output.yaml"]
 ...

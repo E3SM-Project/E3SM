@@ -2,10 +2,14 @@
 ---
 Casename: io_output_restart_np${MPI_RANKS}
 Averaging Type: Average
-Grid: Physics
+Grids: [Point Grid]
 Max Snapshots Per File: 1
-Fields: [field_1, field_2, field_3, field_4]
-Output:
+Fields:
+  Point Grid: [field_1, field_2, field_3, field_4]
+Output Control:
   Frequency: 10
+  Frequency Units: Steps
+Checkpoint Control:
+  Frequency: 5
   Frequency Units: Steps
 ...

@@ -29,7 +29,6 @@ Initial Conditions:
     Filename: p3_init_ne2np4.nc
 
 # The parameters for I/O control
-SCORPIO:
-  Output YAML Files:
-    Point Grid: ["p3_standalone_output.yaml"]
+Scorpio:
+  Output YAML Files: ["p3_standalone_output.yaml"]
 ...

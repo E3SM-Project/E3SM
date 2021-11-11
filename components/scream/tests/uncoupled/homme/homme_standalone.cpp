@@ -79,11 +79,15 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer->get_memory(),
                   "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
-  printf("Start time stepping loop...       [  0%%]\n");
+  if (atm_comm.am_i_root()) {
+    printf("Start time stepping loop...       [  0%%]\n");
+  }
   for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
-    std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
-    std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+    if (atm_comm.am_i_root()) {
+      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+    }
   }
   ad.finalize();
 

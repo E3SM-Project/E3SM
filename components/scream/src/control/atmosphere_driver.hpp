@@ -131,7 +131,7 @@ protected:
 
   ekat::ParameterList                       m_atm_params;
 
-  std::map<std::string,OutputManager>       m_output_managers;
+  std::list<OutputManager>                  m_output_managers;
 
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
 
@@ -139,10 +139,10 @@ protected:
   std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
   // This are the time stamps of the start and end of the time step.
-  util::TimeStamp                       m_current_ts;
+  util::TimeStamp                           m_current_ts;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
-  ekat::Comm   m_atm_comm;
+  ekat::Comm                                m_atm_comm;
 
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;
