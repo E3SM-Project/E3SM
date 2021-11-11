@@ -1083,8 +1083,7 @@ end function shoc_implements_cnst
  
     !  Add liq, ice, and precipitating ice fractions here. These are purely
     !  diagnostic outputs and do not impact the rest of the code. The qi threshold for
-    !  setting ice_cloud_fraction to 1 currently set 1e-8 kg/kg but can be
-    !  changed based on what we think is sensible. 
+    !  setting ice_cloud_fraction and the qi dependent ni_threshold are tunable. 
 
     liq_cloud_frac = 0.0_r8
     ice_cloud_frac = 0.0_r8
