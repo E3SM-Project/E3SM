@@ -456,8 +456,7 @@ void SPAFunctions<S,D>
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Fields",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
-  AtmosphereInput spa_data_input(loc_comm,spa_data_in_params);
-  spa_data_input.init(grid,host_views,layouts);
+  AtmosphereInput spa_data_input(loc_comm,spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
   
