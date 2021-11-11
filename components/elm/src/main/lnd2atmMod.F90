@@ -410,6 +410,11 @@ contains
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
     enddo
 
+    call c2g( bounds, &
+         col_ws%wslake_col(bounds%begc:bounds%endc), &
+         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
     ! second add river storage as gridcell average depth (1.e-3 converts [m3/km2] to [mm])
