@@ -28,7 +28,7 @@ module dynHarvestMod
   use topounit_varcon      , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf  
   use VegetationDataType    , only : veg_ps, veg_pf
-  use elm_varctl            , only : use_cn, use_fates
+  use elm_varctl            , only : use_cn, use_fates, iulog
   use FatesConstantsMod      , only : hlm_harvest_area_fraction
   use FatesConstantsMod      , only : hlm_harvest_carbon
 
@@ -104,7 +104,7 @@ contains
     
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
-    integer :: harvest_shape(2)  ! harvest shape 
+    integer :: harvest_shape(1)  ! harvest shape 
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     
@@ -125,6 +125,7 @@ contains
     ! Get initial harvest data
     if (use_cn .or. use_fates) then
        num_points = (bounds%endg - bounds%begg + 1)
+       harvest_shape(1) = num_points
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
