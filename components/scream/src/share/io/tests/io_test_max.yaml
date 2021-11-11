@@ -2,10 +2,8 @@
 ---
 Casename: io_output_test_np${MPI_RANKS}
 Averaging Type: Max
-Grids: [Point Grid]
 Max Snapshots Per File: 1
-Fields:
-  Point Grid: [field_1, field_2, field_3, field_packed]
+Fields Names: [field_1, field_2, field_3, field_packed]
 Output Control:
   Frequency: 10
   Frequency Units: Steps

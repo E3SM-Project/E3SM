@@ -140,13 +140,14 @@ protected:
   //  - host_views_1d: the 1d flattened views where data will be read into.
   //                   These views must be contiguous (no padding/striding).
   //  - layouts: the layout of the vars (used to reshape the views).
-  void set_parameters (const ekat::ParameterList& params);
+  void set_parameters (const ekat::ParameterList& params, const std::string& grid_name = "");
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                           const std::shared_ptr<const gm_type>& grids_mgr);
   void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
   void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
                   const std::map<std::string,FieldLayout>&  layouts);
+  void register_fields_specs ();
 
   void init_scorpio_structures ();
   void register_variables();
@@ -160,13 +161,14 @@ protected:
   ekat::Comm          m_comm;
 
   std::shared_ptr<const fm_type>        m_field_mgr;
-  std::shared_ptr<const AbstractGrid>   m_grid;
+  std::shared_ptr<const AbstractGrid>   m_io_grid;
   std::shared_ptr<remapper_type>        m_remapper;
 
   std::map<std::string, view_1d_host>   m_host_views_1d;
   std::map<std::string, FieldLayout>    m_layouts;
   
   std::string               m_filename;
+  std::string               m_io_grid_name;
   std::vector<std::string>  m_fields_names;
 
   bool m_is_inited = false;

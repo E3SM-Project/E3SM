@@ -61,7 +61,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_output_streams.push_back(output);
   } else {
     const auto& fields_pl = m_params.sublist("Fields");
-    for (auto it=fields_pl.params_names_cbegin(); it!=fields_pl.params_names_cend(); ++it) {
+    for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
       const auto& gname = *it;
       EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
           "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
@@ -98,7 +98,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     if (m_params.isSublist("Checkpoint Control")) {
       // Output control
-      auto& pl = m_params.sublist("Checkpoint Control"); 
+      auto& pl = m_params.sublist("Checkpoint Control");
       m_checkpoint_control.frequency  = pl.get<int>("Frequency");
       m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
       m_checkpoint_control.nsteps_since_last_write = 0;

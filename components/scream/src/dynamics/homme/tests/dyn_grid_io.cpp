@@ -128,7 +128,7 @@ TEST_CASE("dyn_grid_io")
 
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
-  // Ranodmize control fields, then remap to dyn fields
+  // Randomize control fields, then remap to dyn fields
   std::uniform_real_distribution<Real> pdf(0.01,100.0);
   auto engine = setup_random_test(&comm);
   auto dyn2phys = gm->create_remapper(dyn_grid,phys_grid);
@@ -156,7 +156,8 @@ TEST_CASE("dyn_grid_io")
   io_params.set<std::string>("Averaging Type","Instant");
   io_params.set<std::vector<std::string>>("Grids",{"Dynamics"});
   io_params.set<std::string>("Casename","dyn_grid_io_np" + std::to_string(comm.size()));
-  io_params.sublist("Fields").set<std::vector<std::string>>("Dynamics",fnames);
+  io_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Fields Names",fnames);
+  io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
   io_params.sublist("Output Control").set<int>("Frequency",1);
   io_params.sublist("Output Control").set<std::string>("Frequency Units","Steps");
 

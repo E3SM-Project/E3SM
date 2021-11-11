@@ -519,7 +519,7 @@ void SPAFunctions<S,D>
   
   // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
   ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Fields",fnames);
+  spa_data_in_params.set("Fields Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
   AtmosphereInput spa_data_input(loc_comm,spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
