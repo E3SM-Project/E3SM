@@ -1,7 +1,5 @@
 if (NOT DEBUG)
   string(APPEND CFLAGS " -O2 -Mvect=nosimd")
-endif()
-if (NOT DEBUG)
   string(APPEND FFLAGS " -O2 -DSUMMITDEV_PGI")
 endif()
 if (COMP_NAME STREQUAL gptl)
