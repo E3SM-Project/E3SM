@@ -27,25 +27,8 @@ AbstractGrid (const std::string& name,
   m_comm.all_reduce(&m_num_local_dofs,&m_num_global_dofs,1,MPI_SUM);
 }
 
-AbstractGrid::
-AbstractGrid (const std::string& name,
-              const GridType type,
-              const int num_local_dofs,
-              const int num_vertical_lev,
-              const std::shared_ptr<const AbstractGrid>& unique_grid,
-              const ekat::Comm& comm)
- : AbstractGrid(name,type,num_local_dofs,num_vertical_lev,comm)
-{
-  set_unique_grid(unique_grid);
-}
-
 bool AbstractGrid::is_unique () const {
-  // If a unique grid was passed, then assume we're not unique
-  if (m_unique_grid) {
-    return false;
-  }
-
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0,
+  EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! We cannot establish if this grid is unique before the dofs GIDs are set.\n");
 
   // Get a copy of gids on host. CAREFUL: do not use create_mirror_view,
@@ -119,9 +102,6 @@ set_dofs (const dofs_list_type& dofs)
       "       Input gids list size   : " + std::to_string(dofs.size()) + "\n");
 
   m_dofs_gids  = dofs;
-
-  m_comm.barrier();
-
   m_dofs_set = true;
 }
 
@@ -141,16 +121,8 @@ set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
   // TODO: Should the aforementioned check be global or local (w.r.t. m_comm)?
 
   m_lid_to_idx = lid_to_idx;
-
-  m_comm.barrier();
-
   m_lid_to_idx_set = true;
-}
 
-std::shared_ptr<const AbstractGrid>
-AbstractGrid::get_unique_grid () const {
-  // If this grid is unique, return it, otherwise return the stored unique grid.
-  return is_unique() ? shared_from_this() : m_unique_grid;
 }
 
 AbstractGrid::gid_type
@@ -174,6 +146,7 @@ AbstractGrid::get_global_min_dof_gid () const
 
   return global_min;
 }
+
 AbstractGrid::gid_type
 AbstractGrid::get_global_max_dof_gid () const
 {
@@ -194,17 +167,6 @@ AbstractGrid::get_global_max_dof_gid () const
   m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
 
   return global_max;
-}
-
-void AbstractGrid::
-set_unique_grid (const std::shared_ptr<const AbstractGrid>& unique_grid) {
-  // Sanity check
-  EKAT_REQUIRE_MSG (unique_grid, "Error! Unique grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (unique_grid->is_unique(), "Error! Unique grid is not, in fact, unique.\n");
-  EKAT_REQUIRE_MSG (unique_grid->get_num_global_dofs()<=m_num_global_dofs,
-      "Error! The unique grid has more global dofs than this grid.\n");
-
-  m_unique_grid = unique_grid;
 }
 
 } // namespace scream

@@ -1,10 +1,7 @@
 #ifndef SCREAM_SE_GRID_HPP
 #define SCREAM_SE_GRID_HPP
 
-#include "ekat/mpi/ekat_comm.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/scream_types.hpp"
-#include "ekat/ekat_assert.hpp"
 
 namespace scream
 {
@@ -17,13 +14,6 @@ public:
           const int num_my_elements,
           const int num_gauss_pts,
           const int num_vertical_levels,
-          const ekat::Comm& comm);
-
-  SEGrid (const std::string& grid_name,
-          const int num_my_elements,
-          const int num_gauss_pts,
-          const int num_vertical_levels,
-          const std::shared_ptr<const AbstractGrid>& unique_grid,
           const ekat::Comm& comm);
 
   virtual ~SEGrid () = default;

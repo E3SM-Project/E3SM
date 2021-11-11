@@ -35,16 +35,6 @@ PointGrid (const std::string& grid_name,
   set_lid_to_idx_map(lid_to_idx);
 }
 
-PointGrid::
-PointGrid (const std::string& grid_name,
-           const int          num_my_cols,
-           const int          num_vertical_levels,
-           const std::shared_ptr<const AbstractGrid>& unique_grid,
-           const ekat::Comm&  comm)
- : PointGrid(grid_name,num_my_cols,num_vertical_levels,comm)
-{
-  set_unique_grid(unique_grid);
-}
 
 FieldLayout
 PointGrid::get_2d_scalar_layout () const

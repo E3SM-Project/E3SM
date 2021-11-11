@@ -34,21 +34,6 @@ namespace scream
  * assumptions or switches on the particular grid, and simply rely on common
  * grid interfaces to retrieve the correct layout, based on known field properties,
  * like spatial dimension or "physical" rank.
- *
- * The grid class also offers the ability to retrieve a "unique" grid associated
- * with this grid. A unique grid is a grid where each GID appears *once* globally.
- * This means that no two MPI rank can have the same dof GID, but also that each
- * GID must appear only once on each rank.
- * An example of *non*-unique grid is a SEGrid, where the same dof GID is shared
- * by neighboring spectral elements.
- * If the grid is not unique, the corresponding unique grid must have been passed
- * at construction time in order to access it. On the other hand, if a valid
- * unique grid is passed at construction time, this->is_unique() will always
- * return fals, and get_unique_grid() will always return the grid passed at
- * construction time, regardless of whether the current grid is in fact unique or not.
- * Also, notice that the ctor cannot check that the dofs in the unique_grid
- * are indeed a subset of the dofs of the current grid, since the dofs are not
- * set yet.
  */
 
 class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
@@ -74,13 +59,6 @@ public:
                 const int num_vertical_lev,
                 const ekat::Comm& comm);
 
-  AbstractGrid (const std::string& name,
-                const GridType type,
-                const int num_local_dofs,
-                const int num_vertical_lev,
-                const std::shared_ptr<const AbstractGrid>& unique_grid,
-                const ekat::Comm& comm);
-
   virtual ~AbstractGrid () = default;
 
   // Grid description utilities
@@ -100,9 +78,6 @@ public:
 
   // Whether this grid contains unique dof GIDs
   bool is_unique () const;
-
-  // Retrieve the unique grid associated with this grid
-  std::shared_ptr<const AbstractGrid> get_unique_grid () const;
 
   // The number of dofs on this MPI rank
   int get_num_local_dofs  () const { return m_num_local_dofs;  }
@@ -132,7 +107,6 @@ public:
 
 protected:
 
-  void set_unique_grid (const std::shared_ptr<const AbstractGrid>& unique_grid);
 
   // The grid name and type
   GridType     m_type;
@@ -155,9 +129,6 @@ protected:
   lid_to_idx_map_type   m_lid_to_idx;
 
   geo_view_map_type     m_geo_views;
-
-  // The unique grid associated with this grid, in case this grid is not unique.
-  std::shared_ptr<const AbstractGrid> m_unique_grid;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;
