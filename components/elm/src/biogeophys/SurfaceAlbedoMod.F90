@@ -1657,8 +1657,6 @@ contains
     real(r8), intent(in) :: coszen( bounds%begp: )      ! cos solar zenith angle next time step [gridcell]
     real(r8), intent(in) :: decl           ! declination angle (radians) for next time step
     type(surfalb_type)     , intent(inout) :: surfalb_vars
-     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(coszen) == (/bounds%endp/)),         errMsg(__FILE__, __LINE__))
  
 !
 ! !CALLED FROM:
@@ -1730,6 +1728,8 @@ contains
     data coeff_rdif(:,6) / 1.446E-1, 1.686E-1, -1.439E-1/
     data coeff_rdif(:,7) /-3.427E-6, 1.576E-1,  1.199E-3/
 
+     ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(coszen) == (/bounds%endp/)),         errMsg(__FILE__, __LINE__))
 
     ! Assign local pointers to derived subtypes components (gridcell-level)
 
