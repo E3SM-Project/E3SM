@@ -158,6 +158,7 @@ void SPA::initialize_impl ()
   // Update the local time state information and load the first set of SPA data for interpolation:
   auto ts = timestamp();
   SPATimeState.inited = false;
+  SPATimeState.current_month = ts.get_month();
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 }
 
