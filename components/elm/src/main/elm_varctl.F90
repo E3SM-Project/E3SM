@@ -99,7 +99,7 @@ module elm_varctl
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
-  
+
   !----------------------------------------------------------
   ! Flag to turn on MEGAN VOC's
   !----------------------------------------------------------
@@ -355,7 +355,6 @@ module elm_varctl
   logical, public :: use_var_soil_thick  = .false.
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
-  logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
   logical, public :: use_lake_wat_storage = .false.
 
   !----------------------------------------------------------
