@@ -26,7 +26,8 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
-!  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
+  !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
+  integer :: o3lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
@@ -82,7 +83,7 @@ contains
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
     e90_ndx  = get_spc_ndx('E90')
-!    o3lnz_ndx =   get_spc_ndx('O3LNZ')
+    o3lnz_ndx =   get_spc_ndx('O3LNZ')
 !    n2olnz_ndx =  get_spc_ndx('N2OLNZ')
 !    noylnz_ndx =  get_spc_ndx('NOYLNZ')
 !    ch4lnz_ndx =  get_spc_ndx('CH4LNZ')
@@ -253,6 +254,7 @@ contains
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
     use UCI_cloudJ_interface, only : cloudJ_interface
+    use cam_abortutils,    only : endrun
 !
 ! LINOZ
 !
@@ -1047,6 +1049,7 @@ contains
 
 !
     ! LINOZ
+    ! col_dens(:,:,1) is for O3; col_dens(:,:,1) is for O2; col_dens(:,:,1) is for O3LNZ
     if (masterproc)write(iulog,*)'do_lin_strat_chem=',do_lin_strat_chem,'linoz_v2=',linoz_v2,'linoz_v3=',linoz_v3
     
     xsfc(:,:)=0    
@@ -1055,13 +1058,22 @@ contains
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev )
+                       !call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ')
+                       !pass in column O3 
+                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'CHEM')
           endif
         else
           if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,              col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )                  
           if(linoz_v3) then
                        call h2o_to_vmr(q(:,:,1), qvmr, mbar, ncol )  
-                       call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, tropFlag=tropFlag )
+                       !call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,3), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'LNZ', tropFlag=tropFlag)
+                       !pass in column O3
+                       if (o3lnz_ndx > 0) then
+                          write(iulog,*) 'mo_gas_phase_chemdr: calling LINOZv3 for chemUCI+linozv3 mechanism, O3LNZ should not exist'
+                          call endrun('mo_gas_phase_chemdr: calling LINOZv3 for chemUCI+linozv3 mechanism, O3LNZ should not exist')
+                       else 
+                          call linv3_strat_chem_solve( ncol, lchnk, vmr, qvmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev, pdeldry, 'CHEM',tropFlag=tropFlag)
+                       endif
           endif
           call fstrat_efold_decay(ncol, vmr, delt, troplev, tropFlag=tropFlag) !if chemuci is on
        endif
