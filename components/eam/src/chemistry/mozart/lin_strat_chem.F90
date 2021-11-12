@@ -39,7 +39,8 @@ module lin_strat_chem
 
   integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx, h2olnz_ndx
   integer :: o3_ndx, n2o_ndx, ch4_ndx, no_ndx, no2_ndx, hno3_ndx 
-  
+  integer :: uci1_ndx
+ 
   logical :: do_lin_strat_chem, linoz_v2, linoz_v3
 
   real(r8), parameter :: unset_r8   = huge(1.0_r8)
@@ -126,7 +127,7 @@ end subroutine linoz_readnl
     !
     use linoz_data,   only : linoz_data_init, has_linozv3_data, has_linoz_data
     use ppgrid,       only : pver
-    use mo_chem_utls, only : get_spc_ndx
+    use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
     use cam_history,  only : addfld, horiz_only, add_default
     use physics_buffer, only : physics_buffer_desc
 
@@ -154,15 +155,19 @@ end subroutine linoz_readnl
     n2olnz_ndx  =   get_spc_ndx('N2OLNZ')
     noylnz_ndx  =   get_spc_ndx('NOYLNZ')
     ch4lnz_ndx  =   get_spc_ndx('CH4LNZ')
-    h2olnz_ndx   =  get_spc_ndx('H2OLNZ')
+    h2olnz_ndx  =   get_spc_ndx('H2OLNZ')
 
-    if (o3lnz_ndx <=0 ) then
-       write(iulog,*) 'skip Linoz, need to have tracer O3LNZ at least '
+    uci1_ndx    = get_rxt_ndx('uci1')
+
+    if (uci1_ndx <=0 ) then
+       !write(iulog,*) 'skip Linoz, need to have tracer O3LNZ at least '
+       write(iulog,*) 'skip Linoz, temporally change '
        do_lin_strat_chem = .false.
        return
     end if
 
-    linoz_v3= (o3lnz_ndx > 0 .and. n2olnz_ndx >0  .and. noylnz_ndx >0  .and. ch4lnz_ndx > 0)
+    !linoz_v3= (o3lnz_ndx > 0 .and. n2olnz_ndx >0  .and. noylnz_ndx >0  .and. ch4lnz_ndx > 0)
+    linoz_v3= (n2olnz_ndx >0  .and. noylnz_ndx >0)
     linoz_v2= (o3lnz_ndx > 0 .and. n2olnz_ndx <0  .and. noylnz_ndx <0  .and. ch4lnz_ndx < 0)
 !    write(iulog,*)'linoz_v3=',linoz_v3,'linoz_v2=',linoz_v2
 ! real o3, ch4, n2o tracers
