@@ -102,11 +102,24 @@ public:
   const lid_to_idx_map_type& get_lid_to_idx_map () const;
 
   // Set/get geometric views. The setter is virtual, so each grid can check if "name" is supported.
-  virtual void set_geometry_data (const std::string& name, const geo_view_type& data) = 0;
+  void set_geometry_data (const std::string& name, const geo_view_type& data);
   const geo_view_type& get_geometry_data (const std::string& name) const;
 
 protected:
 
+  // Derived classes can override these methods, which are called inside the
+  // set_dofs and set_lid_to_idx_map methods respectively, to verify that the
+  // views have been set to something that satisfies any requirement of the grid type.
+  // This class already checks the extents of the view, but derived classes can add
+  // some extra consistency check.
+  // NOTE: these methods are called *at the end* of the respective set_* method,
+  //       so that other methods can be called (e.g., get_global_max_dof_gid()).
+  virtual void check_dofs_list () const {}
+  virtual void check_lid_to_idx_map () const {}
+  // Check that geo_data is valid
+  virtual void check_geo_data (const std::string& /*name*/, const geo_view_type& /*data*/) const {}
+
+private:
 
   // The grid name and type
   GridType     m_type;

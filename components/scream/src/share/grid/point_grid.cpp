@@ -1,7 +1,6 @@
 #include "share/grid/point_grid.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
 
 #include <numeric>
 
@@ -14,20 +13,10 @@ PointGrid (const std::string& grid_name,
            const ekat::Comm&  comm)
  : AbstractGrid(grid_name,GridType::Point,num_my_cols,num_vertical_levels,comm)
 {
-  m_num_vert_levs   = num_vertical_levels;
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (m_num_local_dofs>=0,
-                    "Error! The number of local columns is negative.\n");
-  EKAT_REQUIRE_MSG (num_vertical_levels>=1,
-                    "Error! The number of vertical levels is not positive.\n");
-  EKAT_REQUIRE_MSG (m_num_global_dofs>=m_num_local_dofs,
-                    "Error! The number of global columns is smaller than the local one.\n");
-
   // The lid->idx map is the identity map.
-  decltype(m_lid_to_idx) lid_to_idx("lid to idx",m_num_local_dofs,1);
+  lid_to_idx_map_type lid_to_idx("lid to idx",get_num_local_dofs(),1);
   auto h_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
-  std::iota(h_lid_to_idx.data(),h_lid_to_idx.data()+m_num_local_dofs,0);
+  std::iota(h_lid_to_idx.data(),h_lid_to_idx.data()+get_num_local_dofs(),0);
   Kokkos::deep_copy(lid_to_idx,h_lid_to_idx);
 
   // Note: we use the base class set method, rather than directly using m_lid_to_idx,
@@ -41,7 +30,7 @@ PointGrid::get_2d_scalar_layout () const
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({COL},{m_num_local_dofs});
+  return FieldLayout({COL},{get_num_local_dofs()});
 }
 
 FieldLayout
@@ -49,7 +38,7 @@ PointGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim
 {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({COL,vector_tag},{m_num_local_dofs,vector_dim});
+  return FieldLayout({COL,vector_tag},{get_num_local_dofs(),vector_dim});
 }
 
 FieldLayout
@@ -60,7 +49,7 @@ PointGrid::get_3d_scalar_layout (const bool midpoints) const
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({COL,VL},{m_num_local_dofs,nvl});
+  return FieldLayout({COL,VL},{get_num_local_dofs(),nvl});
 }
 
 FieldLayout
@@ -71,18 +60,14 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({COL,vector_tag,VL},{m_num_local_dofs,vector_dim,nvl});
+  return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
 void PointGrid::
-set_geometry_data (const std::string& name, const geo_view_type& data) {
+check_geo_data (const std::string& name, const geo_view_type& /* data */) const {
   // Sanity checks
-  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs,
-                    "Error! Input geometry data has wrong dimensions.\n");
   EKAT_REQUIRE_MSG (name=="lat" || name=="lon" || name=="area",
                     "Error! Point grid does not support geometry data '" + name + "'.\n");
-
-  m_geo_views[name] = data;
 }
 
 std::shared_ptr<const PointGrid>

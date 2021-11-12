@@ -42,7 +42,8 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
-  void set_geometry_data (const std::string& name, const geo_view_type& data) override;
+protected:
+  void check_geo_data (const std::string& name, const geo_view_type& data) const override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned

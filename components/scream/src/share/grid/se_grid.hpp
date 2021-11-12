@@ -24,9 +24,10 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
-  void set_geometry_data (const std::string& name, const geo_view_type& data) override;
 
 protected:
+  void check_lid_to_idx_map () const override;
+  void check_geo_data (const std::string& name, const geo_view_type& data) const override;
 
   // SE dims
   int       m_num_local_elem;

@@ -1,5 +1,7 @@
 #include "share/grid/se_grid.hpp"
 
+#include "ekat/kokkos//ekat_subview_utils.hpp"
+
 namespace scream {
 
 SEGrid::
@@ -19,27 +21,13 @@ SEGrid (const std::string& grid_name,
   m_num_gp         = num_gauss_pts;
 }
 
-SEGrid::
-SEGrid (const std::string& grid_name,
-        const int num_my_elements,
-        const int num_gauss_pts,
-        const int num_vertical_levels,
-        const std::shared_ptr<const AbstractGrid>& unique_grid,
-        const ekat::Comm& comm)
- : SEGrid(grid_name,num_my_elements,num_gauss_pts,num_vertical_levels,comm)
-{
-  set_unique_grid (unique_grid);
-}
-
 void SEGrid::
-set_geometry_data (const std::string& name, const geo_view_type& data) {
+check_geo_data (const std::string& name, const geo_view_type& /* data */) const {
   // Sanity checks
-  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs,
-                    "Error! Input geometry data has wrong dimensions.\n");
   EKAT_REQUIRE_MSG (name=="lat" || name=="lon" || name=="area",
                     "Error! Point grid does not support geometry data '" + name + "'.\n");
 
-  m_geo_views[name] = data;
+  // TODO: check actual values?
 }
 
 FieldLayout
@@ -78,6 +66,26 @@ SEGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, c
   auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({EL,vector_tag,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
+}
+
+void SEGrid::check_lid_to_idx_map () const
+{
+  auto l2i = get_lid_to_idx_map();
+  auto h_l2i = Kokkos::create_mirror_view(l2i);
+  Kokkos::deep_copy(h_l2i,l2i);
+  for (int idof=0; idof<h_l2i.extent_int(0); ++idof) {
+    auto elgpgp = ekat::subview(h_l2i,idof);
+    const int el = elgpgp(0);
+    const int ip = elgpgp(1);
+    const int jp = elgpgp(2);
+
+    EKAT_REQUIRE_MSG (el>=0 && el<m_num_local_elem,
+        "Error! Element index out of bounds.\n");
+    EKAT_REQUIRE_MSG (ip>=0 && ip<m_num_gp,
+        "Error! Gauss point index i out of bounds.\n");
+    EKAT_REQUIRE_MSG (jp>=0 && jp<m_num_gp,
+        "Error! Gauss point index j out of bounds.\n");
+  }
 }
 
 } // namespace scream

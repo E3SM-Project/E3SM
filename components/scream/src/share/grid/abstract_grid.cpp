@@ -103,6 +103,10 @@ set_dofs (const dofs_list_type& dofs)
 
   m_dofs_gids  = dofs;
   m_dofs_set = true;
+
+#ifndef NDEBUG
+  this->check_dofs_list();
+#endif
 }
 
 void AbstractGrid::
@@ -117,12 +121,25 @@ set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
       "       Expected sizes: (" + std::to_string(m_num_local_dofs) + "," + std::to_string(get_2d_scalar_layout().rank()) + ")\n"
       "       Input map sizes: (" + std::to_string(lid_to_idx.extent(0)) + "," + std::to_string(lid_to_idx.extent(1)) + ")\n");
 
-  // TODO: We should check that the gids of the unique grid (if present) are a subset of m_dofs_gids.
-  // TODO: Should the aforementioned check be global or local (w.r.t. m_comm)?
-
   m_lid_to_idx = lid_to_idx;
   m_lid_to_idx_set = true;
 
+#ifndef NDEBUG
+  this->check_lid_to_idx_map();
+#endif
+}
+
+void AbstractGrid::
+set_geometry_data (const std::string& name, const geo_view_type& data) {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs,
+                    "Error! Input geometry data has wrong dimensions.\n");
+
+#ifndef NDEBUG
+  this->check_geo_data(name,data);
+#endif
+
+  m_geo_views[name] = data;
 }
 
 AbstractGrid::gid_type
