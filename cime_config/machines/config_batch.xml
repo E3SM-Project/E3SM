@@ -220,7 +220,7 @@
   </batch_system>
   <!-- for lawrence livermore computing -->
 
-  <!-- for NERSC machines: edison,cori-haswell,cori-knl -->
+  <!-- for NERSC machines: cori-haswell,cori-knl -->
   <batch_system type="nersc_slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -313,23 +313,6 @@
         <queue walltimemax="01:00:00" nodemax="512">knl</queue>
       </queues>
     </batch_system>
-
-    <batch_system MACH="eos" type="pbs" >
-    <directives>
-      <directive>-A {{ project }}</directive>
-      <directive>-l  nodes={{ num_nodes }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" default="true">batch</queue>
-    </queues>
-   </batch_system>
-
-  <batch_system MACH="edison" type="nersc_slurm" >
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:30:00" default="true">regular</queue>
-    </queues>
-  </batch_system>
 
   <batch_system MACH="cori-haswell" type="nersc_slurm">
      <directives>
