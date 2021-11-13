@@ -369,7 +369,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="titan|stampede|bluewaters">
+    <mach name="stampede|bluewaters">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -406,7 +406,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="titan|stampede|bluewaters">
+    <mach name="stampede|bluewaters">
       <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -443,7 +443,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="titan|stampede|bluewaters|cori-haswell">
+    <mach name="stampede|bluewaters|cori-haswell">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -517,7 +517,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="titan|stampede|bluewaters|cori-haswell">
+    <mach name="stampede|bluewaters|cori-haswell">
       <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -776,7 +776,7 @@
     </mach>
   </grid>
   <grid name="a%T85">
-    <mach name="titan|stampede|janus">
+    <mach name="stampede|janus">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
