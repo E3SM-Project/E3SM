@@ -314,16 +314,6 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="eos" type="pbs" >
-    <directives>
-      <directive>-A {{ project }}</directive>
-      <directive>-l  nodes={{ num_nodes }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" default="true">batch</queue>
-    </queues>
-   </batch_system>
-
   <batch_system MACH="cori-haswell" type="nersc_slurm">
      <directives>
        <directive> --constraint=haswell</directive>
