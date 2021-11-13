@@ -186,80 +186,6 @@
     </mach>
   </grid>
   <grid name="any">
-    <mach name="mira">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>2048</ntasks_atm>
-          <ntasks_lnd>2048</ntasks_lnd>
-          <ntasks_rof>2048</ntasks_rof>
-          <ntasks_ice>2048</ntasks_ice>
-          <ntasks_ocn>2048</ntasks_ocn>
-          <ntasks_glc>2048</ntasks_glc>
-          <ntasks_wav>2048</ntasks_wav>
-          <ntasks_cpl>2048</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_glc>16</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="any">
-    <mach name="cetus">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>512</ntasks_atm>
-          <ntasks_lnd>512</ntasks_lnd>
-          <ntasks_rof>512</ntasks_rof>
-          <ntasks_ice>512</ntasks_ice>
-          <ntasks_ocn>512</ntasks_ocn>
-          <ntasks_glc>512</ntasks_glc>
-          <ntasks_wav>512</ntasks_wav>
-          <ntasks_cpl>512</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_glc>16</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="any">
     <mach name="anlworkstation">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -687,43 +613,6 @@
           <nthrds_glc>1</nthrds_glc>
           <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%ne30np4">
-    <mach name="mira|cetus">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>2048</ntasks_atm>
-          <ntasks_lnd>2048</ntasks_lnd>
-          <ntasks_rof>2048</ntasks_rof>
-          <ntasks_ice>2048</ntasks_ice>
-          <ntasks_ocn>2048</ntasks_ocn>
-          <ntasks_glc>2048</ntasks_glc>
-          <ntasks_wav>2048</ntasks_wav>
-          <ntasks_cpl>2048</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_glc>16</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
@@ -1427,43 +1316,6 @@
           <nthrds_glc>4</nthrds_glc>
           <nthrds_wav>4</nthrds_wav>
           <nthrds_cpl>4</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
-  <grid name="a%4x5">
-    <mach name="cetus|mira">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>8</ntasks_atm>
-          <ntasks_lnd>8</ntasks_lnd>
-          <ntasks_rof>8</ntasks_rof>
-          <ntasks_ice>8</ntasks_ice>
-          <ntasks_ocn>8</ntasks_ocn>
-          <ntasks_glc>8</ntasks_glc>
-          <ntasks_wav>8</ntasks_wav>
-          <ntasks_cpl>8</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>16</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>16</nthrds_rof>
-          <nthrds_ice>16</nthrds_ice>
-          <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_glc>16</nthrds_glc>
-          <nthrds_wav>16</nthrds_wav>
-          <nthrds_cpl>16</nthrds_cpl>
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
