@@ -7337,17 +7337,17 @@
       </pes>
     </mach>
     <mach name="theta">
-      <pes compset=".*EAM.+ELM.+CICE.+DOCN.+SROF.+SGLC.+SWAV.*" pesize="any">
-        <comment>ne120 F-compset on 128 nodes</comment>
+      <pes compset=".*EAM.+ELM.+DOCN.+SGLC.+SWAV.*" pesize="any">
+        <comment>ne120 F-compset on 128 nodes 0.492sypd</comment>
         <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>7200</ntasks_atm>
-          <ntasks_cpl>7200</ntasks_cpl>
-          <ntasks_ice>7200</ntasks_ice>
-          <ntasks_lnd>960</ntasks_lnd>
-          <ntasks_rof>960</ntasks_rof>
-          <ntasks_ocn>960</ntasks_ocn>
+          <ntasks_atm>8192</ntasks_atm>
+          <ntasks_cpl>8192</ntasks_cpl>
+          <ntasks_ice>8192</ntasks_ice>
+          <ntasks_lnd>8192</ntasks_lnd>
+          <ntasks_rof>8192</ntasks_rof>
+          <ntasks_ocn>8192</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
@@ -7365,9 +7365,9 @@
           <rootpe_atm>0</rootpe_atm>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_lnd>7232</rootpe_lnd>
-          <rootpe_rof>7232</rootpe_rof>
-          <rootpe_ocn>7232</rootpe_ocn>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ocn>0</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
         </rootpe>
