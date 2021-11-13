@@ -627,43 +627,6 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
-    <mach name="hopper">
-      <pes compset="any" pesize="any">
-        <comment>none</comment>
-        <ntasks>
-          <ntasks_atm>1200</ntasks_atm>
-          <ntasks_lnd>1200</ntasks_lnd>
-          <ntasks_rof>1200</ntasks_rof>
-          <ntasks_ice>1200</ntasks_ice>
-          <ntasks_ocn>1200</ntasks_ocn>
-          <ntasks_glc>1200</ntasks_glc>
-          <ntasks_wav>1200</ntasks_wav>
-          <ntasks_cpl>1200</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_glc>2</nthrds_glc>
-          <nthrds_wav>2</nthrds_wav>
-          <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
-      </pes>
-    </mach>
-  </grid>
   <grid name="a%ne120np4">
     <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
       <pes compset="any" pesize="any">
@@ -1146,7 +1109,7 @@
     </mach>
   </grid>
   <grid name="a%T85">
-    <mach name="hopper|titan|stampede|janus">
+    <mach name="titan|stampede|janus">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
