@@ -110,14 +110,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, cell1, cell2, k, i, iCell, nCells
+      integer :: iEdge, k, i, iCell, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, MaxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, invAreaCell, invAreaCell1, invAreaCell2
+      real (kind=RKIND) :: flux, invAreaCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
 
       !-----------------------------------------------------------------

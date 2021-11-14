@@ -113,6 +113,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     diags.run_diagnostics(false,4);
   }
 
+//// case nu=0 but nu_top>0?  
   if (params.hypervis_order==2 && params.nu>0) {
     HyperviscosityFunctor& functor = context.get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");

@@ -12,7 +12,7 @@ module SurfaceAlbedoMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
-  use elm_varcon        , only : grlnd, namep
+  use elm_varcon        , only : grlnd, namep, namet
   use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
   use VegetationPropertiesType    , only : veg_vp
@@ -31,6 +31,8 @@ module SurfaceAlbedoMod
   use SurfaceAlbedoType , only : lake_melt_icealb, alblak, alblakwi
   use SurfaceAlbedoType , only : albice, albsat, albdry, isoicol
   use elm_instMod , only : alm_fates
+  use topounit_varcon   , only : max_topounits  
+  use TopounitType      , only : top_pp
   !
   implicit none
   save
@@ -46,9 +48,6 @@ module SurfaceAlbedoMod
   ! From D. Mironov (2010) Boreal Env. Research
   real(r8), parameter :: calb = 95.6_r8
   !$acc declare copyin(calb)
-
-
-  !-----------------------------------------------------------------------
 
 contains
 
@@ -983,6 +982,7 @@ contains
     use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak
     use LakeCon         , only : lakepuddling
+    use domainMod       , only : ldomain
     !
     ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds
@@ -998,7 +998,7 @@ contains
      !
     integer, parameter :: nband =numrad ! number of solar radiation waveband classes
     integer  :: fc            ! non-urban filter column index
-    integer  :: c,l           ! indices
+    integer  :: c,l,t,g,gi,pi,mi           ! indices
     integer  :: ib            ! waveband number (1=vis, 2=nir)
     real(r8) :: inc           ! soil water correction factor for soil albedo
     integer  :: soilcol       ! soilcolor
@@ -1027,10 +1027,14 @@ contains
     do ib = 1, nband
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
+          g = col_pp%gridcell(c)
+          t = col_pp%topounit(c)
+          gi = grc_pp%gindex(g)
+          mi = ldomain%mask(g)
+          pi = ldomain%pftm(g)
           if (coszen(c) > 0._r8) then
              l = col_pp%landunit(c)
-
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)  then ! soil
+             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .and. top_pp%active(t))  then ! soil
                 inc    = max(0.11_r8-0.40_r8*h2osoi_vol(c,1), 0._r8)
                 soilcol = isoicol(c)
                 ! changed from local variable to elm_type:
@@ -1038,15 +1042,15 @@ contains
                 !albsoi = albsod
                 albsod(c,ib) = min(albsat(soilcol,ib)+inc, albdry(soilcol,ib))
                 albsoi(c,ib) = albsod(c,ib)
-             else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec)  then  ! land ice
-                ! changed from local variable to elm_type:
+             else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec .and. top_pp%active(t))  then  ! land ice
+                ! changed from local variable to clm_type:
                 !albsod = albice(ib)
                 !albsoi = albsod
                 albsod(c,ib) = albice(ib)
                 albsoi(c,ib) = albsod(c,ib)
              ! unfrozen lake, wetland
              else if (t_grnd(c) > tfrz .or. (lakepuddling .and. lun_pp%itype(l) == istdlak .and. t_grnd(c) == tfrz .and. &
-                      lake_icefrac(c,1) < 1._r8 .and. lake_icefrac(c,2) > 0._r8) ) then
+                      lake_icefrac(c,1) < 1._r8 .and. lake_icefrac(c,2) > 0._r8)  .and. top_pp%active(t)) then
 
                 albsod(c,ib) = 0.05_r8/(max(0.001_r8,coszen(c)) + 0.15_r8)
                 ! This expression is apparently from BATS according to Yongjiu Dai.
@@ -1069,7 +1073,7 @@ contains
                 ! Tenatively I'm restricting this to lakes because I haven't tested it for wetlands. But if anything
                 ! the albedo should be lower when melting over frozen ground than a solid frozen lake.
                 !
-                if (lun_pp%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0) then
+                if (lun_pp%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0  .and. top_pp%active(t)) then
                     ! Need to reference snow layers here because t_grnd could be over snow or ice
                                       ! but we really want the ice surface temperature with no snow
                    sicefr = 1._r8 - exp(-calb * (tfrz - t_grnd(c))/tfrz)

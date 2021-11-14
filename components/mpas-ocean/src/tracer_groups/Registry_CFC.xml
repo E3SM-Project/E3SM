@@ -232,7 +232,7 @@
 			<var name="pCFC12" type="real" dimensions="nCells Time" units="mole fraction"
 				description="Mole Fraction of Atmospheric CFC12"
 			/>
-			<var name="windSpeedSquared10mCFC" type="real" dimensions="nCells Time" units="m^{2} s^{-2} default_value="0.0""
+			<var name="windSpeedSquared10mCFC" type="real" dimensions="nCells Time" units="m^{2} s^{-2}" default_value="0.0"
 				description="10 meter atmospheric wind speed squared"
 			/>
 		</var_struct>

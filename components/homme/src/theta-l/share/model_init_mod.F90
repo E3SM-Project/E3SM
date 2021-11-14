@@ -157,6 +157,7 @@ contains
           if (nu_scale_top(k)>0) write(iulog,*) "  nu_scale_top ",k,nu_scale_top(k)
        end if
     end do
+
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom
     end if

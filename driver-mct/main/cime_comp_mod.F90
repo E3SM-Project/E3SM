@@ -3495,14 +3495,14 @@ contains
     call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
     call shr_mem_getusage(msize,mrss)
 
-    call component_final(EClock_a, atm, atm_final)
-    call component_final(EClock_l, lnd, lnd_final)
-    call component_final(EClock_r, rof, rof_final)
-    call component_final(EClock_i, ice, ice_final)
-    call component_final(EClock_o, ocn, ocn_final)
-    call component_final(EClock_g, glc, glc_final)
-    call component_final(EClock_w, wav, wav_final)
     call component_final(EClock_w, iac, iac_final)
+    call component_final(EClock_w, wav, wav_final)
+    call component_final(EClock_g, glc, glc_final)
+    call component_final(EClock_o, ocn, ocn_final)
+    call component_final(EClock_i, ice, ice_final)
+    call component_final(EClock_r, rof, rof_final)
+    call component_final(EClock_l, lnd, lnd_final)
+    call component_final(EClock_a, atm, atm_final)
 
     !------------------------------------------------------------------------
     ! End the run cleanly
