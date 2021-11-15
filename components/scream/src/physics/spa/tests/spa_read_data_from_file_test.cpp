@@ -34,6 +34,7 @@ TEST_CASE("spa_read_data","spa")
   // Establish the SPA function object
   using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
   using Spack = SPAFunc::Spack;
+  using gid_type = SPAFunc::gid_type;
 
   std::string spa_data_file = "spa_data_for_testing.nc";
   std::string spa_remap_file = "spa_data_for_testing.nc";
@@ -45,16 +46,17 @@ TEST_CASE("spa_read_data","spa")
   // Break the test set of columns into local degrees of freedom per mpi rank
   auto comm_size = spa_comm.size();
   auto comm_rank = spa_comm.rank();
-  std::vector<gid_type> my_dofs;
-  for (int ii=comm_rank;ii<ncols;ii+=comm_size) {
-    my_dofs.push_back(ii);
-  }
-  view_1d<gid_type> dofs_gids("",my_dofs.size());
-  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  for (int ii=0;ii<my_dofs.size();ii++) {
-    dofs_gids_h(ii) = my_dofs[ii];
-  }
-  Kokkos::deep_copy(dofs_gids,dofs_gids_h);
+
+  int my_ncols = ncols/comm_size + (comm_rank < ncols%comm_size ? 1 : 0);
+  view_1d<gid_type> dofs_gids("",my_ncols);
+  Kokkos::parallel_for("", my_ncols, KOKKOS_LAMBDA(const int& ii) {
+    dofs_gids(ii) = comm_rank + ii*comm_size;
+  });
+  // Make sure that the total set of columns has been completely broken up.
+  Int test_total_ncols = 0;
+  spa_comm.all_reduce(&my_ncols,&test_total_ncols,1,MPI_SUM);
+  REQUIRE(test_total_ncols == ncols);
+
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,0,dofs_gids,spa_horiz_interp); //TODO, make this test use 1 as min_dof, for more test coverage.
@@ -75,6 +77,8 @@ TEST_CASE("spa_read_data","spa")
   auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.AER_SSA_SW);
   auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_SW);
   auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_LW);
+  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int time_index = 0;time_index<max_time; time_index++) {
     SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
                                        spa_horiz_interp, spa_data);

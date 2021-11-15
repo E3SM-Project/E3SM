@@ -143,6 +143,7 @@ TEST_CASE("input_output_basic","io")
   auto max_params = get_in_params("Max",io_comm,time);
   auto multi_params = get_in_params("Multisnap",io_comm,t0+dt);
   Real tol = 100*std::numeric_limits<Real>::epsilon();
+  // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
   // Test that pio_inq_dimlen is correct, using a file from one of the above parameter lists.
   {
     auto test_filename = ins_params.get<std::string>("Filename");

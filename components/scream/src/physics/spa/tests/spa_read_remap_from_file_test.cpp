@@ -20,7 +20,7 @@ using namespace spa;
 template <typename S>
 using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
 template <typename S>
-using view_1d_host = typename KokkosTypes<HostDevice>::template view_1d<S>;
+using view_1d_host = typename view_1d<S>::HostMirror; //KokkosTypes<HostDevice>::template view_1d<S>;
 
 TEST_CASE("spa_read_remap_data","spa")
 {
@@ -30,7 +30,8 @@ TEST_CASE("spa_read_remap_data","spa")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // Establish the SPA function object
-  using SPAFunc         = spa::SPAFunctions<Real, DefaultDevice>;
+  using SPAFunc  = spa::SPAFunctions<Real, DefaultDevice>;
+  using gid_type = SPAFunc::gid_type;
   SPAFunc::SPAHorizInterp spa_horiz_interp;
 
   const std::string remap_file_name = "spa_data_for_testing.nc";
@@ -40,30 +41,23 @@ TEST_CASE("spa_read_remap_data","spa")
   // Break the test set of columns into local degrees of freedom per mpi rank
   auto comm_size = spa_comm.size();
   auto comm_rank = spa_comm.rank();
-  std::vector<gid_type> my_dofs;
-  for (int ii=comm_rank;ii<tgt_grid_ncols_total;ii+=comm_size) {
-    my_dofs.push_back(ii);
-  }
-  Int tgt_grid_ncols = my_dofs.size();
+  int tgt_grid_ncols = tgt_grid_ncols_total/comm_size + (comm_rank < tgt_grid_ncols_total%comm_size ? 1 : 0);
+  view_1d<gid_type> dofs_gids("",tgt_grid_ncols);
+  Kokkos::parallel_for("", tgt_grid_ncols, KOKKOS_LAMBDA(const int& ii) {
+    dofs_gids(ii) = comm_rank + ii*comm_size;
+  });
   // Make sure that the total set of columns has been completely broken up.
   Int test_total_ncols = 0;
   spa_comm.all_reduce(&tgt_grid_ncols,&test_total_ncols,1,MPI_SUM);
   REQUIRE(test_total_ncols == tgt_grid_ncols_total);
 
-  view_1d<gid_type> dofs_gids("",tgt_grid_ncols);
-  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
-  for (int ii=0;ii<tgt_grid_ncols;ii++) {
-    dofs_gids_h(ii) = my_dofs[ii];
-  }
-  Kokkos::deep_copy(dofs_gids,dofs_gids_h);
   SPAFunc::get_remap_weights_from_file(remap_file_name,tgt_grid_ncols_total,0,dofs_gids,spa_horiz_interp);
 
   REQUIRE(spa_horiz_interp.length==tgt_grid_ncols*src_grid_ncols);
   REQUIRE(spa_horiz_interp.source_grid_ncols==src_grid_ncols);
 
   // We have a few metrics to ensure that the data read from file matches the data in the file.
-  Real tol = 1e5*std::numeric_limits<Real>::epsilon();
+  Real tol = std::numeric_limits<Real>::epsilon();
   Int col_sum = 0;
   Int row_sum = 0;
   Real wgt_sum = 0.0;
