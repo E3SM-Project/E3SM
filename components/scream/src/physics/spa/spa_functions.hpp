@@ -1,6 +1,7 @@
 #ifndef SPA_FUNCTIONS_HPP
 #define SPA_FUNCTIONS_HPP
 
+#include "share/grid/abstract_grid.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
@@ -37,6 +38,8 @@ struct SPAFunctions
   using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
   using Workspace        = typename WorkspaceManager::Workspace;
 
+  using gid_type = AbstractGrid::gid_type;
+
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   template <typename S>
@@ -57,7 +60,7 @@ struct SPAFunctions
   struct SPATimeState {
     SPATimeState() = default;
     // Whether the timestate has been initialized.
-    bool inited;
+    bool inited = false;
     // The current month
     Int current_month;
     // Julian Date for the beginning of the month, as defined in
@@ -177,10 +180,11 @@ struct SPAFunctions
     Int nlwbands);
 
   static void get_remap_weights_from_file(
-    const std::string&    remap_file_name,
-    const Int             ncols_scream,
-    const view_1d<int>&   dofs_gids,
-          SPAHorizInterp& spa_horiz_interp);
+    const std::string&       remap_file_name,
+    const Int                ncols_scream,
+    gid_type                 min_dof,
+    const view_1d<gid_type>& dofs_gids,
+          SPAHorizInterp&    spa_horiz_interp);
 
   static void update_spa_data_from_file(
     const std::string&    spa_data_file_name,

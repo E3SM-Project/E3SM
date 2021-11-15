@@ -40,7 +40,7 @@ TEST_CASE("spa_read_remap_data","spa")
   // Break the test set of columns into local degrees of freedom per mpi rank
   auto comm_size = spa_comm.size();
   auto comm_rank = spa_comm.rank();
-  std::vector<int> my_dofs;
+  std::vector<gid_type> my_dofs;
   for (int ii=comm_rank;ii<tgt_grid_ncols_total;ii+=comm_size) {
     my_dofs.push_back(ii);
   }
@@ -50,14 +50,14 @@ TEST_CASE("spa_read_remap_data","spa")
   spa_comm.all_reduce(&tgt_grid_ncols,&test_total_ncols,1,MPI_SUM);
   REQUIRE(test_total_ncols == tgt_grid_ncols_total);
 
-  view_1d<int> dofs_gids("",tgt_grid_ncols);
+  view_1d<gid_type> dofs_gids("",tgt_grid_ncols);
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int ii=0;ii<tgt_grid_ncols;ii++) {
     dofs_gids_h(ii) = my_dofs[ii];
   }
   Kokkos::deep_copy(dofs_gids,dofs_gids_h);
-  SPAFunc::get_remap_weights_from_file(remap_file_name,tgt_grid_ncols_total,dofs_gids,spa_horiz_interp);
+  SPAFunc::get_remap_weights_from_file(remap_file_name,tgt_grid_ncols_total,0,dofs_gids,spa_horiz_interp);
 
   REQUIRE(spa_horiz_interp.length==tgt_grid_ncols*src_grid_ncols);
   REQUIRE(spa_horiz_interp.source_grid_ncols==src_grid_ncols);

@@ -21,6 +21,7 @@ namespace scream
 class SPA : public AtmosphereProcess
 {
 public:
+  using gid_type         = AbstractGrid::gid_type;
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
 
@@ -34,7 +35,7 @@ public:
   using view_1d         = typename SPAFunc::view_1d<Spack>;
   using view_2d         = typename SPAFunc::view_2d<Spack>;
   using view_3d         = typename SPAFunc::view_3d<Spack>;
-  using view_1d_int     = typename SPAFunc::view_1d<int>;
+  using view_1d_dof     = typename SPAFunc::view_1d<gid_type>;
 
   template<typename ScalarT>
   using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
@@ -97,8 +98,9 @@ protected:
   Int m_nlwbands = 16;
 
   // DOF information
-  view_1d_int m_dofs_gids;
-  Int m_total_global_dofs; // Needed to make sure that remap data matches grid.
+  view_1d_dof m_dofs_gids;
+  Int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
+  gid_type    m_min_global_dof;
 
   // Struct which contains local variables
   Buffer m_buffer;

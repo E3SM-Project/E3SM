@@ -36,6 +36,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
   m_dofs_gids = grid->get_dofs_gids();
   m_total_global_dofs = grid->get_num_global_dofs();
+  m_min_global_dof    = grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
 
@@ -144,7 +145,7 @@ void SPA::initialize_impl ()
   // TODO: We may want to provide an option to calculate weights on-the-fly. 
   //       If so, then the EKAT_REQUIRE_MSG above will need to be removed and 
   //       we can have a default m_spa_data_file option that is online calculation.
-  SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_dofs_gids,SPAHorizInterp);
+  SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
   scorpio::register_file(m_spa_data_file,scorpio::Read);
