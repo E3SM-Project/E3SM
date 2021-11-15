@@ -142,6 +142,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerHorMixTendency
    real (kind=RKIND), dimension(:,:), pointer :: temperatureShortWaveTendency
    real (kind=RKIND), dimension(:), pointer :: RediKappa
+   real (kind=RKIND), dimension(:), pointer :: rediAbernatheyMap, rediAbernatheyZonal
 
    ! pointers for tendencies used in diagnostic budget computation
    real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
@@ -248,6 +249,10 @@ contains
       if ( config_use_GM ) then
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
                    RediKappa)
+         call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyMap', &
+                   rediAbernatheyMap)
+         call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyZonal', &
+           rediAbernatheyZonal)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', &
                    RediKappaScaling)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', &
@@ -685,6 +690,7 @@ contains
          !$acc                   GMBolusVelocityZ,                &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
+         !$acc                   rediAbernatheyMap,               &
          !$acc                   gradSSHMeridional,               &
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
@@ -699,6 +705,7 @@ contains
          !$acc                   transportVelocityZ,              &
          !$acc                   tangentialVelocity,              &
          !$acc                   montgomeryPotential,             &
+         !$acc                   rediAbernatheyZonal,             &
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
@@ -923,6 +930,7 @@ contains
          !$acc                   GMBolusVelocityZ,                &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
+         !$acc                   rediAbernatheyMap,               &
          !$acc                   gradSSHMeridional,               &
          !$acc                   barotropicForcing,               &
          !$acc                   vertViscTopOfCell,               &
@@ -937,6 +945,7 @@ contains
          !$acc                   transportVelocityZ,              &
          !$acc                   tangentialVelocity,              &
          !$acc                   montgomeryPotential,             &
+         !$acc                   rediAbernatheyZonal,             &
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
@@ -1122,6 +1131,7 @@ contains
                  GMBolusVelocityZ,                &
                  vertNonLocalFlux,                &
                  vertViscTopOfEdge,               &
+                 rediAbernatheyMap,               &
                  gradSSHMeridional,               &
                  barotropicForcing,               &
                  vertViscTopOfCell,               &
@@ -1136,6 +1146,7 @@ contains
                  transportVelocityZ,              &
                  tangentialVelocity,              &
                  montgomeryPotential,             &
+                 rediAbernatheyZonal,             &
                  BruntVaisalaFreqTop,             &
                  vertAleTransportTop,             &
                  GMBolusVelocityZonal,            &
