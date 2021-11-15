@@ -520,6 +520,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_gm_enable_horizontal_resolution_function" type="logical"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Flag to enable the resolution tapering in the horizontal following Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_constant_gravWaveSpeed" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
@@ -557,6 +565,46 @@ Default: Defined in namelist_defaults.xml
 scaling factor on the Visbeck diffusivity parameterization
 
 Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Griffies_min_depth" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum depth to start integral for the Griffies parameter
+
+Valid values: positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Griffies_max_depth" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+maximum depth for the integral of the Griffies parameter
+
+Valid values: positive reals greater than min_depth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Griffies_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+scaling parameter for the Griffies et al (2005) parameterization
+
+Valid values: small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Griffies_length" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+mixing length for the Griffies et al (2005) parameterization
+
+Valid values: roughly 50000-80000
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Griffies_No" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+reference Brunt Vaisala Frequency for the Griffies et al (2005) parameterization
+
+Valid values: small positive reals
 Default: Defined in namelist_defaults.xml
 </entry>
 
