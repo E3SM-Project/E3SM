@@ -88,7 +88,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs(meshPool, statePool, forcingPool, scratchPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs(meshPool, statePool, forcingPool, scratchPool, tracersPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -100,6 +100,8 @@ contains
          meshPool          !< Input: mesh information
 
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
+
+      type (mpas_pool_type), intent(in) :: tracersPool
 
       integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
@@ -172,7 +174,7 @@ contains
       !$omp end do
       !$omp end parallel
 
-      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, err1, timeLevel)
+      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, tracersPool, err1, timeLevel)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, err2, timeLevel)
       call ocn_vmix_coefs_gotm_build(statePool, forcingPool, err3, timeLevel)
 
@@ -1093,7 +1095,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
 
       call mpas_timer_start('vmix coefs', .false.)
-      call ocn_vmix_coefs(meshPool, statePool, forcingPool, scratchPool, err, timeLevel)
+      call ocn_vmix_coefs(meshPool, statePool, forcingPool, scratchPool, tracersPool, err, timeLevel)
       call mpas_timer_stop('vmix coefs')
 
       nCells = nCellsArray(1)
