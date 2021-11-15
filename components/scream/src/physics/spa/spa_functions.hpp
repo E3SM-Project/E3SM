@@ -186,6 +186,10 @@ struct SPAFunctions
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp);
 
+  static void set_remap_weights_one_to_one(
+    const view_1d<gid_type>& dofs_gids,
+          SPAHorizInterp&    spa_horiz_interp);
+
   static void update_spa_data_from_file(
     const std::string&    spa_data_file_name,
     const Int             time_index,

@@ -285,6 +285,31 @@ void SPAFunctions<S,D>
 // from a file.
 template <typename S, typename D>
 void SPAFunctions<S,D>
+::set_remap_weights_one_to_one(
+    const view_1d<gid_type>& dofs_gids,
+          SPAHorizInterp&    spa_horiz_interp
+  )
+{
+  // There may be cases where the SPA data is defined on the same grid as the simulation
+  // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
+  // mapping.
+  auto num_local_cols = dofs_gids.size();
+  spa_horiz_interp.length            = num_local_cols; 
+  spa_horiz_interp.source_grid_ncols = num_local_cols;
+  spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
+  spa_horiz_interp.source_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
+  spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
+  Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
+  Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
+    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii);
+    spa_horiz_interp.target_grid_loc(ii) = dofs_gids(ii);
+  });
+} // END set_remap_weights_one_to_one
+/*-----------------------------------------------------------------*/
+// Function to read the weights for conducting horizontal remapping
+// from a file.
+template <typename S, typename D>
+void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
     const std::string&       remap_file_name,
     const Int                ncols_scream,
@@ -389,7 +414,6 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
   Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
-  spa_horiz_interp.m_comm.barrier();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
