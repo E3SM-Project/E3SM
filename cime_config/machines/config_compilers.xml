@@ -416,6 +416,112 @@ flags should be captured within MPAS CMake files.
   <MPIFC> mpif90 </MPIFC>
 </compiler>
 
+<compiler COMPILER="nvidia">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> nvcc </SCC>
+  <SCXX> nvc++ </SCXX>
+  <SFC> nvfortran </SFC>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA </append>
+    <!--append> -DNO_SHR_VMATH </append-->
+  </CPPDEFS>
+  <CFLAGS>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="FALSE"> -O0 -Mnofma -Mvect=nosimd </append>
+    <append DEBUG="TRUE"> -g </append>
+  </CFLAGS>
+  <FFLAGS>
+    <base> -i4 -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -g -O0 -Mnofma -Wall -Kieee -traceback</append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 -Mnofma </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -Wl,--allow-multiple-definition </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="nvidiagpu">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> nvcc </SCC>
+  <SCXX> nvc++ </SCXX>
+  <SFC> nvfortran </SFC>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA </append>
+    <!--append> -DUSE_CUDA_FORTRAN </append-->
+    <!--append> -DNO_SHR_VMATH </append-->
+    <append DEBUG="TRUE"> -DYAKL_DEBUG </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g </append>
+  </CFLAGS>
+  <FFLAGS>
+    <base> -i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
+    <append DEBUG="FALSE"> -O2 -DHAVE_IEEE_ARITHMETIC </append>
+  </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -g -O0 -Mnofma -Wall -traceback </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 -Mnofma </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -Wl,--allow-multiple-definition </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler COMPILER="pgi">
   <CFLAGS>
     <base> -time </base>
