@@ -4611,6 +4611,7 @@ contains
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
+       call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------

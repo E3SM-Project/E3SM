@@ -51,7 +51,7 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Sa2r
   public :: prep_rof_get_mapper_Fa2r
 
-  public :: prep_rof_ocn_moab 
+  public :: prep_rof_ocn_moab, prep_rof_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -328,7 +328,21 @@ contains
   
   end subroutine prep_rof_ocn_moab
   !================================================================================================
+  subroutine prep_rof_migrate_moab(infodata)
+    !---------------------------------------------------------------
+    ! Description
+    ! After a2oTbot, a2oUbot, a2oVbot tags were loaded on rof mesh,
+    !  they need to be migrated to the coupler pes, for weight application later
+    !
+    ! Arguments
+   type(seq_infodata_type) , intent(in)    :: infodata
 
+   character(*), parameter          :: subname = '(prep_rof_migrate_moab)'
+
+   integer :: ierr
+   ! end copy
+  end subroutine prep_rof_migrate_moab
+  !================================================================================================
   subroutine prep_rof_accum_lnd(timer)
 
     !---------------------------------------------------------------

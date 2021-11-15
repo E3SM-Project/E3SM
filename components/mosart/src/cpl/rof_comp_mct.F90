@@ -76,6 +76,7 @@ module rof_comp_mct
 !
 #ifdef HAVE_MOAB
   private :: init_rof_moab   ! create moab mesh (cloud of points)
+  private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
 #endif
 ! PRIVATE DATA MEMBERS:
 
@@ -398,6 +399,10 @@ contains
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
     call rof_export_mct( r2x_r )
+#ifdef HAVE_MOAB
+    ! Map roff data to MOAB datatype ; load fields/tags in MOAB from rtmCTL%runoff 
+    call rof_export_moab()
+#endif
     call t_stopf ('lc_rof_export')
 
     ! Check that internal clock is in sync with master clock
@@ -880,5 +885,10 @@ contains
 #endif
   end subroutine init_rof_moab
 #endif
+
+subroutine rof_export_moab()
+
+end subroutine rof_export_moab
+
 
 end module rof_comp_mct
