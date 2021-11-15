@@ -1,4 +1,4 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! Copyright. (c) 2013,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -52,6 +52,8 @@ module ocn_gm
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
+   logical :: local_config_GM_compute_Griffies
+
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 
 !***********************************************************************
@@ -122,7 +124,7 @@ contains
                                                     layerThickness
 
       real(kind=RKIND), dimension(:), pointer   :: &
-                ssh, fEdge
+                ssh, fEdge, latEdge
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
@@ -176,6 +178,8 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
 
@@ -237,7 +241,7 @@ contains
          if ( config_Redi_N2_based_taper_enable ) then
    
             !$omp parallel
-            !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
+            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN)
             do iCell = 1, nCells
                k = min(maxLevelCell(iCell) - 1, max(minLevelCell(iCell), indMLD(iCell)))
                maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
@@ -245,9 +249,8 @@ contains
                  k = k + 1
                  maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
                enddo
-   
-               maxLocation = k
-               do k = maxLocation, maxLevelCell(iCell)
+
+               do k = 1, maxLevelCell(iCell)
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
                   RediKappaScaling(k, iCell) = min(max(config_Redi_N2_based_taper_min,                  &
                                                        BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
@@ -278,7 +281,7 @@ contains
          !$omp do schedule(runtime)  &
          !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
          !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-         !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
+         !$omp         slopeTaperUp, slopeTaperDown)
          do iCell = 1, nCells
             invAreaCell = 1.0_RKIND/areaCell(iCell)
             k33(1:maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
@@ -354,19 +357,15 @@ contains
                                     config_Redi_maximum_slope - 1.0_RKIND)*(4.0_RKIND - abs(10.0_RKIND* &
                                     abs(slopeTriadUp(k, iCellSelf, iEdge))/config_Redi_maximum_slope - 4.0_RKIND)))
                   end if
-   
+
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
-   
-                  sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
-                  sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
-                  sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
-   
+
                   slopeTriadUp(k, iCellSelf, iEdge) = &
-                     slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
+                     slopeTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
-                     slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
-   
+                     slopeTaperDownslopeTriadDown(k, iCellSelf, iEdge)
+
                   ! Griffies 1998 eqn 34
                   if (k > minLevelCell(iCell)) then
                      k33(k, iCell) = k33(k, iCell) +  &
@@ -424,8 +423,12 @@ contains
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell = 1, nCells
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
-               rtmp = (displacedDensity(k-1,iCell) - density(k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
-               dDensityDzTopOfCell(k,iCell) = min(rtmp, -epsGM)
+               rtmp = -0.5_RKIND*(thermExpCoeff(k-1,iCell) + thermExpCoeff(k,iCell))* &
+                       (activeTracers(indexTemperature,k-1,iCell) - activeTracers(indexTemperature,k,iCell)) / &
+                       (zMid(k-1,iCell) - zMid(k,iCell)) + 0.5_RKIND*(salineContractCoeff(k-1,iCell) + &
+                       salineContractCoeff(k,iCell))*(activeTracers(indexSalinity,k-1,iCell) - &
+                       activeTracers(indexSalinity,k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
+               dDensityDzTopOfCell(k,iCell) = rtmp
             end do
 
             ! Approximation of dDensityDzTopOfCell on the top and bottom interfaces through the idea of having
@@ -462,7 +465,11 @@ contains
             cell2 = cellsOnEdge(2,iEdge)
 
             do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-               gradDensityEdge(k,iEdge) = (density(k,cell2) - density(k,cell1)) / dcEdge(iEdge)
+               gradDensityEdge(k,iEdge) = -0.5_RKIND*(thermExpCoeff(k,cell1) + thermExpCoeff(k,cell2))* &
+                                           (activeTracers(indexTemperature,k,cell2) - activeTracers(indexTemperature,k,cell1)) / &
+                                           dcEdge(iEdge) + 0.5_RKIND*(salineContractCoeff(k,cell1) + &
+                                           salineContractCoeff(k,cell2))*(activeTracers(indexSalinity,k,cell2) - &
+                                           activeTracers(indexSalinity,k,cell1)) / dcEdge(iEdge)
                gradZMidEdge(k,iEdge) = (zMid(k,cell2) - zMid(k,cell1)) / dcEdge(iEdge)
             end do
          end do
@@ -543,12 +550,12 @@ contains
          ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
+            !$omp do schedule(runtime) private(ltsum, k, cell1, cell2, sumN2, lt1, lt2)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
-               sumN2 = 0.0
-
+               sumN2 = 0.0_RKIND
+               ltsum = 0.0_RKIND
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
 
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
@@ -556,6 +563,7 @@ contains
                   sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
                                 lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
 
+                  ltsum = 0.5_RKIND*(lt1+lt2) + ltsum
                end do
 
                cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed,                          &
@@ -593,28 +601,33 @@ contains
 
               k = minLevelEdgeBot(iEdge)+1
               zEdge = -layerThickEdge(k-1,iEdge)
-              do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
-                lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
-                lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
-                                lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-                sumRi = sumRi + 0.5_RKIND*(lt1*max(RiTopOfCell(k,cell1),0.0_RKIND) + &
-                                    lt2*max(RiTopOfCell(k,cell2),0.0_RKIND))
-                ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
-                countN2 = countN2 + 1
+              do while(zEdge > -50.0_RKIND .and. k < maxLevelEdgeTop(iEdge))
+                 k = k + 1
+                 zEdge = zEdge - layerThickEdge(k-1,iEdge)
+              end do
 
-                k = k + 1
-                zEdge = zEdge - layerThickEdge(k-1,iEdge)
+              do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
+                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                 sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                 lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
+                 sumRi = sumRi + 0.5_RKIND*(lt1*max(RiTopOfCell(k,cell1),0.0_RKIND) + &
+                                     lt2*max(RiTopOfCell(k,cell2),0.0_RKIND))
+                 ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
+                 countN2 = countN2 + 1
+
+                 k = k + 1
+                 zEdge = zEdge - layerThickEdge(k-1,iEdge)
               end do
 
               if (countN2 > 0) then
                 c_Visbeck = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
-                eddyLength(iEdge) = min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
-                                sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge))))
+                eddyLength(iEdge) = max(dcEdge(iEdge), min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
+                                    sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge)))))
                 eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_Visbeck*betaEdge(iEdge))) /  &
-                                      (1.0E-11_RKIND + sqrt(sumRi)))
+                                  (1.0E-11_RKIND + sqrt(sumRi)))
                 gmBolusKappa(iEdge) = config_GM_Visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
                 gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
                                           config_GM_spatially_variable_max_kappa))
@@ -625,6 +638,54 @@ contains
            !$omp end do
            !$omp end parallel
          end if
+
+         ! When config_GM_closure = 'Griffies' actually modify the value of gmBolusKappa based on
+         ! Griffies et al (2005)
+         if (local_config_GM_compute_Griffies) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
+            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2, c_Visbeck)
+            do iEdge = 1, nEdges
+               k=minLevelEdgeBot(iEdge)
+               sumN2 = 0.0_RKIND
+               ltSum = 0.0_RKIND
+               sumRi = 0.0_RKIND
+               countN2 = 0
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+
+               k = minLevelEdgeBot(iEdge)+1
+               zEdge = -layerThickEdge(k-1,iEdge)
+               do while(zEdge > -config_GM_Griffies_min_depth .and. k < maxLevelEdgeTop(iEdge))
+                  k = k+1
+                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+               end do
+
+               do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sumN2 = sumN2 + abs(gradDensityConstZTopOfEdge(k,iEdge))*0.5_RKIND*(lt1+lt2)
+                  ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
+                  countN2 = countN2 + 1
+
+                  k = k + 1
+                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+               end do
+
+               if (countN2 > 0) then
+                  sumN2 = sumN2 / ltsum
+
+                  gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_griffies_length**2.0_RKIND * &
+                                        gravity * abs(sumN2) / (1.0E-15 + config_GM_Griffies_No)
+                  gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
+                                            config_GM_spatially_variable_max_kappa))
+              else !for really shallow columns use min bolus kappa
+                  gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
+              end if
+            end do
+            !$omp end do
+            !$omp end parallel
+          end if
 
          ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
          ! Eden and Greatbach (2008), Ocean Model., but assuming quasi-geostrophy to simplify the EKE budget
@@ -663,6 +724,46 @@ contains
          endif
 
          nEdges = nEdgesArray(3)
+         if(config_gm_enable_horizontal_resolution_function) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+               sumN2 = 0.0
+
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
+
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                                  lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
+               end do
+
+               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
+               cGMphasespeed(iEdge) = c_mode1
+               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
+                            / dcEdge(iEdge)
+               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
+                  gmResolutionTaper(iEdge) = 0.0_RKIND
+               else
+                  gmResolutionTaper(iEdge) = 1.0_RKIND
+               end if
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+
+         if(config_Redi_closure == 'equalGM') then
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iEdge=1,nEdges
+              RediKappa(iEdge) = gmBolusKappa(iEdge)
+           end do
+           !$omp end do
+           !$omp end parallel
+         end if
+
          !!$omp parallel
          !!$omp do schedule(runtime) private(cell1, cell2, k, &
          !!$omp             BruntVaisalaFreqTopEdge, N) &
@@ -679,37 +780,37 @@ contains
                k = minLevelEdgeBot(iEdge)+1
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, epsGM)
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
                                                                      *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
                                  /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
 
                ! Second to next to the last rows
                do k = minLevelEdgeBot(iEdge) + 2, maxLevelEdgeTop(iEdge) - 1
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, epsGM)
                   tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
                                     /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
                   tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
                                                                         *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
                   tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
                                     /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
-                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                          *gradDensityConstZTopOfEdge(k,iEdge)
                end do
 
                ! Last row
                k = maxLevelEdgeTop(iEdge)
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, epsGM)
                tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
                                  /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
                                                                      *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
                N = maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)
@@ -889,7 +990,6 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
@@ -911,11 +1011,29 @@ contains
          end if
 
          RediGMinitValue = 1.0_RKIND
+         !compute beta
+         if(config_GM_closure == 'Visbeck'.or. &
+            config_GM_closure == 'visbeck'.or. &
+            config_GM_closure == 'EdenGreatbatch'.or. &
+            config_GM_closure == 'edengreatbatch'.or. &
+            config_GM_closure == 'edenGreatbatch'.or. &
+            config_gm_enable_horizontal_resolution_function) then
+            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1,nEdges
+               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
          if (config_GM_closure == 'constant') then
             local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_compute_Griffies = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
@@ -929,7 +1047,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .true.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
-
+            local_config_GM_compute_Griffies = .false.
             RediGMinitValue = 0.0_RKIND
             ! for N2 dependence, we still assign Kappa as a constant to be multiplied by N2 scaling.
             !$omp parallel
@@ -945,15 +1063,26 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .true.
             local_config_GM_compute_EdenGreatbatch = .false.
-
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            local_config_GM_compute_Griffies = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_GM_closure == 'Griffies'.or. &
+                  config_GM_closure == 'griffies') then
+            local_config_GM_lat_variable_c2 = .true.
+            local_config_GM_kappa_lat_depth_variable = .false.
+            local_config_GM_compute_Griffies = .true.
+            local_config_GM_compute_Visbeck = .false.
+            local_config_GM_compute_EdenGreatbatch = .false.
+
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1,nEdges
+               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
             !$omp end parallel
@@ -963,14 +1092,10 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .true.
-
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            local_config_GM_compute_Griffies = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
@@ -982,7 +1107,8 @@ contains
          end if
 
          ! Add resolution taper
-         if (config_eddying_resolution_taper == 'none') then
+         if (config_eddying_resolution_taper == 'none' .or. &
+             config_gm_enable_horizontal_resolution_function) then
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1,nEdges
@@ -991,7 +1117,8 @@ contains
             !$omp end do
             !$omp end parallel
             ! Nothing to do, as we just keep the same assignment as above.
-         else if (config_eddying_resolution_taper == 'ramp') then
+         else if (config_eddying_resolution_taper == 'ramp' .and. &
+                  .not. config_gm_enable_horizontal_resolution_function) then
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge = 1, nEdges

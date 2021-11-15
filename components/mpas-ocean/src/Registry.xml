@@ -353,6 +353,10 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
+	    <nml_option name="config_gm_enable_horizontal_resolution_function" type="logical" default_value=".false." units="unitless"
+					description="Flag to enable the resolution tapering in the horizontal following Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
 					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
@@ -372,6 +376,26 @@
 		<nml_option name="config_GM_Visbeck_alpha" type="real" default_value="0.005" units="NA"
 					description="scaling factor on the Visbeck diffusivity parameterization"
 					possible_values="small positive numbers"
+		/>
+		<nml_option name="config_GM_Griffies_min_depth" type="real" default_value="100" units="m"
+					description="minimum depth to start integral for the Griffies parameter"
+					possible_values="positive reals"
+	    />
+		<nml_option name="config_GM_Griffies_max_depth" type="real" default_value="2000.0" units="m"
+					description="maximum depth for the integral of the Griffies parameter"
+					possible_values="positive reals greater than min_depth"
+		/>
+		<nml_option name="config_GM_Griffies_alpha" type="real" default_value="0.15" units="NA"
+					description="scaling parameter for the Griffies et al (2005) parameterization"
+					possible_values="small positive reals"
+		/>
+	    <nml_option name="config_GM_Griffies_length" type="real" default_value="50000" units="m"
+					description="mixing length for the Griffies et al (2005) parameterization"
+					possible_values="roughly 50000-80000"
+		/>
+		<nml_option name="config_GM_Griffies_No" type="real" default_value="0.004" units="s^{-1}"
+					description="reference Brunt Vaisala Frequency for the Griffies et al (2005) parameterization"
+					possible_values="small positive reals"
 		/>
 		<nml_option name="config_GM_Visbeck_max_depth" type="real" default_value="1000.0" units="m"
 					description="minimum depth for calculation of vertical average"
@@ -2849,6 +2873,14 @@
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
+		/>
+  	    <var name="rediAbernatheyMap" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+		     description="Redi kappa value taken from Abernathey and Marshall (2013) DOI - https://doi.org/10.1002/jgrc.20066"
+		     packages="gm"
+		/>
+		<var name="rediAbernatheyZonal" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+		     description="Redi kappa value taken from Gnanadesikan et al (2016) -- DOI - https://doi.org/10.1002/2015GL064100"
 			 packages="gm"
 		/>
 		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
