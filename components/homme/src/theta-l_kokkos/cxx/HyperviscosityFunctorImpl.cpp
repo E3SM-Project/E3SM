@@ -298,7 +298,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       // Fix w at surface:
       // Adjust w_i at the surface, since velocity has changed
       if (process_nh_vars) {
-
         Kokkos::single(Kokkos::PerThread(team),[&](){
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;

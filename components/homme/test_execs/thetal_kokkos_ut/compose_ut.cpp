@@ -132,6 +132,7 @@ struct Session {
     p.dt_tracer_factor = -1;
     p.dt_remap_factor = -1;
     p.params_set = true;
+    p.theta_hydrostatic_mode = true;
 
     const auto hyai = cmvdc(h.hybrid_ai);
     const auto hybi = cmvdc(h.hybrid_bi);
