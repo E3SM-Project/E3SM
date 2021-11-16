@@ -12,6 +12,7 @@ module crm_physics
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
+   use cam_history,     only: outfld
 
    implicit none 
    private
@@ -298,8 +299,8 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    use phys_control,          only: phys_getopts, use_gw_convect
    use phys_grid,             only: get_ncols_p
    use crm_history,           only: crm_history_init
-   use cam_history,    only: addfld
-   use constituents,   only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
+   use cam_history,           only: addfld
+   use constituents,          only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
 #endif
@@ -426,6 +427,11 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
       if (use_gw_convect) call pbuf_set_field(pbuf2d, ttend_dp_idx, 0._r8)
    end if
+
+   call addfld('DDSE_CRM',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to CRM (excluding rad)' )
+   call addfld('DQLV_CRM',(/'lev'/), 'A', 'm/s2 ','QLV tendency due to CRM' )
+   call addfld('DDSE_QRS',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to SW rad in CRM' )
+   call addfld('DDSE_QRL',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to LW rad in CRM' )
 
 end subroutine crm_physics_init
 
@@ -1345,6 +1351,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! Write out data for history files
          !------------------------------------------------------------------------------------------
+
+         ! Need to grab rad heating again - note these were divided by pdel above
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL'), qrl)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRS'), qrs)
+
+         ! MSE budget terms
+         call outfld('DDSE_CRM  ',ptend(c)%s(1:ncol,:) - qrs(1:ncol,:) - qrl(1:ncol,:), ncol, lchnk )
+         call outfld('DQLV_CRM  ',ptend(c)%q(1:ncol,:,1)*latvap, ncol, lchnk )
+         call outfld('DDSE_QRS  ',qrs(1:ncol,:), ncol, lchnk )
+         call outfld('DDSE_QRL  ',qrl(1:ncol,:), ncol, lchnk )
+
          icrm_beg = ncol_sum + 1
          icrm_end = ncol_sum + ncol
          call crm_history_out(state(c), ptend(c), crm_state, crm_rad, crm_output, &
