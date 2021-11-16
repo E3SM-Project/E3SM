@@ -2,6 +2,11 @@
 General quick guide for running e3sm_diags v2
 =========================================================================
 
+.. warning::
+    As of ``v2.6.0``, ``e3sm_diags`` should be used as the module name instead of
+    ``acme_diags``. Instances of ``acme_diags`` in the Python import statements should
+    be replaced accordingly.
+
 1. Installation
 -----------------------------------------------------------
 

@@ -11,7 +11,12 @@ E3SM Diagnostics Package v2
 Welcome to the E3SM Diagnostics Package documentation hub.
 
 To change the documentation version, use the version selector in the bottom left-hand corner.
-Please note, documentation for versions ``<v2.5.0`` are not available in the version selector.
+Please note, documentation for versions ``v2.5.0`` are not available in the version selector.
+
+.. warning::
+    As of ``v2.6.0``, ``e3sm_diags`` should be used as the module name instead of
+    ``acme_diags``. Instances of ``acme_diags`` in the Python import statements should
+    be replaced accordingly.
 
 .. toctree::
    :maxdepth: 2

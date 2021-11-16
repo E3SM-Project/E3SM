@@ -4,6 +4,11 @@
 Cori-Haswell quick guide for running e3sm_diags v2
 =========================================================================
 
+.. warning::
+    As of ``v2.6.0``, ``e3sm_diags`` should be used as the module name instead of
+    ``acme_diags``. Instances of ``acme_diags`` in the Python import statements should
+    be replaced accordingly.
+
 1. Installation
 -----------------------------------------------------------
 
@@ -136,7 +141,7 @@ Once the session is available, launch E3SM Diagnostics, to activate ``e3sm_unifi
 
     ::
 
-        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh 
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 
@@ -160,7 +165,7 @@ Copy and paste the code below into a file named ``diags.bash``.
         #SBATCH --time=01:00:00
         #SBATCH -C haswell
 
-        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh 
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 And then submit it:
