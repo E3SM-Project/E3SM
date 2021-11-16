@@ -287,6 +287,7 @@ template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
     const Int                ncols_scream,
+    gid_type                 min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp
   )
@@ -302,8 +303,12 @@ void SPAFunctions<S,D>
   spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
   Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
   Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
-    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii);
     spa_horiz_interp.target_grid_loc(ii) = ii;
+    // Note we are interested in the vector index, not the actual global-id 
+    // Here we want the index in a the source data vector corresponding to this column
+    // which needs to be offset by the minimum degree of freedom in the whole grid.
+    // That way the first global-id will map to the 0th entry in the source grid data.
+    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
   });
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
@@ -409,8 +414,11 @@ void SPAFunctions<S,D>
   for (int idx=0;idx<local_idx.size();idx++) {
       int ii = global_idx[idx];
       weights_h(idx)         = S_global_h(ii);
-      source_grid_loc_h(idx) = col_global_h(ii) - (1-min_dof);
-      target_grid_loc_h(idx) = local_idx[idx]; 
+      target_grid_loc_h(idx) = local_idx[idx];
+      // Note that the remap column location starts with 1.
+      // Here we want the index in a the source data vector corresponding to this column
+      // which needs to start with 0 since cpp starts with 0.
+      source_grid_loc_h(idx) = col_global_h(ii) - 1;
   }
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
   Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);

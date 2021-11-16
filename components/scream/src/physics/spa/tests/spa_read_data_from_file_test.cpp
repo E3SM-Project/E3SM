@@ -49,8 +49,9 @@ TEST_CASE("spa_read_data","spa")
 
   int my_ncols = ncols/comm_size + (comm_rank < ncols%comm_size ? 1 : 0);
   view_1d<gid_type> dofs_gids("",my_ncols);
+  gid_type min_dof = 1; // Start global-ids from 1
   Kokkos::parallel_for("", my_ncols, KOKKOS_LAMBDA(const int& ii) {
-    dofs_gids(ii) = comm_rank + ii*comm_size;
+    dofs_gids(ii) = min_dof + static_cast<gid_type>(comm_rank + ii*comm_size);
   });
   // Make sure that the total set of columns has been completely broken up.
   Int test_total_ncols = 0;
@@ -60,7 +61,7 @@ TEST_CASE("spa_read_data","spa")
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
-  SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,0,dofs_gids,spa_horiz_interp); //TODO, make this test use 1 as min_dof, for more test coverage.
+  SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,min_dof,dofs_gids,spa_horiz_interp);
   SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
   // Verify that the interpolated values match the algorithm for the data and the weights.

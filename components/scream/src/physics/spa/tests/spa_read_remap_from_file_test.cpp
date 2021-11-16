@@ -44,8 +44,9 @@ TEST_CASE("spa_read_remap_data","spa")
   auto comm_rank = spa_comm.rank();
   int tgt_grid_ncols = tgt_grid_ncols_total/comm_size + (comm_rank < tgt_grid_ncols_total%comm_size ? 1 : 0);
   view_1d<gid_type> dofs_gids("",tgt_grid_ncols);
+  gid_type min_dof = 0;  // We will set up the dof's to start from 0
   Kokkos::parallel_for("", tgt_grid_ncols, KOKKOS_LAMBDA(const int& ii) {
-    dofs_gids(ii) = comm_rank + ii*comm_size;
+    dofs_gids(ii) = min_dof + static_cast<gid_type>(comm_rank + ii*comm_size);
   });
   // Make sure that the total set of columns has been completely broken up.
   Int test_total_ncols = 0;

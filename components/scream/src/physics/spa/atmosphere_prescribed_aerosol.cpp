@@ -149,7 +149,7 @@ void SPA::initialize_impl ()
   ci_string no_filename = "none";
   if (m_spa_remap_file == no_filename) {
     printf("WARNING: SPA Remap File has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation");
-    SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_dofs_gids,SPAHorizInterp);
+    SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   } else {
     SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   }

@@ -49,8 +49,9 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   int my_ncols = ncols/comm_size + (comm_rank < ncols%comm_size ? 1 : 0);
   view_1d<gid_type> dofs_gids("",my_ncols);
+  gid_type min_dof = 0;  // We will set up the dof's to start from 0
   Kokkos::parallel_for("", my_ncols, KOKKOS_LAMBDA(const int& ii) {
-    dofs_gids(ii) = comm_rank + ii*comm_size;
+    dofs_gids(ii) = min_dof + static_cast<gid_type>(comm_rank + ii*comm_size);
   });
   // Make sure that the total set of columns has been completely broken up.
   Int test_total_ncols = 0;
@@ -60,7 +61,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
-  SPAFunc::set_remap_weights_one_to_one(ncols,dofs_gids,spa_horiz_interp);
+  SPAFunc::set_remap_weights_one_to_one(ncols,min_dof,dofs_gids,spa_horiz_interp);
   SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
   // Check that the horizontal interpolation data is in fact a 1-1 mapping
