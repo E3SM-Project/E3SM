@@ -286,6 +286,7 @@ void SPAFunctions<S,D>
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
+    const Int                ncols_scream,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp
   )
@@ -295,14 +296,14 @@ void SPAFunctions<S,D>
   // mapping.
   auto num_local_cols = dofs_gids.size();
   spa_horiz_interp.length            = num_local_cols; 
-  spa_horiz_interp.source_grid_ncols = num_local_cols;
+  spa_horiz_interp.source_grid_ncols = ncols_scream;
   spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
   spa_horiz_interp.source_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
   spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
   Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
   Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
     spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii);
-    spa_horiz_interp.target_grid_loc(ii) = dofs_gids(ii);
+    spa_horiz_interp.target_grid_loc(ii) = ii;
   });
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
@@ -515,7 +516,7 @@ void SPAFunctions<S,D>
   AtmosphereInput spa_data_input(loc_comm,spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
-  
+ 
   // Now that we have the data we can map the data onto the target data.
   auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
   auto ccn3_h       = Kokkos::create_mirror_view(spa_data.CCN3);

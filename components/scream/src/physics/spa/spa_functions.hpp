@@ -187,6 +187,7 @@ struct SPAFunctions
           SPAHorizInterp&    spa_horiz_interp);
 
   static void set_remap_weights_one_to_one(
+    const Int                ncols_scream,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp);
 

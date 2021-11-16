@@ -59,6 +59,7 @@ TEST_CASE("spa_read_data","spa")
 
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
+  spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,0,dofs_gids,spa_horiz_interp); //TODO, make this test use 1 as min_dof, for more test coverage.
   SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
 
