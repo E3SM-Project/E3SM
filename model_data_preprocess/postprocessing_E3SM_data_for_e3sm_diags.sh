@@ -52,14 +52,14 @@ dir_out_diurnal_climo=$result_dir/diurnal_climatology
 echo "Generating Climatology files"
 drc_rgr=${dir_out_climo}/rgr
 drc_out=${dir_out_climo}/native
-ncclimo -m ${atm_name} --caseid=${caseid} --yr_srt=${start} --yr_end=${end} --drc_in=${drc_in} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
+ncclimo -P ${atm_name} --caseid=${caseid} --yr_srt=${start} --yr_end=${end} --drc_in=${drc_in} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
 
 echo "Generating Diurnal Cycle Climo files"
 drc_rgr=${dir_out_diurnal_climo}/rgr
 drc_out=${dir_out_diurnal_climo}/native
 echo ${drc_in}
 
-cd ${drc_in};eval ls ${caseid}.${atm_name}.h4.*{${start}..${end}}*.nc | ncclimo -m ${atm_name} --clm_md=hfc --caseid=${caseid}.${atm_name}.h4 -v PRECT --ypf=1 --yr_srt=${start} --yr_end=${end} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
+cd ${drc_in};eval ls ${caseid}.${atm_name}.h4.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --clm_md=hfc --caseid=${caseid}.${atm_name}.h4 -v PRECT --ypf=1 --yr_srt=${start} --yr_end=${end} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
 ##
 echo "Generating per-variable monthly time-series."
 drc_rgr=${dir_out_ts}/rgr
@@ -69,7 +69,7 @@ echo "Variables for Streamflow"
 cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr}
 #
 echo "Variables for supporting diags using monthly time series as input(ENSO, QBO, etc.)"
-cd ${drc_in};eval ls ${caseid}.${atm_name}.h0.*{${start}..${end}}*.nc | ncclimo -m ${atm_name} --caseid=${caseid} --var=U,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
+cd ${drc_in};eval ls ${caseid}.${atm_name}.h0.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --caseid=${caseid} --var=U,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
 #done
 
 exit
