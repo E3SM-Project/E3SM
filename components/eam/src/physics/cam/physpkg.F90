@@ -46,7 +46,7 @@ module physpkg
                                     modal_aero_wateruptake_reg
 
 !++BEH
-  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux
+  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2
 !--BEH
 
   implicit none
@@ -152,6 +152,7 @@ subroutine phys_register
     use aircraft_emit,      only: aircraft_emit_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
+    use co2_diagnostics,    only: co2_diags_register
     use cospsimulator_intr, only: cospsimulator_intr_register
     use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
     use subcol,             only: subcol_register
@@ -315,6 +316,9 @@ subroutine phys_register
 
     ! Register diagnostics PBUF
     call diag_register()
+
+    ! co2 diagnostics
+    call co2_diags_register()
 
     ! Register age of air tracers
     call aoa_tracers_register()
@@ -1326,6 +1330,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 !    call gmean_mass ('after tphysac FV:WET)', phys_state)
 !    call co2_gmean_check ('CO2 after tphysac FV:WET)', phys_state)
     call co2_gmean_check_wflux ('CO2 after tphysac FV:WET)', phys_state, cam_in)
+    call check_co2_change_pr2(phys_state, phys_tend, pbuf2d, cam_in, 'wet')
 !--BEH
 
     call t_startf ('physpkg_st2')
