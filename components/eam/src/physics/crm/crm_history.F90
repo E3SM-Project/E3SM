@@ -378,7 +378,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    use crm_ecpp_output_module, only: crm_ecpp_output_type
    use constituents,           only: cnst_get_ind
    use ppgrid,                 only: pcols, pver, pverp
-   use physconst,              only: cpair
+   use physconst,              only: cpair, latvap
    use cam_history,            only: outfld
    use cam_abortutils,         only: endrun
    !----------------------------------------------------------------------------

@@ -260,7 +260,7 @@ subroutine cam_run1(cam_in, cam_out, do_dp_coupling)
          call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), pbuf_get_index('QLV_tot'), QLV_tot )
          do i = 1,ncol
             do k = 1,pver
-               DSE_tot(i,k) = cpair*phys_state(c)%t(i,k) + gravit*phys_state(c)%zm(i,k) + phys_state(c)%phis(i)
+               DSE_tot(i,k) = phys_state(c)%s(i,k)
                QLV_tot(i,k) = phys_state(c)%q(i,k,1)*latvap
             end do
          end do
@@ -439,25 +439,13 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
       call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), DSE_tot_idx, DSE_tot )
       call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), QLV_tot_idx, QLV_tot )
 
-      ! Calculate updated MSE components
-      do i = 1,ncol
-         do k = 1,pver
-            DSE(i,k) = cpair*phys_state(c)%t(i,k) + gravit*phys_state(c)%zm(i,k) + phys_state(c)%phis(i)
-            QLV(i,k) = phys_state(c)%q(i,k,1)*latvap
-         end do
-      end do
-
       ! dynamics MSE tendency
-      DSE_diff(1:ncol,:) = ( DSE(1:ncol,:) - DSE_ac(1:ncol,:) )/dtime
-      QLV_diff(1:ncol,:) = ( QLV(1:ncol,:) - QLV_ac(1:ncol,:) )/dtime
-      call outfld('DYN_DDSE', DSE_diff, ncol, lchnk )
-      call outfld('DYN_DQLV', QLV_diff, ncol, lchnk )
+      call outfld('DDSE_DYN', ( phys_state(c)%s(1:ncol,:)          - DSE_ac(1:ncol,:) )/dtime, ncol, lchnk )
+      call outfld('DQLV_DYN', ( phys_state(c)%q(1:ncol,:,1)*latvap - QLV_ac(1:ncol,:) )/dtime, ncol, lchnk )
 
       ! total MSE tendency
-      DSE_diff(1:ncol,:) = ( DSE(1:ncol,:) - DSE_tot(1:ncol,:) )/dtime
-      QLV_diff(1:ncol,:) = ( QLV(1:ncol,:) - QLV_tot(1:ncol,:) )/dtime
-      call outfld('TOT_DDSE', DSE_diff, ncol, lchnk )
-      call outfld('TOT_DQLV', QLV_diff, ncol, lchnk )
+      call outfld('DDSE_TOT', ( phys_state(c)%s(1:ncol,:)          - DSE_tot(1:ncol,:) )/dtime, ncol, lchnk )
+      call outfld('DQLV_TOT', ( phys_state(c)%q(1:ncol,:,1)*latvap - QLV_tot(1:ncol,:) )/dtime, ncol, lchnk )
 
       ! Update baseline values for total MSE tendency
       DSE_tot = DSE

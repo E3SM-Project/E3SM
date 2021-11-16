@@ -316,11 +316,6 @@ subroutine diag_init()
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
 
-   call addfld ('DYN_DDSE',(/'lev'/), 'A','m/s2','Dynamics DSE tendency',   standard_name='dyn_ddse')
-   call addfld ('DYN_DQLV',(/'lev'/), 'A','m/s2','Dynamics qv*Lv tendency', standard_name='dyn_dqlv')
-   call addfld ('TOT_DDSE',(/'lev'/), 'A','m/s2','Total DSE tendency',      standard_name='tot_ddse')
-   call addfld ('TOT_DQLV',(/'lev'/), 'A','m/s2','Total qv*Lv tendency',    standard_name='tot_dqlv')
-
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
    call addfld ('T300',horiz_only,    'A','K','Temperature at 300 mbar pressure surface')
@@ -494,11 +489,6 @@ subroutine diag_init()
       if (moist_physics) then
          call add_default ('RELHUM  ', 1, ' ')
       end if
-
-      call add_default ('DYN_DDSE', 1, ' ')
-      call add_default ('DYN_DQLV', 1, ' ')
-      call add_default ('TOT_DDSE', 1, ' ')
-      call add_default ('TOT_DQLV', 1, ' ')
 
       ! For Tier 1b global water cycle diagostics
       call add_default ('TUQ      ', 1, ' ')
