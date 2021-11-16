@@ -994,6 +994,10 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables mpilib="mpi-serial">
+      <!-- We currently don't have modules for serial NetCDF -->
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.1c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0</env>
+    </environment_variables>
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
