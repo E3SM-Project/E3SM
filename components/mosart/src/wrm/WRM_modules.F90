@@ -428,9 +428,8 @@ MODULE WRM_modules
      character(len=*),parameter :: subname='(WRM_storage_targets)'
 
      call get_curr_date(yr, month, day, tod)
+  do idam=1,ctlSubwWRM%LocalNumDam
    if (StorWater%active_stage(idam) == 2) then !only do this when dam is fully functional
-     do idam=1,ctlSubwWRM%LocalNumDam
-
         drop = 0
         Nmth = 0
         if (WRMUnit%StorageCalibFlag(idam).eq.0) then
@@ -573,8 +572,8 @@ MODULE WRM_modules
            !print*,"calibrate release ",idam, month,fill, drop, WRMUnit%StorCap(idam)
            !print*,WRMUnit%MeanMthFlow(idam,month),WRMUnit%MeanMthFlow(idam,13),StorWater%storage(idam),WRMUnit%StorTarget(idam,month)
         endif
-     end do
-   endif
+     endif
+   end do
   end subroutine WRM_storage_targets
 
 !-----------------------------------------------------------------------
