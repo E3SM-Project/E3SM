@@ -211,8 +211,8 @@ contains
        case (GLC_ELEVCLASS_ERR_NONE)
           ! Do nothing
        case (GLC_ELEVCLASS_ERR_TOO_LOW, GLC_ELEVCLASS_ERR_TOO_HIGH)
-          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
-          write(logunit,*) glc_errcode_to_string(err_code)
+!          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
+!          write(logunit,*) glc_errcode_to_string(err_code)
        case default
           write(logunit,*) subname, ': ERROR getting elevation class for glc_pt = ', glc_pt
           write(logunit,*) glc_errcode_to_string(err_code)
@@ -534,8 +534,8 @@ contains
        case (GLC_ELEVCLASS_ERR_NONE)
           ! Do nothing
        case (GLC_ELEVCLASS_ERR_TOO_LOW, GLC_ELEVCLASS_ERR_TOO_HIGH)
-          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
-          write(logunit,*) glc_errcode_to_string(err_code)
+!          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
+!          write(logunit,*) glc_errcode_to_string(err_code)
        case default
           write(logunit,*) subname, ': ERROR getting elevation class for glc_pt = ', glc_pt
           write(logunit,*) glc_errcode_to_string(err_code)
