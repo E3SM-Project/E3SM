@@ -55,6 +55,124 @@
      This allows using a different mpirun command to launch unit tests
 
   -->
+  <machine MACH="perlmutter">
+    <DESC>Perlmutter at NERSC.  Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
+    <NODENAME_REGEX>login</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>e3sm_g</PROJECT>
+    <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{PSCRATCH}/e3sm_scratch/perlmutter</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>/global/cfs/cdirs/e3sm/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_URL_ROOT>http://portal.nersc.gov/project/e3sm/$ENV{USER}</CIME_URL_ROOT>
+    <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <GMAKE_J>10</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="nvidiagpu">128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="nvidiagpu">4</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+	<arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+    </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
+      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
+      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+      <modules>
+	<command name="unload">cray-hdf5-parallel</command>
+        <command name="unload">cray-netcdf-hdf5parallel</command>
+	<command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">cuda</command>
+        <command name="unload">cudatoolkit</command>
+        <command name="unload">craype-accel-nvidia80</command>
+        <command name="unload">craype-accel-host</command>
+        <command name="unload">perftools-base</command>
+        <command name="unload">perftools</command>
+        <command name="unload">darshan</command>
+      </modules>
+
+      <modules compiler="gnu.*">
+	<command name="load">PrgEnv-gnu/8.2.0</command>
+	<command name="load">gcc/9.3.0</command>
+	<!--command name="load">gcc/10.3.0</command-->
+      </modules>
+
+      <modules compiler="nvidia.*">
+	<command name="load">PrgEnv-nvidia</command>
+	<command name="load">nvidia/21.7</command>
+      </modules>
+      
+      <modules compiler="gnugpu">
+	<command name="load">cuda</command>
+      </modules>      
+
+      <modules compiler="nvidiagpu">
+	<command name="load">cuda</command>
+      </modules>
+      
+      <modules compiler="gnu">
+        <command name="load">craype-accel-host</command>
+      </modules>      
+
+      <modules compiler="nvidia">
+        <command name="load">craype-accel-host</command>
+      </modules>      
+
+      <modules>
+	<command name="load">cray-libsci/21.08.1.2</command>
+	<command name="load">craype</command>
+	<command name="load">cray-mpich/8.1.10</command>
+	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
+	<command name="load">cmake/3.20.5</command>
+      </modules>
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <!--env name="MPICH_GPU_SUPPORT_ENABLED">1</env-->
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="spock">
     <DESC>Spock. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL.</DESC>
     <NODENAME_REGEX>.*spock.*</NODENAME_REGEX>
