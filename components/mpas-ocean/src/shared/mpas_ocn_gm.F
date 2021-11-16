@@ -973,7 +973,7 @@ contains
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
+      real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge, &
             gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge
 
