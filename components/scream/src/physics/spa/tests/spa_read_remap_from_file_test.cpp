@@ -59,10 +59,9 @@ TEST_CASE("spa_read_remap_data","spa")
   REQUIRE(spa_horiz_interp.source_grid_ncols==src_grid_ncols);
 
   // We have a few metrics to ensure that the data read from file matches the data in the file.
-  Real tol = std::numeric_limits<Real>::epsilon();
+  Real tol = 1e0*std::numeric_limits<Real>::epsilon();
   Int col_sum = 0;
   Int row_sum = 0;
-  Real wgt_sum = 0.0;
   view_1d_host<Real> wgts("",tgt_grid_ncols);
   Kokkos::deep_copy(wgts,0.0);
   auto weights_h = Kokkos::create_mirror_view(spa_horiz_interp.weights);
@@ -78,19 +77,18 @@ TEST_CASE("spa_read_remap_data","spa")
   Kokkos::parallel_reduce("", spa_horiz_interp.length, KOKKOS_LAMBDA (const int& i, Int& lsum) {
     lsum += spa_horiz_interp.source_grid_loc[i];
   },col_sum);
-  Kokkos::parallel_reduce("", spa_horiz_interp.length, KOKKOS_LAMBDA (const int& i, Real& lsum) {
-    lsum += spa_horiz_interp.weights[i];
-  },wgt_sum);
   // Note, for our test problem the column sum is sum(0...tgt_grid_ncols-1)*src_grid_ncols,
   //       and the                     row sum is sum(0...src_grid_ncols-1)*tgt_grid_ncols. 
   //       Each set of weights should add up to 1.0 for each ncol, so total weights=tgt_grid_ncols
   REQUIRE(row_sum == (tgt_grid_ncols*(tgt_grid_ncols-1))/2*src_grid_ncols);
   REQUIRE(col_sum == (src_grid_ncols*(src_grid_ncols-1)/2*tgt_grid_ncols));
-  REQUIRE(std::abs(wgt_sum - 1.0*tgt_grid_ncols) < tol);
   // The sum of remap weights should always be 1.0
+  Real wgt_sum = 0.0;
   for (int i=0; i<tgt_grid_ncols; i++) {
     REQUIRE(wgts[i]==1.0);
+    wgt_sum += wgts[i];
   }
+  REQUIRE(std::abs(wgt_sum/tgt_grid_ncols - 1.0) < tol);
   
   // All Done 
   scorpio::eam_pio_finalize();
