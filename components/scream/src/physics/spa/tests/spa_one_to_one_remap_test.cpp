@@ -67,7 +67,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   // Check that the horizontal interpolation data is in fact a 1-1 mapping
   Kokkos::parallel_for("", spa_horiz_interp.length, KOKKOS_LAMBDA(const int& ii) {
     EKAT_KERNEL_ASSERT(spa_horiz_interp.weights(ii)==1.0);
-    EKAT_KERNEL_ASSERT(spa_horiz_interp.source_grid_loc(ii)==dofs_gids(ii));
+    EKAT_KERNEL_ASSERT(spa_horiz_interp.source_grid_loc(ii)==dofs_gids(ii)-min_dof);
     EKAT_KERNEL_ASSERT(spa_horiz_interp.target_grid_loc(ii)==ii);
   });
 
