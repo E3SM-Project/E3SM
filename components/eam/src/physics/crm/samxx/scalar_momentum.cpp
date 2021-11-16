@@ -29,7 +29,9 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    auto &zi    = :: zi;
    auto &w     = :: w;
    auto &rho   = :: rho;
-   auto &dx  = ::dx;
+   auto &dx    = ::dx;
+
+   real constexpr pi = 3.14159;
    
    real1d k_arr("k_arr",nx);
    real2d dz_loc("dz_loc",nzm+1,ncrms);
@@ -128,11 +130,12 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
       k_arr(2*j+1) = 2.*pi*real(j+1)/(real(nx)*dx);   //cos
       k_arr(2*j+2) = 2.*pi*real(j+1)/(real(nx)*dx);   //sin
       if (j==0) {
-         k_arr(0) = 0.0;
+         k_arr(j) = 0.0;
       }
+      if ( j==(nh-1) && (nx%2)==0) { 
+         k_arr(nx-1) = 2.*pi/(2.*dx); //nyquist wavelength for even n
+      }  
    });
-
-   if ((nx%2) == 0) { k_arr(nx-1) = 2.*pi/(2.*dx); }  //nyquist wavelength for even n
 
    //-----------------------------------------
    // solve vertical structure equation
