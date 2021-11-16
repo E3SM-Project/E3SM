@@ -173,11 +173,17 @@
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="WCAtl12to45E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to60E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E2r1">600.0</config_GM_constant_kappa>
+<config_gm_enable_horizontal_resolution_function>.false.</config_gm_enable_horizontal_resolution_function>
 <config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
 <config_GM_spatially_variable_max_kappa>1800.0</config_GM_spatially_variable_max_kappa>
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_Visbeck_alpha>0.13</config_GM_Visbeck_alpha>
+<config_GM_Griffies_min_depth>100</config_GM_Griffies_min_depth>
+<config_GM_Griffies_max_depth>2000.0</config_GM_Griffies_max_depth>
+<config_GM_Griffies_alpha>0.15</config_GM_Griffies_alpha>
+<config_GM_Griffies_length>50000</config_GM_Griffies_length>
+<config_GM_Griffies_No>0.004</config_GM_Griffies_No>
 <config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
 <config_GM_EG_riMin>200.0</config_GM_EG_riMin>
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
