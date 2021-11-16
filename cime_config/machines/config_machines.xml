@@ -155,7 +155,6 @@
 	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
 	<command name="load">cmake/3.20.5</command>
       </modules>
-
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -166,14 +165,12 @@
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_GPU_SUPPORT_ENABLED">1</env-->
-      
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
     </environment_variables>
-    
   </machine>
 
   <machine MACH="spock">
