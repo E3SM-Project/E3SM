@@ -17,15 +17,15 @@ module glc_comp_mct
 
   use glc_import_export
   use glc_cpl_indices
-  ! TJL - use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
-  ! TJL - use glc_constants,       only: zero_gcm_fluxes, model_doi_url
-  ! TJL - use glc_InitMod,         only: glc_initialize
-  ! TJL - use glc_RunMod,          only: glc_run
-  ! TJL - use glc_FinalMod,        only: glc_final
-  ! TJL - use glc_io,              only: glc_io_write_restart
-  ! TJL - use glc_communicate,     only: init_communicate, my_task, master_task
-  ! TJL - use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
-  ! TJL - use glc_fields,          only: ice_sheet
+  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
+  use glc_errormod,        only: glc_success
+  use glc_InitMod,         only: glc_initialize
+  use glc_RunMod,          only: glc_run
+  use glc_FinalMod,        only: glc_final
+  use glc_io,              only: glc_io_write_restart
+  use glc_communicate,     only: init_communicate, my_task, master_task
+  use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
+  use glc_fields,          only: ice_sheet
 
   ! Public types:
   implicit none
@@ -42,13 +42,14 @@ module glc_comp_mct
   !--- stdin input stuff ---
   character(CS) :: str                  ! cpp  defined model name
   
+  !--- other ---
+  integer(IN)   :: errorcode            ! glc error code
+  
   ! my_task_local and master_task_local are needed for some checks that are done before
   ! init_communicate is called (although, it's possible that init_communicate could be
   ! moved to earlier to prevent the need for these copies)
   integer(IN)           :: my_task_local        ! my task in mpi communicator mpicom 
   integer(IN),parameter :: master_task_local=0  ! task number of master task
-
-  type(seq_infodata_type), pointer :: infodata
 
 !===============================================================================
 CONTAINS
@@ -61,10 +62,10 @@ CONTAINS
 
     ! uses:
 
-    ! TJL - use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
-    ! TJL - use glc_files          , only : set_filenames, ionml_filename
-    ! TJL - use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
-    ! TJL - use glc_indexing  , only : nx_tot, ny_tot, npts
+    use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
+    use glc_files          , only : set_filenames, ionml_filename
+    use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
+    use glc_indexing_info  , only : nx_tot, ny_tot, npts
     
     ! input/output parameters:
 
@@ -80,11 +81,10 @@ CONTAINS
     integer(IN)              :: mpicom
     type(mct_gsMap), pointer :: gsMap
     type(mct_gGrid), pointer :: dom
+    type(seq_infodata_type), pointer :: infodata   ! Input init object
     integer(IN)              :: shrlogunit, shrloglev  
     character(CL)            :: starttype
     character(CS)            :: myModelName
-    logical                  :: lnd_present
-    logical                  :: glc_coupled_fluxes ! are we sending fluxes to other components?
 
     !--- formats ---
     character(*), parameter :: F00   = "('(glc_init_mct) ',8a)"
@@ -107,7 +107,7 @@ CONTAINS
     call seq_cdata_getdata(cdata, &
          id=compid, mpicom=mpicom, gsMap=gsMap, dom=dom, infodata=infodata)
 
-    ! TJL - call mpi_comm_rank(mpicom, my_task_local, ierr)
+    call mpi_comm_rank(mpicom, my_task_local, ierr)
 
     !---------------------------------------------------------------------------
     ! set variables that depend on ensemble index
@@ -121,76 +121,51 @@ CONTAINS
     ! use infodata to determine type of run
     !---------------------------------------------------------------------------
 
-    ! TJL - call seq_infodata_GetData( infodata, &
-    ! TJL -      start_type=starttype)
+    call seq_infodata_GetData( infodata, &
+         start_type=starttype)
 
-    ! TJL - if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
-    ! TJL -    runtype = "initial"
-    ! TJL - else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
-    ! TJL -    runtype = "continue"
-    ! TJL - else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
-    ! TJL -    runtype = "branch"
-    ! TJL - else
-    ! TJL -    write(*,*) 'glc_comp_mct ERROR: unknown starttype'
-    ! TJL -    call shr_sys_abort()
-    ! TJL - end if
+    if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
+       runtype = "initial"
+    else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
+       runtype = "continue"
+    else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
+       runtype = "branch"
+    else
+       write(*,*) 'glc_comp_mct ERROR: unknown starttype'
+       call shr_sys_abort()
+    end if
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
     !--- open log file ---
-    ! TJL - if (my_task_local == master_task_local) then
-    ! TJL -    stdout = shr_file_getUnit()
-    ! TJL -    call shr_file_setIO(ionml_filename,stdout)
-    ! TJL - else
-    ! TJL -    stdout = 6
-    ! TJL - endif
-    ! TJL - stderr = stdout
-    ! TJL - nml_in = shr_file_getUnit()
+    if (my_task_local == master_task_local) then
+       stdout = shr_file_getUnit()
+       call shr_file_setIO(ionml_filename,stdout)
+    else
+       stdout = 6
+    endif
+    stderr = stdout
+    nml_in = shr_file_getUnit()
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    ! TJL - call shr_file_setLogUnit (stdout)
+    call shr_file_setLogUnit (stdout)
 
-    ! TJL - if (verbose .and. my_task_local == master_task_local) then
-    ! TJL -    write(stdout,F00) ' Starting'
-    ! TJL -    write(stdout,*) subname, 'COMPID: ', COMPID
-    ! TJL -    call write_inst_vars
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - endif
-
-    ! ------------------------------------------------------------------------
-    ! Perform initial sanity checks, making sure we're okay to run
-    ! ------------------------------------------------------------------------
-
-    ! The coupler allows running glc without lnd. MPAS-LI can handle that configuration,
-    ! but CISM cannot. So abort if there is no land model (data or active) present.
-    ! TJL - call seq_infodata_GetData(infodata, &
-    ! TJL -      lnd_present=lnd_present)
-    if (.not. lnd_present) then
-       call shr_sys_abort('ERROR: CISM requires a land component (either active land or dlnd)&
-            & - it cannot be run with a stub land')
-    end if
-
-    ! ------------------------------------------------------------------------
-    ! Get other info from the coupler
-    ! ------------------------------------------------------------------------
-
-    ! TJL - call seq_infodata_GetData(infodata, &
-    ! TJL -      model_doi_url=model_doi_url)
-
-    ! ------------------------------------------------------------------------
-    ! Do main initialization
-    ! ------------------------------------------------------------------------
-
+    errorCode = glc_Success
+    if (verbose .and. my_task_local == master_task_local) then
+       write(stdout,F00) ' Starting'
+       write(stdout,*) subname, 'COMPID: ', COMPID
+       call write_inst_vars
+       call shr_sys_flush(stdout)
+    endif
     call init_communicate(mpicom)
-
-    call glc_initialize(EClock)
-    ! TJL - if (verbose .and. my_task == master_task) then
-    ! TJL -    write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
-    ! TJL -    write(stdout,F00) ' Initialize Done'
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - endif
+    call glc_initialize(EClock, errorCode)
+    if (verbose .and. my_task == master_task) then
+       write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
+       write(stdout,F01) ' Initialize Done', errorCode
+       call shr_sys_flush(stdout)
+    endif
 
     ! Initialize MCT gsmap
 
@@ -202,41 +177,36 @@ CONTAINS
 
     ! Set flags in infodata
 
-    ! TJL - glc_coupled_fluxes = (.not. zero_gcm_fluxes)
-    ! TJL - call seq_infodata_PutData(infodata, &
-    ! TJL -      glc_present= .true., &
-    ! TJL -      glclnd_present = .true., &
-    ! TJL -      glcocn_present = has_ocn_coupling(), &
-    ! TJL -      glcice_present = has_ice_coupling(), &
-    ! TJL -      glc_prognostic = .true., &
-    ! TJL -      glc_coupled_fluxes = glc_coupled_fluxes, &
-    ! TJL -      glc_nx=nx_tot, &
-    ! TJL -      glc_ny=ny_tot)
+    call seq_infodata_PutData(infodata, glc_present=.true., &
+       glclnd_present = .true., &
+       glcocn_present=has_ocn_coupling(), &
+       glcice_present=has_ice_coupling(), &
+       glc_prognostic = .true., glc_nx=nx_tot, glc_ny=ny_tot)
 
     ! Initialize MCT attribute vectors
 
-    ! TJL - call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=npts)
+    call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=npts)
     call mct_aVect_zero(g2x)
 
-    ! TJL - call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=npts)
+    call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=npts)
     call mct_aVect_zero(x2g)
 
     ! Create initial glc export state
 
     call glc_export(g2x%rattr)
 	 
-   ! TJL - if (my_task == master_task) then
-   ! TJL -    write(stdout,F91) 
-   ! TJL -    write(stdout,F00) trim(myModelName),': start of main integration loop'
-   ! TJL -    write(stdout,F91) 
-   ! TJL - end if
+   if (my_task == master_task) then
+      write(stdout,F91) 
+      write(stdout,F00) trim(myModelName),': start of main integration loop'
+      write(stdout,F91) 
+   end if
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-    ! TJL - call shr_sys_flush(stdout)
+    call shr_sys_flush(stdout)
 
 end subroutine glc_init_mct
 
@@ -281,7 +251,6 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
    integer           :: num 
    character(len= 2) :: cnum
    character(len=64) :: name
-   logical           :: valid_inputs
 
    character(*), parameter :: F00   = "('(glc_run_mct) ',8a)"
    character(*), parameter :: F01   = "('(glc_run_mct) ',a,8i8)"
@@ -294,22 +263,22 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
     !----------------------------------------------------------------------------
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    ! TJL - call shr_file_setLogUnit (stdout)
+    call shr_file_setLogUnit (stdout)
 
     ! Set internal time info
  
+    errorCode = glc_Success
     call seq_timemgr_EClockGetData(EClock,curr_ymd=cesmYMD, curr_tod=cesmTOD)
-
     stop_alarm = seq_timemgr_StopAlarmIsOn( EClock )
 
-    ! TJL - glcYMD = iyear*10000 + imonth*100 + iday
-    ! TJL - glcTOD = ihour*3600 + iminute*60 + isecond
+    glcYMD = iyear*10000 + imonth*100 + iday
+    glcTOD = ihour*3600 + iminute*60 + isecond
     done = .false.
     if (glcYMD == cesmYMD .and. glcTOD == cesmTOD) done = .true.
-    ! TJL - if (verbose .and. my_task == master_task) then
-    ! TJL -    write(stdout,F01) ' Run Starting ',glcYMD,glcTOD
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - endif
+    if (verbose .and. my_task == master_task) then
+       write(stdout,F01) ' Run Starting ',glcYMD,glcTOD
+       call shr_sys_flush(stdout)
+    endif
 
     ! Unpack
 
@@ -317,28 +286,26 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
 
     ! Run 
 
-    ! TJL - call seq_infodata_GetData( infodata, glc_valid_input=valid_inputs)
-
     do while (.not. done) 
        if (glcYMD > cesmYMD .or. (glcYMD == cesmYMD .and. glcTOD > cesmTOD)) then
-          ! TJL - write(stdout,*) subname,' ERROR overshot coupling time ',glcYMD,glcTOD,cesmYMD,cesmTOD
+          write(stdout,*) subname,' ERROR overshot coupling time ',glcYMD,glcTOD,cesmYMD,cesmTOD
           call shr_sys_abort('glc error overshot time')
        endif
 
-       call glc_run(EClock, valid_inputs)
+       call glc_run(EClock)
 
-       ! TJL - glcYMD = iyear*10000 + imonth*100 + iday
-       ! TJL - glcTOD = ihour*3600 + iminute*60 + isecond
+       glcYMD = iyear*10000 + imonth*100 + iday
+       glcTOD = ihour*3600 + iminute*60 + isecond
        if (glcYMD == cesmYMD .and. glcTOD == cesmTOD) done = .true.
-       ! TJL - if (verbose .and. my_task == master_task) then
-       ! TJL -    write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
-       ! TJL - endif
+       if (verbose .and. my_task == master_task) then
+          write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
+       endif
     enddo
 
-    ! TJL - if (verbose .and. my_task == master_task) then
-    ! TJL -    write(stdout,F01) ' Run Done',glcYMD,glcTOD
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - endif
+    if (verbose .and. my_task == master_task) then
+       write(stdout,F01) ' Run Done',glcYMD,glcTOD
+       call shr_sys_flush(stdout)
+    endif
     
     ! Pack
 
@@ -346,29 +313,28 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
     
     ! Log output for model date
 
-    ! TJL - if (my_task == master_task) then
-    ! TJL -    call seq_timemgr_EClockGetData(EClock,curr_ymd=cesmYMD, curr_tod=cesmTOD)
-    ! TJL -    write(stdout,F01) ' CESM Date ', cesmYMD,cesmTOD
-    ! TJL -    glcYMD = iyear*10000 + imonth*100 + iday
-    ! TJL -    glcTOD = ihour*3600 + iminute*60 + isecond
-    ! TJL -    write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
-    ! TJL -    write(stdout,*) '(glc_run_mct) valid Inputs =  ', valid_inputs
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - end if
+    if (my_task == master_task) then
+       call seq_timemgr_EClockGetData(EClock,curr_ymd=cesmYMD, curr_tod=cesmTOD)
+       write(stdout,F01) ' CESM Date ', cesmYMD,cesmTOD
+       glcYMD = iyear*10000 + imonth*100 + iday
+       glcTOD = ihour*3600 + iminute*60 + isecond
+       write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
+       call shr_sys_flush(stdout)
+    end if
 
     ! If time to write restart, do so
 
     rest_alarm = seq_timemgr_RestartAlarmIsOn( EClock )
     if (rest_alarm) then
        ! TODO loop over instances
-       ! TJL - call glc_io_write_restart(ice_sheet%instances(1), EClock)
+       call glc_io_write_restart(ice_sheet%instances(1), EClock)
     endif
 
     ! Reset shr logging to original values
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-    ! TJL - call shr_sys_flush(stdout)
+    call shr_sys_flush(stdout)
     
 end subroutine glc_run_mct
 
@@ -388,7 +354,7 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
 
 ! !USES:
 
-    ! TJL - use glc_ensemble, only : get_inst_name
+    use glc_ensemble, only : get_inst_name
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -416,28 +382,30 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
    ! Reset shr logging to my log file
    call shr_file_getLogUnit (shrlogunit)
    call shr_file_getLogLevel(shrloglev)
-   ! TJL - call shr_file_setLogUnit (stdout)
+   call shr_file_setLogUnit (stdout)
 
    call get_inst_name(myModelName)
 
-   ! TJL - if (my_task == master_task) then
-   ! TJL -    write(stdout,F91) 
-   ! TJL -    write(stdout,F00) trim(myModelName),': end of main integration loop'
-   ! TJL -    write(stdout,F91) 
-   ! TJL - end if
+   if (my_task == master_task) then
+      write(stdout,F91) 
+      write(stdout,F00) trim(myModelName),': end of main integration loop'
+      write(stdout,F91) 
+   end if
       
-   call glc_final()
+   errorCode = glc_Success
 
-   ! TJL - if (verbose .and. my_task == master_task) then
-   ! TJL -    write(stdout,F00) ' Done'
-   ! TJL -    call shr_sys_flush(stdout)
-   ! TJL - endif
+   call glc_final(errorCode)
+
+   if (verbose .and. my_task == master_task) then
+      write(stdout,F01) ' Done',errorCode
+      call shr_sys_flush(stdout)
+   endif
 
    ! Reset shr logging to original values
 
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
-   ! TJL - call shr_sys_flush(stdout)
+   call shr_sys_flush(stdout)
 
 end subroutine glc_final_mct
 
@@ -447,7 +415,7 @@ subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
   
   ! Initialize MCT global seg map
   
-  ! TJL - use glc_indexing, only : local_to_global_indices
+  use glc_indexing_info, only : local_indices, global_indices, nx, ny, npts
 
   integer        , intent(in)  :: mpicom_g
   integer        , intent(in)  :: GLCID
@@ -455,6 +423,8 @@ subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
 
   ! Local Variables
 
+  integer,allocatable :: gindex(:)
+  integer :: i, j, n
   integer :: ier
 
   !--- formats ---
@@ -462,7 +432,18 @@ subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
   character(*), parameter :: subName = "(glc_SetgsMap_mct) "
   !-------------------------------------------------------------------
 
-  ! TJL - call mct_gsMap_init( gsMap_g, local_to_global_indices(), mpicom_g, GLCID )
+  allocate(gindex(npts))
+
+  do j = 1,ny
+     do i = 1,nx
+        n = local_indices(i,j)
+        gindex(n) = global_indices(i,j)
+     enddo
+  enddo
+
+  call mct_gsMap_init( gsMap_g, gindex, mpicom_g, GLCID )
+
+  deallocate(gindex)
 
 end subroutine glc_SetgsMap_mct
 
@@ -470,8 +451,8 @@ end subroutine glc_SetgsMap_mct
 
   subroutine glc_domain_mct( gsMap_g, dom_g )
 
-    ! TJL - use glc_indexing, only : npts, nx, ny, spatial_to_vector
-    ! TJL - use glad_main, only : glad_get_lat_lon, glad_get_areas
+    use glc_indexing_info, only : npts, nx, ny, local_indices
+    use glad_main, only : glad_get_lat_lon, glad_get_areas
     
     !-------------------------------------------------------------------
     type(mct_gsMap), intent(inout) :: gsMap_g
@@ -479,7 +460,7 @@ end subroutine glc_SetgsMap_mct
 
     ! Local Variables
 
-    integer :: i,n                ! index
+    integer :: i,j,n            ! index
     real(r8), pointer :: data(:)  ! temporary
     integer , pointer :: idata(:) ! temporary
     real(r8), allocatable :: lats(:,:)  ! latitude of each point (degrees)
@@ -490,69 +471,83 @@ end subroutine glc_SetgsMap_mct
 
     ! Initialize mct domain type
 
-    ! TJL - call mct_gGrid_init( GGrid=dom_g, CoordChars=trim(seq_flds_dom_coord), &
-    ! TJL -    OtherChars=trim(seq_flds_dom_other), lsize=npts )
+    call mct_gGrid_init( GGrid=dom_g, CoordChars=trim(seq_flds_dom_coord), &
+       OtherChars=trim(seq_flds_dom_other), lsize=npts )
 
     ! Initialize attribute vector with special value
 
-    ! TJL - allocate(data(npts))
+    allocate(data(npts))
     dom_g%data%rAttr(:,:) = -9999.0_R8
     dom_g%data%iAttr(:,:) = -9999
     data(:) = 0.0_R8     
-    ! TJL - call mct_gGrid_importRAttr(dom_g,"mask" ,data,npts) 
-    ! TJL - call mct_gGrid_importRAttr(dom_g,"frac" ,data,npts) 
+    call mct_gGrid_importRAttr(dom_g,"mask" ,data,npts) 
+    call mct_gGrid_importRAttr(dom_g,"frac" ,data,npts) 
 
     ! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
 
-    ! TJL - call mct_gsMap_orderedPoints(gsMap_g, my_task, idata)
-    ! TJL - call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,npts)
+    call mct_gsMap_orderedPoints(gsMap_g, my_task, idata)
+    call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,npts)
 
     ! Fill in correct values for domain components
     ! lat/lon in degrees, area in radians^2, real-valued mask and frac
 
-    ! TJL - allocate(lats(nx, ny))
-    ! TJL - allocate(lons(nx, ny))
-    ! TJL - allocate(areas(nx, ny))
+    allocate(lats(nx, ny))
+    allocate(lons(nx, ny))
+    allocate(areas(nx, ny))
     
     ! TODO(wjs, 2015-04-02) The following may need a loop over instances
-    ! TJL - call glad_get_lat_lon(ice_sheet, instance_index = 1, &
-    ! TJL -      lats = lats, lons = lons)
-    ! TJL - call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
+    call glad_get_lat_lon(ice_sheet, instance_index = 1, &
+         lats = lats, lons = lons)
+    call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
+    
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          data(n) = lons(i,j)
+       end do
+    end do
+    call mct_gGrid_importRattr(dom_g,"lon",data,npts) 
 
-    call spatial_to_vector(lons, data)
-    ! TJL - call mct_gGrid_importRattr(dom_g,"lon",data,npts) 
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          data(n) = lats(i,j)
+       end do
+    end do
+    call mct_gGrid_importRattr(dom_g,"lat",data,npts) 
 
-    ! TJL - call spatial_to_vector(lats, data)
-    ! TJL - call mct_gGrid_importRattr(dom_g,"lat",data,npts) 
-
-    call spatial_to_vector(areas, data)
-    ! convert from m^2 to radians^2
-    ! TJL - data = data/(radius*radius)
-    ! TJL - call mct_gGrid_importRattr(dom_g,"area",data,npts) 
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          ! convert from m^2 to radians^2
+          data(n) = areas(i,j)/(radius*radius)
+       end do
+    end do
+    call mct_gGrid_importRattr(dom_g,"area",data,npts) 
 
     ! For now, assume mask and frac are 1 everywhere. This may need to be changed in the
     ! future.
     data(:) = 1._r8
-    ! TJL - call mct_gGrid_importRattr(dom_g,"mask",data,npts) 
-    ! TJL - call mct_gGrid_importRattr(dom_g,"frac",data,npts) 
+    call mct_gGrid_importRattr(dom_g,"mask",data,npts) 
+    call mct_gGrid_importRattr(dom_g,"frac",data,npts) 
 
     deallocate(data)
     deallocate(idata)
-    ! TJL - deallocate(lats)
-    ! TJL - deallocate(lons)
-    ! TJL - deallocate(areas)
+    deallocate(lats)
+    deallocate(lons)
+    deallocate(areas)
 
-    ! TJL - if (verbose .and. my_task==master_task) then
-    ! TJL -    i = mct_aVect_nIattr(dom_g%data)
-    ! TJL -    do n = 1,i
-    ! TJL -       write(stdout,*) subname,' dom_g ',n,minval(dom_g%data%iAttr(n,:)),maxval(dom_g%data%iAttr(n,:))
-    ! TJL -    enddo
-    ! TJL -    i = mct_aVect_nRattr(dom_g%data)
-    ! TJL -    do n = 1,i
-    ! TJL -       write(stdout,*) subname,' dom_g ',n,minval(dom_g%data%rAttr(n,:)),maxval(dom_g%data%rAttr(n,:))
-    ! TJL -    enddo
-    ! TJL -    call shr_sys_flush(stdout)
-    ! TJL - endif
+    if (verbose .and. my_task==master_task) then
+       i = mct_aVect_nIattr(dom_g%data)
+       do n = 1,i
+          write(stdout,*) subname,' dom_g ',n,minval(dom_g%data%iAttr(n,:)),maxval(dom_g%data%iAttr(n,:))
+       enddo
+       i = mct_aVect_nRattr(dom_g%data)
+       do n = 1,i
+          write(stdout,*) subname,' dom_g ',n,minval(dom_g%data%rAttr(n,:)),maxval(dom_g%data%rAttr(n,:))
+       enddo
+       call shr_sys_flush(stdout)
+    endif
 
   end subroutine glc_domain_mct
     
