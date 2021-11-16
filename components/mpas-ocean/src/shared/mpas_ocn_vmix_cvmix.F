@@ -19,7 +19,7 @@ module ocn_vmix_cvmix
    use mpas_constants
    use mpas_log
 
-   use ocn_equation_equation_of_state
+   use ocn_equation_of_state
    use ocn_constants
    use ocn_config
    use ocn_mesh
@@ -163,7 +163,7 @@ contains
 
       real (kind=RKIND) :: x, bulkRichardsonNumberStop, sfc_layer_depth
       real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
-      real (kind=RKIND) :: sigma
+      real (kind=RKIND) :: sigma, stable
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, layerThicknessEdgeSum, &
                                                       deltaVelocitySquared, normalVelocitySum, &
                                                       potentialDensitySum, RiTemp,              &
@@ -313,7 +313,8 @@ contains
       Nsqr_iface(nVertLevelsP1) = 0.0_RKIND
 
       call mpas_timer_start('cvmix cell loop', .false.)
-            do iCell=1,nCells                                                                                                                                                                                                                                               do k = 1, minLevelCell(iCell) - 1
+      do iCell=1,nCells
+         do k = 1, minLevelCell(iCell) - 1
             zw_iface(k,iCell) = 0.0_RKIND
             zt_cntr(k,iCell) = 0.0_RKIND
          enddo
@@ -560,7 +561,7 @@ contains
                    EFactor = langmuirEnhancementFactor, &
                    LaSL = langmuirNumber, &
                    bfsfc = surfaceBuoyancyForcing(iCell), &
-                   ustar = surfaceFriction(iCell) )
+                   ustar = surfaceFrictionVelocity(iCell) )
 
               ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
 
@@ -570,7 +571,7 @@ contains
                    OBL_depth = boundaryLayerDepth(iCell), &
                    kOBL_depth = cvmix_variables % kOBL_depth, &
                    zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
-                   surf_fric = surfaceFriction(iCell), &
+                   surf_fric = surfaceFrictionVelocity(iCell), &
                    surf_buoy = surfaceBuoyancyForcing(iCell), &
                    Coriolis = fCell(iCell))
 
@@ -597,8 +598,8 @@ contains
              endif
 
              ! apply maximum limit to OBL
-             if(boundaryLayerDepth .gt. abs(zt_cntr(maxLevelCell(iCell),iCell))) then
-                boundaryLayerDepth = abs(zt_cntr(maxLevelCell(iCell),iCell))
+             if(boundaryLayerDepth(iCell) .gt. abs(zt_cntr(maxLevelCell(iCell),iCell))) then
+                boundaryLayerDepth(iCell) = abs(zt_cntr(maxLevelCell(iCell),iCell))
                 indexBoundaryLayerDepth = cvmix_kpp_compute_kOBL_depth(  &
                           zw_iface = zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1,iCell), &
                           zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell),    &

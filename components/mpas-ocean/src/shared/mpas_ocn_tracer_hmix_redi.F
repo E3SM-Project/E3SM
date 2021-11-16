@@ -476,6 +476,7 @@ contains
       type(mpas_pool_type), pointer :: forcingPool
 
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real(kind=RKIND), dimension(:), pointer :: rediAbernatheyZonal, rediAbernatheyMap
       real(kind=RKIND), dimension(:), pointer :: dcEdge
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -498,7 +499,7 @@ contains
          call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
          call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyZonal', rediAbernatheyZonal)
          call mpas_pool_get_array(diagnosticsPool, 'rediAbernatheyMap', rediAbernatheyMap)

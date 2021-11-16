@@ -81,7 +81,8 @@ contains
 
    subroutine ocn_tracer_hmix_tend(meshPool, layerThicknessEdge, layerThickness, zMid, tracers, &
                                    RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
-                                   RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
+                                   RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, &
+                                   gmResolutionTaper, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -92,7 +93,7 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real (kind=RKIND), dimension(:), intent(in), optional :: &
-         RediKappa
+         RediKappa, gmResolutionTaper
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
@@ -154,7 +155,7 @@ contains
         call ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                      RediKappa, dt, isActiveTracer,        &
                                      slopeTriadUp, slopeTriadDown, RediKappaSfcTaper, &
-                                     RediKappaScaling, rediLimiterCount, tend, err1)
+                                     RediKappaScaling, rediLimiterCount, gmResolutionTaper, tend, err1)
       endif
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")

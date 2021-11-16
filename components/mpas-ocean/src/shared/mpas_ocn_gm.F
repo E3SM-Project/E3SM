@@ -130,7 +130,7 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sumN2, countN2, maxN, ltSum
+      real(kind=RKIND)                 :: sumN2, countN2, maxN, ltSum, c_mode1, resolution
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -364,7 +364,7 @@ contains
                   slopeTriadUp(k, iCellSelf, iEdge) = &
                      slopeTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
-                     slopeTaperDownslopeTriadDown(k, iCellSelf, iEdge)
+                     slopeTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
 
                   ! Griffies 1998 eqn 34
                   if (k > minLevelCell(iCell)) then
@@ -973,7 +973,7 @@ contains
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
+      real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge, &
             gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge
 
