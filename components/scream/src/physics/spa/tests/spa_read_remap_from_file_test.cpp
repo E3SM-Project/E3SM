@@ -59,7 +59,6 @@ TEST_CASE("spa_read_remap_data","spa")
   REQUIRE(spa_horiz_interp.source_grid_ncols==src_grid_ncols);
 
   // We have a few metrics to ensure that the data read from file matches the data in the file.
-  Real tol = 1e0*std::numeric_limits<Real>::epsilon();
   Int col_sum = 0;
   Int row_sum = 0;
   view_1d_host<Real> wgts("",tgt_grid_ncols);
@@ -88,7 +87,7 @@ TEST_CASE("spa_read_remap_data","spa")
     REQUIRE(wgts[i]==1.0);
     wgt_sum += wgts[i];
   }
-  REQUIRE(std::abs(wgt_sum/tgt_grid_ncols - 1.0) < tol);
+  REQUIRE(wgt_sum/tgt_grid_ncols == 1.0);
   
   // All Done 
   scorpio::eam_pio_finalize();
