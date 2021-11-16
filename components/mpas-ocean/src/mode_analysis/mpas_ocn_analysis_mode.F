@@ -39,6 +39,7 @@ module ocn_analysis_mode
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_surface_land_ice_fluxes
 
    implicit none
    private
@@ -280,6 +281,19 @@ module ocn_analysis_mode
       character (len=StrKIND), pointer :: config_dt
       logical, pointer :: config_write_output_on_startup
 
+      real (kind=RKIND), dimension(:), pointer :: &
+        seaIcePressure, atmosphericPressure
+
+      real (kind=RKIND), dimension(:), pointer :: &
+        frazilSurfacePressure, landIcePressure, landIceDraft
+
+      real (kind=RKIND), dimension(:), pointer :: &
+        layerThickness, normalVelocity
+
+      real (kind=RKIND), dimension(:), pointer :: ssh
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
       ierr = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_dt', config_dt)
@@ -301,7 +315,38 @@ module ocn_analysis_mode
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
+         call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
+         call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
+         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+
+         if (landIcePressureOn) then 
+            call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+            call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+         endif
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThickness, normalVelocity)
+         !$acc update device (normalTransportVelocity, &
+         !$acc                normalGMBolusVelocity)
+         !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+         !$acc enter data copyin(ssh)
+         !$acc enter data copyin(activeTracers)
+         !$acc update device(tracersSurfaceValue)
+         if ( associated(frazilSurfacePressure) ) then
+            !$acc enter data copyin(frazilSurfacePressure)
+         endif
+         if (landIcePressureOn) then
+            !$acc exit data delete(landIcePressure)
+            !$acc exit data delete(landIceDraft)
+         endif
+         !$acc exit data delete (layerThickness, normalVelocity)
+#endif
          block_ptr => block_ptr % next
       end do
 
