@@ -1679,6 +1679,120 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!    routine ismip6_retreat
+!
+!> /brief Use ISMIP6 retreat parameterization for Greenland (Slater et al.,
+!2019, 2020).
+!> /author Trevor Hillebrand
+!> /date November 2021
+!> /details This routine applies the ISMIP6 glacier retreat parateterization
+!> based on ocean thermal forcing and subglacial discharge. 
+!> Slater, D. A., Straneo, F., Felikson, D., Little, C. M., Goelzer, H.,
+!> Fettweis, X., & Holte, J. (2019).
+!> Estimating Greenland tidewater glacier retreat driven by submarine melting.
+!> The Cryosphere, 13(9), 2489-2509.
+!> https://doi.org/10.5194/tc-13-2489-2019
+!> Slater, D. A., Felikson, D., Straneo, F., Goelzer, H., Little, C. M.,
+!> Morlighem, M., et al. (2020). 
+!> Twenty-first century ocean forcing of the Greenland ice sheet for modelling
+!> of sea level contribution. 
+!> The Cryosphere, 14(3), 985-1008. https://doi.org/10.5194/tc-14-985-2020
+   subroutine ismip6_retreat(domain, err) 
+
+      use li_diagnostic_vars
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: & 
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell, jCell, iNeighbor, nGroundedNeighbors, err_tmp
+      type (block_type), pointer :: block
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, &
+                                        velocityPool, scratchPool, thermalPool
+      real (kind=RKIND), pointer :: config_ismip6_retreat_k
+      real (kind=RKIND), dimension(:), pointer ::  &
+                                        calvingVelocity, thickness, &
+                                        xvelmean, yvelmean, calvingThickness
+       integer, pointer :: nCells
+      integer, dimension(:), pointer :: cellMask
+      logical :: applyToGrounded, applyToFloating, applyToGroundingLine
+      real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
+      real (kind=RKIND), dimension(:), allocatable :: TFoceanPrevious, ismip6RunoffPrevious
+      real (kind=RKIND) :: deltatForcing ! time between forcing updates
+      type (MPAS_Time_Type) :: forcingTime, forcingTimeOld !timestamp from forcing file
+
+      applyToGrounded = .true.
+      applyToFloating = .true.
+      applyToGroundingLine = .false.
+
+      call mpas_pool_get_config(liConfigs, 'config_ismip6_retreat_k', config_ismip6_retreat_k)
+
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      ! get fields
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
+      call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      ! Get ISMIP6 forcing fields for this time
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
+      call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
+      ! Read in previous thermal forcing and runoff fields
+      allocate(TFoceanPrevious(nCells+1))
+      allocate(ismip6RunoffPrevious(nCells+1))
+
+      ! When model time passes a new forcing time, update calvingVelocity
+      !if (forcingTime .ne. forcingTimeOld) then
+         do iCell=1, nCells
+            calvingVelocity(iCell) = config_ismip6_retreat_k * ( (ismip6Runoff(iCell)**0.4_RKIND * TFocean(iCell)) -  &
+                                     (ismip6RunoffPrevious(iCell)**0.4_RKIND * TFoceanPrevious(iCell)) ) / deltatForcing
+         enddo
+      !endif
+
+      call mpas_log_write("calling li_apply_front_ablation_velocity from ismip6 retreat routine")
+      ! Convert calvingVelocity to calvingThickness
+      call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
+                                              calvingThickness, calvingVelocity, applyToGrounded, &
+                                              applyToFloating, applyToGroundingLine, domain, err)
+      ! Update halos on calvingThickness before applying it.
+      ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+      call mpas_timer_stop("halo updates")
+
+      ! === apply calving ===
+      thickness(:) = thickness(:) - calvingThickness(:)
+      ! update mask
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+      call remove_small_islands(meshPool, geometryPool)
+
+      deallocate(TFoceanPrevious)
+      deallocate(ismip6RunoffPrevious)
+
+   end subroutine ismip6_retreat
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !    routine li_apply_front_ablation_velocity
 !
 !> \brief Convert a calving or melting velocity to an ice thickness removal

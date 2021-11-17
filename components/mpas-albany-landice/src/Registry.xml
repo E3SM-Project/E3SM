@@ -138,7 +138,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'"
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
@@ -240,6 +240,10 @@
                         description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold')."
 	                possible_values="any positive real value"
 		/>
+                <nml_option name="config_ismip6_retreat_k" type="real" default_value="-170.0" units="m (m^{3} s^{-1})^{-0.4} deg. C^{-1}"
+                            description="Coefficient for ISMIP6 retreat parameterization from Slater et al. (2019)"
+                            possible_values="any negative real value"
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
