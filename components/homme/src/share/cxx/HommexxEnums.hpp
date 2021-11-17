@@ -106,25 +106,14 @@ enum class UpdateType {
 
 enum class TimeStepType {
   // Explicit
-  LF              =  0, // LeapFrog
-  RK2             =  1,
-  IMEX_KG254_EX   =  4, // Explicit table from IMEX_KG254
-  ULLRICH_RK35    =  5,
+  ttype5          =  5,
 
   // Implicit-Explicit
-  IMEX_KG243      =  6,
-  IMEX_KG254      =  7,
-  IMEX_KG355      =  9,
-  IMEX_KG255      = 10,
+  ttype7_imex     =  7,
+  ttype9_imex     =  9,
+  ttype10_imex    = 10
 
-  // Implicit
-  BE              = 11, // Backward Euler
-  BDF2            = 12
 };
-
-inline bool is_implicit (const TimeStepType& ts) {
-  return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
-}
 
 // ======= How to combine output/input during calculations ========== //
 

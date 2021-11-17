@@ -105,22 +105,22 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
-  if (time_step_type==0) {
-    params.time_step_type = TimeStepType::LF;
-  } else if (time_step_type==1) {
-    params.time_step_type = TimeStepType::RK2;
-  } else if (time_step_type==4) {
-    params.time_step_type = TimeStepType::IMEX_KG254_EX;
-  } else if (time_step_type==5) {
-    params.time_step_type = TimeStepType::ULLRICH_RK35;
-  } else if (time_step_type==6) {
-    params.time_step_type = TimeStepType::IMEX_KG243;
+
+  if (time_step_type==5) {
+    //5 stage, 3rd order, explicit
+    params.time_step_type = TimeStepType::ttype5;
   } else if (time_step_type==7) {
-    params.time_step_type = TimeStepType::IMEX_KG254;
+    //5 stage, based on 2nd order explicit KGU table
+    //1st order (BE) implicit part
+    params.time_step_type = TimeStepType::ttype7_imex;
   } else if (time_step_type==9) {
-    params.time_step_type = TimeStepType::IMEX_KG355;
+    //5 stage, based on 3rd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype9_imex;
   } else if (time_step_type==10) {
-    params.time_step_type = TimeStepType::IMEX_KG255;
+    //5 stage, based on the 2nd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype10_imex;
   }
 
   //set nu_ratios values
@@ -365,10 +365,9 @@ void init_functors_c (const bool& allocate_buffer)
     vrm.setup();
   }
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
-                          params.time_step_type==TimeStepType::IMEX_KG254 ||
-                          params.time_step_type==TimeStepType::IMEX_KG255 ||
-                          params.time_step_type==TimeStepType::IMEX_KG355);
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+                          params.time_step_type==TimeStepType::ttype9_imex ||
+                          params.time_step_type==TimeStepType::ttype10_imex  );
 
   if (need_dirk) {
     // Create dirk functor only if needed

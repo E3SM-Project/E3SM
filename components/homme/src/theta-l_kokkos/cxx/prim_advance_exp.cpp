@@ -20,12 +20,10 @@ namespace Homme
 {
 
 // Declare all the timestepping schemes routines
-void RK2_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
-void imex_KG254_explicit_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
-void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
-void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
-void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
-void imex_KG255_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void ttype7_imex_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void ttype9_imex_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void ttype10_imex_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 
 // -------------- IMPLEMENTATIONS -------------- //
 
@@ -80,23 +78,17 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 #endif
 
   switch (params.time_step_type) {
-    case TimeStepType::RK2:
-      RK2_timestep (tl, dt, eta_ave_w);
+    case TimeStepType::ttype5:
+      ttype5_timestep (tl, dt, eta_ave_w);
       break;
-    case TimeStepType::IMEX_KG254_EX:
-      imex_KG254_explicit_timestep (tl, dt, eta_ave_w);
+    case TimeStepType::ttype7_imex:
+      ttype7_imex_timestep (tl, dt, eta_ave_w);
       break;
-    case TimeStepType::ULLRICH_RK35:
-      u3_5stage_timestep (tl, dt, eta_ave_w);
+    case TimeStepType::ttype9_imex:
+      ttype9_imex_timestep (tl, dt, eta_ave_w);
       break;
-    case TimeStepType::IMEX_KG243:
-      imex_KG243_timestep (tl, dt, eta_ave_w);
-      break;
-    case TimeStepType::IMEX_KG254:
-      imex_KG254_timestep (tl, dt, eta_ave_w);
-      break;
-    case TimeStepType::IMEX_KG255:
-      imex_KG255_timestep (tl, dt, eta_ave_w);
+    case TimeStepType::ttype10_imex:
+      ttype10_imex_timestep (tl, dt, eta_ave_w);
       break;
     default:
       {
@@ -135,26 +127,9 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 }
 
 // Implementations of timestep schemes, in terms of CaarFunctor runs
-
-void RK2_timestep(const TimeLevel& /* tl */,
-                  const Real /* dt */,
-                  const Real /* eta_ave_w */)
+void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
 {
-  // TODO
-  assert(false);
-}
-
-void imex_KG254_explicit_timestep(const TimeLevel& /* tl */,
-                                  const Real /* dt */,
-                                  const Real /* eta_ave_w */)
-{
-  // TODO
-  assert(false);
-}
-
-void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
-{
-  GPTLstart("tl-ae U3-5stage_timestep");
+  GPTLstart("ttype5_timestep");
   // Get elements structure
   Elements& elements = Context::singleton().get<Elements>();
   SimulationParams& params = Context::singleton().get<SimulationParams>();
@@ -223,10 +198,12 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
   functor.run(RKStageData(nm1, np1, np1, qn0, 3.0*dt/4.0, 3.0*eta_ave_w/4.0));
-  GPTLstop("tl-ae U3-5stage_timestep");
+  GPTLstop("ttype5_timestep");
 }
 
-void imex_KG243_timestep(const TimeLevel& /* tl */,
+
+//compare with ttype10_imex, should be almost identical
+void ttype7_imex_timestep(const TimeLevel& /* tl */,
                          const Real /* dt */,
                          const Real /* eta_ave_w */)
 {
@@ -234,7 +211,7 @@ void imex_KG243_timestep(const TimeLevel& /* tl */,
   assert(false);
 }
 
-void imex_KG254_timestep(const TimeLevel& /* tl */,
+void ttype9_imex_timestep(const TimeLevel& /* tl */,
                          const Real /* dt */,
                          const Real /* eta_ave_w */)
 {
@@ -243,11 +220,11 @@ void imex_KG254_timestep(const TimeLevel& /* tl */,
 }
 
 
-void imex_KG255_timestep(const TimeLevel& tl,
+void ttype10_imex_timestep(const TimeLevel& tl,
                          const Real dt_dyn,
                          const Real eta_ave_w)
 {
-  GPTLstart("IMEX_KG255");
+  GPTLstart("ttype10_imex_timestep");
 
   // The context
   const auto& c = Context::singleton();
@@ -304,7 +281,7 @@ void imex_KG255_timestep(const TimeLevel& tl,
   caar.run(RKStageData(n0, np1, np1, qn0, dt, eta_ave_w, 1.0, 0.0, 1.0));
   dirk.run(nm1, a2*dt, n0, a1*dt, np1, a3*dt, elements, hvcoord);
 
-  GPTLstop("IMEX_KG255");
+  GPTLstop("ttype10_imex_timestep");
 }
 
 } // namespace Homme
