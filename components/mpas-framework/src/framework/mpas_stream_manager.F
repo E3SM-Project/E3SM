@@ -319,6 +319,7 @@ module mpas_stream_manager
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
+        type (MPAS_Time_type) :: mostRecentAccessTime
         integer :: err_local, threadNum
 
 
@@ -380,6 +381,11 @@ module mpas_stream_manager
            if (present(realPrecision)) then
                new_stream % precision = realPrecision
            end if
+           allocate(new_stream % mostRecentAccessTime)
+           call mpas_set_time(mostRecentAccessTime, dateTimeString = '9999-12-31_23:59:59')
+           new_stream % mostRecentAccessTime = mostRecentAccessTime
+           ! Not sure what the best value to init to is.  Need undefined value?
+
            call MPAS_stream_list_create(new_stream % alarmList_in, ierr=err_local)
            if (err_local /= MPAS_STREAM_LIST_NOERR) then
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2798,6 +2804,7 @@ module mpas_stream_manager
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .false.
                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % mostRecentAccessTime = local_writeTime
                    end if
                end do
 
@@ -2818,6 +2825,7 @@ module mpas_stream_manager
 
                        stream_cursor % blockWrite = .false.
                        call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % mostRecentAccessTime = local_writeTime
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
@@ -2972,6 +2980,7 @@ module mpas_stream_manager
                       stream_cursor % blockWrite = .true.
                       call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
                                         local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % mostRecentAccessTime = local_writeTime
                       stream_cursor % blockWrite = .false.
                       if ( associated(stream_cursor % stream) ) then
                          stream_cursor % valid = .false.
@@ -2999,6 +3008,7 @@ module mpas_stream_manager
                        stream_cursor % blockWrite = .true.
                        call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
                                          local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % mostRecentAccessTime = local_writeTime
                        stream_cursor % blockWrite = .false.
                        if ( associated(stream_cursor % stream) ) then
                           stream_cursor % valid = .false.
@@ -3445,6 +3455,8 @@ module mpas_stream_manager
         integer :: local_ierr
         integer :: temp_ierr
         type (MPAS_Time_type) :: now_time 
+        character (len=StrKIND) :: actualWhen_local
+        type (MPAS_Time_type) :: actualWhen_time
         integer :: threadNum
         logical :: readStreams
 
@@ -3453,7 +3465,7 @@ module mpas_stream_manager
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_read()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
-        if (present(actualWhen)) write(actualWhen,'(a)') '0000-01-01_00:00:00'
+        write(actualWhen_local,'(a)') '0000-01-01_00:00:00'
 
         !
         ! Use optional arguments or set defaults
@@ -3505,7 +3517,9 @@ module mpas_stream_manager
                    if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
                       readStreams = .true.
                       call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
-                                       local_whence, actualWhen, local_ierr)
+                                       local_whence, actualWhen_local, local_ierr)
+                      call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                      stream_cursor % mostRecentAccessTime = actualWhen_time
                    end if
                end do
 
@@ -3528,7 +3542,9 @@ module mpas_stream_manager
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
                        !
                        call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
-                                        local_when, local_whence, actualWhen, temp_ierr)
+                                        local_when, local_whence, actualWhen_local, temp_ierr)
+                       call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                       stream_cursor % mostRecentAccessTime = actualWhen_time
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = MPAS_STREAM_MGR_ERROR
                        end if
@@ -3539,6 +3555,7 @@ module mpas_stream_manager
            end if
         end if
 
+        if (present(actualWhen)) actualWhen = actualWhen_local
         if (present(ierr)) ierr = local_ierr
 
     end subroutine MPAS_stream_mgr_read !}}}
