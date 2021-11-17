@@ -591,9 +591,9 @@ contains
              if(boundaryLayerDepth(iCell) .lt. configure_cvmix_kpp_minimum_OBL_under_sea_ice) then
                 boundaryLayerDepth(iCell) = configure_cvmix_kpp_minimum_OBL_under_sea_ice
                 indexBoundaryLayerDepth(iCell) = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),&
-                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
-                          OBL_depth = cvmix_variables % BoundaryLayerDepth )
+                          zw_iface = zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1,iCell),&
+                          zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell),    &
+                          OBL_depth = boundaryLayerDepth(iCell) )
              endif
              endif
 
