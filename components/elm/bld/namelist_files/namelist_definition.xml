@@ -309,12 +309,12 @@ Switch deciding which nutrient model to use in FATES.
 
 <entry id="use_fates_fixed_biogeog" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on FATES fixed biogeography mode (STUB ONLY, MUST BE FALSE).
+Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_nocomp" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on no competition mode (only relevant if FATES is being used).
+Toggle to turn on FATES no competition mode (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_sp" type="logical" category="physics"
@@ -329,7 +329,7 @@ Toggle to turn on the logging module (only relevant if FATES is being used).
 
 <entry id="use_fates_planthydro" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on plant hydraulics(only relevant if FATES is on).
+Toggle to turn on plant hydraulics (only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_cohort_age_tracking" type="logical" category="physics"

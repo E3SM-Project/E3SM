@@ -382,7 +382,7 @@ contains
          ! area weight by snow covered fraction
          if (.not.use_fates_sp) then
             ! Do not set these in FATES_SP mode as they turn on the 'vegsol' filter and also
-            ! are duplicated by the FATE variables (in the FATES IFP indexing space)
+            ! are duplicated by the FATES variables (in the FATES IFP indexing space)
 
             elai(p) = max(tlai(p)*(1.0_r8 - frac_sno(c)) + tlai(p)*fb*frac_sno(c), 0.0_r8)
             esai(p) = max(tsai(p)*(1.0_r8 - frac_sno(c)) + tsai(p)*fb*frac_sno(c), 0.0_r8)
