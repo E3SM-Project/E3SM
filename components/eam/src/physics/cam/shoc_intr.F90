@@ -1097,7 +1097,7 @@ end function shoc_implements_cnst
       do i=1,ncol
         cloud_frac(i,k) = min(ast(i,k)+deepcu(i,k),1.0_r8)
         liq_cloud_frac(i,k) = alst(i,k)
-        if (state1%q(i,k,ixcldice) .ge. 1.0e-8_r8) then 
+        if (state1%q(i,k,ixcldice) .ge. 1.0e-5_r8) then 
            if (state1%q(i,k,ixnumice) .ge. state1%q(i,k,ixcldice)*5.0e7_r8) then
               ice_cloud_frac(i,k) = 1.0_r8
            else
