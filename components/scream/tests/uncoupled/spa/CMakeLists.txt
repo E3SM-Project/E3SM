@@ -3,6 +3,17 @@ include (ScreamUtils)
 # Create the test
 SET (TEST_LABELS "spa;physics")
 set (NEED_LIBS spa scream_control scream_share)
+# Make sure the SPA data directory is correctly defined
+if (NOT EXISTS ${SCREAM_SPA_DATA_DIR})
+  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} does not exist")
+endif()
+if (NOT IS_DIRECTORY ${SCREAM_SPA_DATA_DIR})
+  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not a directory")
+endif() 
+if (NOT IS_ABSOLUTE ${SCREAM_SPA_DATA_DIR})
+  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not an absolute directory")
+endif() 
+# Test atmosphere processes
 CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   PROPERTIES FIXTURES_SETUP spa_generate_output_nc_files

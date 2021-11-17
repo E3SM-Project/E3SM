@@ -15,6 +15,8 @@ Atmosphere Processes:
   Process 0:
     Process Name: SPA
     Grid: Point Grid
+    SPA Remap File: @SCREAM_SPA_DATA_DIR@/map_ne4np4_to_ne2np4_mono.nc
+    SPA Data File: @SCREAM_SPA_DATA_DIR@/spa_file_unified_and_complete_ne4_scream.nc
 
 Grids Manager:
   Type: Mesh Free

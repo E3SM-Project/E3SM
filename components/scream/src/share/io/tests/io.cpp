@@ -143,6 +143,16 @@ TEST_CASE("input_output_basic","io")
   auto max_params = get_in_params("Max",io_comm,time);
   auto multi_params = get_in_params("Multisnap",io_comm,t0+dt);
   Real tol = 100*std::numeric_limits<Real>::epsilon();
+  // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
+  // Test that pio_inq_dimlen is correct, using a file from one of the above parameter lists.
+  {
+    auto test_filename = ins_params.get<std::string>("Filename");
+    scorpio::register_file(test_filename,scorpio::Read);
+    Int test_gcols_len = scorpio::get_dimlen_c2f(test_filename.c_str(),"ncol");
+    REQUIRE(test_gcols_len==num_gcols);
+    scorpio::eam_pio_closefile(test_filename);
+  }
+
   auto f1 = field_manager->get_field("field_1");
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");

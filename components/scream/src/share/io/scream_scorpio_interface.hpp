@@ -58,7 +58,7 @@ namespace scorpio {
   void pio_update_time(const std::string &filename, const Real time);
 
   /* Read data for a specific variable from a specific file. */
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const int time_index, Real* hbuf);
+  void grid_read_data_array (const std::string &filename, const std::string &varname, const int time_index, void* hbuf);
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
@@ -73,6 +73,7 @@ extern "C" {
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
+  int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from

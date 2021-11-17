@@ -167,7 +167,8 @@ AbstractGrid::get_global_min_dof_gid () const
         if (dofs(i) < lmin) {
           lmin = dofs(i);
         }
-      },Kokkos::Min<gid_type,DefaultDevice>(local_min));
+      },Kokkos::Min<gid_type>(local_min));
+  Kokkos::fence();
 
   m_comm.all_reduce(&local_min,&global_min,1,MPI_MIN);
 
@@ -187,7 +188,8 @@ AbstractGrid::get_global_max_dof_gid () const
         if (dofs(i) > lmax) {
           lmax = dofs(i);
         }
-      },Kokkos::Max<gid_type,DefaultDevice>(local_max));
+      },Kokkos::Max<gid_type>(local_max));
+  Kokkos::fence();
 
   m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
 

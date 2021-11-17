@@ -17,8 +17,7 @@ extern "C" {
   void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
-  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, Real *&hbuf);
-  void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
+  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
@@ -130,7 +129,7 @@ void count_pio_atm_file() {
 
 }
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, Real *hbuf) {
+void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, void *hbuf) {
   grid_read_data_array_c2f(filename.c_str(),varname.c_str(),time_index,hbuf);
 }
 /* ----------------------------------------------------------------- */
@@ -138,6 +137,5 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 }
 /* ----------------------------------------------------------------- */
-
 } // namespace scorpio
 } // namespace scream
