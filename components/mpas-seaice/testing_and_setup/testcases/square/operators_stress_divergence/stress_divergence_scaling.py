@@ -268,23 +268,16 @@ def L2_norm_integral_triangle(numerical, nVertices, cellsOnVertex, xCell, yCell,
                                                                      xCell[iCell2], yCell[iCell2], \
                                                                      xCell[iCell3], yCell[iCell3])
 
-            divuIntegral = 0.0
-            divvIntegral = 0.0
             for iWeight in range(0, nIntegrationPoints):
 
                 divu, divv = get_analytical_stress_divergence_triangle(u[iWeight], v[iWeight], T11, T12, T21, T22, Cx, Cy, xMin, yMin)
 
-                divuIntegral += weights[iWeight] * divu
-                divvIntegral += weights[iWeight] * divv
-
-            if (divType == "divu"):
-                analytical = divuIntegral
-            else:
-                analytical = divvIntegral
-
-            norm  = norm  + areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
-
-            denom = denom + areaTriangle[iVertex] * math.pow(analytical,2)
+                if (divType == "divu"):
+                    norm  = norm  + weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divu,2)
+                    denom = denom + weights[iWeight] * areaTriangle[iVertex] * math.pow(divu,2)
+                else:
+                    norm  = norm  + weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divv,2)
+                    denom = denom + weights[iWeight] * areaTriangle[iVertex] * math.pow(divv,2)
 
     norm = math.sqrt(norm / denom)
 
@@ -336,9 +329,6 @@ def L2_norm_integral_square(numerical, nVertices, cellsOnVertex, xCell, yCell, a
 
         if (useVertex[iVertex]):
 
-            divuIntegral = 0.0
-            divvIntegral = 0.0
-
             # first triangle
             iCell1 = cellsOnVertex[iVertex,0]
             iCell2 = cellsOnVertex[iVertex,1]
@@ -353,8 +343,12 @@ def L2_norm_integral_square(numerical, nVertices, cellsOnVertex, xCell, yCell, a
 
                 divu, divv = get_analytical_stress_divergence_triangle(u[iWeight], v[iWeight], T11, T12, T21, T22, Cx, Cy, xMin, yMin)
 
-                divuIntegral += weights[iWeight] * divu
-                divvIntegral += weights[iWeight] * divv
+                if (divType == "divu"):
+                    norm  = norm  + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divu,2)
+                    denom = denom + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(divu,2)
+                else:
+                    norm  = norm  + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divv,2)
+                    denom = denom + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(divv,2)
 
             # second triangle
             iCell1 = cellsOnVertex[iVertex,2]
@@ -370,20 +364,12 @@ def L2_norm_integral_square(numerical, nVertices, cellsOnVertex, xCell, yCell, a
 
                 divu, divv = get_analytical_stress_divergence_triangle(u[iWeight], v[iWeight], T11, T12, T21, T22, Cx, Cy, xMin, yMin)
 
-                divuIntegral += weights[iWeight] * divu
-                divvIntegral += weights[iWeight] * divv
-
-            divuIntegral *= 0.5
-            divvIntegral *= 0.5
-
-            if (divType == "divu"):
-                analytical = divuIntegral
-            else:
-                analytical = divvIntegral
-
-            norm  = norm  + areaTriangle[iVertex] * math.pow(numerical[iVertex] - analytical,2)
-
-            denom = denom + areaTriangle[iVertex] * math.pow(analytical,2)
+                if (divType == "divu"):
+                    norm  = norm  + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divu,2)
+                    denom = denom + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(divu,2)
+                else:
+                    norm  = norm  + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(numerical[iVertex] - divv,2)
+                    denom = denom + 0.5 * weights[iWeight] * areaTriangle[iVertex] * math.pow(divv,2)
 
     norm = math.sqrt(norm / denom)
 
