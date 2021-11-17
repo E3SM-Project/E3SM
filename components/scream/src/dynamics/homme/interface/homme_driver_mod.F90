@@ -76,14 +76,16 @@ contains
   end subroutine prim_init_data_structures_f90
 
   subroutine prim_copy_cxx_to_f90 (copy_phis)
-    use iso_c_binding,     only: c_ptr, c_loc
-    use homme_context_mod, only: tl
-    use dimensions_mod,    only: nlevp
-    use theta_f2c_mod,     only: cxx_push_results_to_f90
-    use element_state,     only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
-                              elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
-                              elem_state_Qdp, elem_state_Q, elem_derived_omega_p,     &
-                              elem_state_phis
+    use iso_c_binding,       only: c_ptr, c_loc
+    use homme_context_mod,   only: tl, elem, deriv
+    use dimensions_mod,      only: nlevp, nelemd, np
+    use kinds,               only: real_kind
+    use derivative_mod_base, only: gradient_sphere
+    use theta_f2c_mod,       only: cxx_push_results_to_f90, init_geopotential_c
+    use element_state,       only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
+                                   elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
+                                   elem_state_Qdp, elem_state_Q, elem_derived_omega_p,   &
+                                   elem_state_phis
     !
     ! Inputs
     !
@@ -94,6 +96,11 @@ contains
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
+
+    integer :: ie
+    type (c_ptr) :: elem_state_phis_local_ptr, elem_derived_gradphis_local_ptr
+    real (kind=real_kind), target, dimension(np,np)   :: elem_state_phis_local
+    real (kind=real_kind), target, dimension(np,np,2) :: elem_gradphis_local
     
     ! Set pointers to states
     elem_state_v_ptr         = c_loc(elem_state_v)
@@ -113,6 +120,17 @@ contains
     if (copy_phis) then
       ! Set phis=phi(bottom)
       elem_state_phis(:,:,:) = elem_state_phinh_i(:,:,nlevp,tl%n0,:)
+
+      ! Set geopotential views
+      elem_state_phis_local_ptr       = c_loc(elem_state_phis_local)
+      elem_derived_gradphis_local_ptr = c_loc(elem_gradphis_local)
+      do ie=1,nelemd
+        elem_state_phis_local = elem(ie)%state%phis
+        elem_gradphis_local   = elem(ie)%derived%gradphis
+
+        elem_gradphis_local = gradient_sphere(elem_state_phis_local, deriv, elem(ie)%Dinv)
+        call init_geopotential_c (ie-1, elem_state_phis_local_ptr, elem_derived_gradphis_local_ptr)
+      enddo
     endif
   end subroutine prim_copy_cxx_to_f90
 

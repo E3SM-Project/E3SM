@@ -576,8 +576,8 @@ create_internal_field (const std::string& name,
   m_internal_fields[name+grid] = f;
 }
 
-Field<Real>& HommeDynamics::
-get_internal_field (const std::string& name, const std::string& grid) {
+const Field<Real>& HommeDynamics::
+get_internal_field (const std::string& name, const std::string& grid) const {
   auto it = m_internal_fields.find(name+grid);
   EKAT_REQUIRE_MSG (it!=m_internal_fields.end(),
       "Error! Internal field '" + name + "' on grid '" + grid + "' not found.\n");

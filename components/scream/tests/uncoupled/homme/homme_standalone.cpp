@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "control/atmosphere_driver.hpp"
+#include "share/atm_process/atmosphere_process_group.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
@@ -14,6 +15,9 @@
 // Hommexx includes
 #include "Context.hpp"
 #include "FunctorsBuffersManager.hpp"
+#include "ElementsGeometry.hpp"
+#include "TimeLevel.hpp"
+#include "dynamics/homme/homme_dimensions.hpp"
 
 #include <iomanip>
 
@@ -68,6 +72,31 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
 
   // Init, run, and finalize
   ad.initialize(atm_comm,ad_params,t0);
+
+  // Check that topography data from the FM matches Homme.
+  {
+    auto& geo = Homme::Context::singleton().get<Homme::ElementsGeometry>();
+    auto phis = geo.m_phis;
+
+    const auto& atm_process_group = ad.get_atm_processes();
+    const auto& process = atm_process_group->get_process(0);
+    auto homme_process = std::dynamic_pointer_cast<const HommeDynamics>(process);
+    EKAT_REQUIRE_MSG (process, "Error! Cast to HommeDynamics failed.\n");
+
+    const auto phinh_i = homme_process->get_internal_field("phinh_i","Dynamics").get_view<Real*****>();
+
+    int nelem = Homme::Context::singleton().get<Homme::ElementsGeometry>().num_elems();
+    int n0 = Homme::Context::singleton().get<Homme::TimeLevel>().n0;
+    constexpr int NVL = HOMMEXX_NUM_PHYSICAL_LEV;
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*NP*NP),
+                         KOKKOS_LAMBDA (const int idx) {
+      const int ie = idx/(NP*NP);
+      const int ip = (idx/NP)%NP;
+      const int jp = idx%NP;
+      EKAT_KERNEL_ASSERT(phinh_i(ie,n0,ip,jp,NVL) == phis(ie,ip,jp));
+    });
+  }
 
   // Add checks to verify AD memory buffer and Homme FunctorsBuffersManager
   // are the same size and reference the same memory.
