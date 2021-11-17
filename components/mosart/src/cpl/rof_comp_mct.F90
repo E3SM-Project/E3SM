@@ -53,6 +53,7 @@ module rof_comp_mct
   use ESMF
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
+  use iso_c_binding
 #endif
 !
 ! PUBLIC MEMBER FUNCTIONS:
@@ -94,6 +95,9 @@ contains
     ! back from (i.e. albedos, surface temperature and snow cover over land).
     !
     ! !ARGUMENTS:
+#ifdef HAVE_MOAB
+    use iMOAB , only : iMOAB_RegisterApplication
+#endif
     type(ESMF_Clock),           intent(inout) :: EClock     ! Input synchronization clock
     type(seq_cdata),            intent(inout) :: cdata_r    ! Input runoff-model driver data
     type(mct_aVect) ,           intent(inout) :: x2r_r      ! River import state
@@ -135,7 +139,6 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    integer, external :: iMOAB_RegisterApplicationFortran
     integer :: ierr
     character*32  appname
 #endif
@@ -276,9 +279,9 @@ contains
        call rof_export_mct( r2x_r )
 
 #ifdef HAVE_MOAB
-       appname="ROFMB"//CHAR(0) ! only if rof_prognostic
+       appname="ROFMB"//C_NULL_CHAR ! only if rof_prognostic
     ! first rof instance, should be
-       ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_rof, ROFID, mrofid)
+       ierr = iMOAB_RegisterApplication(appname, mpicom_rof, ROFID, mrofid)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: cannot register moab app')
        if(masterproc) then
@@ -778,14 +781,14 @@ contains
     ! use rtmCTL that has all we need
     use seq_comm_mct,      only: mrofid  ! id of moab rof app
     use shr_const_mod, only: SHR_CONST_PI
+    use iMOAB,  only       : iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
     integer gsize ! global size, that we do not need, actually
     integer n
-    integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
-         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from rtmCTL
@@ -825,7 +828,7 @@ contains
 
     tagtype = 0  ! dense, integer
     numco = 1
-    tagname='GLOBAL_ID'//CHAR(0)
+    tagname='GLOBAL_ID'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to retrieve GLOBAL_ID tag ')
@@ -841,7 +844,7 @@ contains
 
     !there are no shared entities, but we will set a special partition tag, in order to see the
     ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-    tagname='partition'//CHAR(0)
+    tagname='partition'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to create new partition tag ')
@@ -852,7 +855,7 @@ contains
       call shr_sys_abort( sub//' Error: fail to set partition tag ')
 
     ! mask
-    tagname='mask'//CHAR(0)
+    tagname='mask'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to create new mask tag ')
@@ -869,8 +872,8 @@ contains
     deallocate(vgids)
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
-    outfile = 'wholeRof.h5m'//CHAR(0)
-    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    outfile = 'wholeRof.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')

@@ -307,6 +307,8 @@ contains
     use seq_comm_mct, only: mphaid ! imoab pid for atm physics
     use seq_comm_mct, only : num_moab_exports !
     use cam_abortutils       , only: endrun
+    use iMOAB, only:  iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
+    use iso_c_binding 
     !
     ! Arguments
     !
@@ -317,7 +319,6 @@ contains
     character*100 outfile, wopts, tagname, lnum
 
     integer ierr, c, nlcols, ig, i, ncols
-    integer , external :: iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
 
     ! load temp, u, and v on atm phys moab mesh, that is
 
@@ -340,18 +341,18 @@ contains
        enddo
     enddo
 
-    tagname='T_ph'//CHAR(0)
+    tagname='T_ph'//C_NULL_CHAR
     ent_type = 0 ! vertex type
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, tbot)
-    tagname ='u_ph'//CHAR(0)
+    tagname ='u_ph'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, ubot)
-    tagname ='v_ph'//CHAR(0)
+    tagname ='v_ph'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, vbot)
 #ifdef MOABDEBUG
     num_moab_exports = num_moab_exports +1
     write(lnum,"(I0.2)")num_moab_exports
-    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//CHAR(0)
-    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the atm phys mesh file with data')

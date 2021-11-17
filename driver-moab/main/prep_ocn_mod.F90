@@ -25,6 +25,7 @@ module prep_ocn_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
+  use iso_c_binding
 
   implicit none
   save
@@ -1495,6 +1496,7 @@ contains
 
   ! exposed method to migrate projected tag from coupler pes to ocean pes
   subroutine prep_ocn_migrate_moab(infodata)
+   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
   !---------------------------------------------------------------
     ! Description
     ! After a2oTbot_proj, a2oVbot_proj, a2oUbot_proj were computed on ocn mesh on coupler, they need
@@ -1517,9 +1519,6 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
-    integer, external :: iMOAB_WriteMesh
-
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          ocn_present=ocn_present)
@@ -1533,19 +1532,19 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
+    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
       context_id = ocnid1
-      ierr = iMOAB_SendElementTagFortran(mboxid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTag(mboxid, tagName, mpicom_join, context_id)
 
     endif
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       ! receive on ocean pes, a tag that was computed on coupler pes
        context_id = id_join
-       ierr = iMOAB_ReceiveElementTagFortran(mpoid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTag(mpoid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
@@ -1560,8 +1559,8 @@ contains
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") number_proj
-      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//CHAR(0)
-      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
 
     !CHECKRC(ierr, "cannot receive tag values")
