@@ -153,28 +153,30 @@ void timeloop() {
 
       int debug_k = 5;
       int cnt;
-      real u_2dx = 0;
-      real w_2dx = 0;
+      real u_2dx;
+      real w_2dx;
 
       cnt = 0;
+      u_2dx = 0;
+      w_2dx = 0;
       for (int i=1; i<nx; i++) {
-        u_2dx = ( u_2dx*cnt + u(i,debug_k) - u(i-1,debug_k) ) / (cnt+1);
-        w_2dx = ( w_2dx*cnt + w(i,debug_k) - w(i-1,debug_k) ) / (cnt+1);
+        u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
+        w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
         cnt++;
       }
-
       std::cout << "debug-hypervis - u_2dx before uvw: " << u_2dx << std::endl;
       std::cout << "debug-hypervis - w_2dx before uvw: " << w_2dx << std::endl;
 
       uvw();
 
       cnt = 0;
+      u_2dx = 0;
+      w_2dx = 0;
       for (int i=1; i<nx; i++) {
-        u_2dx = ( u_2dx*cnt + u(i,debug_k) - u(i-1,debug_k) ) / (cnt+1);
-        w_2dx = ( w_2dx*cnt + w(i,debug_k) - w(i-1,debug_k) ) / (cnt+1);
+        u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
+        w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
         cnt++;
       }
-      
       std::cout << "debug-hypervis - u_2dx after uvw : " << u_2dx << std::endl;
       std::cout << "debug-hypervis - w_2dx after uvw : " << w_2dx << std::endl;
 

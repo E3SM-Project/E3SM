@@ -142,19 +142,23 @@ void diffuse_mom2D(real5d &tk) {
     //   do i=1,nx
     //     do icrm = 1 , ncrms
     parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real uhv = u(k,j,i-2,icrm) - 4*u(k,j,i-1,icrm) + 6*u(k,j,i,icrm) - 4*u(k,j,i+1,icrm) + u(k,j,i+2,icrm);
-      real vhv = v(k,j,i-2,icrm) - 4*v(k,j,i-1,icrm) + 6*v(k,j,i,icrm) - 4*v(k,j,i+1,icrm) + v(k,j,i+2,icrm);
+      real uhv = u(k,j+offy_u,i-2+offx_u,icrm) - 4*u(k,j+offy_u,i-1+offx_u,icrm) + 6*u(k,j+offy_u,i+offx_u,icrm) - 4*u(k,j+offy_u,i+1+offx_u,icrm) + u(k,j+offy_u,i+2+offx_u,icrm);
+      real vhv = v(k,j+offy_v,i-2+offx_v,icrm) - 4*v(k,j+offy_v,i-1+offx_v,icrm) + 6*v(k,j+offy_v,i+offx_v,icrm) - 4*v(k,j+offy_v,i+1+offx_v,icrm) + v(k,j+offy_v,i+2+offx_v,icrm);
+      real whv = w(k,j+offy_w,i-2+offx_w,icrm) - 4*w(k,j+offy_w,i-1+offx_w,icrm) + 6*w(k,j+offy_w,i+offx_w,icrm) - 4*w(k,j+offy_w,i+1+offx_w,icrm) + w(k,j+offy_w,i+2+offx_w,icrm);
       dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - khyp * rdx16 * uhv;
       dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - khyp * rdx16 * vhv;
+      if (k>0) {
+      dwdt(na-1,k,j,i,icrm) = dwdt(na-1,k,j,i,icrm) - khyp * rdx16 * whv; 
+      }
     });
 
     // do k=2,nzm
     //   do i=1,nx
     //     do icrm = 1 , ncrms
-    parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real whv = w(k+1,j,i-2,icrm) - 4*w(k+1,j,i-1,icrm) + 6*w(k+1,j,i,icrm) - 4*w(k+1,j,i+1,icrm) + w(k+1,j,i+2,icrm);
-      dwdt(na-1,k+1,j,i,icrm) = dwdt(na-1,k+1,j,i,icrm) - khyp * rdx16 * whv; 
-    });
+    // parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    //   real whv = w(k+1,j+offy_w,i-2+offx_w,icrm) - 4*w(k+1,j+offy_w,i-1+offx_w,icrm) + 6*w(k+1,j+offy_w,i+offx_w,icrm) - 4*w(k+1,j+offy_w,i+1+offx_w,icrm) + w(k+1,j+offy_w,i+2+offx_w,icrm);
+    //   dwdt(na-1,k+1,j,i,icrm) = dwdt(na-1,k+1,j,i,icrm) - khyp * rdx16 * whv; 
+    // });
 
   // }
 #endif
