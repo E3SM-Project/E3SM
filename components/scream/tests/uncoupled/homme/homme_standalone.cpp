@@ -80,7 +80,9 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
 
     const auto& atm_process_group = ad.get_atm_processes();
     const auto& process = atm_process_group->get_process(0);
-    const scream::HommeDynamics* homme_process = static_cast<const scream::HommeDynamics*>(&(*process));
+    auto homme_process = std::dynamic_pointer_cast<const HommeDynamics>(process);
+    EKAT_REQUIRE_MSG (process, "Error! Cast to HommeDynamics failed.\n");
+
     const auto phinh_i = homme_process->get_internal_field("phinh_i","Dynamics").get_view<Real*****>();
 
     int nelem = Homme::Context::singleton().get<Homme::ElementsGeometry>().num_elems();
