@@ -39,7 +39,8 @@ namespace scream
 HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
+  // This class needs Homme's context, so register as a user
+  HommeContextUser::singleton().add_user();
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -344,8 +345,10 @@ void HommeDynamics::run_impl (const int dt)
 
 void HommeDynamics::finalize_impl (/* what inputs? */)
 {
-  Homme::Context::singleton().finalize_singleton();
   prim_finalize_f90();
+
+  // This class is done needing Homme's context, so remove myself as customer
+  Homme::Context::singleton().finalize_singleton();
 }
 
 void HommeDynamics::homme_pre_process (const int dt) {

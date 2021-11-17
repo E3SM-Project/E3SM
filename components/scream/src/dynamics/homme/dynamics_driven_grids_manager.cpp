@@ -1,6 +1,7 @@
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
@@ -19,6 +20,9 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
                             const ekat::ParameterList& p)
  : m_comm (comm)
 {
+  // This class needs Homme's context, so register as a user
+  HommeContextUser::singleton().add_user();
+
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
     auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
@@ -65,6 +69,9 @@ DynamicsDrivenGridsManager::
 ~DynamicsDrivenGridsManager () {
   // Cleanup the grids stuff
   finalize_geometry_f90 ();
+
+  // This class is done needing Homme's context, so remove myself as customer
+  Homme::Context::singleton().finalize_singleton();
 }
 
 DynamicsDrivenGridsManager::remapper_ptr_type
