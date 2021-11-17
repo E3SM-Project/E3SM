@@ -87,10 +87,6 @@ interface
     type (c_ptr) , intent(in) :: phis_ptr, gradphis_ptr
   end subroutine init_geopotential_c
 
-  ! Uses phis to compute gradphis
-  subroutine compute_gradphis_c () bind(c)
-  end subroutine
-
   ! Initializes C++ diagnostics arrays with ptrs provided from f90
   subroutine init_diagnostics_c (elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, &
                                  elem_accum_q1mass_ptr, elem_accum_iener_ptr,                 &
