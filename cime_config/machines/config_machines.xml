@@ -1050,6 +1050,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">cmake/3.20.3-vedypwm</command>
+	<command name="load">anaconda3/2021.05</command>
       </modules>
       <modules compiler="intel">
         <command name="load">gcc/7.4.0</command>
@@ -1062,6 +1063,7 @@
         <command name="load">netcdf-cxx/4.2-db2f5or</command>
         <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
         <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
+	<command name="load">hdf5/1.10.7-igh6foh</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-i42whlw</command>
@@ -1069,6 +1071,7 @@
         <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
         <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
         <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
+	<command name="load">hdf5/1.10.7-ugvomvt</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
         <command name="load">openmpi/4.1.1-v3b3npd</command>
@@ -1134,6 +1137,12 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+    <environment_variables mpilib="impi" compiler="intel">
+      <env name="MOAB_PATH">/gpfs/fs1/home/software/climate/moab/devel/anvil/impi-2019.9.304/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich" compiler="intel">
+      <env name="MOAB_PATH">/gpfs/fs1/home/software/climate/moab/devel/anvil/mvapich-2.3.6/intel-20.0.4</env>
     </environment_variables>
   </machine>
 
