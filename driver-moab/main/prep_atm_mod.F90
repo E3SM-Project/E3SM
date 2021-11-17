@@ -31,6 +31,8 @@ module prep_atm_mod
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use dimensions_mod, only : np     ! for atmosphere
 
+  use iso_c_binding
+
 
   implicit none
   save
@@ -100,6 +102,8 @@ contains
 
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
+    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
+      iMOAB_WriteMesh, iMOAB_ComputePointDoFIntersection ! use computedofintx if land is point cloud
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and  mappers
@@ -127,8 +131,6 @@ contains
     type(mct_avect), pointer         :: a2x_ax
     character(*), parameter          :: subname = '(prep_atm_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
-    integer, external :: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplicationFortran, &
-        iMOAB_WriteMesh, iMOAB_ComputePointDoFIntersection ! use computedofintx if land is point cloud
     integer ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
     !---------------------------------------------------------------
@@ -191,10 +193,10 @@ contains
 
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
-            appname = "ATM_OCN_COU"//CHAR(0)
+            appname = "ATM_OCN_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
             idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, idintx, mbintxoa)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm ocn intx'
               call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
@@ -208,11 +210,11 @@ contains
               write(logunit,*) 'iMOAB intersection between atm and ocean with id:', idintx
             end if
 #ifdef MOABDEBUG
-            wopts = CHAR(0)
+            wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
             if (rank .lt. 5) then
               write(lnum,"(I0.2)")rank !
-              outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
+              outfile = 'intx'//trim(lnum)// '.h5m' // C_NULL_CHAR
               ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
               if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in writing intx file '
@@ -280,10 +282,10 @@ contains
                'mapper_Sl2a initialization',esmf_map_flag)
 
           if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0)) then
-            appname = "ATM_LND_COU"//CHAR(0)
+            appname = "ATM_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, idintx, mbintxla)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm lnd intx '
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
@@ -306,11 +308,11 @@ contains
 #ifdef MOABDEBUG
             ! write intx only if true intx file:
             if (.not. sameg_al) then
-              wopts = CHAR(0)
+              wopts = C_NULL_CHAR
               call shr_mpi_commrank( mpicom_CPLID, rank )
               if (rank .lt. 5) then ! write only a few intx files
                 write(lnum,"(I0.2)")rank !
-                outfile = 'intx_la'//trim(lnum)// '.h5m' // CHAR(0)
+                outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
                 ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
                 if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in writing intx file land atm '
@@ -328,6 +330,9 @@ contains
   end subroutine prep_atm_init
 
   subroutine prep_atm_ocn_moab(infodata)
+
+    use iMOAB, only: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, &
+      iMOAB_ComputeCommGraph
     !---------------------------------------------------------------
     ! Description
     ! After intersection of atm and ocean mesh, correct the communication graph
@@ -356,7 +361,6 @@ contains
     integer                  :: typeA, typeB ! type for computing graph;
     integer                  :: idintx ! in this case, id of moab intersection between atm and ocn, on coupler pes
 
-    integer, external :: iMOAB_CoverageGraphFortran, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraphFortran
 
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
@@ -376,12 +380,12 @@ contains
     ! it happens over joint communicator
 
     if (atm_pg_active ) then ! use mhpgid mesh
-      ierr = iMOAB_CoverageGraphFortran(mpicom_join, mhpgid, mbaxid, mbintxoa, atm_id, id_join, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, atm_id, id_join, context_id);
       if (iamroot_CPLID) then
         write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
       end if
     else
-      ierr = iMOAB_CoverageGraphFortran(mpicom_join, mhid, mbaxid, mbintxoa, atm_id, id_join, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, atm_id, id_join, context_id);
       if (iamroot_CPLID) then
         write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
       end if
@@ -392,20 +396,20 @@ contains
     endif
 
     if ( mbintxoa .ge. 0 ) then
-      wgtIdef = 'scalar'//CHAR(0)
+      wgtIdef = 'scalar'//C_NULL_CHAR
       if (atm_pg_active) then
-        dm1 = "fv"//CHAR(0)
-        dofnameATM="GLOBAL_ID"//CHAR(0)
+        dm1 = "fv"//C_NULL_CHAR
+        dofnameATM="GLOBAL_ID"//C_NULL_CHAR
         orderATM = 1 !  fv-fv
         volumetric = 1 ! maybe volumetric ?
       else
-        dm1 = "cgll"//CHAR(0)
-        dofnameATM="GLOBAL_DOFS"//CHAR(0)
+        dm1 = "cgll"//C_NULL_CHAR
+        dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
         orderATM = np !  it should be 4
         volumetric = 0
       endif
-      dm2 = "fv"//CHAR(0)
-      dofnameOCN="GLOBAL_ID"//CHAR(0)
+      dm2 = "fv"//C_NULL_CHAR
+      dofnameOCN="GLOBAL_ID"//C_NULL_CHAR
       orderOCN = 1  !  not much arguing
       fNoBubble = 1
       monotonicity = 0 !
@@ -433,7 +437,7 @@ contains
     ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
     !    int typeA = 2; // point cloud
     !    int typeB = 1; // quads in coverage set
-    !    ierr = iMOAB_ComputeCommGraphFortran(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
+    !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
     !        &typeA, &typeB, &cmpatm, &atmocnid);
     call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
     call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
@@ -458,7 +462,7 @@ contains
          mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
           typeA, typeB, atm_id, idintx
     end if
-    ierr = iMOAB_ComputeCommGraphFortran( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+    ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
           typeA, typeB, atm_id, idintx)
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '
@@ -470,6 +474,8 @@ contains
   end subroutine prep_atm_ocn_moab
 
   subroutine prep_atm_lnd_moab(infodata)
+
+    use iMOAB, only: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraph
     !---------------------------------------------------------------
     ! Description
     ! If the land is on the same mesh as atm, we do not need to compute intx
@@ -498,8 +504,6 @@ contains
     integer                  :: idintx ! in this case, id of moab intersection between atm and lnd, on coupler pes
                                        ! used only for tri-grid case
 
-    integer, external :: iMOAB_CoverageGraphFortran, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraphFortran
-
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          lnd_present=lnd_present)
@@ -517,9 +521,9 @@ contains
     context_id = lnd(1)%cplcompid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     if (atm_pg_active ) then ! use mhpgid mesh
-      ierr = iMOAB_CoverageGraphFortran(mpicom_join, mhpgid, mbaxid, mbintxla, atm_id, id_join, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, atm_id, id_join, context_id);
     else
-      ierr = iMOAB_CoverageGraphFortran(mpicom_join, mhid, mbaxid, mbintxla, atm_id, id_join, context_id);
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, atm_id, id_join, context_id);
     endif
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing coverage graph atm/lnd '
@@ -528,28 +532,28 @@ contains
 
     if (mbintxla .ge. 0 ) then ! weights are computed over coupler pes
       ! copy from atm - ocn  , it is now similar, as land is full mesh, not pc cloud
-      wgtIdef = 'scalar'//CHAR(0)
+      wgtIdef = 'scalar'//C_NULL_CHAR
       if (atm_pg_active) then
-        dm1 = "fv"//CHAR(0)
-        dofnameATM="GLOBAL_ID"//CHAR(0)
+        dm1 = "fv"//C_NULL_CHAR
+        dofnameATM="GLOBAL_ID"//C_NULL_CHAR
         orderATM = 1 !  fv-fv
         volumetric = 1 ! maybe volumetric ?
       else
-        dm1 = "cgll"//CHAR(0)
-        dofnameATM="GLOBAL_DOFS"//CHAR(0)
+        dm1 = "cgll"//C_NULL_CHAR
+        dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
         orderATM = np !  it should be 4
         volumetric = 0
       endif
 
-      dofnameLND="GLOBAL_ID"//CHAR(0)
+      dofnameLND="GLOBAL_ID"//C_NULL_CHAR
       orderLND = 1  !  not much arguing
       ! is the land mesh explicit or point cloud ? based on sameg_al flag:
       if (sameg_al) then
-        dm2 = "pcloud"//CHAR(0)
-        wgtIdef = 'scalar-pc'//CHAR(0)
+        dm2 = "pcloud"//C_NULL_CHAR
+        wgtIdef = 'scalar-pc'//C_NULL_CHAR
         volumetric = 0 !  TODO: check this , for PC ; for imoab_coupler test, volumetric is 0
       else
-        dm2 = "fv"//CHAR(0) ! land is FV
+        dm2 = "fv"//C_NULL_CHAR ! land is FV
         volumetric = 1
       endif
       fNoBubble = 1
@@ -593,7 +597,7 @@ contains
                   ! data from phys grid directly to atm-lnd intx , for later projection
                   ! context is the same, atm - lnd intx id !
       endif
-      ierr = iMOAB_ComputeCommGraphFortran( mphaid, mbintxla, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+      ierr = iMOAB_ComputeCommGraph( mphaid, mbintxla, mpicom_join, mpigrp_old, mpigrp_CPLID, &
             typeA, typeB, atm_id, idintx)
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing graph phys grid - atm/lnd intx '
@@ -604,6 +608,9 @@ contains
   end subroutine prep_atm_lnd_moab
 
   subroutine prep_atm_migrate_moab(infodata)
+
+    use iMOAB, only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, &
+      iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
     !---------------------------------------------------------------
     ! Description
     ! After a2oTbot, a2oUbot, a2oVbot tags were loaded on atm mesh,
@@ -627,8 +634,6 @@ contains
     character*50             :: outfile, wopts, tagnameProj, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
-    integer, external :: iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
 
     call seq_infodata_getData(infodata, &
       atm_present=atm_present,       &
@@ -647,8 +652,8 @@ contains
     ! we should do this only if ocn_present
 
     context_id = ocn(1)%cplcompid
-    wgtIdef = 'scalar'//CHAR(0)
-    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
+    wgtIdef = 'scalar'//C_NULL_CHAR
+    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR
     num_proj = num_proj + 1
 
     if (atm_present .and. ocn_present) then
@@ -659,9 +664,9 @@ contains
           ! basically, adjust the migration of the tag we want to project; it was sent initially with
           ! trivial partitioning, now we need to adjust it for "coverage" mesh
           ! as always, use nonblocking sends
-          tagName = 'T_ph;u_ph;v_ph;'//CHAR(0) ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+          tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
           context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx !
-          ierr = iMOAB_SendElementTagFortran(mphaid, tagName, mpicom_join, context_id)
+          ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending tag from phys atm to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in sending tag from phys atm to ocn atm intx')
@@ -670,11 +675,11 @@ contains
         endif
 
         if (mbintxoa .ge. 0 ) then ! we are for sure on coupler pes!
-          tagName = 'T_ph16;u_ph16;v_ph16;'//CHAR(0) ! they are defined in cplcomp_exchange mod
+          tagName = 'T_ph16;u_ph16;v_ph16;'//C_NULL_CHAR ! they are defined in cplcomp_exchange mod
           ! context_id = atm(1)%cplcompid == atm_id above (5)
           ! we use the same name as spectral case, even thought in pg2 case, the size of tag is 1, not 16
           ! in imoab_apg2_ol_coupler.cpp we use at this stage, receiver, the same name as sender, T_ph
-          ierr = iMOAB_ReceiveElementTagFortran(mbintxoa, tagName, mpicom_join, atm_id)
+          ierr = iMOAB_ReceiveElementTag(mbintxoa, tagName, mpicom_join, atm_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tag from phys atm to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in receiving tag from phys atm to ocn atm intx')
@@ -690,7 +695,7 @@ contains
           endif
         endif
       else  ! original send from spectral elements
-        tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
+        tagName = 'a2oTbot;a2oUbot;a2oVbot;'//C_NULL_CHAR ! they are defined in semoab_mod.F90!!!
         !  the separator will be ';' semicolon
 
         if (mhid .ge. 0) then !  send because we are on atm pes
@@ -699,7 +704,7 @@ contains
           ! trivial partitioning, now we need to adjust it for "coverage" mesh
           ! as always, use nonblocking sends
 
-          ierr = iMOAB_SendElementTagFortran(mhid, tagName, mpicom_join, context_id)
+          ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending tag from atm spectral to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in sending tag from atm spectral to ocn atm intx')
@@ -707,7 +712,7 @@ contains
         endif
         if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
           ! receive on atm on coupler pes, that was redistributed according to coverage
-          ierr = iMOAB_ReceiveElementTagFortran(mbaxid, tagName, mpicom_join, context_id)
+          ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tag from atm spectral to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in receiving tag from atm spectral to ocn atm intx')
@@ -740,8 +745,8 @@ contains
         ! we can also write the ocean mesh to file, just to see the projectd tag
         !      write out the mesh file to disk
         write(lnum,"(I0.2)")num_proj
-        outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//CHAR(0)
-        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+        outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in writing ocn mesh after projection '
@@ -754,12 +759,12 @@ contains
 
     endif  ! if atm and ocn
     ! repeat this for land data, that is already on atm tag
-    tagNameProj = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//CHAR(0)
+    tagNameProj = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//C_NULL_CHAR
 
     context_id = lnd(1)%cplcompid
 
     if (atm_present .and. lnd_present) then
-      wgtIdef = 'scalar'//CHAR(0) ! from fv, need to be similar to ocean now
+      wgtIdef = 'scalar'//C_NULL_CHAR ! from fv, need to be similar to ocean now
       if (.not. sameg_al) then ! tri-grid case
         if (atm_pg_active ) then ! use mhpgid mesh
 
@@ -768,10 +773,10 @@ contains
             ! basically, adjust the migration of the tag we want to project; it was sent initially with
             ! original partitioning, now we need to adjust it for "coverage" mesh
             ! as always, use nonblocking sends
-            tagName = 'T_ph;u_ph;v_ph;'//CHAR(0) ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+            tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
             context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
             ! use computed graph
-            ierr = iMOAB_SendElementTagFortran(mphaid, tagName, mpicom_join, context_id)
+            ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in sending tag from atm to atm land intx '
               call shr_sys_abort(subname//' ERROR in sending tag from atm to atm land intx')
@@ -780,8 +785,8 @@ contains
           endif
           if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
             ! receive on atm on coupler pes, that was redistributed according to coverage
-            tagName = 'T_ph;u_ph;v_ph;'//CHAR(0) ! they are defined in initialize_moab_atm_phys
-            ierr = iMOAB_ReceiveElementTagFortran(mbintxla, tagName, mpicom_join, atm_id)
+            tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys
+            ierr = iMOAB_ReceiveElementTag(mbintxla, tagName, mpicom_join, atm_id)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in receiving tag from atm to atm land intx '
               call shr_sys_abort(subname//' ERROR in receiving tag from atm to atm land intx')
@@ -798,7 +803,7 @@ contains
             endif
           endif
         else ! regular coarse homme mesh if (.not. atm_pg_active)
-          tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0)
+          tagName = 'a2oTbot;a2oUbot;a2oVbot;'//C_NULL_CHAR
           ! context_id = lnd(1)%cplcompid !
           if (mhid .ge. 0) then !  send because we are on atm pes
 
@@ -806,7 +811,7 @@ contains
             ! original partitioning, now we need to adjust it for "coverage" mesh
             ! as always, use nonblocking sends
 
-            ierr = iMOAB_SendElementTagFortran(mhid, tagName, mpicom_join, context_id)
+            ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in sending tag from atm spectral to atm/lnd intx '
               call shr_sys_abort(subname//' ERROR in sending tag from atm spectral to atm/lnd intx ')
@@ -815,7 +820,7 @@ contains
           endif
           if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
             ! receive on atm on coupler pes, that was redistributed according to coverage
-            ierr = iMOAB_ReceiveElementTagFortran(mbaxid, tagName, mpicom_join, context_id)
+            ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in receiving tag from atm spectral to atm/lnd intx '
               call shr_sys_abort(subname//' ERROR in receiving tag from atm spectral to atm/lnd intx ')
@@ -847,8 +852,8 @@ contains
           ! we can also write the ocean mesh to file, just to see the projectd tag
           !      write out the mesh file to disk
             write(lnum,"(I0.2)")num_proj
-            outfile = 'lndCplProj'//trim(lnum)//'.h5m'//CHAR(0)
-            wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+            outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
             ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in writing mesh on coupler land'
@@ -866,7 +871,7 @@ contains
           ! original partitioning, now we need to adjust it for "coverage" mesh
           ! as always, use nonblocking sends
 
-          ierr = iMOAB_SendElementTagFortran(mhid, tagName, mpicom_join, context_id)
+          ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending tag for land projection'
             call shr_sys_abort(subname//' ERROR in sending tag for land projection')
@@ -874,7 +879,7 @@ contains
         endif
         if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
           ! receive on atm on coupler pes, that was redistributed according to coverage
-          ierr = iMOAB_ReceiveElementTagFortran(mbaxid, tagName, mpicom_join, context_id)
+          ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tag for land projection'
             call shr_sys_abort(subname//' ERROR in receiving tag for land projection')
@@ -896,7 +901,7 @@ contains
 
           ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
           !  hard coded now, it should be a runtime option in the future
-          wgtIdef = 'scalar-pc'//CHAR(0)
+          wgtIdef = 'scalar-pc'//C_NULL_CHAR
           ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagNameProj)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights for land projection'
@@ -907,8 +912,8 @@ contains
           ! we can also write the land mesh to file, just to see the projectd tag
           !      write out the mesh file to disk
             write(lnum,"(I0.2)")num_proj
-            outfile = 'lndCplProj'//trim(lnum)//'.h5m'//CHAR(0)
-            wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+            outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
             ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in writing land projection'

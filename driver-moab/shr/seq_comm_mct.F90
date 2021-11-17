@@ -27,6 +27,7 @@ module seq_comm_mct
 #endif
   use esmf           , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
   use esmf           , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
+  use iMOAB, only: iMOAB_Initialize
 
   implicit none
 
@@ -213,7 +214,6 @@ module seq_comm_mct
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
-  integer, external :: iMOAB_InitializeFortran
   integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
   integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -228,6 +228,8 @@ module seq_comm_mct
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof migrated to coupler pes
+  integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
+                              ! similar to intx id, oa, la; 
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
@@ -606,7 +608,7 @@ contains
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
 
-    ierr = iMOAB_InitializeFortran()
+    ierr = iMOAB_Initialize()
     if (ierr /= 0) then
        write(logunit,*) trim(subname),' ERROR initialize MOAB '
     endif
@@ -631,6 +633,7 @@ contains
     mbixid = -1   ! iMOAB for sea-ice migrated to coupler
     mrofid = -1   ! iMOAB id of moab rof app
     mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
+    mbrmapro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file 
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)

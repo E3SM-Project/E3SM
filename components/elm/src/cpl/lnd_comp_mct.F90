@@ -12,6 +12,7 @@ module lnd_comp_mct
   use mct_mod          , only : mct_avect, mct_gsmap
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export
+  use iso_c_binding
   !
   ! !public member functions:
   implicit none
@@ -73,7 +74,8 @@ contains
     use mct_mod
     use ESMF
 #ifdef HAVE_MOAB
-    use seq_comm_mct,      only: mlnid ! id of moab land app
+    use iMOAB            , only : iMOAB_RegisterApplication
+    use seq_comm_mct,       only: mlnid ! id of moab land app
 #endif
     !
     ! !ARGUMENTS:
@@ -124,7 +126,6 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    integer, external :: iMOAB_RegisterApplicationFortran
     integer :: ierr
     character*32  appname
     logical :: samegrid_al !
@@ -278,9 +279,9 @@ contains
     call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd ) 	
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
 #ifdef HAVE_MOAB
-    appname="LNDMB"//CHAR(0)
+    appname="LNDMB"//C_NULL_CHAR
     ! first land instance, should be 9
-    ierr = iMOAB_RegisterApplicationFortran(appname, mpicom_lnd, LNDID, mlnid)
+    ierr = iMOAB_RegisterApplication(appname, mpicom_lnd, LNDID, mlnid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app')
     if(masterproc) then
@@ -772,6 +773,9 @@ contains
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
+    use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
 
     type(bounds_type) , intent(in)  :: bounds
     logical :: samegrid_al
@@ -780,9 +784,6 @@ contains
     integer lsz !  keep local size
     integer gsize ! global size, that we do not need, actually
     integer n
-    integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
-         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
@@ -838,7 +839,7 @@ contains
         ! define some tags on cells now, not on vertices
         tagtype = 0  ! dense, integer
         numco = 1
-        tagname='GLOBAL_ID'//CHAR(0)
+        tagname='GLOBAL_ID'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
@@ -854,7 +855,7 @@ contains
 
 !        !there are no shared entities, but we will set a special partition tag, in order to see the
 !        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-!        tagname='partition'//CHAR(0)
+!        tagname='partition'//C_NULL_CHAR
 !        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
 !        if (ierr > 0 )  &
 !          call endrun('Error: fail to create new partition tag ')
@@ -866,7 +867,7 @@ contains
 
         ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
         !   on the vertices; do not allocate other data array
-        tagname='frac'//CHAR(0)
+        tagname='frac'//C_NULL_CHAR
         tagtype = 1 ! dense, double
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
@@ -880,7 +881,7 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 
-        tagname='area'//CHAR(0)
+        tagname='area'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
@@ -903,7 +904,7 @@ contains
           end do
         end do
         ent_type = 0 ! vertices now
-        tagname = 'GLOBAL_ID'//CHAR(0)
+        tagname = 'GLOBAL_ID'//C_NULL_CHAR
         ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids )
         if (ierr > 0 )  &
           call endrun('Error: fail to set global ID tag on vertices in land mesh ')
@@ -930,7 +931,7 @@ contains
 
         tagtype = 0  ! dense, integer
         numco = 1
-        tagname='GLOBAL_ID'//CHAR(0)
+        tagname='GLOBAL_ID'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
@@ -946,7 +947,7 @@ contains
 
         !there are no shared entities, but we will set a special partition tag, in order to see the
         ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-        tagname='partition'//CHAR(0)
+        tagname='partition'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create new partition tag ')
@@ -958,7 +959,7 @@ contains
 
         ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
         !   on the vertices; do not allocate other data array
-        tagname='frac'//CHAR(0)
+        tagname='frac'//C_NULL_CHAR
         tagtype = 1 ! dense, double
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
@@ -972,7 +973,7 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 
-        tagname='area'//CHAR(0)
+        tagname='area'//C_NULL_CHAR
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
@@ -989,8 +990,8 @@ contains
     deallocate(vgids)
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
-    outfile = 'wholeLnd.h5m'//CHAR(0)
-    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    outfile = 'wholeLnd.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the land mesh file')

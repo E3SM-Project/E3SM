@@ -13,17 +13,19 @@ module prep_ocn_mod
 
   use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
-  use seq_map_mod
+  use seq_map_mod        !  will have also moab_map_init_rcfile 
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
+  use iso_c_binding
 
   implicit none
   save
@@ -171,6 +173,11 @@ contains
     character(*), parameter  :: subname = '(prep_ocn_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     character(*), parameter  :: F01 = "('"//subname//" : ', A, I8 )"
+
+    character*32             :: appname ! to register moab app
+    integer                  :: rmapid  ! external id to identify the moab app
+    integer, external        :: iMOAB_RegisterApplicationFortran ! 
+    integer                  :: ierr ! 
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -326,6 +333,20 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq  initialization',esmf_map_flag)
+
+               
+          appname = "ROF_OCN_COU"//CHAR(0)
+            ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
+          rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
+          ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, rmapid, mbrmapro)
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in registering rof 2 ocn moab map '
+             call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
+          endif
+
+          call moab_map_init_rcfile(mbrmapro, rof(1), ocn(1), &
+               'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
+               'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -1475,6 +1496,7 @@ contains
 
   ! exposed method to migrate projected tag from coupler pes to ocean pes
   subroutine prep_ocn_migrate_moab(infodata)
+   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
   !---------------------------------------------------------------
     ! Description
     ! After a2oTbot_proj, a2oVbot_proj, a2oUbot_proj were computed on ocn mesh on coupler, they need
@@ -1497,9 +1519,6 @@ contains
     character*32             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
-    integer, external :: iMOAB_SendElementTagFortran, iMOAB_ReceiveElementTagFortran, iMOAB_FreeSenderBuffers
-    integer, external :: iMOAB_WriteMesh
-
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          ocn_present=ocn_present)
@@ -1513,19 +1532,19 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
+    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
       context_id = ocnid1
-      ierr = iMOAB_SendElementTagFortran(mboxid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTag(mboxid, tagName, mpicom_join, context_id)
 
     endif
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       ! receive on ocean pes, a tag that was computed on coupler pes
        context_id = id_join
-       ierr = iMOAB_ReceiveElementTagFortran(mpoid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTag(mpoid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
@@ -1540,8 +1559,8 @@ contains
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") number_proj
-      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//CHAR(0)
-      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
 
     !CHECKRC(ierr, "cannot receive tag values")

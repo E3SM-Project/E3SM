@@ -7,6 +7,7 @@ module mpas_moabmesh
   use mpas_sort
   use mpas_stream_manager
   use mpas_pool_routines
+
   !use mpas_vector_operations
 #include "moab/MOABConfig.h"
   implicit none
@@ -24,7 +25,12 @@ module mpas_moabmesh
   end subroutine
   
   subroutine mpas_moab_instance(domain, ext_comp_id, pidmoab)
-    
+    use iMOAB, only : iMOAB_RegisterApplication, &
+     iMOAB_CreateVertices, iMOAB_CreateElements, &
+     iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
+     iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
+     iMOAB_UpdateMeshInfo
+
     type (domain_type), intent(inout) :: domain
     integer , intent(in) :: ext_comp_id
     integer , Intent(inout) :: pidmoab
@@ -42,11 +48,6 @@ module mpas_moabmesh
     real(kind=RKIND), pointer :: x_period, y_period
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
 
-    integer , external :: iMOAB_RegisterApplicationFortran, &
-        iMOAB_CreateVertices, iMOAB_CreateElements, &
-        iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
-        iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
-        iMOAB_UpdateMeshInfo
     integer :: c_comm, i1, j1, ic, lastvertex
     character*12 appname
     integer :: ierr, num_verts_in_cells
@@ -59,8 +60,8 @@ module mpas_moabmesh
 
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
-    appname = 'MPAS_MB_'//trim(lnum)// CHAR(0)
-    ierr = iMOAB_RegisterApplicationFortran(appname, c_comm, ext_comp_id, pid)
+    appname = 'MPAS_MB_'//trim(lnum)//C_NULL_CHAR
+    ierr = iMOAB_RegisterApplication(appname, c_comm, ext_comp_id, pid)
     pidmoab = pid ! this is exported, need for send to work
     call errorout(ierr, 'fail to register MPAS_MOAB mesh')
     proc_id = domain % dminfo % my_proc_id
@@ -152,7 +153,7 @@ module mpas_moabmesh
        call errorout(ierr, 'fail to create polygons')
 !      set the global id for vertices
 !   first, retrieve the tag
-       tagname='GLOBAL_ID'//CHAR(0)
+       tagname='GLOBAL_ID'//C_NULL_CHAR
        tagtype = 0  ! dense, integer
        numco = 1
        ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
@@ -173,8 +174,8 @@ module mpas_moabmesh
 !#ifdef MPAS_DEBUG
 !       if (proc_id.lt. 5) then
 !         write(lnum,"(I0.2)")proc_id
-!         localmeshfile = 'ownedOcn_'//trim(lnum)// '.h5m' // CHAR(0)
-!         wopts = CHAR(0)
+!         localmeshfile = 'ownedOcn_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+!         wopts = C_NULL_CHAR
 !         ierr = iMOAB_WriteMesh(pid, localmeshfile, wopts)
 !         call errorout(ierr, 'fail to write local mesh file')
 !       endif

@@ -30,6 +30,7 @@ module seq_map_mod
   !--------------------------------------------------------------------------
 
   public :: seq_map_init_rcfile     ! cpl pes
+  public :: moab_map_init_rcfile    ! cpl pes
   public :: seq_map_init_rearrolap  ! cpl pes
   public :: seq_map_initvect        ! cpl pes
   public :: seq_map_map             ! cpl pes
@@ -157,6 +158,68 @@ contains
     endif
 
   end subroutine seq_map_init_rcfile
+
+
+  subroutine moab_map_init_rcfile( mbappid, comp_s, comp_d, &
+    maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
+
+   implicit none
+   !-----------------------------------------------------
+   !
+   ! Arguments
+   !
+   type(integer)        ,intent(in)            :: mbappid  ! moab app id, identifing the map from source to target
+   type(component_type) ,intent(inout)         :: comp_s
+   type(component_type) ,intent(inout)         :: comp_d
+   character(len=*)     ,intent(in)            :: maprcfile
+   character(len=*)     ,intent(in)            :: maprcname
+   character(len=*)     ,intent(in)            :: maprctype
+   logical              ,intent(in)            :: samegrid
+   character(len=*)     ,intent(in),optional   :: string
+   logical              ,intent(in),optional   :: esmf_map
+   !
+   ! Local Variables
+   !
+   !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
+   !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
+   integer(IN)                 :: mpicom
+   character(CX)               :: mapfile
+   character(CX)               :: mapfile_term
+   character(CL)               :: maptype
+   integer(IN)                 :: mapid
+   integer, external           :: iMOAB_LoadMappingWeightsFromFile
+   character(CX)               :: sol_identifier !   /* "scalar", "flux", "custom" */
+   integer                     :: ierr 
+
+   character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
+   !-----------------------------------------------------
+
+   if (seq_comm_iamroot(CPLID) .and. present(string)) then
+      write(logunit,'(A)') subname//' called for '//trim(string)
+   endif
+
+   call seq_comm_setptrs(CPLID, mpicom=mpicom)
+
+   ! --- Initialize Smatp
+   call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
+   !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
+   sol_identifier = 'scalar'//CHAR(0)
+   mapfile_term = trim(mapfile)//CHAR(0)
+   if (seq_comm_iamroot(CPLID)) then
+       write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
+   endif 
+   ierr = iMOAB_LoadMappingWeightsFromFile( mbappid, sol_identifier, mapfile_term)
+   if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in loading map file'
+      call shr_sys_abort(subname//' ERROR in loading map file')
+    endif
+   if (seq_comm_iamroot(CPLID)) then
+      write(logunit,'(2A,I6,4A)') subname,' iMOAB map app ID, maptype, mapfile = ', &
+         mbappid,' ',trim(maptype),' ',trim(mapfile)
+      call shr_sys_flush(logunit)
+   endif
+
+end subroutine moab_map_init_rcfile
 
   !=======================================================================
 

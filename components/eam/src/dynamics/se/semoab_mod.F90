@@ -5,6 +5,7 @@
 
 module semoab_mod    
 #ifdef HAVE_MOAB
+  use iso_c_binding
   use kinds, only : real_kind, iulog, long_kind, int_kind
 !  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
 !       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
@@ -81,6 +82,9 @@ contains
   subroutine create_moab_meshes(par, elem)
 
     use ISO_C_BINDING
+    use iMOAB, only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
+      iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo, iMOAB_DefineTagStorage, &
+      iMOAB_SetIntTagStorage, iMOAB_ReduceTagsMax, iMOAB_GetIntTagStorage
     use coordinate_systems_mod, only :  cartesian3D_t,  spherical_to_cart, spherical_polar_t
 
     type (element_t), intent(inout) :: elem(:)
@@ -94,11 +98,6 @@ contains
     integer moab_dim_cquads, ix, idx, nverts, nverts_c ! used for indexing in loops; nverts will have the number of local vertices
 
     integer nelemd2  ! do not confuse this with dimensions_mod::nelemd
-
-! do we really need this?
-    integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_CreateElements, &
-        iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo, iMOAB_DefineTagStorage, &
-        iMOAB_SetIntTagStorage, iMOAB_ReduceTagsMax, iMOAB_GetIntTagStorage
 
     integer(kind=long_kind), dimension(:), allocatable :: gdofv
     !  this will be moab vertex handle locally
@@ -256,7 +255,7 @@ contains
       ! for this particular problem, markers are the global dofs at corner nodes
 ! set the global id for vertices
 !   first, retrieve the tag
-      tagname='GDOF'//CHAR(0)
+      tagname='GDOF'//C_NULL_CHAR
       tagtype = 0  ! dense, integer
       numco = 1
       ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
@@ -276,7 +275,7 @@ contains
 ! use element offset for actual global dofs
       ! tagtype = 0  ! dense, integer
       ! numco = 1
-      newtagg='GLOBAL_ID'//CHAR(0)
+      newtagg='GLOBAL_ID'//C_NULL_CHAR
       ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create new GDOF tag')
@@ -318,8 +317,8 @@ contains
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 4) then
         write(lnum,"(I0.2)")par%rank
-        localmeshfile = 'fineh_'//trim(lnum)// '.h5m' // CHAR(0)
-        wopts = CHAR(0)
+        localmeshfile = 'fineh_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+        wopts = C_NULL_CHAR
         ierr = iMOAB_WriteMesh(MHFID, localmeshfile, wopts)
         if (ierr > 0 )  &
           call endrun('Error: fail to write local mesh file')
@@ -330,8 +329,8 @@ contains
         call endrun('Error: fail to update mesh info')
 #ifdef MOABDEBUG
 !     write out the mesh file to disk, in parallel
-      outfile = 'wholeFineATM.h5m'//CHAR(0)
-      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+      outfile = 'wholeFineATM.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
@@ -425,7 +424,7 @@ contains
       ! for this particular problem, markers are the global dofs at corner nodes
 ! set the global id for vertices
 !   first, retrieve the tag
-      tagname='GDOFV'//CHAR(0)
+      tagname='GDOFV'//C_NULL_CHAR
       tagtype = 0  ! dense, integer
       numco = 1
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
@@ -450,7 +449,7 @@ contains
         call endrun('Error: fail to resolve shared entities')
 
 !   global dofs are the GLL points are set for each element
-      tagname='GLOBAL_DOFS'//CHAR(0)
+      tagname='GLOBAL_DOFS'//C_NULL_CHAR
       tagtype = 0  ! dense, integer
       numco = np*np !  usually, it is 16; each element will have the dofs in order
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
@@ -490,19 +489,19 @@ contains
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
       !  (bottom atm to surface of ocean)
-      tagname='a2oTbot'//CHAR(0) !  atm to ocean temp bottom tag
+      tagname='a2oTbot'//C_NULL_CHAR !  atm to ocean temp bottom tag
       tagtype = 1  ! dense, double
       numco = np*np !  usually, it is 16; each element will have the same order as dofs
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create atm to ocean temp bottom tag')
 
-      tagname='a2oUbot'//CHAR(0) !  atm to ocean U bottom tag
+      tagname='a2oUbot'//C_NULL_CHAR !  atm to ocean U bottom tag
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create atm to ocean U velocity bottom tag')
 
-      tagname='a2oVbot'//CHAR(0) !  atm to ocean V bottom tag
+      tagname='a2oVbot'//C_NULL_CHAR !  atm to ocean V bottom tag
       ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
         call endrun('Error: fail to create atm to ocean V velocity bottom tag')
@@ -510,7 +509,7 @@ contains
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
       !  (bottom atm to surface of ocean); for debugging, use it on fine mesh
-      tagname='a2o_T'//CHAR(0) !  atm to ocean tag
+      tagname='a2o_T'//C_NULL_CHAR !  atm to ocean tag
       tagtype = 1  ! dense, double
       numco = 1 !  usually, it is 1; one value per gdof
       ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
@@ -521,8 +520,8 @@ contains
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 5) then
         write(lnum,"(I0.2)")par%rank
-        localmeshfile = 'owned_'//trim(lnum)// '.h5m' // CHAR(0)
-        wopts = CHAR(0)
+        localmeshfile = 'owned_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+        wopts = C_NULL_CHAR
         ierr = iMOAB_WriteMesh(MHID, localmeshfile, wopts)
         if (ierr > 0 )  &
           call endrun('Error: fail to write local mesh file')
@@ -533,8 +532,8 @@ contains
         call endrun('Error: fail to update mesh info')
 #ifdef MOABDEBUG
 !     write out the mesh file to disk, in parallel
-      outfile = 'wholeATM.h5m'//CHAR(0)
-      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+      outfile = 'wholeATM.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
@@ -759,7 +758,7 @@ contains
           if (ierr > 0 )  &
              call endrun('Error: fail to create MOAB elements')
 
-          tagname='GLOBAL_ID'//CHAR(0)
+          tagname='GLOBAL_ID'//C_NULL_CHAR
           tagtype = 0  ! dense, integer
           numco = 1
           ierr = iMOAB_DefineTagStorage(MHPGID, tagname, tagtype, numco,  tagindex )
@@ -784,8 +783,8 @@ contains
              call endrun('Error: fail to update mesh info for pg2 mesh')
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
-          outfile = 'wholeATM_PG2.h5m'//CHAR(0)
-          wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+          outfile = 'wholeATM_PG2.h5m'//C_NULL_CHAR
+          wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
           ierr = iMOAB_WriteMesh(MHPGID, outfile, wopts)
           if (ierr > 0 )  &
             call endrun('Error: fail to write the mesh file')
@@ -814,11 +813,11 @@ contains
 
   subroutine moab_export_data(elem)
 
+    use iMOAB, only:  iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     type(element_t),    pointer :: elem(:)
 
     integer num_elem, ierr
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-    integer, external :: iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
 
     real(kind=real_kind), allocatable :: valuesTag(:)
@@ -848,7 +847,7 @@ contains
       enddo
     enddo
     ! set the tag
-    tagname='a2oTbot'//CHAR(0) !  atm to ocean tag for temperature
+    tagname='a2oTbot'//C_NULL_CHAR !  atm to ocean tag for temperature
     ent_type = 1 ! element type
     ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
     if (ierr > 0 )  &
@@ -863,7 +862,7 @@ contains
       enddo
     enddo
     ! set the tag
-    tagname='a2oUbot'//CHAR(0) !  atm to ocean tag for U velocity
+    tagname='a2oUbot'//C_NULL_CHAR !  atm to ocean tag for U velocity
     ent_type = 1 ! element type
     ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
     if (ierr > 0 )  &
@@ -878,7 +877,7 @@ contains
       enddo
     enddo
     ! set the tag
-    tagname='a2oVbot'//CHAR(0) !  atm to ocean tag for V velocity
+    tagname='a2oVbot'//C_NULL_CHAR !  atm to ocean tag for V velocity
     ent_type = 1 ! element type
     ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
     if (ierr > 0 )  &
@@ -888,8 +887,8 @@ contains
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
     write(lnum,"(I0.2)")num_calls_export
-    outfile = 'wholeATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
-    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    outfile = 'wholeATM_T_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the mesh file')
@@ -907,7 +906,7 @@ contains
       end do
     end do
 
-    tagname='a2o_T'//CHAR(0) !  atm to ocean tag, on fine mesh
+    tagname='a2o_T'//C_NULL_CHAR !  atm to ocean tag, on fine mesh
     ierr  = iMOAB_GetMeshInfo ( MHFID, nvert, nvise, nbl, nsurf, nvisBC );
     ent_type = 0 ! vertex type
     ierr = iMOAB_SetDoubleTagStorage ( MHFID, tagname, nvert(1), ent_type, valuesTag)
@@ -917,7 +916,7 @@ contains
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
 
-    outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // CHAR(0)
+    outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // C_NULL_CHAR
 
     ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
     if (ierr > 0 )  &
