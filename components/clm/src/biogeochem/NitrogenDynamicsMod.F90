@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use clm_varcon          , only : dzsoi_decomp, zisoi
-  use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc, iulog
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -209,6 +209,15 @@ contains
                
                if (col_lag_npp(c) /= spval) then
                   ! need to put npp in units of gC/m^2/year here first
+                  if (abs(col_lag_npp(c)) .gt. 1) then 
+                     write(iulog, *) 'TRS - col_lag_npp out of range, setting to zero', &
+                          c, col_lag_npp(c)
+                     col_lag_npp(c) = 0.0
+                  endif
+                  if (abs(col_lag_npp(c)) .gt. .01) then                
+                     write(iulog, *) 'TRS - col_lag_npp large', c,&
+                          col_lag_npp(c)
+                  endif
                   t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
                   nfix_to_sminn(c) = max(0._r8,t)
                else

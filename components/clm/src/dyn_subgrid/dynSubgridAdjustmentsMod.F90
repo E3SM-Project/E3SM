@@ -873,7 +873,7 @@ contains
           ! col_ns%dyn_nbal_adjustments being NaN is an actual problem
           ! or not, but it bombs out while debugging so we have to trap
           ! for it
-          if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+          if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then 
              col_ns%dyn_nbal_adjustments(begc:endc) = &
                   col_ns%dyn_nbal_adjustments(begc:endc) + &
                   adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -890,7 +890,7 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+       if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then 
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -903,7 +903,7 @@ contains
            adjustment  = adjustment_one_level(begc:endc))
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ns%dyn_nbal_adjustments(1))) then 
+       if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then 
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1308,7 +1308,7 @@ contains
                adjustment  = adjustment_one_level(begc:endc))
 
           ! TRS NaN trap, for debugging
-          if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+          if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then 
              col_ps%dyn_pbal_adjustments(begc:endc) =      &
                   col_ps%dyn_pbal_adjustments(begc:endc) + &
                   adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1324,7 +1324,7 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1337,7 +1337,7 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1351,7 +1351,7 @@ contains
 
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
@@ -1364,7 +1364,7 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ps%dyn_pbal_adjustments(1))) then 
+       if (.not. isnan(col_ps%dyn_pbal_adjustments(begc))) then 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
