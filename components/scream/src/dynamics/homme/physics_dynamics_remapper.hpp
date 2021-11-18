@@ -138,14 +138,14 @@ protected:
   KokkosTypes<DefaultDevice>::view_1d<Dims>     phys_dims;
   KokkosTypes<DefaultDevice>::view_1d<Int>      phys_layout;
 
-  KokkosTypes<DefaultDevice>::view_1d<Pointer> dyn_ptrs;
-  KokkosTypes<DefaultDevice>::view_1d<Dims>    dyn_dims;
-  KokkosTypes<DefaultDevice>::view_1d<Int>     dyn_layout;
+  KokkosTypes<DefaultDevice>::view_1d<Pointer>  dyn_ptrs;
+  KokkosTypes<DefaultDevice>::view_1d<Dims>     dyn_dims;
+  KokkosTypes<DefaultDevice>::view_1d<Int>      dyn_layout;
 
-  KokkosTypes<DefaultDevice>::view_1d<bool>                   has_parent;
-  KokkosTypes<DefaultDevice>::view_1d<Int>                    pack_alloc_property;
-  KokkosTypes<DefaultDevice>::view_1d<bool>                   is_state_field_dev;
-  KokkosTypes<DefaultDevice>::view_1d<Kokkos::pair<int,int>>  time_levels;
+  KokkosTypes<DefaultDevice>::view_1d<bool>     has_parent;
+  KokkosTypes<DefaultDevice>::view_1d<Int>      pack_alloc_property;
+  KokkosTypes<DefaultDevice>::view_1d<bool>     is_state_field_dev;
+  KokkosTypes<DefaultDevice>::view<int>         states_tl_idx;
 
   void initialize_device_variables();
 
@@ -430,7 +430,7 @@ initialize_device_variables()
   has_parent          = decltype(has_parent)          ("has_parent",               this->m_num_fields);
   pack_alloc_property = decltype(pack_alloc_property) ("phys_pack_alloc_property", this->m_num_fields);
   is_state_field_dev  = decltype(is_state_field_dev)  ("is_state_field_dev",       this->m_num_fields);
-  time_levels         = decltype(time_levels)         ("time_levels",              1);
+  states_tl_idx       = decltype(states_tl_idx)       ("states_time_level");
 
   auto h_phys_ptrs   = Kokkos::create_mirror_view(phys_ptrs);
   auto h_phys_layout = Kokkos::create_mirror_view(phys_layout);
@@ -443,9 +443,6 @@ initialize_device_variables()
   auto h_has_parent          = Kokkos::create_mirror_view(has_parent);
   auto h_pack_alloc_property = Kokkos::create_mirror_view(pack_alloc_property);
   auto h_is_state_field_dev  = Kokkos::create_mirror_view(is_state_field_dev);
-  auto h_time_levels         = Kokkos::create_mirror_view(time_levels);
-
-  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
 
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& phys = m_phys[i];
@@ -516,8 +513,6 @@ initialize_device_variables()
 
     // Store time levels
     h_is_state_field_dev(i) = m_is_state_field[i];
-    h_time_levels(0).first  = tl.n0;
-    h_time_levels(0).second = tl.np1;
   }
 
   Kokkos::deep_copy(phys_ptrs,   h_phys_ptrs);
@@ -529,7 +524,6 @@ initialize_device_variables()
   Kokkos::deep_copy(dyn_dims,   h_dyn_dims);
 
   Kokkos::deep_copy(has_parent,          h_has_parent);
-  Kokkos::deep_copy(time_levels,         h_time_levels);
   Kokkos::deep_copy(pack_alloc_property, h_pack_alloc_property);
   Kokkos::deep_copy(is_state_field_dev,  h_is_state_field_dev);
 }
@@ -542,7 +536,7 @@ set_dyn_to_zero(const MT& team) const
 {
   const int i = team.league_rank();
 
-  const int itl = time_levels(0).first;
+  const int itl = states_tl_idx();
   const auto& dim_d = dyn_dims(i).dims;
 
   switch (phys_layout(i)) {
@@ -668,6 +662,10 @@ template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 do_remap_fwd() const
 {
+  // Update time slice idx for states
+  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
+  Kokkos::deep_copy(states_tl_idx, tl.n0);
+
   using KT = KokkosTypes<DefaultDevice>;
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
@@ -688,7 +686,6 @@ do_remap_fwd() const
   Kokkos::fence();
 
   // Exchange only the current time levels
-  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
   m_be[tl.n0]->exchange();
 }
 
@@ -696,6 +693,10 @@ template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 do_remap_bwd() const
 {
+  // Update time slice idx for states
+  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
+  Kokkos::deep_copy(states_tl_idx, tl.n0);
+
   using KT = KokkosTypes<DefaultDevice>;
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
@@ -922,7 +923,7 @@ local_remap_fwd_2d (const MT& team) const
 
         const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],time_levels(0).first,elgp[1],elgp[2]) = phys(icol);
+          dyn(elgp[0],states_tl_idx(),elgp[1],elgp[2]) = phys(icol);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -949,7 +950,7 @@ local_remap_fwd_2d (const MT& team) const
           const int idim = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],time_levels(0).first,idim,elgp[1],elgp[2]) = phys(icol,idim);
+          dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2]) = phys(icol,idim);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -996,7 +997,7 @@ local_remap_fwd_3d (const MT& team) const
           const int ilev = idx%dim_d[4];
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],time_levels(0).first,elgp[1],elgp[2],ilev) = phys(icol,ilev);
+          dyn(elgp[0],states_tl_idx(),elgp[1],elgp[2],ilev) = phys(icol,ilev);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -1028,7 +1029,7 @@ local_remap_fwd_3d (const MT& team) const
           const int ilev =  idx%dim_d[5];
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],time_levels(0).first,idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
+          dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -1074,7 +1075,7 @@ local_remap_bwd_2d (const MT& team) const
       if (is_state_field_dev(i)) {
         auto dyn = reshape<RealType,4> (dyn_ptrs(i), dyn_dims(i));
 
-        phys(icol) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2]);
+        phys(icol) = dyn(elgp[0],states_tl_idx(),elgp[1],elgp[2]);
       } else {
         auto dyn = reshape<RealType,3> (dyn_ptrs(i), dyn_dims(i));
 
@@ -1091,7 +1092,7 @@ local_remap_bwd_2d (const MT& team) const
         auto dyn = reshape<RealType,5> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int idim) {
-          phys(icol,idim) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2]);
+          phys(icol,idim) = dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2]);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -1133,7 +1134,7 @@ local_remap_bwd_3d (const MT& team) const
         auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
 
         const auto f = [&] (const int ilev) {
-          phys(icol,ilev) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2],ilev);
+          phys(icol,ilev) = dyn(elgp[0],states_tl_idx(),elgp[1],elgp[2],ilev);
         };
         Kokkos::parallel_for(tr, f);
       } else {
@@ -1157,7 +1158,7 @@ local_remap_bwd_3d (const MT& team) const
         const auto f = [&] (const int idx) {
           const int idim = idx%dim_p[1];
           const int ilev = idx/dim_p[1];
-          phys(icol,idim,ilev) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2],ilev);
+          phys(icol,idim,ilev) = dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2],ilev);
         };
         Kokkos::parallel_for(tr, f);
       } else {
