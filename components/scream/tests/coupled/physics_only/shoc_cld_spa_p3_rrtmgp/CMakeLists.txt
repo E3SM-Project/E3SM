@@ -5,7 +5,7 @@ SET (TEST_LABELS "shoc;cld;spa;p3;rrtmgp;physics")
 SET (NEED_LIBS shoc cld_fraction spa p3 scream_rrtmgp scream_control scream_share physics_share)
 CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-  PROPERTIES FIXTURES_SETUP shoc_cld_spa_p3_rrmtgp_generate_output_nc_files
+  PROPERTIES FIXTURES_SETUP shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
 )
 # Make sure the SPA data directory is correctly defined
 if (NOT EXISTS ${SCREAM_SPA_DATA_DIR})
@@ -67,6 +67,6 @@ if (SCREAM_TEST_MAX_RANKS GREATER 1)
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED shoc_cld_spa_p3_rrmtgp_generate_output_nc_files)
+              FIXTURES_REQUIRED shoc_cld_spa_p3_rrtmgp_generate_output_nc_files)
   endforeach()
 endif()
