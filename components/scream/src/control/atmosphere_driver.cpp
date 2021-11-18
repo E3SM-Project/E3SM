@@ -243,6 +243,22 @@ void AtmosphereDriver::create_fields()
     m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
 
+  // Now that all processes have all the required/computed fields/groups, they
+  // have also created any possible internal field (if needed). Notice that some
+  // atm proc might have created internal fields already during the set_grids
+  // call. However, some atm proc might need to create an internal field based
+  // on the dimension of a group, or create an internal field as a subfield
+  // of another one. Therefore, we had to wait till this point to query the
+  // atm proc group for any internal field, and add it to the field manager
+  // Besides, the field manager(s) can accept pre-built fields only after
+  // the registration phase has ended.
+  m_atm_process_group->gather_internal_fields();
+  for (const auto& f : m_atm_process_group->get_internal_fields()) {
+    const auto& fid = f.get_header().get_identifier();
+    auto fm = get_field_mgr(fid.get_grid_name());
+    fm->add_field(f);
+  }
+
   m_ad_status |= s_fields_created;
 }
 

@@ -40,7 +40,7 @@ void AtmosphereProcess::finalize (/* what inputs? */) {
 
 void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
   // Sanity check
-  EKAT_REQUIRE_MSG (requires_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (is_required_field(f.get_header().get_identifier()),
     "Error! Input field is not required by this atm process.\n"
     "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "    atm process: " + this->name() + "\n"
@@ -62,7 +62,7 @@ void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
 
 void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
   // Sanity check
-  EKAT_REQUIRE_MSG (computes_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (is_computed_field(f.get_header().get_identifier()),
     "Error! Input field is not computed by this atm process.\n"
     "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
@@ -84,7 +84,7 @@ void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
 
 void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (requires_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (is_required_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not require the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
@@ -111,7 +111,7 @@ void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group)
 
 void AtmosphereProcess::set_computed_group (const FieldGroup<Real>& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (computes_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (is_computed_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not compute the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
@@ -244,8 +244,7 @@ void AtmosphereProcess::check_computed_fields () {
   }
 }
 
-
-bool AtmosphereProcess::requires_field (const FieldIdentifier& id) const {
+bool AtmosphereProcess::is_required_field (const FieldIdentifier& id) const {
   for (const auto& it : m_required_field_requests) {
     if (it.fid==id) {
       return true;
@@ -253,7 +252,7 @@ bool AtmosphereProcess::requires_field (const FieldIdentifier& id) const {
   }
   return false;
 }
-bool AtmosphereProcess::computes_field (const FieldIdentifier& id) const {
+bool AtmosphereProcess::is_computed_field (const FieldIdentifier& id) const {
   for (const auto& it : m_computed_field_requests) {
     if (it.fid==id) {
       return true;
@@ -262,7 +261,7 @@ bool AtmosphereProcess::computes_field (const FieldIdentifier& id) const {
   return false;
 }
 
-bool AtmosphereProcess::requires_group (const std::string& name, const std::string& grid) const {
+bool AtmosphereProcess::is_required_group (const std::string& name, const std::string& grid) const {
   for (const auto& it : m_required_group_requests) {
     if (it.name==name && it.grid==grid) {
       return true;
@@ -270,7 +269,7 @@ bool AtmosphereProcess::requires_group (const std::string& name, const std::stri
   }
   return false;
 }
-bool AtmosphereProcess::computes_group (const std::string& name, const std::string& grid) const {
+bool AtmosphereProcess::is_computed_group (const std::string& name, const std::string& grid) const {
   for (const auto& it : m_computed_group_requests) {
     if (it.name==name && it.grid==grid) {
       return true;
@@ -282,10 +281,20 @@ bool AtmosphereProcess::computes_group (const std::string& name, const std::stri
 void AtmosphereProcess::update_time_stamps () {
   const auto& t = timestamp();
 
-  // Update *all* output fields, regardless of whether they were touched
-  // at all during this time step.
+  // Update *all* output fields/groups, regardless of whether
+  // they were touched at all during this time step.
+  // TODO: this might have to be changed
   for (auto& f : m_fields_out) {
     f.get_header().get_tracking().update_time_stamp(t);
+  }
+  for (auto& g : m_groups_out) {
+    if (g.m_bundle) {
+      g.m_bundle->get_header().get_tracking().update_time_stamp(t);
+    } else {
+      for (auto& f : g.m_fields) {
+        f.second->get_header().get_tracking().update_time_stamp(t);
+      }
+    }
   }
 }
 
@@ -297,149 +306,108 @@ void AtmosphereProcess::add_me_as_customer (const Field<const Real>& f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-// Convenience function to retrieve input/output fields
+void AtmosphereProcess::add_internal_field (const Field<Real>& f) {
+  m_internal_fields.push_back(f);
+}
+
+const Field<const Real>& AtmosphereProcess::
+get_field_in(const std::string& field_name, const std::string& grid_name) const {
+  return get_field_in_impl(field_name,grid_name);
+}
+
 Field<const Real>& AtmosphereProcess::
 get_field_in(const std::string& field_name, const std::string& grid_name) {
-  try {
-    return *m_fields_in_pointers.at(field_name).at(grid_name);
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate input field in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   field name: " + field_name + "\n"
-        "   grid name: " + grid_name + "\n");
-  }
+  return get_field_in_impl(field_name,grid_name);
+}
+
+const Field<const Real>& AtmosphereProcess::
+get_field_in(const std::string& field_name) const {
+  return get_field_in_impl(field_name);
 }
 
 Field<const Real>& AtmosphereProcess::
 get_field_in(const std::string& field_name) {
-  try {
-    auto& copies = m_fields_in_pointers.at(field_name);
-    EKAT_REQUIRE_MSG (copies.size()==1,
-        "Error! Attempt to find input field providing only the name,\n"
-        "       but multiple copies (on different grids) are present.\n"
-        "  field name: " + field_name + "\n"
-        "  atm process: " + this->name() + "\n"
-        "  number of copies: " + std::to_string(copies.size()) + "\n");
-    return *copies.begin()->second;
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate input field in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   field name: " + field_name + "\n");
-  }
+  return get_field_in_impl(field_name);
+}
+
+const Field<Real>& AtmosphereProcess::
+get_field_out(const std::string& field_name, const std::string& grid_name) const {
+  return get_field_out_impl(field_name,grid_name);
 }
 
 Field<Real>& AtmosphereProcess::
 get_field_out(const std::string& field_name, const std::string& grid_name) {
-  try {
-    return *m_fields_out_pointers.at(field_name).at(grid_name);
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate output field in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   field name: " + field_name + "\n"
-        "   grid name: " + grid_name + "\n");
-  }
+  return get_field_out_impl(field_name,grid_name);
+}
+
+const Field<Real>& AtmosphereProcess::
+get_field_out(const std::string& field_name) const {
+  return get_field_out_impl (field_name);
 }
 
 Field<Real>& AtmosphereProcess::
 get_field_out(const std::string& field_name) {
-  try {
-    auto& copies = m_fields_out_pointers.at(field_name);
-    EKAT_REQUIRE_MSG (copies.size()==1,
-        "Error! Attempt to find output field providing only the name,\n"
-        "       but multiple copies (on different grids) are present.\n"
-        "  field name: " + field_name + "\n"
-        "  atm process: " + this->name() + "\n"
-        "  number of copies: " + std::to_string(copies.size()) + "\n");
-    return *copies.begin()->second;
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate output field in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   field name: " + field_name + "\n");
-  }
+  return get_field_out_impl (field_name);
+}
+
+const FieldGroup<const Real>& AtmosphereProcess::
+get_group_in(const std::string& group_name, const std::string& grid_name) const {
+  return get_group_in_impl (group_name,grid_name);
 }
 
 FieldGroup<const Real>& AtmosphereProcess::
 get_group_in(const std::string& group_name, const std::string& grid_name) {
-  try {
-    return *m_groups_in_pointers.at(group_name).at(grid_name);
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate input group in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   group name: " + group_name + "\n"
-        "   grid name: " + grid_name + "\n");
-  }
+  return get_group_in_impl (group_name,grid_name);
+}
+
+const FieldGroup<const Real>& AtmosphereProcess::
+get_group_in(const std::string& group_name) const {
+  return get_group_in_impl(group_name);
 }
 
 FieldGroup<const Real>& AtmosphereProcess::
 get_group_in(const std::string& group_name) {
-  try {
-    auto& copies = m_groups_in_pointers.at(group_name);
-    EKAT_REQUIRE_MSG (copies.size()==1,
-        "Error! Attempt to find input group providing only the name,\n"
-        "       but multiple copies (on different grids) are present.\n"
-        "  group name: " + group_name + "\n"
-        "  atm process: " + this->name() + "\n"
-        "  number of copies: " + std::to_string(copies.size()) + "\n");
-    return *copies.begin()->second;
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate input group in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   group name: " + group_name + "\n");
-  }
+  return get_group_in_impl(group_name);
+}
+
+const FieldGroup<Real>& AtmosphereProcess::
+get_group_out(const std::string& group_name, const std::string& grid_name) const {
+  return get_group_out_impl(group_name,grid_name);
 }
 
 FieldGroup<Real>& AtmosphereProcess::
 get_group_out(const std::string& group_name, const std::string& grid_name) {
-  try {
-    return *m_groups_out_pointers.at(group_name).at(grid_name);
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate output group in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   group name: " + group_name + "\n"
-        "   grid name: " + grid_name + "\n");
-  }
+  return get_group_out_impl(group_name,grid_name);
+}
+
+const FieldGroup<Real>& AtmosphereProcess::
+get_group_out(const std::string& group_name) const {
+  return get_group_out_impl(group_name);
 }
 
 FieldGroup<Real>& AtmosphereProcess::
 get_group_out(const std::string& group_name) {
-  try {
-    auto& copies = m_groups_out_pointers.at(group_name);
-    EKAT_REQUIRE_MSG (copies.size()==1,
-        "Error! Attempt to find output group providing only the name,\n"
-        "       but multiple copies (on different grids) are present.\n"
-        "  group name: " + group_name + "\n"
-        "  atm process: " + this->name() + "\n"
-        "  number of copies: " + std::to_string(copies.size()) + "\n");
-    return *copies.begin()->second;
-  } catch (const std::out_of_range&) {
-    // std::out_of_range would message would not help detecting where
-    // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG (
-        "Error! Could not locate output group in this atm proces.\n"
-        "   atm proc name: " + this->name() + "\n"
-        "   group name: " + group_name + "\n");
-  }
+  return get_group_out_impl(group_name);
+}
+
+const Field<Real>& AtmosphereProcess::
+get_internal_field(const std::string& field_name, const std::string& grid_name) const {
+  return get_internal_field_impl(field_name,grid_name);
+}
+
+Field<Real>& AtmosphereProcess::
+get_internal_field(const std::string& field_name, const std::string& grid_name) {
+  return get_internal_field_impl(field_name,grid_name);
+}
+
+Field<Real>& AtmosphereProcess::
+get_internal_field(const std::string& field_name) {
+  return get_internal_field_impl(field_name);
+}
+
+const Field<Real>& AtmosphereProcess::
+get_internal_field(const std::string& field_name) const {
+  return get_internal_field_impl(field_name);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
@@ -459,6 +427,10 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
     const auto& group_name = g.m_info->m_group_name;
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
   }
+  for (auto& f : m_internal_fields) {
+    const auto& fid = f.get_header().get_identifier();
+    m_internal_fields_pointers[fid.name()][fid.get_grid_name()] = &f;
+  }
 }
 
 void AtmosphereProcess::
@@ -469,6 +441,8 @@ alias_field_in (const std::string& field_name,
   try {
     m_fields_in_pointers[alias_name][grid_name] = m_fields_in_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
         "Error! Could not locate input field for aliasing request.\n"
         "    - field name: " + field_name + "\n"
@@ -484,6 +458,8 @@ alias_field_out (const std::string& field_name,
   try {
     m_fields_out_pointers[alias_name][grid_name] = m_fields_out_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
         "Error! Could not locate output field for aliasing request.\n"
         "    - field name: " + field_name + "\n"
@@ -499,6 +475,8 @@ alias_group_in (const std::string& group_name,
   try {
     m_groups_in_pointers[alias_name][grid_name] = m_groups_in_pointers.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
         "Error! Could not locate input group for aliasing request.\n"
         "    - group name: " + group_name + "\n"
@@ -514,10 +492,192 @@ alias_group_out (const std::string& group_name,
   try {
     m_groups_out_pointers[alias_name][grid_name] = m_groups_out_pointers.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
     EKAT_ERROR_MSG (
         "Error! Could not locate output group for aliasing request.\n"
         "    - group name: " + group_name + "\n"
         "    - grid name:  " + grid_name + "\n");
+  }
+}
+
+Field<const Real>& AtmosphereProcess::
+get_field_in_impl(const std::string& field_name, const std::string& grid_name) const {
+  try {
+    return *m_fields_in_pointers.at(field_name).at(grid_name);
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate input field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n"
+        "   grid name: " + grid_name + "\n");
+  }
+}
+
+Field<const Real>& AtmosphereProcess::
+get_field_in_impl(const std::string& field_name) const {
+  try {
+    auto& copies = m_fields_in_pointers.at(field_name);
+    EKAT_REQUIRE_MSG (copies.size()==1,
+        "Error! Attempt to find input field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " + field_name + "\n"
+        "  atm process: " + this->name() + "\n"
+        "  number of copies: " + std::to_string(copies.size()) + "\n");
+    return *copies.begin()->second;
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate input field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n");
+  }
+}
+
+Field<Real>& AtmosphereProcess::
+get_field_out_impl(const std::string& field_name, const std::string& grid_name) const {
+  try {
+    return *m_fields_out_pointers.at(field_name).at(grid_name);
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate output field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n"
+        "   grid name: " + grid_name + "\n");
+  }
+}
+
+Field<Real>& AtmosphereProcess::
+get_field_out_impl(const std::string& field_name) const {
+  try {
+    auto& copies = m_fields_out_pointers.at(field_name);
+    EKAT_REQUIRE_MSG (copies.size()==1,
+        "Error! Attempt to find output field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " + field_name + "\n"
+        "  atm process: " + this->name() + "\n"
+        "  number of copies: " + std::to_string(copies.size()) + "\n");
+    return *copies.begin()->second;
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate output field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n");
+  }
+}
+
+FieldGroup<const Real>& AtmosphereProcess::
+get_group_in_impl(const std::string& group_name, const std::string& grid_name) const {
+  try {
+    return *m_groups_in_pointers.at(group_name).at(grid_name);
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate input group in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   group name: " + group_name + "\n"
+        "   grid name: " + grid_name + "\n");
+  }
+}
+
+FieldGroup<const Real>& AtmosphereProcess::
+get_group_in_impl(const std::string& group_name) const {
+  try {
+    auto& copies = m_groups_in_pointers.at(group_name);
+    EKAT_REQUIRE_MSG (copies.size()==1,
+        "Error! Attempt to find input group providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  group name: " + group_name + "\n"
+        "  atm process: " + this->name() + "\n"
+        "  number of copies: " + std::to_string(copies.size()) + "\n");
+    return *copies.begin()->second;
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate input group in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   group name: " + group_name + "\n");
+  }
+}
+
+FieldGroup<Real>& AtmosphereProcess::
+get_group_out_impl(const std::string& group_name, const std::string& grid_name) const {
+  try {
+    return *m_groups_out_pointers.at(group_name).at(grid_name);
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate output group in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   group name: " + group_name + "\n"
+        "   grid name: " + grid_name + "\n");
+  }
+}
+
+FieldGroup<Real>& AtmosphereProcess::
+get_group_out_impl(const std::string& group_name) const {
+  try {
+    auto& copies = m_groups_out_pointers.at(group_name);
+    EKAT_REQUIRE_MSG (copies.size()==1,
+        "Error! Attempt to find output group providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  group name: " + group_name + "\n"
+        "  atm process: " + this->name() + "\n"
+        "  number of copies: " + std::to_string(copies.size()) + "\n");
+    return *copies.begin()->second;
+  } catch (const std::out_of_range&) {
+    // std::out_of_range would message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate output group in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   group name: " + group_name + "\n");
+  }
+}
+
+Field<Real>& AtmosphereProcess::
+get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const {
+  try {
+    return *m_internal_fields_pointers.at(field_name).at(grid_name);
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate internal field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n"
+        "   grid name: " + grid_name + "\n");
+  }
+}
+
+Field<Real>& AtmosphereProcess::
+get_internal_field_impl(const std::string& field_name) const {
+  try {
+    auto& copies = m_internal_fields_pointers.at(field_name);
+    EKAT_REQUIRE_MSG (copies.size()==1,
+        "Error! Attempt to find internal field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " + field_name + "\n"
+        "  atm process: " + this->name() + "\n"
+        "  number of copies: " + std::to_string(copies.size()) + "\n");
+    return *copies.begin()->second;
+  } catch (const std::out_of_range&) {
+    // std::out_of_range message would not help detecting where
+    // the exception originated, so print a more meaningful message.
+    EKAT_ERROR_MSG (
+        "Error! Could not locate internal field in this atm proces.\n"
+        "   atm proc name: " + this->name() + "\n"
+        "   field name: " + field_name + "\n");
   }
 }
 

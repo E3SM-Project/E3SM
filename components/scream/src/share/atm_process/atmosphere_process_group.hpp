@@ -65,6 +65,9 @@ public:
   void set_required_field (const Field<const Real>& field);
   void set_required_group (const FieldGroup<const Real>& group);
 
+  // Gather internal fields from all processes in the group
+  void gather_internal_fields ();
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
