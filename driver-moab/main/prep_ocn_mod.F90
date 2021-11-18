@@ -176,7 +176,6 @@ contains
 
     character*32             :: appname ! to register moab app
     integer                  :: rmapid  ! external id to identify the moab app
-    integer, external        :: iMOAB_RegisterApplicationFortran ! 
     integer                  :: ierr ! 
     !---------------------------------------------------------------
 
@@ -338,7 +337,7 @@ contains
           appname = "ROF_OCN_COU"//CHAR(0)
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-          ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, rmapid, mbrmapro)
+          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbrmapro)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')

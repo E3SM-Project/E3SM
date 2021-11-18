@@ -187,7 +187,6 @@ contains
    character(CX)               :: mapfile_term
    character(CL)               :: maptype
    integer(IN)                 :: mapid
-   integer, external           :: iMOAB_LoadMappingWeightsFromFile
    character(CX)               :: sol_identifier !   /* "scalar", "flux", "custom" */
    integer                     :: ierr 
 
