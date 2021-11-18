@@ -134,6 +134,7 @@ contains
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
+    use iMOAB, only: iMOAB_RegisterApplication
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
