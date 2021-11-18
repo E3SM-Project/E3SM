@@ -112,11 +112,10 @@ protected:
     if (grids.size()==0) {
       return str;
     }
-    auto next = ++grids.begin();
-    for (auto it=grids.begin(); next!=grids.end(); ++it, ++next) {
-      str += it->first + ", ";
+    for (const auto& g : grids) {
+      str += g.second->name() + ", ";
     }
-    str += next->first;
+    str.erase(str.size()-2,2); // Erase trailing ', '
     return str;
   }
 
@@ -128,11 +127,10 @@ protected:
     if (grids.size()==0) {
       return str;
     }
-    auto it = grids.begin();
-    str += *it;
-    for (; it!=grids.end(); ++it) {
-      str += ", " + *it;
+    for (const auto& gn : grids) {
+      str += gn + ", ";
     }
+    str.erase(str.size()-2,2); // Erase trailing ', '
     return str;
   }
 };
