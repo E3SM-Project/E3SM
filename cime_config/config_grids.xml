@@ -3301,6 +3301,10 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne256pg2/map_r0125_to_ne256pg2_bilin.200212.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne256np4.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne256pg2/map_ne256pg2_to_r0125_bilin.200212.nc</map>
+    </gridmap>
 
     <gridmap atm_grid="ne512np4.pg2" ocn_grid="oRRS18to6v3">
       <!-- 6km atm /  18to6 ocean, so use bilin for state -->
