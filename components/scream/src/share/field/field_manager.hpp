@@ -1,8 +1,6 @@
 #ifndef SCREAM_FIELD_MANAGER_HPP
 #define SCREAM_FIELD_MANAGER_HPP
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_units.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_request.hpp"
@@ -13,12 +11,15 @@
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
+#include "ekat/util/ekat_units.hpp"
 
 #include <algorithm>
 #include <initializer_list>
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 
 namespace scream
 {
@@ -114,7 +115,6 @@ protected:
   // When registering subfields, we might end up registering the subfield before
   // the parent field. So at registration time, simply keep track of the subfields,
   // and create them at registration_ends() time, after all other fields.
-  std::map<std::string,FieldRequest> m_subfield_requests;
 
   // The map group_name -> FieldGroupInfo
   group_info_map      m_field_groups;
@@ -181,25 +181,11 @@ void FieldManager<RealType>::register_field (const FieldRequest& req)
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
 
-    // Do not allow to mix subfield requests with normal requests for now.
-    // TODO: you might be able to relax this. It's ok if field F was requested as subfield of G,
-    //       and also requested without knowledge of parent fields.
-    EKAT_REQUIRE_MSG (
-        (req.subview_info.dim_idx==-1) ||
-        m_subfield_requests.find(id.name())==m_subfield_requests.end() ||
-        m_subfield_requests.at(id.name()).subview_info==req.subview_info,
-        "Error! Inconsistent requests for a subfield.");
   }
 
-  if (req.subview_info.dim_idx>=0) {
-    // This is a request for a subfield. Store request info, so we can correctly set up
-    // the subfield at the end of registration_ends() call
-    m_subfield_requests.emplace(id.name(),req);
-  } else {
-    // Make sure the field can accommodate the requested value type
-    constexpr int real_size = sizeof(RealType);
-    m_fields[id.name()]->get_header().get_alloc_properties().request_allocation(real_size,req.pack_size);
-  }
+  // Make sure the field can accommodate the requested value type
+  constexpr int real_size = sizeof(RealType);
+  m_fields[id.name()]->get_header().get_alloc_properties().request_allocation(real_size,req.pack_size);
 
   // Finally, add the field to the given groups
   // Note: we do *not* set the group info struct in the field header yet.
@@ -863,22 +849,8 @@ registration_ends ()
       // If the field has been already allocated, then it was in a bunlded group, so skip it.
       continue;
     }
-
-    // Skip requests for subfields, since we need to have all fields allocated first
-    if (m_subfield_requests.find(it.first)==m_subfield_requests.end()) {
-      // A brand new field. Allocate it
-      it.second->allocate_view();
-    }
-  }
-
-  // Now allocate subfields
-  for (const auto& it : m_subfield_requests) {
-    auto f = get_field_ptr(it.first);
-    const auto& sv_info = it.second.subview_info;
-    const auto& fid = f->get_header().get_identifier();
-    const auto& p = m_fields.at(it.second.parent_name);
-
-    *f = p->subfield (fid.name(),fid.get_units(),sv_info.dim_idx,sv_info.slice_idx,sv_info.dynamic);
+    // A brand new field. Allocate it
+    it.second->allocate_view();
   }
 
   for (const auto& it : m_field_groups) {
