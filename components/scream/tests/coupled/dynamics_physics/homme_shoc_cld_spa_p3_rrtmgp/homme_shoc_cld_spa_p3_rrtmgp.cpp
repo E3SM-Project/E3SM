@@ -5,7 +5,6 @@
 
 // Dynamics includes
 #include "dynamics/register_dynamics.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 // Physics includes
 #include "physics/register_physics.hpp"

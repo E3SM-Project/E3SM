@@ -2,7 +2,7 @@ INCLUDE (ScreamUtils)
 
 # Create the test
 SET (TEST_LABELS "shoc;cld;p3;rrtmgp;physics")
-SET (NEED_LIBS shoc cld_fraction spa p3 scream_rrtmgp scream_control scream_share physics_share)
+SET (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp scream_control scream_share physics_share)
 CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   PROPERTIES FIXTURES_SETUP shoc_cld_p3_rrtmgp_generate_output_nc_files

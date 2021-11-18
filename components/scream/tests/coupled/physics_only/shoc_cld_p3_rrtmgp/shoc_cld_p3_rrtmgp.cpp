@@ -4,8 +4,13 @@
 #include "control/atmosphere_driver.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+
+// Physics headers
+#include "physics/p3/atmosphere_microphysics.hpp"
+#include "physics/shoc/atmosphere_macrophysics.hpp"
+#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
 
 // EKAT headers
 #include "ekat/ekat_pack.hpp"
@@ -36,7 +41,11 @@ TEST_CASE("shoc-stand-alone", "") {
   EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
-  register_physics();
+  auto& proc_factory = AtmosphereProcessFactory::instance();
+  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
+  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
   register_mesh_free_grids_manager();
 
   // Create the driver

@@ -8,7 +8,10 @@
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 // Physics includes
-#include "physics/register_physics.hpp"
+#include "physics/p3/atmosphere_microphysics.hpp"
+#include "physics/shoc/atmosphere_macrophysics.hpp"
+#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
 
 // EKAT headers
 #include "ekat/ekat_assert.hpp"
@@ -53,7 +56,11 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
 
   // Register all atm procs and the grids manager in the respective factories
   register_dynamics();
-  register_physics();
+  auto& proc_factory = AtmosphereProcessFactory::instance();
+  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
+  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
 
   // Create the driver
   AtmosphereDriver ad;

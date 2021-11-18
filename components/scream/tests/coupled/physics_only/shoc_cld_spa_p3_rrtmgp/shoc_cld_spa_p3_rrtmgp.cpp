@@ -2,13 +2,11 @@
 
 // Boiler plate, needed for all runs
 #include "control/atmosphere_driver.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
 
 #include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 // EKAT headers
-#include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 namespace scream {
