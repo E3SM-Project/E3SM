@@ -32,6 +32,7 @@ void diffuse_mom2D(real5d &tk) {
 
   real rdx2=1.0/dx/dx;
   real rdx25=0.25*rdx2;
+  
   // stuff for hypverviscosity
   real rdx16 = rdx25*rdx25;
   // Set default timescale for damping 2-delta waves in x to 60 seconds.

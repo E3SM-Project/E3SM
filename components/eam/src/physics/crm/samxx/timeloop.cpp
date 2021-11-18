@@ -167,7 +167,7 @@ void timeloop() {
       // std::cout << "debug-hypervis - u_2dx before uvw: " << u_2dx << std::endl;
       // std::cout << "debug-hypervis - w_2dx before uvw: " << w_2dx << std::endl;
 
-      // uvw();
+      uvw();
 
       // cnt = 0;
       // u_2dx = 0;
