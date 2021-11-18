@@ -552,7 +552,7 @@ contains
               end do ! do kIndexOBL
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
 
-              bulkRichardsonNumberBuoy(:,iCell) = cvmix_kpp_compute_bulk_Richardson( &
+              bulkRichardsonNumber(:,iCell) = cvmix_kpp_compute_bulk_Richardson( &
                    zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
                    delta_buoy_cntr = bulkRichardsonNumberBuoy(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
                    delta_Vsqr_cntr = bulkRichardsonNumberShear(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
@@ -600,7 +600,7 @@ contains
              ! apply maximum limit to OBL
              if(boundaryLayerDepth(iCell) .gt. abs(zt_cntr(maxLevelCell(iCell),iCell))) then
                 boundaryLayerDepth(iCell) = abs(zt_cntr(maxLevelCell(iCell),iCell))
-                indexBoundaryLayerDepth = cvmix_kpp_compute_kOBL_depth(  &
+                indexBoundaryLayerDepth(iCell) = cvmix_kpp_compute_kOBL_depth(  &
                           zw_iface = zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1,iCell), &
                           zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell),    &
                           OBL_depth = boundaryLayerDepth(iCell) )
