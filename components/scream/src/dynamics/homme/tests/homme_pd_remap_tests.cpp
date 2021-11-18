@@ -16,6 +16,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
+#include <memory>
 #include <random>
 #include <numeric>
 
@@ -78,12 +79,12 @@ TEST_CASE("remap", "") {
 
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = gm.get_grid("Dynamics");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
   auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
-  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());
+  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_cg_dofs_gids());
   auto h_d_lid2idx = Kokkos::create_mirror_view(dyn_grid->get_lid_to_idx_map());
   Kokkos::deep_copy(h_p_dofs,phys_grid->get_dofs_gids());
-  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_cg_dofs_gids());
   Kokkos::deep_copy(h_d_lid2idx,dyn_grid->get_lid_to_idx_map());
 
   // Get some dimensions for Homme
@@ -224,7 +225,7 @@ TEST_CASE("remap", "") {
       // Note: for the dyn->phys test to run correctly, the dynamics input v must be synced,
       //       meaning that the values at the interface between two elements must match.
       //       To do this, we initialize each entry in the dynamic v with the id
-      //       of the corresponding column.
+      //       of the corresponding physics column.
       //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
 
       if (fwd) {
@@ -623,12 +624,12 @@ TEST_CASE("combo_remap", "") {
 
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = gm.get_grid("Dynamics");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
   auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
-  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());
+  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_cg_dofs_gids());
   auto h_d_lid2idx = Kokkos::create_mirror_view(dyn_grid->get_lid_to_idx_map());
   Kokkos::deep_copy(h_p_dofs,phys_grid->get_dofs_gids());
-  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_cg_dofs_gids());
   Kokkos::deep_copy(h_d_lid2idx,dyn_grid->get_lid_to_idx_map());
 
   // Get some dimensions for Homme

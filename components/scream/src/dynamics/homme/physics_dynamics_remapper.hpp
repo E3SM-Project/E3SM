@@ -7,6 +7,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/grid/se_grid.hpp"
 #include "share/util/scream_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -1185,7 +1186,9 @@ create_p2d_map () {
   auto num_phys_dofs = m_phys_grid->get_num_local_dofs();
   auto num_dyn_dofs  = m_dyn_grid->get_num_local_dofs();
 
-  auto dyn_gids  = m_dyn_grid->get_dofs_gids();
+  auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
+  EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
+  auto dyn_gids  = se_dyn->get_cg_dofs_gids();
   auto phys_gids = m_phys_grid->get_dofs_gids();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);

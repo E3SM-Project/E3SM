@@ -141,30 +141,35 @@ build_grids (const std::set<std::string>& grid_names)
 }
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
-  if (m_grids.find("Dynamics")==m_grids.end()) {
 
+  const std::string name = "Dynamics";
+  if (m_grids.find(name)==m_grids.end()) {
     // Get dimensions and create "empty" grid
     const int nlelem = get_num_local_elems_f90();
     const int nlev   = get_nlev_f90();
+
     auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
     dyn_grid->setSelfPointer(dyn_grid);
 
     const int ndofs = nlelem*HOMMEXX_NP*HOMMEXX_NP;
 
     // Create the gids, elgpgp, coords, area views
-    AbstractGrid::dofs_list_type      dofs("dyn dofs",ndofs);
+    AbstractGrid::dofs_list_type      dg_dofs("dyn dofs",ndofs);
+    AbstractGrid::dofs_list_type      cg_dofs("dyn dofs",ndofs);
     AbstractGrid::lid_to_idx_map_type elgpgp("dof idx",ndofs,3);
     AbstractGrid::geo_view_type       lat("lat",ndofs);
     AbstractGrid::geo_view_type       lon("lon",ndofs);
-    auto h_dofs   = Kokkos::create_mirror_view(dofs);
+    auto h_cg_dofs   = Kokkos::create_mirror_view(cg_dofs);
+    auto h_dg_dofs   = Kokkos::create_mirror_view(dg_dofs);
     auto h_elgpgp = Kokkos::create_mirror_view(elgpgp);
     auto h_lat    = Kokkos::create_mirror_view(lat);
     auto h_lon    = Kokkos::create_mirror_view(lon);
 
     // Get (ie,igp,jgp,gid) data for each dof
-    get_dyn_grid_data_f90 (h_dofs.data(),h_elgpgp.data(), h_lat.data(), h_lon.data());
+    get_dyn_grid_data_f90 (h_dg_dofs.data(),h_cg_dofs.data(),h_elgpgp.data(), h_lat.data(), h_lon.data());
 
-    Kokkos::deep_copy(dofs,h_dofs);
+    Kokkos::deep_copy(dg_dofs,h_dg_dofs);
+    Kokkos::deep_copy(cg_dofs,h_cg_dofs);
     Kokkos::deep_copy(elgpgp,h_elgpgp);
     Kokkos::deep_copy(lat,h_lat);
     Kokkos::deep_copy(lon,h_lon);
@@ -182,7 +187,8 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
 #endif
 
     // Set dofs and geo data in the grid
-    dyn_grid->set_dofs (dofs);
+    dyn_grid->set_dofs (dg_dofs);
+    dyn_grid->set_cg_dofs (cg_dofs);
     dyn_grid->set_lid_to_idx_map(elgpgp);
     dyn_grid->set_geometry_data ("lat", lat);
     dyn_grid->set_geometry_data ("lon", lon);

@@ -68,6 +68,25 @@ SEGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, c
   return FieldLayout({EL,vector_tag,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
 }
 
+auto SEGrid::get_cg_dofs_gids () const -> const dofs_list_type&
+{
+  EKAT_REQUIRE_MSG (m_cg_dofs_set, "Error! CG dofs not yet set.\n");
+  return m_cg_dofs_gids;
+}
+
+void SEGrid::set_cg_dofs (const dofs_list_type& cg_dofs)
+{
+  EKAT_REQUIRE_MSG (not m_cg_dofs_set, "Error! CG dofs were already set.\n");
+  m_cg_dofs_gids = cg_dofs;
+  m_cg_dofs_set = true;
+}
+
+void SEGrid::check_dofs_list () const
+{
+  EKAT_REQUIRE_MSG (is_unique(),
+    "Error! SEGrid of type 'DG' requires unique dof gids.\n");
+}
+
 void SEGrid::check_lid_to_idx_map () const
 {
   auto l2i = get_lid_to_idx_map();
