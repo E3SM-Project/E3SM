@@ -11,21 +11,27 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use elm_varctl          , only : use_vertsoilc
+  use elm_varctl          , only : use_vertsoilc, iulog
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
+  use CNCarbonFluxType    , only : carbonflux_type
+  use CNNitrogenFluxType  , only : nitrogenflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
+  use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf
-  use ColumnDataType      , only : nfix_timeconst
+  use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf 
+  use ColumnDataType      , only : nfix_timeconst  
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cs, veg_ns, veg_nf
+  use VegetationDataType  , only : veg_cs, veg_ns, veg_nf  
   use VegetationPropertiesType  , only : veg_vp
-  use elm_varctl          , only : NFIX_PTASE_plant
-  use elm_varctl          , only : use_fates
-
+  use CNCarbonStateType   , only : carbonstate_type
+  use TemperatureType     , only : temperature_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use clm_varctl          , only : NFIX_PTASE_plant
+ 
   !
   implicit none
   save
@@ -40,17 +46,15 @@ module NitrogenDynamicsMod
   public :: CNSoyfix
   public :: readNitrogenDynamicsParams
   public :: NitrogenFixation_balance
-
+  
   !
   ! !PRIVATE DATA:
-  type, public :: CNNDynamicsParamsType
-     real(r8), pointer :: sf     => null()    ! soluble fraction of mineral N (unitless)
-     real(r8), pointer :: sf_no3 => null()    ! soluble fraction of NO3 (unitless)
+  type, private :: CNNDynamicsParamsType
+     real(r8):: sf        ! soluble fraction of mineral N (unitless)
+     real(r8):: sf_no3    ! soluble fraction of NO3 (unitless)
   end type CNNDynamicsParamsType
-
-  type(CNNDynamicsParamsType), public ::  CNNDynamicsParamsInst
-  !$acc declare create(CNNDynamicsParamsInst)
-
+  
+  type(CNNDynamicsParamsType),private ::  CNNDynamicsParamsInst
   !-----------------------------------------------------------------------
 
 contains
@@ -67,9 +71,13 @@ contains
        ! wasn't specified by the user namelist and we need to assign
        ! it the correct default value. If the user specified it in the
        ! name list, we leave it alone.
-       nfix_timeconst = 10._r8
+       if (use_nitrif_denitrif) then
+          nfix_timeconst = 10._r8
+       else
+          nfix_timeconst = 0._r8
+       end if
     end if
-
+   
   end subroutine NitrogenDynamicsInit
 
   !-----------------------------------------------------------------------
@@ -93,11 +101,9 @@ contains
     real(r8)           :: tempr ! temporary to read in constant
     character(len=100) :: tString ! temp. var for reading
     !-----------------------------------------------------------------------
-
+    
     call NitrogenDynamicsInit()
 
-    allocate(CNNDynamicsParamsInst%sf)
-    allocate(CNNDynamicsParamsInst%sf_no3)
     tString='sf_minn'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -107,12 +113,12 @@ contains
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNNDynamicsParamsInst%sf_no3=tempr
-
+   
   end subroutine readNitrogenDynamicsParams
 
   !-----------------------------------------------------------------------
   subroutine NitrogenDeposition( bounds, &
-       atm2lnd_vars, dt )
+       atm2lnd_vars, nitrogenflux_vars )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen deposition rate
@@ -122,20 +128,19 @@ contains
     ! directly into the canopy and mineral N entering the soil pool.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)        , intent(in)    :: bounds
+    type(bounds_type)        , intent(in)    :: bounds  
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    real(r8),   intent(in) :: dt
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: g,c                    ! indices
     !-----------------------------------------------------------------------
-
-    associate(&
-         forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
-         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]
+    
+    associate(& 
+         forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
-
+      
       ! Loop through columns
       do c = bounds%begc, bounds%endc
          g = col_pp%gridcell(c)
@@ -147,7 +152,8 @@ contains
   end subroutine NitrogenDeposition
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFixation(num_soilc, filter_soilc, dayspyr)
+  subroutine NitrogenFixation(num_soilc, filter_soilc, waterflux_vars, &
+       carbonflux_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fixation rate
@@ -155,34 +161,38 @@ contains
     ! All N fixation goes to the soil mineral N pool.
     !
     ! !USES:
-      !$acc routine seq
-    use elm_varcon       , only : secspday, spval
+    use clm_time_manager , only : get_days_per_year, get_step_size
+    use shr_sys_mod      , only : shr_sys_flush
+    use clm_varcon       , only : secspday, spval
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    real(r8), intent(in) :: dayspyr               ! days per year
-
+    type(waterflux_type)     , intent(in)    :: waterflux_vars    
+    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars 
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
+    real(r8) :: dayspyr               ! days per year
     real(r8) :: secspyr              ! seconds per yr
     logical  :: do_et_bnf = .false.
     !-----------------------------------------------------------------------
 
-    associate(&
-         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
-         col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production
+    associate(& 
+         cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
+         col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
 
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
-
+         
          qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
          nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
+      dayspyr = get_days_per_year()
 
-      if (do_et_bnf .or. use_fates) then
+      if (do_et_bnf) then
          secspyr = dayspyr * 86400._r8
          do fc = 1, num_soilc
             c =filter_soilc(fc)
@@ -195,11 +205,20 @@ contains
             ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
             ! Loop through columns
             do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
+               c = filter_soilc(fc)         
+               
                if (col_lag_npp(c) /= spval) then
                   ! need to put npp in units of gC/m^2/year here first
-                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
+                  if (abs(col_lag_npp(c)) .gt. 1) then 
+                     write(iulog, *) 'TRS - col_lag_npp out of range, setting to zero', &
+                          c, col_lag_npp(c)
+                     col_lag_npp(c) = 0.0
+                  endif
+                  if (abs(col_lag_npp(c)) .gt. .01) then                
+                     write(iulog, *) 'TRS - col_lag_npp large', c,&
+                          col_lag_npp(c)
+                  endif
+                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
                   nfix_to_sminn(c) = max(0._r8,t)
                else
                   nfix_to_sminn(c) = 0._r8
@@ -209,7 +228,7 @@ contains
             ! use annual-mean values for NPP-NFIX relation
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
+               
                t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
                nfix_to_sminn(c) = max(0._r8,t)
             end do
@@ -219,28 +238,32 @@ contains
     end associate
 
   end subroutine NitrogenFixation
-
+ 
   !-----------------------------------------------------------------------
-  subroutine NitrogenLeaching(bounds, num_soilc, filter_soilc, dt )
+  subroutine NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+       waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen leaching rate
     ! as a function of soluble mineral N and total soil water outflow.
     !
     ! !USES:
-      !$acc routine seq
-    use elm_varpar       , only : nlevdecomp, nlevsoi, nlevgrnd
+    use clm_varpar       , only : nlevdecomp, nlevsoi
+    use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
+    type(bounds_type)        , intent(in)    :: bounds  
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    real(r8)                 , intent(in)    :: dt          ! radiation time step (seconds)
-
+    type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(waterflux_type)     , intent(in)    :: waterflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars 
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
-    integer  :: nlevbed				       ! number of layers to bedrock
+    real(r8) :: dt                                     ! radiation time step (seconds)
+    real(r8) :: sf                                     ! soluble fraction of mineral N (unitless)
     real(r8) :: sf_no3                                 ! soluble fraction of NO3 (unitless)
     real(r8) :: disn_conc                              ! dissolved mineral N concentration (gN/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
@@ -250,41 +273,52 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-    	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
          h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+
          qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         
+         sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
          smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
+         sminn_leached_vr    => col_nf%sminn_leached_vr    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
          smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
          smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
          )
 
+      ! set time steps
+      dt = real( get_step_size(), r8 )
 
-      ! Assume that 100% of the soil NO3 is in a soluble form
-      sf_no3 =  CNNDynamicsParamsInst%sf_no3 
+      if (.not. use_nitrif_denitrif) then
+         ! set constant sf 
+         sf = CNNDynamicsParamsInst%sf
+      else
+         ! Assume that 100% of the soil NO3 is in a soluble form
+         sf_no3 =  CNNDynamicsParamsInst%sf_no3 
+      end if
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         nlevbed = nlev2bed(c)
-         do j = 1,nlevbed
+      do j = 1,nlevsoi
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
 
       ! for runoff calculation; calculate total water to a given depth
       surface_water(bounds%begc:bounds%endc) = 0._r8
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         nlevbed = nlev2bed(c)
-         do j = 1,nlevbed
-            if ( zisoi(j) <= depth_runoff_Nloss)  then
+      do j = 1,nlevsoi
+         if ( zisoi(j) <= depth_runoff_Nloss)  then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-            elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
+            end do
+         elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
-            end if
-         end do
+            end do
+         endif
       end do
 
       ! Loop through columns
@@ -293,77 +327,133 @@ contains
          drain_tot(c) = qflx_drain(c)
       end do
 
-      do j = 1,nlevdecomp
-         ! Loop through columns
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
 
-            if (.not. use_vertsoilc) then
-               ! calculate the dissolved mineral N concentration (gN/kg water)
-               ! assumes that 10% of mineral nitrogen is soluble
-               disn_conc = 0._r8
-               if (tot_water(c) > 0._r8) then
-                  disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(c)
-               end if
+      if (.not. use_nitrif_denitrif) then
 
-               ! calculate the N leaching flux as a function of the dissolved
-               ! concentration and the sub-surface drainage flux
-               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c)
-            else
-               ! calculate the dissolved mineral N concentration (gN/kg water)
-               ! assumes that 10% of mineral nitrogen is soluble
-               disn_conc = 0._r8
-               if (h2osoi_liq(c,j) > 0._r8) then
-                  disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
-               end if
-               !
-               ! calculate the N leaching flux as a function of the dissolved
-               ! concentration and the sub-surface drainage flux
-               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
-               !
-               ! ensure that leaching rate isn't larger than soil N pool
-               smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
-               !
-               ! limit the leaching flux to a positive value
-               smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
-               !
-               !
-               ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
-               if ( zisoi(j) <= depth_runoff_Nloss )  then
-                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                       h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
-               elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
-                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                       h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
-                       col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
+         !----------------------------------------
+         ! --------- NITRIF_NITRIF OFF------------
+         !----------------------------------------
+
+         do j = 1,nlevdecomp
+            ! Loop through columns
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               if (.not. use_vertsoilc) then
+                  ! calculate the dissolved mineral N concentration (gN/kg water)
+                  ! assumes that 10% of mineral nitrogen is soluble
+                  disn_conc = 0._r8
+                  if (tot_water(c) > 0._r8) then
+                     disn_conc = (sf * sminn_vr(c,j) ) / tot_water(c)
+                  end if
+
+                  ! calculate the N leaching flux as a function of the dissolved
+                  ! concentration and the sub-surface drainage flux
+                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c)
                else
-                  smin_no3_runoff_vr(c,j) = 0._r8
-               endif
-               !
-               ! ensure that runoff rate isn't larger than soil N pool
-               smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
-               !
+                  ! calculate the dissolved mineral N concentration (gN/kg water)
+                  ! assumes that 10% of mineral nitrogen is soluble
+                  disn_conc = 0._r8
+                  if (h2osoi_liq(c,j) > 0._r8) then
+                     disn_conc = (sf * sminn_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
+                  end if
+
+                  ! calculate the N leaching flux as a function of the dissolved
+                  ! concentration and the sub-surface drainage flux
+                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
+
+               end if
+
+               ! limit the flux based on current sminn state
+               ! only let at most the assumed soluble fraction
+               ! of sminn be leached on any given timestep
+               sminn_leached_vr(c,j) = min(sminn_leached_vr(c,j), (sf * sminn_vr(c,j))/dt)
+
                ! limit the flux to a positive value
-               smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
+               sminn_leached_vr(c,j) = max(sminn_leached_vr(c,j), 0._r8)
 
-
-            endif
-            ! limit the flux based on current smin_no3 state
-            ! only let at most the assumed soluble fraction
-            ! of smin_no3 be leached on any given timestep
-            smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
-
-            ! limit the flux to a positive value
-            smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
-
+            end do
          end do
-      end do
+
+      else     
+
+         !----------------------------------------
+         ! --------- NITRIF_NITRIF ON-------------
+         !----------------------------------------
+
+         do j = 1,nlevdecomp
+            ! Loop through columns
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               if (.not. use_vertsoilc) then
+                  ! calculate the dissolved mineral N concentration (gN/kg water)
+                  ! assumes that 10% of mineral nitrogen is soluble
+                  disn_conc = 0._r8
+                  if (tot_water(c) > 0._r8) then
+                     disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(c)
+                  end if
+
+                  ! calculate the N leaching flux as a function of the dissolved
+                  ! concentration and the sub-surface drainage flux
+                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c)
+               else
+                  ! calculate the dissolved mineral N concentration (gN/kg water)
+                  ! assumes that 10% of mineral nitrogen is soluble
+                  disn_conc = 0._r8
+                  if (h2osoi_liq(c,j) > 0._r8) then
+                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
+                  end if
+                  !
+                  ! calculate the N leaching flux as a function of the dissolved
+                  ! concentration and the sub-surface drainage flux
+                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
+                  !
+                  ! ensure that leaching rate isn't larger than soil N pool
+                  smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
+                  !
+                  ! limit the leaching flux to a positive value
+                  smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+                  !
+                  !
+                  ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
+                  if ( zisoi(j) <= depth_runoff_Nloss )  then
+                     smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                          h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
+                  elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
+                     smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                          h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
+                          col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
+                  else
+                     smin_no3_runoff_vr(c,j) = 0._r8
+                  endif
+                  !
+                  ! ensure that runoff rate isn't larger than soil N pool
+                  smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
+                  !
+                  ! limit the flux to a positive value
+                  smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
+
+
+               endif
+               ! limit the flux based on current smin_no3 state
+               ! only let at most the assumed soluble fraction
+               ! of smin_no3 be leached on any given timestep
+               smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
+
+               ! limit the flux to a positive value
+               smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+
+            end do
+         end do
+      endif
 
     end associate
   end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFert(bounds, num_soilc, filter_soilc )
+  subroutine NitrogenFert(bounds, num_soilc, filter_soilc, &
+       nitrogenflux_vars)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fertilizer for crops
@@ -372,20 +462,20 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)       , intent(in)    :: bounds
+    type(bounds_type)       , intent(in)    :: bounds  
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars 
     !
     ! !LOCAL VARIABLES:
     integer :: c,fc                 ! indices
     !-----------------------------------------------------------------------
 
-    associate(&
-         fert          =>    veg_nf%fert          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)
-         fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]
+    associate(&   
+         fert          =>    veg_nf%fert          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)                
+         fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]                                                    
          )
-
+      
       call p2c(bounds, num_soilc, filter_soilc, &
            fert(bounds%begp:bounds%endp), &
            fert_to_sminn(bounds%begc:bounds%endc))
@@ -396,7 +486,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNSoyfix (bounds, &
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       crop_vars, cnstate_vars)
+       waterstate_vars, crop_vars, cnstate_vars, nitrogenstate_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
     ! This routine handles the fixation of nitrogen for soybeans based on
@@ -405,17 +495,19 @@ contains
     ! nitrogen in the soil root zone.
     !
     ! !USES:
-      !$acc routine seq
     use pftvarcon  , only : nsoybean
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
+    type(bounds_type)        , intent(in)    :: bounds  
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(crop_type)          , intent(in)    :: crop_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
+    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars 
     !
     ! !LOCAL VARIABLES:
     integer :: fp,p,c
@@ -427,20 +519,20 @@ contains
     real(r8):: GDDfracthreshold3, GDDfracthreshold4
     !-----------------------------------------------------------------------
 
-    associate(                                                         &
-         wf               =>  col_ws%wf                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m
+    associate(                                                         & 
+         wf               =>  col_ws%wf                 , & ! Input:  [real(r8) (:) ]  soil water as frac. of whc for top 0.5 m          
 
-         hui              =>  crop_vars%gddplant_patch               , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)
+         hui              =>  crop_vars%gddplant_patch               , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)                    
 
-         fpg              =>  cnstate_vars%fpg_col                   , & ! Input:  [real(r8) (:) ]  fraction of potential gpp (no units)
-         gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest
-         croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested
+         fpg              =>  cnstate_vars%fpg_col                   , & ! Input:  [real(r8) (:) ]  fraction of potential gpp (no units)              
+         gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest                             
+         croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested                  
 
-         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
-         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
-
-         soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop
-         soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]
+         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N                           
+         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)  
+         
+         soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop               
+         soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]                                                    
          )
 
       sminnthreshold1 = 30._r8
@@ -485,7 +577,7 @@ contains
                ! slevis: to replace GDDfrac, assume...
                ! Beth's crit_offset_gdd_def is similar to my gddmaturity
                ! Beth's ac_gdd (base 5C) similar to my hui=gddplant (base 10
-               ! for soy)
+               ! for soy) 
                ! Ranges below are not firm. Are they lit. based or tuning based?
 
                GDDfrac = hui(p) / gddmaturity(p)
@@ -504,7 +596,7 @@ contains
 
                ! calculate the nitrogen fixed by the soybean
 
-               fxr = min(1._r8, fxw, fxn) * fxg
+               fxr = min(1._r8, fxw, fxn) * fxg 
                fxr = max(0._r8, fxr)
                soyfixn(p) =  fxr * soy_ndemand
                soyfixn(p) = min(soyfixn(p), soy_ndemand)
@@ -531,7 +623,8 @@ contains
   end subroutine CNSoyfix
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFixation_balance(num_soilc, filter_soilc,cnstate_vars)
+  subroutine NitrogenFixation_balance(num_soilc, filter_soilc,cnstate_vars, carbonflux_vars, &
+             nitrogenstate_vars, nitrogenflux_vars, temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
     ! created, Aug 2015 by Q. Zhu
@@ -540,15 +633,23 @@ contains
     ! N2 fixation is based on Fisher 2010 GBC doi:10.1029/2009GB003621; Wang 2007 GBC doi:10.1029/2006GB002797; and Grand 2012 ecosys model
     !
     ! !USES:
-      !$acc routine seq
-    use elm_varcon       , only : secspday, spval
+    use clm_time_manager , only : get_days_per_year, get_step_size
+    use shr_sys_mod      , only : shr_sys_flush
+    use clm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
-
+        
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)      , intent(inout) :: cnstate_vars
+    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
+    type(nitrogenstate_type), intent(in)    :: nitrogenstate_vars
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+    type(temperature_type)  , intent(inout) :: temperature_vars
+    type(waterstate_type)   , intent(in)    :: waterstate_vars
+    type(carbonstate_type)  , intent(inout) :: carbonstate_vars
+    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc,p                     ! indices
@@ -559,8 +660,8 @@ contains
     real(r8) :: nfix_tmp
     !-----------------------------------------------------------------------
 
-    associate(&
-         ivt                   => veg_pp%itype                            , & ! input:  [integer  (:) ]  pft vegetation type
+    associate(& 
+         ivt                   => veg_pp%itype                            , & ! input:  [integer  (:) ]  pft vegetation type  
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
@@ -584,7 +685,7 @@ contains
               if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
                   r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8&
-                       *(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8)
+                       *(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
@@ -593,10 +694,10 @@ contains
                   ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
                   ! aqueous N2 concentration under pure nitrogen is 6.1e-4 mol/L/atm (based on Hery's law)
                   ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
-                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * max(h2osoi_vol(c,4),0.01_r8)
+                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * h2osoi_vol(c,4)
                   ! calculate n2 fixation rate for each pft and add it to column total
                   nfix_tmp = vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
-                             N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p)))
+                             N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) 
                   if (NFIX_PTASE_plant) then
                      nfix_to_sminn(c) = nfix_to_sminn(c) + nfix_tmp  * veg_pp%wtcol(p) * (1._r8-veg_vp%alpha_nfix(veg_pp%itype(p)))
                      nfix_to_plantn(p) = nfix_tmp * veg_vp%alpha_nfix(veg_pp%itype(p))
@@ -613,5 +714,5 @@ contains
     end associate
 
   end subroutine NitrogenFixation_balance
-
+  
 end module NitrogenDynamicsMod

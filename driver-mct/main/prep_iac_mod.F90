@@ -81,7 +81,7 @@ contains
     logical                 , intent(in)    :: lnd_c2_iac ! .true.  => lnd to iac coupling on
     !
     ! Local Variables
-    integer                  :: lsize_z
+    integer                  :: lsize_z, lsize_l
     integer                  :: eli,erl
     logical                  :: samegrid_lz   ! samegrid land and iac
     logical                  :: lnd_present   ! .true. => land is present
@@ -90,7 +90,7 @@ contains
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: iac_gnam      ! iac grid
-    type(mct_avect), pointer :: z2x_zx
+    type(mct_avect), pointer :: z2x_zx, x2z_zx, l2x_lx
     character(*), parameter  :: subname = '(prep_iac_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -119,21 +119,21 @@ contains
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
        ! iac imports
-!       x2z_zx => component_get_x2c_cx(iac(1))
-!       lsize_z = mct_aVect_lsize(x2z_zx)
+       x2z_zx => component_get_x2c_cx(iac(1))
+       lsize_z = mct_aVect_lsize(x2z_zx)
 
        ! lnd exports
-!       l2x_lx => component_get_c2x_cx(lnd(1))
-!       lsize_l = mct_aVect_lsize(l2x_lx)
+       l2x_lx => component_get_c2x_cx(lnd(1))
+       lsize_l = mct_aVect_lsize(l2x_lx)
 
        ! Now create into our accumulator avect (on the land grid,
        ! still), using shared fields in both import and export avects
-!       allocate(l2zacc_lx(num_inst_lnd))
+       allocate(l2zacc_lx(num_inst_lnd))
 
- !      do erl = 1,num_inst_lnd
- !         call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zacc_lx(erl), lsize=lsize_l)
- !         call mct_aVect_zero(l2zacc_lx(erl))       
-  !     end do
+       do erl = 1,num_inst_lnd
+          call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zacc_lx(erl), lsize=lsize_l)
+          call mct_aVect_zero(l2zacc_lx(erl))       
+       end do
 
        samegrid_lz = .true.
        if (trim(lnd_gnam) /= trim(iac_gnam)) samegrid_lz = .false.       

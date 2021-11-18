@@ -1840,7 +1840,8 @@ contains
                        nstep,c,errch4
                   g = col_pp%gridcell(c)
                   write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                  call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
+                  ! TRS - turn off abort for debugging 
+                  ! call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
             end if
 
@@ -3081,8 +3082,9 @@ contains
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               call endrun(msg=' ERROR: Methane demands exceed methane available.'&
-                    //errMsg(__FILE__, __LINE__))
+               ! TRS - turn off abort for debugging 
+               !call endrun(msg=' ERROR: Methane demands exceed methane available.'&
+               !     //errMsg(__FILE__, __LINE__))
             else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
