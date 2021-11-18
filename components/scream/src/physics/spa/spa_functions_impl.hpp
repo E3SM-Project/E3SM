@@ -121,6 +121,7 @@ void SPAFunctions<S,D>
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nlevs_atm);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols_atm, nk_pack);
+  auto t_norm = (t_now-t_beg)/t_len;
   // SPA Main loop
   // Parallel loop order:
   // 1. Loop over all horizontal columns (i index)
@@ -147,7 +148,6 @@ void SPAFunctions<S,D>
   
     // Second Step: Temporal Interpolation
     // Use basic linear interpolation function y = b + mx
-    auto t_norm = (t_now-t_beg)/t_len;
     /* Determine PS for the source data at this time */
     auto ps_src = linear_interp(ps_beg_sub,ps_end_sub,t_norm);
     /* Reconstruct the vertical pressure profile for the data and time interpolation
@@ -435,12 +435,21 @@ void SPAFunctions<S,D>
           SPAHorizInterp& spa_horiz_interp,
           SPAData&        spa_data)
 {
+  // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
+  ekat::Comm self_comm(MPI_COMM_SELF);
+
+  // We have enough info to start opening the file
+  std::vector<std::string> fnames = {"PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
+  ekat::ParameterList spa_data_in_params;
+  spa_data_in_params.set("Fields Names",fnames);
+  spa_data_in_params.set("Filename",spa_data_file_name);
+  AtmosphereInput spa_data_input(self_comm,spa_data_in_params);
+
   // Note that the SPA data follows a conventional GLL grid format, albeit at a different resolution than
   // the simulation.  For simplicity we can use the scorpio_input object class but we must construct a
   // local grid to match the size of the SPA data file.
 
   // To construct the grid we need to determine the number of columns and levels in the data file.
-  scorpio::register_file(spa_data_file_name,scorpio::Read);
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
   spa_horiz_interp.source_grid_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
   // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
@@ -475,8 +484,7 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(AER_TAU_SW_v_h,    AER_TAU_SW_v);             
   Kokkos::deep_copy(AER_TAU_LW_v_h,    AER_TAU_LW_v);             
   // Construct the grid needed for input:
-  auto loc_comm = spa_horiz_interp.m_comm.split(spa_horiz_interp.m_comm.rank());
-  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs,loc_comm);
+  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs,self_comm);
   PointGrid::dofs_list_type dof_gids("",spa_horiz_interp.source_grid_ncols);
   Kokkos::parallel_for("", spa_horiz_interp.source_grid_ncols, KOKKOS_LAMBDA (const int& ii) {
     dof_gids(ii) = ii;
@@ -488,40 +496,30 @@ void SPAFunctions<S,D>
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs} };
   FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, spa_horiz_interp.source_grid_nlevs} }; 
   FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, spa_horiz_interp.source_grid_nlevs} };
-  std::vector<std::string>           fnames;
   std::map<std::string,view_1d_host> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
-  fnames.push_back("PS");
-  host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());//view_h("",spa_horiz_interp.source_grid_ncols);
+  host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());
   layouts.emplace("PS", scalar2d_layout_mid);
   //
-  fnames.push_back("CCN3");
   host_views["CCN3"] = view_1d_host(CCN3_v_h.data(),CCN3_v_h.size());
   layouts.emplace("CCN3",scalar3d_layout_mid);
   //
-  fnames.push_back("AER_G_SW");
   host_views["AER_G_SW"] = view_1d_host(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
   layouts.emplace("AER_G_SW",scalar3d_swband_layout);
   //
-  fnames.push_back("AER_SSA_SW");
   host_views["AER_SSA_SW"] = view_1d_host(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
   layouts.emplace("AER_SSA_SW",scalar3d_swband_layout);
   //
-  fnames.push_back("AER_TAU_SW");
   host_views["AER_TAU_SW"] = view_1d_host(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
   layouts.emplace("AER_TAU_SW",scalar3d_swband_layout);
   //
-  fnames.push_back("AER_TAU_LW");
   host_views["AER_TAU_LW"] = view_1d_host(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
   layouts.emplace("AER_TAU_LW",scalar3d_lwband_layout);
   //
   
   // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Fields Names",fnames);
-  spa_data_in_params.set("Filename",spa_data_file_name);
-  AtmosphereInput spa_data_input(loc_comm,spa_data_in_params,grid,host_views,layouts);
+  spa_data_input.init(grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
  

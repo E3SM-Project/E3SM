@@ -31,11 +31,9 @@ AtmosphereInput (const ekat::Comm& comm,
   // Set list of fields. Use grid name to potentially find correct sublist inside Fields: list.
   set_parameters (params, field_mgr->get_grid()->name());
 
-  // Sets the internal field mgr, and possibly sets up the remapper
-  set_field_manager(field_mgr,grids_mgr);
-
-  // Init scorpio internal structures
-  init_scorpio_structures ();
+  // Sets the internal field mg, possibly sets up the remapper,
+  // and init scorpio internal structures
+  init (field_mgr, grids_mgr);
 }
 
 AtmosphereInput::
@@ -45,6 +43,26 @@ AtmosphereInput (const ekat::Comm& comm,
                  const std::map<std::string,view_1d_host>& host_views_1d,
                  const std::map<std::string,FieldLayout>&  layouts)
  : AtmosphereInput(comm,params)
+{
+  // Sets the grid, the host views, and init scorpio internal structures
+  init (grid,host_views_1d,layouts);
+}
+
+void AtmosphereInput::
+init (const std::shared_ptr<const fm_type>& field_mgr,
+      const std::shared_ptr<const gm_type>& grids_mgr)
+{
+  // Sets the internal field mgr, and possibly sets up the remapper
+  set_field_manager(field_mgr,grids_mgr);
+
+  // Init scorpio internal structures
+  init_scorpio_structures ();
+}
+
+void AtmosphereInput::
+init (const std::shared_ptr<const grid_type>& grid,
+      const std::map<std::string,view_1d_host>& host_views_1d,
+      const std::map<std::string,FieldLayout>&  layouts)
 {
   // Set the grid associated with the input views
   set_grid(grid);
@@ -90,6 +108,10 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
   // Sanity checks
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
   EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_views,
+      "Error! Input class was already inited with user-provided views.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_fields,
+      "Error! Input class was already inited with fields.\n");
 
   m_field_mgr = field_mgr;
 
@@ -139,6 +161,8 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
 
   // Init fields specs
   register_fields_specs();
+
+  m_inited_with_fields = true;
 }
 
 void AtmosphereInput::
@@ -172,6 +196,7 @@ void AtmosphereInput::
 set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 {
   // Sanity checks
+  EKAT_REQUIRE_MSG (not m_io_grid, "Error! Grid pointer was already set.\n");
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
   EKAT_REQUIRE_MSG (grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -196,8 +221,8 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 //       last time level set by running eam_update_timesnap.
 void AtmosphereInput::read_variables (const int time_index)
 {
-  EKAT_REQUIRE_MSG (m_is_inited,
-      "Error! The init method has not been called yet.\n");
+  EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
+      "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
 
   for (auto const& name : m_fields_names) {
 
@@ -327,6 +352,10 @@ set_views (const std::map<std::string,view_1d_host>& host_views_1d,
            const std::map<std::string,FieldLayout>&  layouts)
 {
   // Sanity checks
+  EKAT_REQUIRE_MSG (not m_inited_with_views,
+      "Error! Input class was already inited with user-provided views.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_fields,
+      "Error! Input class was already inited with fields.\n");
   EKAT_REQUIRE_MSG (host_views_1d.size()==m_fields_names.size(),
       "Error! Input host views map has the wrong size.\n"
       "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
@@ -342,12 +371,24 @@ set_views (const std::map<std::string,view_1d_host>& host_views_1d,
     m_layouts.emplace(name,layouts.at(name));
     m_host_views_1d[name] = host_views_1d.at(name);
   }
+
+  m_inited_with_views = true;
 }
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize() 
 {
   scorpio::eam_pio_closefile(m_filename);
+
+  m_field_mgr = nullptr;
+  m_io_grid   = nullptr;
+  m_remapper  = nullptr;
+
+  m_host_views_1d.clear();
+  m_layouts.clear();
+
+  m_inited_with_views = false;
+  m_inited_with_fields = false;
 } // finalize
 
 /* ---------------------------------------------------------- */
@@ -359,8 +400,6 @@ void AtmosphereInput::init_scorpio_structures()
 
   // Finish the definition phase for this file.
   scorpio::set_decomp  (m_filename); 
-
-  m_is_inited = true;
 }
 
 /* ---------------------------------------------------------- */
@@ -441,6 +480,12 @@ get_var_dof_offsets(const FieldLayout& layout)
   // check this during set_grid) that the grid global gids are in the interval
   // [gid_0, gid_0+num_global_dofs), the offset is simply given by
   // (dof_gid-gid_0)*column_size (for partitioned arrays).
+  // NOTE: a "dof" in the grid object is not the same as a "dof" in scorpio.
+  //       For a SEGrid 3d vector field with (MPI local) layout (nelem,2,np,np,nlev),
+  //       scorpio sees nelem*2*np*np*nlev dofs, while the SE grid sees nelem*np*np dofs.
+  //       All we need to do in this routine is to compute the offset of all the entries
+  //       of the MPI-local array w.r.t. the global array. So long as the offsets are in
+  //       the same order as the corresponding entry in the data to be read/written, we're good.
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
 
