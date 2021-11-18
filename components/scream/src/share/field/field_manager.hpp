@@ -70,6 +70,11 @@ public:
   void registration_ends ();
   void clean_up ();
 
+  // Adds a pre-existing field to the FieldManager.
+  // Notes: the repo must be in closed state, and the field must not exist already.
+  // This can be used to allow atm procs to create some helper fields internally,
+  // but still leverage the FM class for certain features (e.g., I/O).
+  void add_field (const Field<RealType>& f);
 
   // Get information about the state of the repo
   int size () const { return m_fields.size(); }
@@ -880,6 +885,27 @@ void FieldManager<RealType>::clean_up() {
 
   // Reset repo state
   m_repo_state = RepoState::Clean;
+}
+
+template<typename RealType>
+void FieldManager<RealType>::add_field (const Field<RealType>& f) {
+  // This method has a few restrictions on the input field.
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+      "Error! The method 'add_field' can only be called on a closed repo.\n");
+  EKAT_REQUIRE_MSG (f.is_allocated(),
+      "Error! The method 'add_field' requires the input field to be already allocated.\n");
+  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==m_grid->name(),
+      "Error! Input field to 'add_field' is defined on a grid different from the one stored.\n"
+      "  - field manager grid: " + m_grid->name() + "\n"
+      "  - input field grid:   " + f.get_header().get_identifier().get_grid_name() + "\n");
+  EKAT_REQUIRE_MSG (not has_field(f.get_header().get_identifier().name()),
+      "Error! The method 'add_field' requires the input field to not be already existing.\n"
+      "  - field name: " + f.get_header().get_identifier().name() + "\n");
+  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0,
+      "Error! The method 'add_field' requires the input field to not be part of any group.\n");
+
+  // All good, add the field to the repo
+  m_fields[f.get_header().get_identifier().name()] = std::make_shared<Field<Real>>(f);
 }
 
 template<typename RealType>

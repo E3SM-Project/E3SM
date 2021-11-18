@@ -396,6 +396,9 @@ TEST_CASE("field_mgr", "") {
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
 
+  // Cannot add external fields while registration is happening
+  REQUIRE_THROWS(field_mgr.add_field(Field<Real>()));
+
   field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
@@ -458,6 +461,26 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (f1_padding==ekat::PackInfo<Pack::n>::padding(nlevs));
   REQUIRE (f2_padding==ekat::PackInfo<16>::padding(nlevs));
 
+  // Try to subview a field and set the subfield back in the FM
+  field_mgr.add_field(f4.subfield("field_4_sf",subview_dim,subview_slice,true));
+  auto f4_sf = field_mgr.get_field("field_4_sf");
+  REQUIRE (field_mgr.size()==5);
+  REQUIRE_THROWS (field_mgr.add_field(Field<Real>())); // Not allocated
+  REQUIRE_THROWS (field_mgr.add_field(f4_sf)); // Cannot have duplicates
+
+  // Verify f5 is a subfield of f4
+  auto f4_sf_ap = f4_sf.get_header().get_alloc_properties();
+  REQUIRE (f4_sf_ap.is_subfield());
+  REQUIRE (f4_sf_ap.is_dynamic_subfield());
+  REQUIRE (f4_sf_ap.get_subview_info().dim_idx==subview_dim);
+  REQUIRE (f4_sf_ap.get_subview_info().slice_idx==subview_slice);
+
+  // Fill f4_sf with random numbers, and verify corresponding subview of f4 gets same values.
+  auto engine = setup_random_test(&comm);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.0,1.0);
+  randomize(f4_sf,engine,pdf);
+  REQUIRE (views_are_equal(f4_sf,f4.get_component(subview_slice)));
 }
 
 TEST_CASE("tracers_bundle", "") {
