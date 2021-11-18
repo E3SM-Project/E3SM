@@ -171,7 +171,12 @@ public:
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const field_type& field_src);
+  void deep_copy (const non_const_field_type& field_src) {
+    deep_copy(field_src.get_const());
+  }
+
+  template<HostOrDevice HD = Device>
+  void deep_copy (const const_field_type& field_src);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -480,7 +485,7 @@ sync_to_dev () const {
 template<typename RealType>
 template<HostOrDevice HD>
 void Field<RealType>::
-deep_copy (const field_type& field_src) {
+deep_copy (const const_field_type& field_src) {
   const auto& layout     = get_header().get_identifier().get_layout();
   const auto& layout_src = field_src.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(layout==layout_src,
@@ -493,35 +498,35 @@ deep_copy (const field_type& field_src) {
     case 1:
       {
         auto v     = get_view<RT*,HD>();
-        auto v_src = field_src.get_view<RT*,HD>();
+        auto v_src = field_src.template get_view<const_RT*,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 2:
       {
         auto v     = get_view<RT**,HD>();
-        auto v_src = field_src.get_view<RT**,HD>();
+        auto v_src = field_src.template get_view<const_RT**,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 3:
       {
         auto v     = get_view<RT***,HD>();
-        auto v_src = field_src.get_view<RT***,HD>();
+        auto v_src = field_src.template get_view<const_RT***,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 4:
       {
         auto v     = get_view<RT****,HD>();
-        auto v_src = field_src.get_view<RT****,HD>();
+        auto v_src = field_src.template get_view<const_RT****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 5:
       {
         auto v     = get_view<RT*****,HD>();
-        auto v_src = field_src.get_view<RT*****,HD>();
+        auto v_src = field_src.template get_view<const_RT*****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
