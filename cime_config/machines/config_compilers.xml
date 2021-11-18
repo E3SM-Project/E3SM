@@ -416,6 +416,112 @@ flags should be captured within MPAS CMake files.
   <MPIFC> mpif90 </MPIFC>
 </compiler>
 
+<compiler COMPILER="nvidia">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> nvcc </SCC>
+  <SCXX> nvc++ </SCXX>
+  <SFC> nvfortran </SFC>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA </append>
+    <!--append> -DNO_SHR_VMATH </append-->
+  </CPPDEFS>
+  <CFLAGS>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="FALSE"> -O0 -Mnofma -Mvect=nosimd </append>
+    <append DEBUG="TRUE"> -g </append>
+  </CFLAGS>
+  <FFLAGS>
+    <base> -i4 -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -g -O0 -Mnofma -Wall -Kieee -traceback</append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 -Mnofma </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -Wl,--allow-multiple-definition </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="nvidiagpu">
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> nvcc </SCC>
+  <SCXX> nvc++ </SCXX>
+  <SFC> nvfortran </SFC>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA </append>
+    <!--append> -DUSE_CUDA_FORTRAN </append-->
+    <!--append> -DNO_SHR_VMATH </append-->
+    <append DEBUG="TRUE"> -DYAKL_DEBUG </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g </append>
+  </CFLAGS>
+  <FFLAGS>
+    <base> -i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
+    <append DEBUG="FALSE"> -O2 -DHAVE_IEEE_ARITHMETIC </append>
+  </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++14 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -g -O0 -Mnofma -Wall -traceback </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 -Mnofma </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -Wl,--allow-multiple-definition </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler COMPILER="pgi">
   <CFLAGS>
     <base> -time </base>
@@ -1148,6 +1254,142 @@ flags should be captured within MPAS CMake files.
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
+</compiler>
+
+<compiler MACH="perlmutter" COMPILER="gnu">
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
+  <NETCDF_C_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_FORTRAN_PATH>
+  <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
+  <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -g </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -g </append>
+  </FFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
+</compiler>
+
+<compiler MACH="perlmutter" COMPILER="gnugpu">
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
+  <USE_CUDA>TRUE</USE_CUDA>
+  <CPPDEFS>
+    <append> -DGPU </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
+    <append> -DTHRUST_IGNORE_CUB_VERSION_CHECK </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
+  <NETCDF_C_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_FORTRAN_PATH>
+  <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
+  <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <CUDA_FLAGS>
+    <append> -ccbin CC -O2 -arch sm_80 --use_fast_math </append>
+  </CUDA_FLAGS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
+</compiler>
+
+<compiler MACH="perlmutter" COMPILER="nvidia">
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
+  <NETCDF_C_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_FORTRAN_PATH>
+  <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
+  <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
+</compiler>
+
+<compiler MACH="perlmutter" COMPILER="nvidiagpu">
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
+  <USE_CUDA>TRUE</USE_CUDA>
+  <CPPDEFS>
+    <append> -DGPU </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
+    <append> -DTHRUST_IGNORE_CUB_VERSION_CHECK </append>
+  </CPPDEFS>
+  <CUDA_FLAGS>
+    <append> -ccbin CC -O2 -arch sm_80 --use_fast_math </append>
+  </CUDA_FLAGS>
+  <SLIBS>
+    <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+    <append> -lblas -llapack </append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <NETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</NETCDF_PATH>
+  <NETCDF_C_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</NETCDF_FORTRAN_PATH>
+  <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
+  <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
 </compiler>
 
 <compiler MACH="ghost" COMPILER="intel">
