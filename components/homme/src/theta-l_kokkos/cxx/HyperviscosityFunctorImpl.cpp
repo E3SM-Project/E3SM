@@ -322,7 +322,8 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   Kokkos::fence();
 
-  //sponge layer  
+  //sponge layer 
+  if(m_data.nu_top > 0){ 
   for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
 
     //m_policy_first_laplace has ref states, so cannot be reused now
@@ -340,6 +341,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
     Kokkos::parallel_for(m_policy_update_states2, *this);
     Kokkos::fence();
+  }
   } //for for sponge layer
 } //run()
 
