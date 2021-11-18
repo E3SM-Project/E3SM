@@ -151,34 +151,34 @@ void timeloop() {
       // u_2dx = mean( u(1:2:crm_nx,debug_k) - u(2:2:crm_nx,debug_k) );
       // w_2dx = mean( w(1:2:crm_nx,debug_k) - w(2:2:crm_nx,debug_k) );
 
-      int debug_k = 5;
-      int cnt;
-      real u_2dx;
-      real w_2dx;
+      // int debug_k = 5;
+      // int cnt;
+      // real u_2dx;
+      // real w_2dx;
 
-      cnt = 0;
-      u_2dx = 0;
-      w_2dx = 0;
-      for (int i=1; i<nx; i++) {
-        u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
-        w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
-        cnt++;
-      }
-      std::cout << "debug-hypervis - u_2dx before uvw: " << u_2dx << std::endl;
-      std::cout << "debug-hypervis - w_2dx before uvw: " << w_2dx << std::endl;
+      // cnt = 0;
+      // u_2dx = 0;
+      // w_2dx = 0;
+      // for (int i=1; i<nx; i++) {
+      //   u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
+      //   w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
+      //   cnt++;
+      // }
+      // std::cout << "debug-hypervis - u_2dx before uvw: " << u_2dx << std::endl;
+      // std::cout << "debug-hypervis - w_2dx before uvw: " << w_2dx << std::endl;
 
-      uvw();
+      // uvw();
 
-      cnt = 0;
-      u_2dx = 0;
-      w_2dx = 0;
-      for (int i=1; i<nx; i++) {
-        u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
-        w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
-        cnt++;
-      }
-      std::cout << "debug-hypervis - u_2dx after uvw : " << u_2dx << std::endl;
-      std::cout << "debug-hypervis - w_2dx after uvw : " << w_2dx << std::endl;
+      // cnt = 0;
+      // u_2dx = 0;
+      // w_2dx = 0;
+      // for (int i=1; i<nx; i++) {
+      //   u_2dx = ( u_2dx*cnt + u(debug_k,0,i,0) - u(debug_k,0,i-1,0) ) / (cnt+1);
+      //   w_2dx = ( w_2dx*cnt + w(debug_k,0,i,0) - w(debug_k,0,i-1,0) ) / (cnt+1);
+      //   cnt++;
+      // }
+      // std::cout << "debug-hypervis - u_2dx after uvw : " << u_2dx << std::endl;
+      // std::cout << "debug-hypervis - w_2dx after uvw : " << w_2dx << std::endl;
 
       //----------------------------------------------------------
       //     Update boundaries for scalars to prepare for SGS effects:

@@ -148,16 +148,16 @@ void diffuse_mom2D(real5d &tk) {
       dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - khyp * rdx16 * uhv;
       dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - khyp * rdx16 * vhv;
       if (k>0) {
-      dwdt(na-1,k,j,i,icrm) = dwdt(na-1,k,j,i,icrm) - khyp * rdx16 * whv; 
+      dwdt(na-1,k,j,i,icrm) = dwdt(na-1,k,j,i,icrm) - khyp * rdx16 * whv;
       }
     });
 
-    // do k=2,nzm
-    //   do i=1,nx
-    //     do icrm = 1 , ncrms
+    // // do k=2,nzm
+    // //   do i=1,nx
+    // //     do icrm = 1 , ncrms
     // parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     //   real whv = w(k+1,j+offy_w,i-2+offx_w,icrm) - 4*w(k+1,j+offy_w,i-1+offx_w,icrm) + 6*w(k+1,j+offy_w,i+offx_w,icrm) - 4*w(k+1,j+offy_w,i+1+offx_w,icrm) + w(k+1,j+offy_w,i+2+offx_w,icrm);
-    //   dwdt(na-1,k+1,j,i,icrm) = dwdt(na-1,k+1,j,i,icrm) - khyp * rdx16 * whv; 
+    //   dwdt(na-1,k+1,j,i,icrm) = dwdt(na-1,k+1,j,i,icrm) - khyp * rdx16 * whv;
     // });
 
   // }
