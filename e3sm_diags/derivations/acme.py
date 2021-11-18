@@ -329,7 +329,7 @@ def adjust_prs_val_units(
     """Adjust the prs_val units based on the prs.id"""
     # COSP v2 cosp_pr in units Pa instead of hPa as in v1
     # COSP v2 cosp_htmisr in units m instead of km as in v1
-    adjust_ids = {"cosp_prs": 100, "cosp_htmsir": 1000}
+    adjust_ids = {"cosp_prs": 100, "cosp_htmisr": 1000}
 
     if prs_val0:
         prs_val = prs_val0

@@ -46,7 +46,7 @@ class TestAdjustPrsValUnits(TestCase):
         self.assertEqual(actual, expected)
 
     def test_swap_units_and_apply_multiplier_for_all_matched_ids(self):
-        adjust_ids = {"cosp_prs": 100, "cosp_htmsir": 1000}
+        adjust_ids = {"cosp_prs": 100, "cosp_htmisr": 1000}
 
         for id, multiplier in adjust_ids.items():
             self.mock_file_axis.id = id
