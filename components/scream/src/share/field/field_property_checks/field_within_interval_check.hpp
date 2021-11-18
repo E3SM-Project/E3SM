@@ -119,6 +119,26 @@ public:
           }, Kokkos::MinMax<RT>(minmax));
         }
         break;
+      case 6:
+        {
+          auto v = field.template get_view<const_RT******>();
+          const int dim1 = dims[1];
+          const int dim2 = dims[2];
+          const int dim3 = dims[3];
+          const int dim4 = dims[4];
+          const int dim5 = dims[5];
+          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3*dim4*dim5, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            const int i = ((((idx / dim5) / dim4) / dim3) / dim2) / dim1;
+            const int j = ((((idx / dim5) / dim4) / dim3) / dim2) % dim1;
+            const int k =  (((idx / dim5) / dim4) / dim3) % dim2;
+            const int l =   ((idx / dim5) / dim4) % dim3;
+            const int m =    (idx / dim5) % dim4;
+            const int n =     idx % dim5;
+            result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l,m,n));
+            result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l,m,n));
+          }, Kokkos::MinMax<RT>(minmax));
+        }
+        break;
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
     }
@@ -209,6 +229,27 @@ public:
             const int l =   (idx / dim4) % dim3;
             const int m =    idx % dim4;
             auto& ref = v(i,j,k,l,m);
+            ref = ekat::impl::min(ub, ref);
+            ref = ekat::impl::max(lb, ref);
+          });
+        }
+        break;
+      case 6:
+        {
+          auto v = field.template get_view<non_const_RT******>();
+          const int dim1 = dims[1];
+          const int dim2 = dims[2];
+          const int dim3 = dims[3];
+          const int dim4 = dims[4];
+          const int dim5 = dims[5];
+          Kokkos::parallel_for(dim0*dim1*dim2*dim3*dim4*dim5, KOKKOS_LAMBDA(int idx) {
+            const int i = ((((idx / dim5) / dim4) / dim3) / dim2) / dim1;
+            const int j = ((((idx / dim5) / dim4) / dim3) / dim2) % dim1;
+            const int k =  (((idx / dim5) / dim4) / dim3) % dim2;
+            const int l =   ((idx / dim5) / dim4) % dim3;
+            const int m =    (idx / dim5) % dim4;
+            const int n =     idx % dim5;
+            auto& ref = v(i,j,k,l,m,n);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
           });

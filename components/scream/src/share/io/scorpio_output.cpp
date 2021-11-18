@@ -117,6 +117,45 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         }}}
         break;
       }
+      case 4:
+      {
+        auto new_view_4d = field.get_view<const Real****,Host>();
+        auto avg_view_4d = view_Nd_host<4>(data,dims[0],dims[1],dims[2],dims[3]);
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            for (int k=0; k<dims[2]; ++k) {
+              for (int l=0; l<dims[3]; ++l) {
+                combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output);
+        }}}}
+        break;
+      }
+      case 5:
+      {
+        auto new_view_5d = field.get_view<const Real*****,Host>();
+        auto avg_view_5d = view_Nd_host<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            for (int k=0; k<dims[2]; ++k) {
+              for (int l=0; l<dims[3]; ++l) {
+                for (int m=0; m<dims[4]; ++m) {
+                  combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output);
+        }}}}}
+        break;
+      }
+      case 6:
+      {
+        auto new_view_6d = field.get_view<const Real******,Host>();
+        auto avg_view_6d = view_Nd_host<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            for (int k=0; k<dims[2]; ++k) {
+              for (int l=0; l<dims[3]; ++l) {
+                for (int m=0; m<dims[4]; ++m) {
+                  for (int n=0; n<dims[5]; ++n) {
+                    combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
+        }}}}}}
+        break;
+      }
       default:
         EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
     }

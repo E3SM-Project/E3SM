@@ -109,6 +109,25 @@ public:
           }, Kokkos::Min<RT>(min_val));
         }
         break;
+      case 6:
+        {
+          auto v = field.template get_view<const_RT******>();
+          const int dim1 = dims[1];
+          const int dim2 = dims[2];
+          const int dim3 = dims[3];
+          const int dim4 = dims[4];
+          const int dim5 = dims[5];
+          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3*dim4*dim5, KOKKOS_LAMBDA(int idx, RT& result) {
+            const int i = ((((idx / dim5) / dim4) / dim3) / dim2) / dim1;
+            const int j = ((((idx / dim5) / dim4) / dim3) / dim2) % dim1;
+            const int k =  (((idx / dim5) / dim4) / dim3) % dim2;
+            const int l =   ((idx / dim5) / dim4) % dim3;
+            const int m =    (idx / dim5) % dim4;
+            const int n =     idx % dim5;
+            result = ekat::impl::min(result, v(i,j,k,l,m,n));
+          }, Kokkos::Min<RT>(min_val));
+        }
+        break;
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
     }

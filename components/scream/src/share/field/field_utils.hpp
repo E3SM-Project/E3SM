@@ -95,6 +95,22 @@ bool views_are_equal(const Field<RT1>& f1, const Field<RT2>& f2) {
         }}}}}
       }
       break;
+    case 6:
+      {
+        auto v1 = f1.template get_view<RT1******,Host>();
+        auto v2 = f2.template get_view<RT2******,Host>();
+        for (int i=0; i<dims[0]; ++i) {
+          for (int j=0; j<dims[1]; ++j) {
+            for (int k=0; k<dims[2]; ++k) {
+              for (int l=0; l<dims[3]; ++l) {
+                for (int m=0; m<dims[4]; ++m) {
+                  for (int n=0; n<dims[5]; ++n) {
+                    if (v1(i,j,k,l,m,n) != v2(i,j,k,l,m,n)) {
+                      return false;
+                    }
+        }}}}}}
+      }
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
@@ -159,6 +175,19 @@ void randomize (const Field<RT>& f, Engine& engine, PDF&& pdf)
                 for (int m=0; m<v.extent_int(4); ++m) {
                   v(i,j,k,l,m) = pdf(engine);
         }}}}}
+      }
+      break;
+    case 6:
+      {
+        auto v = f.template get_view<RT******,Host>();
+        for (int i=0; i<v.extent_int(0); ++i) {
+          for (int j=0; j<v.extent_int(1); ++j) {
+            for (int k=0; k<v.extent_int(2); ++k) {
+              for (int l=0; l<v.extent_int(3); ++l) {
+                for (int m=0; m<v.extent_int(4); ++m) {
+                  for (int n=0; n<v.extent_int(5); ++n) {
+                    v(i,j,k,l,m,n) = pdf(engine);
+        }}}}}}
       }
       break;
     default:

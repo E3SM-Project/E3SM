@@ -530,6 +530,13 @@ deep_copy (const const_field_type& field_src) {
         Kokkos::deep_copy(v,v_src);
       }
       break;
+    case 6:
+      {
+        auto v     = get_view<RT******,HD>();
+        auto v_src = field_src.template get_view<const_RT******,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
   }
@@ -574,6 +581,12 @@ deep_copy (const RT value) {
     case 5:
       {
         auto v = get_view<RT*****,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
+    case 6:
+      {
+        auto v = get_view<RT******,HD>();
         Kokkos::deep_copy(v,value);
       }
       break;

@@ -279,6 +279,48 @@ void AtmosphereInput::read_variables (const int time_index)
               }}}
               break;
             }
+          case 4:
+            {
+              // Reshape temp_view to a 4d view, then copy
+              auto dst = f.get_view<RT****,Host>();
+              auto src = view_Nd_host<4>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      dst(i,j,k,l) = src(i,j,k,l);
+              }}}}
+              break;
+            }
+          case 5:
+            {
+              // Reshape temp_view to a 5d view, then copy
+              auto dst = f.get_view<RT*****,Host>();
+              auto src = view_Nd_host<5>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      for (int m=0; m<fl.dim(4); ++m) {
+                        dst(i,j,k,l,m) = src(i,j,k,l,m);
+              }}}}}
+              break;
+            }
+          case 6:
+            {
+              // Reshape temp_view to a 6d view, then copy
+              auto dst = f.get_view<RT******,Host>();
+              auto src = view_Nd_host<6>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4),fl.dim(5));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      for (int m=0; m<fl.dim(4); ++m) {
+                        for (int n=0; n<fl.dim(5); ++n) {
+                          dst(i,j,k,l,m,n) = src(i,j,k,l,m,n);
+              }}}}}}
+              break;
+            }
           default:
             EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
         }
