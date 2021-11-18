@@ -259,6 +259,29 @@ void AtmosphereDriver::create_fields()
     fm->add_field(f);
   }
 
+  // Now go through the input fields/groups to the atm proc group, as well as
+  // the internal fields/groups, and mark them as part of the RESTART group.
+  for (const auto& f : m_atm_process_group->get_fields_in()) {
+    const auto& fid = f.get_header().get_identifier();
+    auto fm = get_field_mgr(fid.get_grid_name());
+    fm->add_to_group(fid.name(),"RESTART");
+  }
+  for (const auto& g : m_atm_process_group->get_groups_in()) {
+    auto fm = get_field_mgr(g.grid_name());
+    if (g.m_bundle) {
+      fm->add_to_group(g.m_bundle->get_header().get_identifier().name(),"RESTART");
+    } else {
+      for (const auto& fn : g.m_info->m_fields_names) {
+        fm->add_to_group(fn,"RESTART");
+      }
+    }
+  }
+  for (const auto& f : m_atm_process_group->get_internal_fields()) {
+    const auto& fid = f.get_header().get_identifier();
+    auto fm = get_field_mgr(fid.get_grid_name());
+    fm->add_to_group(fid.name(),"RESTART");
+  }
+
   m_ad_status |= s_fields_created;
 }
 

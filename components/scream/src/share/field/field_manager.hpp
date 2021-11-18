@@ -86,6 +86,11 @@ public:
   // Get the group_name->group_info map of all stored groups
   const group_info_map& get_groups_info () const { return m_field_groups; }
 
+  // Adds $field_name to group $group_name (creating the group, if necessary).
+  // NOTE: if $group_name is allocated as a bundled field, this throws.
+  // NOTE: must be called after registration ends
+  void add_to_group (const std::string& field_name, const std::string& group_name);
+
   // Query for a particular field or group of fields
   bool has_field (const std::string& name) const { return m_fields.find(name)!=m_fields.end(); }
   bool has_field (const identifier_type& id) const;
@@ -237,7 +242,32 @@ void FieldManager<RealType>::register_group (const GroupRequest& req)
 }
 
 template<typename RealType>
-bool FieldManager<RealType>::has_field (const identifier_type& id) const {
+void FieldManager<RealType>::
+add_to_group (const std::string& field_name, const std::string& group_name)
+{
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+      "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
+  auto& group = m_field_groups[group_name];
+  if (not group) {
+    group = std::make_shared<FieldGroupInfo>(group_name);
+  }
+  EKAT_REQUIRE_MSG (not group->m_bundled,
+      "Error! Cannot add fields to a group that is bundled.\n"
+      "   group name: " + field_name + "\n");
+
+  EKAT_REQUIRE_MSG (has_field(field_name),
+      "Error! Cannot add field to group, since the field is not present in this FieldManager.\n"
+      "   field name: " + field_name + "\n"
+      "   group name: " + group_name + "\n");
+
+  group->m_fields_names.push_back(field_name);
+  auto& ft = get_field(field_name).get_header().get_tracking();
+  ft.add_to_group(group);
+}
+
+template<typename RealType>
+bool FieldManager<RealType>::has_field (const identifier_type& id) const
+{
   return has_field(id.name()) && m_fields.at(id.name())->get_header()->get_identifier()==id;
 }
 
