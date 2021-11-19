@@ -50,7 +50,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 

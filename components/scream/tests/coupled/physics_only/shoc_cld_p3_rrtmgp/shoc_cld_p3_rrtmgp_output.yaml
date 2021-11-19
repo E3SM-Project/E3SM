@@ -1,0 +1,62 @@
+%YAML 1.1
+---
+Casename: shoc_cld_p3_rrtmgp_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  - T_mid
+  - T_prev_micro_step
+  - qv
+  - qc
+  - qr
+  - qi
+  - qm
+  - nc
+  - nr
+  - ni
+  - bm
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - micro_liq_ice_exchange
+  - micro_vap_liq_exchange
+  - micro_vap_ice_exchange
+  - tke
+  - cldfrac_liq
+  - cldfrac_tot
+  - eddy_diff_mom
+  - horiz_winds
+  - sgs_buoy_flux
+  - inv_qc_relvar
+  - pbl_height
+  - LW_flux_up
+  - LW_flux_dn
+  - SW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - omega
+  - p_int
+  - p_mid
+  - phis
+  - pseudo_density
+  - surf_latent_flux
+  - surf_mom_flux
+  - surf_sens_flux
+  - cldfrac_ice
+  - nc_activated
+  - ni_activated
+  - nc_nuceat_tend
+  - eff_radius_qc
+  - eff_radius_qi
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - surf_lw_flux_up
+ 
+Output Control:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...
