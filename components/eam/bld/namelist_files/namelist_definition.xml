@@ -5418,8 +5418,41 @@ Default: FALSE
 
 <entry id="do_cloudj_photolysis" type="logical" category="cam_chem"
        group="chem_inparm" valid_values="" >
-If TRUE then use the FAST-J method to calculate the photolysis reactions rates,
+If TRUE then use the Cloud-J method to calculate the photolysis reactions rates,
 otherwise use the lookup table method.
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_clouds" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use cloud opacities in the Cloud-J calculation of photolysis reactions rates,
+Default: TRUE
+</entry>
+
+<entry id="do_cloudj_aerosols" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use aerosol opacities in the Cloud-J calculation of photolysis reactions rates,
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_lookup_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by the lookup table.
+This is diagnostic only, since these rates won't be used in the simulation.  
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_aerosol_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by Cloud-J using aerosol opacities.
+This is diagnostic only, since these rates won't be used in the simulation.  
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_nocloud_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by Cloud-J for a cloud-free column.
+This is diagnostic only, since these rates won't be used in the simulation.  
 Default: FALSE
 </entry>
 

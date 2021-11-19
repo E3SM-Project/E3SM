@@ -81,7 +81,7 @@
 !-----------------------------------------------------------------------
 
 ! Radiation Field, Cloud Cover & Other fixed parameters
-      ! MASFAC: Conversion factor for pressure to column density
+      ! MASFAC: Conversion factor for pressure to column density: [PJC: P(mbar) * MASFAC = molecules/cm2]
       real*8, parameter:: MASFAC = 100.d0*6.022d+23/(28.97d0*9.8d0*10.d0)
       ! HeatFac_: convert watt/m2 to K/day
       real*8, parameter:: HeatFac_ = 86400.d0*9.80616d0/1.00464d5

@@ -61,7 +61,12 @@ module chemistry
   ! photolysis
 
   logical            :: xactive_prates = .false.
-  logical            :: do_cloudj_photolysis = .false.
+  logical            :: do_cloudj_photolysis    = .false.
+  logical            :: do_cloudj_clouds        = .true.
+  logical            :: do_cloudj_aerosols      = .false.
+  logical            :: do_cloudj_lookup_diag   = .false.
+  logical            :: do_cloudj_aerosol_diag  = .false.
+  logical            :: do_cloudj_nocloud_diag  = .false.
   character(len=shr_kind_cl) :: rsf_file = 'rsf_file'
   character(len=shr_kind_cl) :: exo_coldens_file = ''
   character(len=shr_kind_cl) :: tuv_xsect_file = 'tuv_xsect_file'
@@ -501,7 +506,9 @@ end function chem_is
          sulf_file, depvel_file, xs_coef_file, xs_short_file, &
          exo_coldens_file, tuv_xsect_file, o2_xsect_file, &
          xs_long_file, rsf_file, &
-         lght_no_prd_factor, xactive_prates, do_cloudj_photolysis, &
+         lght_no_prd_factor, xactive_prates, &
+         do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
+         do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
          depvel_lnd_file, clim_soilw_file, season_wes_file, drydep_srf_file, &
          srf_emis_type, srf_emis_cycle_yr, srf_emis_fixed_ymd, srf_emis_fixed_tod, srf_emis_specifier,  &
          fstrat_file, fstrat_list, fstrat_efold_list, &
@@ -642,8 +649,13 @@ end function chem_is
     call mpibcast (xs_coef_file,      len(xs_coef_file),               mpichar, 0, mpicom)
     call mpibcast (xs_short_file,     len(xs_short_file),              mpichar, 0, mpicom)
     call mpibcast (xs_long_file,      len(xs_long_file),               mpichar, 0, mpicom)
-    call mpibcast (xactive_prates,       1,                            mpilog,  0, mpicom)
-    call mpibcast (do_cloudj_photolysis, 1,                            mpilog,  0, mpicom)
+    call mpibcast (xactive_prates,         1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_photolysis,   1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_clouds,       1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_aerosols,     1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_lookup_diag,  1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_aerosol_diag, 1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_nocloud_diag, 1,                          mpilog,  0, mpicom)
     call mpibcast (electron_file,     len(electron_file),              mpichar, 0, mpicom)
     call mpibcast (euvac_file,        len(euvac_file),                 mpichar, 0, mpicom)
     call mpibcast (euvacdat_file,     len(euvacdat_file),              mpichar, 0, mpicom)
@@ -1640,7 +1652,9 @@ end function chem_is_active
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pdeldry, state%pint, &
                           cldw, tropLev, ncldwtr, state%u, state%v, &
-                          chem_dt, state%ps, xactive_prates, do_cloudj_photolysis, &
+                          chem_dt, state%ps, xactive_prates, &
+                          do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
+                          do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
                           fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
                           chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &

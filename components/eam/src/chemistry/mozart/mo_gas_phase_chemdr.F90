@@ -104,9 +104,12 @@ contains
     do n = 1,rxt_tag_cnt
        tag_names(n) = trim(rxt_tag_lst(n))
        if (n<=phtcnt) then
-          call addfld( tag_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+          call addfld(      tag_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+          call addfld( trim(tag_names(n))//"_nocloud", (/ 'lev' /), 'I', '/s', 'photolysis rate (cloud free)' )
+          call addfld( trim(tag_names(n))//"_aerosol", (/ 'lev' /), 'I', '/s', 'photolysis rate (including aerosols)' )
+          call addfld( trim(tag_names(n))//"_lookup", (/ 'lev' /), 'I', '/s', 'photolysis rate (lookup table: diagnostic)' )
        else
-          call addfld( tag_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
+          call addfld( tag_names(n),             (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        endif
        !call add_default( tag_names(n), 1, ' ' )
     enddo
@@ -114,7 +117,10 @@ contains
     do n = 1,phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        pht_names(n) = 'J_' // trim(string)
-       call addfld( pht_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+       call addfld(      pht_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+       call addfld( trim(pht_names(n))//"_nocloud", (/ 'lev' /), 'I', '/s', 'photolysis rate (cloud free)' )
+       call addfld( trim(pht_names(n))//"_aerosol", (/ 'lev' /), 'I', '/s', 'photolysis rate (including aerosols)' )
+       call addfld( trim(pht_names(n))//"_lookup", (/ 'lev' /), 'I', '/s', 'photolysis rate (lookup table: diagnostic)' )
        !call add_default( pht_names(n), 3, ' ' )
     enddo
 
@@ -194,7 +200,9 @@ contains
                               tfld, pmid, pdel, pdeldry, pint,  &
                               cldw, troplev, &
                               ncldwtr, ufld, vfld,  &
-                              delt, ps, xactive_prates, do_cloudj_photolysis, &
+                              delt, ps, xactive_prates, &
+                              do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
+                              do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
                               chem_name, drydepflx, cflx, qtend, pbuf, ixcldliq, ixcldice, tropFlag, tropFlagInt)
@@ -290,7 +298,12 @@ contains
     real(r8),       intent(in)    :: pint(pcols,pver+1)             ! interface pressures (Pa)
     real(r8),       intent(in)    :: q(pcols,pver,pcnst)            ! species concentrations (kg/kg)
     logical,        intent(in)    :: xactive_prates
-    logical,        intent(in)    :: do_cloudj_photolysis
+    logical,        intent(in)    :: do_cloudj_photolysis           ! Use Cloud-J for photolysis rates.
+    logical,        intent(in)    :: do_cloudj_clouds               ! Include Clouds in Cloud-J.
+    logical,        intent(in)    :: do_cloudj_aerosols             ! Include Aerosols in Cloud-J photolysis rates.
+    logical,        intent(in)    :: do_cloudj_lookup_diag          ! Output lookup table photolysis rates to compare to cloud-J.
+    logical,        intent(in)    :: do_cloudj_aerosol_diag         ! Output Cloud-J photolysis rates that include aerosols.
+    logical,        intent(in)    :: do_cloudj_nocloud_diag         ! Output Cloud-J photolysis rates with no clouds.
     real(r8),       intent(in)    :: fsds(pcols)                    ! longwave down at sfc
     real(r8),       intent(in)    :: icefrac(pcols)                 ! sea-ice areal fraction
     real(r8),       intent(in)    :: ocnfrac(pcols)                 ! ocean areal fraction
@@ -450,7 +463,7 @@ contains
     call get_rlon_all_p( lchnk, ncol, rlons )
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_prain,      prain,  start=(/1,1/), kount=(/ncol,pver/))
-    call pbuf_get_field(pbuf, ndx_cldfr,        cldfr, start=(/1,1,tim_ndx/), kount=(/ncol,pver,1/) )
+    call pbuf_get_field(pbuf, ndx_cldfr,      cldfr,  start=(/1,1,tim_ndx/), kount=(/ncol,pver,1/) )
     call pbuf_get_field(pbuf, ndx_cmfdqr,     cmfdqr, start=(/1,1/), kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_nevapr,     nevapr, start=(/1,1/), kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_cldtop,     cldtop )
@@ -695,12 +708,60 @@ contains
        !------------------------------------------------------------------
        !	... compute the photolysis rates using CLoud-J and Fast-JX
        !------------------------------------------------------------------
-       call cloudJ_interface( reaction_rates, vmr, invariants, tfld, &
+       
+!!! Photolosys rates for clear sky (Diagnostic sensitivity)
+       if ( do_cloudj_nocloud_diag ) then
+          
+          call cloudJ_interface( reaction_rates, vmr, mmr, invariants, tfld, &
+            cldfr, q(:ncol,:,ixcldliq), q(:ncol,:,ixcldice), &
+               pmid, pint, zmidr, zint, rlats, rlons, col_dens, zen_angle, asdir, &
+               invariants(1,1,indexm), ps, ts, &
+               esfact, relhum, dust_vmr, &
+               ncol, lchnk, .false., do_cloudj_aerosols ) 
+          
+          do i = 1,phtcnt
+             call outfld( trim(pht_names(i))//"_nocloud", reaction_rates(:ncol,:,i), ncol, lchnk )
+             call outfld( trim(tag_names(i))//"_nocloud", reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
+          enddo
+       endif
+       
+!!! Photolosys rates with aerosols and clouds (Diagnostic sensitivity)
+       if ( do_cloudj_aerosol_diag ) then
+       
+          call cloudJ_interface( reaction_rates, vmr, mmr, invariants, tfld, &
+               cldfr, q(:ncol,:,ixcldliq), q(:ncol,:,ixcldice), &
+               pmid, pint, zmidr, zint, rlats, rlons, col_dens, zen_angle, asdir, &
+               invariants(1,1,indexm), ps, ts, &
+               esfact, relhum, dust_vmr, &
+               ncol, lchnk, do_cloudj_clouds, .true. ) 
+          
+          do i = 1,phtcnt
+             call outfld( trim(pht_names(i))//"_aerosol", reaction_rates(:ncol,:,i), ncol, lchnk )
+             call outfld( trim(tag_names(i))//"_aerosol", reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
+          enddo
+       endif
+
+!!! Photolosys rates from lookup table (Diagnostic sensitivity)
+       if ( do_cloudj_lookup_diag ) then
+
+          call table_photo( reaction_rates, pmid, pdel, tfld, zmid, zint, &
+               col_dens, zen_angle, asdir, cwat, cldfr, &
+               esfact, vmr, invariants, ncol, lchnk, pbuf )
+          
+          do i = 1,phtcnt
+             call outfld( trim(pht_names(i))//"_lookup", reaction_rates(:ncol,:,i), ncol, lchnk )
+             call outfld( trim(tag_names(i))//"_lookup", reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
+          enddo
+       endif
+
+!!! Photolosys rates for E3SM
+       
+       call cloudJ_interface( reaction_rates, vmr, mmr, invariants, tfld, &
             cldfr, q(:ncol,:,ixcldliq), q(:ncol,:,ixcldice), &
             pmid, pint, zmidr, zint, rlats, rlons, col_dens, zen_angle, asdir, &
             invariants(1,1,indexm), ps, ts, &
             esfact, relhum, dust_vmr, &
-            ncol, lchnk )    !pjc
+            ncol, lchnk, do_cloudj_clouds, do_cloudj_aerosols ) 
 
     else if ( xactive_prates ) then
        if ( dst_ndx > 0 ) then

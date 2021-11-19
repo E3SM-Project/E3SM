@@ -19,15 +19,15 @@ module UCI_cloudJ_interface
   ! it to E3SM.
 
   
-  use ppgrid,       only : pcols, pver, pverp, begchunk, endchunk
-  use chem_mods,    only : nabscol, phtcnt, gas_pcnst, nfs
-  use dust_model,   only : ndst => dust_nbin
-  use mo_constants, only : pi,r2d,boltz,d2r
-  use shr_kind_mod, only : r8 => shr_kind_r8
-  use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx, get_inv_ndx
+  use ppgrid,        only : pcols, pver, pverp, begchunk, endchunk
+  use chem_mods,     only : nabscol, phtcnt, gas_pcnst, nfs
+  use dust_model,    only : ndst => dust_nbin
+  use mo_constants,  only : pi,r2d,boltz,d2r
+  use shr_kind_mod,  only : r8 => shr_kind_r8
+  use mo_chem_utls,  only : get_spc_ndx, get_rxt_ndx, get_inv_ndx
 !  use physconst,     only : mwdry, mwch4, mwn2o, mwf11, mwf12, mwh2o, mwo3  ! pjc needed?
   use chem_surfvals, only : chem_surfvals_get
-
+  use mo_tracname,   only : solsym
   
   use cam_history,      only : fieldname_len
   use cam_logfile,      only : iulog
@@ -62,8 +62,9 @@ module UCI_cloudJ_interface
   ! flag for the source used  (1=advection_array, 2=invariants_array, 3=surface_concentration)
   integer ::  CH4_source_flag      ! CH4 
 
-
-
+  integer ::  E3SM_FastJ_aerosol_index(2,gas_pcnst) ! 1st element = E3SM index; 2nd element = Fast-J aerosol index
+  integer ::  num_E3SM_FastJ_aerosols               ! # of aerosols in E3SM_FastJ_aerosol_index
+  
 !---------------------------------------------------------------------------------
 ! Public interfaces
 !---------------------------------------------------------------------------------
@@ -80,6 +81,10 @@ subroutine cloudJ_init()  !pmid, pint, zmid, zint, rlats, rlons, ncol)
 
   USE FJX_INIT_MOD
 
+  integer :: tracer_num,kk     ! local variables for mapping from E3SM tracers to Fast-J aerosols
+  character(len=16) :: aerosol_string
+!  character(len=*)  :: error_string
+  
 !  real(r8), intent(in)    :: pmid(pcols,pver)             ! midpoint pressure (Pa)
 !  real(r8), intent(in)    :: pint(pcols,pver+1)           ! interface pressures (Pa)
 !  real(r8), intent(in)    :: zmid(ncol,pver)              ! midpoint height (m)
@@ -154,6 +159,44 @@ subroutine cloudJ_init()  !pmid, pint, zmid, zint, rlats, rlons, ncol)
 
     !     open (77,file='tables/atmos_PTClds.dat',status='old',SHARED) !UNIX
 
+    !! Set up mapping from E3SM tracer number to Fast-J aerosol index
+    !! The Fast-J aerosol properties are not based on the E3SM
+    !! aerosols, so this mapping is just a place holder.
+    !! NOTE: this is based on code from chm_diags_inti_ac
+
+    !! This code assumes we are using MAM.
+    E3SM_FastJ_aerosol_index(:,:) = 0
+    num_E3SM_FastJ_aerosols = 0
+    do tracer_num = 1,gas_pcnst
+       kk=0
+       if ( kk==0 ) kk = index(trim(solsym(tracer_num)), '_a')    ! indicates this is an aerosol
+!?!       if ( kk==0 ) kk = index(trim(solsym(tracer_num)), '_c') ! indicates this is an aerosol in cloud phase (I think)
+       if ( kk>0 ) then ! must be aerosol species
+          num_E3SM_FastJ_aerosols = num_E3SM_FastJ_aerosols + 1
+          E3SM_FastJ_aerosol_index(1,num_E3SM_FastJ_aerosols) = tracer_num
+          aerosol_string = solsym(tracer_num)
+          aerosol_string = aerosol_string(1:kk-1)         ! isolate the name of the aerosol
+!          write(iulog,'(A)') 'PJC Fast-J: '//trim(aerosol_string)
+          select case (trim(aerosol_string))
+          case ('so4','pom','soa','ncl','mom')
+             E3SM_FastJ_aerosol_index(2,num_E3SM_FastJ_aerosols) =  5    ! 05 = UT-sulfM  in FJX_scat-aer.dat
+          case ('dst')
+             E3SM_FastJ_aerosol_index(2,num_E3SM_FastJ_aerosols) = 14    ! 14 = HDust.80  in FJX_scat-aer.dat
+          case ('bc')
+             E3SM_FastJ_aerosol_index(2,num_E3SM_FastJ_aerosols) =  6    ! 06 = UM-BC1    in FJX_scat-aer.dat
+          case ('num')
+             ! number density is not needed by Fast-J, so ignore for now.
+          case default
+!             error_string = 'FAST-J: Unknown E3SM aerosol type = '//trim(aerosol_string)
+             call endrun('FAST-J: Unknown E3SM aerosol type = '//trim(aerosol_string))
+          end select
+       endif
+    enddo
+    IF (num_E3SM_FastJ_aerosols .GT. ANU) THEN
+       call endrun('FAST-J: ERROR, num_E3SM_FastJ_aerosols > ANU')
+    ENDIF
+    
+    
 end subroutine cloudJ_init
 
   
@@ -161,11 +204,11 @@ end subroutine cloudJ_init
 ! cloudJ_interface routine
 !---------------------------------------------------------------------------------
 
-subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldice, &
+subroutine cloudJ_interface(photos, vmr, mmr, invariants, temper, cldfr, cldwat, cldice, &
                  pmid, pint, zmid, zint, rlats, rlons, col_dens, zen_angle, srf_alb, &
                  tdens, ps, ts, esfact, relhum, dust_vmr, &
  !                           dt_diag, fracday, &
-                 ncol, lchnk)
+                 ncol, lchnk, do_clouds, do_aerosols)
      
   USE FJX_SUB_MOD
   USE CLD_SUB_MOD, ONLY : CLOUD_JX
@@ -173,8 +216,9 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
   
      !----------- CloudJ_interface arguments -------------------
 
+  real(r8), intent(out)   :: photos(ncol,pver,phtcnt)     ! photodissociation rates (1/s)
   integer,  intent(in)    :: ncol, lchnk
-  real(r8), intent(in)    :: esfact                       ! earth sun distance factor
+  real(r8), intent(in)    :: esfact                       ! earth sun distance factor (currently not used by Fast-J)
   real(r8), intent(in)    :: ps(pcols)                    ! surface pressure (Pa)
   real(r8), intent(in)    :: ts(ncol)                     ! surface temperature (K)
   real(r8), intent(in)    :: col_dens(ncol,pver,nabscol) ! column densities (molecules/cm^2)
@@ -182,6 +226,7 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
   real(r8), intent(in)    :: srf_alb(pcols)               ! surface albedo
   real(r8), intent(in)    :: tdens(ncol,pver)             ! total atms density (molecules/cm^3)
   real(r8), intent(in)    :: vmr(ncol,pver,gas_pcnst)     ! species concentration (mol/mol)
+  real(r8), intent(in)    :: mmr(pcols,pver,gas_pcnst)    ! species concentration (kg/kg)
   real(r8), intent(in)    :: invariants(ncol,pver,nfs)    ! Fixed species, including N2 and species from files (cgs density)
   real(r8), intent(in)    :: pmid(pcols,pver)             ! midpoint pressure (Pa)
   real(r8), intent(in)    :: pint(pcols,pver+1)           ! interface pressures (Pa)
@@ -195,7 +240,8 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
   real(r8), intent(in)    :: cldwat(ncol,pver)            ! cloud water (kg/kg)
   real(r8), intent(in)    :: cldice(ncol,pver)            ! cloud ice (kg/kg)
   real(r8), intent(in)    :: dust_vmr(ncol,pver,ndst)     ! dust concentration (mol/mol)
-  real(r8), intent(inout) :: photos(ncol,pver,phtcnt)     ! photodissociation rates (1/s)
+  logical,  intent(in)    :: do_clouds                    ! Should Cloud-J use cloud optical depths?
+  logical,  intent(in)    :: do_aerosols                  ! Should Cloud-J use aerosol optical depths?
 !     real(r8), intent(out)   :: dt_diag(pcols,8)             ! od diagnostics
 !     real(r8), intent(out)   :: fracday(pcols)               ! fraction of day
      
@@ -236,7 +282,7 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
   integer :: column_number
   integer :: level_number
   integer, parameter :: cloud_freezing_temperature = 273 !PJC: temperature below which cloud is assumed to be ice
-
+  integer :: aerosol_num    ! local variable for mapping from E3SM to FAST-J aerosols
 
   photos(:,:,:) = 0.   ! This makes sure that values on the dark side (which Fast-JX doesn't calculate) are zero. 
 
@@ -300,10 +346,10 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
      TTT(1:pver) = temper(column_number,pver:1:-1)    ! Layer mid-point temperature (K)
      RRR(1:pver) = relhum(column_number,pver:1:-1)    ! Mid-point Relative Humidity (fraction)
 
-     AER1(:) = 0.     !!! PJC: temporarily set to zero
-     NAA1(:) = 0.
-     AER2(:) = 0.
-     NAA2(:) = 0.
+!     AER1(:) = 0.     !!! PJC: temporarily set to zero   [Now set to MAM4 aerosols below]
+!     NAA1(:) = 0.
+!     AER2(:) = 0.
+!     NAA2(:) = 0.
 
 !     read (77,*)
 !     do L = LWEPAR,1,-1   ! Clouds in levels   
@@ -313,25 +359,17 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
 !     enddo
 !     close(77)
 
-
-     CLDFRW(:)  = cldfr(column_number,pver:1:-1)          ! Cloud fraction (fraction) [[?]]
-
-!!! CWAT is sum of liquid and ice, so need to separate for Fast-J 
-!     CLDLWCW(:) = 0.
-!     CLDIWCW(:) = 0.
-!     DO level_number = 1,pver
-!        IF (TTT(level_number) .GT. cloud_freezing_temperature ) THEN    ! PJC: too simple, but good for now
-!           CLDLWCW(level_number) = cwat(column_number,pver-level_number+1)    ! Cloud liquid water (g/g)
-!        else
-!           CLDIWCW(level_number) = cwat(column_number,pver-level_number+1)    ! Cloud ice water (g/g)
-!        endif
-!     END DO    
-
-     CLDLWCW(1:pver) = cldwat(column_number,pver:1:-1)   ! Cloud liquid water (g/g)
-     CLDIWCW(1:pver) = cldice(column_number,pver:1:-1)   ! Cloud ice water (g/g)
-
-     
-     PPP(1:pver+1) = pint(column_number,pver+1:1:-1) / 100D0      ! Interface pressures
+     if ( do_clouds ) then
+        CLDFRW(:)       = cldfr (column_number,pver:1:-1)   ! Cloud fraction (fraction) [[?]]
+        CLDLWCW(1:pver) = cldwat(column_number,pver:1:-1)   ! Cloud liquid water (g/g)
+        CLDIWCW(1:pver) = cldice(column_number,pver:1:-1)   ! Cloud ice water (g/g)
+     else
+        CLDFRW (:) = 0.
+        CLDLWCW(:) = 0.
+        CLDIWCW(:) = 0.
+     endif
+        
+     PPP(1:pver+1) = pint(column_number,pver+1:1:-1) / 100D0      ! Interface pressures (mbar)
      PPP(pver+2)   = 0.
 !     do L = 1,L1_
 !        PPP(L) = ETAA(L) + ETAB(L)*PSURF    ! Pressure on level interfaces (mbar)
@@ -393,12 +431,16 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cldfr, cldwat, cldi
      
      AERSP(:,:)  = 0.d0
      NDXAER(:,:) = 0
-     do L = 1,L_
-        NDXAER(L,1) = NAA1(L)
-        AERSP(L,1)  = AER1(L)
-        NDXAER(L,2) = NAA2(L)
-        AERSP(L,2)  = AER2(L)
-     enddo
+
+     IF ( do_aerosols ) THEN
+        do aerosol_num = 1, num_E3SM_FastJ_aerosols 
+           do L = 1,L_
+              NDXAER(L,aerosol_num)= E3SM_FastJ_aerosol_index(2,aerosol_num)
+              AERSP(L,aerosol_num) = mmr(column_number,pver-L+1,E3SM_FastJ_aerosol_index(1,aerosol_num)) * (PPP(L)-PPP(L+1)) * 100d0 * 1000d0 / 9.8d0  !P(mbar) 100(Pa/mbar) *1000(g/kg) / g(m/s2) => g_air/m2
+           enddo
+        enddo
+     ENDIF
+  
      LTOP  = LWEPAR
      if (maxval(CLDFRW) .le. 0.005d0) then
         IWP(:) = 0.d0

@@ -1,5 +1,6 @@
 Comments
-     "last touch 20210825 - PJC"
+     "last touched on 2021-11-17 by Philip Cameron-Smith (merging with updated Linoz tweaks)"
+     "Modified photolysis reactions to work with both lookup table and Fast-J, Philip Cameron-Smith 2011-8-25"
      "Modified by Juno Hsu and Qi Tang - 4/9/2020"
      "chemUCI + MAM4 for E3SM"
      "last touch 20200331 - MJP"
@@ -39,11 +40,9 @@ SPECIES
 * MVKMACR = sum of MVK -> CH2CHCOCH3 + MACR -> CH2CCH3CHO
   MVKO2 -> C4H7O4
   E90 -> O3
-  O3LNZ -> O3
-  N2OLNZ-> N2
-  NOYLNZ-> N
-  CH4LNZ-> CH4
-
+  N2OLNZ -> N2
+  NOYLNZ -> N
+  H2OLNZ -> H2O
 * MAM4 species
   DMS -> C2H6S
   SO2 -> O2S
@@ -96,7 +95,7 @@ Solution Classes
 
  Explicit
    CO, C2H6, C3H8, CH3COCH3
-   E90, O3LNZ, N2OLNZ, NOYLNZ, CH4LNZ
+   E90, N2OLNZ,NOYLNZ, H2OLNZ
    DMS, SO2, H2SO4, SOAG
    so4_a1,  so4_a2,  so4_a3
    pom_a1,           pom_a3,  pom_a4
@@ -236,11 +235,14 @@ CHEMISTRY
 [lmvkmacr_oh]  MVKMACR + OH -> MVKO2                          ; 2.600E-12, 610
 [lmvko2_no]    MVKO2 + NO -> 0.5*CH3CO3 + CH2O + NO2          ; 2.700E-12, 360
 [lmvko2_ho2]   MVKO2 + HO2 -> C2H5OOH + CO                    ; 1.820E-13, 1300
-[ucih1]  N2O5  -> 2*HNO3                          ; 0.05E+00
-[ucih2]  NO3   -> HNO3                            ; 0.03E+00
-[ucih3]  HO2   ->                                 ; 0.10E+00
 
-[usr_e90]  E90 ->                                ; 1.286E-7, 0.
+* UCI heterogeneous reactions has problems with E3SM MAM4 aerosols
+* comment out for now. To be fixed with the aerosol team.
+*[ucih1]  N2O5  -> 2*HNO3                          ; 0.05E+00
+*[ucih2]  NO3   -> HNO3                            ; 0.03E+00
+*[ucih3]  HO2   ->                                 ; 0.10E+00
+
+[usr_e90]  E90 ->                                 ; 1.286E-7, 0.
 
 * MAM4 chemistry below
 [ldms_oh]     DMS + OH -> SO2                    ; 9.600E-12, -234
