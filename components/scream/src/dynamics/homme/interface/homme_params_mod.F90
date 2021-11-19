@@ -132,9 +132,10 @@ contains
       hypervis_scaling,         &
       hypervis_subcycle,        &
       hypervis_subcycle_tom,    &
-      moisture,                 & ! Unused in SCREAM
-      statefreq,                & ! Unused in SCREAM
-      mesh_file,                & ! Unused in SCREAM
+      moisture,                 &
+      mesh_file,                &
+      statefreq,                &
+      disable_diagnostics,      &
       se_ftype
 
     namelist /vert_nl/    &

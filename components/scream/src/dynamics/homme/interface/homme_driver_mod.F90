@@ -140,6 +140,7 @@ contains
                                  prim_init_state_views
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
+    use control_mod,       only: disable_diagnostics
     use dimensions_mod,    only: nelemd
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
                                  elem, hybrid, hvcoord, deriv, tl
@@ -172,7 +173,9 @@ contains
 
     ! In order to print up to date stuff in F90
     call prim_copy_cxx_to_f90 (.true.)
-    call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
+    if (.not. disable_diagnostics) then
+      call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
+    endif
 
     is_model_inited = .true.
 

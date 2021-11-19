@@ -1,4 +1,5 @@
 &ctl_nl
+disable_diagnostics    = .false.
 partmethod             = 4
 topology               = "cube"
 mesh_file              = '/dev/null'
