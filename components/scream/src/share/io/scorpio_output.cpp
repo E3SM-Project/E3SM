@@ -385,6 +385,12 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
   // NOTE: we allow gid_0!=0, so that we don't have to worry about 1-based numbering
   //       vs 0-based numbering. The key feature is that the global gids are a
   //       contiguous array. The starting point doesn't matter.
+  // NOTE: a "dof" in the grid object is not the same as a "dof" in scorpio.
+  //       For a SEGrid 3d vector field with (MPI local) layout (nelem,2,np,np,nlev),
+  //       scorpio sees nelem*2*np*np*nlev dofs, while the SE grid sees nelem*np*np dofs.
+  //       All we need to do in this routine is to compute the offset of all the entries
+  //       of the MPI-local array w.r.t. the global array. So long as the offsets are in
+  //       the same order as the corresponding entry in the data to be read/written, we're good.
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
 

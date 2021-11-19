@@ -81,12 +81,14 @@ public:
               const util::TimeStamp& t0,
               const bool is_model_restart_output,
               const bool is_restarted_run);
-  void run(util::TimeStamp& current_ts);
+  void run (const util::TimeStamp& current_ts);
   void finalize();
 
+  const util::TimeStamp& simulation_start_time () const { return m_t0; }
 protected:
 
   std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;
+  std::string find_filename_in_rpointer (const std::string& casename, const std::string& suffix) const;
 
   // Craft the restart parameter list
   void set_params (const ekat::ParameterList& params,
@@ -124,6 +126,7 @@ protected:
 
   // The simulation start date/time. We use this to produce a 'time'
   // var in the output file, corresponding to seconds_since_start_of_simulation.
+  // Note: in case of restarted runs, this is the start time of the *original* run.
   util::TimeStamp   m_t0;
 };
 
