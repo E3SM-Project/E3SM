@@ -526,6 +526,7 @@ registration_ends ()
   // extensive changes in Homme. Instead, we hack our way around this limitatin
   // (for now), and rearrange groups/fields so that we can expect qv to be the
   // first tracer.
+  bool qv_must_come_first = false;
   if (has_field("qv")) {
     auto it = ekat::find(groups_to_bundle,"tracers");
     if (it!=groups_to_bundle.end()) {
@@ -539,6 +540,7 @@ registration_ends ()
       groups_to_bundle.push_front("__qv__");
       m_field_groups.emplace("__qv__",std::make_shared<group_info_type>("__qv__"));
       m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
+      qv_must_come_first = true;
     }
   }
 
@@ -668,22 +670,24 @@ registration_ends ()
 
       // WARNING: this lines should be removed if we move away from Homme's requirement that
       //          qv be the first tracer
-      auto qv_it = ekat::find(cluster_ordered_fields,"qv");
-      if (qv_it!=cluster_ordered_fields.end()) {
-        // Check that qv comes first or last (if last, reverse the list). If not, error out.
-        // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
-        EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || std::next(qv_it,1)==cluster_ordered_fields.end(),
-            "Error! The water vapor field has to be the first tracer, but it is not.\n");
+      if (qv_must_come_first) {
+        auto qv_it = ekat::find(cluster_ordered_fields,"qv");
+        if (qv_it!=cluster_ordered_fields.end()) {
+          // Check that qv comes first or last (if last, reverse the list). If not, error out.
+          // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
+          EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || std::next(qv_it,1)==cluster_ordered_fields.end(),
+              "Error! The water vapor field has to be the first tracer, but it is not.\n");
 
-        if (qv_it!=cluster_ordered_fields.begin()) {
-          // Note: reversing the order of the fields preserves subgroups contiguity
-          cluster_ordered_fields.reverse();
-        }
+          if (qv_it!=cluster_ordered_fields.begin()) {
+            // Note: reversing the order of the fields preserves subgroups contiguity
+            cluster_ordered_fields.reverse();
+          }
 
-        // Remove __qv__ from the cluster (if present)
-        auto qv_gr_it = ekat::find(cluster,"__qv__");
-        if (qv_gr_it!=cluster.end()) {
-          cluster.erase(qv_gr_it);
+          // Remove __qv__ from the cluster (if present)
+          auto qv_gr_it = ekat::find(cluster,"__qv__");
+          if (qv_gr_it!=cluster.end()) {
+            cluster.erase(qv_gr_it);
+          }
         }
       }
 
