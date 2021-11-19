@@ -37,11 +37,11 @@ contains
     type(pio_atm_file_t), pointer :: atm_file
     character(len=256)      :: filename
     logical (kind=c_bool)   :: res
-    logical :: found, is_open
+    logical :: found
 
     call convert_c_string(filename_in,filename)
-    call lookup_pio_atm_file(filename,atm_file,found,is_open)
-    if (found .and. is_open) then
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
       res = atm_file%purpose .eq. purpose
     else
       res = .false.
