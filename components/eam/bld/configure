@@ -1764,7 +1764,7 @@ if (defined $opts{'use_MMF'}) {
     }
     # For now, the P3/SHOC build still tries to build Kokkos, 
     # so just disable COMPOSE and use Eulerian tracer transport
-    $disable_compose = 'TRUE'
+    # $disable_compose = 'TRUE'
     # if ( $crm eq 'samxx' and $MMF_microphysics_scheme eq 'p3' ) {
     #   $disable_compose = 'TRUE'
     # }
