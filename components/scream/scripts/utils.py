@@ -368,24 +368,3 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
 def ensure_psutil(): _ensure_pylib_impl("psutil")
-
-###############################################################################
-def multilevel_dict_change(ml_dict, keys, value):
-###############################################################################
-    """
-    Change an existing value in a multi-level dict (expects all keys to already
-    be in dict). Returns True if dict was modified
-    """
-    num_keys = len(keys)
-    modified = False
-    for idx, key in enumerate(keys):
-        expect(key in ml_dict, "No key {} in {}-th level of ml_dict {}".format(key, idx, ml_dict))
-        if idx == num_keys-1:
-            # Last key
-            if ml_dict[key] != value:
-                ml_dict[key] = value
-                modified = True
-        else:
-            ml_dict = ml_dict[key]
-
-    return modified

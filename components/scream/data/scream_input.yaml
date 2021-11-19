@@ -49,10 +49,10 @@ Atmosphere Driver:
 
 SCREAM:
 
-  Start Date: 01-01-2000 # For CIME cases, do NOT set this! It will be set by CIME's RUN_STARTDATE
+  Start Date: "${RUN_STARTDATE}"
 
   Input Files:
-    input_root                  : default # this will default to DIN_LOC_ROOT for the current machine
+    input_root                  : "${DIN_LOC_ROOT}"
 
 
 # Note: HOMME settings will be translated into data/namelist.nl

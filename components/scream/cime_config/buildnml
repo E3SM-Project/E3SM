@@ -2,9 +2,29 @@
 
 """
 Namelist creator for E3SM's SCREAM component
+
+This script is mostly for processing the scream_input.yaml file.
+
+That file supports some special syntax in addition to basic YAML:
+'${VAR}' will be used to refer to env variables in the CIME case
+
+'<switch_val : key1 => val1 : key2 => val2 : elseval>' will be used to express conditional
+statements. If switch_val matches key1, then the expression evaluates to val1; if switch_val
+matches key2, then the expression evaluates to val2; if it matches neither, then
+the expression evaluates to elseval. The elseval component of this expression is optional.
+
+Example, if you wanted tstep to depend on atm grid resolution:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : 30>"
+
+This would give all ne4 cases a timestep of 300, otherwise it would be 30.
+
+You could specify multiple grid->timestep relationships this way:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : ne30np4 => 100 : 30>"
 """
 
-import os, sys
+import os, sys, re
 from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
@@ -20,11 +40,105 @@ from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
 from CIME.buildnml import create_namelist_infile, parse_input
 
 # SCREAM imports
-from utils import ensure_yaml, multilevel_dict_change
+from utils import ensure_yaml
 ensure_yaml()
 import yaml
 
 logger = logging.getLogger(__name__)
+
+CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
+SWITCH_RE   = re.compile(r'<\s*(\w+)\s*:')
+
+###############################################################################
+def do_cime_vars(entry, case):
+###############################################################################
+    m = CIME_VAR_RE.search(entry)
+    while m:
+        cime_var = m.groups()[0]
+        value = case.get_value(cime_var)
+        expect(value is not None, "Cannot resolve yaml entry {}, CIME has no value for {}".format(entry, cime_var))
+        entry = entry.replace("${{{}}}".format(cime_var), value)
+        m = CIME_VAR_RE.search(entry)
+
+    return entry
+
+###############################################################################
+def do_switches(entry, case):
+###############################################################################
+    m = SWITCH_RE.search(entry)
+    while m:
+        begin_switch_idx, end_cond_idx = m.span()
+        value = m.groups()[0]
+        opens = 1
+        idx = end_cond_idx
+        segments = [""]
+        for idx in range(end_cond_idx, len(entry)):
+            if entry[idx] == "<":
+                opens += 1
+            elif entry[idx] == ">" and entry[idx-1] != "=":
+                opens -= 1
+                if opens == 0:
+                    break
+
+            if entry[idx] == ":" and opens == 1:
+                segments.append("")
+            else:
+                segments[-1] += entry[idx]
+
+        expect(idx < len(entry), "Switch statement parse error in string '{}'".format(entry))
+        end_switch_idx = idx + 1
+        best_val = None
+        for segment in segments:
+            components = segment.split("=>", 1)
+            if (len(components) == 1 or '<' in components[0]):
+                if best_val is None:
+                    best_val = do_switches(segment, case).strip()
+            else:
+                compare = re.compile(components[0].strip())
+                if compare.match(value):
+                    best_val = do_switches(components[-1], case).strip()
+                    break
+
+        expect(best_val is not None, "Couldn't resolve switch statement for '{}', no matches".format(entry))
+
+        entry = entry[0:begin_switch_idx] + best_val + entry[end_switch_idx:]
+        m = SWITCH_RE.search(entry)
+
+    return entry
+
+###############################################################################
+def refine_type(entry):
+###############################################################################
+    try:
+        v = int(entry)
+        return v
+    except ValueError:
+        pass
+
+    try:
+        v = float(entry)
+        return v
+    except ValueError:
+        return entry
+
+###############################################################################
+def process_leaves(yaml_entry, case):
+###############################################################################
+    modified = False
+    for k, v in yaml_entry.items():
+        if isinstance(v, str):
+            orig_str = v
+            v = do_cime_vars(v, case)
+            v = do_switches(v, case)
+            if v != orig_str:
+                v = refine_type(v)
+                modified = True
+                yaml_entry[k] = v
+
+        elif isinstance(v, dict):
+            modified |= process_leaves(v, case)
+
+    return modified
 
 ###############################################################################
 def load_comments(filepath):
@@ -137,13 +251,6 @@ def buildnml(case, caseroot, compname):
     src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
     yaml_tgt = os.path.join(target, "scream_input.yaml")
 
-    # Specify yaml input changes that are driven by case env
-    # maps key-tuple to case env name to lookup
-    yaml_changes = {
-        ("SCREAM", "Start Date"): "RUN_STARTDATE",
-        ("SCREAM", "Input Files", "input_root"): "DIN_LOC_ROOT"
-    }
-
     # Copy scream/data to rundir/data
     with SharedArea():
         if not os.path.isdir(target):
@@ -159,12 +266,7 @@ def buildnml(case, caseroot, compname):
     comments = load_comments(yaml_tgt)
     scream_input = ordered_load(yaml_tgt)
 
-    # Change yaml values based on case env
-    modified = False
-    for keys, envname in yaml_changes.items():
-        envval = case.get_value(envname)
-        expect("\n" not in envval, "Multiline env vals breaks us")
-        modified |= multilevel_dict_change(scream_input, keys, envval)
+    modified = process_leaves(scream_input, case)
 
     # If we have to re-dump the YAML file due to CIME case updates,
     # we need to also restore the original comments.
