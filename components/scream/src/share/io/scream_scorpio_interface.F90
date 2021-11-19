@@ -199,8 +199,6 @@ module scream_scorpio_interface
         !> @brief Number of history records on this file
         integer               :: numRecs
 
-        !> @brief Coordinate Dimensions Array
-        type(hist_coord_t), allocatable :: dimensions(:)
         !> @brief Whether or not the dim/var definition phase is still open
         logical                         :: is_enddef = .false.
 
@@ -1054,25 +1052,18 @@ contains
   end subroutine get_var
 !=====================================================================!
   ! Diagnostic routine to determine how many pio files are currently open:
-  subroutine count_pio_atm_file()
+  function count_pio_atm_file() result(total_count)
     integer :: total_count
 
-    type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
+    type(pio_file_list_t), pointer :: curr_file_ptr ! Used to cycle through recursive list of pio atm files
 
     total_count = 0
-    curr => pio_file_list_top
-    do while (associated(curr))
-      if (associated(curr%pio_file)) then
-        if (curr%pio_file%isopen) then
-          total_count = total_count+1
-          write(*,*) "File: ", trim(curr%pio_file%filename), " is open"
-        end if
-      end if
-      prev => curr
-      curr => prev%next
+    curr_file_ptr => pio_file_list_front
+    do while (associated(curr_file_ptr))
+      total_count = total_count+1
+      curr_file_ptr => curr_file_ptr%next
     end do
-    write(*,*) "Total number of files open: ", total_count
-  end subroutine count_pio_atm_file
+  end function count_pio_atm_file
 !=====================================================================!
   ! Retrieves an integer global attribute from the nc file
   function get_int_attribute (file_name, attr_name) result(val)
