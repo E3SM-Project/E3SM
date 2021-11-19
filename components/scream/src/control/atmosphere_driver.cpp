@@ -1,12 +1,17 @@
 #include "control/atmosphere_driver.hpp"
 
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+
+#include <fstream>
 
 namespace scream {
 
@@ -189,9 +194,10 @@ void AtmosphereDriver::create_fields()
           // Get field on src_grid
           auto f = rel_fm->get_field_ptr(fname);
 
-          // Build a FieldRequest for the same field on greq's grid
+          // Build a FieldRequest for the same field on greq's grid,
+          // and add it to the group of this request
           auto fid = r->create_tgt_fid(f->get_header().get_identifier());
-          FieldRequest freq(fid,req.src_name,req.pack_size);
+          FieldRequest freq(fid,req.name,req.pack_size);
           fm->register_field(freq);
         }
 
@@ -285,10 +291,30 @@ void AtmosphereDriver::create_fields()
   m_ad_status |= s_fields_created;
 }
 
-void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
+void AtmosphereDriver::initialize_output_managers () {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
+  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+
   auto& io_params = m_atm_params.sublist("Scorpio");
+
+
+  // Simulation start time. Will be overwritten if this is a restarted run.
+  auto simulation_start_time = m_current_ts;
+
+  // IMPORTANT: create model restart OutputManager first! This OM will be able to
+  // retrieve the original simulation start date, which we later pass to the
+  // OM of all the requested outputs.
+
+  // Check for model restart output
+  if (io_params.isSublist("Model Restart")) {
+    auto restart_pl = io_params.sublist("Model Restart");
+    // Signal that this is not a normal output, but the model restart one
+    m_output_managers.emplace_back();
+    auto& om = m_output_managers.back();
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
+    simulation_start_time = om.simulation_start_time();
+  }
 
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
@@ -298,16 +324,7 @@ void AtmosphereDriver::initialize_output_managers (const bool restarted_run) {
     ekat::parse_yaml_file(fname,params);
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run);
-  }
-
-  // Check for model restart output
-  if (io_params.isSublist("Model Restart")) {
-    auto restart_pl = io_params.sublist("Model Restart");
-    // Signal that this is not a normal output, but the model restart one
-    m_output_managers.emplace_back();
-    auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,simulation_start_time,false,restarted_run);
   }
 
   m_ad_status |= s_output_inited;
@@ -344,6 +361,149 @@ initialize_fields (const util::TimeStamp& t0)
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
 
+  m_current_ts = t0;
+
+  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  if (restarted_run) {
+    restart_model ();
+  } else {
+    set_initial_conditions ();
+  }
+
+  // Check if lat/lon needs to be loaded
+  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  for (const auto& it : m_field_mgrs) {
+    const auto& grid_name = it.first;
+    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+
+    // Check whether we need to load latitude/longitude of reference grid dofs.
+    // This option allows the user to set lat or lon in their own
+    // test or run setup code rather than by file.
+    bool load_latitude  = false;
+    bool load_longitude = false;
+    if (ic_pl_grid.isParameter("Load Latitude")) {
+      load_latitude = ic_pl_grid.get<bool>("Load Latitude");
+    }
+    if (ic_pl_grid.isParameter("Load Longitude")) {
+      load_longitude = ic_pl_grid.get<bool>("Load Longitude");
+    }
+
+    if (load_longitude || load_latitude) {
+      MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+      if (!scorpio::is_eam_pio_subsystem_inited()) {
+        scorpio::eam_init_pio_subsystem(fcomm);
+      } else {
+        EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
+            "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
+      }
+
+      using namespace ShortFieldTagsNames;
+      using view_d = AbstractGrid::geo_view_type;
+      using view_h = view_d::HostMirror;
+      auto grid = m_grids_manager->get_grid(grid_name);
+      int ncol  = grid->get_num_local_dofs();
+      FieldLayout layout ({COL},{ncol});
+
+      std::vector<std::string> fnames;
+      std::map<std::string,FieldLayout> layouts;
+      std::map<std::string,view_h> host_views;
+      std::map<std::string,view_d> dev_views;
+      if (load_latitude) {
+        dev_views["lat"] = grid->get_geometry_data("lat");
+        host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
+        layouts.emplace("lat",layout);
+        fnames.push_back("lat");
+      }
+      if (load_longitude) {
+        dev_views["lon"] = grid->get_geometry_data("lon");
+        host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
+        layouts.emplace("lon",layout);
+        fnames.push_back("lon");
+      }
+
+      ekat::ParameterList lat_lon_params;
+      lat_lon_params.set("Fields Names",fnames);
+      lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
+
+      AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params,grid,host_views,layouts);
+      lat_lon_reader.read_variables();
+      lat_lon_reader.finalize();
+      for (auto& fname : fnames) {
+        Kokkos::deep_copy(dev_views[fname],host_views[fname]);
+      }
+    }
+  }
+
+  m_ad_status |= s_fields_inited;
+}
+
+void AtmosphereDriver::restart_model ()
+{
+  // First, figure out the name of the netcdf file containing the restart data
+  std::string filename, content;
+  bool found = false;
+  auto casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  if (m_atm_comm.am_i_root()) {
+    std::ifstream rpointer_file;
+    rpointer_file.open("rpointer.atm");
+
+    std::string line;
+    // Note: keep swallowing line, even after the first match, since we never wipe
+    //       rpointer.atm, so it might contain multiple matches, and we want to pick
+    //       the last one (which is the last restart file that was written).
+    while (rpointer_file >> line) {
+      content += line + "\n";
+      if (line.find(casename) != std::string::npos && line.find(".r.nc") != std::string::npos) {
+        found = true;
+        filename = line;
+      }
+    }
+  }
+  m_atm_comm.broadcast(&found,1,0);
+
+  // If the model restart file is not found, it's an error
+  EKAT_REQUIRE_MSG (found,
+      "Error! Output restart requested, but the no history restart file found in 'rpointer.atm'.\n"
+      "   restart file name root: " + casename + "\n"
+      "   rpointer content:\n" + content);
+
+  // Have the root rank communicate the nc filename
+  broadcast_string(filename,m_atm_comm,m_atm_comm.root_rank());
+
+  // Restart the num steps counter in the atm time stamp
+  if (!scorpio::is_eam_pio_subsystem_inited()) {
+    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+    scorpio::eam_init_pio_subsystem(fcomm);
+  } else {
+    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+    EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
+        "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
+  }
+
+  ekat::ParameterList rest_pl;
+  rest_pl.set<std::string>("Filename",filename);
+  AtmosphereInput model_restart(m_atm_comm,rest_pl);
+  m_current_ts.set_num_steps(model_restart.read_int_scalar("nsteps"));
+
+  for (auto& it : m_field_mgrs) {
+    if (not it.second->has_group("RESTART")) {
+      // No field needs to be restarted on this grid.
+      continue;
+    }
+    const auto& restart_group = it.second->get_groups_info().at("RESTART");
+    std::vector<std::string> fnames;
+    for (const auto& fn : restart_group->m_fields_names) {
+      fnames.push_back(fn);
+    }
+    read_fields_from_file (fnames,it.first,filename,m_current_ts);
+  }
+  // Finalize after the above loop, so we don't delete-recreate the pio file struct
+  // in the F90 interface while calling 'read_fields_from_file'.
+  model_restart.finalize();
+}
+
+void AtmosphereDriver::set_initial_conditions ()
+{
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
   // When processing groups and fields separately, we might end up processing the same
@@ -374,7 +534,7 @@ initialize_fields (const util::TimeStamp& t0)
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
-        f_nonconst.get_header().get_tracking().update_time_stamp(t0);
+        f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
       } else if (ic_pl_grid.isType<std::string>(fname)) {
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
@@ -443,86 +603,8 @@ initialize_fields (const util::TimeStamp& t0)
   // Now loop over all grids, and load from file the needed fields on each grid (if any).
   for (const auto& it : m_field_mgrs) {
     const auto& grid_name = it.first;
-    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
-
-    // Check whether we need to load latitude/longitude of reference grid dofs.
-    // This option allows the user to set lat or lon in their own
-    // test or run setup code rather than by file.
-    bool load_latitude  = false;
-    bool load_longitude = false;
-    if (ic_pl_grid.isParameter("Load Latitude")) {
-      load_latitude = ic_pl_grid.get<bool>("Load Latitude");
-    }
-    if (ic_pl_grid.isParameter("Load Longitude")) {
-      load_longitude = ic_pl_grid.get<bool>("Load Longitude");
-    }
-
-    if (ic_fields_names[grid_name].size()>0 || load_longitude || load_latitude) {
-      MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-      if (!scorpio::is_eam_pio_subsystem_inited()) {
-        scorpio::eam_init_pio_subsystem(fcomm);
-      } else {
-        EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
-            "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
-      }
-
-      // Case where there are fields to load from initial condition file.
-      if (ic_fields_names[grid_name].size()>0) {
-        // There are fields to read from the nc file. We must have a valid nc file then.
-        ekat::ParameterList ic_reader_params;
-        ic_reader_params.set("Fields",ic_fields_names[grid_name]);
-        ic_reader_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
-
-        const auto& field_mgr = it.second;
-        AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,field_mgr);
-        ic_reader.read_variables();
-        ic_reader.finalize();
-
-        for (const auto& fname : ic_fields_names[grid_name]) {
-          // Set the initial time stamp
-          auto f = m_field_mgrs.at(grid_name)->get_field(fname);
-          f.get_header().get_tracking().update_time_stamp(t0);
-        }
-      }
-
-      // Case where lat and/or lon are pulled from initial condition file
-      if ( load_latitude || load_longitude) {
-        using namespace ShortFieldTagsNames;
-        using view_d = AbstractGrid::geo_view_type;
-        using view_h = view_d::HostMirror;
-        auto grid = m_grids_manager->get_grid(grid_name);
-        int ncol  = grid->get_num_local_dofs();
-        FieldLayout layout ({COL},{ncol});
-
-        std::vector<std::string> fnames;
-        std::map<std::string,FieldLayout> layouts;
-        std::map<std::string,view_h> host_views;
-        std::map<std::string,view_d> dev_views;
-        if (load_latitude) {
-          dev_views["lat"] = grid->get_geometry_data("lat");
-          host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
-          layouts.emplace("lat",layout);
-          fnames.push_back("lat");
-        }
-        if (load_longitude) {
-          dev_views["lon"] = grid->get_geometry_data("lon");
-          host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
-          layouts.emplace("lon",layout);
-          fnames.push_back("lon");
-        }
-
-        ekat::ParameterList lat_lon_params;
-        lat_lon_params.set("Fields",fnames);
-        lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
-
-        AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params,grid,host_views,layouts);
-        lat_lon_reader.read_variables();
-        lat_lon_reader.finalize();
-        for (auto& fname : fnames) {
-          Kokkos::deep_copy(dev_views[fname],host_views[fname]);
-        }
-      }
-    }
+    const auto& file_name = ic_pl.sublist(grid_name).get<std::string>("Filename","");
+    read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
@@ -577,7 +659,7 @@ initialize_fields (const util::TimeStamp& t0)
       r->remap(true);
     }
     // Set the initial time stamp
-    f_tgt.get_header().get_tracking().update_time_stamp(t0);
+    f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
 
   // Final step: it is possible to have a bundled group G1=(f1,f2,f3),
@@ -591,24 +673,60 @@ initialize_fields (const util::TimeStamp& t0)
         // The bundled field has not been inited. Check if all the subfields
         // have been inited. If so, init the timestamp of the bundled field too.
         const auto& children = track.get_children();
-        bool all_good = children.size()>0; // If no children, then something is off, so mark as not good
+        bool all_inited = children.size()>0; // If no children, then something is off, so mark as not good
         for (auto wp : children) {
           auto sp = wp.lock();
           if (not sp->get_time_stamp().is_valid()) {
-            all_good = false;
+            all_inited = false;
             break;
           }
         }
-        if (all_good) {
-          track.update_time_stamp(t0);
+        if (all_inited) {
+          track.update_time_stamp(m_current_ts);
         }
       }
     }
   }
+}
 
-  m_current_ts = t0;
+void AtmosphereDriver::
+read_fields_from_file (const std::vector<std::string>& field_names,
+                       const std::string& grid_name,
+                       const std::string& file_name,
+                       const util::TimeStamp& t0)
+{
+  if (field_names.size()==0) {
+    return;
+  }
 
-  m_ad_status |= s_fields_inited;
+  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+  if (!scorpio::is_eam_pio_subsystem_inited()) {
+    scorpio::eam_init_pio_subsystem(fcomm);
+  } else {
+    EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
+        "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
+  }
+
+  // Loop over all grids, setup and run an AtmosphereInput object,
+  // loading all fields in the RESTART group on that grid from
+  // the nc file stored in the rpointer file
+  // for (const auto& it : m_field_mgrs) {
+  const auto& field_mgr = m_field_mgrs.at(grid_name);
+
+  // There are fields to read from the nc file. We must have a valid nc file then.
+  ekat::ParameterList ic_reader_params;
+  ic_reader_params.set("Fields Names",field_names);
+  ic_reader_params.set("Filename",file_name);
+
+  AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,field_mgr,m_grids_manager);
+  ic_reader.read_variables();
+  ic_reader.finalize();
+
+  for (const auto& fname : field_names) {
+    // Set the initial time stamp
+    auto f = m_field_mgrs.at(grid_name)->get_field(fname);
+    f.get_header().get_tracking().update_time_stamp(t0);
+  }
 }
 
 void AtmosphereDriver::
@@ -651,8 +769,10 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_memory_buffer = std::make_shared<ATMBufferManager>();
   m_atm_process_group->initialize_atm_memory_buffer(*m_memory_buffer);
 
+  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+
   // Initialize the processes
-  m_atm_process_group->initialize(m_current_ts);
+  m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
   m_ad_status |= s_procs_inited;
 }
@@ -660,8 +780,7 @@ void AtmosphereDriver::initialize_atm_procs ()
 void AtmosphereDriver::
 initialize (const ekat::Comm& atm_comm,
             const ekat::ParameterList& params,
-            const util::TimeStamp& t0,
-            const bool restarted_run)
+            const util::TimeStamp& t0)
 {
   set_comm(atm_comm);
   set_params(params);
@@ -674,7 +793,7 @@ initialize (const ekat::Comm& atm_comm,
 
   initialize_fields (t0);
 
-  initialize_output_managers (restarted_run);
+  initialize_output_managers ();
 
   initialize_atm_procs ();
 }

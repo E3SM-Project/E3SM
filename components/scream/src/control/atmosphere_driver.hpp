@@ -77,7 +77,7 @@ public:
   void initialize_fields (const util::TimeStamp& t0);
 
   // Initialie I/O structures for output
-  void initialize_output_managers (const bool restarted_run = false);
+  void initialize_output_managers ();
 
   // Call 'initialize' on all atm procs
   void initialize_atm_procs ();
@@ -89,11 +89,9 @@ public:
   //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
   //  - params: parameter list with all atm options (organized in sublists)
   //  - t0: the time stamp where the simulation starts
-  //  - restarted_run: whether this run is restarting from the output of a previous run
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0,
-                   const bool restarted_run = false);
+                   const util::TimeStamp& t0);
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -120,7 +118,13 @@ public:
 
 protected:
 
+  void set_initial_conditions ();
+  void restart_model ();
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
+  void read_fields_from_file (const std::vector<std::string>& field_names,
+                              const std::string& grid_name,
+                              const std::string& file_name,
+                              const util::TimeStamp& t0);
   void register_groups ();
 
   std::map<std::string,field_mgr_ptr>       m_field_mgrs;
