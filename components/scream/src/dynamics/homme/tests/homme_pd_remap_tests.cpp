@@ -856,23 +856,6 @@ TEST_CASE("combo_remap", "") {
       // Remap
       if (pdp) {
         remapper->remap(true);
-        // For states, p->d remaps into tl.n0 and d->p remaps out of tl.np1.
-        // Hence, copy n0 slice into np1 slice in the states
-        auto ss_3d = ss_3d_field_dyn.get_view<Real*****>();
-        auto vs_3d = vs_3d_field_dyn.get_view<Real******>();
-        const int size = nle*np*np*NVL;
-        using ExeSpace = typename decltype(ss_3d)::traits::execution_space;
-        Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,size),
-                             KOKKOS_LAMBDA (const int idx) {
-          const int ie = idx / (np*np*NVL);
-          const int ip = (idx / (np*NVL)) % np;
-          const int jp = (idx / NVL) % np;
-          const int il = idx % NVL;
-
-          ss_3d(ie,np1,ip,jp,il) = ss_3d(ie,n0,ip,jp,il);
-          vs_3d(ie,np1,0,ip,jp,il) = vs_3d(ie,n0,0,ip,jp,il);
-          vs_3d(ie,np1,1,ip,jp,il) = vs_3d(ie,n0,1,ip,jp,il);
-        });
         Kokkos::fence();
         remapper->remap(false);
       } else {
