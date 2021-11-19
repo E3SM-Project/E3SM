@@ -8,10 +8,20 @@ This script is mostly for processing the scream_input.yaml file.
 That file supports some special syntax in addition to basic YAML:
 '${VAR}' will be used to refer to env variables in the CIME case
 
-'<cond : key1 => val1 : key2 => val2 : elseval>' will be used to express conditional
-statements. If cond matches key1, then the expression evaluates to val1; if cond
+'<switch_val : key1 => val1 : key2 => val2 : elseval>' will be used to express conditional
+statements. If switch_val matches key1, then the expression evaluates to val1; if switch_val
 matches key2, then the expression evaluates to val2; if it matches neither, then
 the expression evaluates to elseval. The elseval component of this expression is optional.
+
+Example, if you wanted tstep to depend on atm grid resolution:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : 30>"
+
+This would give all ne4 cases a timestep of 300, otherwise it would be 30.
+
+You could specify multiple grid->timestep relationships this way:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : ne30np4 => 100 : 30>"
 """
 
 import os, sys, re
@@ -37,7 +47,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-TERN_RE     = re.compile(r'<\s*(\w+)\s*:')
+SWITCH_RE   = re.compile(r'<\s*(\w+)\s*:')
 
 ###############################################################################
 def do_cime_vars(entry, case):
@@ -53,11 +63,11 @@ def do_cime_vars(entry, case):
     return entry
 
 ###############################################################################
-def do_ternaries(entry, case):
+def do_switches(entry, case):
 ###############################################################################
-    m = TERN_RE.search(entry)
+    m = SWITCH_RE.search(entry)
     while m:
-        begin_tern_idx, end_cond_idx = m.span()
+        begin_switch_idx, end_cond_idx = m.span()
         value = m.groups()[0]
         opens = 1
         idx = end_cond_idx
@@ -75,24 +85,24 @@ def do_ternaries(entry, case):
             else:
                 segments[-1] += entry[idx]
 
-        expect(idx < len(entry), "Ternary parse error in string '{}'".format(entry))
-        end_tern_idx = idx + 1
+        expect(idx < len(entry), "Switch statement parse error in string '{}'".format(entry))
+        end_switch_idx = idx + 1
         best_val = None
         for segment in segments:
             components = segment.split("=>", 1)
             if (len(components) == 1 or '<' in components[0]):
                 if best_val is None:
-                    best_val = do_ternaries(segment, case).strip()
+                    best_val = do_switches(segment, case).strip()
             else:
                 compare = re.compile(components[0].strip())
                 if compare.match(value):
-                    best_val = do_ternaries(components[-1], case).strip()
+                    best_val = do_switches(components[-1], case).strip()
                     break
 
-        expect(best_val is not None, "Couldn't resolve ternary for '{}', no matches".format(entry))
+        expect(best_val is not None, "Couldn't resolve switch statement for '{}', no matches".format(entry))
 
-        entry = entry[0:begin_tern_idx] + best_val + entry[end_tern_idx:]
-        m = TERN_RE.search(entry)
+        entry = entry[0:begin_switch_idx] + best_val + entry[end_switch_idx:]
+        m = SWITCH_RE.search(entry)
 
     return entry
 
@@ -119,7 +129,7 @@ def process_leaves(yaml_entry, case):
         if isinstance(v, str):
             orig_str = v
             v = do_cime_vars(v, case)
-            v = do_ternaries(v, case)
+            v = do_switches(v, case)
             if v != orig_str:
                 v = refine_type(v)
                 modified = True

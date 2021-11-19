@@ -55,8 +55,6 @@ SCREAM:
     input_root                  : "${DIN_LOC_ROOT}"
 
 
-  Test Var: "<${ATM_GRID} : ne4np4 => 42 : 420>"
-
 # Note: HOMME settings will be translated into data/namelist.nl
 HOMME:
   ctl_nl:
