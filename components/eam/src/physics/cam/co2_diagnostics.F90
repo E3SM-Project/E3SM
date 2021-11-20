@@ -26,6 +26,10 @@ private
 save
 
 public co2_diags_register            ! setup co2 pbuf fields
+public get_total_carbon
+public get_carbon_emissions
+public print_global_carbon_diags
+
 public check_co2_change_pr2
 public co2_gmean_check_wflux         ! printout co2 global means
 public co2_gmean_check2_wflux        ! higher level co2 checker
@@ -62,6 +66,173 @@ contains
       endif
 
    end subroutine co2_diags_register
+
+   subroutine get_total_carbon(state, wet_or_dry)
+      use physconst,      only: rga
+
+      type(physics_state), intent(inout) :: state
+      character(len=3),    intent(in   ) :: wet_or_dry ! is co2 mmr wet or dry
+
+      ! local variables
+      real(r8) :: tc(state%ncol)            ! vertical integral of total carbon
+      integer ncol                          ! number of atmospheric columns
+      integer i, k, m                       ! column, level, constant indices
+      !------------------------------------------------------------------------
+
+      ! Set CO2 global index
+      do m = 1, ncnst
+         select case (trim(c_names(m)))
+         case ('CO2')
+            co2_glo_ind = c_i(m)
+         end select
+      end do
+
+      ! initialize array
+      ncol = state%ncol
+      do i = 1, ncol
+         tc(i) = 0._r8
+      end do
+      
+      ! sum column co2 mass
+      select case (trim(wet_or_dry))
+      case ('wet')
+         do k = 1, pver
+            do i = 1, ncol
+               tc(i) = tc(i) + state%pdel(i,k) * state%q(i,k,m)
+            end do
+         end do
+      case ('dry')
+         do k = 1, pver
+            do i = 1, ncol
+               tc(i) = tc(i) + state%pdeldry(i,k) * state%q(i,k,co2_glo_ind)
+            end do
+         end do
+      end select
+
+      do i = 1, ncol
+         tc(i) = tc(i) * rga
+      end do
+
+      ! copy new value to state
+      do i = 1, ncol
+         state%tc_cur(i) = tc(i)
+      end do
+
+   end subroutine get_total_carbon
+
+   subroutine get_carbon_emissions(state, cam_in, pbuf)
+      use physconst,      only: rga
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+
+      type(physics_state), intent(inout) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(cam_in_t),      intent(in   ) :: cam_in
+
+      ! local variables
+      real(r8) :: tc(state%ncol)            ! vertical integral of total carbon
+      integer ncol                          ! number of atmospheric columns
+      integer i, k, m                       ! column, level, constant indices
+      integer index_ac_CO2                  ! pbuf index for aircraft emissions
+      real(r8), pointer :: ac_CO2(:,:)      ! aircraft emissions in pbuf
+      real(r8) :: sfc_flux(pcols)           ! constituent surface flux
+      real(r8) :: air_flux(pcols)           ! aircraft emission flux
+      !------------------------------------------------------------------------
+
+      ! Set CO2 global index
+      do m = 1, ncnst
+         select case (trim(c_names(m)))
+         case ('CO2')
+            co2_glo_ind = c_i(m)
+         end select
+      end do
+
+      index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
+
+      ! initialize arrays
+      ncol  = state%ncol
+      do i = 1, ncol
+         sfc_flux(i) = 0._r8
+         air_flux(i) = 0._r8
+      end do
+
+      ! gather surface and aircraft fluxes
+      do i = 1, ncol
+         sfc_flux(i) = sfc_flux(i) + cam_in%cflx(i,co2_glo_ind)
+      end do
+
+      do k = 1, pver
+         do i = 1, ncol
+            air_flux(i) = air_flux(i) + ac_CO2(i,k)
+         end do
+      end do
+
+      ! Note: once future versions include chemical sources and sinks
+      !       those will need to be included here too
+
+      ! sum value and put in state
+      do i = 1, ncol
+         state%c_emis_sfc(i) = sfc_flux(i) !+ air_flux(i)
+         state%c_emis_air(i) = air_flux(i)
+      end do
+
+   end subroutine get_carbon_emissions
+
+   subroutine print_global_carbon_diags(state, dtime, nstep)
+      use phys_gmean,     only: gmean
+
+      type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
+      real(r8), intent(in) :: dtime        ! physics time step
+      integer , intent(in) :: nstep        ! current timestep number
+
+      ! local variables
+      integer ncol, lchnk
+      real(r8) :: tc(pcols,begchunk:endchunk,5)
+      real(r8) :: tc_glob(5)
+      real(r8) :: tc_start_glob, tc_end_glob, delta_tc_glob, c_emis_glob, c_air_glob
+      real(r8) :: rel_error, expected_tc
+      !------------------------------------------------------------------------
+
+      do lchnk = begchunk, endchunk
+         ncol = state(lchnk)%ncol
+         ! carbon at start of time step
+         tc(:ncol,lchnk,1) = state(lchnk)%tc_before_physstep(:ncol)
+         ! carbon at end of time step
+         tc(:ncol,lchnk,2) = state(lchnk)%tc_cur(:ncol)
+         ! carbon difference across time step
+         tc(:ncol,lchnk,3) = state(lchnk)%delta_tc(:ncol)
+         ! carbon emissions
+         tc(:ncol,lchnk,4) = state(lchnk)%c_emis_sfc(:ncol)
+         tc(:ncol,lchnk,5) = state(lchnk)%c_emis_air(:ncol)
+
+         ! expected carbon
+         !tc(:ncol,lchnk,5) = tc(:ncol,lchnk,1) + (tc(:ncol,lchnk,4) * dtime)
+      end do
+
+      ! Compute global means of input and output energies and of
+      ! surface pressure for heating rate (assume uniform ptop)
+!      if (nstep > 0) then
+      call gmean(tc, tc_glob, 5)
+!      end if
+
+      tc_start_glob = tc_glob(1)
+      tc_end_glob   = tc_glob(2)
+      delta_tc_glob = tc_glob(3)
+      c_emis_glob   = tc_glob(4)
+      c_air_glob    = tc_glob(5)
+!      expected_tc   = tc_glob(5)
+
+!      rel_error     = ( (delta_tc_glob / dtime) - c_emis_glob ) / c_emis_glob
+      expected_tc   = tc_start_glob + (c_emis_glob * dtime) + (c_air_glob * dtime)
+      rel_error     = ( expected_tc - tc_end_glob  ) / tc_end_glob
+
+      if (masterproc) then
+         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, tc start, tc end, diff ", nstep, tc_start_glob, tc_end_glob, delta_tc_glob
+         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, d(tc)/dt, emis, rel err", nstep, delta_tc_glob/dtime, c_emis_glob, rel_error
+         write(iulog,'(1x,a30,1x,i8,2(1x,e25.17))') "nstep, sfc_emis, aircraft_emis", nstep, c_emis_glob, c_air_glob
+      end if
+      
+   end subroutine print_global_carbon_diags
 
    subroutine check_co2_change_pr2(state, tend, pbuf2d, cam_in, wet_or_dry)
       use physconst,      only: gravit
@@ -132,7 +303,7 @@ contains
       if (begchunk .le. endchunk) then
          if (masterproc) then
             do m = 1, ncnst
-               write (6,'(a32,i2,a36,1p,4e25.15)') trim(title)//' m=',c_i(m), &
+               write (6,'(a32,i2,a36,1p,4e25.17)') trim(title)//' m=',c_i(m), &
                   'name='//trim(cnst_name(c_i(m)))//' gavg dry, wet, sfc, air ', &
                   mass_dry_mean(m), mass_wet_mean(m), &
                   sfc_flux_mean(m), air_flux_mean(m)
@@ -529,7 +700,7 @@ contains
                   'name='//trim(cnst_name(c_i(m)))//' gavg dry, wet, sfc ', &
                   mass_dry_mean(c_i(m)), mass_wet_mean(c_i(m)), &
                   sfc_flux_mean(c_i(m))
-66             format (a32,i2,a36,1p,3e25.13)
+66             format (a32,i2,a36,1p,3e25.17)
          end do
 
       endif
@@ -676,7 +847,7 @@ contains
                   'name='//trim(cnst_name(c_i(m)))//' gavg dry, wet, sfc, air ', &
                   mass_dry_mean(c_i(m)), mass_wet_mean(c_i(m)), &
                   sfc_flux_mean(c_i(m)), air_flux_mean(c_i(m))
-66             format (a32,i2,a36,1p,4e25.15)
+66             format (a32,i2,a36,1p,4e25.17)
 !old version66             format (a32,i2,a36,1p,4e25.13)
          end do
 

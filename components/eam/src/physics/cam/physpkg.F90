@@ -46,7 +46,7 @@ module physpkg
                                     modal_aero_wateruptake_reg
 
 !++BEH
-  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2
+  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2, get_total_carbon, get_carbon_emissions, print_global_carbon_diags
 !--BEH
 
   implicit none
@@ -1078,6 +1078,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 !       call gmean_mass ('between DRY', phys_state)
 !       call co2_gmean_check ('CO2 between DRY', phys_state)
        call co2_gmean_check_wflux ('CO2 between DRY', phys_state, cam_in)
+       call print_global_carbon_diags(phys_state, ztodt, nstep)
 !--BEH
     end if
 
@@ -1330,7 +1331,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 !    call gmean_mass ('after tphysac FV:WET)', phys_state)
 !    call co2_gmean_check ('CO2 after tphysac FV:WET)', phys_state)
     call co2_gmean_check_wflux ('CO2 after tphysac FV:WET)', phys_state, cam_in)
-    call check_co2_change_pr2(phys_state, phys_tend, pbuf2d, cam_in, 'wet')
+!    call check_co2_change_pr2(phys_state, phys_tend, pbuf2d, cam_in, 'wet')
 !--BEH
 
     call t_startf ('physpkg_st2')
@@ -1602,6 +1603,11 @@ end if ! l_tracer_aero
 
     call t_stopf('tphysac_init')
 
+!++BEH
+    call get_total_carbon(state, 'dry')
+    state%tc_before_physstep(:ncol) = state%tc_cur(:ncol)
+!--BEH
+
 if (l_tracer_aero) then
     !===================================================
     ! Source/sink terms for advected tracers.
@@ -1619,9 +1625,9 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
     
-    ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
+!BH    ! add tendency from aircraft emissions
+!BH    call co2_cycle_set_ptend(state, pbuf, ptend)
+!BH    call physics_update(state, ptend, ztodt, tend)
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1925,6 +1931,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use co2_cycle,       only: co2_cycle_set_ptend, co2_transport
 
     implicit none
 
@@ -2711,6 +2718,12 @@ if (l_rad) then
 
 end if ! l_rad
 
+!++BEH
+    ! add tendency from aircraft emissions
+    call co2_cycle_set_ptend(state, pbuf, ptend)
+    call physics_update(state, ptend, ztodt, tend)
+!--BEH
+
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
     end if
@@ -2731,6 +2744,12 @@ end if ! l_rad
     call t_stopf('diag_export')
 
     call check_tracers_fini(tracerint)
+
+    !++BEH
+    call get_total_carbon(state, 'dry')
+    state%delta_tc(1:ncol) = state%tc_cur(1:ncol) - state%tc_before_physstep(1:ncol)
+    call get_carbon_emissions(state, cam_in, pbuf)
+    !--BEH
 
 end subroutine tphysbc
 
