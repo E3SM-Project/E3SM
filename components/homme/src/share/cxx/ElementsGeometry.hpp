@@ -49,6 +49,7 @@ public:
   ElementsGeometry() : m_num_elems(0) {}
 
   void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
+             const Real rearth,
              const bool alloc_sphere_coords=false);
 
   void randomize (const int seed);
@@ -69,7 +70,8 @@ public:
 
 private:
   bool m_consthv;
-  int m_num_elems;
+  int  m_num_elems;
+  Real m_rearth;
 };
 
 } // Homme

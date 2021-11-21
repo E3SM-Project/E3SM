@@ -75,6 +75,8 @@ public:
     m_metdet   = geometry.m_metdet;
     m_metinv   = geometry.m_metinv;
     m_spheremp = geometry.m_spheremp;
+    m_rearth   = geometry.m_rearth;
+    m_rrearth  = 1./geometry.m_rearth;
   }
 
   template<typename... Tags>
