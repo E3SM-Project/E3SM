@@ -117,7 +117,9 @@ module control_mod
   integer              , public :: partmethod     ! partition methods
   character(len=MAX_STRING_LEN)    , public :: topology = "cube"       ! options: "cube", "plane"
   character(len=MAX_STRING_LEN)    , public :: geometry = "sphere"      ! options: "sphere", "plane"
-  character(len=MAX_STRING_LEN)    , public :: test_case      
+  character(len=MAX_STRING_LEN)    , public :: test_case
+  !most tests don't have forcing
+  logical                          , public :: test_with_forcing = .false. 
   integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq

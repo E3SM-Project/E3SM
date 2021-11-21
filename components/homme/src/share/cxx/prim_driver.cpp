@@ -104,9 +104,10 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   if ( ! independent_time_steps) {
     tl.update_tracers_levels(params.dt_tracer_factor);
 
-#ifndef CAM
-    apply_test_forcing ();
-#endif
+/// remove
+//#ifndef CAM
+//    apply_test_forcing ();
+//#endif
 
     // Apply forcing.
     // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
