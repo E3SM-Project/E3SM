@@ -9,13 +9,13 @@ SET(EXEC_NAME theta-nlev128-kokkos)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc21.nl)
+SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc12.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES
-  dd1.nc
-  dd2.nc)
+  dcmip2012_test2_11.nc
+  dcmip2012_test2_12.nc)
 
 
 #DO NOT MOD
