@@ -149,11 +149,11 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  if (test_name=="jw_baroclinic") {
+  //if (test_name=="jw_baroclinic") {
     params.test_case = TestCase::JW_BAROCLINIC;
-  } else {
-    Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  }
+  //} else {
+  //  Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
+  //}
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -227,14 +227,12 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
-    if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
-    }
-    HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
-        elem_derived_FQ, num_elems);
-    sync_to_device(fq_f90, tracers.fq);
+  if (tracers.fq.data() == nullptr) {
+    tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
   }
+  HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
+      elem_derived_FQ, num_elems);
+  sync_to_device(fq_f90, tracers.fq);
 }
 
 void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)
