@@ -3,7 +3,7 @@
 Casename: spa_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
-Fields:
+Fields Names:
   - aero_g_sw
   - aero_ssa_sw
   - aero_tau_lw

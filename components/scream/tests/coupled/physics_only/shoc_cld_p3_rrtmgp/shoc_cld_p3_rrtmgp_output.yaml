@@ -3,7 +3,7 @@
 Casename: shoc_cld_p3_rrtmgp_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
-Fields:
+Fields Names:
   - T_mid
   - T_prev_micro_step
   - qv
