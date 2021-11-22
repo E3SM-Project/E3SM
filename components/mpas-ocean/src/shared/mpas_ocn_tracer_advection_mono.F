@@ -101,7 +101,7 @@ module ocn_tracer_advection_mono
          i, iCell, iEdge, &! horz indices
          cell1, cell2,    &! neighbor cell indices
          nCells, nEdges,  &! numbers of cells or edges
-         k,k2,kmin, kmax, &! vert index variants
+         k,kmin, kmax, &! vert index variants
          kmin1, kmax1,    &! vert index variants
          iTracer,         &! tracer index
          numTracers        ! total number of tracers
@@ -115,7 +115,6 @@ module ocn_tracer_advection_mono
          flux,              &! flux temporary
          tracerWeight,      &! tracer weighting temporary
          invAreaCell1,      &! inverse cell area
-         invAreaCell2,      &! inverse cell area
          coef1, coef3        ! temporary coefficients
 
       real (kind=RKIND), dimension(:), allocatable :: &

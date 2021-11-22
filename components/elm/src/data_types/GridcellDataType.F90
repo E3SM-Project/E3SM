@@ -614,6 +614,10 @@ contains
          avgflag='I', long_name='total carbon storage at the end of a month', &
          ptr_lnd=this%tcs_month_end)
 
+    call hist_addfld1d (fname='CMASS_BALANCE_ERROR',  units='gC/m^2',  &
+         avgflag='A', long_name='Gridcell carbon mass balance error', &
+         ptr_lnd=this%errcb)
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_cs
     !-----------------------------------------------------------------------
