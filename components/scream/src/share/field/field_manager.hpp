@@ -70,10 +70,13 @@ public:
   void registration_ends ();
   void clean_up ();
 
-  // Adds a pre-existing field to the FieldManager.
-  // Notes: the repo must be in closed state, and the field must not exist already.
+  // Adds an externally-constructed field to the FieldManager. Allows the FM
+  // to make the field available as if it had been built with the usual
+  // registration procedures.
   // This can be used to allow atm procs to create some helper fields internally,
   // but still leverage the FM class for certain features (e.g., I/O).
+  // NOTE: the repo must be in closed state, and the FieldManager must not already
+  //       store a field with the same name.
   void add_field (const Field<RealType>& f);
 
   // Get information about the state of the repo

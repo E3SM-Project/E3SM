@@ -86,7 +86,8 @@ public:
   gid_type get_global_max_dof_gid () const;
 
   // Set the dofs list
-  // NOTE: this method must be called on all ranks in the stored comm.
+  // NOTE: this method calls valid_dofs_list, which may contain collective
+  //       operations over the stored communicator.
   void set_dofs (const dofs_list_type& dofs);
 
   // Get a 1d view containing the dof gids
@@ -94,14 +95,17 @@ public:
 
   // Set the the map dof_lid->dof_indices, where the indices are the ones used
   // to access the dof in the layout returned by get_2d_scalar_layout().
-  // NOTE: this method must be called on all ranks in the stored comm.
+  // NOTE: this method calls valid_lid_to_idx_map, which may contain collective
+  //       operations over the stored communicator.
   void set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx);
 
   // Get a 2d view, where (i,j) entry contains the j-th coordinate of
   // the i-th dof in the native dof layout.
   const lid_to_idx_map_type& get_lid_to_idx_map () const;
 
-  // Set/get geometric views. The setter is virtual, so each grid can check if "name" is supported.
+  // Set/get geometric views.
+  // NOTE: this method calls valid_geo_data, which may contain collective
+  //       operations over the stored communicator.
   void set_geometry_data (const std::string& name, const geo_view_type& data);
   const geo_view_type& get_geometry_data (const std::string& name) const;
 

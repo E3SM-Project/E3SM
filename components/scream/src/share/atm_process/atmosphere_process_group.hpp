@@ -66,6 +66,10 @@ public:
   void set_required_group (const FieldGroup<const Real>& group);
 
   // Gather internal fields from all processes in the group
+  // NOTE: this method *must* be called before any attempt to query this atm proc group
+  //       for its internal fields, otherwise it will appear as if this atm proc group
+  //       stores ZERO internal fields. In other words, this method populates the list
+  //       of internal fields of the group.
   void gather_internal_fields ();
 
 protected:
