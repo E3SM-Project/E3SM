@@ -425,7 +425,7 @@ initialize_fields (const util::TimeStamp& t0)
       lat_lon_params.set("Field Names",fnames);
       lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
 
-      AtmosphereInput lat_lon_reader(m_atm_comm,lat_lon_params,grid,host_views,layouts);
+      AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
       lat_lon_reader.read_variables();
       lat_lon_reader.finalize();
       for (auto& fname : fnames) {
@@ -718,7 +718,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   ic_reader_params.set("Field Names",field_names);
   ic_reader_params.set("Filename",file_name);
 
-  AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,field_mgr,m_grids_manager);
+  AtmosphereInput ic_reader(ic_reader_params,field_mgr,m_grids_manager);
   ic_reader.read_variables();
   ic_reader.finalize();
 

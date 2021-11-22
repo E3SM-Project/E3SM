@@ -13,36 +13,34 @@ namespace scream
 AtmosphereInput::
 AtmosphereInput (const ekat::Comm& comm,
                  const ekat::ParameterList& params)
- : m_comm (comm)
+ : m_comm   (comm)
+ , m_params (params)
 {
-  set_parameters (params);
+  m_filename = m_params.get<std::string>("Filename");
+
+  // This ensures that the nc file is open, even if init() doesn't
+  // get called. This allows users to read global scalar values from
+  // an nc file, by easily creating an AtmosphereInput on the fly.
+  scorpio::register_file(m_filename,scorpio::Read);
 }
 
 AtmosphereInput::
-AtmosphereInput (const ekat::Comm& comm,
-                 const ekat::ParameterList& params,
+AtmosphereInput (const ekat::ParameterList& params,
                  const std::shared_ptr<const fm_type>& field_mgr,
                  const std::shared_ptr<const gm_type>& grids_mgr)
- : m_comm (comm)
+ : AtmosphereInput(field_mgr->get_grid()->get_comm(),params)
 {
-  EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
-
-  // Set list of fields. Use grid name to potentially find correct sublist inside Fields: list.
-  set_parameters (params, field_mgr->get_grid()->name());
-
   // Sets the internal field mg, possibly sets up the remapper,
   // and init scorpio internal structures
   init (field_mgr, grids_mgr);
 }
 
 AtmosphereInput::
-AtmosphereInput (const ekat::Comm& comm,
-                 const ekat::ParameterList& params,
+AtmosphereInput (const ekat::ParameterList& params,
                  const std::shared_ptr<const grid_type>& grid,
                  const std::map<std::string,view_1d_host>& host_views_1d,
                  const std::map<std::string,FieldLayout>&  layouts)
- : AtmosphereInput(comm,params)
+ : AtmosphereInput(grid->get_comm(),params)
 {
   // Sets the grid, the host views, and init scorpio internal structures
   init (grid,host_views_1d,layouts);
@@ -52,6 +50,9 @@ void AtmosphereInput::
 init (const std::shared_ptr<const fm_type>& field_mgr,
       const std::shared_ptr<const gm_type>& grids_mgr)
 {
+  // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
+  set_fields_and_grid_names (field_mgr->get_grid()->name());
+
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
 
@@ -64,6 +65,9 @@ init (const std::shared_ptr<const grid_type>& grid,
       const std::map<std::string,view_1d_host>& host_views_1d,
       const std::map<std::string,FieldLayout>&  layouts)
 {
+  // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
+  set_fields_and_grid_names (grid->name());
+
   // Set the grid associated with the input views
   set_grid(grid);
 
@@ -75,30 +79,24 @@ init (const std::shared_ptr<const grid_type>& grid,
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::
-set_parameters (const ekat::ParameterList& params, const std::string& grid_name) {
-  m_filename = params.get<std::string>("Filename");
 
+void AtmosphereInput::
+set_fields_and_grid_names (const std::string& grid_name) {
   // The user might just want to read some global attributes (no fields),
   // so get the list of fields names only if present.
   using vos_t = std::vector<std::string>;
-  if (params.isParameter("Field Names")) {
-    m_fields_names = params.get<vos_t>("Field Names");
-    if (params.isParameter("IO Grid Name")) {
-      m_io_grid_name = params.get<std::string>("IO Grid Name");
+  if (m_params.isParameter("Field Names")) {
+    m_fields_names = m_params.get<vos_t>("Field Names");
+    if (m_params.isParameter("IO Grid Name")) {
+      m_io_grid_name = m_params.get<std::string>("IO Grid Name");
     }
-  } else if (params.isSublist("Fields") && grid_name!="") {
-    const auto& pl = params.sublist("Fields").sublist(grid_name);
+  } else if (m_params.isSublist("Fields") && grid_name!="") {
+    const auto& pl = m_params.sublist("Fields").sublist(grid_name);
     m_fields_names = pl.get<vos_t>("Field Names");
     if (pl.isParameter("IO Grid Name")) {
       m_io_grid_name = pl.get<std::string>("IO Grid Name");
     }
   }
-
-  // This ensures that the nc file is open, even if init() doesn't
-  // get called. This allows users to read global scalar values from
-  // an nc file, by easily creating an AtmosphereInput on the fly.
-  scorpio::register_file(m_filename,scorpio::Read);
 }
 
 void AtmosphereInput::
@@ -212,6 +210,9 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 
   // The grid is good. Store it.
   m_io_grid = grid;
+
+  // Reset the comm
+  m_comm = m_io_grid->get_comm();
 }
 
 /* ---------------------------------------------------------- */

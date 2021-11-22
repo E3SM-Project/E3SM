@@ -170,7 +170,7 @@ TEST_CASE("input_output_basic","io")
   auto f4_host = f4.get_view<Real**,Host>();
 
   // Check instant output
-  input_type ins_input(io_comm,ins_params,field_manager);
+  input_type ins_input(ins_params,field_manager);
   ins_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -191,7 +191,7 @@ TEST_CASE("input_output_basic","io")
   reset_fields();
 
   // Check average output
-  input_type avg_input(io_comm,avg_params,field_manager);
+  input_type avg_input(avg_params,field_manager);
   avg_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -214,7 +214,7 @@ TEST_CASE("input_output_basic","io")
 
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-  input_type max_input(io_comm,max_params,field_manager);
+  input_type max_input(max_params,field_manager);
   max_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -231,7 +231,7 @@ TEST_CASE("input_output_basic","io")
   max_input.finalize();
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
-  input_type min_input(io_comm,min_params,field_manager);
+  input_type min_input(min_params,field_manager);
   min_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -249,7 +249,7 @@ TEST_CASE("input_output_basic","io")
   reset_fields();
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
-  input_type multi_input(io_comm,multi_params,field_manager);
+  input_type multi_input(multi_params,field_manager);
   for (int tt = 1; tt<=std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();

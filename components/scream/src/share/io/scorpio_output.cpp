@@ -102,7 +102,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   res_params.set<std::string>("Filename",filename);
   res_params.set("Field Names",m_fields_names);
 
-  AtmosphereInput hist_restart (m_comm,res_params,m_io_grid,m_host_views_1d,m_layouts);
+  AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
   hist_restart.finalize();
 }

@@ -182,7 +182,7 @@ TEST_CASE("dyn_grid_io")
 
   io_params.set<std::string>("Filename",filename);
   io_params.set<std::string>("Grid",dyn_grid->name());
-  AtmosphereInput input (comm,io_params,fm_dyn, gm);
+  AtmosphereInput input (io_params,fm_dyn, gm);
   input.read_variables();
 
   // Remap dyn->phys, and compare against ctrl

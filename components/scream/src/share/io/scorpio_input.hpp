@@ -94,8 +94,7 @@ public:
   //               Fields can be padded/strided.
   // It calls init(field_mgr) at the end.
   // TODO: is comm superfluous, considering we can get it from the grid in the field_mgr?
-  AtmosphereInput (const ekat::Comm& comm,
-                   const ekat::ParameterList& params,
+  AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
 
@@ -113,8 +112,7 @@ public:
   // It calls init(grid,host_views_1d,layouts) at the end.
   // TODO: do not require layouts, and read them from file.
   // TODO: is comm superfluous, considering we can get it from the grid?
-  AtmosphereInput (const ekat::Comm& comm,
-                   const ekat::ParameterList& params,
+  AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const grid_type>& grid,
                    const std::map<std::string,view_1d_host>& host_views_1d,
                    const std::map<std::string,FieldLayout>&  layouts);
@@ -138,7 +136,7 @@ public:
 
 protected:
 
-  void set_parameters (const ekat::ParameterList& params, const std::string& grid_name = "");
+  void set_fields_and_grid_names (const std::string& grid_name);
   void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
@@ -157,7 +155,8 @@ protected:
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
-  ekat::Comm          m_comm;
+  ekat::Comm            m_comm;
+  ekat::ParameterList   m_params;
 
   std::shared_ptr<const fm_type>        m_field_mgr;
   std::shared_ptr<const AbstractGrid>   m_io_grid;
