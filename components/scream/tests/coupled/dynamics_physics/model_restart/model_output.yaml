@@ -5,12 +5,12 @@ Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
   Physics GLL:
-    Fields Names:
+    Field Names:
       - T_mid
       - qv
       - horiz_winds
   Dynamics:
-    Fields Names:
+    Field Names:
       - Qdp_dyn
       - v_dyn
 Output Control:

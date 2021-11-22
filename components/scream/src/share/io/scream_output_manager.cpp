@@ -371,7 +371,7 @@ set_params (const ekat::ParameterList& params,
           fnames.push_back(n);
         }
       }
-      fields_pl.sublist(it.first).set("Fields Names",fnames);
+      fields_pl.sublist(it.first).set("Field Names",fnames);
     }
     m_casename = m_params.get<std::string>("Casename", "scream_restart");
   } else {

@@ -3,7 +3,7 @@
 Casename: rrtmgp_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
-Fields Names:
+Field Names:
   - T_mid
   - LW_flux_up
   - LW_flux_dn

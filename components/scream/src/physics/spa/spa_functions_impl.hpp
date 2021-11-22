@@ -441,7 +441,7 @@ void SPAFunctions<S,D>
   // We have enough info to start opening the file
   std::vector<std::string> fnames = {"PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Fields Names",fnames);
+  spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
   AtmosphereInput spa_data_input(self_comm,spa_data_in_params);
 

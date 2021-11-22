@@ -378,7 +378,7 @@ ekat::ParameterList get_in_params(const std::string& type,
       + "." + t_first_write.to_string() + ".nc";
 
   in_params.set<std::string>("Filename",filename);
-  in_params.set<vos_type>("Fields Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
 }
 /*===================================================================================================================*/

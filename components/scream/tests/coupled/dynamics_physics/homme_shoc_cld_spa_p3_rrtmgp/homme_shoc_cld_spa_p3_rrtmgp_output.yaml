@@ -5,7 +5,7 @@ Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
   Physics GLL:
-    Fields Names:
+    Field Names:
       - T_mid
       - T_prev_micro_step
       - qv

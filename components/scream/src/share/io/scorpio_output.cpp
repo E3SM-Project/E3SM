@@ -30,17 +30,17 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // By default, IO is done directly on the field mgr grid
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grid();
-  if (params.isParameter("Fields Names")) {
+  if (params.isParameter("Field Names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    m_fields_names = params.get<vos_t>("Fields Names");
+    m_fields_names = params.get<vos_t>("Field Names");
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
     const auto& grid_name = io_grid->name(); 
     if (f_pl.isSublist(grid_name)) {
       const auto& pl = f_pl.sublist(grid_name);
-      m_fields_names = pl.get<vos_t>("Fields Names");
+      m_fields_names = pl.get<vos_t>("Field Names");
 
       // Check if the user wants to remap fields on a different grid first
       if (pl.isParameter("IO Grid Name")) {
@@ -100,7 +100,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   // Create an input stream on the fly, and init averaging data
   ekat::ParameterList res_params("Input Parameters");
   res_params.set<std::string>("Filename",filename);
-  res_params.set("Fields Names",m_fields_names);
+  res_params.set("Field Names",m_fields_names);
 
   AtmosphereInput hist_restart (m_comm,res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
