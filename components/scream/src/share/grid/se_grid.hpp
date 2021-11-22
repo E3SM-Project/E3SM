@@ -30,9 +30,9 @@ public:
   const dofs_list_type& get_cg_dofs_gids () const;
 
 protected:
-  void check_dofs_list () const override;
-  void check_lid_to_idx_map () const override;
-  void check_geo_data (const std::string& name, const geo_view_type& data) const override;
+  bool valid_dofs_list (const dofs_list_type& dofs_gids)      const override;
+  bool valid_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx) const override;
+  bool valid_geo_data (const std::string& name, const geo_view_type& data) const override;
 
   // SE dims
   int       m_num_local_elem;

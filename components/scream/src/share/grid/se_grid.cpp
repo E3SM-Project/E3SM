@@ -21,15 +21,6 @@ SEGrid (const std::string& grid_name,
   m_num_gp         = num_gauss_pts;
 }
 
-void SEGrid::
-check_geo_data (const std::string& name, const geo_view_type& /* data */) const {
-  // Sanity checks
-  EKAT_REQUIRE_MSG (name=="lat" || name=="lon" || name=="area",
-                    "Error! Point grid does not support geometry data '" + name + "'.\n");
-
-  // TODO: check actual values?
-}
-
 FieldLayout
 SEGrid::get_2d_scalar_layout () const
 {
@@ -81,13 +72,12 @@ void SEGrid::set_cg_dofs (const dofs_list_type& cg_dofs)
   m_cg_dofs_set = true;
 }
 
-void SEGrid::check_dofs_list () const
+bool SEGrid::valid_dofs_list (const dofs_list_type& /*dofs_gids*/) const
 {
-  EKAT_REQUIRE_MSG (is_unique(),
-    "Error! SEGrid of type 'DG' requires unique dof gids.\n");
+  return is_unique();
 }
 
-void SEGrid::check_lid_to_idx_map () const
+bool SEGrid::valid_lid_to_idx_map (const lid_to_idx_map_type& /*lid_to_idx*/) const
 {
   auto l2i = get_lid_to_idx_map();
   auto h_l2i = Kokkos::create_mirror_view(l2i);
@@ -98,13 +88,19 @@ void SEGrid::check_lid_to_idx_map () const
     const int ip = elgpgp(1);
     const int jp = elgpgp(2);
 
-    EKAT_REQUIRE_MSG (el>=0 && el<m_num_local_elem,
-        "Error! Element index out of bounds.\n");
-    EKAT_REQUIRE_MSG (ip>=0 && ip<m_num_gp,
-        "Error! Gauss point index i out of bounds.\n");
-    EKAT_REQUIRE_MSG (jp>=0 && jp<m_num_gp,
-        "Error! Gauss point index j out of bounds.\n");
+    if (el<0 || el>=m_num_local_elem) return false;
+    if (ip<0 || ip>=m_num_gp) return false;
+    if (jp<0 || jp>=m_num_gp) return false;
   }
+  return true;
+}
+
+bool SEGrid::
+valid_geo_data (const std::string& name, const geo_view_type& /* data */) const {
+  // Sanity checks
+  return name=="lat" || name=="lon" || name=="area";
+
+  // TODO: check actual values?
 }
 
 } // namespace scream
