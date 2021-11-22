@@ -4843,7 +4843,7 @@ end subroutine uwshcu_readnl
     call qsat(Ti, psfc, es, qs)
     rhi      =  qt/qs
     if( rhi .le. 0.01_r8 ) then
-        write(iulog,*) 'Source air is too dry and pLCL is set to psmin in uwshcu.F90' 
+        ! write(iulog,*) 'Source air is too dry and pLCL is set to psmin in uwshcu.F90' 
         qsinvert = psmin
         return
     end if
