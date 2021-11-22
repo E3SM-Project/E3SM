@@ -30,7 +30,7 @@
  *  Max Snapshots Per File:       INT                   (default: 1)
  *  Fields:
  *     GRID_NAME_1:
- *        Fields Names:            ARRAY OF STRINGS
+ *        Fields Names:           ARRAY OF STRINGS
  *        IO Grid Name:           STRING                (optional)
  *     GRID_NAME_2:
  *        Fields Names:           ARRAY OF STRINGS

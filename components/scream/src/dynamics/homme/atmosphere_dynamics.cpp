@@ -255,12 +255,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // ------ Sanity checks ------- //
 
   // Nobody should claim to be a provider for dp, w_i.
-  // WARNING! If the assumption on 'pseudo_density' ceasaes to be true, you have to revisit
+  // WARNING! If the assumption on 'pseudo_density' ceases to be true, you have to revisit
   //          how you restart homme. In particular, p_mid is restarted from pseudo_density,
   //          as it is read from restart file. If other procs update it, the restarted value
   //          might no longer match the end-of-homme-step value, which is what you need
   //          to compute p_mid. Hence, if this assumption goes away, you need to restart
-  //          p_mid by first remapping the reestarted dp3d_dyn back to ref grid, and using
+  //          p_mid by first remapping the restarted dp3d_dyn back to ref grid, and using
   //          that value to compute p_mid.
   const auto& rho_track = get_field_out("pseudo_density").get_header().get_tracking();
   const auto& w_i_track = get_field_out("w_int").get_header().get_tracking();

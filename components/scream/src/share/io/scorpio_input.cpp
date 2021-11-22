@@ -174,7 +174,7 @@ register_fields_specs() {
     const auto& fid = fh.get_identifier();
     const auto& fl  = fid.get_layout();
 
-    // Store tha layout
+    // Store the layout
     m_layouts.emplace(name,fl);
 
     // If we can alias the field's host view, do it.
