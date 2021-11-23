@@ -10,6 +10,7 @@
 #include "share/grid/se_grid.hpp"
 #include "share/util/scream_utils.hpp"
 
+#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
 
@@ -147,6 +148,8 @@ protected:
   KokkosTypes<DefaultDevice>::view_1d<Int>      pack_alloc_property;
   KokkosTypes<DefaultDevice>::view_1d<bool>     is_state_field_dev;
   KokkosTypes<DefaultDevice>::view<int>         states_tl_idx;
+  // Only meaningful for 3d fields. Set to -1 for 2d fields, in case wrongfully used
+  KokkosTypes<DefaultDevice>::view_1d<Int>      num_levels;
 
   void initialize_device_variables();
 
@@ -431,6 +434,7 @@ initialize_device_variables()
   has_parent          = decltype(has_parent)          ("has_parent",               this->m_num_fields);
   pack_alloc_property = decltype(pack_alloc_property) ("phys_pack_alloc_property", this->m_num_fields);
   is_state_field_dev  = decltype(is_state_field_dev)  ("is_state_field_dev",       this->m_num_fields);
+  num_levels          = decltype(num_levels)          ("num_physical_levels",      this->m_num_fields);
   states_tl_idx       = decltype(states_tl_idx)       ("states_time_level");
 
   auto h_phys_ptrs   = Kokkos::create_mirror_view(phys_ptrs);
@@ -444,6 +448,7 @@ initialize_device_variables()
   auto h_has_parent          = Kokkos::create_mirror_view(has_parent);
   auto h_pack_alloc_property = Kokkos::create_mirror_view(pack_alloc_property);
   auto h_is_state_field_dev  = Kokkos::create_mirror_view(is_state_field_dev);
+  auto h_num_levels          = Kokkos::create_mirror_view(num_levels);
 
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& phys = m_phys[i];
@@ -512,6 +517,8 @@ initialize_device_variables()
       compute_view_dims<Real>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
     }
 
+    h_num_levels(i) = is_phys_field_3d ? phys_dim.back() : -1;
+
     // Store time levels
     h_is_state_field_dev(i) = m_is_state_field[i];
   }
@@ -527,6 +534,7 @@ initialize_device_variables()
   Kokkos::deep_copy(has_parent,          h_has_parent);
   Kokkos::deep_copy(pack_alloc_property, h_pack_alloc_property);
   Kokkos::deep_copy(is_state_field_dev,  h_is_state_field_dev);
+  Kokkos::deep_copy(num_levels,          h_num_levels);
 }
 
 template<typename RealType>
@@ -984,6 +992,10 @@ local_remap_fwd_3d (const MT& team) const
   const auto& dim_p = phys_dims(i).dims;
   const auto& dim_d = dyn_dims(i).dims;
 
+  constexpr int PackSize = sizeof(ScalarT) / sizeof(RealType);
+  using PI = ekat::PackInfo<PackSize>;
+  const int num_packs = PI::num_packs(num_levels(i));
+
   switch (phys_layout(i)) {
     case etoi(LayoutType::Scalar3D):
     {
@@ -992,10 +1004,10 @@ local_remap_fwd_3d (const MT& team) const
       if (is_state_field_dev(i)) {
         auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_d[4]);
+        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*num_packs);
         const auto f = [&] (const int idx) {
-          const int icol = idx/dim_d[4];
-          const int ilev = idx%dim_d[4];
+          const int icol = idx / num_packs;
+          const int ilev = idx % num_packs;
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
           dyn(elgp[0],states_tl_idx(),elgp[1],elgp[2],ilev) = phys(icol,ilev);
@@ -1004,10 +1016,10 @@ local_remap_fwd_3d (const MT& team) const
       } else {
         auto dyn = reshape<ScalarT,4> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_d[3]);
+        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*num_packs);
         const auto f = [&] (const int idx) {
-          const int icol = idx/dim_d[3];
-          const int ilev = idx%dim_d[3];
+          const int icol = idx / num_packs;
+          const int ilev = idx % num_packs;
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
           dyn(elgp[0],elgp[1],elgp[2],ilev) = phys(icol,ilev);
@@ -1019,15 +1031,15 @@ local_remap_fwd_3d (const MT& team) const
     case etoi(LayoutType::Vector3D):
     {
       auto phys = reshape<ScalarT,3> (phys_ptrs(i), phys_dims(i));
+      const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_p[1]*num_packs);
 
       if (is_state_field_dev(i)) {
         auto dyn = reshape<ScalarT,6> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_p[1]*dim_d[5]);
         const auto f = [&] (const int idx) {
-          const int icol =  idx/(dim_p[1]*dim_d[5]);
-          const int idim = (idx/dim_d[5])%dim_p[1];
-          const int ilev =  idx%dim_d[5];
+          const int icol = (idx / num_packs) / dim_p[1];
+          const int idim = (idx / num_packs) % dim_p[1];
+          const int ilev =  idx % num_packs;
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
           dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
@@ -1036,11 +1048,10 @@ local_remap_fwd_3d (const MT& team) const
       } else {
         auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*dim_p[1]*dim_d[4]);
         const auto f = [&] (const int idx) {
-          const int icol =  idx/(dim_p[1]*dim_d[4]);
-          const int idim = (idx/dim_d[4])%dim_p[1];
-          const int ilev =  idx%dim_d[4];
+          const int icol = (idx / num_packs) / dim_p[1];
+          const int idim = (idx / num_packs) % dim_p[1];
+          const int ilev =  idx % num_packs;
 
           const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
           dyn(elgp[0],idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
@@ -1125,12 +1136,16 @@ local_remap_bwd_3d (const MT& team) const
 
   const auto& dim_p = phys_dims(i).dims;
 
+  constexpr int PackSize = sizeof(ScalarT) / sizeof(RealType);
+  using PI = ekat::PackInfo<PackSize>;
+  const int num_packs = PI::num_packs(num_levels(i));
+
   switch (phys_dims(i).size) {
     case 2:
     {
       auto phys = reshape<ScalarT,2> (phys_ptrs(i), phys_dims(i));
 
-      const auto tr = Kokkos::TeamThreadRange(team, dim_p[1]);
+      const auto tr = Kokkos::TeamThreadRange(team, num_packs);
       if (is_state_field_dev(i)) {
         auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
 
@@ -1151,24 +1166,23 @@ local_remap_bwd_3d (const MT& team) const
     case 3:
     {
       auto phys = reshape<ScalarT,3> (phys_ptrs(i), phys_dims(i));
+      const auto tr = Kokkos::TeamThreadRange(team, dim_p[1]*num_packs);
 
       if (is_state_field_dev(i)) {
         auto dyn = reshape<ScalarT,6> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, dim_p[1]*dim_p[2]);
         const auto f = [&] (const int idx) {
-          const int idim = idx%dim_p[1];
-          const int ilev = idx/dim_p[1];
+          const int idim = idx / num_packs;
+          const int ilev = idx % num_packs;
           phys(icol,idim,ilev) = dyn(elgp[0],states_tl_idx(),idim,elgp[1],elgp[2],ilev);
         };
         Kokkos::parallel_for(tr, f);
       } else {
         auto dyn = reshape<ScalarT,5> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, dim_p[1]*dim_p[2]);
         const auto f = [&] (const int idx) {
-          const int idim = idx%dim_p[1];
-          const int ilev = idx/dim_p[1];
+          const int idim = idx / num_packs;
+          const int ilev = idx % num_packs;
           phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
         };
         Kokkos::parallel_for(tr, f);
