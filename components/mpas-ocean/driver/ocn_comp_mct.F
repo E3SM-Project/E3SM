@@ -2497,7 +2497,7 @@ contains
                                                avgOceanSurfaceDMS, &
                                                avgOceanSurfaceDMSP, &
                                                avgOceanSurfaceDOCr, &
-                                               avgOceanSurfaceDOCSum, &
+                                               avgOceanSurfaceDOCSemiLabile, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
 
@@ -2581,7 +2581,7 @@ contains
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
-        call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSum', avgOceanSurfaceDOCSum)
+        call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
      endif
@@ -2668,9 +2668,9 @@ contains
           o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
           o2x_o % rAttr(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
           o2x_o % rAttr(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
-          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSum(i))
-          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSum(i))
-          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSum(i))
+          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
           o2x_o % rAttr(index_o2x_So_don1,   n) = 0.0_RKIND
           o2x_o % rAttr(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
           o2x_o % rAttr(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))

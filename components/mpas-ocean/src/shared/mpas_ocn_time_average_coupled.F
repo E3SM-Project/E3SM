@@ -74,7 +74,7 @@ module ocn_time_average_coupled
                                                     avgOceanSurfaceDMS, &
                                                     avgOceanSurfaceDMSP, &
                                                     avgOceanSurfaceDOCr, &
-                                                    avgOceanSurfaceDOCSum, &
+                                                    avgOceanSurfaceDOCSemiLabile, &
                                                     avgOceanSurfaceFeParticulate, &
                                                     avgOceanSurfaceFeDissolved
 
@@ -130,7 +130,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
-           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSum', avgOceanSurfaceDOCSum)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
 
@@ -142,7 +142,7 @@ module ocn_time_average_coupled
               avgOceanSurfacePhytoC(:,iCell) = 0.0_RKIND
 
               avgOceanSurfaceDIC(iCell) = 0.0_RKIND
-              avgOceanSurfaceDOCSum(iCell) = 0.0_RKIND
+              avgOceanSurfaceDOCSemiLabile(iCell) = 0.0_RKIND
               avgOceanSurfaceNO3(iCell) = 0.0_RKIND
               avgOceanSurfaceSiO3(iCell) = 0.0_RKIND
               avgOceanSurfaceNH4(iCell) = 0.0_RKIND
@@ -231,7 +231,7 @@ module ocn_time_average_coupled
 
         real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
                                                     avgOceanSurfaceDON, &
-                                                    avgOceanSurfaceDOCSum, &
+                                                    avgOceanSurfaceDOCSemiLabile, &
                                                     avgOceanSurfaceNO3, &
                                                     avgOceanSurfaceSiO3, &
                                                     avgOceanSurfaceNH4, &
@@ -311,7 +311,7 @@ module ocn_time_average_coupled
 
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
-         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSum', avgOceanSurfaceDOCSum)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
@@ -340,7 +340,7 @@ module ocn_time_average_coupled
 
            avgOceanSurfaceDIC(iCell) = ( avgOceanSurfaceDIC(iCell) * nAccumulatedCoupled &
               + ecosysTracers(dic_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
-           avgOceanSurfaceDOCSum(iCell) = ( avgOceanSurfaceDOCSum(iCell) * nAccumulatedCoupled &
+           avgOceanSurfaceDOCSemiLabile(iCell) = ( avgOceanSurfaceDOCSemiLabile(iCell) * nAccumulatedCoupled &
               + ecosysTracers(doc_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceSiO3(iCell) = ( avgOceanSurfaceSiO3(iCell) * nAccumulatedCoupled &
               + ecosysTracers(sio3_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)

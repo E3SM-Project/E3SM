@@ -687,8 +687,8 @@
 			<var name="avgOceanSurfaceDIC" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
 				description="Ocean Surface DIC concentration"
 			/>
-			<var name="avgOceanSurfaceDOCSum" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
-				description="Total Ocean Surface DOC concentration"
+			<var name="avgOceanSurfaceDOCSemiLabile" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
+				description="Total Ocean Surface DOC semi-labile concentration"
 			/>
 			<var name="avgOceanSurfaceNO3" type="real" dimensions="nCells Time" units="mmol N m^{-3}"
 				description="Ocean Surface NO3 concentration"
