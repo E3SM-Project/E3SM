@@ -1350,9 +1350,9 @@
 
 <!-- For now, the P3/SHOC build still tries to build Kokkos,  -->
 <!-- so just disable COMPOSE and use Eulerian tracer transport -->
-<!-- <transport_alg       use_MMF="1" dyn_target="theta-l">0</transport_alg> -->
-<!-- <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l">1</hypervis_subcycle_q> -->
-<!-- <dt_tracer_factor    use_MMF="1" dyn_target="theta-l">1</dt_tracer_factor> -->
+<transport_alg       use_MMF="1" dyn_target="theta-l">0</transport_alg>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l">1</hypervis_subcycle_q>
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l">1</dt_tracer_factor>
 
 
 <!-- ================================================================== -->
