@@ -394,7 +394,7 @@ void SPAFunctions<S,D>
   std::vector<int> global_idx;
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
     int dof = row_global_h(idx) - (1-min_dof); // Note, the dof ids may start with 0 or 1.  In the data they certainly start with 1.  This maps 1 -> true min dof.
-    for (int id=0;id<dofs_gids_h.size();id++) {
+    for (int id=0;id<dofs_gids_h.extent_int(0);id++) {
       if (dof == dofs_gids_h(id)) {
         global_idx.push_back(idx);
         local_idx.push_back(id);
@@ -411,7 +411,7 @@ void SPAFunctions<S,D>
   auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
   auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
   auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  for (int idx=0;idx<local_idx.size();idx++) {
+  for (size_t idx=0;idx<local_idx.size();idx++) {
       int ii = global_idx[idx];
       weights_h(idx)         = S_global_h(ii);
       target_grid_loc_h(idx) = local_idx[idx];
@@ -537,7 +537,6 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(aer_tau_sw_h,0.0);
   Kokkos::deep_copy(aer_tau_lw_h,0.0);
 
-  const Int nk_pack = ekat::npack<Spack>(spa_horiz_interp.source_grid_nlevs);
   auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
   auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
   auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
