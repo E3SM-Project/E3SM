@@ -5,6 +5,9 @@
 FW = ../../../mpas-framework/src
 SHARED_INCLUDES  = -I$(FW)/framework -I$(FW)/external/esmf_time_f90 -I$(FW)/operators
 SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/mode_forward
+ifeq "$(SLM)" "true"
+SHARED_INCLUDES += -I$(PWD)/SeaLevelModel
+endif
 
 all: core_landice
 
@@ -15,7 +18,7 @@ analysis_members: shared
 	(cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
 
-mode_forward: shared analysis_members
+mode_forward: shared analysis_members sea_level_model
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
 sea_level_model:
