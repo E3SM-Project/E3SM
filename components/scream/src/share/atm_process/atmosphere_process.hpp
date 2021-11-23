@@ -163,10 +163,10 @@ public:
   virtual const std::list<field_type>& get_internal_fields  () const { return m_internal_fields; }
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
-  bool is_required_field (const FieldIdentifier& id) const;
-  bool is_computed_field (const FieldIdentifier& id) const;
-  bool is_required_group (const std::string& name, const std::string& grid) const;
-  bool is_computed_group (const std::string& name, const std::string& grid) const;
+  bool has_required_field (const FieldIdentifier& id) const;
+  bool has_computed_field (const FieldIdentifier& id) const;
+  bool has_required_group (const std::string& name, const std::string& grid) const;
+  bool has_computed_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }

@@ -40,7 +40,7 @@ void AtmosphereProcess::finalize (/* what inputs? */) {
 
 void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
   // Sanity check
-  EKAT_REQUIRE_MSG (is_required_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (has_required_field(f.get_header().get_identifier()),
     "Error! Input field is not required by this atm process.\n"
     "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "    atm process: " + this->name() + "\n"
@@ -62,7 +62,7 @@ void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
 
 void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
   // Sanity check
-  EKAT_REQUIRE_MSG (is_computed_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (has_computed_field(f.get_header().get_identifier()),
     "Error! Input field is not computed by this atm process.\n"
     "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
@@ -84,7 +84,7 @@ void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
 
 void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (is_required_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not require the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
@@ -111,7 +111,7 @@ void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group)
 
 void AtmosphereProcess::set_computed_group (const FieldGroup<Real>& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (is_computed_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not compute the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
@@ -244,7 +244,7 @@ void AtmosphereProcess::check_computed_fields () {
   }
 }
 
-bool AtmosphereProcess::is_required_field (const FieldIdentifier& id) const {
+bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
   for (const auto& it : m_required_field_requests) {
     if (it.fid==id) {
       return true;
@@ -252,7 +252,7 @@ bool AtmosphereProcess::is_required_field (const FieldIdentifier& id) const {
   }
   return false;
 }
-bool AtmosphereProcess::is_computed_field (const FieldIdentifier& id) const {
+bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
   for (const auto& it : m_computed_field_requests) {
     if (it.fid==id) {
       return true;
@@ -261,7 +261,7 @@ bool AtmosphereProcess::is_computed_field (const FieldIdentifier& id) const {
   return false;
 }
 
-bool AtmosphereProcess::is_required_group (const std::string& name, const std::string& grid) const {
+bool AtmosphereProcess::has_required_group (const std::string& name, const std::string& grid) const {
   for (const auto& it : m_required_group_requests) {
     if (it.name==name && it.grid==grid) {
       return true;
@@ -269,7 +269,7 @@ bool AtmosphereProcess::is_required_group (const std::string& name, const std::s
   }
   return false;
 }
-bool AtmosphereProcess::is_computed_group (const std::string& name, const std::string& grid) const {
+bool AtmosphereProcess::has_computed_group (const std::string& name, const std::string& grid) const {
   for (const auto& it : m_computed_group_requests) {
     if (it.name==name && it.grid==grid) {
       return true;

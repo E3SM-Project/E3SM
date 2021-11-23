@@ -180,7 +180,7 @@ set_required_field (const Field<const Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   int first_proc_that_needs_f = -1;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->is_required_field(fid)) {
+    if (m_atm_processes[iproc]->has_required_field(fid)) {
       first_proc_that_needs_f = iproc;
       break;
     }
@@ -201,7 +201,7 @@ set_required_field (const Field<const Real>& f) {
   //       in case they contain some of the fields in this group.
   bool computed = false;
   for (int iproc=0; iproc<first_proc_that_needs_f; ++iproc) {
-    if (m_atm_processes[iproc]->is_computed_field(fid)) {
+    if (m_atm_processes[iproc]->has_computed_field(fid)) {
       computed = true;
       goto endloop;
     }
@@ -247,7 +247,7 @@ set_required_group (const FieldGroup<const Real>& group) {
   // Find the first process that requires this group
   int first_proc_that_needs_group = -1;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->is_required_group(group.m_info->m_group_name,group.grid_name())) {
+    if (m_atm_processes[iproc]->has_required_group(group.m_info->m_group_name,group.grid_name())) {
       first_proc_that_needs_group = iproc;
       break;
     }
@@ -272,7 +272,7 @@ set_required_group (const FieldGroup<const Real>& group) {
     const auto& fn = it.first;
     const auto& fid = it.second->get_header().get_identifier();
     for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {
-      if (m_atm_processes[iproc]->is_computed_field(fid)) {
+      if (m_atm_processes[iproc]->has_computed_field(fid)) {
         computed.insert(fid.name());
         goto endloop;
       }
@@ -318,7 +318,7 @@ void AtmosphereProcessGroup::
 set_required_group_impl (const FieldGroup<const Real>& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->is_required_group(group.m_info->m_group_name,group.grid_name())) {
+    if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_required_group(group);
     }
   }
@@ -328,14 +328,14 @@ void AtmosphereProcessGroup::
 set_computed_group_impl (const FieldGroup<Real>& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->is_computed_group(group.m_info->m_group_name,group.grid_name())) {
+    if (atm_proc->has_computed_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_computed_group(group);
     }
     // In sequential scheduling, some groups may be computed by
     // a process and used by the next one. In this case, the group
     // may not figure as 'input' for the group, but we still
     // need to set it in the processes that need it.
-    if (atm_proc->is_required_group(group.m_info->m_group_name,group.grid_name())) {
+    if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_required_group(group.get_const());
     }
   }
@@ -344,7 +344,7 @@ set_computed_group_impl (const FieldGroup<Real>& group)
 void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->is_required_field(fid)) {
+    if (atm_proc->has_required_field(fid)) {
       atm_proc->set_required_field(f);
     }
   }
@@ -353,14 +353,14 @@ void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f
 void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->is_computed_field(fid)) {
+    if (atm_proc->has_computed_field(fid)) {
       atm_proc->set_computed_field(f);
     }
     // In sequential scheduling, some fields may be computed by
     // a process and used by the next one. In this case, the field
     // does not figure as 'input' for the group, but we still
     // need to set it in the processes that need it.
-    if (atm_proc->is_required_field(fid)) {
+    if (atm_proc->has_required_field(fid)) {
       atm_proc->set_required_field(f.get_const());
     }
   }
@@ -369,7 +369,7 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
 void AtmosphereProcessGroup::
 process_required_group (const GroupRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (is_computed_group(req.name,req.grid)) {
+    if (has_computed_group(req.name,req.grid)) {
       // Some previous atm proc computes this group, so it's not an 'input'
       // of the atm group as a whole. However, we might need a different
       // pack size. So, instead of adding to the required groups,
@@ -392,7 +392,7 @@ process_required_group (const GroupRequest& req) {
 void AtmosphereProcessGroup::
 process_required_field (const FieldRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (is_computed_field(req.fid)) {
+    if (has_computed_field(req.fid)) {
       // Some previous atm proc computes this field, so it's not an 'input'
       // of the group as a whole. However, we might need a different pack size,
       // or want to add it to a different group. So, instead of adding to
