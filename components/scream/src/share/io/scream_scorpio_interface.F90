@@ -419,8 +419,6 @@ contains
         ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
         call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
-        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
-        hist_var%pio_decomp_tag = trim(hist_var%pio_decomp_tag)//"_"//trim(dimlen_str)
       end do
 
       ! Register Variable with PIO

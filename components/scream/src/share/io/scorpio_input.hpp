@@ -151,7 +151,7 @@ protected:
   void set_degrees_of_freedom();
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
-  std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
+  std::string get_io_decomp (const FieldLayout& layout);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables

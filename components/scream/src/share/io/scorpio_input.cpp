@@ -414,7 +414,11 @@ void AtmosphereInput::register_variables()
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
-    auto io_decomp_tag = get_io_decomp(vec_of_dims);
+    auto io_decomp_tag = get_io_decomp(m_layouts.at(name));
+
+    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
+    // may need to delete this line when switching to full C++/C implementation.
+    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
 
     // Register the variable
     // TODO  Need to change dtype to allow for other variables. 
@@ -437,23 +441,24 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
     dims_names[i] = scorpio::get_nc_tag_name(layout.tag(i),layout.dim(i));
   }
 
-  // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
-  // may need to delete this line when switching to full C++/C implementation.
-  std::reverse(dims_names.begin(),dims_names.end());
-
   return dims_names;
 }
 
 /* ---------------------------------------------------------- */
-std::string AtmosphereInput::get_io_decomp(const std::vector<std::string>& dims_names)
+std::string AtmosphereInput::
+get_io_decomp(const FieldLayout& layout)
 {
   // Given a vector of dimensions names, create a unique decomp string to register with I/O
   // Note: We are hard-coding for only REAL input here.
   // TODO: would be to allow for other dtypes
   std::string io_decomp_tag = "Real";
-  for (auto it = dims_names.crbegin(); it!=dims_names.crend(); ++it) {
-    const auto& dim = *it;
-    io_decomp_tag += "-" + dim;
+  auto dims_names = get_vec_of_dims(layout);
+  for (size_t i=0; i<dims_names.size(); ++i) {
+    io_decomp_tag += "-" + dims_names[i];
+    // If tag==CMP, we already attached the length to the tag name
+    if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
+      io_decomp_tag += "_" + std::to_string(layout.dim(i));
+    }
   }
 
   return io_decomp_tag;

@@ -354,7 +354,12 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     const auto& layout = fid.get_layout();
     for (int i=0; i<fid.get_layout().rank(); ++i) {
       const auto tag_name = get_nc_tag_name(layout.tag(i), layout.dim(i));
-      io_decomp_tag += "-" + tag_name; // Concatenate the dimension string to the io-decomp string
+      // Concatenate the dimension string to the io-decomp string
+      io_decomp_tag += "-" + tag_name;
+      // If tag==CMP, we already attached the length to the tag name
+      if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
+        io_decomp_tag += "_" + std::to_string(layout.dim(i));
+      }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
     // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger? 
