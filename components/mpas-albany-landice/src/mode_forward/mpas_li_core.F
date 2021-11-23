@@ -70,6 +70,7 @@ module li_core
       use li_setup
       use li_constants
       use li_subglacial_hydro
+      use li_bedtopo
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
 
@@ -287,6 +288,10 @@ module li_core
 
       ! Initialize subglacial hydrology solver
       call li_SGH_init(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Initialize bed topo module
+      call li_bedtopo_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! initialize analysis driver
