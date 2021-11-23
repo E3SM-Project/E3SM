@@ -768,7 +768,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   realHost4d crm_state_nr              = realHost4d( "crm_state_nr            ",crm_state_nr_p             , crm_nz, crm_ny    , crm_nx    , pcols); 
   realHost4d crm_state_qi              = realHost4d( "crm_state_qi            ",crm_state_qi_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_ni              = realHost4d( "crm_state_ni            ",crm_state_ni_p             , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost4d crm_state_qv              = realHost4d( "crm_state_qv            ",crm_state_qv_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qm              = realHost4d( "crm_state_qm            ",crm_state_qm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_bm              = realHost4d( "crm_state_bm            ",crm_state_bm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost2d crm_state_t_prev          = realHost2d( "crm_state_t_prev        ",crm_state_t_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
@@ -897,7 +896,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   ::crm_output_qci            = real4d( "crm_output_qci          ",   crm_nz, crm_ny    , crm_nx  , pcols);
   ::crm_output_qpl            = real4d( "crm_output_qpl          ",   crm_nz, crm_ny    , crm_nx  , pcols);
   ::crm_output_qpi            = real4d( "crm_output_qpi          ",   crm_nz, crm_ny    , crm_nx  , pcols);
-  ::crm_output_z0m            = real1d( "crm_output_z0m          "                                , pcols); 
   ::crm_output_precc          = real1d( "crm_output_precc        "                                , pcols); 
   ::crm_output_precl          = real1d( "crm_output_precl        "                                , pcols); 
   ::crm_output_precsc         = real1d( "crm_output_precsc       "                                , pcols); 
@@ -1190,11 +1188,11 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
 }
 
 
-
 void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                               real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
                               real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                               real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                              real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                               real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
                               real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
                               real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
@@ -1428,10 +1426,6 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_ql              = real2d();
   ::crm_input_tau00           = real1d();
   ::crm_input_phis            = real1d();
-  ::crm_input_shf          = real1d();
-  ::crm_input_cflx           = real1d(); 
-  ::crm_input_wsx            = real1d();
-  ::crm_input_wsy            = real1d();
 #ifdef MMF_ESMT
   ::crm_input_ul_esmt         = real2d();
   ::crm_input_vl_esmt         = real2d();
@@ -1926,10 +1920,6 @@ real2d crm_input_qiil  ;
 real2d crm_input_ql    ;
 real1d crm_input_tau00 ;
 real1d crm_input_phis  ;
-real1d crm_input_shf; 
-real1d crm_input_cflx ; 
-real1d crm_input_wsx  ;
-real1d crm_input_wsy  ;
 #ifdef MMF_ESMT
 real2d crm_input_ul_esmt;
 real2d crm_input_vl_esmt;

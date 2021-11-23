@@ -52,24 +52,9 @@ void pre_timeloop() {
   auto &crm_state_temperature     = :: crm_state_temperature; 
   auto &micro_field               = :: micro_field;
   auto &microphysics_scheme       = :: microphysics_scheme;
-  auto &relvar                    = :: relvar;
-  auto &nccn_prescribed           = :: nccn_prescribed;
-  auto &zm                        = :: zm;
-  auto &sl                        = :: sl;
-  auto &ast                       = :: ast;
-  auto &omega                     = :: omega;
-  auto &crm_input_relvar          = :: crm_input_relvar;
-  auto &crm_input_nccn_prescribed = :: crm_input_nccn_prescribed;
-  auto &crm_input_t_prev          = :: crm_input_t_prev;
-  auto &crm_input_qv_prev         = :: crm_input_qv_prev;
-  auto &crm_input_zm              = :: crm_input_zm;
-  auto &crm_input_sl              = :: crm_input_sl;
-  auto &crm_input_ast             = :: crm_input_ast;
-  auto &crm_input_omega           = :: crm_input_omega;
-  auto &crm_input_npccn           = :: crm_input_npccn;
+  auto &crm_input_nccn            = :: crm_input_nccn;
+  auto &crm_input_nc_nuceat_tend  = :: crm_input_nc_nuceat_tend;
   auto &crm_input_ni_activated    = :: crm_input_ni_activated;
-  auto &t_prev                    = :: t_prev;
-  auto &qv_prev                   = :: qv_prev;
   auto &crm_state_qt              = :: crm_state_qt;
   auto &crm_state_qp              = :: crm_state_qp;
   auto &crm_state_qn              = :: crm_state_qn;
@@ -79,13 +64,12 @@ void pre_timeloop() {
   auto &crm_state_nr              = :: crm_state_nr;
   auto &crm_state_qi              = :: crm_state_qi;
   auto &crm_state_ni              = :: crm_state_ni;
-  auto &crm_state_qs              = :: crm_state_qs;
-  auto &crm_state_ns              = :: crm_state_ns;
-  auto &crm_state_qg              = :: crm_state_qg;
-  auto &crm_state_ng              = :: crm_state_ng;
-  auto &crm_state_qv              = :: crm_state_qv;
   auto &crm_state_qm              = :: crm_state_qm;
   auto &crm_state_bm              = :: crm_state_bm;
+  auto &crm_state_t_prev          = :: crm_state_t_prev;
+  auto &crm_state_q_prev          = :: crm_state_q_prev;
+  auto &t_prev                    = :: t_prev;
+  auto &q_prev                    = :: q_prev;
   auto &qn                        = :: qn;
   auto &colprec                   = :: colprec;
   auto &colprecs                  = :: colprecs;
@@ -191,6 +175,7 @@ void pre_timeloop() {
   auto &use_VT                     = :: use_VT;
   auto &crm_input_phis             = :: crm_input_phis;
   auto &phis                       = :: phis;
+  auto &nccn                       = :: nccn;
   auto &nc_nuceat_tend             = :: nc_nuceat_tend;
   auto &ni_activated               = :: ni_activated;
 
@@ -273,8 +258,6 @@ void pre_timeloop() {
     prespot(k,icrm)=pow((1000.0/pres(k,icrm)),(rgas/cp));
     bet(k,icrm) = ggr/crm_input_tl(plev-(k+1),icrm);
     gamaz(k,icrm)=ggr/cp*z(k,icrm);
-    nc_nuceat_tend(k,icrm)=crm_input_npccn(plev-(k+1),icrm);
-    ni_activated(k,icrm)=crm_input_ni_activated(plev-(k+1),icrm);
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -364,7 +347,6 @@ void pre_timeloop() {
 
   } else if (microphysics_scheme == "p3") {
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm);
       micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
       micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
       micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
@@ -374,8 +356,8 @@ void pre_timeloop() {
       micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
       micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
       qn(k,j,i,icrm)                    = crm_state_qn(k,j,i,icrm);
-      t_prev(k,j+offy_s,i+offx_s,icrm)  = crm_input_t_prev(plev-k-1,icrm);
-      qv_prev(k,j+offy_s,i+offx_s,icrm) = crm_input_qv_prev(plev-k-1,icrm);
+      t_prev(k,j+offy_s,i+offx_s,icrm)  = crm_state_t_prev(plev-k-1,icrm);
+      q_prev(k,j+offy_s,i+offx_s,icrm)  = crm_state_q_prev(plev-k-1,icrm);
    });
   }
 
@@ -468,13 +450,10 @@ void pre_timeloop() {
       q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
     }
     if (microphysics_scheme == "p3") {
-      relvar(k,icrm) = crm_input_relvar(l,icrm);
-      nccn_prescribed(k,icrm) = crm_input_nccn_prescribed(l,icrm);
+      nccn(k,icrm)           = crm_input_nccn(l,icrm);
+      nc_nuceat_tend(k,icrm) = crm_input_nc_nuceat_tend(plev-(k+1),icrm);
+      ni_activated(k,icrm)   = crm_input_ni_activated(plev-(k+1),icrm);
     }
-    zm(k,icrm) = crm_input_zm(l,icrm);
-    sl(k,icrm) = crm_input_sl(l,icrm);
-    ast(k,icrm) = crm_input_ast(l,icrm);
-    omega(k,icrm) = crm_input_omega(l,icrm); 
   });
 
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

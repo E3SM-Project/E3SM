@@ -74,11 +74,6 @@ void post_timeloop() {
   auto &crm_state_nr            = :: crm_state_nr;
   auto &crm_state_qi            = :: crm_state_qi;  
   auto &crm_state_ni            = :: crm_state_ni; 
-  auto &crm_state_qs            = :: crm_state_qs; 
-  auto &crm_state_ns            = :: crm_state_ns;
-  auto &crm_state_qg            = :: crm_state_qg;
-  auto &crm_state_ng            = :: crm_state_ng;
-  auto &crm_state_qv            = :: crm_state_qv;
   auto &crm_state_qm            = :: crm_state_qm;
   auto &crm_state_bm            = :: crm_state_bm;
   auto &micro_field             = :: micro_field;
@@ -375,7 +370,7 @@ void post_timeloop() {
       crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
       crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
 
-      crm_output_tk(k,j,i,icrm) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+      crm_output_tk(k,j,i,icrm)  = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
       crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
       crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
       crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
@@ -385,7 +380,6 @@ void post_timeloop() {
 
   } else if (microphysics_scheme == "p3") {
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      crm_state_qv(k,j,i,icrm) = micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm);
       crm_state_qi(k,j,i,icrm) = micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm);
       crm_state_qi(k,j,i,icrm) = micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm);
       crm_state_nc(k,j,i,icrm) = micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm);

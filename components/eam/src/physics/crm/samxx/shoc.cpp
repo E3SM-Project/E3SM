@@ -1,6 +1,9 @@
 
 #include "shoc.h"
 
+// temporarily disable all this code for now
+#ifdef use_shoc
+
 using namespace scream;
 using namespace scream::shoc;
 
@@ -325,3 +328,5 @@ void shoc_proc() {
     // sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
   });
 }
+
+#endif

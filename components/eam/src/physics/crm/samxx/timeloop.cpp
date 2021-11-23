@@ -168,11 +168,8 @@ void timeloop() {
       //-----------------------------------------------------------
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
-//#if defined(p3)
-        micro_p3_proc();
-//#else 
-//        micro_proc();
-//#endif
+        if (microphysics_scheme == "sam1mom") { micro_proc(); }
+        // if (microphysics_scheme == "p3"     ) { micro_p3_proc(); }
       }
 
       //-----------------------------------------------------------

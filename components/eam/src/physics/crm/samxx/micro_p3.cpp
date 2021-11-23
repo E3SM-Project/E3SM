@@ -1,6 +1,9 @@
 
 #include "micro_p3.h"
 
+// temporarily disable all this code for now
+#ifdef use_p3
+
 using namespace scream;
 using namespace scream::p3;
 
@@ -416,4 +419,6 @@ void micro_p3_proc() {
      
   if (docloud)  micro_p3_diagnose();   // leave this line here
 }
+
+#endif
 
