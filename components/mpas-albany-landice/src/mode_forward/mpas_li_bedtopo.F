@@ -66,7 +66,9 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine li_bedtopo_init(domain, err)
-
+#ifdef USE_SEALEVELMODEL
+      use planets_mod
+#endif
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -94,6 +96,8 @@ contains
 #ifdef USE_SEALEVELMODEL
       ! add calls to code in the sea level model inside ifdefs only.
       call mpas_log_write("<<< Compiled successfully with Sea Level Model! >>>") ! Replace with actual call
+      call earth_init()
+      call mpas_log_write("<<< Successfully called earth_init! >>>") ! Replace with actual call
 #endif
 
    !--------------------------------------------------------------------
