@@ -18,7 +18,16 @@ analysis_members: shared
 mode_forward: shared analysis_members
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
-core_landice: mode_forward shared analysis_members
+sea_level_model:
+ifeq "$(SLM)" "true"
+	if [ -e SeaLevelModel/.git ]; then \
+		(cd SeaLevelModel; $(MAKE) all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	else \
+                (echo "Missing mpas-ocean/src/SeaLevelModel/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
+	fi
+endif
+
+core_landice: mode_forward shared analysis_members sea_level_model
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_input_gen:
@@ -49,3 +58,8 @@ clean:
 	(cd shared; $(MAKE) clean)
 	(cd mode_forward; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
+ifeq "$(SLM)" "true"
+	if [ -e SeaLevelModel/.git ]; then \
+		(cd SeaLevelModel; $(MAKE) clean) \
+	fi
+endif

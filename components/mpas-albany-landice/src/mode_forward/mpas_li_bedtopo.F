@@ -91,6 +91,11 @@ contains
       ! No init is needed.
       err = 0
 
+#ifdef USE_SEALEVELMODEL
+      ! add calls to code in the sea level model inside ifdefs only.
+      call mpas_log_write("<<< Compiled successfully with Sea Level Model! >>>") ! Replace with actual call
+#endif
+
    !--------------------------------------------------------------------
 
    end subroutine li_bedtopo_init
@@ -218,7 +223,10 @@ subroutine li_bedtopo_solve(domain, err)
       endif
 
 
-
+#ifdef USE_SEALEVELMODEL
+      ! add calls to code in the sea level model inside ifdefs only.
+      call mpas_log_write("<<< Compiled successfully with Sea Level Model! >>>") ! Replace with actual call
+#endif
 
 
       ! === error check
