@@ -175,11 +175,11 @@ contains
 
                 smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
                 ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
-                temp_solutionp(c,j) = ( col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
-                            (flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + &
-                            col_pf%secondp_to_labilep_vr(c,j)*dt + col_pf%supplement_to_sminp_vr(c,j)*dt - &
-                            col_pf%sminp_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
-                            col_pf%sminp_leached_vr(c,j)*dt ))
+                temp_solutionp(c,j) = col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
+                     (flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + &
+                     col_pf%secondp_to_labilep_vr(c,j)*dt + col_pf%supplement_to_sminp_vr(c,j)*dt - &
+                     col_pf%sminp_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
+                     col_pf%sminp_leached_vr(c,j)*dt )
 
                  if (temp_solutionp(c,j) < 0.0_r8) then
 
@@ -210,6 +210,7 @@ contains
                     temp_solutionp(c,j) = 0.0_r8
                     col_ps%solutionp_vr(c,j) = 0.0_r8
                     col_ps%labilep_vr(c,j) = 0.0_r8
+
                  else
                        ! sorbp = smax*solutionp/(ks+solutionp)
                        ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition

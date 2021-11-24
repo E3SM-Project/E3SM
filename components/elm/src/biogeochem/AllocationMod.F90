@@ -964,6 +964,7 @@ contains
    integer :: c,p,l,j,k ! indices
    integer :: fp        ! lake filter pft index
    integer :: fc        ! lake filter column index
+   integer :: ft        ! functional type index
    integer :: f         ! loop index for plant competitors
    integer :: ci, s     ! used for FATES BC (clump index, site index)
    integer :: ft        ! FATES PFT index
@@ -975,7 +976,7 @@ contains
    real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nh4 demand per competitor per soil layer
    real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
    real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
-   
+   real(r8) :: ndemand,pdemand
    integer  :: nc   ! clump index
    integer  :: pci, pcf                        ! (I)nitial and (F)inal plant competitor index
    real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array
@@ -1189,6 +1190,7 @@ contains
                  
               end do
 
+              
            else  !(ECA)
 
               do f = 1,n_pcomp
@@ -1293,9 +1295,6 @@ contains
 
         end if
 
-
-
-
         ! Starting resolving N limitation !!!
         ! =============================================================
         ! This section is modified, Aug 2015 by Q. Zhu
@@ -1303,7 +1302,7 @@ contains
         ! (2) nitrogen and phosphorus uptake is based on root kinetics
         ! (3) no second pass nutrient uptake for plants
         ! ============================================================= 
-
+        
         if (nu_com .eq. 'RD') then
 
 
@@ -1375,8 +1374,8 @@ contains
                                    f_denit_vr(c,:))                     ! OUT
 
             col_plant_ndemand_vr(c,:) = col_plant_nh4demand_vr(c,:)+col_plant_no3demand_vr(c,:)
-      
-        end if
+
+         end if
 
 
         do j = 1, nlevdecomp
@@ -1426,7 +1425,7 @@ contains
            actual_immob_vr(c,j) = actual_immob_no3_vr(c,j) + actual_immob_nh4_vr(c,j)
 
         end do
-
+        
         ! Starting resolving P limitation !!!
         ! =============================================================
 
@@ -1820,7 +1819,7 @@ contains
 
             do f = 1,n_pcomp
                do j = 1,nlevdecomp
-                  
+
                   elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) = & 
                        elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) + & 
                        plant_nh4demand_vr_fates(f,j) * fpg_nh4_vr(c,j)  * dzsoi_decomp(j) * dt
@@ -3093,7 +3092,7 @@ contains
        end do
 
        e_km = e_km + e_decomp_scalar*decompmicc(j)*(1._r8/km_decomp_nh4 + 1._r8/km_nit)
-
+       
        do i = 1, n_pcomp
           ip = filter_pcomp(i)
           ft = ft_index(ip)
