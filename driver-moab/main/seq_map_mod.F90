@@ -163,7 +163,7 @@ contains
   subroutine moab_map_init_rcfile( mbappid, mbtsid, type_grid, comp_s, comp_d, &
     maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
 
-   use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
+   use iMOAB, only: iMOAB_LoadMappingWeights
    implicit none
    !-----------------------------------------------------
    !

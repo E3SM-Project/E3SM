@@ -349,10 +349,10 @@ contains
           call moab_map_init_rcfile(mbrmapro, mboxid, type_grid, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq moab initialization',esmf_map_flag)
-          appname = "ROF_COU"//CHAR(0)
+          appname = "ROF_COU"//C_NULL_CHAR
                ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
           rmapid = rof(1)%cplcompid 
-          ierr = iMOAB_RegisterApplicationFortran(trim(appname), mpicom_CPLID, rmapid, mbrxoid)
+          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbrxoid)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof on coupler in ocean context '
              call shr_sys_abort(subname//' ERROR in registering  rof on coupler in ocean context ')

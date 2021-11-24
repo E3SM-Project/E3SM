@@ -265,8 +265,9 @@ contains
     !  computes the comm graph after intersection
     !
     ! Arguments
-   type(seq_infodata_type) , intent(in)    :: infodata
 
+   use iMOAB, only: iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh
+   type(seq_infodata_type) , intent(in)    :: infodata
    character(*), parameter          :: subname = '(prep_rof_ocn_moab)'
    integer :: ierr
 
@@ -283,8 +284,6 @@ contains
    integer                  :: typeA   ! type for computing graph, in this case it is 2 (point cloud)
    integer                  :: direction ! will be 1, source to coupler
    character*32             :: prefix_output ! for writing a coverage file for debugging
-
-   integer, external ::   iMOAB_MigrateMapMeshFortran, iMOAB_WriteLocalMesh
 
    call seq_infodata_getData(infodata, &
         rof_present=rof_present,       &
@@ -304,7 +303,7 @@ contains
    call seq_comm_getData(rof_id, mpigrp=mpigrp_rof)    !  component group pes, from rof id ( also ROFID(1) )
    typeA = 2 ! point cloud
    direction = 1 ! 
-   ierr = iMOAB_MigrateMapMeshFortran (mrofid, mbrmapro, mbrxoid, mpicom_join, mpigrp_rof, &
+   ierr = iMOAB_MigrateMapMesh (mrofid, mbrmapro, mbrxoid, mpicom_join, mpigrp_rof, &
       mpigrp_CPLID, typeA, rof_id, id_join, direction)
    
    if (ierr .ne. 0) then
