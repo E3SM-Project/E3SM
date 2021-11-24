@@ -97,8 +97,10 @@ contains
       err = 0
 
 #ifdef USE_SEALEVELMODEL
+      call mpas_log_write("<<< 1.Successfully called slmodel_init()! >>>") ! Replace with actual call
 		call slmodel_init()
-      call mpas_log_write("<<< Successfully called slmodel_init()! >>>") ! Replace with actual call
+      call mpas_log_write("<<< 2.Successfully called slmodel_init()! >>>") ! Replace with actual call
+		
 #endif
 
    !--------------------------------------------------------------------
@@ -322,8 +324,8 @@ subroutine li_bedtopo_solve(domain, err)
 	subroutine slmodel_init
 	   use sl_model_mod !HH
 		! declare variables
-		integer :: iter_sh, itersl_sh
-		real    :: starttime_sh 
+		integer :: iter_sh, itersl_sh, dtime_sh
+		real    :: starttime_sh
 		! check if we are on the head processor
 		! get initial topography from MALI 
 		     ! gather topography to the headnode
@@ -332,7 +334,9 @@ subroutine li_bedtopo_solve(domain, err)
 		iter_sh = 0 
 		itersl_sh = 1	   ! * note: hardcode itersl_sh == 1. 
 		starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation) 
-	   
+	   dtime_sh = 100
+		
+		call sl_solver_checkpoint(itersl_sh, dtime_sh)
 		call set_planet 
 		call sl_timewindow(iter_sh)
 			 ! * note: read in namelist values. SLM should return dtime from its own namelist file and MALI stores the values
