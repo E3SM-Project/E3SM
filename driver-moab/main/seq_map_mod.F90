@@ -207,7 +207,7 @@ contains
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
    !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
-   sol_identifier = 'scalar'//CHAR(0)
+   sol_identifier = 'map-from-file'//CHAR(0)
    mapfile_term = trim(mapfile)//CHAR(0)
    if (seq_comm_iamroot(CPLID)) then
        write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
