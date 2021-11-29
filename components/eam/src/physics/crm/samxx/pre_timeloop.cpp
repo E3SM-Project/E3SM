@@ -258,8 +258,6 @@ void pre_timeloop() {
     prespot(k,icrm)=pow((1000.0/pres(k,icrm)),(rgas/cp));
     bet(k,icrm) = ggr/crm_input_tl(plev-(k+1),icrm);
     gamaz(k,icrm)=ggr/cp*z(k,icrm);
-    nc_nuceat_tend(k,icrm)=crm_input_npccn(plev-(k+1),icrm);
-    ni_activated(k,icrm)=crm_input_ni_activated(plev-(k+1),icrm);
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {

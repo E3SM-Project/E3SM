@@ -99,7 +99,8 @@ contains
          call prefetch(state%ns)
          call prefetch(state%ng)
       end if
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+#if defined(MMF_SAMXX)
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          if (.not. allocated(state%qc))          allocate(state%qc(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qi))          allocate(state%qi(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qr))          allocate(state%qr(ncrms,crm_nx,crm_ny,crm_nz))
@@ -120,13 +121,14 @@ contains
          call prefetch(state%bm)
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
-      end if
-      if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
+      ! end if
+      ! if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (.not. allocated(state%qp))          allocate(state%qp(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%qn))          allocate(state%qn(ncrms,crm_nx,crm_ny,crm_nz))
          call prefetch(state%qp)
          call prefetch(state%qn)
-      end if
+      ! end if
+#endif
 
    end subroutine crm_state_initialize
    !------------------------------------------------------------------------------------------------
@@ -153,7 +155,8 @@ contains
          if (allocated(state%ns)) deallocate(state%ns)
          if (allocated(state%ng)) deallocate(state%ng)
       end if
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+#if defined(MMF_SAMXX)
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          if (allocated(state%qc)) deallocate(state%qc)
          if (allocated(state%qi)) deallocate(state%qi)
          if (allocated(state%qr)) deallocate(state%qr)
@@ -164,11 +167,12 @@ contains
          if (allocated(state%bm)) deallocate(state%bm)
          if (allocated(state%t_prev)) deallocate(state%t_prev)
          if (allocated(state%q_prev)) deallocate(state%q_prev)
-      end if
-      if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
+      ! end if
+      ! if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (allocated(state%qp)) deallocate(state%qp)
          if (allocated(state%qn)) deallocate(state%qn)
-      end if
+      ! end if
+#endif
 
    end subroutine crm_state_finalize
 end module crm_state_module

@@ -453,8 +453,8 @@ extern real4d crm_state_qi;
 extern real4d crm_state_ni;
 extern real4d crm_state_qm;
 extern real4d crm_state_bm;
-extern real2d crm_state_t_prev;
-extern real2d crm_state_q_prev;
+extern real4d crm_state_t_prev;
+extern real4d crm_state_q_prev;
 
 extern real4d crm_rad_qrad;
 extern real4d crm_rad_temperature;

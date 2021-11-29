@@ -127,14 +127,14 @@ contains
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
 
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          if (.not. allocated(input%nccn          ))  allocate(input%nccn(ncrms,nlev))
          if (.not. allocated(input%nc_nuceat_tend))  allocate(input%nc_nuceat_tend(ncrms,nlev))
          if (.not. allocated(input%ni_activated  ))  allocate(input%ni_activated(ncrms,nlev))
          call prefetch(input%nccn)
          call prefetch(input%nc_nuceat_tend)
          call prefetch(input%ni_activated)
-      end if
+      ! end if
 
       ! Initialize
       input%zmid    = 0
@@ -174,11 +174,11 @@ contains
       input%t_vt = 0
       input%q_vt = 0
 
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          input%nccn           = 0
          input%nc_nuceat_tend = 0
          input%ni_activated   = 0
-      end if
+      ! end if
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------

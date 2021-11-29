@@ -770,8 +770,8 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   realHost4d crm_state_ni              = realHost4d( "crm_state_ni            ",crm_state_ni_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qm              = realHost4d( "crm_state_qm            ",crm_state_qm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_bm              = realHost4d( "crm_state_bm            ",crm_state_bm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost2d crm_state_t_prev          = realHost2d( "crm_state_t_prev        ",crm_state_t_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost2d crm_state_q_prev          = realHost2d( "crm_state_q_prev        ",crm_state_q_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_t_prev          = realHost4d( "crm_state_t_prev        ",crm_state_t_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_q_prev          = realHost4d( "crm_state_q_prev        ",crm_state_q_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_rad_qrad              = realHost4d( "crm_rad_qrad            ",crm_rad_qrad_p             , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
 
   realHost1d crm_output_subcycle_factor  = realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                           , pcols); 
@@ -824,8 +824,8 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   ::crm_state_ni              = real4d( "crm_state_ni            ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_qm              = real4d( "crm_state_qm            ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_bm              = real4d( "crm_state_bm            ", crm_nz, crm_ny    , crm_nx    , pcols);
-  ::crm_state_t_prev          = real2d( "crm_state_t_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
-  ::crm_state_q_prev          = real2d( "crm_state_q_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_t_prev          = real4d( "crm_state_t_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_q_prev          = real4d( "crm_state_q_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
 
   ::crm_rad_qrad              = real4d( "crm_rad_qrad            ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_temperature       = real4d( "crm_rad_temperature     ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
@@ -1451,8 +1451,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_state_ni              = real4d();
   ::crm_state_qm              = real4d();
   ::crm_state_bm              = real4d();
-  ::crm_state_t_prev          = real2d();
-  ::crm_state_q_prev          = real2d();
+  ::crm_state_t_prev          = real4d();
+  ::crm_state_q_prev          = real4d();
 
   ::crm_rad_qrad              = real4d();
   ::crm_rad_temperature       = real4d();
@@ -1945,8 +1945,8 @@ real4d crm_state_qi;
 real4d crm_state_ni;
 real4d crm_state_qm;
 real4d crm_state_bm;
-real2d crm_state_t_prev;
-real2d crm_state_q_prev;
+real4d crm_state_t_prev;
+real4d crm_state_q_prev;
 
 real4d crm_rad_qrad;
 real4d crm_rad_temperature;
