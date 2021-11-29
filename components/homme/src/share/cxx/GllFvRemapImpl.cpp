@@ -287,7 +287,6 @@ g2f_mixing_ratio (const KernelVariables& kv, const int np2, const int nf2, const
                   const WT& w1, const WT& w2, const int iqf, const QT& qf) {
   using g = GllFvRemapImpl;
   using Kokkos::parallel_for;
-  const auto ttrg = Kokkos::TeamThreadRange(kv.team, np2);
   const auto ttrf = Kokkos::TeamThreadRange(kv.team, nf2);
   const auto tvr  = Kokkos::ThreadVectorRange(kv.team, nlev);
 

@@ -64,8 +64,8 @@ struct ComposeTransportImpl {
 
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
-        hv_subcycle_q(0), independent_time_steps(false), nu_q(0), hv_scaling(0),
-        dp_tol(-1), geometry_type(0)
+        hv_subcycle_q(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
+        independent_time_steps(false)
     {}
   };
 
