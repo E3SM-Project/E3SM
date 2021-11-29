@@ -30,3 +30,14 @@ message(STATUS "YAKL Flags: ${YAKL_COMPILER_FLAGS}")
 # Include YAKL source and library directories
 include_directories(${YAKL_BIN})
 
+# include copy of SCREAM code for P3/SHOC
+include_directories(${SCREAM_SOURCE_DIR}/share)
+include_directories(${SCREAM_SOURCE_DIR}/physics/p3)
+include_directories(${SCREAM_SOURCE_DIR}/physics/share)
+include_directories(${SCREAM_SOURCE_DIR}/physics/shoc)
+include_directories(${SCREAM_BIN_DIR}/src)
+include_directories(${SCREAM_BIN_DIR}/src/share)
+include_directories(${SCREAM_BIN_DIR}/src/physics/p3)
+include_directories(${SCREAM_BIN_DIR}/src/physics/shoc)
+include_directories(${SCREAM_BIN_DIR}/src/physics/share)
+
