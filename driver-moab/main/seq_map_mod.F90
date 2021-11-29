@@ -163,7 +163,7 @@ contains
   subroutine moab_map_init_rcfile( mbappid, mbtsid, type_grid, comp_s, comp_d, &
     maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
 
-   use iMOAB, only: iMOAB_LoadMappingWeights
+   use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
    implicit none
    !-----------------------------------------------------
    !
@@ -215,7 +215,7 @@ contains
 
    col_or_row = 0 ! row based distribution
 
-   ierr = iMOAB_LoadMappingWeights( mbappid, mbtsid, col_or_row, type_grid, sol_identifier, mapfile_term)
+   ierr = iMOAB_LoadMappingWeightsFromFile( mbappid, mbtsid, col_or_row, type_grid, sol_identifier, mapfile_term)
    if (ierr .ne. 0) then
       write(logunit,*) subname,' error in loading map file'
       call shr_sys_abort(subname//' ERROR in loading map file')
