@@ -51,15 +51,11 @@ module ocn_vmix
    !
    !--------------------------------------------------------------------
 
-   private :: tridiagonal_solve, &
-              tridiagonal_solve_mult
-
    public :: ocn_vmix_coefs, &
              ocn_vel_vmix_tend_implicit, &
              ocn_tracer_vmix_tend_implicit, &
              ocn_vmix_init, &
-             ocn_vmix_implicit, &
-             ocn_compute_kpp_rhs
+             ocn_vmix_implicit
 
    !--------------------------------------------------------------------
    !
