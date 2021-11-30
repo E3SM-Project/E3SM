@@ -75,11 +75,27 @@ contains
   !
    do ie=nets,nete
      ! update final ps_v
+#define DEF
+#ifdef DEF
      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
           sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+#else
+
+     elem(ie)%state%ps_v(:,:,np1) = elem(ie)%ai(1)*hvcoord%ps0 + &
+          sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+#endif
+
      do k=1,nlev
+
+#ifdef DEF
         dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+#else
+
+        dp(:,:,k) = ( elem(ie)%ai(k+1) - elem(ie)%ai(k) )*hvcoord%ps0 + &
+             ( elem(ie)%bi(k+1) - elem(ie)%bi(k) )*elem(ie)%state%ps_v(:,:,np1)
+#endif
+
         if (rsplit==0) then
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k))

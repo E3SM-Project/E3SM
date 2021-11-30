@@ -30,6 +30,12 @@ module element_mod
 
   !___________________________________________________________________
   type, public :: element_t
+
+
+     real (kind=real_kind)    :: am(nlev), bm(nlev), ai(nlevp), bi(nlevp)
+
+
+
      integer(kind=int_kind) :: LocalId       ! element numbering on each MPI task
      integer(kind=int_kind) :: GlobalId      ! global element numbering independent of MPI decomposition
 

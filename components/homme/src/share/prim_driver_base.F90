@@ -827,6 +827,19 @@ contains
   end interface
 #endif
 
+
+          do ie=nets,nete
+
+               !( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               !( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+
+             elem(ie)%am  = hvcoord%hyam
+             elem(ie)%bm  = hvcoord%hybm
+             elem(ie)%ai  = hvcoord%hyai
+             elem(ie)%bi  = hvcoord%hybi
+          enddo
+
+
     if (topology == "cube" .OR. topology=='plane') then
        call test_global_integral(elem, hybrid,nets,nete)
     end if
