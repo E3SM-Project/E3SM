@@ -1745,7 +1745,11 @@ contains
     ! use reading a restart as a surrogate from whether this is a startup run
 
     skip_ocean_run = .true.
-    if (read_restart .and. ocn_prognostic) skip_ocean_run = .false.
+    if ( read_restart) skip_ocean_run = .false.
+    !================================================================
+    !skip_ocean_run = .true.
+    !if (read_restart .and. ocn_prognostic) skip_ocean_run = .false.
+    !================================================================
     !skip_ocean_run = .false.
     !if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
