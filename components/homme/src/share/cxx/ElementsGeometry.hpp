@@ -48,6 +48,8 @@ public:
 
   ElementsGeometry() : m_num_elems(0) {}
 
+  Real m_rearth;
+
   void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
              const Real rearth,
              const bool alloc_sphere_coords=false);
@@ -71,7 +73,6 @@ public:
 private:
   bool m_consthv;
   int  m_num_elems;
-  Real m_rearth;
 };
 
 } // Homme

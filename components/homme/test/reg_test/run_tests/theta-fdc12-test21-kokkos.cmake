@@ -14,8 +14,7 @@ SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES
-  dcmip2012_test2_11.nc
-  dcmip2012_test2_12.nc)
+  dcmip2012_test2_11.nc)
 
 
 #DO NOT MOD

@@ -1032,6 +1032,9 @@ public:
   ExecViewManaged<const Real * [NP][NP]>        m_metdet;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_d;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_dinv;
+
+  Real m_rearth;
+  Real m_rrearth;
 };
 
 } // namespace Homme
