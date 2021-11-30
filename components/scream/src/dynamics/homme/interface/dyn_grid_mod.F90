@@ -54,8 +54,8 @@ contains
     !
     ! Inputs
     !
-    real(kind=c_double), intent(out), pointer :: lat (:), lon(:)
-    integer(kind=c_int), intent(out), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:)
+    real(kind=c_double), intent(out) :: lat (:), lon(:)
+    integer(kind=c_int), intent(out) :: cg_gids (:), dg_gids(:), elgpgp(:,:)
     !
     ! Local(s)
     !
