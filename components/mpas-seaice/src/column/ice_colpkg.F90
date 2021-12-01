@@ -533,10 +533,11 @@
          doc, don, dic, fed, fep, zaeros, hum,  &
          ocean_bio_all, &
          max_algae, max_doc, max_dic, max_don,  max_fe, max_nbtrcr, max_aero, &
-         l_stop, stop_label)
+         DOCPoolFractions, use_macromolecules, l_stop, stop_label)
 
       use ice_constants_colpkg, only: c0, c1, c2, p1, p15, p5
-      use ice_zbgc_shared, only: R_S2N, zbgc_frac_init, zbgc_init_frac, remap_zbgc
+      use ice_zbgc_shared, only: R_S2N, zbgc_frac_init, zbgc_init_frac, remap_zbgc, &
+           doc_pool_fractions
 
       ! column package includes
       use ice_colpkg_tracers, only: nt_fbri, nt_bgc_S, nt_sice, nt_zbgc_frac, &
@@ -562,21 +563,23 @@
          max_fe, &
          max_nbtrcr, &
          max_aero
- 
+
       real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: &
          igrid     ! biology vertical interface points
- 
-      real (kind=dbl_kind), dimension (nilyr+1), intent(inout) :: &
-         cgrid     ! CICE vertical coordinate   
 
-      logical (kind=log_kind), intent(in) :: & 
-         restart_bgc ! if .true., read bgc restart file
+      real (kind=dbl_kind), dimension (nilyr+1), intent(inout) :: &
+         cgrid     ! CICE vertical coordinate
+
+      logical (kind=log_kind), intent(in) :: &
+         restart_bgc, & ! if .true., read bgc restart file
+         use_macromolecules ! if .true., doc ocean fractions are determined &
+                            ! by the ocean macromolecules subroutine
 
       real (kind=dbl_kind), dimension(nilyr, ncat), intent(in) :: &
          sicen     ! salinity on the cice grid
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
-         trcrn     ! subset of tracer array (only bgc) 
+         trcrn     ! subset of tracer array (only bgc)
 
       real (kind=dbl_kind), intent(in) :: &
          sss       ! sea surface salinity (ppt)
@@ -610,6 +613,9 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          ocean_bio_all   ! fixed order, all values even for tracers false
 
+      real (kind=dbl_kind), dimension (:), intent(out) :: &
+         DOCPoolFractions   ! Fraction of DOC in polysacharids, lipids, and proteins
+
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
 
@@ -641,6 +647,13 @@
       zspace(1)       = p5*zspace(1)
       zspace(nblyr+1) = p5*zspace(nblyr+1)
       ntrcr_bgc       = ntrcr-ntrcr_o
+
+      DOCPoolFractions(:) = c1
+      if (.not. use_macromolecules) then
+        do mm = 1,max_doc
+           DOCPoolFractions(mm) = doc_pool_fractions(mm)
+        end do
+      end if
 
       call colpkg_init_OceanConcArray(max_nbtrcr,                &
                                  max_algae, max_don,  max_doc,   &
