@@ -83,8 +83,12 @@ void BfbTreeAllReducer<ES>
   const auto nf = nfield_;
   cedr_assert(ns.levels[0].nodes.size() == static_cast<size_t>(nlocal_));
 
-  // We want to be behaviorally const but still permit lazy finish_setup.
-  if ( ! bd_.size()) const_cast<Me*>(this)->finish_setup();
+  { // We want to be behaviorally const but still permit lazy finish_setup.
+    //   Cuda 10.1.105 with GCC 8.5.0 incorrectly misses the const_cast; for
+    // some reason, adding remove_const fixes that.
+    typedef typename std::remove_const<Me>::type MeLcl;
+    if ( ! bd_.size()) const_cast<MeLcl*>(this)->finish_setup();
+  }
 
   const auto buf_host = get_send_host(send);
 
