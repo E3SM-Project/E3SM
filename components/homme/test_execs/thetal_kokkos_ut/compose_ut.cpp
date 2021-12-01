@@ -20,6 +20,7 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 #include "VerticalRemapManager.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -154,6 +155,7 @@ struct Session {
 
     init_geometry_f90();    
     auto& geo = c.get<ElementsGeometry>();
+    geo.m_rearth = PhysicalConstants::rearth0;
 
     auto& sphop = c.create<SphereOperators>();
     sphop.setup(geo, ref_FE);

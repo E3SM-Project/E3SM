@@ -61,6 +61,12 @@ public:
     setup (geometry, ref_FE);
   }
 
+  //only for unit tests
+  SphereOperators (const Real rearth)
+  {
+    m_rearth   = rearth;
+    m_rrearth  = 1./rearth;
+  }
 
   void setup (const ElementsGeometry& geometry,
               const ReferenceElement& ref_FE) {
