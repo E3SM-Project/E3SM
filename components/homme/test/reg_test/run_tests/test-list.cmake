@@ -98,6 +98,8 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-fhs2
      theta-fhs3
      theta-fdc12-test21
+     theta-fdc12-test22
+     theta-fdc12-test3
   )
 
   #all tests that will be used for cxx-vs-F bfb testing

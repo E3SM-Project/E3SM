@@ -9,7 +9,7 @@ SET(EXEC_NAME theta-nlev128)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc12.nl)
+SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc12-test21.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
 # compare all of these files against baselines:

@@ -3,18 +3,18 @@
 #or              theta-form0-ttype5-hvs1-hvst0-r3-q1-nutop0-samenu-kokkos
 #adding BB to each var to avoid unwanted substitutions
 
-SET(TEST_NAME theta-fdc12-test21-kokkos)
+SET(TEST_NAME theta-fdc12-test3)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME theta-nlev128-kokkos)
+SET(EXEC_NAME theta-nlev128)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc12-test21.nl)
+SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta-fdc12-test3.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES
-  dcmip2012_test2_11.nc)
+  dcmip2012_test31.nc)
 
 
 #DO NOT MOD
