@@ -40,9 +40,9 @@ extern "C" {
   void init_geometry_f90();
 
   void run_gfr_test(int* nerr);
-  void run_gfr_check_api(int* nerr);
+  void run_gfr_check_api(bool theta_hydrostatic_mode, int* nerr);
 
-  void gfr_init_f90(int nf, int ftype, bool theta_hydrostatic_mode);
+  void gfr_init_f90(int nf, bool theta_hydrostatic_mode);
   void gfr_init_hxx();
   void gfr_finish_f90();
 
@@ -51,7 +51,7 @@ extern "C" {
   void gfr_dyn_to_fv_phys_f90(int nf, int nt, Real* ps, Real* phis, Real* T, Real* uv,
                               Real* omega_p, Real* q);
 
-  void gfr_fv_phys_to_dyn_f90(int nf, int nt, Real dt, Real* T, Real* uv, Real* q);
+  void gfr_fv_phys_to_dyn_f90(int nf, int nt, Real* T, Real* uv, Real* q);
   void cmp_dyn_data_f90(int nlev_align, int nq, Real* ft, Real* fm, Real* q, Real* fq, int* nerr);
 } // extern "C"
 
@@ -71,6 +71,48 @@ decltype(Kokkos::create_mirror_view(V())) cmvdc (const V& v) {
   const auto h = Kokkos::create_mirror_view(v);
   deep_copy(h, v);
   return h;
+}
+
+// Make a,b a little better behaved so levels don't get too thin.
+static void clean (HybridVCoord& h) {
+  static const int n = NUM_INTERFACE_LEV, nh = (n+1)/2, nh0 = n-nh;
+  const auto ai = cmvdc(h.hybrid_ai);
+  const auto bi = cmvdc(h.hybrid_bi);
+  const auto amp = cmvdc(h.hybrid_am);
+  const auto bmp = cmvdc(h.hybrid_bm);
+  const CA1d am(reinterpret_cast<Real*>(amp.data()), n-1);
+  const CA1d bm(reinterpret_cast<Real*>(bmp.data()), n-1);
+
+  for (int i = 0; i < n; ++i) bi(i) = 0;
+  for (int i = 0; i < nh; ++i) {
+    assert(nh0+i < n);
+    const Real a = Real(i)/(nh-1);
+    bi(nh0+i) = (1-a)*0.02 + a*1;
+  }
+  assert(bi(n-1) == 1);
+
+  Real etai[n];
+  for (int i = 0; i < n; ++i) {
+    const Real a = Real(i)/(n-1);
+    etai[i] = (1-a)*0.0001 + a*1;
+  }
+
+  for (int i = 0; i < n; ++i) {
+    ai(i) = etai[i] - bi(i);
+    assert(ai(i) >= 0);
+  }
+
+  for (int i = 0; i < n-1; ++i) am(i) = (ai(i) + ai(i+1))/2;
+  for (int i = 0; i < n-1; ++i) bm(i) = (bi(i) + bi(i+1))/2;
+
+  deep_copy(h.hybrid_ai, ai);
+  deep_copy(h.hybrid_bi, bi);
+  deep_copy(h.hybrid_am, amp);
+  deep_copy(h.hybrid_bm, bmp);
+
+  h.hybrid_ai0 = ai(0);
+  h.compute_deltas();
+  h.compute_eta();
 }
 
 class Random {
@@ -134,7 +176,9 @@ struct Session {
     auto& c = Context::singleton();
 
     c.create<HybridVCoord>().random_init(seed);
-    h = c.get<HybridVCoord>();
+    auto& h_ref = c.get<HybridVCoord>();
+    clean(h_ref);
+    h = h_ref;
 
     auto& p = c.create<SimulationParams>();
     p.qsize = qsize;
@@ -580,9 +624,9 @@ static void init_dyn_data (Session& s) {
   using g = GllFvRemapImpl;
 
   // randomize C++ data
+  auto& c = Context::singleton();
   const auto hai = cmvdc(s.h.hybrid_ai);
   const auto bai = cmvdc(s.h.hybrid_bi);
-  auto& c = Context::singleton();
   const auto state = c.get<ElementsState>();
   const auto derived = c.get<ElementsDerivedState>();
   const auto tracers = c.get<Tracers>();
@@ -732,13 +776,13 @@ static void test_get_temperature (Session& s) {
   }
 }
 
-static void test_dyn_to_fv_phys (Session& s, const int nf, const int ftype,
-                                 const bool theta_hydrostatic_mode) {
+static void
+test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode) {
   using g = GllFvRemapImpl;
 
   const int nf2 = nf*nf;
 
-  gfr_init_f90(nf, ftype, theta_hydrostatic_mode);
+  gfr_init_f90(nf, theta_hydrostatic_mode);
   gfr_init_hxx();
 
   init_dyn_data(s);
@@ -787,15 +831,14 @@ static void test_dyn_to_fv_phys (Session& s, const int nf, const int ftype,
   gfr_finish_f90();
 }
 
-static void test_fv_phys_to_dyn (Session& s, const int nf, const int ftype,
-                                 const bool theta_hydrostatic_mode) {
+static void
+test_fv_phys_to_dyn (Session& s, const int nf, const bool theta_hydrostatic_mode) {
   using Kokkos::deep_copy;
   using g = GllFvRemapImpl;
   
-  const Real dt = 1800;
   const int nf2 = nf*nf;
 
-  gfr_init_f90(nf, ftype, theta_hydrostatic_mode);
+  gfr_init_f90(nf, theta_hydrostatic_mode);
   gfr_init_hxx();
 
   {
@@ -829,8 +872,8 @@ static void test_fv_phys_to_dyn (Session& s, const int nf, const int ftype,
     auto& gfr = c.get<GllFvRemap>();
 
     const int nt = 1;
-    gfr_fv_phys_to_dyn_f90(nf, nt+1, dt, fT.data(), fuv.data(), ffq.data());
-    gfr.run_fv_phys_to_dyn(nt, dt, dT, duv, dfq);
+    gfr_fv_phys_to_dyn_f90(nf, nt+1, fT.data(), fuv.data(), ffq.data());
+    gfr.run_fv_phys_to_dyn(nt, dT, duv, dfq);
     gfr.run_fv_phys_to_dyn_dss();
   }
 
@@ -879,26 +922,31 @@ TEST_CASE ("gllfvremap_testing") {
     }
 
     // Existing F90 gllfvremap unit tests.
-    int nerr;
-    run_gfr_test(&nerr);
-    REQUIRE(nerr == 0);
-    run_gfr_test(&nerr);
-    REQUIRE(nerr == 0);
+    {
+      int nerr;
+      run_gfr_test(&nerr);
+      REQUIRE(nerr == 0);
+    }
+    {
+      int nerr;
+      const bool thm = true;
+      Context::singleton().get<SimulationParams>().theta_hydrostatic_mode = thm;
+      init_dyn_data(s);
+      run_gfr_check_api(thm, &nerr);
+      REQUIRE(nerr == 0);
+    }
 
     // Main remap routines.
     for (const bool theta_hydrostatic_mode : {false, true}) {
-      auto& c = Context::singleton();
-      for (const int nf : {2,3,4})
-        for (const int ftype : {2}) { // dyn_to_fv_phys is independent of ftype
-          printf("ut> g2f nf %d ftype %d thm %d\n", nf, ftype, (int) theta_hydrostatic_mode);
-          test_dyn_to_fv_phys(s, nf, ftype, theta_hydrostatic_mode);
-        }
+      for (const int nf : {2,3,4}) {
+        printf("ut> g2f nf %d thm %d\n", nf, (int) theta_hydrostatic_mode);
+        test_dyn_to_fv_phys(s, nf, theta_hydrostatic_mode);
+      }
 
-      for (const int nf : {2,3,4})
-        for (const int ftype : {2,0}) {
-          printf("ut> f2g nf %d ftype %d thm %d\n", nf, ftype, (int) theta_hydrostatic_mode);
-          test_fv_phys_to_dyn(s, nf, ftype, theta_hydrostatic_mode);
-        }
+      for (const int nf : {2,3,4}) {
+        printf("ut> f2g nf %d thm %d\n", nf, (int) theta_hydrostatic_mode);
+        test_fv_phys_to_dyn(s, nf, theta_hydrostatic_mode);
+      }
     }
   } catch (...) {}
   Session::delete_singleton();
