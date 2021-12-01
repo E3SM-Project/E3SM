@@ -66,6 +66,10 @@ OR
     parser.add_argument("-o","--overwrite", action="store_true", default=False,
                         help="Overwrite possibly existing variable values")
 
+    # Dimensions addition
+    parser.add_argument("-adims","--add-dimensions",nargs='+', default=[],
+                        help="Add dimensions, if not already existing")
+
     # Variables addition/manipulation
     parser.add_argument("-avars","--add-variables",nargs='+', default=[],
                         help="Add variables with given dimension, setting them to 0 everywhere")
