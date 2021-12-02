@@ -349,6 +349,7 @@ module li_core
       use li_setup
       use li_statistics
       use li_time_integration
+		use li_bedtopo 
 
       implicit none
 
@@ -389,8 +390,7 @@ module li_core
       integer :: restartTimestampUnit
 
       integer :: err, err_tmp, err_tmp2, globalErr
-
-
+		
       err = 0
       err_tmp = 0
       globalErr = 0
@@ -432,7 +432,7 @@ module li_core
             timestepNumber = timestepNumber + 1
             block => block % next
          end do
-
+         write(6,*) '<<< HH: Starting timestep number', timestepNumber
          call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
 
          ! ===
@@ -1044,11 +1044,13 @@ module li_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       type (MPAS_TimeInterval_type) :: adaptDtForceInterval
+	   type (MPAS_TimeInterval_type) :: slm_coupling_interval
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, &
          config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+		character (len=StrKIND), pointer :: config_uplift_method, config_slm_coupling_interval
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
       integer, pointer :: config_year_digits
       integer :: err_tmp
@@ -1067,7 +1069,8 @@ module li_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(configs, 'config_adaptive_timestep_force_interval', config_adaptive_timestep_force_interval)
-
+		call mpas_pool_get_config(configs, 'config_uplift_method', config_uplift_method)
+		call mpas_pool_get_config(configs, 'config_slm_coupling_interval', config_slm_coupling_interval)
 
       ! Set time to the user-specified start time OR use a restart time from file
       if ( trim(config_start_time) == "file" ) then
@@ -1130,6 +1133,18 @@ module li_core
       endif
       ierr = ior(ierr, err_tmp)
 
+      ! Set up the coupling time interval if MALI is coupled to sea-level model 
+	   write(6,*)'<<< (mpas_li_core.F L1134: config uplift method:  '   , config_uplift_method
+      if (trim(config_uplift_method) == "sealevelmodel") then
+			write(6,*)'<<< Setting up an alarm for MALI-SLM coupling time interval>>>'
+			call mpas_set_timeInterval(slm_coupling_interval, timeString=config_slm_coupling_interval, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+			write(6,*) '<<< mpas_li_core.F L1139: config_slm_coupling_interval = ', config_slm_coupling_interval
+	      call mpas_add_clock_alarm(core_clock, 'slmCouplingInterval', alarmTime=startTime, &
+	           alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
+			write(6,*) '<<< mpas_li_core.F L1142: Added alarm clock'
+		endif		
+		
       ! === error check
       if (ierr > 0) then
           call mpas_log_write("An error has occurred in li_simulation_clock_init.", MPAS_LOG_ERR)

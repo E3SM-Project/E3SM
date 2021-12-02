@@ -131,7 +131,12 @@
 	<nml_record name="solidearth" in_defaults="true">
 		<nml_option name="config_uplift_method" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for bedrock uplift calculation."
-		            possible_values="'none', 'data'"
+		            possible_values="'none', 'data', 'sealevelmodel'"
+        />
+                <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
+                            description="Time interval at which the sea-level model is called by MALI"
+                            possible_values="Any positive integer value greater than or equal to 0"
+                    
 		/>
 	</nml_record>
 
