@@ -70,7 +70,7 @@ contains
 		use spharmt 
       use planets_mod
 		use io_mod
-		!use user_specs_mod
+		use user_specs_mod, only: dt1
 #endif
       !-----------------------------------------------------------------
       ! input variables
@@ -87,6 +87,7 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
+		integer :: dtime_sl, iter_sl
 
       !-----------------------------------------------------------------
       ! local variables
@@ -97,10 +98,11 @@ contains
       err = 0
 
 #ifdef USE_SEALEVELMODEL
-      call mpas_log_write("<<< 1.Successfully called slmodel_init()! >>>") ! Replace with actual call
-		call slmodel_init()
-      call mpas_log_write("<<< 2.Successfully called slmodel_init()! >>>") ! Replace with actual call
-		
+      write(6,*)'<<< Calling slmodel_init from li_bedtopo_init! >>>'
+		call mpas_log_write("<<< Calling slmodel_init()! >>>") 
+		call slmodel_init
+		write(6,*)'<<< Successfully called slmodel_init! >>>' ! Replace with actual call
+	   call mpas_log_write("<<< Successfully called slmodel_init()! >>>") 
 #endif
 
    !--------------------------------------------------------------------
@@ -164,6 +166,7 @@ contains
 !-----------------------------------------------------------------------
 subroutine li_bedtopo_solve(domain, err)
 
+      use mpas_timekeeping 
       use li_mask
       use li_advection
 
@@ -189,6 +192,7 @@ subroutine li_bedtopo_solve(domain, err)
 
       type (block_type), pointer :: block
       character (len=StrKIND), pointer :: config_uplift_method
+		character (len=StrKIND), pointer :: config_slm_coupling_interval
       type (mpas_pool_type), pointer :: meshPool          !< mesh information
       type (mpas_pool_type), pointer :: geometryPool      !< geometry information
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
@@ -225,21 +229,35 @@ subroutine li_bedtopo_solve(domain, err)
             block => block % next
          end do
 
+		elseif (trim(config_uplift_method)=='sealevelmodel') then
+			call mpas_log_write("<<< Sea level model is coupled to MALI >>>")
       else
          call mpas_log_write("Unknown option selected for 'config_uplift_method'", MPAS_LOG_ERR)
       endif
 
-
 #ifdef USE_SEALEVELMODEL
-      call mpas_log_write("<<< Calling slmodel_solve! >>>") ! Replace with actual call
-		call slmodel_solve
-      call mpas_log_write("<<< Called slmodel_solve successfully! >>>") ! Replace with actual call
+      if (trim(config_uplift_method)=='sealevelmodel') then
+			call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+		   if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then 
+				err = ior(err, err_tmp)
+			  
+		      call slmodel_solve
+			   write(6,*) "<<< Called slmodel_solve successfully! >>>" 
+            call mpas_log_write("<<< Called slmodel_solve successfully! >>>")
+		      call mpas_reset_clock_alarm(domain % clock, 'slmCouplingInterval', ierr=err_tmp)
+		      err = ior(err, err_tmp)
+			else
+				write(6,*) '<<< mpas alarm is not reading. SLM is not called>>>'
+			 ! do nothing for now, but could calculate uplift rate here later instead. 
+		   endif
+		else
+			call mpas_log_write("'sealevelmodel' should be selected for option 'config_uplift_method'", MPAS_LOG_ERR)
+		endif
 #endif
-
 
       ! === error check
       if (err > 0) then
-          call mpas_log_write("An error has occurred in li_bedtopo_solve.", MPAS_LOG_ERR)
+          call mpas_log_write("An error has occurred in li_bedtopo_solve.")
       endif
 
    !--------------------------------------------------------------------
@@ -305,15 +323,13 @@ subroutine li_bedtopo_solve(domain, err)
 		iter_sh = 0 
 		itersl_sh = 1	   ! * note: hardcode itersl_sh == 1. 
 		starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation) 
-	   dtime_sh = 100
-		
-		!call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
-		call set_planet 
+	   dtime_sh = 2
+		call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
 		call sl_timewindow(iter_sh)
 			 ! * note: read in namelist values. SLM should return dtime from its own namelist file and MALI stores the values
-	   !call sl_solver_init(itersl_sh, starttime_sh)  !Uncomment this after fixing the spharmt error
-		! Deallocate arrays that are set from sl_timewindow()
-	   call deallocate_slarrays
+	   call sl_solver_init(itersl_sh, starttime_sh)  !Uncomment this after fixing the spharmt error
+	   call deallocate_slarrays ! Deallocate arrays that are set from sl_timewindow()
+		!call check_call_slmodel ?
 	end subroutine slmodel_init
 	
 	
@@ -332,11 +348,16 @@ subroutine li_bedtopo_solve(domain, err)
 		! 5. get itersl_sh, iter_sh, dtime_sh, starttime_sh
 		
 	   ! 6. call sl_checkpoint & set_planet & sl_timewindow
-		!call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
-		call set_planet
+		itersl_sh = 1	   ! * note: hardcode itersl_sh == 1. 
+		starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation) 
+	   dtime_sh = 2
+	   iter_sh = 1
+		call mpas_log_write("A")
+		call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
+		call mpas_log_write("B")
 		call sl_timewindow(iter_sh)
       ! 7.  call sl_solver
-		!call sl_solver(itersl_sh, iter_sh, dtime_sh, starttime_sh) !Uncomment this after fixing the spharmt error
+		call sl_solver(itersl_sh, iter_sh, dtime_sh, starttime_sh) !Uncomment this after fixing the spharmt error
 		! 8. deallocate memory within the slm
 		call deallocate_slarrays
 		
@@ -345,6 +366,17 @@ subroutine li_bedtopo_solve(domain, err)
 				! option 2: keep track of both surfaces or one? 
 		! 10. scatter topography to all processors. 
 	end subroutine slmodel_solve
+	
+	!subroutine sl_get_iter(nmelt)
+	!	integer :: iter
+	!	iter = nmelt
+	!end subroutine sl_get_iter
+
+	!subroutine check_call_slmodel(iter_sl, dtime_sl)
+	!	integer :: iter_sl, dtime_sl, timestepNumber
+	!	write(6,*)'CHECK Completed timestep.  New time is: ', iter_sl, dtime_sl, timestepNumber
+	!end subroutine check_call_slmodel
+	
 	
 	! last step (refer to the MPAS Ocean model)
 	subroutine interp_li_to_slm
