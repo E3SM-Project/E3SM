@@ -34,4 +34,9 @@
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%DATMFORCED_DROF%IAF_SGLC_WW3</lname>
   </compset>
 
+  <compset>
+    <alias>AWAV_WCYCLSSP585_CMIP6</alias>
+    <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
+  </compset>
+
 </compsets>

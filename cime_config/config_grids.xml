@@ -1853,6 +1853,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30_oECv3_wQU225EC60to30">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC60to30</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="ne30_oECv3wLI">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
@@ -4032,6 +4042,10 @@
 
     <gridmap atm_grid="T62" wav_grid="wQU225EC60to30">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_T62_TO_wQU225EC60to30_blin.20210428.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_n30np4_TO_wQU225EC60to30_blin.20211130.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">

@@ -1492,6 +1492,28 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne30np4_l%.+oi%oEC60to30.+w%wQU225EC60to30">
+    <mach name="anvil|chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+WW3" pesize="any">
+        <comment>none</comment>
+        <ntasks>
+          <ntasks_atm>1350</ntasks_atm>
+          <ntasks_lnd>72</ntasks_lnd>
+          <ntasks_rof>72</ntasks_rof>
+          <ntasks_ice>1296</ntasks_ice>
+          <ntasks_cpl>1296</ntasks_cpl>
+          <ntasks_ocn>216</ntasks_ocn>
+          <ntasks_wav>612</ntasks_wav>
+        </ntasks>
+        <rootpe>
+          <rootpe_lnd>1296</rootpe_lnd>
+          <rootpe_rof>1296</rootpe_rof>
+          <rootpe_ocn>1368</rootpe_ocn>
+          <rootpe_wav>1584</rootpe_wav>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne30.+_oi%.*EC.*to">
     <mach name="gcp">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
