@@ -356,7 +356,7 @@ contains
 !      !$omp         topIndex, kIndexOBL, deltaVelocitySquared, sigma, OBLDepths, interfaceForcings, &
 !      !$omp         surfaceAverageIndex, sfc_layer_depth, kav, i, iEdge, &
 !      !$omp         normalVelocitySum, layerThicknessEdgeSum, normalVelocityAv, delU2, potentialDensitySum, &
-!      !$omp         layerThicknessSum, blTemp) &
+!      !$omp         layerThicknessSum, blTemp, zonalWavenumberCoeff, meridionalWavenumberCoeff) &
 !      !$omp firstprivate(cvmix_variables, Nsqr_iface, turbulentScalarVelocityScale)
       do iCell = 1, nCells
 
