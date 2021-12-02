@@ -1684,7 +1684,9 @@ contains
                                   stokesDriftMeridionalWavenumber5Field, &
                                   stokesDriftZonalWavenumber6Field, &
                                   stokesDriftMeridionalWavenumber6Field, &
-                                  significantWaveHeightField
+                                  significantWaveHeightField, &
+                                  peakWaveFrequencyField, &
+                                  peakWaveDirectionField
                                   !landIcePressureField
 
    type (field2DReal), pointer :: iceFluxPhytoCField, &
@@ -1743,7 +1745,9 @@ contains
                                                stokesDriftMeridionalWavenumber5, &
                                                stokesDriftZonalWavenumber6, &
                                                stokesDriftMeridionalWavenumber6, &
-                                               significantWaveHeight
+                                               significantWaveHeight, &
+                                               peakWaveFrequency, &
+                                               peakWaveDirection
                                                !landIcePressure
 
    real (kind=RKIND), dimension(:), pointer :: latCell
@@ -1835,6 +1839,8 @@ contains
       call mpas_pool_get_field(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6Field)
       call mpas_pool_get_field(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6Field)
       call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
+      call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
+      call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -1889,6 +1895,8 @@ contains
       stokesDriftZonalWavenumber6 => stokesDriftZonalWavenumber6Field % array
       stokesDriftMeridionalWavenumber6 => stokesDriftMeridionalWavenumber6Field % array
       significantWaveHeight => significantWaveHeightField % array
+      peakWaveFrequency => peakWaveFrequencyField % array
+      peakWaveDirection => peakWaveDirectionField % array
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -2111,6 +2119,12 @@ contains
         if ( significantWaveHeightField % isActive ) then
            significantWaveHeight(i) = x2o_o % rAttr(index_x2o_Sw_Hs, n)
         end if
+        if ( peakWaveFrequency % isActive ) then
+           peakWaveFrequency(i) = x2o_o % rAttr(index_x2o_Sw_Fp, n)
+        end if
+        if ( peakWaveDirection % isActive ) then
+           peakWaveDirection(i) = x2o_o % rAttr(index_x2o_Sw_Dp, n)
+        end if
 
         if (config_cvmix_kpp_use_theory_wave) then
            if ( windSpeed10mField% isActive ) then
@@ -2296,6 +2310,8 @@ contains
    call mpas_pool_get_field(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6Field)
    call mpas_pool_get_field(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6Field)
    call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
+   call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
+   call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -2455,6 +2471,12 @@ contains
    end if
    if ( significantWaveHeightField % isActive ) then
       call mpas_dmpar_exch_halo_field(significantWaveHeightField)
+   end if
+   if ( peakWaveFrequencyField % isActive ) then
+      call mpas_dmpar_exch_halo_field(peakWaveFrequencyField)
+   end if
+   if ( peakWaveDirectionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(peakWaveDirectionField)
    end if
 
    if ( landIceFreshwaterFluxField % isActive ) then

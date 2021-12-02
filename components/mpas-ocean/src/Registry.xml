@@ -3458,6 +3458,14 @@
 			 description="Significant wave height is the average of the highest 1/3 of the waves"
 			 packages="activeWavePKG"
 		/>
+		<var name="peakWaveFrequency" type="real" dimensions="nCells Time" units="s^{-1}"
+			 description="Frequency of peak of wave spectrum"
+			 packages="activeWavePKG"
+		/>
+		<var name="peakWaveDirection" type="real" dimensions="nCells Time" units="deg"
+			 description="Direction of peak of wave spectrum"
+			 packages="activeWavePKG"
+		/>
 		<var name="langmuirNumber" type="real" dimensions="nCells Time" units="m"
 			 description="Projected surface layer averaged Langmuir number from Van Roekel et al. 2012."
 		/>

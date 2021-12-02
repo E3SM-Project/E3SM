@@ -123,7 +123,9 @@ module mpaso_cpl_indices
   integer :: index_x2o_Sw_vstokes_wavenumber_5      ! partitioned Stokes drift wavenumber 5
   integer :: index_x2o_Sw_ustokes_wavenumber_6      ! partitioned Stokes drift wavenumber 6 
   integer :: index_x2o_Sw_vstokes_wavenumber_6      ! partitioned Stokes drift wavenumber 6
-  integer :: index_x2o_Sw_Hs
+  integer :: index_x2o_Sw_Hs         ! Significant wave height
+  integer :: index_x2o_Sw_Fp         ! Peak wave frequency
+  integer :: index_x2o_Sw_Dp         ! Peak wave direction
 
   ! drv -> glc and internal drv fields
 
@@ -311,7 +313,9 @@ contains
     index_x2o_Sw_vstokes_wavenumber_5 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_5')
     index_x2o_Sw_ustokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_6')
     index_x2o_Sw_vstokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_6')
-    index_x2o_Sw_Hs= mct_avect_indexra(x2o,'Sw_Hs')
+    index_x2o_Sw_Hs = mct_avect_indexra(x2o,'Sw_Hs')
+    index_x2o_Sw_Fp = mct_avect_indexra(x2o,'Sw_Fp')
+    index_x2o_Sw_Dp = mct_avect_indexra(x2o,'Sw_Dp')
 
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)

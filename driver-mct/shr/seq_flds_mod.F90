@@ -2522,6 +2522,22 @@ contains
     attname  = 'Sw_Hs'
     call metadata_set(attname, longname, stdname, units)
 
+    call seq_flds_add(w2x_states,'Sw_Fp')
+    call seq_flds_add(x2o_states,'Sw_Fp')
+    longname = 'Peak wave frequency'
+    stdname  = 'peak_wave_frequency'
+    units    = 's-1'
+    attname  = 'Sw_Fp'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_Dp')
+    call seq_flds_add(x2o_states,'Sw_Dp')
+    longname = 'Peak wave direction'
+    stdname  = 'peak_wave_direction'
+    units    = 'deg'
+    attname  = 'Sw_Dp'
+    call metadata_set(attname, longname, stdname, units)
+
     call seq_flds_add(o2x_states,'So_ssh')
     call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Ocean sea surface height'

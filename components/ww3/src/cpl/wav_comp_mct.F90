@@ -155,7 +155,7 @@
                           sig, nk, zb, dmin, &
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va, ust, ice 
-      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs
+      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs, fp0, thp0
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN, ICEP1, ICEP5, TI1, TI5
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -193,7 +193,8 @@
                                     index_w2x_Sw_ustokes_wavenumber_4, index_w2x_Sw_vstokes_wavenumber_4, &
                                     index_w2x_Sw_ustokes_wavenumber_5, index_w2x_Sw_vstokes_wavenumber_5, &
                                     index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6, &
-                                    index_w2x_Sw_Hs
+                                    index_w2x_Sw_Hs, index_w2x_Sw_Fp, index_w2x_Sw_Dp
+
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
       use shr_kind_mod     , only : in=>shr_kind_in, r8=>shr_kind_r8, &
@@ -1217,6 +1218,9 @@ CONTAINS
          if (MAPSTA(IY,IX) .eq. 1) then
 
              w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
+             w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
+             w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
+
 
              w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
              w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
