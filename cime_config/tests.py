@@ -299,7 +299,9 @@ _TESTS = {
         "tests"    : (
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_pg2",
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
-                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2"
+                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
+                 "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_ftype0",
+                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_ftype0",
                  )
     },
     "e3sm_bench_hires_g" : {
