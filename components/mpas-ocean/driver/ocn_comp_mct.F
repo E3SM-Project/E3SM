@@ -2119,10 +2119,10 @@ contains
         if ( significantWaveHeightField % isActive ) then
            significantWaveHeight(i) = x2o_o % rAttr(index_x2o_Sw_Hs, n)
         end if
-        if ( peakWaveFrequency % isActive ) then
+        if ( peakWaveFrequencyField % isActive ) then
            peakWaveFrequency(i) = x2o_o % rAttr(index_x2o_Sw_Fp, n)
         end if
-        if ( peakWaveDirection % isActive ) then
+        if ( peakWaveDirectionField % isActive ) then
            peakWaveDirection(i) = x2o_o % rAttr(index_x2o_Sw_Dp, n)
         end if
 
