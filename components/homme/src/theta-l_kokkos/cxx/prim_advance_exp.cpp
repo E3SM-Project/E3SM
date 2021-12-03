@@ -302,11 +302,10 @@ void ttype9_imex_timestep(const TimeLevel& tl,
   }
   ExecSpace::impl_static_fence();
 
-  Real a1 = 5.0/18.0;
-  Real a2 = 1.0/36.0;
-  Real a3 = 8.0/18.0;
-  dt = dt_dyn;
-  dirk.run(nm1, a2*dt, n0, a1*dt, np1, a3*dt, elements, hvcoord);
+  Real a1 = 5.0*dt_dyn/18.0;
+  Real a2 = dt_dyn/36.0;
+  Real a3 = 8.0*dt_dyn/18.0;
+  dirk.run(nm1, a2, n0, a1, np1, a3, elements, hvcoord);
 
   GPTLstop("ttype9_imex_timestep");
 
