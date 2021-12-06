@@ -383,11 +383,13 @@ module li_core
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
+		character (len=StrKIND), pointer :: config_uplift_method
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
       integer :: restartTimestampUnit
+		integer :: ninner
 
       integer :: err, err_tmp, err_tmp2, globalErr
 		
@@ -399,8 +401,9 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-
-      call mpas_timer_start("land ice core run")
+      call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
+      
+		call mpas_timer_start("land ice core run")
 
       ! initialize time step number.  initial time is 0
       block => domain % blocklist
@@ -410,7 +413,12 @@ module li_core
          timestepNumber = 0
          block => block % next
       end do
-
+		
+		!initialize coupling time step number. initial time is 0
+		if (trim(config_uplift_method)=='sealevelmodel') then
+         ninner = 0         
+		endif
+		
       ! ===
       ! Solve initial state before beginning time stepping
       ! ===
@@ -432,14 +440,26 @@ module li_core
             timestepNumber = timestepNumber + 1
             block => block % next
          end do
-         write(6,*) '<<< HH: Starting timestep number', timestepNumber
+			
+         write(6,*) '<<< 2. mpas_li_core.F L442: Starting timestep number', timestepNumber
+
+			
+         if (trim(config_uplift_method)=='sealevelmodel') then
+			   if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then
+                 ninner = ninner + 1
+					  write(6,*) '<<< mpas alarm is rining from li_core.F L448>>>'
+					  write(6,*) '<<< HH: NMELT COUPLING timestep number, L449>>>', ninner
+				endif	
+			endif 
+			
          call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
 
          ! ===
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-
+		   write(6,*)'<<< 2.25 mpas_li_core.F L461: call li_timestep from mpas_li_time_integration.F'
+			call mpas_log_write('<<< mpas_li_core.F L461: call li_timestep')
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
 
@@ -573,7 +593,6 @@ module li_core
 
    !--------------------------------------------------------------------
    end function li_core_run
-
 
 
 !***********************************************************************
@@ -1134,15 +1153,19 @@ module li_core
       ierr = ior(ierr, err_tmp)
 
       ! Set up the coupling time interval if MALI is coupled to sea-level model 
-	   write(6,*)'<<< (mpas_li_core.F L1134: config uplift method:  '   , config_uplift_method
+	   write(6,*)'<<< 1. (mpas_li_core.F L1134: config uplift method:  '   , config_uplift_method
       if (trim(config_uplift_method) == "sealevelmodel") then
 			write(6,*)'<<< Setting up an alarm for MALI-SLM coupling time interval>>>'
 			call mpas_set_timeInterval(slm_coupling_interval, timeString=config_slm_coupling_interval, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
-			write(6,*) '<<< mpas_li_core.F L1139: config_slm_coupling_interval = ', config_slm_coupling_interval
 	      call mpas_add_clock_alarm(core_clock, 'slmCouplingInterval', alarmTime=startTime, &
 	           alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
-			write(6,*) '<<< mpas_li_core.F L1142: Added alarm clock'
+         ! Reset the alarm for checking for force setting of the adaptive timestep interval
+         if (mpas_is_alarm_ringing(core_clock, 'slmCouplingInterval', ierr=err_tmp)) then
+            ierr = ior(ierr, err_tmp)
+		      call mpas_reset_clock_alarm(core_clock, 'slmCouplingInterval', ierr=err_tmp)
+		      ierr = ior(ierr, err_tmp)	
+			endif			  
 		endif		
 		
       ! === error check
