@@ -1,3 +1,199 @@
+11/30/2021
+
+* Huh.  When I ran with lnd ntasks=64, we crash on a different column
+  (c=30) but same time step 366.  My col=56 prints from this run look like
+  this:
+
+======
+ Beginning timestep   : 2015-01-08_15:00:00
+ TRS Debug2         366          56 -3.825552378243753E-010
+  4.134697279933682E-004  7.551932844945582E-005  6.884084725096922E-005
+  7.310531940145805E-005  1.487689291751433E-002          10
+ TRS Debug2         366          56 -1.434158082969919E-013
+  1.721422719162096E-007  3.751353951305753E-008  4.713990565421693E-007
+  7.310531940145805E-005  1.487689291751433E-002           0
+ CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.t
+ imestep)         366          30   2147483648.00000     
+======
+
+  So these values are of the right magnitude, but different than the
+  ntasks=36 runs - which, I'm not sure should be happening.  The
+  decomposition shouldn't affect each column calculation, right?
+
+  Also, of course, we don't have the spurious 7e21 value blowing everything
+  up.  But note that the errch4 value is *exactly* the same in the old c=56
+  as it is in the currentn c=30 runs.
+
+? Do the c=56 values look the same for previous nsteps?
+
+* Okay, this *now* looks like a memory thing, since changing the memory map
+  across multiple nodes changes the answers I'm getting.
+
+11/29/2021
+
+* Digging into the first error we find with a lnd run - stops at nstep 366
+  with c = 56.  The errch4(c) value jumps to 2147483648.00000, which not
+  merely above the 1e-8 tolerance but comically so, which suggests a math
+  or memory error.
+
+  The element of errch4(c) that blows up is ch4_surf_diff(c) at this time
+  step, which goes from order ~1e-9 in the previous time step, to
+  7.359163363910448E+021. 
+
+  (see
+  /compyfs/d3a230/e3sm_scratch/zlnd_v2/run/lnd.log.253888.211129-104902).
+
+* So now I'm printing near line 3436 to see how ch4_surf_diff(c) is
+  calculated for this nstep.
+
+  ...it looks like conc_ch4_rel(c,1) is the term that blows up, from 1e-6
+  to 1e26 in successive calls near line 3436.  Note that we get two
+  printing of nstep 366 and c=56.  The first call everything looks normal,
+  it's for the second call that conc_ch4_rel(c,1) has blown up.  This can't
+  be in the fc loop, because conc_ch4_rel(c,1) hasn't changed inside this
+  loop, so we must be nested inside another loop...
+
+  Here's the relevant printout from the log:
+
+=======
+ Beginning timestep   : 2015-01-08_15:00:00
+ TRS Debug2         366          56 -1.675304498840987E-009
+  6.455042782800097E-003  9.288544559760978E-005  4.599325768290392E-005
+  6.969888586105318E-005  3.387602486391894E-003          10
+ TRS Debug2         366          56  7.359163363910448E+021
+  1.375684987377554E-004  1.069890771714985E+026  8.083328515988145E-007
+  6.969888586105318E-005  3.387602486391894E-003           0
+ CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.t
+ imestep)         366          56   2147483648.00000     
+ Latdeg,Londeg=  -33.1578947368422        17.5000000000000     
+=======
+
+  ...and here's the code for the printout:
+
+-------
+       if (c .eq. 56) then 
+          write(iulog,*), 'TRS Debug2', nstep, c,&
+               ch4_surf_diff(c), dm1_zm1(c,1), &
+               conc_ch4_rel(c,1), conc_ch4_rel_old(c,1), &
+               c_atm(g,s), k_h_cc(c,0,s), jwt(c)
+       endif
+-------
+
+
+11/18/2021
+
+* To get to run lnd with multiprocessors, I simply did this:
+
+  ./xmlchange --id "NTASKS_LND" --val 24
+
+  You have to do this (which it will tell you):
+
+  ./case.setup --reset
+  ./case.build --clean-all
+  ./case.build
+
+* I had to fix my code to run in multiproc mode, though - I had been
+  skipping the arrays of NaNs by checking the first value of the array
+  (.ie. isnan(foo(1) ).  But since these were column arrays and we decomp
+  over columns, for all but the first proc "1" is not a valid array index.
+  So I had to change all of these to "foo(begc)".  
+
+* So it now runs with 24 procs, and seems to crash in the same place as
+  before, PhosphorusStateUpdate3Mod.F90, line 162.  We now get eight cores
+  dumped, which show the bomb in the same place.  Of course, running
+  asynchronously, some procs will hit the problem before others, so that's
+  why we don't get 24 cores.  But it does make the logs complicated,
+  because some will show the error and some will simply show where they
+  were when the abort came through.
+
+  You can use gdb to find the problem on each core:
+
+  $ gdb /compyfs/d3a230/e3sm_scratch/zlnd_v2/bld/e3sm.exe core.417493
+  
+  ... then do a 'where' to climb back up the calling three to where the error
+  occured, because the first few levels will be abort and support
+  functions.
+
+  (gdb) where
+  #0  0x00002ac460b09207 in raise () from /lib64/libc.so.6
+  #1  0x00002ac460b0a8f8 in abort () from /lib64/libc.so.6
+  #2  0x000000000571ba41 in for__signal_handler ()
+  #3  <signal handler called>
+  #4  0x0000000002d65fb6 in phosphorusstateupdate3mod::phosphorusstateupdate3 (
+    bounds=<error reading variable: Cannot access memory at address 0x0>, 
+    num_soilc=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_soilc=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    num_soilp=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_soilp=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    cnstate_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    phosphorusflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    phosphorusstate_vars=<error reading variable: Cannot access memory at address 0x0>)
+    at
+    /qfs/people/d3a230/E3SM_current/components/clm/src/biogeochem/PhosphorusStateUpdate3Mod.F90:162
+
+* You can switch to new core files with:
+
+  (gdb) target core core.417509
+
+* When running in serial mode you can examine variables and stuff, but for
+  some reason these parallel core dumps show this "cannot access memory"
+  errors. 
+
+* Huh, interesting - one of the cores bombs in a different place (core.417509):
+
+  #4  0x0000000001291f42 in balancecheckmod::colwaterbalancecheck (bounds=<error reading variable: Cannot access memory at address 0x0>, 
+    num_do_smb_c=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_do_smb_c=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    atm2lnd_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    glc2lnd_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    solarabs_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    waterflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    waterstate_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    energyflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    canopystate_vars=<error reading variable: Cannot access memory at address 0x0>)
+    at /qfs/people/d3a230/E3SM_current/components/clm/src/biogeophys/BalanceCheckMod.F90:657
+
+  This is from the surface energy balance check, during the log write for
+  "sabg", which is weird.
+
+* The log also shows some exiting at BalanceCheckMod.F90 line 695, which is
+  another explicit call to endrun after tthe soil balance error fails.
+  Apparently calls to endrun don't dump a core, so you still have to look
+  at the log.
+
+* Okay, there are a number of places where the code stopped - only the
+  phosphorus and balancecheckmod line 657 dump a core, but I'll examine all
+  the other places.
+
+  e3sm.exe           0000000000902414  accumulmod_mp_pri         221  accumulMod.F90
+  *e3sm.exe           0000000002D65FB6  phosphorusstateup         162  PhosphorusStateUpdate3Mod.F90
+  e3sm.exe           00000000038A20A2  urbanradiationmod         705  UrbanRadiationMod.F90
+  *e3sm.exe           0000000001291F42  balancecheckmod_m         657  BalanceCheckMod.F90
+  e3sm.exe           000000000129AAEC  balancecheckmod_m         694  BalanceCheckMod.F90
+  e3sm.exe           0000000002834E46  firemod_mp_lnfm_i        1812  FireMod.F90
+
+* accumulMod.F90 line 221: a write statement, so not really an error.
+
+* UrbanRadiationMod.F90 line 704 is an endrun call after failing urban net
+  longwave radiation balance error.
+
+* BalanceCheckMod.F90 line 694: endrun after failing soil balance error
+  check. 
+
+* FireMod.F90 line 1812: regular call to shr_strdata_advance(), so probably
+  not really an error.
+
+* Okay, so either we are stopping in the middle when teh abort comes
+  through, or we have a number of endruns() happening after failing various
+  checks.  
+
+* So what this all means, I think, is that we actually have a number of
+  issues at this level - we are failing a number of checks (simultaneously
+  and/or asynchronously), plus we get some math errors that lead to core
+  dumpy crashes.
+
+! Just for fun, I'm going to run in 32 tasks and see what happens.
+
 11/9/2021
 
 * Okay!  The iac_in file in the run directory was *copied* over from Kate,
@@ -42,7 +238,7 @@
   cd iac/gcam
   git checkout $gcam_branch
 
-  cd ~/$clone/cime
+  cd ~/$clone/cime/scripts
 
   mkdir ~/$build
   ./create_newcase --project e3sm --case ~/$build --compset ZLND --res f19_g16
@@ -54,11 +250,18 @@
   ./xmlchange --id DEBUG --val TRUE
   ./xmlchange --id NTASKS --val 1
   ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
+  ./xmlchange -id "ATM_NCPL" -val 17520
   ./xmlchange -id "IAC_NCPL" -val 1
   ./xmlchange -id "STOP_OPTION" -val "nyears"
   ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+  ./xmlchange --id "NTASKS_LND" --val 480
 
+XXX  This doesn't work - don't know the right base one, but
+XXX  ~/zlnd_v2/user_nl_gcam works
   cp /compyfs/d3x132/iac_E3SM_working_Z/user_nl_gcam .
+XXX
+
+  cp ~/zlnd_v2/user_nl_gcam .
 
   ./case.setup --reset
   ./case.setup 
@@ -66,16 +269,18 @@
   # Modify this to match the new build directory name
   scratchdir=/compyfs/d3a230/e3sm_scratch/$build
   rundir=$scratchdir/run
-  cp -r /compyfs/d3x132/e3sm_scratch/$build/input $scratchdir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/log_conf.xml $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/iac_in $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/gcamo_base.csv $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/glm.fut.conf $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/iESM_Dyn_CropPast.nc $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/mksurf_landuse_iESM_720x360.nc $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/restart.* $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/surfdata_360x720* $rundir
-  cp /compyfs/d3x132/e3sm_scratch/$build/run/surfdata_iESM_dyn.nc $rundir
+  kdir=/compyfs/d3x132/e3sm_scratch/gcam_Z
+
+  cp -r $kdir/input $scratchdir
+  cp $kdir/run/log_conf.xml $rundir
+  cp $kdir/run/iac_in $rundir
+  cp $kdir/run/gcamo_base.csv $rundir
+  cp $kdir/run/glm.fut.conf $rundir
+  cp $kdir/run/iESM_Dyn_CropPast.nc $rundir
+  cp $kdir/run/mksurf_landuse_iESM_720x360.nc $rundir
+  cp $kdir/run/restart.* $rundir
+  cp $kdir/run/surfdata_360x720* $rundir
+  cp $kdir/run/surfdata_iESM_dyn.nc $rundir
 
   adir=/compyfs/divi553/e3sm_scratch/zlnd_ldt2/run
 

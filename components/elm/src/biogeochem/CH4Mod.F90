@@ -1840,8 +1840,7 @@ contains
                        nstep,c,errch4
                   g = col_pp%gridcell(c)
                   write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                  ! TRS - turn off abort for debugging 
-                  ! call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
+                  call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
             end if
 
@@ -3082,17 +3081,15 @@ contains
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               ! TRS - turn off abort for debugging 
-               !call endrun(msg=' ERROR: Methane demands exceed methane available.'&
-               !     //errMsg(__FILE__, __LINE__))
+               call endrun(msg=' ERROR: Methane demands exceed methane available.'&
+                    //errMsg(__FILE__, __LINE__))
             else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:', &
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               ! TRS - turn off abort
-               !call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
-               !     errMsg(__FILE__, __LINE__))
+               call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
+                    errMsg(__FILE__, __LINE__))
             end if
 
             source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
@@ -3571,12 +3568,11 @@ contains
             ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
             write(iulog,*)'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)', &
-                 nstep,c,errch4(c)
+                 nstep,c,errch4(c),dtime
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-            ! TRS - turn off abort for debugging 
-            !call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
-            !     errMsg(__FILE__, __LINE__))
+            call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
+                 errMsg(__FILE__, __LINE__))
          end if
       end do
 
