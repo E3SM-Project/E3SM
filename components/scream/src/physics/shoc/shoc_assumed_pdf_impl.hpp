@@ -282,6 +282,12 @@ void Functions<S,D>::shoc_assumed_pdf(
           qn1.set(std_s1_C1_not_small, s1*C1+(std_s1/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s1/std_s1)));
         }
         qn1.set(!std_s1_not_small && s1 > 0, s1);
+        
+        // Checking to prevent empty clouds
+        const auto qn1_le_zero = qn1 <= 0;
+        C1.set(qn1_le_zero,0);
+        qn1.set(qn1_le_zero,0);
+        
         ql1 = ekat::min(qn1, qw1_1);
 
         // Second plume
@@ -317,6 +323,11 @@ void Functions<S,D>::shoc_assumed_pdf(
           }
           qn2.set(nequal && !std_s2_not_small && s2 > 0, s2);
         }
+        
+        // Checking to prevent empty clouds
+        const auto qn2_le_zero = qn2 <= 0;
+        C2.set(qn2_le_zero,0);
+        qn2.set(qn2_le_zero,0);
 
         ql2 = ekat::min(qn2, qw1_2);
       }
