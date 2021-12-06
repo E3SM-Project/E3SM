@@ -702,7 +702,8 @@ contains
          if (abs(err) > .10_r8 ) then
             write (iulog,*) 'urban net longwave radiation balance error',err
             write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            ! TRS - comment out for debugging
+            ! call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
       end do

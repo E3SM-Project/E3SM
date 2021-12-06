@@ -1943,7 +1943,7 @@ sub process_namelist_inline_logic {
   setup_logic_co2_type($opts, $nl_flags, $definition, $defaults, $nl);
   setup_logic_irrigate($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_start_type($nl_flags, $nl);
-  setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl);
+  setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl, $envxml_ref);
   setup_logic_decomp_performance($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
   setup_logic_snow($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
@@ -2170,14 +2170,19 @@ sub setup_logic_start_type {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_delta_time {
-  my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $envxml_ref) = @_;
 
   if ( defined($opts->{'l_ncpl'}) ) {
     my $l_ncpl = $opts->{'l_ncpl'};
     if ( $l_ncpl <= 0 ) {
       fatal_error("bad value for -l_ncpl option.\n");
     }
-    my $val = ( 3600 * 24 ) / $l_ncpl;
+    # TRS - modify for yearly
+    my $var = "NCPL_BASE_PERIOD";
+    my $val = (  3600 * 24 ) / $l_ncpl;
+    if ( $envxml_ref->{$var} == "year" ) {
+      $val = ( 365 * 3600 * 24 ) / $l_ncpl;
+    }
     my $dtime = $nl->get_value('dtime');
     if ( ! defined($dtime)  ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'dtime', 'val'=>$val);
