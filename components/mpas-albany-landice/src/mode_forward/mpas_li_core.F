@@ -389,7 +389,6 @@ module li_core
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
       integer :: restartTimestampUnit
-		integer :: ninner
 
       integer :: err, err_tmp, err_tmp2, globalErr
 		
@@ -414,10 +413,6 @@ module li_core
          block => block % next
       end do
 		
-		!initialize coupling time step number. initial time is 0
-		if (trim(config_uplift_method)=='sealevelmodel') then
-         ninner = 0         
-		endif
 		
       ! ===
       ! Solve initial state before beginning time stepping
@@ -442,15 +437,6 @@ module li_core
          end do
 			
          write(6,*) '<<< 2. mpas_li_core.F L442: Starting timestep number', timestepNumber
-
-			
-         if (trim(config_uplift_method)=='sealevelmodel') then
-			   if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then
-                 ninner = ninner + 1
-					  write(6,*) '<<< mpas alarm is rining from li_core.F L448>>>'
-					  write(6,*) '<<< HH: NMELT COUPLING timestep number, L449>>>', ninner
-				endif	
-			endif 
 			
          call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
 
