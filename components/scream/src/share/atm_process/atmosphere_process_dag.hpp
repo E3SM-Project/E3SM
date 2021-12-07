@@ -49,9 +49,9 @@ protected:
     std::string       name;
     int               id;
     std::set<int>     computed;     // output fields
-    std::set<int>     required;     // input fields
-    std::set<int>     gr_updated;   // in-out groups
-    std::set<int>     gr_required;  // input groups
+    std::set<int>     required;     // input  fields
+    std::set<int>     gr_computed;  // output groups
+    std::set<int>     gr_required;  // input  groups
   };
 
   // Assign an id to each field identifier

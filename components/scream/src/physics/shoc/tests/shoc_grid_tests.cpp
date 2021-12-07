@@ -169,20 +169,20 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocGridData& d_f90 = f90_data[i];
-      ShocGridData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.dz_zt); ++k) {
-        REQUIRE(d_f90.dz_zt[k] == d_cxx.dz_zt[k]);
-        REQUIRE(d_f90.rho_zt[k] == d_cxx.rho_zt[k]);
-      }
-      for (Int k = 0; k < d_f90.total(d_f90.dz_zi); ++k) {
-        REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocGridData& d_f90 = f90_data[i];
+        ShocGridData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.dz_zt); ++k) {
+          REQUIRE(d_f90.dz_zt[k] == d_cxx.dz_zt[k]);
+          REQUIRE(d_f90.rho_zt[k] == d_cxx.rho_zt[k]);
+        }
+        for (Int k = 0; k < d_f90.total(d_f90.dz_zi); ++k) {
+          REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 };
 

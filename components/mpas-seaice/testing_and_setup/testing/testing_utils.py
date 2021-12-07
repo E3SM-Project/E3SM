@@ -206,10 +206,10 @@ def run_model(runName, mpasDir, domainsDir, domain, configuration, nmlChanges, s
     get_domain(domainsDir, domain)
 
     # create namelist file
-    create_new_namelist(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/namelist.seaice", "namelist.seaice", nmlChanges)
+    create_new_namelist(mpasDir+"/testing_and_setup/configurations/"+configuration+"/namelist.seaice", "namelist.seaice", nmlChanges)
 
     # create streams file
-    create_new_streams(mpasDir+"/testing_and_setup/seaice/configurations/"+configuration+"/streams.seaice", "streams.seaice", streamChanges)
+    create_new_streams(mpasDir+"/testing_and_setup/configurations/"+configuration+"/streams.seaice", "streams.seaice", streamChanges)
 
     # run the model
     returnCode = execute_model(nProcs, logfile, oversubscribe)

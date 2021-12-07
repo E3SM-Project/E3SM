@@ -3,8 +3,8 @@ include(EkatCreateUnitTest)
 include(EkatUtils)
 
 # This function takes the following arguments:
-#    - target_name: the name of the executable
-#    - target_srcs: a list of src files for the executable
+#    - test_name: the base name of the test. We create an executable with this name
+#    - test_srcs: a list of src files for the executable.
 #      Note: no need to include catch_main; this macro will add it
 #    - scream_libs: a list of scream libraries needed by the executable
 #    - compiler_defs (optional): a list of additional defines for the compiler, default is nothing
@@ -15,95 +15,147 @@ include(EkatUtils)
 #  - One test will be created per combination of valid mpi-rank and thread value
 #  - compiler defs/flags can also be providedd on a per-language basis via COMPILER_[C|CXX|F]_[FLAGS|DEFS]
 
-function(CreateUnitTest target_name target_srcs scream_libs)
-  set(options EXCLUDE_MAIN_CPP SERIAL)
-  set(oneValueArgs EXE_ARGS DEP)
-  set(multiValueArgs
-    MPI_RANKS THREADS
-    INCLUDE_DIRS
-    COMPILER_DEFS
-    COMPILER_C_DEFS COMPILER_CXX_DEFS COMPILER_F_DEFS
-    COMPILER_FLAGS
-    COMPILER_C_FLAGS COMPILER_CXX_FLAGS COMPILER_F_FLAGS
-    LABELS PROPERTIES)
-  cmake_parse_arguments(PARSE_ARGV 3 CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
-  CheckMacroArgs(CreateUnitTest CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
+macro(SetVarDependingOnTestProfile var_name val_short val_medium val_long)
+  string (TOUPPER ${SCREAM_TEST_PROFILE} profile)
+  if (profile STREQUAL "SHORT")
+    set(${var_name} ${val_short})
+  elseif(profile STREQUAL "MEDIUM")
+    set(${var_name} ${val_medium})
+  elseif(profile STREQUAL "LONG")
+    set(${var_name} ${val_long})
+  else()
+    message("Error! Unrecognized testing profile '${profile}'.")
+    message("  Valid test profile options: ${SCREAM_TEST_VALID_PROFILES}")
+    message(FATAL_ERROR "Aborting.")
+  endif()
+endmacro()
 
-  set (TEST_INCLUDE_DIRS
-       ${SCREAM_INCLUDE_DIRS}
-       ${CMAKE_CURRENT_SOURCE_DIR}
-       ${CMAKE_CURRENT_BINARY_DIR}
-       ${SCREAM_F90_MODULES}
-       ${CreateUnitTest_INCLUDE_DIRS}
+set(SCREAM_CUT_EXEC_OPTIONS ${CUT_EXEC_OPTIONS})
+set(SCREAM_CUT_EXEC_1V_ARGS ${CUT_EXEC_1V_ARGS})
+set(SCREAM_CUT_EXEC_MV_ARGS ${CUT_EXEC_MV_ARGS})
+
+set(SCREAM_CUT_TEST_OPTIONS ${CUT_TEST_OPTIONS})
+set(SCREAM_CUT_TEST_1V_ARGS ${CUT_TEST_1V_ARGS})
+set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
+
+#
+# Adjust Ekat CUT options based on SCREAM specifics
+#
+
+# Scream always excludes the ekat test session since it has its own
+list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS EXCLUDE_TEST_SESSION)
+
+# Libs are a position arg for SCREAM, not an optional arg like in EKAT
+list(REMOVE_ITEM SCREAM_CUT_EXEC_MV_ARGS LIBS)
+
+# MPI stuff is set in scream's cache config and is not configurable per-test
+list(REMOVE_ITEM SCREAM_CUT_TEST_1V_ARGS MPI_EXEC_NAME MPI_NP_FLAG)
+list(REMOVE_ITEM SCREAM_CUT_TEST_MV_ARGS MPI_EXTRA_ARGS)
+
+###############################################################################
+function(CreateUnitTestExec exec_name test_srcs scream_libs)
+###############################################################################
+  cmake_parse_arguments(cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" ${ARGN})
+  CheckMacroArgs(CreateUnitTestExec cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}")
+
+  separate_cut_arguments(cute "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" options)
+
+  set(TEST_INCLUDE_DIRS
+    ${SCREAM_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${SCREAM_F90_MODULES}
   )
 
-  set (test_libs "${scream_libs}")
+  set(test_libs "${scream_libs}")
   list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
 
-  # Note: some args are likely empty, so check them before adding them,
-  #       or you would have either a) a keyword followed by nothing (error),
-  #       or b) to add a space at front or back (causing EKAT to think that
-  #       that option is present, when it's not).
-  set (cut_options EXCLUDE_TEST_SESSION)
-  if (CreateUnitTest_EXCLUDE_MAIN_CPP)
-    list(APPEND cut_options EXCLUDE_MAIN_CPP)
-  endif()
-  if (CreateUnitTest_SERIAL)
-    list(APPEND cut_options SERIAL)
-  endif()
-  if (CreateUnitTest_DEP)
-    list(APPEND cut_options DEP ${CreateUnitTest_DEP})
-  endif()
-  if (CreateUnitTest_PROPERTIES)
-    list(APPEND cut_options PROPERTIES ${CreateUnitTest_PROPERTIES})
-  endif()
-  if (CreateUnitTest_LABELS)
-    list(APPEND cut_options LABELS ${CreateUnitTest_LABELS})
-  endif()
-  if (CreateUnitTest_MPI_RANKS)
-    list(APPEND cut_options MPI_RANKS ${CreateUnitTest_MPI_RANKS})
+  if (SCREAM_Fortran_FLAGS)
+    list(APPEND options COMPILER_F_FLAGS ${SCREAM_Fortran_FLAGS})
   endif ()
-  if (CreateUnitTest_THREADS)
-    list(APPEND cut_options THREADS ${CreateUnitTest_THREADS})
-  endif ()
-  if (CreateUnitTest_EXE_ARGS)
-    list(APPEND cut_options EXE_ARGS ${CreateUnitTest_EXE_ARGS})
-  endif ()
+
+  EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${options}
+    EXCLUDE_TEST_SESSION LIBS ${test_libs} INCLUDE_DIRS ${TEST_INCLUDE_DIRS})
+
+endfunction(CreateUnitTestExec)
+
+###############################################################################
+function(CreateUnitTestFromExec test_name test_exec)
+###############################################################################
+  cmake_parse_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" ${ARGN})
+  CheckMacroArgs(CreateUnitTestExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
+
+  separate_cut_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" options)
+
   if (SCREAM_MPI_EXTRA_ARGS)
-    list(APPEND cut_options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
-  endif ()
-  if (CreateUnitTest_COMPILER_DEFS)
-    list(APPEND cut_options COMPILER_DEFS ${CreateUnitTest_COMPILER_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_C_DEFS)
-    list(APPEND cut_options COMPILER_C_DEFS ${CreateUnitTest_COMPILER_C_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_CXX_DEFS)
-    list(APPEND cut_options COMPILER_CXX_DEFS ${CreateUnitTest_COMPILER_CXX_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_F_DEFS)
-    list(APPEND cut_options COMPILER_F_DEFS ${CreateUnitTest_C_COMPILER_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_FLAGS)
-    list(APPEND cut_options COMPILER_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_C_FLAGS)
-    list(APPEND cut_options COMPILER_C_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_CXX_FLAGS)
-    list(APPEND cut_options COMPILER_CXX_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
-  endif ()
-  if (CreateUnitTest_COMPILER_F_FLAGS OR SCREAM_Fortran_FLAGS)
-    list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS} ${SCREAM_Fortran_FLAGS})
+    list(APPEND options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
   endif ()
 
+  #
+  # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
+  #
+  if (cutfe_MPI_RANKS OR cutfe_THREADS)
+    list(LENGTH cutfe_MPI_RANKS NUM_MPI_RANK_ARGS)
+    list(LENGTH cutfe_THREADS   NUM_THREAD_ARGS)
+    if (NUM_MPI_RANK_ARGS EQUAL 0)
+      set(MAX_RANKS 1)
+    elseif (NUM_MPI_RANK_ARGS GREATER 1)
+      list(GET cutfe_MPI_RANKS 1 MAX_RANKS)
+    else()
+      list(GET cutfe_MPI_RANKS 0 MAX_RANKS)
+    endif()
+    if (NUM_THREAD_ARGS EQUAL 0)
+      set(MAX_THREADS 1)
+    elseif (NUM_THREAD_ARGS GREATER 1)
+      list(GET cutfe_THREADS   1 MAX_THREADS)
+    else()
+      list(GET cutfe_THREADS   0 MAX_THREADS)
+    endif()
+    math(EXPR NUM_THREADS_NEEDED ${MAX_RANKS}*${MAX_THREADS})
+    if (${NUM_THREADS_NEEDED} GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+      string (CONCAT msg
+        "**************************************************************************\n"
+        "Error! Invalid max threads/ranks combination. When invoking CreateUnitTest,\n"
+        "you must ensure that the product of the max requested mpi ranks and\n"
+        "the max requested omp threads is lower than SCREAM_TEST_MAX_TOTAL_THREADS.\n"
+        "   - test exec name: ${test_name}\n"
+        "   - requested max MPI ranks: ${MAX_RANKS}\n"
+        "   - requested max OMP threads: ${MAX_THREADS}\n"
+        "   - resulting max threads needed: ${NUM_THREADS_NEEDED}\n"
+        "   - SCREAM_TEST_MAX_TOTAL_THREADS: ${SCREAM_TEST_MAX_TOTAL_THREADS}\n")
+      message("${msg}")
+      message(FATAL_ERROR "Aborting")
+    endif()
+  endif()
 
-  EkatCreateUnitTest(${target_name} "${target_srcs}"
-    MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
-    MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG}
-    INCLUDE_DIRS ${TEST_INCLUDE_DIRS}
-    LIBS ${test_libs}
-    "${cut_options}"
-  )
+  EkatCreateUnitTestFromExec("${test_name}" "${test_exec}" ${options}
+    MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE} MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG})
+
+endfunction(CreateUnitTestFromExec)
+
+###############################################################################
+function(CreateUnitTest test_name test_srcs scream_libs)
+###############################################################################
+  set(options ${SCREAM_CUT_EXEC_OPTIONS} ${SCREAM_CUT_TEST_OPTIONS})
+  set(oneValueArgs ${SCREAM_CUT_EXEC_1V_ARGS} ${SCREAM_CUT_TEST_1V_ARGS})
+  set(multiValueArgs ${SCREAM_CUT_EXEC_MV_ARGS} ${SCREAM_CUT_TEST_MV_ARGS})
+
+  # ecut = Ekat Create Unit Test
+  cmake_parse_arguments(cut "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  CheckMacroArgs(CreateUnitTest cut "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+  #------------------------------#
+  #      Create Exec Phase       #
+  #------------------------------#
+
+  separate_cut_arguments(cut "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" options_ExecPhase)
+  CreateUnitTestExec("${test_name}" "${test_srcs}" "${scream_libs}" ${options_ExecPhase})
+
+  #------------------------------#
+  #      Create Tests Phase      #
+  #------------------------------#
+
+  separate_cut_arguments(cut "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" options_TestPhase)
+  CreateUnitTestFromExec("${test_name}" "${test_name}" ${options_TestPhase})
 
 endfunction(CreateUnitTest)

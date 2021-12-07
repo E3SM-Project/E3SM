@@ -176,6 +176,24 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
+  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3" units="unitless"
+      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+      possible_values="Any positive integer number greater than 0."
+    />
+    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+      description="Temperature of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="PSU"
+      description="Salinity of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0" units="unitless"
+     description="integer id of transport test."
+     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
+    />
+  </nml_record>
 
 
 	<!--*************************************-->
@@ -2010,8 +2028,11 @@
 			 description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
-
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
+		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
@@ -3158,10 +3179,10 @@
 		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="seaIceFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="icebergFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
 		/>
 
@@ -3708,4 +3729,5 @@
 #ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
 #endif
+
 </registry>

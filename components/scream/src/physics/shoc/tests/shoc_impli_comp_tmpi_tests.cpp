@@ -158,16 +158,16 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTmpiData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ComputeTmpiData& d_f90 = f90_data[i];
-      ComputeTmpiData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.tmpi); ++k) {
-        REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTmpiData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ComputeTmpiData& d_f90 = f90_data[i];
+        ComputeTmpiData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.tmpi); ++k) {
+          REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
+        }
       }
     }
-#endif
   }
 };
 

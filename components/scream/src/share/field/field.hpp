@@ -188,14 +188,17 @@ public:
   //   - If the field rank is 2, then idim cannot be 1. This is b/c Kokkos
   //     specializes view's traits for LayoutRight of rank 1, not allowing
   //     to store a stride for the slowest dimension.
+  //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
   field_type subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-                       const int idim, const int k) const;
-  field_type subfield (const std::string& sf_name, const int idim, const int k) const;
-  field_type subfield (const int idim, const int k) const;
+                       const int idim, const int index, const bool dynamic = false) const;
+  field_type subfield (const std::string& sf_name, const int idim,
+                       const int index, const bool dynamic = false) const;
+  field_type subfield (const int idim, const int k, const bool dynamic = false) const;
 
   // If this field is a vector field, get a subfield for the ith component.
+  // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
-  field_type get_component (const int i);
+  field_type get_component (const int i, const bool dynamic = false);
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_view_d.data()!=nullptr; }
@@ -577,7 +580,7 @@ deep_copy (const RT value) {
 template<typename RealType>
 Field<RealType> Field<RealType>::
 subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-          const int idim, const int k) const {
+          const int idim, const int index, const bool dynamic) const {
 
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
@@ -599,7 +602,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
   field_type sf;
-  sf.m_header = create_subfield_header(sf_id,m_header,idim,k);
+  sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_view_d = m_view_d;
   sf.m_view_h = m_view_h;
   sf.m_prop_checks = std::make_shared<property_check_list>();
@@ -609,20 +612,20 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const std::string& sf_name, const int idim, const int k) const {
+subfield (const std::string& sf_name, const int idim, const int index, const bool dynamic) const {
   const auto& id = m_header->get_identifier();
-  return subfield(sf_name,id.get_units(),idim,k);
+  return subfield(sf_name,id.get_units(),idim,index,dynamic);
 }
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const int idim, const int k) const {
-  return subfield(m_header->get_identifier().name(),idim,k);
+subfield (const int idim, const int index, const bool dynamic) const {
+  return subfield(m_header->get_identifier().name(),idim,index,dynamic);
 }
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-get_component (const int i) {
+get_component (const int i, const bool dynamic) {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto& fname = get_header().get_identifier().name();
   EKAT_REQUIRE_MSG (layout.is_vector_layout(),
@@ -633,7 +636,7 @@ get_component (const int i) {
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),
       "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
 
-  return subfield (idim,i);
+  return subfield (idim,i,dynamic);
 }
 
 template<typename RealType>
@@ -712,9 +715,9 @@ auto Field<RealType>::get_ND_view () const ->
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
     // Now we can subview v_np1 at the correct slice
-    const auto& idx = m_header->get_alloc_properties().get_subview_idx();
-    const int idim = idx.first;
-    const int k    = idx.second;
+    const auto& info = m_header->get_alloc_properties().get_subview_info();
+    const int idim = info.dim_idx;
+    const int k    = info.slice_idx;
 
     // So far we can only subview at first or second dimension.
     EKAT_REQUIRE_MSG (idim==0 || idim==1,

@@ -293,26 +293,26 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsData);
-    for (Int i = 0; i < num_runs; ++i) {
-      DiagSecondMomentsData& d_f90 = f90_data[i];
-      DiagSecondMomentsData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.w_sec); ++k) {
-        REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
-      }
-      for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
-        REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
-        REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
-        REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
-        REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
-        REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
-        REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
-        REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
-        REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsData);
+      for (Int i = 0; i < num_runs; ++i) {
+        DiagSecondMomentsData& d_f90 = f90_data[i];
+        DiagSecondMomentsData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.w_sec); ++k) {
+          REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
+        }
+        for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
+          REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
+          REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
+          REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
+          REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
+          REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
+          REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
+          REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
+          REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

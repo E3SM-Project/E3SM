@@ -548,15 +548,6 @@ add_default($nl, 'start_type');
 my $dyn = $cfg->get('dyn');
 if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
-if ($dyn =~ /se/) {
-  my $npg = $cfg->get('npg');
-  my $se_fv_nphys = $nl->get_value('se_fv_nphys');
-  if (defined($se_fv_nphys) and $se_fv_nphys != $npg) {
-    die "$ProgName - ERROR: se_fv_nphys should not be set by the user\n";
-  }
-  add_default($nl, 'se_fv_nphys', 'val'=>$npg);
-}
-
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }

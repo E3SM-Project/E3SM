@@ -29,8 +29,8 @@ struct SimulationParams
   ForcingAlg    ftype;
   AdvectionForm theta_adv_form; // Only for theta model
 
-  int           rsplit;
-  int           qsplit;
+  int           rsplit, dt_remap_factor;
+  int           qsplit, dt_tracer_factor;
   int           qsize;
 
 
@@ -40,7 +40,7 @@ struct SimulationParams
 
   int       state_frequency;
   bool      disable_diagnostics;
-  bool      use_semi_lagrangian_transport;
+  int       transport_alg;
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
 
@@ -87,7 +87,7 @@ inline void SimulationParams::print () {
   printf ("   nu_ratio1: %f\n", nu_ratio1);
   printf ("   nu_ratio2: %f\n", nu_ratio2);
   printf ("   use_cpstar: %s\n", (use_cpstar ? "yes" : "no"));
-  printf ("   use_semi_lagrangian_transport: %s\n", (use_semi_lagrangian_transport ? "yes" : "no"));
+  printf ("   transport_alg: %d\n", transport_alg);
   printf ("   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no"));
   printf ("   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no"));
   printf ("   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no"));

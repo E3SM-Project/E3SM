@@ -4,12 +4,12 @@
 
 #include "physics/p3/atmosphere_microphysics.hpp"
 
-#include "physics/share/physics_only_grids_manager.hpp"
-
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
+
+#include <iomanip>
 
 namespace scream {
 
@@ -17,44 +17,45 @@ TEST_CASE("p3-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
+  // Create a comm
+  ekat::Comm atm_comm (MPI_COMM_WORLD);
+
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
-  // run params:
-  const auto& num_iters = ad_params.get<int>("Number of Iterations",5);
-  const auto& dt        = ad_params.get<Real>("dt",300.0);
+  // Time stepping parameters
+  auto& ts = ad_params.sublist("Time Stepping");
+  const auto dt = ts.get<int>("Time Step");
+  const auto start_date = ts.get<std::vector<int>>("Start Date");
+  const auto start_time = ts.get<std::vector<int>>("Start Time");
+  const auto nsteps     = ts.get<int>("Number of Steps");
 
-  // Create a comm
-  ekat::Comm atm_comm (MPI_COMM_WORLD);
+  util::TimeStamp t0 (start_date, start_time);
+  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
-  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
-
-  // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
-  auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
+  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
   // Create the driver
   AtmosphereDriver ad;
 
   // Init and run
-  util::TimeStamp time (0,0,0,0);
-  ad.initialize(atm_comm,ad_params,time);
-  for (int i=0; i<num_iters; ++i) {
-    if (i % 10 == 0) {
-      printf("  -  %f%%\nRun iteration: %d, ",Real(i)/Real(num_iters)*100,i+1);
-    } else {
-      printf("%d, ",i);
-    }
-    ad.run(dt);
+  ad.initialize(atm_comm,ad_params,t0);
+  if (atm_comm.am_i_root()) {
+    printf("Start time stepping loop...       [  0%%]\n");
   }
-  printf("\n");
+  for (int i=0; i<nsteps; ++i) {
+    ad.run(dt);
+    if (atm_comm.am_i_root()) {
+      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+    }
+  }
 
   // TODO: get the field repo from the driver, and go get (one of)
   //       the output(s) of P3, to check its numerical value (if possible)

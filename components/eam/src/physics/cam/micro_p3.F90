@@ -750,7 +750,7 @@ contains
            qr2qv_evap_tend,nr_evap_tend)
 
       call ice_deposition_sublimation(qi_incld(k), ni_incld(k), t_atm(k), &
-           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), &
+           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), inv_dt, &
            qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
 444   continue
@@ -816,11 +816,6 @@ contains
       !   1) Should we be taking qinuc into consideration too?
       !   2) Is MG correct in NOT limiting qi2qv_sublim_tend?
 
-      call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
-
-      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt, &
-           qi2qv_sublim_tend, qr2qv_evap_tend)
-
       ! cloud
       call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
            qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep)
@@ -839,6 +834,12 @@ contains
            nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,&
            ni_sublim_tend,ni_selfcollect_tend)
+      
+      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt, &
+           qi2qv_sublim_tend, qr2qv_evap_tend)
+
+      call prevent_liq_supersaturation(pres(k), t_atm(k), qv(k), latent_heat_vapor(k), latent_heat_sublim(k), dt, qidep, qinuc, & 
+           qi2qv_sublim_tend, qr2qv_evap_tend)
 
       !---------------------------------------------------------------------------------
       ! update prognostic microphysics and thermodynamics variables
@@ -1857,8 +1858,8 @@ contains
        mu_r = mu_r_constant
        lamr   = bfb_cbrt(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
-       lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
-
+       lammin = (mu_r+1._rtype)*500._rtype  !500=1/(2mm) is inverse of max allowed number-weighted mean raindrop diameter
+       
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
           lamr = lammin
@@ -2074,7 +2075,7 @@ contains
 
    if (qi_incld .ge.qsmall .and. qc_incld .ge.qsmall) then
       if  (t_atm .le.T_zerodegc) then
-         qccol = rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld
+         qccol = rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld         
          nc_collect_tend = rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld
       else if (t_atm .gt. T_zerodegc) then
          ! for T > 273.15, assume cloud water is collected and shed as rain drops
@@ -2127,6 +2128,7 @@ contains
       if (t_atm.le.T_zerodegc) then
          ! note: table_val_qr2qi_collect and logn0r are already calculated as log_10
          qrcol = bfb_pow(10._rtype,(table_val_qr2qi_collect+logn0r))*rho*rhofaci*eri*ni_incld
+         
          nr_collect_tend = bfb_pow(10._rtype,(table_val_nr_collect+logn0r))*rho*rhofaci*eri*ni_incld
       else if (t_atm .gt. T_zerodegc) then
          ! rain number sink due to collection
@@ -2294,13 +2296,13 @@ qv,qc_incld,qi_incld,ni_incld,qr_incld,    &
          if ((qccol+qrcol).ge.1.e-10_rtype) then
             dum1  = 1._rtype/(qccol+qrcol)
             qc2qr_ice_shed_tend = qc2qr_ice_shed_tend + dum*qccol*dum1
-            qccol = qccol - dum*qccol*dum1
-            qrcol = qrcol - dum*qrcol*dum1
+            qccol = max(0._rtype,qccol - dum*qccol*dum1) !PMC: collection shouldn't work backwards
+            qrcol = max(0._rtype,qrcol - dum*qrcol*dum1) !PMC: collection shouldn't work backwards
+           
          endif
          ! densify due to wet growth
          log_wetgrowth = .true.
       endif
-
 
    end if
 
@@ -2515,8 +2517,9 @@ subroutine cldliq_immersion_freezing(t_atm,lamc,mu_c,cdist1,qc_incld,inv_qc_relv
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
       dum1 = bfb_exp(aimm*(T_zerodegc-t_atm))
       dum2 = bfb_cube(1._rtype/lamc)
-      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2._rtype)
-      Q_nuc = cons6*cdist1*bfb_gamma(7._rtype+mu_c)*dum1*bfb_square(dum2)
+      ! sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2._rtype)
+      sbgrd_var_coef = 1._rtype    !no subgrid enhancement
+      Q_nuc = sbgrd_var_coef*cons6*cdist1*bfb_gamma(7._rtype+mu_c)*dum1*bfb_square(dum2)
       N_nuc = cons5*cdist1*bfb_gamma(mu_c+4._rtype)*dum1*dum2
       qc2qi_hetero_freeze_tend = Q_nuc
       nc2ni_immers_freeze_tend = N_nuc
@@ -2678,8 +2681,9 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
      elseif (iparam.eq.3) then
         !Khroutdinov and Kogan (2000)
         !print*,'p3_qc_accret_expon = ',p3_qc_accret_expon
-        sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 1.15_rtype ) !p3_qc_accret_expon
-        qc2qr_accret_tend = 67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
+        !sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 1.15_rtype ) !p3_qc_accret_expon
+        sbgrd_var_coef = 1._rtype    ! no subgrid enhancement
+        qc2qr_accret_tend = sbgrd_var_coef*67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
         nc_accret_tend = qc2qr_accret_tend*nc_incld/qc_incld
      endif
 
@@ -2755,8 +2759,9 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
 
       !Khroutdinov and Kogan (2000)
       !print*,'p3_qc_autocon_expon = ',p3_qc_autocon_expon
-      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.47_rtype)
-      qc2qr_autoconv_tend = 1350._rtype*bfb_pow(qc_incld,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
+      !sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.47_rtype)
+      sbgrd_var_coef = 1._rtype    ! no subgrid enhancement
+      qc2qr_autoconv_tend = sbgrd_var_coef*1350._rtype*bfb_pow(qc_incld,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
       !ncautr is change in nr: assume all new raindrops are 25 micron in diameter
       ncautr = qc2qr_autoconv_tend*cons3
       !nc2nr_autoconv_tend is change in nc: remove frac of nc_incld 
@@ -2840,36 +2845,6 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
 
 end subroutine back_to_cell_average
 
-subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,    &
-   qidep,qi2qv_sublim_tend)
-
-   !-- Limit ice process rates to prevent overdepletion of sources such that
-   !   the subsequent adjustments are done with maximum possible rates for the
-   !   time step.  (note: most ice rates are adjusted here since they must be done
-   !   simultaneously (outside of iice-loops) to distribute reduction proportionally
-   !   amongst categories.
-   !PMC - might need to rethink above statement since only one category now.
-
-   implicit none
-
-   real(rtype), intent(in) :: pres
-   real(rtype), intent(in) :: t_atm
-   real(rtype), intent(in) :: qv
-   real(rtype), intent(in) :: latent_heat_sublim
-   real(rtype), intent(in) :: inv_dt
-
-   real(rtype), intent(inout) :: qidep
-   real(rtype), intent(inout) :: qi2qv_sublim_tend
-
-   real(rtype) :: dumqv_sat_i, qdep_satadj
-
-   dumqv_sat_i = qv_sat(t_atm,pres,1)
-   qdep_satadj = (qv-dumqv_sat_i)/(1._rtype + bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv* bfb_square(t_atm) ))*inv_dt
-   qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
-   qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qi2qv_sublim_tend, 1.e-20_rtype))
-
-end subroutine prevent_ice_overdepletion
-
 subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend, qr2qv_evap_tend)
   !Make sure ice processes don't drag qv below ice supersaturation
   !Note that qv_sat_i is always > 0 so this also ensures qv itself doesn't go
@@ -2901,6 +2876,75 @@ subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_h
 
   return
 end subroutine ice_supersat_conservation
+
+subroutine prevent_liq_supersaturation(pres,t_atm,qv,latent_heat_vapor,latent_heat_sublim,dt,qidep,qinuc,    &
+     qi2qv_sublim_tend,qr2qv_evap_tend)
+  !-- Limit sublimation and evaporation to prevent qv from becoming supersaturated with respect to liquid
+
+  use micro_p3_utils, only: inv_cp
+
+  implicit none
+
+  real(rtype), intent(in) :: pres
+  real(rtype), intent(in) :: t_atm
+  real(rtype), intent(in) :: qv
+  real(rtype), intent(in) :: latent_heat_sublim,latent_heat_vapor
+  real(rtype), intent(in) :: dt
+  real(rtype), intent(in) :: qidep,qinuc
+  real(rtype), intent(inout) :: qi2qv_sublim_tend,qr2qv_evap_tend
+
+  real(rtype) :: qv_sinks, qv_sources, qv_endstep, T_endstep, qsl, A, frac
+
+  qv_sources = qi2qv_sublim_tend + qr2qv_evap_tend
+  if (qv_sources < qsmall) then
+     frac = 0._rtype
+  else
+     qv_sinks   = qidep + qinuc
+
+     !Actual qv after micro step
+     qv_endstep = qv - qv_sinks*dt + qv_sources*dt 
+     ! ... corresponding temperature
+     T_endstep = t_atm + ( (qv_sinks-qi2qv_sublim_tend)*latent_heat_sublim*inv_cp &
+          - qr2qv_evap_tend*latent_heat_vapor*inv_cp )*dt
+
+     !qv we would have at end of step if we were saturated with respect to liquid
+     qsl = qv_sat(T_endstep,pres,0)
+
+     ! The balance we seek is:
+     ! qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)
+     ! where the T correction for conservation is:
+     ! dt*[latent_heat_sublim/cp*(qi2qv_sublim_tend-frac*qi2qv_sublim_tend)
+     !     +latent_heat_vapor /cp*(qr2qv_evap_tend  -frac*qr2qv_evap_tend)]
+     ! =(1-frac)*dt/cp*(latent_heat_sublim*qi2qv_sublim_tend + latent_heat_vap*qr2qv_evap_tend).
+     ! Note T correction is positive because frac *reduces* evaporative cooling. Note as well that
+     ! dqsl_dt comes from linearization of qsl around the end-of-step T computed before temperature
+     ! correction. dqsl_dt should be computed with respect to *liquid* even though frac also adjusts
+     ! sublimation because we want to be saturated with respect to liquid at the end of the step.
+     ! dqsl_dt=Latent_heat_vapor*qsl/rv*T^2 following Clausius Clapeyron. Combining and solving for
+     ! frac yields:
+
+     A=latent_heat_vapor*qsl*dt*inv_cp/(rv*T_endstep*T_endstep) &
+          *(latent_heat_sublim*qi2qv_sublim_tend + latent_heat_vapor*qr2qv_evap_tend)
+
+     !Denom of frac is 0 if qv_sources and therefore A are 0.
+     frac = (qsl-qv+qv_sinks*dt + A)/(qv_sources*dt + A)
+
+     !The only way frac<0 is if qv-qv_sinks*dt is already greater than qsl. In this case
+     !the best we can do is zero out qv_sources.
+     frac = max(0._rtype,frac)
+     
+     !The only way frac>1 is if qv-qv_sinks*dt+qv_sources*dt < qsl, in which case we shouldn't 
+     !limit anyways so set frac to 1:
+     frac = min(1._rtype,frac)
+
+     qi2qv_sublim_tend = frac*qi2qv_sublim_tend
+     qr2qv_evap_tend = frac*qr2qv_evap_tend
+     
+  end if
+
+
+  return
+end subroutine prevent_liq_supersaturation
 
 subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
      nc_accret_tend, nc2nr_autoconv_tend)
@@ -3025,7 +3069,7 @@ subroutine rain_water_conservation(qr,qc2qr_autoconv_tend,qc2qr_accret_tend,qi2q
       qr2qv_evap_tend  = qr2qv_evap_tend*ratio
       qrcol  = qrcol*ratio
       qr2qi_immers_freeze_tend = qr2qi_immers_freeze_tend*ratio
-   endif
+   end if
 
 end subroutine rain_water_conservation
 
@@ -3213,11 +3257,9 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
 
 end subroutine update_prognostic_liquid
 
-
-
-subroutine ice_deposition_sublimation(qi_incld,ni_incld,t_atm,    &
-qv_sat_l,qv_sat_i,epsi,abi,qv,    &
-qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
+ subroutine ice_deposition_sublimation(qi_incld,ni_incld,t_atm,    &
+qv_sat_l,qv_sat_i,epsi,abi,qv, inv_dt,   &
+qv2qi_depos_tend,qi2qv_sublim_tend,ni_sublim_tend,qc2qi_berg_tend)
 
    implicit none
 
@@ -3229,39 +3271,54 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: qv
-   real(rtype), intent(out) :: qidep
+   real(rtype), intent(in)  :: inv_dt
+   real(rtype), intent(out) :: qv2qi_depos_tend
    real(rtype), intent(out) :: qi2qv_sublim_tend
    real(rtype), intent(out) :: ni_sublim_tend
-   real(rtype), intent(out) :: qiberg
+   real(rtype), intent(out) :: qc2qi_berg_tend
 
-   real(rtype) :: oabi
+   real(rtype) :: qi_tend
 
-   oabi = 1._rtype/abi
-   if (qi_incld>=qsmall) then
-      !Compute deposition/sublimation
-      qidep = epsi * oabi * (qv - qv_sat_i)
-      !Split into deposition or sublimation.
-      if (t_atm < T_zerodegc .and. qidep>0._rtype) then
-         qi2qv_sublim_tend=0._rtype
-      else
-      ! make qi2qv_sublim_tend positive for consistency with other evap/sub processes
-         qi2qv_sublim_tend=-min(qidep,0._rtype)
-         qidep=0._rtype
+   !INITIALIZE EVERYTHING TO 0.
+   qc2qi_berg_tend = 0._rtype
+   qv2qi_depos_tend  = 0._rtype
+   qi2qv_sublim_tend  = 0._rtype
+   ni_sublim_tend  = 0._rtype
+
+   !NO ICE => NO DEPOS/SUBLIM SO SKIP ALL CALCULATIONS
+   if (qi_incld>qsmall) then
+
+      !USING MIN IN THE LINE BELOW TO PREVENT SUBLIM OR DEPOS FROM PUSHING qv BEYOND qv_sat_i
+      !WITHIN THE GIVEN TIMESTEP. APPLYING MIN HERE IS EQUIVALENT TO LIMITING THE
+      !TENDENCY LATER TO ENSURE END-OF-STEP QV ISN'T INAPPROPRIATELY SUPER OR SUBSATURATED.
+      qi_tend = min(epsi/abi,inv_dt) * (qv - qv_sat_i)
+      
+      !SUBLIMATION:
+      if (qi_tend<0._rtype) then
+         qi2qv_sublim_tend = -qi_tend
+         ni_sublim_tend = qi2qv_sublim_tend*(ni_incld/qi_incld)
       end if
-      !sublimation occurs @ any T. Not so for berg.
+
+      !DEPOSITION ONLY OCCURS BELOW FREEZING
       if (t_atm < T_zerodegc) then
-         !Compute bergeron rate assuming cloud for whole step.
-         qiberg = max(epsi*oabi*(qv_sat_l - qv_sat_i), 0._rtype)
-      else !T>frz
-         qiberg=0._rtype
-      end if !T<frz
-      ni_sublim_tend = qi2qv_sublim_tend*(ni_incld/qi_incld)
-   else
-      qiberg = 0._rtype
-      qidep  = 0._rtype
-      qi2qv_sublim_tend  = 0._rtype
-      ni_sublim_tend  = 0._rtype
-   end if
+
+         !BERGERON OCCURS WHERE LIQUID IS PRESENT AND DEPOSITION FROM VAPOR OCCURS WHERE IT ISN'T.
+         !IF ALL LIQUID IS CONSUMED PARTWAY THROUGH A STEP, BERGERON SHOULD BE ACTIVE FOR THE
+         !FRACTION OF THE STEP WHEN LIQUID IS PRESENT AND DEPOSITION FROM VAPOR SHOULD BE ACTIVE FOR
+         !THE REST OF THE STEP. THE FRACTION OF THE STEP WITH LIQUID ISN'T KNOWN UNTIL THE 'CONSERVATION
+         !CHECKS' AT THE END OF THE STEP, SO WE COMPUTE BERGERON AND VAPOR DEPOSITION HERE ASSUMING
+         !LIQUID IS OR ISN'T PRESENT FOR THE WHOLE STEP (RESPECTIVELY). 
+
+         !VAPOR DEPOSITION
+         if (qi_tend>=0._rtype) then
+            qv2qi_depos_tend = qi_tend
+         end if
+
+         !BERGERON
+         qc2qi_berg_tend = max(epsi/abi*(qv_sat_l - qv_sat_i), 0._rtype)
+
+      end if !T<freezing
+   end if !qi_incld>qsmall
 
    return
 

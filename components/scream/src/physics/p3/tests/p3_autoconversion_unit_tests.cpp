@@ -99,17 +99,17 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   Kokkos::deep_copy(cwadc_host, cwadc_device);
 
   // Validate results
-#ifndef NDEBUG
-  for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
-    REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
-    REQUIRE(cwadc[s].nc_incld             == cwadc_host(s).nc_incld);
-    REQUIRE(cwadc[s].inv_qc_relvar        == cwadc_host(s).inv_qc_relvar);
-    REQUIRE(cwadc[s].qc2qr_autoconv_tend  == cwadc_host(s).qc2qr_autoconv_tend);
-    REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
-    REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
+  if (SCREAM_BFB_TESTING) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
+      REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
+      REQUIRE(cwadc[s].nc_incld             == cwadc_host(s).nc_incld);
+      REQUIRE(cwadc[s].inv_qc_relvar        == cwadc_host(s).inv_qc_relvar);
+      REQUIRE(cwadc[s].qc2qr_autoconv_tend  == cwadc_host(s).qc2qr_autoconv_tend);
+      REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
+      REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
+    }
   }
-#endif
 }
 
   static void run_bfb(){

@@ -155,7 +155,7 @@ class Plotter(object):
             self._display_name_map[orig_name] = new_name
 
         for datafile in datafiles:
-            with open(datafile, "r") as fd:
+            with open(datafile, "r", encoding="utf-8") as fd:
                 lines = [line.strip() for line in fd.readlines()]
 
             prov_line    = lines[0]
@@ -231,7 +231,7 @@ class Plotter(object):
         line_label = ""
         xlabel = None
 
-        with open(datafile, "r") as fd:
+        with open(datafile, "r", encoding="utf-8") as fd:
             for line in fd.readlines():
                 line = line.strip()
                 if "Provenance" in line:

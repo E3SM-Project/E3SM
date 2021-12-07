@@ -107,11 +107,11 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-#ifndef NDEBUG
-  for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(droplet_self_coll_data[s].nc_selfcollect_tend == host_data[s].nc_selfcollect_tend);
+  if (SCREAM_BFB_TESTING) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(droplet_self_coll_data[s].nc_selfcollect_tend == host_data[s].nc_selfcollect_tend);
+    }
   }
-#endif
 }
 
 };

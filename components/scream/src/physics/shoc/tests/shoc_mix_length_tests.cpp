@@ -160,16 +160,16 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeShocMixShocLengthData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ComputeShocMixShocLengthData& d_f90 = SDS_f90[i];
-      ComputeShocMixShocLengthData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.shoc_mix); ++k) {
-        REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeShocMixShocLengthData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ComputeShocMixShocLengthData& d_f90 = SDS_f90[i];
+        ComputeShocMixShocLengthData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.shoc_mix); ++k) {
+          REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+        }
       }
     }
-#endif
   }
 };
 

@@ -1,0 +1,33 @@
+%YAML 1.1
+---
+Casename: rrtmgp_standalone_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  - T_mid
+  - LW_flux_up
+  - LW_flux_dn
+  - SW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - cldfrac_tot
+  - p_int
+  - p_mid
+  - pseudo_density
+  - qc
+  - qi
+  - qv
+  - eff_radius_qc
+  - eff_radius_qi
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - surf_lw_flux_up
+ 
+Output Control:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

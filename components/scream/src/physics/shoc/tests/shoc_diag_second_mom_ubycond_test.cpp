@@ -96,21 +96,21 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
       shoc_diag_second_moments_ubycond_f(d.shcol, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
     }
 
-#ifndef NDEBUG
-    for (Int i = 0; i < num_runs; ++i) {
-      const Int shcol = uby_cxx[i].shcol;
-      for (Int k = 0; k < shcol; ++k) {
-        REQUIRE(uby_fortran[i].thl_sec[k]      == uby_cxx[i].thl_sec[k]);
-        REQUIRE(uby_fortran[i].qw_sec[k]       == uby_cxx[i].qw_sec[k]);
-        REQUIRE(uby_fortran[i].qwthl_sec[k]    == uby_cxx[i].qwthl_sec[k]);
-        REQUIRE(uby_fortran[i].wthl_sec[k]     == uby_cxx[i].wthl_sec[k]);
-        REQUIRE(uby_fortran[i].wqw_sec[k]      == uby_cxx[i].wqw_sec[k]);
-        REQUIRE(uby_fortran[i].uw_sec[k]       == uby_cxx[i].uw_sec[k]);
-        REQUIRE(uby_fortran[i].vw_sec[k]       == uby_cxx[i].vw_sec[k]);
-        REQUIRE(uby_fortran[i].wtke_sec[k]     == uby_cxx[i].wtke_sec[k]);
+    if (SCREAM_BFB_TESTING) {
+      for (Int i = 0; i < num_runs; ++i) {
+        const Int shcol = uby_cxx[i].shcol;
+        for (Int k = 0; k < shcol; ++k) {
+          REQUIRE(uby_fortran[i].thl_sec[k]      == uby_cxx[i].thl_sec[k]);
+          REQUIRE(uby_fortran[i].qw_sec[k]       == uby_cxx[i].qw_sec[k]);
+          REQUIRE(uby_fortran[i].qwthl_sec[k]    == uby_cxx[i].qwthl_sec[k]);
+          REQUIRE(uby_fortran[i].wthl_sec[k]     == uby_cxx[i].wthl_sec[k]);
+          REQUIRE(uby_fortran[i].wqw_sec[k]      == uby_cxx[i].wqw_sec[k]);
+          REQUIRE(uby_fortran[i].uw_sec[k]       == uby_cxx[i].uw_sec[k]);
+          REQUIRE(uby_fortran[i].vw_sec[k]       == uby_cxx[i].vw_sec[k]);
+          REQUIRE(uby_fortran[i].wtke_sec[k]     == uby_cxx[i].wtke_sec[k]);
+        }
       }
     }
-#endif
   }
 
 };

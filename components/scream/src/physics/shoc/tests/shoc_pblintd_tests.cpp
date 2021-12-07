@@ -178,16 +178,16 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdData);
-    for (Int i = 0; i < num_runs; ++i) {
-      PblintdData& d_f90 = f90_data[i];
-      PblintdData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-        REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdData);
+      for (Int i = 0; i < num_runs; ++i) {
+        PblintdData& d_f90 = f90_data[i];
+        PblintdData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
+          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

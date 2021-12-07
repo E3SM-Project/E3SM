@@ -20,8 +20,7 @@ public:
 
   std::string name () const { return "Dynamics Driven Grids Manager"; }
 
-  void build_grids (const std::set<std::string>& grid_names,
-                    const std::string& reference_grid);
+  void build_grids (const std::set<std::string>& grid_names);
 
   std::set<std::string> supported_grids () const { return m_valid_grid_names; }
 
@@ -46,9 +45,11 @@ protected:
 
   void build_grid_codes ();
 
+  ekat::Comm      m_comm;
+
   grid_repo_type  m_grids;
 
-  std::string m_ref_grid_name;
+  std::string     m_ref_grid_name;
 
   // Admissible grid names
   std::set<std::string> m_valid_grid_names;

@@ -47,8 +47,11 @@ public:
     return grids.find(grid_name)!=grids.end();
   }
 
-  virtual void build_grids (const std::set<std::string>& grid_names,
-                            const std::string& reference_grid) = 0;
+  void build_all_grids () {
+    build_grids (supported_grids());
+  }
+
+  virtual void build_grids (const std::set<std::string>& grid_names) = 0;
 
   remapper_ptr_type
   create_remapper (const grid_ptr_type& from_grid,

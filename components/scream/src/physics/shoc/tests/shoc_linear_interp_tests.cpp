@@ -378,16 +378,16 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
-    for (Int i = 0; i < num_runs; ++i) {
-      LinearInterpData& d_f90 = f90_data[i];
-      LinearInterpData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.y2); ++k) {
-        REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
+      for (Int i = 0; i < num_runs; ++i) {
+        LinearInterpData& d_f90 = f90_data[i];
+        LinearInterpData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.y2); ++k) {
+          REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

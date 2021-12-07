@@ -443,20 +443,20 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocAssumedPdfData& d_f90 = SDS_f90[i];
-      ShocAssumedPdfData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.wqls); ++k) {
-        REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
-        REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
-        REQUIRE(d_f90.wqls[k] == d_cxx.wqls[k]);
-        REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
-        REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocAssumedPdfData& d_f90 = SDS_f90[i];
+        ShocAssumedPdfData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.wqls); ++k) {
+          REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
+          REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
+          REQUIRE(d_f90.wqls[k] == d_cxx.wqls[k]);
+          REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
+          REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+        }
       }
     }
-#endif
   }
 };
 

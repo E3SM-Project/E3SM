@@ -16,8 +16,7 @@ void Functions<S,D>
   const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion, const Spack& dv,
   const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
   const Spack& qi_incld, const Spack& ni_incld, const Spack& qr_incld,
-  Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate, Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend,
-  const Smask& range_mask, const Smask& context)
+  Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate, Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend, const Smask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -43,7 +42,7 @@ void Functions<S,D>
   Spack dum1{0.};
 
   if (any_if.any()) {
-    qsat0 = physics::qv_sat( zerodeg,pres, false, range_mask );
+    qsat0 = physics::qv_sat( zerodeg,pres, false, context );
 
     qc_growth_rate.set(any_if,
                ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*
@@ -67,10 +66,10 @@ void Functions<S,D>
                 qc2qr_ice_shed_tend+dum*qc2qi_collect_tend*dum1);
 
       qc2qi_collect_tend.set(any_if_col && dum_ge_small,
-                qc2qi_collect_tend-dum*qc2qi_collect_tend*dum1);
+			     max(0,qc2qi_collect_tend-dum*qc2qi_collect_tend*dum1));
 
       qr2qi_collect_tend.set(any_if_col && dum_ge_small,
-                qr2qi_collect_tend-dum*qr2qi_collect_tend*dum1);
+			     max(0,qr2qi_collect_tend-dum*qr2qi_collect_tend*dum1));
     }
 
     log_wetgrowth = any_if && dum_ge_small;

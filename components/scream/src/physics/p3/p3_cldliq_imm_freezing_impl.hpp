@@ -37,7 +37,8 @@ void Functions<S,D>
     inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
 
     Spack sgs_var_coef;
-    sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2);
+    // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2);
+    sgs_var_coef = 1;
 
     qc2qi_hetero_freeze_tend.set(qc_not_small_and_t_freezing,
                sgs_var_coef * CONS6 * cdist1 * tgamma(7+mu_c) * expAimmDt *

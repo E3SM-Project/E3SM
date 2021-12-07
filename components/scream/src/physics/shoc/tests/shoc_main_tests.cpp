@@ -397,80 +397,80 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
 
-    for (Int i = 0; i < num_runs; ++i) {
-      ShocMainData& d_f90 = f90_data[i];
-      ShocMainData& d_cxx = cxx_data[i];
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.host_dse));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tke));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.thetal));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.qw));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.u_wind));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.v_wind));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wthv_sec));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tkh));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tk));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_cldfrac));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_mix));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.isotropy));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.w_sec));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wqls_sec));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.brunt));
-      REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql2));
-      for (Int k = 0; k < d_f90.total(d_f90.host_dse); ++k) {
-        REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
-        REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-        REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-        REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-        REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-        REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
-        REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
-        REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
-        REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
-        REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
-        REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
-        REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
-        REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
-        REQUIRE(d_f90.wqls_sec[k] == d_cxx.wqls_sec[k]);
-        REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
-        REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
-      }
+      for (Int i = 0; i < num_runs; ++i) {
+        ShocMainData& d_f90 = f90_data[i];
+        ShocMainData& d_cxx = cxx_data[i];
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.host_dse));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tke));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.qw));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.v_wind));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wthv_sec));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tkh));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tk));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_cldfrac));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_mix));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.isotropy));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.w_sec));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wqls_sec));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.brunt));
+        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql2));
+        for (Int k = 0; k < d_f90.total(d_f90.host_dse); ++k) {
+          REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
+          REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
+          REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
+          REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
+          REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
+          REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
+          REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
+          REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+          REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
+          REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
+          REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+          REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
+          REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
+          REQUIRE(d_f90.wqls_sec[k] == d_cxx.wqls_sec[k]);
+          REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
+          REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+        }
 
-      REQUIRE(d_f90.total(d_f90.qtracers) == d_cxx.total(d_cxx.qtracers));
-      for (Int k = 0; k < d_f90.total(d_f90.qtracers); ++k) {
-        REQUIRE(d_f90.qtracers[k] == d_cxx.qtracers[k]);
-      }
+        REQUIRE(d_f90.total(d_f90.qtracers) == d_cxx.total(d_cxx.qtracers));
+        for (Int k = 0; k < d_f90.total(d_f90.qtracers); ++k) {
+          REQUIRE(d_f90.qtracers[k] == d_cxx.qtracers[k]);
+        }
 
-      REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
-      for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-        REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
-      }
+        REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
+        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
+          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+        }
 
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.thl_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qw_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qwthl_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wthl_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wqw_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wtke_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.uw_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.vw_sec));
-      REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.w3));
-      for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
-        REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
-        REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
-        REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
-        REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
-        REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
-        REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
-        REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
-        REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
-        REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.thl_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qw_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qwthl_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wthl_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wqw_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wtke_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.uw_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.vw_sec));
+        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.w3));
+        for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
+          REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
+          REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
+          REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
+          REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
+          REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
+          REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
+          REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
+          REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
+          REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 };
 

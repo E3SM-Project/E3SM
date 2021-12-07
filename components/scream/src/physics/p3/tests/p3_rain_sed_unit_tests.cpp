@@ -112,15 +112,15 @@ static void run_bfb_rain_vel()
   Kokkos::deep_copy(crfv_host, crfv_device);
 
   // Validate results
-#ifndef NDEBUG
-  for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(crfv_fortran[s].nr_incld == crfv_host(s).nr_incld);
-    REQUIRE(crfv_fortran[s].mu_r     == crfv_host(s).mu_r);
-    REQUIRE(crfv_fortran[s].lamr     == crfv_host(s).lamr);
-    REQUIRE(crfv_fortran[s].V_qr     == crfv_host(s).V_qr);
-    REQUIRE(crfv_fortran[s].V_nr     == crfv_host(s).V_nr);
+  if (SCREAM_BFB_TESTING) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(crfv_fortran[s].nr_incld == crfv_host(s).nr_incld);
+      REQUIRE(crfv_fortran[s].mu_r     == crfv_host(s).mu_r);
+      REQUIRE(crfv_fortran[s].lamr     == crfv_host(s).lamr);
+      REQUIRE(crfv_fortran[s].V_qr     == crfv_host(s).V_qr);
+      REQUIRE(crfv_fortran[s].V_nr     == crfv_host(s).V_nr);
+    }
   }
-#endif
 }
 
 static void run_bfb_rain_sed()
@@ -165,25 +165,25 @@ static void run_bfb_rain_sed()
                          d.qr_tend, d.nr_tend);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
-    Int end   = std::max(rsds_fortran[i].kbot, rsds_fortran[i].ktop);     // 0-based indx
-    for (Int k = start; k < end; ++k) {
-      REQUIRE(rsds_fortran[i].qr[k]              == rsds_cxx[i].qr[k]);
-      REQUIRE(rsds_fortran[i].nr[k]              == rsds_cxx[i].nr[k]);
-      REQUIRE(rsds_fortran[i].nr_incld[k]        == rsds_cxx[i].nr_incld[k]);
-      REQUIRE(rsds_fortran[i].mu_r[k]            == rsds_cxx[i].mu_r[k]);
-      REQUIRE(rsds_fortran[i].lamr[k]            == rsds_cxx[i].lamr[k]);
-      REQUIRE(rsds_fortran[i].precip_liq_flux[k] == rsds_cxx[i].precip_liq_flux[k]);
-      REQUIRE(rsds_fortran[i].qr_tend[k]         == rsds_cxx[i].qr_tend[k]);
-      REQUIRE(rsds_fortran[i].nr_tend[k]         == rsds_cxx[i].nr_tend[k]);
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(rsds_fortran[i].kbot, rsds_fortran[i].ktop);     // 0-based indx
+      for (Int k = start; k < end; ++k) {
+        REQUIRE(rsds_fortran[i].qr[k]              == rsds_cxx[i].qr[k]);
+        REQUIRE(rsds_fortran[i].nr[k]              == rsds_cxx[i].nr[k]);
+        REQUIRE(rsds_fortran[i].nr_incld[k]        == rsds_cxx[i].nr_incld[k]);
+        REQUIRE(rsds_fortran[i].mu_r[k]            == rsds_cxx[i].mu_r[k]);
+        REQUIRE(rsds_fortran[i].lamr[k]            == rsds_cxx[i].lamr[k]);
+        REQUIRE(rsds_fortran[i].precip_liq_flux[k] == rsds_cxx[i].precip_liq_flux[k]);
+        REQUIRE(rsds_fortran[i].qr_tend[k]         == rsds_cxx[i].qr_tend[k]);
+        REQUIRE(rsds_fortran[i].nr_tend[k]         == rsds_cxx[i].nr_tend[k]);
+      }
+      REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
+      REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
     }
-    REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
-    REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
   }
-#endif
 }
 
 static void run_bfb()

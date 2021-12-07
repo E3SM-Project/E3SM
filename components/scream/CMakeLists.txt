@@ -40,6 +40,21 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (Kokkos_ENABLE_CUDA)
+  if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+    if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENALBE_DEBUG_BOUNDS_CHECK=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(WARNING "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    else()
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(STATUS "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    endif()
+  endif()
   include(EkatBuildKokkos)
   # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
   EkatSetKokkosSourceDir()
@@ -47,6 +62,11 @@ if (Kokkos_ENABLE_CUDA)
   include (EkatSetNvccWrapper)
   EkatSetNvccWrapper()
 endif()
+
+# Homme's composef90 library (built for f90 support) requires Kokkos::Serial
+# to be defined, which in turn requires the CMake var Kokkos_ENABLE_SERIAL
+# to be on. For now, simply ensure Kokkos Serial is enabled
+option (Kokkos_ENABLE_SERIAL "" ON)
 
 set (CMAKE_CXX_STANDARD 14)
 
@@ -131,7 +151,7 @@ endif ()
 set(DEFAULT_FPMODEL "precise")
 set(DEFAULT_MPIRUN_EXE "mpiexec")
 set(DEFAULT_MPI_EXTRA_ARGS "--bind-to core")
-set(DEFAULT_MPI_NP_FLAG "-np")
+set(DEFAULT_MPI_NP_FLAG "--map-by")
 set(DEFAULT_LIB_ONLY FALSE)
 if (SCREAM_CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
@@ -185,6 +205,7 @@ set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-rela
 set(SCREAM_NUM_VERTICAL_LEV ${DEFAULT_NUM_VERTICAL_LEV} CACHE STRING
     "The number of levels used in the vertical grid."
 )
+option(SCREAM_HAS_LEAP_YEAR "Whether scream uses leap years or not" ON)
 
 ## Work out pack sizes.
 # Determine the master pack size.
@@ -225,9 +246,35 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 ### <Scream configuration options
 
 # Scream test configuration options
-set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
+set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads per rank for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
 set(SCREAM_TEST_MAX_RANKS ${DEFAULT_MAX_RANKS} CACHE STRING "Upper limit on ranks for mpi tests")
+math(EXPR DEFAULT_MAX_TOTAL_THREADS "${SCREAM_TEST_MAX_RANKS}*${SCREAM_TEST_MAX_THREADS}")
+set(SCREAM_TEST_MAX_TOTAL_THREADS ${DEFAULT_MAX_TOTAL_THREADS} CACHE STRING "Upper limit on nranks*threads for threaded tests")
+
+# Make sure SCREAM_TEST_MAX_RANKS and SCREAM_TEST_MAX_THREADS do not individually exceed SCREAM_TEST_MAX_TOTAL_THREADS
+if (SCREAM_TEST_MAX_THREADS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max threads/rank (${SCREAM_TEST_MAX_THREADS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_THREADS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_THREADS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
+if (SCREAM_TEST_MAX_RANKS GREATER ${SCREAM_TEST_MAX_TOTAL_THREADS})
+  string(CONCAT msg
+         "The requested number of max ranks (${SCREAM_TEST_MAX_RANKS}) is larger "
+         "than the max total threads (${SCREAM_TEST_MAX_TOTAL_THREADS}). Setting "
+         "SCREAM_TEST_MAX_RANKS=${SCREAM_TEST_MAX_TOTAL_THREADS}")
+  message(STATUS "${msg}")
+  set (SCREAM_TEST_MAX_RANKS ${SCREAM_TEST_MAX_TOTAL_THREADS})
+endif()
+
+# This is a meta-variable, which individual tests can use to set *different* degrees
+# of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
+# for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
+set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
+set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
@@ -266,6 +313,10 @@ print_var(SCREAM_TPL_LIBRARIES)
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
+if (EKAT_ENABLE_CUDA_MEMCHECK)
+  add_definitions(-DEKAT_ENABLE_CUDA_MEMCHECK)
+endif()
+
 # Hooks for testing test-all-scream within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
@@ -278,9 +329,20 @@ if ($ENV{SCREAM_FORCE_RUN_FPE_FAIL})
 endif()
 if ($ENV{SCREAM_FORCE_RUN_DIFF})
   add_definitions(-DSCREAM_FORCE_RUN_DIFF)
+  set(SCREAM_FAKE_NEED_P3 ON)
+endif()
+if ($ENV{SCREAM_FORCE_RUN_DIFF_BFB_UNIT})
+  add_definitions(-DSCREAM_FORCE_RUN_DIFF_BFB_UNIT)
+  set(SCREAM_FAKE_NEED_P3 ON)
 endif()
 if ($ENV{SCREAM_FORCE_RUN_KOKKOS_OOB})
   add_definitions(-DSCREAM_FORCE_RUN_KOKKOS_OOB)
+endif()
+if ($ENV{SCREAM_FORCE_RUN_VALG_ERR})
+  add_definitions(-DSCREAM_FORCE_RUN_VALG_ERR)
+  if (NOT EKAT_ENABLE_VALGRIND)
+    message(FATAL_ERROR "Makes no sense to turn on valgrind error test without valgrind enabled")
+  endif()
 endif()
 
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")

@@ -21,7 +21,7 @@ from utils import run_cmd, check_minimum_python_version, expect, ensure_pylint, 
 
 check_minimum_python_version(3, 4)
 
-from machines_specs import is_machine_supported, is_cuda_machine, get_all_supported_machines
+from machines_specs import is_machine_supported, is_cuda_machine
 
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
@@ -103,7 +103,7 @@ def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
 ###############################################################################
     baseline_sha_file = test_dir.parent/"ctest-build"/"baselines"/build_name/"baseline_git_sha"
     test_obj.assertTrue(baseline_sha_file.exists())
-    with baseline_sha_file.open("r") as fd:
+    with baseline_sha_file.open("r", encoding="utf-8") as fd:
         baseline_sha = fd.read().strip()
 
     test_obj.assertEqual(baseline_sha, expected_sha)
@@ -112,7 +112,7 @@ def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
 def add_file_and_commit(repo, filename, contents, commit_msg):
 ###############################################################################
     filepath = repo / filename
-    with filepath.open("w") as fd:
+    with filepath.open("w", encoding="utf-8") as fd:
         fd.write(contents)
 
     run_cmd_no_fail("git add {}".format(filename), from_dir=repo)
@@ -124,6 +124,31 @@ def test_branch_switch(test_obj, repo, branch_name):
     checkout_git_ref(branch_name, repo=repo)
     test_obj.assertEqual(get_current_branch(repo=repo), branch_name)
     test_obj.assertEqual(get_current_head(repo=repo), branch_name)
+
+###############################################################################
+def test_omp_spread(test_obj, output, num_places, begin=0):
+###############################################################################
+    lines = output.splitlines()
+    all_places = []
+    for line in lines:
+        if "OMP_PLACES = '" in line:
+            places_str = line.split("=")[1].strip().strip("'")
+            try:
+                places = [int(item.strip("{}")) for item in places_str.split(",")]
+            except ValueError as e:
+                test_obj.assertTrue(False, msg=f"Line {line} had value error: {str(e)}")
+
+            # Should be sequential
+            for idx, place in enumerate(places):
+                if idx != 0:
+                    test_obj.assertEqual(place, places[0]+idx)
+
+            all_places.extend(places)
+
+    all_places.sort()
+    test_obj.assertEqual(len(all_places), num_places - begin, msg=f"{output}")
+    for idx, place in enumerate(all_places):
+        test_obj.assertEqual(idx + begin, place, msg=f"Idx {idx} was not in sequential order in {all_places}")
 
 ###############################################################################
 class TestBaseOuter: # Hides the TestBase class from test scanner
@@ -140,8 +165,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._full        = CONFIG["full"]
             self._jenkins     = CONFIG["jenkins"]
 
-            if self._full or self._jenkins:
-                expect(self._machine is not None, "Full/Jenkins runs require a machine")
+            expect(self._machine is not None, "Runs require a machine")
 
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
@@ -154,9 +178,6 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             return "{}{}".format(cmd.replace("$machine", machine).replace("$results", str(self._results)),
                                  " --dry-run" if (dry_run and "--dry-run" not in cmd) else "")
 
-        def get_machines(self):
-            return [self._machine] if self._machine else get_all_supported_machines()
-
         def test_doctests(self):
             run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
 
@@ -166,19 +187,15 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
 
         def test_gen_baseline(self):
             if self._generate:
-                machines = self.get_machines()
-                for machine in machines:
-                    for cmd in self._cmds:
-                        run_cmd_store_output(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
+                for cmd in self._cmds:
+                    run_cmd_store_output(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
             else:
                 self.skipTest("Skipping dry run baseline generation")
 
         def test_cmp_baseline(self):
             if self._compare:
-                machines = self.get_machines()
-                for machine in machines:
-                    for cmd in self._cmds:
-                        run_cmd_check_baseline(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
+                for cmd in self._cmds:
+                    run_cmd_check_baseline(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
             else:
                 self.skipTest("Skipping dry run baseline comparison")
 
@@ -248,7 +265,7 @@ class TestUtils(TestBaseOuter.TestBase):
         self.assertEqual(ahead, 0)
 
         filepath = git_test_root / "foo"
-        with filepath.open("a") as fd:
+        with filepath.open("a", encoding="utf-8") as fd:
             fd.write("moretext")
 
         self.assertFalse(is_repo_clean(repo=git_test_root))
@@ -273,6 +290,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             *internal_args)
 
     def test_dbg_details(self):
+        """
+        Test the 'dbg' test in test-all-scream. It should pass and set certain CMake values
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -287,6 +307,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_sp_details(self):
+        """
+        Test the 'sp' test in test-all-scream. It should pass and set certain CMake values
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t sp", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -302,6 +325,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_fpe_details(self):
+        """
+        Test the 'fpe' test in test-all-scream. It should pass and set certain CMake values
+        """
         if self._full:
             if is_cuda_machine(self._machine):
                 self.skipTest("Skipping FPE check on cuda")
@@ -316,6 +342,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_config_fail_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a cmake configure error
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_CONFIG_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
@@ -323,6 +352,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_build_fail_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a build error
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_BUILD_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
@@ -330,6 +362,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_run_fail_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a test failure
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
@@ -337,6 +372,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_run_fpe_fail_captured(self):
+        """
+        Test that the 'fpe' test in test-all-scream detects and returns non-zero if there's a floating point exception
+        """
         if self._full:
             if is_cuda_machine(self._machine):
                 self.skipTest("Skipping FPE check on cuda")
@@ -347,20 +385,72 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_run_kokkos_oob_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a kokkos out-of-bounds index
+        """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_KOKKOS_OOB=True -m $machine -b HEAD -k -t fpe", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_KOKKOS_OOB=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 
+    def test_run_valg_err_captured(self):
+        """
+        Test that the 'valg' test in test-all-scream detects and returns non-zero if there's a valgrind error
+        """
+        if self._full:
+            if is_cuda_machine(self._machine):
+                self.skipTest("Skipping valgrind test on cuda")
+            else:
+                cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_VALG_ERR=True -m $machine -b HEAD -k -t valg", self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
     def test_run_diff_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a baseline diff in p3_run_and_cmp
+        """
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 
+    def test_run_diff_opt_not_captured(self):
+        """
+        Test that the 'opt' test in test-all-scream does NOT detect and returns zero if there's a baseline diff in p3_run_and_cmp
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF=True -m $machine -b HEAD -k -t opt", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_run_bfb_unit_diff_captured(self):
+        """
+        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a difference between f90 and cxx results for rain_sed
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF_BFB_UNIT=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_run_bfb_unit_diff_opt_not_captured(self):
+        """
+        Test that the 'opt' test in test-all-scream does NOT detect and returns zero if there's a difference between f90 and cxx results for rain_sed
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF_BFB_UNIT=True -m $machine -b HEAD -k -t opt", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+        else:
+            self.skipTest("Skipping full run")
+
     def test_baseline_handling(self):
+        """
+        Test the mechanics of test-all-scream's handling of baselines
+        """
         if self._full:
             baseline_dir = TEST_DIR.parent/"ctest-build"/"baselines"
 
@@ -410,13 +500,37 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_mpirank_and_thread_spreading(self):
-        pass
+        """
+        Test that MPI ranks and threads are properly spread across a machine's computing resources
+        """
+        if self._full and self._machine == "mappy":
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 40)
+
+            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 40)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
+
+            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_omp_spread(self, output, 48, begin=8)
+
+        else:
+            self.skipTest("Skipping full run or not on mappy")
 
     def test_jenkins_process_at(self):
+        """
+        Test the jenkins script in autotester mode, should return zero
+        """
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
@@ -424,10 +538,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping jenkins test")
 
     def test_jenkins_process_nightly(self):
+        """
+        Test the jenkins script in nightly mode, should return zero
+        """
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
@@ -435,9 +552,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping jenkins test")
 
     def test_jenkins_process_fail_captured_at(self):
+        """
+        Test the jenkins script in autotester mode with a failure, should return non-zero
+        """
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
-            cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
@@ -445,9 +565,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping jenkins test")
 
     def test_jenkins_process_fail_captured_nightly(self):
+        """
+        Test the jenkins script in nightly mode with a failure, should return non-zero
+        """
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
-            cmd = self.get_cmd("SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
                                self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
@@ -499,10 +622,10 @@ OR
     > {0} TestTestAllScream.test_pylint
 
     \033[1;32m# Do a dry-run generation for test_all_scream \033[0m
-    > {0} -g TestTestAllScream
+    > {0} -g TestTestAllScream -m $machine
 
     \033[1;32m# Do a dry-run comparison for test_all_scream \033[0m
-    > {0} -c TestTestAllScream
+    > {0} -c TestTestAllScream -m $machine
 
     \033[1;32m# Do a full test run of test_all_scream \033[0m
     > {0} -f -m $machine TestTestAllScream
@@ -511,17 +634,17 @@ OR
     > {0} -f -m $machine
 
     \033[1;32m# Do a dry-run generation for everything \033[0m
-    > {0} -g
+    > {0} -g -m $machine
 
     \033[1;32m# Do a dry-run comparison for comparison \033[0m
-    > {0} -c
+    > {0} -c -m $machine
 
     \033[1;32m# Run every possible test. This should be done before a PR is issued \033[0m
-    > {0} -g # You likely want to do this for a reference commit
-    > {0} -c
+    > {0} -g -m $machine # You likely want to do this for a reference commit
+    > {0} -c -m $machine
     > {0} -f -m $machine
 
-    \033[1;32m# Test Jenkins script, do NOT do this from Jenkins \033[0m
+    \033[1;32m# Test Jenkins script \033[0m
     > {0} -j -m $machine
 
 """.format(Path(args[0]).name)
@@ -544,7 +667,7 @@ OR
                         help="Do a full (not dry) run")
 
     parser.add_argument("-j", "--jenkins", action="store_true",
-                        help="Test the jenkins script. Do NOT run from jenkins.")
+                        help="Test the jenkins script.")
 
     args, py_ut_args = parser.parse_known_args()
     sys.argv[1:] = py_ut_args

@@ -69,23 +69,23 @@ static void run_bfb()
                           d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);
   }
 
-#ifndef NDEBUG
-  for (Int i = 0; i < num_runs; ++i) {
-    // Due to pack issues, we must restrict checks to the active k space
-    Int start = std::min(csds_fortran[i].kbot, csds_fortran[i].ktop) - 1; // 0-based indx
-    Int end   = std::max(csds_fortran[i].kbot, csds_fortran[i].ktop);     // 0-based indx
-    for (Int k = start; k < end; ++k) {
-      REQUIRE(csds_fortran[i].qc[k]       == csds_cxx[i].qc[k]);
-      REQUIRE(csds_fortran[i].nc[k]       == csds_cxx[i].nc[k]);
-      REQUIRE(csds_fortran[i].nc_incld[k] == csds_cxx[i].nc_incld[k]);
-      REQUIRE(csds_fortran[i].mu_c[k]     == csds_cxx[i].mu_c[k]);
-      REQUIRE(csds_fortran[i].lamc[k]     == csds_cxx[i].lamc[k]);
-      REQUIRE(csds_fortran[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
-      REQUIRE(csds_fortran[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
+  if (SCREAM_BFB_TESTING) {
+    for (Int i = 0; i < num_runs; ++i) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(csds_fortran[i].kbot, csds_fortran[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(csds_fortran[i].kbot, csds_fortran[i].ktop);     // 0-based indx
+      for (Int k = start; k < end; ++k) {
+        REQUIRE(csds_fortran[i].qc[k]       == csds_cxx[i].qc[k]);
+        REQUIRE(csds_fortran[i].nc[k]       == csds_cxx[i].nc[k]);
+        REQUIRE(csds_fortran[i].nc_incld[k] == csds_cxx[i].nc_incld[k]);
+        REQUIRE(csds_fortran[i].mu_c[k]     == csds_cxx[i].mu_c[k]);
+        REQUIRE(csds_fortran[i].lamc[k]     == csds_cxx[i].lamc[k]);
+        REQUIRE(csds_fortran[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
+        REQUIRE(csds_fortran[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
+      }
+      REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
     }
-    REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
   }
-#endif
 }
 
 };

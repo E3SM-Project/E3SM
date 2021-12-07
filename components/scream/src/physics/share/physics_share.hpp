@@ -3,7 +3,7 @@
 
 #include "share/scream_types.hpp"
 
-using scream::Real;
+namespace scream {
 
 extern "C" {
 
@@ -20,6 +20,6 @@ Real cxx_erf(Real input);
 
 }
 
-#endif
+} // namespace scream
 
-
+#endif // SCREAM_PHYSICS_SHARE_HPP

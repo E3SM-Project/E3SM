@@ -136,39 +136,39 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-#ifndef NDEBUG
-  for (Int s = 0; s < Spack::n; ++s) {
-    REQUIRE(back_to_cell_average_data[s].qc2qr_accret_tend        == host_data[s].qc2qr_accret_tend);
-    REQUIRE(back_to_cell_average_data[s].qr2qv_evap_tend          == host_data[s].qr2qv_evap_tend);
-    REQUIRE(back_to_cell_average_data[s].qc2qr_autoconv_tend      == host_data[s].qc2qr_autoconv_tend);
-    REQUIRE(back_to_cell_average_data[s].nc_accret_tend           == host_data[s].nc_accret_tend);
-    REQUIRE(back_to_cell_average_data[s].nc_selfcollect_tend      == host_data[s].nc_selfcollect_tend);
-    REQUIRE(back_to_cell_average_data[s].nc2nr_autoconv_tend      == host_data[s].nc2nr_autoconv_tend);
-    REQUIRE(back_to_cell_average_data[s].nr_selfcollect_tend      == host_data[s].nr_selfcollect_tend);
-    REQUIRE(back_to_cell_average_data[s].nr_evap_tend             == host_data[s].nr_evap_tend);
-    REQUIRE(back_to_cell_average_data[s].ncautr                   == host_data[s].ncautr);
-    REQUIRE(back_to_cell_average_data[s].qi2qv_sublim_tend        == host_data[s].qi2qv_sublim_tend);
-    REQUIRE(back_to_cell_average_data[s].nr_ice_shed_tend         == host_data[s].nr_ice_shed_tend);
-    REQUIRE(back_to_cell_average_data[s].qc2qi_hetero_freeze_tend == host_data[s].qc2qi_hetero_freeze_tend);
-    REQUIRE(back_to_cell_average_data[s].qr2qi_collect_tend       == host_data[s].qr2qi_collect_tend);
-    REQUIRE(back_to_cell_average_data[s].qc2qr_ice_shed_tend      == host_data[s].qc2qr_ice_shed_tend);
-    REQUIRE(back_to_cell_average_data[s].qi2qr_melt_tend          == host_data[s].qi2qr_melt_tend);
-    REQUIRE(back_to_cell_average_data[s].qc2qi_collect_tend       == host_data[s].qc2qi_collect_tend);
-    REQUIRE(back_to_cell_average_data[s].qr2qi_immers_freeze_tend == host_data[s].qr2qi_immers_freeze_tend);
-    REQUIRE(back_to_cell_average_data[s].ni2nr_melt_tend          == host_data[s].ni2nr_melt_tend);
-    REQUIRE(back_to_cell_average_data[s].nc_collect_tend          == host_data[s].nc_collect_tend);
-    REQUIRE(back_to_cell_average_data[s].ncshdc                   == host_data[s].ncshdc);
-    REQUIRE(back_to_cell_average_data[s].nc2ni_immers_freeze_tend == host_data[s].nc2ni_immers_freeze_tend);
-    REQUIRE(back_to_cell_average_data[s].nr_collect_tend          == host_data[s].nr_collect_tend);
-    REQUIRE(back_to_cell_average_data[s].ni_selfcollect_tend      == host_data[s].ni_selfcollect_tend);
-    REQUIRE(back_to_cell_average_data[s].qv2qi_vapdep_tend        == host_data[s].qv2qi_vapdep_tend);
-    REQUIRE(back_to_cell_average_data[s].nr2ni_immers_freeze_tend == host_data[s].nr2ni_immers_freeze_tend);
-    REQUIRE(back_to_cell_average_data[s].ni_sublim_tend           == host_data[s].ni_sublim_tend);
-    REQUIRE(back_to_cell_average_data[s].qv2qi_nucleat_tend       == host_data[s].qv2qi_nucleat_tend);
-    REQUIRE(back_to_cell_average_data[s].ni_nucleat_tend          == host_data[s].ni_nucleat_tend);
-    REQUIRE(back_to_cell_average_data[s].qc2qi_berg_tend          == host_data[s].qc2qi_berg_tend);
+  if (SCREAM_BFB_TESTING) {
+    for (Int s = 0; s < Spack::n; ++s) {
+      REQUIRE(back_to_cell_average_data[s].qc2qr_accret_tend        == host_data[s].qc2qr_accret_tend);
+      REQUIRE(back_to_cell_average_data[s].qr2qv_evap_tend          == host_data[s].qr2qv_evap_tend);
+      REQUIRE(back_to_cell_average_data[s].qc2qr_autoconv_tend      == host_data[s].qc2qr_autoconv_tend);
+      REQUIRE(back_to_cell_average_data[s].nc_accret_tend           == host_data[s].nc_accret_tend);
+      REQUIRE(back_to_cell_average_data[s].nc_selfcollect_tend      == host_data[s].nc_selfcollect_tend);
+      REQUIRE(back_to_cell_average_data[s].nc2nr_autoconv_tend      == host_data[s].nc2nr_autoconv_tend);
+      REQUIRE(back_to_cell_average_data[s].nr_selfcollect_tend      == host_data[s].nr_selfcollect_tend);
+      REQUIRE(back_to_cell_average_data[s].nr_evap_tend             == host_data[s].nr_evap_tend);
+      REQUIRE(back_to_cell_average_data[s].ncautr                   == host_data[s].ncautr);
+      REQUIRE(back_to_cell_average_data[s].qi2qv_sublim_tend        == host_data[s].qi2qv_sublim_tend);
+      REQUIRE(back_to_cell_average_data[s].nr_ice_shed_tend         == host_data[s].nr_ice_shed_tend);
+      REQUIRE(back_to_cell_average_data[s].qc2qi_hetero_freeze_tend == host_data[s].qc2qi_hetero_freeze_tend);
+      REQUIRE(back_to_cell_average_data[s].qr2qi_collect_tend       == host_data[s].qr2qi_collect_tend);
+      REQUIRE(back_to_cell_average_data[s].qc2qr_ice_shed_tend      == host_data[s].qc2qr_ice_shed_tend);
+      REQUIRE(back_to_cell_average_data[s].qi2qr_melt_tend          == host_data[s].qi2qr_melt_tend);
+      REQUIRE(back_to_cell_average_data[s].qc2qi_collect_tend       == host_data[s].qc2qi_collect_tend);
+      REQUIRE(back_to_cell_average_data[s].qr2qi_immers_freeze_tend == host_data[s].qr2qi_immers_freeze_tend);
+      REQUIRE(back_to_cell_average_data[s].ni2nr_melt_tend          == host_data[s].ni2nr_melt_tend);
+      REQUIRE(back_to_cell_average_data[s].nc_collect_tend          == host_data[s].nc_collect_tend);
+      REQUIRE(back_to_cell_average_data[s].ncshdc                   == host_data[s].ncshdc);
+      REQUIRE(back_to_cell_average_data[s].nc2ni_immers_freeze_tend == host_data[s].nc2ni_immers_freeze_tend);
+      REQUIRE(back_to_cell_average_data[s].nr_collect_tend          == host_data[s].nr_collect_tend);
+      REQUIRE(back_to_cell_average_data[s].ni_selfcollect_tend      == host_data[s].ni_selfcollect_tend);
+      REQUIRE(back_to_cell_average_data[s].qv2qi_vapdep_tend        == host_data[s].qv2qi_vapdep_tend);
+      REQUIRE(back_to_cell_average_data[s].nr2ni_immers_freeze_tend == host_data[s].nr2ni_immers_freeze_tend);
+      REQUIRE(back_to_cell_average_data[s].ni_sublim_tend           == host_data[s].ni_sublim_tend);
+      REQUIRE(back_to_cell_average_data[s].qv2qi_nucleat_tend       == host_data[s].qv2qi_nucleat_tend);
+      REQUIRE(back_to_cell_average_data[s].ni_nucleat_tend          == host_data[s].ni_nucleat_tend);
+      REQUIRE(back_to_cell_average_data[s].qc2qi_berg_tend          == host_data[s].qc2qi_berg_tend);
+    }
   }
-#endif
 }
 
 };

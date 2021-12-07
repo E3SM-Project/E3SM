@@ -9,12 +9,15 @@
 // Get all Homme's compile-time dims
 #include "homme_dimensions.hpp"
 
+#include "ekat/std_meta/ekat_std_utils.hpp"
+
 namespace scream
 {
 
 DynamicsDrivenGridsManager::
 DynamicsDrivenGridsManager (const ekat::Comm& comm,
                             const ekat::ParameterList& p)
+ : m_comm (comm)
 {
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -48,6 +51,11 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
   gn.insert("Physics PG4 Twin"); // Phys columns are FV points in 4x4 subcells of SE cell
 
   // TODO: add other rebalancing?
+
+  // Get the ref grid name
+  m_ref_grid_name = p.get<std::string>("Reference Grid");
+  EKAT_REQUIRE_MSG (ekat::contains(gn,m_ref_grid_name),
+      "Error! Invalid reference grid name: " + m_ref_grid_name + "\n");
 
   // Create the grid integer codes map (i.e., int->string
   build_grid_codes ();
@@ -88,37 +96,25 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void DynamicsDrivenGridsManager::
-build_grids (const std::set<std::string>& grid_names,
-             const std::string& reference_grid) {
-  m_ref_grid_name = reference_grid;
-
-  // Retrieve all grid codes
-  std::set<int> codes;
+build_grids (const std::set<std::string>& grid_names)
+{
+  // Retrieve all physics grids codes
+  std::vector<int> pg_codes;
   for (const auto& gn : grid_names) {
     // Sanity check first
     EKAT_REQUIRE_MSG (supported_grids().count(gn)==1,
                       "Error! Grid '" + gn + "' is not supported by this grid manager.\n");
 
-    codes.insert(m_grid_codes.at(gn));
-  }
-  // Also check the ref grid (and retrieve its code)
-  EKAT_REQUIRE_MSG (supported_grids().count(reference_grid)==1,
-                    "Error! Grid '" +reference_grid + "' is not supported by this grid manager.\n");
-  codes.insert(m_grid_codes.at(reference_grid));
-
-  // Deduce the phys grid type we need
-  int pgN = -1;
-  for (auto code : codes) {
+    auto code = m_grid_codes.at(gn);
+    // Dyn grid has a negative code, while phys grids codes are >=0.
+    // We only need to store the phys grids codes.
     if (code>=0) {
-      int N = code % 10;
-      EKAT_REQUIRE_MSG (pgN==-1 || N==pgN,
-                        "Error! Mixing different types of physics grid is not allowed.\n"
-                        "       You can, however, have phys grids with different *balancing* options.\n");
-      pgN = N;
+      pg_codes.push_back(code);
     }
   }
-
-  init_grids_f90 (pgN);
+  pg_codes.push_back(m_grid_codes.at(m_ref_grid_name));
+  const int* codes_ptr = pg_codes.data();
+  init_grids_f90 (codes_ptr,pg_codes.size());
 
   // We know we need the dyn grid, so build it
   build_dynamics_grid ();
@@ -129,8 +125,8 @@ build_grids (const std::set<std::string>& grid_names,
     }
   }
 
-  if (reference_grid!="Dynamics") {
-    build_physics_grid(reference_grid);
+  if (m_grids.find(m_ref_grid_name)==m_grids.end()) {
+    build_physics_grid(m_ref_grid_name);
   }
 
   // Now we can cleanup all the grid stuff in f90
@@ -139,14 +135,17 @@ build_grids (const std::set<std::string>& grid_names,
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
   if (m_grids.find("Dynamics")==m_grids.end()) {
+    // Build the Physics GLL grid, to be used as 'unique grid' in the dyn grid
+    build_physics_grid("Physics GLL");
+    auto phys_gll = m_grids.at("Physics GLL");
 
     // Get dimensions and create "empty" grid
     const int nlelem = get_num_local_elems_f90();
-    const int ngelem = get_num_global_elems_f90();
     const int nlev   = get_nlev_f90();
-    auto dyn_grid = std::make_shared<SEGrid>("Dynamics",ngelem,nlelem,NP,nlev);
+    auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,phys_gll,m_comm);
+    dyn_grid->setSelfPointer(dyn_grid);
 
-    const int ndofs = nlelem*NP*NP;
+    const int ndofs = nlelem*HOMMEXX_NP*HOMMEXX_NP;
 
     // Create the gids, elgpgp, coords, area views
     AbstractGrid::dofs_list_type      dofs("dyn dofs",ndofs);
@@ -179,7 +178,8 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
 #endif
 
     // Set dofs and geo data in the grid
-    dyn_grid->set_dofs (dofs, elgpgp);
+    dyn_grid->set_dofs (dofs);
+    dyn_grid->set_lid_to_idx_map(elgpgp);
     dyn_grid->set_geometry_data ("lat", lat);
     dyn_grid->set_geometry_data ("lon", lon);
 
@@ -198,10 +198,10 @@ build_physics_grid (const std::string& name) {
 
     // Get dimensions and create "empty" grid
     const int nlev  = get_nlev_f90();
-    const int nlcols = get_num_local_columns_f90 ();
-    const int ngcols = get_num_global_columns_f90 ();
+    const int nlcols = get_num_local_columns_f90 (pg_type % 10);
 
-    auto phys_grid = std::make_shared<PointGrid>(name,ngcols,nlcols,nlev);
+    auto phys_grid = std::make_shared<PointGrid>(name,nlcols,nlev,m_comm);
+    phys_grid->setSelfPointer(phys_grid);
 
     // Create the gids, coords, area views
     AbstractGrid::dofs_list_type dofs("phys dofs",nlcols);
@@ -261,7 +261,7 @@ build_grid_codes () {
   constexpr int gll_t = 10;  // Physics GLL Twin
   constexpr int pg2_t = 12;  // Physics PG2 Twin
   constexpr int pg3_t = 13;  // Physics PG3 Twin
-  constexpr int pg4_t = 13;  // Physics PG4 Twin
+  constexpr int pg4_t = 14;  // Physics PG4 Twin
 
   for (const auto& name : m_valid_grid_names) {
     int code;

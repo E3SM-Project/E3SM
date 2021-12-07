@@ -178,7 +178,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 }
 
 void HommeDynamics::
-set_updated_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup<Real>& group)
 {
   const auto& name = group.m_info->m_group_name;
   EKAT_REQUIRE_MSG(name=="tracers",
@@ -265,7 +265,7 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   fbm.allocate(buffer_manager.get_memory(), buffer_manager.allocated_bytes()/sizeof(Real));
 }
 
-void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
+void HommeDynamics::initialize_impl ()
 {
   const auto& dgn = m_dyn_grid->name();
   const auto& rgn = m_ref_grid->name();
@@ -308,20 +308,29 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   // Import I.C. from the ref grid to the dyn grid.
   import_initial_conditions ();
 
+  // Update p_int and p_mid. Other models might import these values from
+  // SurfaceCoupling during initialization. They will be overwritten
+  // during postprocessing.
+  update_pressure();
+
   // Complete homme model initialization
   prim_init_model_f90 ();
 }
 
-void HommeDynamics::run_impl (const Real dt)
+void HommeDynamics::run_impl (const int dt)
 {
   try {
     // Prepare inputs for homme
     Kokkos::fence();
     homme_pre_process (dt);
 
-    // Run hommexx
-    Kokkos::fence();
-    prim_run_f90 (dt);
+    // Note: Homme's step lasts homme_dt*max(dt_remap_factor,dt_tracers_factor), and it must divide dt.
+    // We neeed to compute dt/homme_dt, and subcycle homme that many times
+    const int nsplit = get_homme_nsplit_f90(dt);
+    for (int subiter=0; subiter<nsplit; ++subiter) {
+      Kokkos::fence();
+      prim_run_f90 ();
+    }
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
@@ -339,7 +348,7 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
   prim_finalize_f90();
 }
 
-void HommeDynamics::homme_pre_process (const Real dt) {
+void HommeDynamics::homme_pre_process (const int dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
   using KT = KokkosTypes<DefaultDevice>;
@@ -567,8 +576,8 @@ create_internal_field (const std::string& name,
   m_internal_fields[name+grid] = f;
 }
 
-Field<Real>& HommeDynamics::
-get_internal_field (const std::string& name, const std::string& grid) {
+const Field<Real>& HommeDynamics::
+get_internal_field (const std::string& name, const std::string& grid) const {
   auto it = m_internal_fields.find(name+grid);
   EKAT_REQUIRE_MSG (it!=m_internal_fields.end(),
       "Error! Internal field '" + name + "' on grid '" + grid + "' not found.\n");
@@ -811,6 +820,40 @@ void HommeDynamics::import_initial_conditions () {
     const int k  = idx % NVL;
 
     qdp(ie,n0_qdp,iq,ip,jp,k) = q(ie,iq,ip,jp,k) * dp(ie,n0,ip,jp,k);
+  });
+}
+// =========================================================================================
+void HommeDynamics::update_pressure() {
+  using KT = KokkosTypes<DefaultDevice>;
+  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
+  using Pack = ekat::Pack<Real,N>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+
+  const auto ncols = m_ref_grid->get_num_local_dofs();
+  const auto nlevs = m_ref_grid->get_num_vertical_levels();
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+
+  const auto& c = Homme::Context::singleton();
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
+
+  const auto dp_view    = get_field_out("pseudo_density").get_view<Pack**>();
+  const auto p_int_view = get_field_out("p_int").get_view<Pack**>();
+  const auto p_mid_view = get_field_out("p_mid").get_view<Pack**>();
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int& icol = team.league_rank();
+
+    auto dp = ekat::subview(dp_view,icol);
+    auto p_mid = ekat::subview(p_mid_view,icol);
+    auto p_int = ekat::subview(p_int_view,icol);
+
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    team.team_barrier();
+    ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
   });
 }
 // =========================================================================================

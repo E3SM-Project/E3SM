@@ -3,7 +3,6 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "physics/p3/p3_main_impl.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
@@ -235,8 +234,8 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void initialize_impl ();
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables

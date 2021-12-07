@@ -39,6 +39,7 @@ set (SCREAM_LIBS
      shoc
      scream_rrtmgp
      cld_fraction
+     spa
 )
 
 include (tpls/Mct)

@@ -290,14 +290,6 @@ def median(items):
         return sorted(items)[quotient] if remainder else sum(sorted(items)[quotient - 1:quotient + 1]) / 2.
 
 ###############################################################################
-def get_cpu_core_count():
-###############################################################################
-    """
-    Get the number of CPU processors available on the current node
-    """
-    return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
-
-###############################################################################
 def ensure_pip():
 ###############################################################################
     """
@@ -369,30 +361,10 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
         pip_install_lib(pip_libname)
         pkg = import_module(libname)
 
-    
-    expect (package_version_ok(pkg,min_version), "Error! Could not find version {} for package {}.".format(min_version,libname))
+    expect(package_version_ok(pkg,min_version),
+           "Error! Could not find version {} for package {}.".format(min_version,libname))
 
 # We've accepted these outside dependencies
 def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
-
-###############################################################################
-def multilevel_dict_change(ml_dict, keys, value):
-###############################################################################
-    """
-    Change an existing value in a multi-level dict (expects all keys to already
-    be in dict). Returns True if dict was modified
-    """
-    num_keys = len(keys)
-    modified = False
-    for idx, key in enumerate(keys):
-        expect(key in ml_dict, "No key {} in {}-th level of ml_dict {}".format(key, idx, ml_dict))
-        if idx == num_keys-1:
-            # Last key
-            if ml_dict[key] != value:
-                ml_dict[key] = value
-                modified = True
-        else:
-            ml_dict = ml_dict[key]
-
-    return modified
+def ensure_psutil(): _ensure_pylib_impl("psutil")

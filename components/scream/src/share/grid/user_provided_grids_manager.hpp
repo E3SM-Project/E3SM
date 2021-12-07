@@ -32,15 +32,14 @@ public:
     return gnames;
   }
 
-  void build_grids (const std::set<std::string>& grid_names,
-                    const std::string& reference_grid) {
+  void build_grids (const std::set<std::string>& grid_names) {
     // Simply make sure that the grids have been set
     for (const auto& gn : grid_names) {
       EKAT_REQUIRE_MSG (has_grid(gn),
                         "Error! No grid provided for '" + gn + "'.\n");
     }
-    EKAT_REQUIRE_MSG (has_grid(reference_grid),
-                      "Error! No grid provided for '" + reference_grid + "'.\n");
+    EKAT_REQUIRE_MSG (has_grid(m_ref_grid_name),
+                      "Error! No reference grid was set.\n");
   }
 
   void set_remapper (const remapper_ptr_type remapper) {
@@ -57,10 +56,14 @@ public:
     m_provided_remappers[from_to] = remapper;
   }
 
-  void set_grid (const grid_ptr_type grid) {
+  void set_grid (const grid_ptr_type grid, const bool ref_grid = false) {
     EKAT_REQUIRE_MSG (m_provided_grids.find(grid->name())==m_provided_grids.end(),
                         "Error! A grid with name '" + grid->name() + "' was already set.\n");
     m_provided_grids[grid->name()] = grid;
+
+    if (ref_grid) {
+      m_ref_grid_name = grid->name();
+    }
   }
 
   void set_reference_grid (const std::string& grid_name) {

@@ -25,7 +25,8 @@ void Functions<S,D>
   constexpr Scalar qsmall = C::QSMALL;
 
   Spack sgs_var_coef;
-  sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
+  // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
+  sgs_var_coef = 1;
 
   const auto qr_and_qc_not_small = (qr_incld >= qsmall) && (qc_incld >= qsmall) && context;
   if (qr_and_qc_not_small.any()) {

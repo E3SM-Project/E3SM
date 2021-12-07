@@ -2,6 +2,7 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
+                transport_tests
                 time_integration
                 hmix
                 hmix_del2

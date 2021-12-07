@@ -15,7 +15,7 @@ TEST_CASE("rrtmgp_test_heating") {
     auto heating = real2d("heating", 1, 1);
     // Simple no-heating test
     // NOTE: parallel_for because we need to do these in a kernel on the device
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         dp(1, 1) = 10;
         flux_up(1, 1) = 1.0;
         flux_up(1, 2) = 1.0;
@@ -27,7 +27,7 @@ TEST_CASE("rrtmgp_test_heating") {
 
     // Simple net postive heating; net flux into layer should be 1.0
     // NOTE: parallel_for because we need to do these in a kernel on the device
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         flux_up(1, 1) = 1.0;
         flux_up(1, 2) = 1.0;
         flux_dn(1, 1) = 1.5;
@@ -43,7 +43,7 @@ TEST_CASE("rrtmgp_test_heating") {
 
     // Simple net negative heating; net flux into layer should be -1.0
     // NOTE: parallel_for because we need to do these in a kernel on the device
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         flux_up(1,1) = 1.5;
         flux_up(1,2) = 0.5;
         flux_dn(1,1) = 1.0;
@@ -74,7 +74,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     auto cloud_mass = real2d("cloud_mass", 1, 1);
 
     // Test with cell completely filled with cloud
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         dp(1,1) = 10.0;
         mixing_ratio(1,1) = 0.0001;
         cloud_fraction(1,1) = 1.0;
@@ -84,7 +84,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
 
     // Test with no cloud
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         dp(1,1) = 10.0;
         mixing_ratio(1,1) = 0.0;
         cloud_fraction(1,1) = 0.0;
@@ -96,7 +96,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
      // Test with empty clouds (cloud fraction but with no associated mixing ratio)
      // This case could happen if we use a total cloud fraction, but compute layer
      // cloud mass separately for liquid and ice.
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         dp(1,1) = 10.0;
         mixing_ratio(1,1) = 0.0;
         cloud_fraction(1,1) = 0.1;
@@ -106,7 +106,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
  
     // Test with cell half filled with cloud
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         dp(1,1) = 10.0;
         mixing_ratio(1,1) = 0.0001;
         cloud_fraction(1,1) = 0.5;
@@ -132,7 +132,7 @@ TEST_CASE("rrtmgp_test_limit_to_bounds") {
     auto arr_limited = real2d("arr_limited", 2, 2);
 
     // Setup dummy array
-    parallel_for(1, YAKL_LAMBDA(int dummy) {
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         arr(1,1) = 1.0;
         arr(1,2) = 2.0;
         arr(2,1) = 3.0;
@@ -180,7 +180,7 @@ TEST_CASE("rrtmgp_test_zenith") {
     double obliqr;
     double lambm0;
     double mvelpp;
-    bool flag_print = false;
+    // bool flag_print = false;
     shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
                      &obliqr, &lambm0, &mvelpp); //, flag_print); // Note fortran code has optional arg
     REQUIRE(eccen == eccen_ref);

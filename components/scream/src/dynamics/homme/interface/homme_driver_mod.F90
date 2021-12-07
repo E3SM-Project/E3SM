@@ -12,7 +12,6 @@ module homme_driver_mod
   private 
 
   public :: prim_init_data_structures_f90
-  public :: prim_copy_cxx_to_f90
   public :: prim_init_model_f90
   public :: prim_run_f90
   public :: prim_finalize_f90
@@ -76,15 +75,17 @@ contains
     is_data_structures_inited = .true.
   end subroutine prim_init_data_structures_f90
 
-  subroutine prim_copy_cxx_to_f90 (copy_phis) bind (c)
-    use iso_c_binding,     only: c_ptr, c_loc
-    use homme_context_mod, only: tl
-    use dimensions_mod,    only: nlevp
-    use theta_f2c_mod,     only: cxx_push_results_to_f90
-    use element_state,     only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
-                              elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
-                              elem_state_Qdp, elem_state_Q, elem_derived_omega_p,     &
-                              elem_state_phis
+  subroutine prim_copy_cxx_to_f90 (copy_phis)
+    use iso_c_binding,       only: c_ptr, c_loc
+    use homme_context_mod,   only: tl, elem, deriv
+    use dimensions_mod,      only: nlevp, nelemd, np
+    use kinds,               only: real_kind
+    use derivative_mod_base, only: gradient_sphere
+    use theta_f2c_mod,       only: cxx_push_results_to_f90, init_geopotential_c
+    use element_state,       only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
+                                   elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
+                                   elem_state_Qdp, elem_state_Q, elem_derived_omega_p,   &
+                                   elem_state_phis
     !
     ! Inputs
     !
@@ -95,6 +96,11 @@ contains
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
+
+    integer :: ie
+    type (c_ptr) :: elem_state_phis_local_ptr, elem_derived_gradphis_local_ptr
+    real (kind=real_kind), target, dimension(np,np)   :: elem_state_phis_local
+    real (kind=real_kind), target, dimension(np,np,2) :: elem_gradphis_local
     
     ! Set pointers to states
     elem_state_v_ptr         = c_loc(elem_state_v)
@@ -114,6 +120,17 @@ contains
     if (copy_phis) then
       ! Set phis=phi(bottom)
       elem_state_phis(:,:,:) = elem_state_phinh_i(:,:,nlevp,tl%n0,:)
+
+      ! Set geopotential views
+      elem_state_phis_local_ptr       = c_loc(elem_state_phis_local)
+      elem_derived_gradphis_local_ptr = c_loc(elem_gradphis_local)
+      do ie=1,nelemd
+        elem_state_phis_local = elem(ie)%state%phis
+        elem_gradphis_local   = elem(ie)%derived%gradphis
+
+        elem_gradphis_local = gradient_sphere(elem_state_phis_local, deriv, elem(ie)%Dinv)
+        call init_geopotential_c (ie-1, elem_state_phis_local_ptr, elem_derived_gradphis_local_ptr)
+      enddo
     endif
   end subroutine prim_copy_cxx_to_f90
 
@@ -136,6 +153,7 @@ contains
       call abortmp ("Error! 'prim_init_model_f90' has already been called.\n")
     endif
 
+    ! Needed in model init, to have correct state values (or else EOS craps out)
     call prim_copy_cxx_to_f90 (.true.)
 
     ! Notably, this inits the ref states
@@ -160,28 +178,22 @@ contains
 
   end subroutine prim_init_model_f90 
 
-  subroutine prim_run_f90 (dt) bind(c)
+  subroutine prim_run_f90 () bind(c)
     use dimensions_mod,    only: nelemd
     use prim_driver_mod,   only: prim_run_subcycle
 
     use time_mod,          only: tstep
-    use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord, par
-    !
-    ! Input(s)
-    !
-    real (kind=c_double), intent(in) :: dt
+    use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord
 
     if (.not. is_model_inited) then
       call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
     endif
 
-    ! Set dt in the time mod
-    tstep = dt
+    if (tstep .le. 0) then
+      call abortmp ("Error! No time step was set in Homme yet.\n")
+    endif
 
-    if (par%masterproc) print *, "HOMME step: ", tl%nstep
-
-    call prim_run_subcycle(elem,hybrid,1,nelemd,dt,.false.,tl,hvcoord,1)
-
+    call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,1)
   end subroutine prim_run_f90
 
   subroutine prim_finalize_f90 () bind(c)

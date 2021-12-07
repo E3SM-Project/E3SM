@@ -98,7 +98,8 @@ public:
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
   // and dynamics (HOMME).
-  void run (const Real dt);
+  // Note: dt is assumed to be in seconds
+  void run (const int dt);
 
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
@@ -113,33 +114,35 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
-  const ATMBufferManager& get_memory_buffer() const { return m_memory_buffer; }
+  const std::shared_ptr<ATMBufferManager>& get_memory_buffer() const { return m_memory_buffer; }
+
+  const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
 protected:
 
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
   void register_groups ();
 
-  std::map<std::string,field_mgr_ptr>    m_field_mgrs;
+  std::map<std::string,field_mgr_ptr>       m_field_mgrs;
 
-  std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
+  std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
 
-  std::shared_ptr<GridsManager>                       m_grids_manager;
+  std::shared_ptr<GridsManager>             m_grids_manager;
 
-  ekat::ParameterList                                 m_atm_params;
+  ekat::ParameterList                       m_atm_params;
 
-  std::map<std::string,OutputManager>                 m_output_managers;
+  std::list<OutputManager>                  m_output_managers;
 
-  ATMBufferManager                                    m_memory_buffer;
+  std::shared_ptr<ATMBufferManager>         m_memory_buffer;
 
   // Surface coupling stuff
-  std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
+  std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
   // This are the time stamps of the start and end of the time step.
-  util::TimeStamp                       m_current_ts;
+  util::TimeStamp                           m_current_ts;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
-  ekat::Comm   m_atm_comm;
+  ekat::Comm                                m_atm_comm;
 
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;

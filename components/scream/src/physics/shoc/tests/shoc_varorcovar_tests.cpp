@@ -312,16 +312,16 @@ static void run_bfb()
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVarorcovarData);
-    for (Int i = 0; i < num_runs; ++i) {
-      CalcShocVarorcovarData& d_f90 = SDS_f90[i];
-      CalcShocVarorcovarData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.varorcovar); ++k) {
-        REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVarorcovarData);
+      for (Int i = 0; i < num_runs; ++i) {
+        CalcShocVarorcovarData& d_f90 = SDS_f90[i];
+        CalcShocVarorcovarData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.varorcovar); ++k) {
+          REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
+        }
       }
     }
-#endif
   }
 };
 

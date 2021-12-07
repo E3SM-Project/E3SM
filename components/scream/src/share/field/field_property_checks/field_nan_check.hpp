@@ -37,7 +37,7 @@ public:
         {
           auto v = field.template get_view<const_RT*>();
           Kokkos::parallel_reduce(dim0, KOKKOS_LAMBDA(int i, int& result) {
-            if (isnan(v(i))) {
+            if (std::isnan(v(i))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));
@@ -50,7 +50,7 @@ public:
           Kokkos::parallel_reduce(dim0*dim1, KOKKOS_LAMBDA(int idx, int& result) {
             const int i = idx / dim1;
             const int j = idx % dim1;
-            if (isnan(v(i,j))) {
+            if (std::isnan(v(i,j))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));
@@ -65,7 +65,7 @@ public:
             const int i = (idx / dim2) / dim1;
             const int j = (idx / dim2) % dim1;
             const int k =  idx % dim2;
-            if (isnan(v(i,j,k))) {
+            if (std::isnan(v(i,j,k))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));
@@ -82,7 +82,7 @@ public:
             const int j = ((idx / dim3) / dim2) % dim1;
             const int k =  (idx / dim3) % dim2;
             const int l =   idx % dim3;
-            if (isnan(v(i,j,k,l))) {
+            if (std::isnan(v(i,j,k,l))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));
@@ -101,7 +101,7 @@ public:
             const int k =  ((idx / dim4) / dim3) % dim2;
             const int l =   (idx / dim4) % dim3;
             const int m =    idx % dim4;
-            if (isnan(v(i,j,k,l,m))) {
+            if (std::isnan(v(i,j,k,l,m))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));

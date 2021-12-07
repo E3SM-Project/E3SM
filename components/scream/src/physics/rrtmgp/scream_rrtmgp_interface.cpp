@@ -389,8 +389,9 @@ namespace scream {
             // Surface temperature
             auto p_lay_host = p_lay.createHostCopy();
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
-            auto t_lev_host = t_lev.createHostCopy();
-            memset( t_sfc    , t_lev_host(1, merge(nlay+1, 1, top_at_1)) );
+            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                t_sfc(icol) = t_lev(icol, merge(nlay+1, 1, top_at_1));
+            });
             memset( emis_sfc , 0.98_wp                                   );
 
             // Do gas optics

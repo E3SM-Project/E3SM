@@ -232,17 +232,17 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvSgsTkeData);
-    for (Int i = 0; i < num_runs; ++i) {
-      AdvSgsTkeData& d_f90 = f90_data[i];
-      AdvSgsTkeData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
-        REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
-        REQUIRE(d_f90.a_diss[k] == d_cxx.a_diss[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvSgsTkeData);
+      for (Int i = 0; i < num_runs; ++i) {
+        AdvSgsTkeData& d_f90 = f90_data[i];
+        AdvSgsTkeData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
+          REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
+          REQUIRE(d_f90.a_diss[k] == d_cxx.a_diss[k]);
+        }
       }
     }
-#endif
   }//run_bfb
 };
 

@@ -7,6 +7,9 @@ IFS=';' read -r -a labels <<< "$PR_LABELS";
 skip_testing=0
 test_scripts=0
 test_cime=0
+skip_mappy=0
+skip_weaver=0
+skip_blake=0
 if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
@@ -17,6 +20,12 @@ if [ ${#labels[@]} -gt 0 ]; then
       test_scripts=1
     elif [ "$label" == "CIME" ]; then
       test_cime=1
+    elif [ "$label" == "AT: Skip mappy" ]; then
+      skip_mappy=1
+    elif [ "$label" == "AT: Skip weaver" ]; then
+      skip_weaver=1
+    elif [ "$label" == "AT: Skip blake" ]; then
+      skip_blake=1
     fi
   done
 fi
@@ -27,6 +36,18 @@ if [ $skip_testing -eq 0 ]; then
   cd $JENKINS_SCRIPT_DIR/../..
 
   source scripts/jenkins/${NODE_NAME}_setup
+
+  # Check machine-specific skipping
+  if [[ $skip_mappy == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip mappy' was found.\n"
+    exit 0
+  elif [[ $skip_weaver == 1 && "$SCREAM_MACHINE" == "weaver" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip weaver' was found.\n"
+    exit 0
+  elif [[ $skip_blake == 1 && "$SCREAM_MACHINE" == "blake" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip blake' was found.\n"
+    exit 0
+  fi
 
   if [[ "$(whoami)" == "e3sm-jenkins" ]]; then
       git config --local user.email "jenkins@ignore.com"
@@ -40,13 +61,13 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   AUTOTESTER_CMAKE=""
-  # If this is a nightly run, we do NOT want this script to stop on the first failed command
-  # since that will prevent subsequent dashboard submissions
+  # Now that we are starting to run things that we expect could fail, we
+  # do not want the script to exit on any fail since this will prevent
+  # later tests from running.
   set +e
   if [ -n "$PULLREQUESTNUM" ]; then
       SUBMIT="" # We don't submit AT runs
       AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
-      set -e # This is an AT run, not nightly, so it's OK to stop on first fail
   fi
 
   declare -i fails=0
@@ -63,13 +84,19 @@ if [ $skip_testing -eq 0 ]; then
     if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 
+  # Add a cuda-memcheck test for weaver for nightlies
+  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
+    ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
+  fi
+
   # scripts-tests is pretty expensive, so we limit this testing to mappy
   if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
     # since we aren't changing HEADs
-    ./scripts/scripts-tests -g
+    ./scripts/scripts-tests -g -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
-    ./scripts/scripts-tests -c
+    ./scripts/scripts-tests -c -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
 
     ./scripts/scripts-tests -f -m $SCREAM_MACHINE
@@ -79,6 +106,9 @@ if [ $skip_testing -eq 0 ]; then
   # Run SCREAM CIME suite
   if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream -c -b master
+    if [[ $? != 0 ]]; then fails=$fails+1; fi
+
+    ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
     if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
 

@@ -2,6 +2,7 @@
 #include "share/field/field_property_checks/field_positivity_check.hpp"
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
+#include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -11,9 +12,6 @@
 
 namespace scream
 {
-/*
- * P3 Microphysics routines
-*/
 
   using namespace p3;
 
@@ -64,7 +62,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // These variables are needed by the interface, but not actually passed to p3_main. 
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("z_int",       scalar3d_layout_int, m,      grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
@@ -178,7 +175,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void P3Microphysics::initialize_impl (const util::TimeStamp& /* t0 */)
+void P3Microphysics::initialize_impl ()
 {
   // Set property checks for fields in this process
   // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
@@ -273,41 +270,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& /* t0 */)
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
-}
-
-// =========================================================================================
-void P3Microphysics::run_impl (const Real dt)
-{
-
-  // Assign values to local arrays used by P3, these are now stored in p3_loc.
-  Kokkos::parallel_for(
-    "p3_main_local_vals",
-    Kokkos::RangePolicy<>(0,m_num_cols),
-    p3_preproc
-  ); // Kokkos::parallel_for(p3_main_local_vals)
-  Kokkos::fence();
-
-  // Update the variables in the p3 input structures with local values.
-
-  infrastructure.dt = dt;
-  infrastructure.it++;
-
-  // WorkspaceManager for internal local variables
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nk_pack, 52, policy);
-
-  // Run p3 main
-  P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-               history_only, workspace_mgr, m_num_cols, m_num_levs);
-
-  // Conduct the post-processing of the p3_main output.
-  Kokkos::parallel_for(
-    "p3_main_local_vals",
-    Kokkos::RangePolicy<>(0,m_num_cols),
-    p3_postproc
-  ); // Kokkos::parallel_for(p3_main_local_vals)
-  Kokkos::fence();
 }
 
 // =========================================================================================

@@ -173,16 +173,16 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVertfluxData);
-    for (Int i = 0; i < num_runs; ++i) {
-      CalcShocVertfluxData& d_f90 = SDS_f90[i];
-      CalcShocVertfluxData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total(d_f90.vertflux); ++k) {
-        REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
+    if (SCREAM_BFB_TESTING) {
+      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVertfluxData);
+      for (Int i = 0; i < num_runs; ++i) {
+        CalcShocVertfluxData& d_f90 = SDS_f90[i];
+        CalcShocVertfluxData& d_cxx = SDS_cxx[i];
+        for (Int k = 0; k < d_f90.total(d_f90.vertflux); ++k) {
+          REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
+        }
       }
     }
-#endif
   }
 
 };

@@ -38,8 +38,8 @@ void Functions<S,D>::eddy_diffusivities(
   const Scalar Ckh = 0.1;
   const Scalar Ckm = 0.1;
   // Maximum eddy coefficients for stable PBL diffusivities
-  const Scalar Ckh_s_max = 1;
-  const Scalar Ckm_s_max = 1;
+  const Scalar Ckh_s_max = 0.1;
+  const Scalar Ckm_s_max = 0.1;
   // Minimum allowable value for stability diffusivities
   const Scalar Ckh_s_min = 0.1;
   const Scalar Ckm_s_min = 0.1;

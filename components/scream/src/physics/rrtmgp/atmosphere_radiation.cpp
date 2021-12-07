@@ -3,6 +3,7 @@
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/scream_column_ops.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
 #include "ekat/ekat_assert.hpp"
@@ -62,7 +63,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
-  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name(), ps);
   add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
@@ -73,6 +73,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid->name());
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
@@ -176,7 +177,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
-void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
+void RRTMGPRadiation::initialize_impl() {
   using PC = scream::physics::Constants<Real>;
 
   // Determine orbital year. If Orbital Year is negative, use current year
@@ -208,9 +209,11 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 }
 // =========================================================================================
 
-void RRTMGPRadiation::run_impl (const Real dt) {
+void RRTMGPRadiation::run_impl (const int dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
+  using CO = scream::ColumnOps<DefaultDevice,Real>;
+
   // get a host copy of lat/lon 
   auto h_lat  = Kokkos::create_mirror_view(m_lat);
   auto h_lon  = Kokkos::create_mirror_view(m_lon);
@@ -221,7 +224,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
   auto d_pint = get_field_in("p_int").get_view<const Real**>();
   auto d_pdel = get_field_in("pseudo_density").get_view<const Real**>();
-  auto d_tint = get_field_in("t_int").get_view<const Real**>();
   auto d_sfc_alb_dir_vis = get_field_in("sfc_alb_dir_vis").get_view<const Real*>();
   auto d_sfc_alb_dir_nir = get_field_in("sfc_alb_dir_nir").get_view<const Real*>();
   auto d_sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real*>();
@@ -232,6 +234,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_cldfrac_tot = get_field_in("cldfrac_tot").get_view<const Real**>();
   auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
   auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
+  auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -264,6 +267,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto lw_flux_up      = m_buffer.lw_flux_up;
   auto lw_flux_dn      = m_buffer.lw_flux_dn;
 
+  constexpr auto stebol = PC::stebol;
+  const auto ncol = m_ncol;
+  const auto nlay = m_nlay;
   // Copy data from the FieldManager to the YAKL arrays
   {
     // Determine the cosine zenith angle
@@ -281,13 +287,13 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       auto ts = timestamp();
       auto orbital_year = m_orbital_year;
       if (orbital_year < 0) {
-          orbital_year = ts.get_years();
+          orbital_year = ts.get_year();
       }
       shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
                          &obliqr, &lambm0, &mvelpp);
       // Use the orbital parameters to calculate the solar declination
       double delta, eccf;
-      auto calday = ts.get_julian_day();
+      auto calday = ts.frac_of_year_in_days();
       shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                        obliqr, &delta, &eccf);
       // Now use solar declination to calculate zenith angle for all points
@@ -299,9 +305,43 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     }
     Kokkos::deep_copy(d_mu0,h_mu0);
 
+    // dz and T_int will need to be computed
+    view_2d_real d_tint("T_int", m_ncol, m_nlay+1);
+    view_2d_real d_dz  ("dz",    m_ncol, m_nlay);
+
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
+
+      // Calculate dz
+      const auto pseudo_density = ekat::subview(d_pdel, i);
+      const auto p_mid          = ekat::subview(d_pmid, i);
+      const auto T_mid          = ekat::subview(d_tmid, i);
+      const auto qv             = ekat::subview(d_qv,   i);
+      const auto dz             = ekat::subview(d_dz,   i);
+      PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
+      team.team_barrier();
+
+      // Calculate T_int from longwave flux up from the surface, assuming
+      // blackbody emission with emissivity of 1.
+      // TODO: Does land model assume something other than emissivity of 1? If so
+      // we should use that here rather than assuming perfect blackbody emission.
+      // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
+      // surface. The input data for the standalone test is ordered surface to
+      // toa, but SCREAM in general assumes data is toa to surface. We account
+      // for this here by swapping bc_top and bc_bot in the case that the input
+      // data is ordered surface to toa.
+      const auto T_int = ekat::subview(d_tint, i);
+      const auto P_mid = ekat::subview(d_pmid, i);
+      const int itop = (P_mid(0) < P_mid(nlay-1)) ? 0 : nlay-1;
+      const Real bc_top = T_mid(itop);
+      const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(i)/stebol));
+      if (itop == 0) {
+          CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot, T_int);
+      } else {
+          CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top, T_int);
+      }
+      team.team_barrier();
 
       mu0(i+1) = d_mu0(i);
       sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(i);
@@ -309,7 +349,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(i);
       sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(i);
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
         p_lay(i+1,k+1)       = d_pmid(i,k);
         t_lay(i+1,k+1)       = d_tmid(i,k);
         p_del(i+1,k+1)       = d_pdel(i,k);
@@ -322,8 +362,8 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         t_lev(i+1,k+1)       = d_tint(i,k);
       });
 
-      p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
-      t_lev(i+1,m_nlay+1) = d_tint(i,m_nlay);
+      p_lev(i+1,nlay+1) = d_pint(i,nlay);
+      t_lev(i+1,nlay+1) = d_tint(i,nlay);
     });
   }
   Kokkos::fence();
@@ -335,10 +375,12 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+    const auto gas_mol_weights = m_gas_mol_weights;
+
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
-        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& i) {
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
       });
     });
     Kokkos::fence();
@@ -356,7 +398,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
       int i = icol+1;
       lwp(i,k) *= 1e3;
       iwp(i,k) *= 1e3;
@@ -398,7 +440,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
       int i = icol+1;
       rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
       t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
@@ -413,8 +455,8 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay+1), [&] (const int& k) {
-        if (k < m_nlay) d_tmid(i,k) = t_lay(i+1,k+1);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+        if (k < nlay) d_tmid(i,k) = t_lay(i+1,k+1);
 
         d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
         d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);

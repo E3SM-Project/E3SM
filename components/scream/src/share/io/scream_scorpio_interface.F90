@@ -63,20 +63,22 @@ module scream_scorpio_interface
 
 #include "scream_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
+# define pio_rtype PIO_double
 # define rtype c_double
 #else
+# define pio_rtype PIO_real
 # define rtype c_float
 #endif
 
   public :: &
+            lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
             eam_pio_enddef,              & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
             is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
             eam_pio_subsystem_comm,      & ! Return comm used for pio subsystem
             eam_pio_finalize,            & ! Run any final PIO commands
-            register_outfile,            & ! Create a pio output file
-            register_infile,             & ! Open a pio input file
+            register_file,               & ! Creates/opens a pio input/output file
             register_variable,           & ! Register a variable with a particular pio output file
             get_variable,                & ! Register a variable with a particular pio output file
             register_dimension,          & ! Register a dimension with a particular pio output file
@@ -88,7 +90,8 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             count_pio_atm_file,          & ! Diagnostic to count how many files are still open
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
-            set_int_attribute              ! Writes an integer global attribute to the nc file
+            set_int_attribute,           & ! Writes an integer global attribute to the nc file
+            get_dimlen                     ! Returns the length of a specific dimension in a file
 
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -204,42 +207,37 @@ module scream_scorpio_interface
         !> @brief Whether or not the dim/var definition phase is still open
         logical                         :: is_enddef = .false.
 
+        ! The number of customer that requested to open the file.
+        ! Increased at every open request, decreased at every close request.
+        integer :: num_customers
   end type pio_atm_file_t
 
 !----------------------------------------------------------------------
   interface grid_read_data_array
-    module procedure grid_read_darray_1d_real
+    module procedure grid_read_darray_1d
   end interface grid_read_data_array
 !----------------------------------------------------------------------
   interface grid_write_data_array
-    module procedure grid_write_darray_1d_real
+    module procedure grid_write_darray_1d
   end interface
 !----------------------------------------------------------------------
 contains
 !=====================================================================!
-  ! Register a new file for PIO output with the PIO Atmosphere list.
-  ! This step also creates the header meta-data for the new file.
-  subroutine register_outfile(filename)
+  ! Register a PIO file to be used for input/output operations.
+  ! If file is already open, ensures file_purpose matches the current one
+  subroutine register_file(filename,file_purpose)
 
     character(len=*), intent(in) :: filename
+    integer, intent(in)          :: file_purpose
 
     type(pio_atm_file_t), pointer :: current_atm_file
 
-    if (.not.associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
-    call get_pio_atm_file(filename,current_atm_file,file_purpose_out)
+    if (.not.associated(pio_subsystem)) then
+      call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
+    endif
+    call get_pio_atm_file(filename,current_atm_file,file_purpose)
 
-  end subroutine register_outfile
-!=====================================================================!
-  ! Register a file to be used PIO input with the PIO Atmosphere list.
-  subroutine register_infile(filename)
-
-    character(len=*), intent(in) :: filename
-
-    type(pio_atm_file_t), pointer :: current_atm_file
-
-    call get_pio_atm_file(filename,current_atm_file,file_purpose_in)
-
-  end subroutine register_infile
+  end subroutine register_file
 !=====================================================================!
   ! Mandatory call to finish the variable and dimension definition phase
   ! of a new PIO file.  Once this routine is called it is not possible
@@ -377,6 +375,7 @@ contains
     integer                      :: dim_ii
     integer                      :: ierr
     logical                      :: found,is_open,var_found
+    character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
 
@@ -424,6 +423,8 @@ contains
         ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
         call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
+        hist_var%pio_decomp_tag = trim(hist_var%pio_decomp_tag)//"_"//trim(dimlen_str)
       end do
 
       ! Register Variable with PIO
@@ -436,15 +437,22 @@ contains
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
-      if ( trim(hist_var%name) .ne. trim(shortname) .or. &
-           trim(hist_var%long_name) .ne. trim(longname) .or. &
-           hist_var%dtype .ne. dtype .or. &
+      if ( trim(hist_var%name) .ne. trim(shortname) &
+               .or. &
+           trim(hist_var%long_name) .ne. trim(longname) &
+               .or. &
+           hist_var%dtype .ne. dtype &
+                .or. &
            (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
             (hist_var%numdims .ne. numdims .or. &
-             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) .or. &
-           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
-            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
-             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) )then
+             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag))) &
+! TODO: Check on this last conditional statement.  I don't think it is defined
+! correctly.  Commenting out for now.
+!                 .or. &
+!           (pio_atm_file%purpose .eq. file_purpose_in .and. & ! In files *may* use a decomp tag
+!            (hist_var%numdims .ne. (numdims+1) .or. &           ! without "-time" at the end
+!             trim(hist_var%pio_decomp_tag) .ne. trim(pio_decomp_tag)//"-time")) &
+          ) then
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different name and/or dims and/or dtype and/or decomp tag, in file: "//trim(filename),-999)
       endif
     endif
@@ -483,6 +491,7 @@ contains
     integer                      :: dim_ii
     integer                      :: ierr
     logical                      :: found,is_open,var_found
+    character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
 
@@ -531,6 +540,8 @@ contains
         ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,hist_var%dimid(dim_ii),hist_var%dimlen(dim_ii))
         call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension "//trim(var_dimensions(dim_ii)),ierr)
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
+        call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
+        hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
       end do
 
       ! Register Variable with PIO
@@ -742,9 +753,19 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found)
     if (found) then
-      call PIO_closefile(pio_atm_file%pioFileDesc)
-      pio_atm_file%isopen = .false.
-      pio_atm_file%purpose = file_purpose_not_set
+      if (pio_atm_file%num_customers .eq. 1) then
+        if (pio_atm_file%purpose .eq. file_purpose_out) then
+          call PIO_syncfile(pio_atm_file%pioFileDesc)
+        endif
+        call PIO_closefile(pio_atm_file%pioFileDesc)
+        pio_atm_file%isopen = .false.
+        pio_atm_file%purpose = file_purpose_not_set
+        pio_atm_file%num_customers = 0
+      else if (pio_atm_file%num_customers .gt. 1) then
+        pio_atm_file%num_customers = pio_atm_file%num_customers - 1
+      else
+        call errorHandle("PIO ERROR: while closing file: "//trim(fname)//", found num_customers<=0",-999)
+      endif
     else
       call errorHandle("PIO ERROR: unable to close file: "//trim(fname)//", was not found",-999)
     end if
@@ -1135,16 +1156,25 @@ contains
     logical                        :: found, is_open
     type(pio_file_list_t), pointer :: curr
 
+    integer                        :: ierr, time_id
+
+    ! Sanity check
+    if (purpose .ne. file_purpose_in .and. purpose .ne. file_purpose_out) then
+      call errorHandle("PIO Error: unrecognized file purpose for file '"//filename//"'.",-999)
+    endif
     ! Make sure a there isn't a pio_atm_file pointer already estalished for a
     ! file with this filename.
     call lookup_pio_atm_file(trim(filename),pio_file,found,is_open)
     if (found) then
-      if (is_open .and. purpose .ne. pio_file%purpose) then
-        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open with a different purpose.",-999)
+      if (is_open .and. (purpose .ne. file_purpose_in .or. &
+          pio_file%purpose .ne. file_purpose_in) ) then
+        ! We only allow multiple customers of the file if they all use it in read mode.
+        call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
       else
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%isopen = .true.
         pio_file%purpose = purpose
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
+        pio_file%num_customers = pio_file%num_customers + 1
+        pio_file%isopen = .true.
       endif
     endif
 
@@ -1157,13 +1187,25 @@ contains
       pio_file%filename = trim(filename)
       pio_file%isopen = .true.
       pio_file%numRecs = 0
+      pio_file%num_customers = 1
+      pio_file%isopen = .true.
       if (purpose == file_purpose_out) then  ! Will be used for output.  Set numrecs to zero and create the new file.
         call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
         call eam_pio_createHeader(pio_file%pioFileDesc)
         pio_file%purpose = file_purpose_out
       elseif (purpose == file_purpose_in) then ! Will be used for input, just open it
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
         pio_file%purpose = file_purpose_in
+        call eam_pio_openfile(pio_file,trim(pio_file%filename))
+        ! Update the numRecs to match the number of recs in this file.
+        ierr = pio_inq_dimid(pio_file%pioFileDesc,"time",time_id)
+        if (ierr.ne.0) then
+          ! time is not present in the file, set the number of Recs to 1
+          pio_file%numRecs = 1
+        else
+          ! time is present, set the number of Recs accordingly
+          ierr = pio_inq_dimlen(pio_file%pioFileDesc,time_id,pio_file%numRecs)
+          call errorHandle("EAM_PIO ERROR: Unable to determine length for dimension time in file "//trim(pio_file%filename),ierr)
+        end if
       else
         call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
       end if
@@ -1176,93 +1218,177 @@ contains
 
   end subroutine get_pio_atm_file
 !=====================================================================!
-  ! Write output to file based on type (int or real) and dimensionality
-  ! (currently support 1-4 dimensions).
+  ! Retrieve the dimension length for a file.
+  function get_dimlen(filename,dimname) result(val)
+    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: dimname
+    integer                      :: val
+
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    integer                       :: dim_id, ierr
+    logical                       :: found
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    if (.not.found) call errorHandle("pio_inq_dimlen ERROR: File "//trim(filename)//" not found",-999)
+    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(dimname),dim_id)
+    call errorHandle("pio_inq_dimlen ERROR: dimension "//trim(dimname)//" not found in file "//trim(filename)//".",ierr)
+    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
+
+  end function get_dimlen
+!=====================================================================!
+  ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D
   ! before calling a write routine.
   ! Mandatory inputs are:
-  ! filename: the netCDF filename to be written to.
-  ! hbuf:     An array of data that will be used to write the output.  NOTE:
-  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
-  !           which includes only those degrees of freedom that have been
-  !           assigned to this rank.  See set_dof above.
-  ! varname:  The shortname for the variable being written.
+  ! filename:     the netCDF filename to be written to.
+  ! varname:      The shortname for the variable being written.
+  ! var_data_ptr: An array of data that will be used to write the output.  NOTE:
+  !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
+  !               which includes only those degrees of freedom that have been
+  !               assigned to this rank.  See set_dof above.
   !---------------------------------------------------------------------------
   !
-  !  grid_write_darray_1d_real: Write a variable defined on this grid
+  !  grid_write_darray_1d: Write a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_write_darray_1d_real(filename, varname, var_data_ptr)
+  subroutine grid_write_darray_1d(filename, varname, var_data_ptr)
     ! Dummy arguments
     character(len=*),   intent(in) :: filename       ! PIO filename
     character(len=*),   intent(in) :: varname
     type (c_ptr),       intent(in) :: var_data_ptr
 
     ! Local variables
-    real(rtype), dimension(:), pointer :: var_data
+    real(rtype), dimension(:), pointer         :: var_data_real
+    integer(kind=c_int), dimension(:), pointer :: var_data_int
     type(pio_atm_file_t), pointer      :: pio_atm_file
     type(hist_var_t), pointer          :: var
-    integer                            :: ierr,var_size,ndims,i
+    integer                            :: ierr,var_size
     logical                            :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
+    ! Set the timesnap we are reading
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    call c_f_pointer (var_data_ptr, var_data, [var_size])
-
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
-    call errorHandle( 'eam_grid_write_darray_1d_real: Error writing variable',ierr)
-  end subroutine grid_write_darray_1d_real
+    if (var%dtype .eq. pio_rtype) then
+      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_INT) then
+      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
+      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+    else
+      call errorHandle( "eam_grid_write_darray_1d: Error writing variable "//trim(varname)//" unsupported dtype", -999)
+    end if
+  end subroutine grid_write_darray_1d
 !=====================================================================!
-  ! Read output from file based on type (int or real) and dimensionality
-  ! (currently support 1-4 dimensions).
+  ! Read output from file based on type (int or real)
   ! --Note-- that any dimensionality could be read if it is flattened to 1D
   ! before calling a write routine.
   ! Mandatory inputs are:
-  ! filename: the netCDF filename to be read from.
-  ! hbuf:     An array of data that will be used to read the input.  NOTE:
-  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
-  !           which includes only those degrees of freedom that have been
-  !           assigned to this rank.  See set_dof above.
-  ! varname:  The shortname for the variable being read.
+  ! filename:     the netCDF filename to be read from.
+  ! varname:      The shortname for the variable being read.i
+  ! var_data_ptr: An c_ptr of data that will be used to read the input.  NOTE:
+  !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
+  !               which includes only those degrees of freedom that have been
+  !               assigned to this rank.  See set_dof above.
   !---------------------------------------------------------------------------
   !
-  !  grid_read_darray_1d_real: Read a variable defined on this grid
+  !  grid_read_darray_1d: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d_real(filename, varname, var_data_ptr)
+  subroutine grid_read_darray_1d(filename, varname, var_data_ptr, time_index)
 
     ! Dummy arguments
     character(len=*), intent(in) :: filename       ! PIO filename
     character(len=*), intent(in) :: varname
     type (c_ptr),     intent(in) :: var_data_ptr
+    integer, intent(in)          :: time_index
 
     ! Local variables
     type(pio_atm_file_t),pointer       :: pio_atm_file
     type(hist_var_t), pointer          :: var
-    integer                            :: ierr, var_size, ndims, i
+    integer                            :: ierr, var_size
     logical                            :: found
-    real(rtype), dimension(:), pointer :: var_data
+    real(rtype), dimension(:), pointer         :: var_data_real
+    integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    if (time_index .gt. 0) then
+      ! The user has set a valid time index to read from
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
+    else
+      ! Otherwise default to the last time_index in the file
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
+    end if
     
     ! We don't want the extent along the 'time' dimension
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    call c_f_pointer (var_data_ptr, var_data, [var_size])
+    if (var%dtype .eq. pio_rtype) then
+      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_INT) then
+      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    else
+      call errorHandle( "eam_grid_read_darra_1d: Error reading variable "//trim(varname)//" unsupported dtype", -999)
+    end if
 
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data, ierr)
-    call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
 
-  end subroutine grid_read_darray_1d_real
+  end subroutine grid_read_darray_1d
+!=====================================================================!
+  subroutine convert_int_2_str(int_in,str_out)
+    integer, intent(in)           :: int_in
+    character(len=*), intent(out) :: str_out
+
+    character(len=8) :: fmt_str
+
+    if (int_in < 0) then
+      fmt_str = "(A1,"
+    else
+      fmt_str = "("
+    end if
+
+    if (abs(int_in)<10) then
+      fmt_str = trim(fmt_str)//"I1)"
+    elseif (abs(int_in)<1e2) then
+      fmt_str = trim(fmt_str)//"I2)"
+    elseif (abs(int_in)<1e3) then
+      fmt_str = trim(fmt_str)//"I3)"
+    elseif (abs(int_in)<1e4) then
+      fmt_str = trim(fmt_str)//"I4)"
+    elseif (abs(int_in)<1e5) then
+      fmt_str = trim(fmt_str)//"I5)"
+    elseif (abs(int_in)<1e6) then
+      fmt_str = trim(fmt_str)//"I6)"
+    elseif (abs(int_in)<1e7) then
+      fmt_str = trim(fmt_str)//"I7)"
+    elseif (abs(int_in)<1e8) then
+      fmt_str = trim(fmt_str)//"I8)"
+    elseif (abs(int_in)<1e9) then
+      fmt_str = trim(fmt_str)//"I9)"
+    endif
+    
+    if (int_in < 0) then
+      write(str_out,fmt_str) "n", int_in
+    else
+      write(str_out,fmt_str) int_in
+    end if 
+
+  end subroutine convert_int_2_str
 !=====================================================================!
 
 end module scream_scorpio_interface

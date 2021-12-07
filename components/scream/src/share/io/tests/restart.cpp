@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream> 
 
+#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "scream_config.h"
 #include "share/scream_types.hpp"
@@ -11,7 +12,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
-#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
 #include "share/field/field_identifier.hpp"
@@ -32,10 +33,8 @@ get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<FieldManager<Real>>
 backup_fm(const std::shared_ptr<FieldManager<Real>>& src);
 
-std::shared_ptr<const AbstractGrid>
-get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check);
+std::shared_ptr<GridsManager>
+get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 ekat::ParameterList get_in_params();
 
@@ -43,7 +42,7 @@ void randomize_fields (const FieldManager<Real>& fm, const int seed);
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
-                   const double dt);
+                   const int dt);
 
 TEST_CASE("restart","io")
 {
@@ -59,7 +58,8 @@ TEST_CASE("restart","io")
   Int num_levs = 3;
 
   // First set up a field manager and grids manager to interact with the output functions
-  auto grid = get_test_grid(io_comm,num_gcols,num_levs);
+  auto gm = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = gm->get_grid("Point Grid");
   auto field_manager = get_test_fm(grid);
   randomize_fields(*field_manager,seed);
 
@@ -67,14 +67,16 @@ TEST_CASE("restart","io")
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
-  // Create an Output manager for testing output
-  OutputManager output_manager;
-  auto output_params = get_om_params(io_comm,grid->name(),false);
-  output_manager.setup(io_comm,output_params,field_manager,false);
-
   // Construct a timestamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});
   const auto& out_fields = field_manager->get_groups_info().at("output")->m_fields_names;
+
+  // Create an Output manager for testing output
+  std::string param_filename = "io_test_restart_np" + std::to_string(io_comm.size()) + ".yaml";
+  ekat::ParameterList output_params;
+  ekat::parse_yaml_file(param_filename,output_params);
+  OutputManager output_manager;
+  output_manager.setup(io_comm,output_params,field_manager,gm,t0,false,false);
 
   // We advance the fields, by adding dt to each entry of the fields at each time step
   // The restart data is written every 5 time steps, while the output freq is 10.
@@ -82,8 +84,9 @@ TEST_CASE("restart","io")
   // and a history restart files, with solution at t=15. 
 
   // Time-advance all fields
-  const Real dt = 1.0;
+  const int dt = 1;
   const int nsteps = 15;
+  auto time = t0;
   for (int i=0; i<nsteps; ++i) {
     time_advance(*field_manager,out_fields,dt);
     time += dt;
@@ -166,10 +169,11 @@ TEST_CASE("restart","io")
   // restart the output from the saved history.
 
   // Create Output manager, and read the restart
-  util::TimeStamp time_res (0,0,0,15);
-  auto output_params_res = get_om_params(io_comm,grid->name(),true);
+  util::TimeStamp time_res ({2000,1,1},{0,0,15});
+  ekat::ParameterList output_params_res;
+  ekat::parse_yaml_file(param_filename,output_params_res);
   OutputManager output_manager_res;
-  output_manager_res.setup(io_comm,output_params_res,fm_res,true);
+  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,t0,false,true);
 
   // Run 5 more steps from the restart, to get to the next output step.
   // We should be generating the same output file as before.
@@ -225,7 +229,7 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   fm->registration_ends();
 
   // Initialize fields to -1.0, and set initial time stamp
-  util::TimeStamp time (0,0,0,0);
+  util::TimeStamp time ({2000,1,1},{0,0,0});
   fm->init_fields_time_stamp(time);
   for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
     fm->get_field(fn).deep_copy(-1.0);
@@ -270,24 +274,14 @@ void randomize_fields (const FieldManager<Real>& fm, const int seed)
 }
 
 /*===================================================================================================================*/
-std::shared_ptr<const AbstractGrid>
-get_test_grid(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-  return create_point_grid("Physics",num_gcols,num_levs,io_comm);
-}
-/*===================================================================================================================*/
-ekat::ParameterList get_om_params(const ekat::Comm& comm, const std::string& grid, const bool check)
-{
-  ekat::ParameterList om_params("Output Manager");
-  auto& files = om_params.sublist("Output YAML Files");
-  std::vector<std::string> fileNames (1);
-  fileNames[0] = std::string("io_test_restart") + (check ? "_check" : "") + "_np" + std::to_string(comm.size()) + ".yaml";
-  files.set(grid,fileNames);
-  auto& res_sub = om_params.sublist("Model Restart");
-  res_sub.sublist("Output").set<int>("Frequency",5);
-  res_sub.sublist("Output").set<std::string>("Frequency Units","Steps");
-
-  return om_params;  
+  ekat::ParameterList gm_params;
+  gm_params.sublist("Mesh Free").set("Number of Global Columns",num_gcols);
+  gm_params.sublist("Mesh Free").set("Number of Vertical Levels",num_levs);
+  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
+  gm->build_grids(std::set<std::string>{"Point Grid"});
+  return gm;
 }
 /*===================================================================================================================*/
 ekat::ParameterList get_in_params()
@@ -300,7 +294,7 @@ ekat::ParameterList get_in_params()
   EKAT_REQUIRE_MSG (rpointer_file.is_open(), "Error! Could not open rpointer.atm file.\n");
   bool found = false;
   while (rpointer_file >> filename) {
-    if (filename.find(".r.") != std::string::npos) {
+    if (filename.find(".rhist.") != std::string::npos) {
       found = true;
       break;
   }}
@@ -316,7 +310,7 @@ ekat::ParameterList get_in_params()
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
-                   const double dt) {
+                   const int dt) {
   for (const auto& fname : fnames) {
     auto f  = fm.get_field(fname);
     f.sync_to_host();

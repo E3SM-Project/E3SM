@@ -7,7 +7,6 @@ set(P3_TESTS_SRCS
     p3_ice_tables_unit_tests.cpp
     p3_table3_unit_tests.cpp
     p3_back_to_cell_average_unit_tests.cpp
-    p3_prevent_ice_overdepletion_unit_tests.cpp
     p3_find_unit_tests.cpp
     p3_upwind_unit_tests.cpp
     p3_calc_rime_density_unit_tests.cpp
@@ -37,6 +36,8 @@ set(P3_TESTS_SRCS
     p3_nc_conservation_tests.cpp
     p3_nr_conservation_tests.cpp
     p3_ni_conservation_tests.cpp
+    p3_ice_deposition_sublimation_tests.cpp
+    p3_prevent_liq_supersaturation_tests.cpp
     ) # P3_TESTS_SRCS
 
 # The p3_test_setup executable generates tables used by all p3 tests. This
@@ -45,7 +46,7 @@ set(P3_TESTS_SRCS
 # it via the FIXTURES_REQUIRED property.
 # (See https://cmake.org/cmake/help/latest/prop_test/FIXTURES_REQUIRED.html)
 CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
-               PROPERTIES FIXTURES_SETUP p3_tables)
+               EXCLUDE_MAIN_CPP PROPERTIES FIXTURES_SETUP p3_tables)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
@@ -55,22 +56,16 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                  LABELS "p3;physics")
 endif()
 
-# Set inf tolerance for release builds. This will effectively disable all baseline
-# checking, but we still want to ensure things run without crashing
-if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
-  set(TOL_FLAG "--tol inf")
-endif()
-
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
 
 CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} -f ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-f -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
@@ -79,10 +74,10 @@ CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
 # to use CXX to generate their baselines, they should use "make baseline_cxx".
 
 add_custom_target(p3_baseline_f90
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_f90> -f -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
+  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_f90> -f -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
 
 add_custom_target(p3_baseline_cxx
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_cxx> -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
+  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_cxx> -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
 
 add_dependencies(baseline     p3_baseline_f90)
 add_dependencies(baseline_cxx p3_baseline_cxx)

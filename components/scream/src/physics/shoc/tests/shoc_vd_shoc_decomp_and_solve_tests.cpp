@@ -67,16 +67,16 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve {
     }
 
     // Verify BFB results, all data should be in C layout
-#ifndef NDEBUG
-    for (Int i = 0; i < num_runs; ++i) {
-      VdShocDecompandSolveData& d_f90 = f90_data[i];
-      VdShocDecompandSolveData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(d_f90.var); ++k) {
-        REQUIRE(d_f90.total(d_f90.var) == d_cxx.total(d_cxx.var));
-        REQUIRE(d_f90.var[k] == d_cxx.var[k]);
+    if (SCREAM_BFB_TESTING) {
+      for (Int i = 0; i < num_runs; ++i) {
+        VdShocDecompandSolveData& d_f90 = f90_data[i];
+        VdShocDecompandSolveData& d_cxx = cxx_data[i];
+        for (Int k = 0; k < d_f90.total(d_f90.var); ++k) {
+          REQUIRE(d_f90.total(d_f90.var) == d_cxx.total(d_cxx.var));
+          REQUIRE(d_f90.var[k] == d_cxx.var[k]);
+        }
       }
     }
-#endif
   } // run_bfb
 
 };

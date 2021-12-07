@@ -270,28 +270,28 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Kokkos::deep_copy(real_results_mirror, real_results);
 
     // Validate results
-#ifndef NDEBUG
-    for(int s = 0; s < max_pack_size; ++s) {
-      // +1 for O vs 1-based indexing
-      REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
-      REQUIRE(int_results_mirror(1, s)+1 == lid[s].dumjj);
-      REQUIRE(int_results_mirror(2, s)+1 == lid[s].dumii);
-      REQUIRE(int_results_mirror(3, s)+1 == lid[s].dumzz);
+    if (SCREAM_BFB_TESTING) {
+      for(int s = 0; s < max_pack_size; ++s) {
+        // +1 for O vs 1-based indexing
+        REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
+        REQUIRE(int_results_mirror(1, s)+1 == lid[s].dumjj);
+        REQUIRE(int_results_mirror(2, s)+1 == lid[s].dumii);
+        REQUIRE(int_results_mirror(3, s)+1 == lid[s].dumzz);
 
-      REQUIRE(int_results_mirror(4, s)+1 == lidb[s].dumj);
+        REQUIRE(int_results_mirror(4, s)+1 == lidb[s].dumj);
 
-      REQUIRE(real_results_mirror(0, s) == lid[s].dum1);
-      REQUIRE(real_results_mirror(1, s) == lid[s].dum4);
-      REQUIRE(real_results_mirror(2, s) == lid[s].dum5);
-      REQUIRE(real_results_mirror(3, s) == lid[s].dum6);
+        REQUIRE(real_results_mirror(0, s) == lid[s].dum1);
+        REQUIRE(real_results_mirror(1, s) == lid[s].dum4);
+        REQUIRE(real_results_mirror(2, s) == lid[s].dum5);
+        REQUIRE(real_results_mirror(3, s) == lid[s].dum6);
 
-      REQUIRE(real_results_mirror(4, s) == lidb[s].dum3);
+        REQUIRE(real_results_mirror(4, s) == lidb[s].dum3);
 
-      REQUIRE(real_results_mirror(5, s) == altd[s].proc);
+        REQUIRE(real_results_mirror(5, s) == altd[s].proc);
 
-      REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
+        REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
+      }
     }
-#endif
   }
 
   static void run_phys()

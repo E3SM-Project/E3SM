@@ -5,11 +5,11 @@ namespace scream {
 FieldAllocProp::FieldAllocProp ()
  : m_value_type_sizes (0)
  , m_scalar_type_size (0)
+ , m_pack_size_max    (0)
  , m_alloc_size       (0)
  , m_committed        (false)
 {
-  // Set to something invalid
-  m_subview_idx = std::make_pair(-1,-1);
+  // Nothing to do here
 }
 
 FieldAllocProp& FieldAllocProp::operator= (const FieldAllocProp& src)
@@ -21,9 +21,10 @@ FieldAllocProp& FieldAllocProp::operator= (const FieldAllocProp& src)
     m_layout = src.m_layout;
     m_value_type_sizes = src.m_value_type_sizes;
     m_scalar_type_size = src.m_scalar_type_size;
+    m_pack_size_max = src.m_pack_size_max;
     m_last_extent = src.m_last_extent;
     m_alloc_size = src.m_alloc_size;
-    m_subview_idx = src.m_subview_idx;
+    m_subview_info = src.m_subview_info;
     m_contiguous = src.m_contiguous;
     m_committed = src.m_committed;
   }
@@ -31,7 +32,7 @@ FieldAllocProp& FieldAllocProp::operator= (const FieldAllocProp& src)
 }
 
 FieldAllocProp FieldAllocProp::
-subview (const int idim, const int k) const {
+subview (const int idim, const int k, const bool dynamic) const {
   EKAT_REQUIRE_MSG(is_committed(),
       "Error! Subview requires alloc properties to be committed.\n");
   EKAT_REQUIRE_MSG (idim==0 || idim==1,
@@ -45,8 +46,9 @@ subview (const int idim, const int k) const {
   FieldAllocProp props;
   props.m_committed = false;
   props.m_scalar_type_size = m_scalar_type_size;
+  props.m_pack_size_max = m_pack_size_max;
   props.m_alloc_size = m_alloc_size / m_layout->dim(idim);
-  props.m_subview_idx = std::make_pair(idim,k);
+  props.m_subview_info = SubviewInfo(idim,k,m_layout->dim(idim),dynamic);
 
   // Output is contioguous if a) this->m_contiguous=true,
   // b) idim==0, or if m_layout->dim(i)==1 for i<idim
@@ -123,6 +125,20 @@ int FieldAllocProp::get_padding () const {
   return padding;
 }
 
+void FieldAllocProp::reset_subview_idx (const int idx) {
+  EKAT_REQUIRE_MSG (is_committed(),
+      "Error! Cannot reset subview idx on a non-committed allocation.\n");
+  EKAT_REQUIRE_MSG (is_subfield(),
+      "Error! Cannot reset subview idx if this is not a subfield.\n");
+  EKAT_REQUIRE_MSG (is_dynamic_subfield(),
+      "Error! Cannot reset subview idx for non-dynamic subfields.\n");
+  EKAT_REQUIRE_MSG (idx>=0 && idx<m_subview_info.dim_extent,
+      "Error! Subview slice idx out of bounds.\n");
+
+  // Note: all the other allocation properties are unchanged.
+  m_subview_info.slice_idx = idx;
+}
+
 void FieldAllocProp::commit (const layout_ptr_type& layout)
 {
   if (is_committed()) {
@@ -160,6 +176,9 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
     // The number of scalar_type in a value_type
     const int vt_len = vts / m_scalar_type_size;
 
+    // Update the max pack size
+    m_pack_size_max = std::max(m_pack_size_max,vt_len);
+
     // The number of value_type's needed in the fast-striding dimension
     const int num_vt = (last_phys_extent + vt_len - 1) / vt_len;
 
@@ -182,6 +201,12 @@ int FieldAllocProp::get_alloc_size () const {
   EKAT_REQUIRE_MSG(is_committed(),
       "Error! You cannot query the allocation properties until they have been committed.");
   return m_alloc_size;
+}
+
+int FieldAllocProp::get_largest_pack_size () const {
+  EKAT_REQUIRE_MSG(is_committed(),
+      "Error! You cannot query the allocation properties until they have been committed.");
+  return m_pack_size_max;
 }
 
 int FieldAllocProp::get_last_extent () const {

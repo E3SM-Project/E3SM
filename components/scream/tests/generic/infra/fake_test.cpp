@@ -47,14 +47,23 @@ TEST_CASE("force_kokkos_oob", "[fake_infra_test]")
 }
 #endif
 
+#ifdef SCREAM_FORCE_RUN_VALG_ERR
+TEST_CASE("force_valgrind_err", "[fake_infra_test]")
+{
+  bool uninit;
+  int i = 0;
+  if (uninit) {
+    ++i;
+  }
+  else {
+    i += 4;
+  }
+  REQUIRE(i < 10);
+}
+#endif
+
 TEST_CASE("pass", "[fake_infra_test]")
 {
-  REQUIRE(true);
-}
-
-TEST_CASE("rank_and_thread_spread", "[fake_infra_test]")
-{
-  // TODO
   REQUIRE(true);
 }
 

@@ -21,8 +21,14 @@ set(BUILD_HOMME_PREQX_KOKKOS OFF CACHE BOOL "")
 set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
-set(HOMME_ENABLE_COMPOSE     OFF CACHE BOOL "")
+set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
+
+if (NOT Kokkos_ENABLE_SERIAL)
+  # We don't really *need* composef90, but Homme always builds it, so we need
+  # to make sure it can build without errors.
+  message(FATAL_ERROR "Homme's composef90 library requires Kokkos_ENABLE_SERIAL=ON.")
+endif()
 
 # We DON'T want homme's pio support, so force this option
 set(BUILD_HOMME_WITHOUT_PIOLIBRARY ON  CACHE BOOL "" FORCE)
@@ -154,6 +160,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       # Link to cime's csm_share lib
       target_link_libraries (${hommeLibName} csm_share)
     endif ()
+    target_link_libraries (${hommeLibName} composec++)
 
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details

@@ -28,27 +28,37 @@ contains
     call eam_pio_finalize()
   end subroutine eam_pio_finalize_c2f
 !=====================================================================!
-  subroutine register_outfile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : register_outfile
-    type(c_ptr), intent(in) :: filename_in
+  function is_file_open_c2f(filename_in,purpose) result(res) bind(c)
+    use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
 
-    character(len=256)       :: filename
+    type(c_ptr), intent(in)         :: filename_in
+    integer(kind=c_int), intent(in) :: purpose
+
+    type(pio_atm_file_t), pointer :: atm_file
+    character(len=256)      :: filename
+    logical (kind=c_bool)   :: res
+    logical :: found, is_open
 
     call convert_c_string(filename_in,filename)
-    call register_outfile(trim(filename))
-
-  end subroutine register_outfile_c2f
+    call lookup_pio_atm_file(filename,atm_file,found,is_open)
+    if (found .and. is_open) then
+      res = atm_file%purpose .eq. purpose
+    else
+      res = .false.
+    endif
+  end function is_file_open_c2f
 !=====================================================================!
-  subroutine register_infile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : register_infile
-    type(c_ptr), intent(in) :: filename_in
+  subroutine register_file_c2f(filename_in,purpose) bind(c)
+    use scream_scorpio_interface, only : register_file
+    type(c_ptr), intent(in)         :: filename_in
+    integer(kind=c_int), intent(in) :: purpose
 
-    character(len=256)       :: filename
+    character(len=256)      :: filename
 
     call convert_c_string(filename_in,filename)
-    call register_infile(trim(filename))
+    call register_file(trim(filename),purpose)
 
-  end subroutine register_infile_c2f
+  end subroutine register_file_c2f
 !=====================================================================!
   subroutine sync_outfile_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_sync_piofile
@@ -220,6 +230,21 @@ contains
     
   end subroutine register_dimension_c2f
 !=====================================================================!
+  function get_dimlen_c2f(filename_in,dimname_in) result(val) bind(c)
+    use scream_scorpio_interface, only : get_dimlen
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: dimname_in
+    integer(kind=c_int)     :: val
+
+    character(len=256) :: filename
+    character(len=256) :: dimname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(dimname_in,dimname)
+    val = get_dimlen(filename,dimname)
+
+  end function get_dimlen_c2f
+!=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef
     type(c_ptr), intent(in) :: filename_in
@@ -266,11 +291,12 @@ contains
 
   end subroutine grid_write_data_array_c2f_real
 !=====================================================================!
-  subroutine grid_read_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)
+  subroutine grid_read_data_array_c2f(filename_in,varname_in,time_index,var_data_ptr) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
+    integer(kind=c_int), value, intent(in) :: time_index
     type(c_ptr), intent(in) :: var_data_ptr
 
     character(len=256) :: filename
@@ -278,8 +304,8 @@ contains
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,varname,var_data_ptr)
+    call grid_read_data_array(filename,varname,var_data_ptr,time_index)
 
-  end subroutine grid_read_data_array_c2f_real
+  end subroutine grid_read_data_array_c2f
 !=====================================================================!
 end module scream_scorpio_interface_iso_c2f

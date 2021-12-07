@@ -28,8 +28,6 @@ module ocn_tracer_DMS
 
    use DMS_mod
    use DMS_parms
-   use BGC_mod
-   use BGC_parms
 
    implicit none
    private
@@ -78,7 +76,22 @@ module ocn_tracer_DMS
 
 ! hold indices in tracer pool corresponding to each tracer array
   type(DMS_indices_type), public :: dmsIndices
-  type(BGC_indices_type) :: ecosysIndices
+
+! indices for ecosys tracers
+  integer, public ::   &
+      no3_ind_MPAS_DMS,     &
+      doc_ind_MPAS_DMS,     &
+      zooC_ind_MPAS_DMS,     &
+      spChl_ind_MPAS_DMS,     &
+      spC_ind_MPAS_DMS,     &
+      spCaCO3_ind_MPAS_DMS,     &
+      diatChl_ind_MPAS_DMS,     &
+      diatC_ind_MPAS_DMS,     &
+      diazChl_ind_MPAS_DMS,     &
+      diazC_ind_MPAS_DMS
+! currently no Phaeo in MARBL
+!     phaeoChl_ind_MPAS_DMS     &
+!     phaeoC_ind_MPAS_DMS     &
 
 !***********************************************************************
 
@@ -182,24 +195,27 @@ contains
          DMS_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
          DMS_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
-         do iLevel=1,DMS_input%number_of_active_levels(column)
-            DMS_input%cell_thickness(iLevel,column)    = layerThickness(iLevel + minLevelCell(iCell) - 1,iCell)*convertLengthScale
+         do iLevel=iLevelSurface,DMS_input%number_of_active_levels(column)
+            DMS_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
 
             DMS_input%DMS_tracers(iLevel,column,DMS_indices%dms_ind)  = DMSTracers(dmsIndices%dms_ind,iLevel,iCell)
             DMS_input%DMS_tracers(iLevel,column,DMS_indices%dmsp_ind) = DMSTracers(dmsIndices%dmsp_ind,iLevel,iCell)
 
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%no3_ind)      = ecosysTracers(ecosysIndices%no3_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%doc_ind)      = ecosysTracers(ecosysIndices%doc_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%zooC_ind)     = ecosysTracers(ecosysIndices%zooC_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spC_ind)      = ecosysTracers(ecosysIndices%spC_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spChl_ind)    = ecosysTracers(ecosysIndices%spChl_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spCaCO3_ind)  = ecosysTracers(ecosysIndices%spCaCO3_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diatC_ind)    = ecosysTracers(ecosysIndices%diatC_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diatChl_ind)  = ecosysTracers(ecosysIndices%diatChl_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoC_ind)   = ecosysTracers(ecosysIndices%phaeoC_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoChl_ind) = ecosysTracers(ecosysIndices%phaeoChl_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diazC_ind)    = ecosysTracers(ecosysIndices%diazC_ind,iLevel,iCell)
-            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diazChl_ind)  = ecosysTracers(ecosysIndices%diazChl_ind,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%no3_ind)      = ecosysTracers(no3_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%doc_ind)      = ecosysTracers(doc_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%zooC_ind)     = ecosysTracers(zooC_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spC_ind)      = ecosysTracers(spC_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spChl_ind)    = ecosysTracers(spChl_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%spCaCO3_ind)  = ecosysTracers(spCaCO3_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diatC_ind)    = ecosysTracers(diatC_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diatChl_ind)  = ecosysTracers(diatChl_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diazC_ind)    = ecosysTracers(diazC_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%diazChl_ind)  = ecosysTracers(diazChl_ind_MPAS_DMS,iLevel,iCell)
+! currently no Phaeo in MARBL
+!           DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoC_ind)   = ecosysTracers(phaeoC_ind_MPAS_DMS,iLevel,iCell)
+!           DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoChl_ind) = ecosysTracers(phaeoChl_ind_MPAS_DMS,iLevel,iCell)
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoC_ind)   = 0.0_RKIND
+            DMS_input%DMS_tracers(iLevel,column,DMS_indices%phaeoChl_ind) = 0.0_RKIND
 
          enddo  !  iLevel
 
@@ -207,7 +223,7 @@ contains
                              DMS_output, DMS_diagnostic_fields, nVertLevels,   &
                              numColumnsMax, numColumns)
 
-         do iLevel=1,DMS_input%number_of_active_levels(column)
+         do iLevel=iLevelSurface,DMS_input%number_of_active_levels(column)
 
             DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell)   &
                + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dms_ind)*layerThickness(iLevel,iCell)
@@ -527,29 +543,30 @@ contains
       dmsIndices%dmsp_ind = index_dummy
 
       call mpas_pool_get_dimension(tracersPool, 'index_NO3',      index_dummy)
-      ecosysIndices%no3_ind             = index_dummy
+      no3_ind_MPAS_DMS             = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_DOC',      index_dummy)
-      ecosysIndices%doc_ind             = index_dummy
+      doc_ind_MPAS_DMS             = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_zooC',     index_dummy)
-      ecosysIndices%zooC_ind            = index_dummy
+      zooC_ind_MPAS_DMS            = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_spChl',    index_dummy)
-      ecosysIndices%spChl_ind           = index_dummy
+      spChl_ind_MPAS_DMS           = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_spC',      index_dummy)
-      ecosysIndices%spC_ind             = index_dummy
+      spC_ind_MPAS_DMS             = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_spCaCO3',  index_dummy)
-      ecosysIndices%spCaCO3_ind         = index_dummy
+      spCaCO3_ind_MPAS_DMS         = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_diatChl',  index_dummy)
-      ecosysIndices%diatChl_ind         = index_dummy
+      diatChl_ind_MPAS_DMS         = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_diatC',    index_dummy)
-      ecosysIndices%diatC_ind           = index_dummy
+      diatC_ind_MPAS_DMS           = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_diazChl',  index_dummy)
-      ecosysIndices%diazChl_ind         = index_dummy
+      diazChl_ind_MPAS_DMS         = index_dummy
       call mpas_pool_get_dimension(tracersPool, 'index_diazC',    index_dummy)
-      ecosysIndices%diazC_ind           = index_dummy
-      call mpas_pool_get_dimension(tracersPool, 'index_phaeoChl', index_dummy)
-      ecosysIndices%phaeoChl_ind        = index_dummy
-      call mpas_pool_get_dimension(tracersPool, 'index_phaeoC',   index_dummy)
-      ecosysIndices%phaeoC_ind          = index_dummy
+      diazC_ind_MPAS_DMS           = index_dummy
+! currently no Phaeo in MARBL
+!     call mpas_pool_get_dimension(tracersPool, 'index_phaeoChl', index_dummy)
+!     phaeoChl_ind_MPAS_DMS        = index_dummy
+!     call mpas_pool_get_dimension(tracersPool, 'index_phaeoC',   index_dummy)
+!     phaeoC_ind_MPAS_DMS          = index_dummy
 
 ! DMS_init sets short and long names, units in DMS_indices
 

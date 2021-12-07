@@ -1,0 +1,49 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Atmosphere Processes:
+  Number of Entries: 1
+
+  Process 0:
+    Process Name: RRTMGP
+    Grid: Point Grid
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    Orbital Year: 1990
+    Fixed Solar Zenith Angle: 0.86
+
+Grids Manager:
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns: 128
+    Number of Vertical Levels: 42
+
+# Specifications for setting initial conditions
+Initial Conditions:
+  Point Grid:
+    p_mid: 0.0
+    p_int: 0.0
+    pseudo_density: 0.0
+    T_mid: 0.0
+    surf_lw_flux_up: 0.0
+    sfc_alb_dir_vis: 0.0
+    sfc_alb_dir_nir: 0.0
+    sfc_alb_dif_vis: 0.0
+    sfc_alb_dif_nir: 0.0
+    cos_zenith: 0.0
+    qc: 0.0
+    qi: 0.0
+    cldfrac_tot: 0.0
+    eff_radius_qc: 0.0
+    eff_radius_qi: 0.0
+    qv: 0.0
+    co2: 0.0
+    o3: 0.0
+    n2o: 0.0
+    co: 0.0
+    ch4: 0.0
+    o2: 0.0
+    n2: 0.0
+...
