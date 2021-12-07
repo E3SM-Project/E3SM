@@ -552,7 +552,7 @@ contains
               end do ! do kIndexOBL
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
 
-              bulkRichardsonNumberBuoy(:,iCell) = cvmix_kpp_compute_bulk_Richardson( &
+              bulkRichardsonNumber(:,iCell) = cvmix_kpp_compute_bulk_Richardson( &
                    zt_cntr = zt_cntr(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
                    delta_buoy_cntr = bulkRichardsonNumberBuoy(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
                    delta_Vsqr_cntr = bulkRichardsonNumberShear(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
