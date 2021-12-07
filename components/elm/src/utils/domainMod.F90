@@ -45,13 +45,11 @@ module domainMod
      logical          :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
 
-     ! === TOP solar radiation parameterization
      real(r8),pointer :: stdev_elev(:)     ! standard deviation of elevation within a gridcell
-     real(r8),pointer :: sky_view(:)       ! mean of (sky view factor / cos(slope))  ! 3D-RT
+     real(r8),pointer :: sky_view(:)       ! mean of (sky view factor / cos(slope))
      real(r8),pointer :: terrain_config(:) ! mean of (terrain configuration factor / cos(slope))
      real(r8),pointer :: sinsl_cosas(:)    ! sin(slope)*cos(aspect) / cos(slope)
      real(r8),pointer :: sinsl_sinas(:)    ! sin(slope)*sin(aspect) / cos(slope)
-     ! === End
      
      ! pflotran:beg-----------------------------------------------------
      integer          :: nv           ! number of vertices
@@ -306,11 +304,11 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
     write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
     write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)
-    write(iulog,*) '  domain_check stdev_elev = ',minval(domain%stdev_elev),maxval(domain%stdev_elev)
-    write(iulog,*) '  domain_check sky_view = ',minval(domain%sky_view),maxval(domain%sky_view)
+    write(iulog,*) '  domain_check stdev_elev     = ',minval(domain%stdev_elev),maxval(domain%stdev_elev)
+    write(iulog,*) '  domain_check sky_view       = ',minval(domain%sky_view),maxval(domain%sky_view)
     write(iulog,*) '  domain_check terrain_config = ',minval(domain%terrain_config),maxval(domain%terrain_config)
-    write(iulog,*) '  domain_check sinsl_cosas = ',minval(domain%sinsl_cosas),maxval(domain%sinsl_cosas)
-    write(iulog,*) '  domain_check sinsl_sinas = ',minval(domain%sinsl_sinas),maxval(domain%sinsl_sinas)
+    write(iulog,*) '  domain_check sinsl_cosas    = ',minval(domain%sinsl_cosas),maxval(domain%sinsl_cosas)
+    write(iulog,*) '  domain_check sinsl_sinas    = ',minval(domain%sinsl_sinas),maxval(domain%sinsl_sinas)
     write(iulog,*) ' '
   endif
 
