@@ -128,11 +128,13 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
 
   tl.update_tracers_levels(params.dt_tracer_factor);
   
-  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_DEBUG ||
+  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_0 ||
                              params.ftype == ForcingAlg::FORCING_2);
   bool apply_forcing;
-#ifdef CAM
-  apply_forcing = params.ftype == ForcingAlg::FORCING_DEBUG;
+
+  //decide on tracer forcing
+#if defined(CAM) || defined(SCREAM)
+  apply_forcing = params.ftype == ForcingAlg::FORCING_2;
 #else
   apply_forcing = forcing_0or2;
 #endif

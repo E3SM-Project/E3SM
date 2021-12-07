@@ -104,21 +104,23 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   if ( ! independent_time_steps) {
     tl.update_tracers_levels(params.dt_tracer_factor);
 
-/// remove
-//#ifndef CAM
-//    apply_test_forcing ();
-//#endif
-
     // Apply forcing.
-    // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
-    // Corresponds to ftype == 0 in Fortran
-    if(params.ftype == ForcingAlg::FORCING_DEBUG) {
-      apply_cam_forcing(dt_remap);
-    }
-    // Corresponds to ftype == 2 in Fortran
-    else if(params.ftype == ForcingAlg::FORCING_2) {
+    // to make it readable, duplicate some code
+#if defined(CAM)
+    if(params.ftype == ForcingAlg::FORCING_2) {
       apply_cam_forcing_dynamics(dt_remap);
     }
+#elif defined(SCREAM)
+    if(params.ftype == ForcingAlg::FORCING_2) {
+      apply_cam_forcing(dt_remap);
+    }
+#else
+    // Corresponds to ftype == 0 or ftype == 2 in Fortran
+    if(params.ftype == ForcingAlg::FORCING_0 || 
+       params.ftype == ForcingAlg::FORCING_2    ) {
+      apply_cam_forcing(dt_remap);
+    }
+#endif
 
     if (compute_diagnostics) {
       Diagnostics& diags = context.get<Diagnostics>();

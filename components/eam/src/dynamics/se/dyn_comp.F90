@@ -12,6 +12,7 @@ Module dyn_comp
   use time_manager, only: is_first_step
   use spmd_utils,  only : iam, npes_cam => npes
   use pio,         only: file_desc_t
+  use control_mod, only: nsplit_iteration
 
   implicit none
   private
@@ -366,6 +367,7 @@ CONTAINS
 
        if (.not. use_3dfrc) then
          do n=1,se_nsplit
+           nsplit_iteration = n
            ! forward-in-time RK, with subcycling
            call t_startf('prim_run_subcycle')
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&

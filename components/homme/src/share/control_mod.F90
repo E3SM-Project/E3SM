@@ -68,6 +68,8 @@ module control_mod
   ! Default values make qsplit and rsplit control the time steps.
   integer, public :: dt_remap_factor = -1, dt_tracer_factor = -1
 
+  integer, public :: nsplit_iteration = 0
+
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
