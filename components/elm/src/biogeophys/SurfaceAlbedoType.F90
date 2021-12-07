@@ -268,10 +268,8 @@ contains
     allocate(this%albd_patch         (begp:endp,numrad))       ; this%albd_patch         (:,:) =spval
     allocate(this%albi_patch         (begp:endp,numrad))       ; this%albi_patch         (:,:) =spval
 
-    !!=== TOP solar radiation parameterization =====
-	allocate(this%fd_top_adjust      (begp:endp,numrad))       ; this%fd_top_adjust      (:,:) = spval
-	allocate(this%fi_top_adjust      (begp:endp,numrad))       ; this%fi_top_adjust      (:,:) = spval
-    !!=== End
+    allocate(this%fd_top_adjust      (begp:endp,numrad))       ; this%fd_top_adjust      (:,:) = spval
+    allocate(this%fi_top_adjust      (begp:endp,numrad))       ; this%fi_top_adjust      (:,:) = spval
     
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) =spval
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) =spval
