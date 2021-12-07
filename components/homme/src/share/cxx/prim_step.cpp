@@ -133,8 +133,11 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   bool apply_forcing;
 
   //decide on tracer forcing
-#if defined(CAM) || defined(SCREAM)
+#if defined(CAM)
   apply_forcing = params.ftype == ForcingAlg::FORCING_2;
+#elif defined(SCREAM)
+  apply_forcing = (params.ftype == ForcingAlg::FORCING_2 &&
+                   nstep_iteration == 1 );
 #else
   apply_forcing = forcing_0or2;
 #endif

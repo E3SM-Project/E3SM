@@ -112,7 +112,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     }
 #elif defined(SCREAM)
     if(params.ftype == ForcingAlg::FORCING_2) {
-      apply_cam_forcing(dt_remap);
+      if(nstep_iteration == 1) apply_cam_forcing_tracers(dt_remap);
+      apply_cam_forcing_dynamics(dt_remap);
     }
 #else
     // Corresponds to ftype == 0 or ftype == 2 in Fortran
