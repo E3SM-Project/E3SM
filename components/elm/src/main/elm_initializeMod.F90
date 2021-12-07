@@ -59,7 +59,7 @@ contains
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
+    use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
