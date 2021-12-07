@@ -22,7 +22,6 @@ namespace Homme
 void prim_step (const Real, const bool);
 void prim_step_flexible (const Real, const bool);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 void update_q (const int np1_qdp, const int np1);
 
 extern "C" {
@@ -58,7 +57,8 @@ void initialize_dp3d_from_ps_c () {
   GPTLstop("tl-sc dp3d-from-ps");
 }
 
-void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, const int& next_output_step)
+void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, 
+                          const int& next_output_step, const int& nsplit_iteration)
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
 
@@ -66,6 +66,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   // Get simulation params
   SimulationParams& params = context.get<SimulationParams>();
+  params.nsplit_iteration = nsplit_iteration;
   assert(params.params_set);
 
   const bool independent_time_steps = (params.transport_alg > 0 &&
@@ -116,7 +117,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     //SCREAM, support only ftype2, nothing is done in dp layer
 #elif defined(SCREAM)
     if(params.ftype == ForcingAlg::FORCING_2) {
-      if(nstep_iteration == 1) apply_cam_forcing_tracers(dt_remap);
+      if(params.nsplit_iteration == 1) 
+         apply_cam_forcing_tracers(dt_remap*params.nsplit);
       apply_cam_forcing_dynamics(dt_remap);
     }
 
@@ -187,20 +189,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 }
 
 } // extern "C"
-
-void apply_test_forcing () {
-  // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
-
-  switch (params.test_case) {
-    case TestCase::JW_BAROCLINIC:
-      break;  // Do nothing
-    case TestCase::DCMIP2016_TEST2:
-    default:
-      Errors::runtime_abort("Test case not yet available in C++ build.\n",
-                            Errors::err_not_implemented);
-  }
-}
 
 void update_q (const int np1_qdp, const int np1)
 {

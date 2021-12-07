@@ -19,7 +19,6 @@ namespace Homme
 void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
 void prim_advec_tracers_remap (const Real);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 
 static void set_tracer_transport_derived_values (
   const SimulationParams& params, const Elements& elements, const TimeLevel& tl)
@@ -123,7 +122,6 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   Elements& elements = context.get<Elements>();
   TimeLevel& tl = context.get<TimeLevel>();
 
-  const auto dt_q = dt*params.dt_tracer_factor;
   const auto dt_remap = params.dt_remap_factor == 0 ? dt : dt*params.dt_remap_factor;
 
   tl.update_tracers_levels(params.dt_tracer_factor);
@@ -132,6 +130,9 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
                              params.ftype == ForcingAlg::FORCING_2);
   bool apply_forcing;
 
+  const auto dt_q =        dt * params.dt_tracer_factor;
+  const auto dt_q_nsplit = dt * params.dt_tracer_factor * params.nsplit;
+  
   //decide on tracer forcing
   //SCREAM, CAM -- support only ftype2
 #if defined(CAM)
@@ -145,7 +146,11 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
 
   if (apply_forcing) {
     // Apply tracer forcings over tracer time step.
+#ifdef SCREAM
+    apply_cam_forcing_tracers(dt_q_nsplit);
+#else
     apply_cam_forcing_tracers(dt_q);
+#endif
   }
 
   set_tracer_transport_derived_values(params, elements, tl);

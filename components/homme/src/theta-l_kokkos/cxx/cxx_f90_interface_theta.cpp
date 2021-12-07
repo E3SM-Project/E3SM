@@ -43,7 +43,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
-                               const int& dt_remap_factor, const int& dt_tracer_factor)
+                               const int& dt_remap_factor, const int& dt_tracer_factor,
+                               const int& nsplit)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -61,6 +62,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+  Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
 
   // Get the simulation params struct
   SimulationParams& params = Context::singleton().create<SimulationParams>();
@@ -105,6 +107,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
+  params.nsplit                        = nsplit;
   if (time_step_type==0) {
     params.time_step_type = TimeStepType::LF;
   } else if (time_step_type==1) {
@@ -141,7 +144,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   if (ftype == -1) {
     params.ftype = ForcingAlg::FORCING_OFF;
   } else if (ftype == 0) {
-    params.ftype = ForcingAlg::FORCING_DEBUG;
+    params.ftype = ForcingAlg::FORCING_0;
   } else if (ftype == 2) {
     params.ftype = ForcingAlg::FORCING_2;
   }

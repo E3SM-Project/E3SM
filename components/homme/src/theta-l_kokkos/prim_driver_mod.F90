@@ -64,7 +64,7 @@ contains
     use iso_c_binding, only : c_loc, c_ptr, c_bool, C_NULL_CHAR
     use theta_f2c_mod, only : init_reference_element_c, init_simulation_params_c, &
                               init_time_level_c, init_hvcoord_c, init_elements_c
-    use time_mod,      only : TimeLevel_t
+    use time_mod,      only : TimeLevel_t, nsplit
     use hybvcoord_mod, only : hvcoord_t
     use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,   &
                               nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg,  &
@@ -107,7 +107,8 @@ contains
                                    transport_alg,                                                 &
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
                                    c_loc(test_name),                                              &
-                                   dt_remap_factor, dt_tracer_factor)
+                                   dt_remap_factor, dt_tracer_factor,                             &
+                                   nsplit)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -346,7 +347,7 @@ contains
 
   end subroutine prim_init_kokkos_functors
 
-  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord, nsplit_iteration)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
     use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics, &
                                dt_remap_factor, dt_tracer_factor
@@ -368,9 +369,6 @@ contains
 #ifndef SCREAM
     use theta_f2c_mod,  only : push_forcing_to_c
 #endif
-#if !defined(CAM) && !defined(SCREAM)
-    use test_mod,       only : compute_test_forcing
-#endif
     !
     ! Inputs
     !
@@ -382,7 +380,7 @@ contains
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
+    integer,              intent(in)    :: nsplit_iteration             !  = 1 .. nsplit
     !
     ! Locals
     !
@@ -395,6 +393,9 @@ contains
     integer :: n0_qdp, np1_qdp
     real(kind=real_kind) :: dt_remap, dt_q
 
+    if (nsplit_iteration < 1 .or. nsplit_iteration > nsplit) then
+      call abortmp ('nsplit_iteration out of range')
+    endif
     if (nets/=1 .or. nete/=nelemd) then
       call abortmp ('We don''t allow to call C routines from a horizontally threaded region')
     endif
@@ -422,18 +423,16 @@ contains
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-#if !defined(CAM) && !defined(SCREAM)
     ! Test forcing is only for standalone Homme (and only for some tests/configurations)
     if (compute_forcing_and_push_to_c) then
-      call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
+      call compute_test_forcing_dummy(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
       call t_startf('push_to_cxx')
       call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                              elem_derived_FPHI, elem_derived_FQ)
       call t_stopf('push_to_cxx')
     endif
-#endif
 
-    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
+    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c
@@ -441,7 +440,7 @@ contains
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    call init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics)
+    call init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iteration)
 
     if (push_to_f) then
       ! Set pointers to states
@@ -545,13 +544,13 @@ contains
   end subroutine init_logic_for_push_to_c
 
 
-  subroutine init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics)
+  subroutine init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter)
 
     use control_mod, only: test_with_forcing
-    use time_mod,    only : timelevel_t
+    use time_mod,    only : timelevel_t, nsplit
 
     type (TimeLevel_t),   intent(in) :: tl
-    integer,              intent(in) :: statefreq, nextOutputStep
+    integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
     logical,              intent(in) :: compute_diagnostics
 
 #ifdef HOMMEXX_BENCHMARK_NOFORCING
@@ -564,10 +563,44 @@ contains
     if (test_with_forcing) then
        push_to_f = .true.
     endif
+    if (nsplit_iter == nsplit) then
+       push_to_f = .true.
+    endif
 
 #endif
 
   end subroutine init_logic_for_push_to_f
+
+
+  subroutine compute_test_forcing_dummy(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use element_mod,      only : element_t
+#if !defined(CAM) && !defined(SCREAM)
+    use test_mod,       only : compute_test_forcing
+#endif
+    implicit none
+    type(element_t),     intent(inout) :: elem(:)                            ! element array
+    type(hybrid_t),      intent(in)    :: hybrid                             ! hybrid parallel structure
+    type(hvcoord_t),     intent(in)    :: hvcoord
+    real(kind=real_kind),intent(in)    :: dt
+    integer,             intent(in)    :: nets,nete,nt,ntQ
+    type(TimeLevel_t),   intent(in)    :: tl
+
+#if !defined(CAM) && !defined(SCREAM)
+    call compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
+#endif
+
+  end subroutine compute_test_forcing_dummy
+
+
+
+
+
+
+
+
 
 
 end module

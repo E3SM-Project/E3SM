@@ -18,7 +18,7 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
+  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false), nsplit(0) {}
 
   void print();
 
@@ -56,7 +56,9 @@ struct SimulationParams
   int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
-
+  int       nsplit;
+  int       nsplit_iteration;
+ 
   // Use this member to check whether the struct has been initialized
   bool      params_set;
 };
@@ -93,6 +95,7 @@ inline void SimulationParams::print () {
   printf ("   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no"));
   printf ("   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no"));
   printf ("   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no"));
+  printf ("   nsplit: %d\n", nsplit);
   printf ("\n**********************************************************\n");
 }
 
