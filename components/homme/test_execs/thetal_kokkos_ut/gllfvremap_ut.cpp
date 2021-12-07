@@ -142,6 +142,7 @@ struct Session {
     p.transport_alg = 0;
     p.moisture = MoistDry::MOIST;
     p.theta_hydrostatic_mode = false;
+    p.rearth = PhysicalConstants::rearth0;
     p.params_set = true;
 
     const auto hyai = cmvdc(h.hybrid_ai);
