@@ -6,7 +6,7 @@
   theta_hydrostatic_mode = .false.
   rsplit            = 1
   ne                = ${HOMME_TEST_NE}
-  qsize             = 0                         ! num tracer fields
+  qsize             = 1                         ! num tracer fields
   nmax              = 180                     ! 7200s / 0.4s per step = 18000 steps
   statefreq         = 180                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
