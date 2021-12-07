@@ -969,12 +969,10 @@ contains
        end do
     end do
 
-    !!!!!!--- TOP solar radiation parameterization ---------
     if (use_top_solar_rad) then
       call Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, nextsw_cday, &
 	                              coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars)
     endif
-    !!!!!!--- End  ------------------------
 
      end associate
 
@@ -1116,8 +1114,7 @@ contains
    subroutine TwoStream(bounds, &
         filter_vegsol, num_vegsol, &
         coszen, rho, tau, &
-        !canopystate_vars, surfalb_vars)
-        canopystate_vars, surfalb_vars, nextsw_cday, decl) ! For solar radiation parameterization revised by Dalei Hao
+        canopystate_vars, surfalb_vars, nextsw_cday, decl)
      !
      ! !DESCRIPTION:
      ! Two-stream fluxes for canopy radiative transfer
@@ -1146,8 +1143,7 @@ contains
      type(canopystate_type) , intent(in)    :: canopystate_vars
      type(surfalb_type)     , intent(inout) :: surfalb_vars
      
-    ! TOP solar radiation parameterization revised by Dalei Hao
-	 real(r8), intent(in) :: nextsw_cday    ! calendar day at Greenwich (1.00, ..., days/year)
+     real(r8), intent(in) :: nextsw_cday    ! calendar day at Greenwich (1.00, ..., days/year)
      real(r8), intent(in) :: decl           ! declination angle (radians) for next time step
      
      !
@@ -1206,7 +1202,7 @@ contains
           albgri       =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level)
           
           fd_top_adjust =>   surfalb_vars%fd_top_adjust          , & ! Input: TOP adjusted factor for direct radiation 
-		  fi_top_adjust =>   surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation 
+	  fi_top_adjust =>   surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation 
           
           fsun_z       =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer
           vcmaxcintsun =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
@@ -1362,13 +1358,11 @@ contains
           ftid(p,ib) = h4*s2/sigma + h5*s1 + h6/s1
           ftdd(p,ib) = s2
           fabd(p,ib) = 1._r8 - albd(p,ib) - (1._r8-albgrd(c,ib))*ftdd(p,ib) - (1._r8-albgri(c,ib))*ftid(p,ib)
-
-          !!!!!!--- TOP solar radiation parameterization ---------
+  
           if (use_top_solar_rad) then
             call Albedo_TOP_Adjustment_vegsol_direct( p, ib, nextsw_cday, &
 	                              cosz, decl, surfalb_vars)
           endif
-          !!!!!!--- End ------------------------
 
           a1 = h1 / sigma * (1._r8 - s2*s2) / (2._r8 * twostext(p)) &
              + h2         * (1._r8 - s2*s1) / (twostext(p) + h) &
@@ -1378,10 +1372,8 @@ contains
              + h5         * (1._r8 - s2*s1) / (twostext(p) + h) &
              + h6         * (1._r8 - s2/s1) / (twostext(p) - h)
 
-          !fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) )
-          !!!--- TOP solar radiation parameterization
-		  fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) ) * fd_top_adjust(p,ib)
-          !!!--- End 
+
+          fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) ) * fd_top_adjust(p,ib)
           fabd_sha(p,ib) = fabd(p,ib) - fabd_sun(p,ib)
 
           ! Diffuse
@@ -1403,21 +1395,16 @@ contains
           ftii(p,ib) = h9*s1 + h10/s1
           fabi(p,ib) = 1._r8 - albi(p,ib) - (1._r8-albgri(c,ib))*ftii(p,ib)
 
-          !!!!!!--- TOP solar radiation parameterization ---------
           if (use_top_solar_rad) then
             call Albedo_TOP_Adjustment_vegsol_diffuse(p, ib, nextsw_cday, &
 	                              cosz, decl, surfalb_vars)
           endif
-          !!!!!! End---------------------------
           
           a1 = h7 * (1._r8 - s2*s1) / (twostext(p) + h) +  h8 * (1._r8 - s2/s1) / (twostext(p) - h)
           a2 = h9 * (1._r8 - s2*s1) / (twostext(p) + h) + h10 * (1._r8 - s2/s1) / (twostext(p) - h)
 
-          !fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)
-          !!!--- TOP solar radiation parameterization
-          !fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)
-		  fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2) * fi_top_adjust(p,ib)
-          !!!--- End 
+
+	  fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2) * fi_top_adjust(p,ib)  
           fabi_sha(p,ib) = fabi(p,ib) - fabi_sun(p,ib)
 
           ! Repeat two-stream calculations for each canopy layer to calculate derivatives.
@@ -1634,8 +1621,6 @@ contains
 
     end subroutine TwoStream
     
-    !----------------------------------------------------------------------
-!Accouting for sub-grid topographic effect on solar radiation for non-vegetation added by Dalei Hao
 !----------------------------------------------------------------------
   subroutine Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, &
                                   nextsw_cday, coszen, decl, surfalb_vars)
@@ -1876,12 +1861,8 @@ contains
      end associate
 
   end subroutine Albedo_TOP_Adjustment_novegsol
-!--- End ----------------------------------------------------------
 
 
-!----------------------------------------------------------------------
-!Accouting for sub-grid topographic effect on solar radiation added by Dalei Hao
-!For direct radiation over vegetation
 !----------------------------------------------------------------------
   subroutine Albedo_TOP_Adjustment_vegsol_direct(p, ib, &
                                   nextsw_cday, cosz, decl, surfalb_vars)
@@ -2056,13 +2037,7 @@ contains
      end associate
 
   end subroutine Albedo_TOP_Adjustment_vegsol_direct
-!--- End ----------------------------------------------------------
 
-
-
-!----------------------------------------------------------------------
-!Accouting for sub-grid topographic effect on solar radiation added by Dalei Hao
-!For diffuse radiation
 !----------------------------------------------------------------------
   subroutine Albedo_TOP_Adjustment_vegsol_diffuse(p, ib, &
                                   nextsw_cday, cosz, decl, surfalb_vars)
@@ -2233,6 +2208,5 @@ contains
      end associate
 
   end subroutine Albedo_TOP_Adjustment_vegsol_diffuse
-!--- End ----------------------------------------------------------
 
 end module SurfaceAlbedoMod
