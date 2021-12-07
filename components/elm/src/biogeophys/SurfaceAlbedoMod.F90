@@ -1142,8 +1142,8 @@ contains
      real(r8)               , intent(in)    :: tau( bounds%begp: , 1: ) ! leaf/stem tran weighted by fraction LAI and SAI [pft, numrad]
      type(canopystate_type) , intent(in)    :: canopystate_vars
      type(surfalb_type)     , intent(inout) :: surfalb_vars
-     real(r8)               , intent(in)    :: nextsw_cday    ! calendar day at Greenwich (1.00, ..., days/year)
-     real(r8)               , intent(in)    :: decl           ! declination angle (radians) for next time step
+     real(r8)               , intent(in)    :: nextsw_cday              ! calendar day at Greenwich (1.00, ..., days/year)
+     real(r8)               , intent(in)    :: decl                     ! declination angle (radians) for next time step
      
      !
      ! !LOCAL VARIABLES:
@@ -1634,13 +1634,13 @@ contains
 !
 ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds             ! bounds
-    integer , intent(in) :: num_novegsol               ! number of pfts in non-urban filter
-    integer , intent(in) :: filter_novegsol(:) ! bounds%endg-bounds%endg+1 pft filter for non-urban points
-    real(r8), intent(in) :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8), intent(in) :: coszen( bounds%begp: )      ! cos solar zenith angle next time step [gridcell]
-    real(r8), intent(in) :: decl           ! declination angle (radians) for next time step
-    type(surfalb_type)     , intent(inout) :: surfalb_vars
+    type(bounds_type)  , intent(in)   :: bounds             ! bounds
+    integer            , intent(in)   :: num_novegsol               ! number of pfts in non-urban filter
+    integer            , intent(in)   :: filter_novegsol(:) ! bounds%endg-bounds%endg+1 pft filter for non-urban points
+    real(r8)           , intent(in)   :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
+    real(r8)           , intent(in)   :: coszen( bounds%begp: )      ! cos solar zenith angle next time step [gridcell]
+    real(r8)           , intent(in)   :: decl           ! declination angle (radians) for next time step
+    type(surfalb_type) , intent(inout):: surfalb_vars
  
 !
 ! !CALLED FROM:
@@ -1666,7 +1666,6 @@ contains
     real(r8) :: f_rdif, f_rdif_temp    ! adjustment factor for reflected-diffuse flux
     real(r8) :: fd_prime     ! temp adjustment factor for direct flux
     real(r8) :: fi_prime     ! temp adjustment factor for diffuse flux
-    !real(r8) :: fi_top_adjust     ! adjustment factor for diffuse flux
     real(r8) :: albd_adjust     ! adjusted albedo for direct flux
     real(r8) :: albi_adjust     ! adjusted albedo for diffuse flux
     real(r8) :: ftemp1, ftemp2, dzen1, dzen2
@@ -1723,13 +1722,13 @@ contains
           terrain_config =>    grc_pp%terrain_config              , & ! Output: 
 	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
           sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albd           =>    surfalb_vars%albd_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          albi           =>    surfalb_vars%albi_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabd           =>    surfalb_vars%fabd_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          fabi           =>    surfalb_vars%fabi_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          ftdd           =>    surfalb_vars%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          ftid           =>    surfalb_vars%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          ftii           =>    surfalb_vars%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
+          albd           =>    surfalb_vars%albd_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
+          albi           =>    surfalb_vars%albi_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
+          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
+          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
+          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
+          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
+          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
           fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
           fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
           )
@@ -1885,11 +1884,8 @@ contains
     real(r8), parameter :: mpe = 1.e-06_r8 ! prevents overflow for division by zero
     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
     integer  :: g                ! indices
-    !integer :: ib                         ! band index
-    !integer :: ic                         ! 0=unit incoming direct; 1=unit incoming diffuse
     integer  :: izen
     real(r8) :: lon_180  !  lon starting from -180
-    !real(r8):: cosz    ! cosine solar zenith angle for next time step
     real(r8) :: sinz    ! sine of solar zenith angle
     real(r8) :: azi_angle    ! solar azimuth angle
     real(r8) :: next_tod    ! time of day for nextsw_cday in second
@@ -1933,10 +1929,10 @@ contains
           terrain_config =>    grc_pp%terrain_config              , & ! Output: 
 	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
 	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albd           =>    surfalb_vars%albd_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          fabd           =>    surfalb_vars%fabd_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          ftdd           =>    surfalb_vars%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          ftid           =>    surfalb_vars%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
+          albd           =>    surfalb_vars%albd_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
+          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
+          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
+          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
           fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation 
           )
 
@@ -2034,7 +2030,7 @@ contains
     implicit none
   
     real(r8)          , intent(in) :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8)          , intent(in) :: cosz                        ! cos solar zenith angle next time step [col]
+    real(r8)          , intent(in) :: cosz                          ! cos solar zenith angle next time step [col]
     real(r8)          , intent(in) :: decl                          ! declination angle (radians) for next time step
     integer           , intent(in) :: p      
     integer           , intent(in) :: ib      
@@ -2049,11 +2045,8 @@ contains
     real(r8), parameter :: mpe = 1.e-06_r8 ! prevents overflow for division by zero
     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
     integer  :: g                    ! indices
-    !integer :: ib                         ! band index
-    !integer :: ic                         ! 0=unit incoming direct; 1=unit incoming diffuse
     integer  :: izen
     real(r8) :: lon_180  !  lon starting from -180
-    !real(r8):: cosz    ! cosine solar zenith angle for next time step
     real(r8) :: sinz    ! sine of solar zenith angle
     real(r8) :: azi_angle    ! solar azimuth angle
     real(r8) :: next_tod    ! time of day for nextsw_cday in second
@@ -2093,13 +2086,13 @@ contains
           pcolumn        =>    veg_pp%column                      , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
           stdev_elev     =>    grc_pp%stdev_elev                  , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
           sky_view       =>    grc_pp%sky_view                    , & ! Output: 
-		  terrain_config =>    grc_pp%terrain_config              , & ! Output: 
-		  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
-		  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albi           =>    surfalb_vars%albi_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabi           =>    surfalb_vars%fabi_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          ftii           =>    surfalb_vars%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          fi_top_adjust  =>    surfalb_vars%fi_top_adjust             & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
+	  terrain_config =>    grc_pp%terrain_config              , & ! Output: 
+	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
+	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
+          albi           =>    surfalb_vars%albi_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
+          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
+          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
+          fi_top_adjust  =>    surfalb_vars%fi_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
           )
 
     coeff_dif(:,0) = coeff_dif(:,1)
