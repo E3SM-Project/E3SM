@@ -299,7 +299,7 @@ void SHOCMacrophysics::initialize_impl ()
   input.zt_grid     = shoc_preprocess.zt_grid;
   input.zi_grid     = shoc_preprocess.zi_grid;
   input.pres        = p_mid;
-  input.presi       = get_field_in("p_int").get_view<const Spack**>();
+  input.presi       = p_int;
   input.pdel        = pseudo_density;
   input.thv         = shoc_preprocess.thv;
   input.w_field     = shoc_preprocess.wm_zt;

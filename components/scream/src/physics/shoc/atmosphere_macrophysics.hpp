@@ -162,11 +162,11 @@ public:
       const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
       const auto& inv_exner_int_surf = 1/exner_int;
 
-      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
+      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]);
       wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_int_surf;
-      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlev_v)[nlev_p];
+      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlevi_v)[nlevi_p];
+      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
+      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
