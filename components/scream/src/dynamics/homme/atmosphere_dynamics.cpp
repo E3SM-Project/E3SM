@@ -167,6 +167,9 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
   tl.update_tracers_levels(params.qsplit);
 
+  // NOTE: 'true' is for 'dynamic' subfield; the idx of the subfield slice will move
+  //       during execution (this class will take care of moving it, by calling
+  //       reset_subview_idx on each field).
   add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true));
   add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true));
   add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true));
@@ -553,8 +556,8 @@ void HommeDynamics::homme_post_process () {
   // Remap outputs to ref grid
   m_d2p_remapper->remap(true);
 
+  constexpr int N = HOMMEXX_PACK_SIZE;
   using KT = KokkosTypes<DefaultDevice>;
-  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
   using Pack = ekat::Pack<Real,N>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
@@ -855,28 +858,31 @@ void HommeDynamics::restart_homme_state () {
 
   // Copy uv_prev and w_prev into FM_ref. Also, FT_ref contains vtheta_dp,
   // so convert it to actual temperature
+  constexpr int N = HOMMEXX_PACK_SIZE;
+  using Pack = ekat::Pack<Real,N>;
   using KT = KokkosTypes<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  const auto policy = ESU::get_default_team_policy(ncols,nlevs);
   const bool has_w_forcing = get_field_out("w_int").get_header().get_tracking().get_providers().size()>1;
 
-  auto uv_view     = m_helper_fields.at("uv_prev").get_view<Real***>();
-  auto w_view      = m_helper_fields.at("w_prev").get_view<Real**>();
-  auto V_prev_view = m_helper_fields.at("FM_ref").get_view<Real***>();
-  auto T_prev_view = m_helper_fields.at("FT_ref").get_view<Real**>();
-  auto dp_view     = get_field_in("pseudo_density",rgn).get_view<const Real**>();
-  auto p_mid_view  = get_field_out("p_mid").get_view<Real**>();
-  auto qv_view     = qv_prev_ref->get_view<Real**>();
+  auto uv_view     = m_helper_fields.at("uv_prev").get_view<Pack***>();
+  auto w_view      = m_helper_fields.at("w_prev").get_view<Pack**>();
+  auto V_prev_view = m_helper_fields.at("FM_ref").get_view<Pack***>();
+  auto T_prev_view = m_helper_fields.at("FT_ref").get_view<Pack**>();
+  auto dp_view     = get_field_in("pseudo_density",rgn).get_view<const Pack**>();
+  auto p_mid_view  = get_field_out("p_mid").get_view<Pack**>();
+  auto qv_view     = qv_prev_ref->get_view<Pack**>();
 
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+  const auto policy = ESU::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
     const int icol = team.league_rank();
 
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto qv    = ekat::subview(qv_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
                          [&](const int& ilev) {
       // Init v_prev from uv and, possibly, w
       V_prev_view(icol,0,ilev) = uv_view(icol,0,ilev);
