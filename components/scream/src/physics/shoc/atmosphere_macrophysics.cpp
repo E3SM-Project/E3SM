@@ -247,6 +247,7 @@ void SHOCMacrophysics::initialize_impl ()
   //       variables a local view is constructed.
   const auto& T_mid            = get_field_out("T_mid").get_view<Spack**>();
   const auto& p_mid            = get_field_in("p_mid").get_view<const Spack**>();
+  const auto& p_int            = get_field_in("p_int").get_view<const Spack**>();
   const auto& pseudo_density   = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto& omega            = get_field_in("omega").get_view<const Spack**>();
   const auto& surf_sens_flux   = get_field_in("surf_sens_flux").get_view<const Real*>();
@@ -287,7 +288,7 @@ void SHOCMacrophysics::initialize_impl ()
   const Real z_surf = 0.0;
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,
-                                T_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
+                                T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_mom_flux,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
