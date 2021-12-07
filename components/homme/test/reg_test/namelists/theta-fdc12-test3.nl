@@ -13,7 +13,7 @@
   runtype           = 0                         ! 0 => new run
   tstep             = 1.0                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 10                        ! 1 => default method
+  tstep_type        = 9                        ! 1 => default method
   nu                = 5.0e8                     ! reduced planet hyperviscosity hv/500^3
   nu_p              = 5.0e8
   hypervis_order    = 2                         ! 2 = hyperviscosity
