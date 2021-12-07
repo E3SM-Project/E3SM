@@ -970,8 +970,8 @@ contains
     end do
 
     if (use_top_solar_rad) then
-      call Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, nextsw_cday, &
-	                              coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars)
+       call Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, nextsw_cday, &
+	                                  coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars)
     endif
 
      end associate
@@ -1200,8 +1200,8 @@ contains
           albgrd        =>    surfalb_vars%albgrd_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level)
           albgri        =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level)
           
-          fd_top_adjust =>   surfalb_vars%fd_top_adjust          , & ! Input: TOP adjusted factor for direct radiation 
-	  fi_top_adjust =>   surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation 
+          fd_top_adjust =>   surfalb_vars%fd_top_adjust           , & ! Input: TOP adjusted factor for direct radiation 
+	  fi_top_adjust =>   surfalb_vars%fi_top_adjust           , & ! Input: TOP adjusted factor for diffuse radiation 
           
           fsun_z        =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer
           vcmaxcintsun  =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
@@ -1634,12 +1634,12 @@ contains
 !
 ! !ARGUMENTS:
     implicit none
-    type(bounds_type)  , intent(in)   :: bounds             ! bounds
+    type(bounds_type)  , intent(in)   :: bounds                     ! bounds
     integer            , intent(in)   :: num_novegsol               ! number of pfts in non-urban filter
-    integer            , intent(in)   :: filter_novegsol(:) ! bounds%endg-bounds%endg+1 pft filter for non-urban points
-    real(r8)           , intent(in)   :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8)           , intent(in)   :: coszen( bounds%begp: )      ! cos solar zenith angle next time step [gridcell]
-    real(r8)           , intent(in)   :: decl           ! declination angle (radians) for next time step
+    integer            , intent(in)   :: filter_novegsol(:)         ! bounds%endg-bounds%endg+1 pft filter for non-urban points
+    real(r8)           , intent(in)   :: nextsw_cday                ! calendar day at Greenwich (1.00, ..., days/year)
+    real(r8)           , intent(in)   :: coszen( bounds%begp: )     ! cos solar zenith angle next time step [gridcell]
+    real(r8)           , intent(in)   :: decl                       ! declination angle (radians) for next time step
     type(surfalb_type) , intent(inout):: surfalb_vars
  
 !
@@ -1648,32 +1648,32 @@ contains
 
 ! !OTHER LOCAL VARIABLES:
 !
-    real(r8), parameter :: mpe = 1.e-06_r8 ! prevents overflow for division by zero
+    real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
-    integer  :: fp,fc,g,c,p                ! indices
-    integer  :: ib                         ! band index
-    integer  :: ic                         ! 0=unit incoming direct; 1=unit incoming diffuse
+    integer  :: fp,fc,g,c,p                               ! indices
+    integer  :: ib                                        ! band index
+    integer  :: ic                                        ! 0=unit incoming direct; 1=unit incoming diffuse
     integer  :: izen
-    real(r8) :: lon_180  ! lon starting from -180
-    real(r8) :: cosz    ! cosine solar zenith angle for next time step
-    real(r8) :: sinz    ! sine of solar zenith angle
-    real(r8) :: azi_angle    ! solar azimuth angle
-    real(r8) :: next_tod    ! time of day for nextsw_cday in second
-    real(r8) :: solar_inc ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dir     ! adjustment factor for direct flux
-    real(r8) :: f_rdir, f_rdir_temp    ! adjustment factor for reflected-direct flux
-    real(r8) :: f_dif     ! adjustment factor for diffuse flux
-    real(r8) :: f_rdif, f_rdif_temp    ! adjustment factor for reflected-diffuse flux
-    real(r8) :: fd_prime     ! temp adjustment factor for direct flux
-    real(r8) :: fi_prime     ! temp adjustment factor for diffuse flux
-    real(r8) :: albd_adjust     ! adjusted albedo for direct flux
-    real(r8) :: albi_adjust     ! adjusted albedo for diffuse flux
+    real(r8) :: lon_180                                   ! lon starting from -180
+    real(r8) :: cosz                                      ! cosine solar zenith angle for next time step
+    real(r8) :: sinz                                      ! sine of solar zenith angle
+    real(r8) :: azi_angle                                 ! solar azimuth angle
+    real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
+    real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
+    real(r8) :: f_dir                                     ! adjustment factor for direct flux
+    real(r8) :: f_rdir, f_rdir_temp                       ! adjustment factor for reflected-direct flux
+    real(r8) :: f_dif                                     ! adjustment factor for diffuse flux
+    real(r8) :: f_rdif, f_rdif_temp                       ! adjustment factor for reflected-diffuse flux
+    real(r8) :: fd_prime                                  ! temp adjustment factor for direct flux
+    real(r8) :: fi_prime                                  ! temp adjustment factor for diffuse flux
+    real(r8) :: albd_adjust                               ! adjusted albedo for direct flux
+    real(r8) :: albi_adjust                               ! adjusted albedo for diffuse flux
     real(r8) :: ftemp1, ftemp2, dzen1, dzen2
-    real(r8) :: local_timeofday     ! local time of day (second)
-    real(r8) :: coeff_dir(3,0:7)  ! regression coefficients for f_dir
-    real(r8) :: coeff_rdir(3,0:7) ! regression coefficients for f_rdir
-    real(r8) :: coeff_dif(4,0:7)  ! regression coefficients for f_dif
-    real(r8) :: coeff_rdif(3,0:7) ! regression coefficients for f_rdif
+    real(r8) :: local_timeofday                           ! local time of day (second)
+    real(r8) :: coeff_dir(3,0:7)                          ! regression coefficients for f_dir
+    real(r8) :: coeff_rdir(3,0:7)                         ! regression coefficients for f_rdir
+    real(r8) :: coeff_dif(4,0:7)                          ! regression coefficients for f_dif
+    real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
 
     data coeff_dir(:,1) /2.045E+1, 6.792E-1, -2.103E+1/
     data coeff_dir(:,2) /1.993E+0, 9.284E-1, -2.911E+0/
@@ -1868,8 +1868,8 @@ contains
 ! !ARGUMENTS:
     implicit none
     real(r8)          , intent(in)    :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8)          , intent(in)    :: cosz    ! cos solar zenith angle next time step [col]
-    real(r8)          , intent(in)    :: decl           ! declination angle (radians) for next time step
+    real(r8)          , intent(in)    :: cosz                          ! cos solar zenith angle next time step [col]
+    real(r8)          , intent(in)    :: decl                          ! declination angle (radians) for next time step
     integer           , intent(in)    :: p      
     integer           , intent(in)    :: ib  
     type(surfalb_type), intent(inout) :: surfalb_vars
@@ -1881,23 +1881,23 @@ contains
 !
 ! !OTHER LOCAL VARIABLES:
 !
-    real(r8), parameter :: mpe = 1.e-06_r8 ! prevents overflow for division by zero
+    real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
-    integer  :: g                ! indices
+    integer  :: g                                         ! indices
     integer  :: izen
-    real(r8) :: lon_180  !  lon starting from -180
-    real(r8) :: sinz    ! sine of solar zenith angle
-    real(r8) :: azi_angle    ! solar azimuth angle
-    real(r8) :: next_tod    ! time of day for nextsw_cday in second
-    real(r8) :: solar_inc ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dir     ! adjustment factor for direct flux
-    real(r8) :: f_rdir, f_rdir_temp    ! adjustment factor for reflected-direct flux
-    real(r8) :: fd_prime     ! temp adjustment factor for direct flux
-    real(r8) :: albd_adjust     ! adjusted albedo for direct flux
+    real(r8) :: lon_180                                   ! lon starting from -180
+    real(r8) :: sinz                                      ! sine of solar zenith angle
+    real(r8) :: azi_angle                                 ! solar azimuth angle
+    real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
+    real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
+    real(r8) :: f_dir                                     ! adjustment factor for direct flux
+    real(r8) :: f_rdir, f_rdir_temp                       ! adjustment factor for reflected-direct flux
+    real(r8) :: fd_prime                                  ! temp adjustment factor for direct flux
+    real(r8) :: albd_adjust                               ! adjusted albedo for direct flux
     real(r8) :: ftemp1, ftemp2, dzen1, dzen2
-    real(r8) :: local_timeofday     ! local time of day (second)
-    real(r8) :: coeff_dir(3,0:7)  ! regression coefficients for f_dir
-    real(r8) :: coeff_rdir(3,0:7) ! regression coefficients for f_rdir
+    real(r8) :: local_timeofday                           ! local time of day (second)
+    real(r8) :: coeff_dir(3,0:7)                          ! regression coefficients for f_dir
+    real(r8) :: coeff_rdir(3,0:7)                         ! regression coefficients for f_rdir
 
 
     data coeff_dir(:,1) /2.045E+1, 6.792E-1, -2.103E+1/
@@ -2042,23 +2042,23 @@ contains
 
 ! !OTHER LOCAL VARIABLES:
 !
-    real(r8), parameter :: mpe = 1.e-06_r8 ! prevents overflow for division by zero
+    real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
-    integer  :: g                    ! indices
+    integer  :: g                                         ! indices
     integer  :: izen
-    real(r8) :: lon_180  !  lon starting from -180
-    real(r8) :: sinz    ! sine of solar zenith angle
-    real(r8) :: azi_angle    ! solar azimuth angle
-    real(r8) :: next_tod    ! time of day for nextsw_cday in second
-    real(r8) :: solar_inc ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dif     ! adjustment factor for diffuse flux
-    real(r8) :: f_rdif, f_rdif_temp    ! adjustment factor for reflected-diffuse flux
-    real(r8) :: fi_prime     ! temp adjustment factor for diffuse flux
-    real(r8) :: albi_adjust     ! adjusted albedo for diffuse flux
+    real(r8) :: lon_180                                   ! lon starting from -180
+    real(r8) :: sinz                                      ! sine of solar zenith angle
+    real(r8) :: azi_angle                                 ! solar azimuth angle
+    real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
+    real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
+    real(r8) :: f_dif                                     ! adjustment factor for diffuse flux
+    real(r8) :: f_rdif, f_rdif_temp                       ! adjustment factor for reflected-diffuse flux
+    real(r8) :: fi_prime                                  ! temp adjustment factor for diffuse flux
+    real(r8) :: albi_adjust                               ! adjusted albedo for diffuse flux
     real(r8) :: ftemp1, ftemp2, dzen1, dzen2
-    real(r8) :: local_timeofday     ! local time of day (second)
-    real(r8) :: coeff_dif(4,0:7)  ! regression coefficients for f_dif
-    real(r8) :: coeff_rdif(3,0:7) ! regression coefficients for f_rdif
+    real(r8) :: local_timeofday                           ! local time of day (second)
+    real(r8) :: coeff_dif(4,0:7)                          ! regression coefficients for f_dif
+    real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
 
 
     data coeff_dif(:,1) /3.146E-7, 4.385E+0, 6.723E-3, -4.382E+0/
