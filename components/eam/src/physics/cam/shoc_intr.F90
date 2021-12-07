@@ -38,6 +38,7 @@ module shoc_intr
              tk_idx, &
              wthv_idx, &       ! buoyancy flux
              cld_idx, &          ! Cloud fraction
+             tot_cloud_frac_idx, & ! Cloud fraction with higher ice threshold 
              concld_idx, &       ! Convective cloud fraction
              ast_idx, &          ! Stratiform cloud fraction
              alst_idx, &         ! Liquid stratiform cloud fraction
@@ -165,6 +166,7 @@ module shoc_intr
     call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qlst_idx)
     call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
     call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    cld_idx)
+    call pbuf_add_field('TOT_CLOUD_FRAC',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    tot_cloud_frac_idx)
     call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/), fice_idx)
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/), radf_idx)
     call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/), cmeliq_idx)
@@ -331,6 +333,7 @@ end function shoc_implements_cnst
     
     ! Define physics buffers indexes
     cld_idx     = pbuf_get_index('CLD')         ! Cloud fraction
+    tot_cloud_frac_idx     = pbuf_get_index('TOT_CLOUD_FRAC')         ! Cloud fraction
     concld_idx  = pbuf_get_index('CONCLD')      ! Convective cloud cover
     ast_idx     = pbuf_get_index('AST')         ! Stratiform cloud fraction
     alst_idx    = pbuf_get_index('ALST')        ! Liquid stratiform cloud fraction
@@ -580,7 +583,7 @@ end function shoc_implements_cnst
    real(r8) :: ice_cloud_frac(pcols,pver)          ! ice number aware cloud fraction, 0 or 1
    real(r8) :: precipitating_ice_frac(pcols,pver)        ! precipitating ice fraction, 0 or 1
    real(r8) :: liq_cloud_frac(pcols,pver)     
-   real(r8) :: tot_cloud_frac(pcols,pver)         
+   !real(r8) :: tot_cloud_frac(pcols,pver)         
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx, host_dy
@@ -627,6 +630,7 @@ end function shoc_implements_cnst
    real(r8), pointer, dimension(:,:) :: tkh 
    real(r8), pointer, dimension(:,:) :: tk
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
+   real(r8), pointer, dimension(:,:) :: tot_cloud_frac      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: alst     ! liquid stratiform cloud fraction             [fraction]
@@ -685,6 +689,7 @@ end function shoc_implements_cnst
    call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, tot_cloud_frac_idx,     tot_cloud_frac,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, alst_idx,    alst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
