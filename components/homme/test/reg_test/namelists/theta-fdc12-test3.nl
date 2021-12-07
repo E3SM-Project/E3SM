@@ -7,8 +7,8 @@
   rsplit            = 1
   ne                = ${HOMME_TEST_NE}
   qsize             = 0                         ! num tracer fields
-  nmax              = 1800                     ! 7200s / 0.4s per step = 18000 steps
-  statefreq         = 360                       ! number of steps between screen dumps
+  nmax              = 180                       ! 7200s / 0.4s per step = 18000 steps
+  statefreq         = 180                       ! number of steps between screen dumps
   restartfreq       = -1                        ! don't write restart files if < 0
   runtype           = 0                         ! 0 => new run
   tstep             = 1.0                       ! largest timestep in seconds
@@ -31,8 +31,8 @@
 &analysis_nl
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 0=timesteps, 1=days, 2=hours, 3=seconds
-  output_frequency  = 1800,                      ! 720 seconds (10+1 outputs)
-  output_varnames1  ='T','ps','u','v','omega','geo'   ! variables to write to file
+  output_frequency  = 180,                      ! 720 seconds (10+1 outputs)
+  output_varnames1  ='T','ps','u','v','omega','geo_i'   ! variables to write to file
   interp_type       = 0                         ! 0=native grid, 1=bilinear
   output_type       ='netcdf'                   ! netcdf or pnetcdf
   !num_io_procs      = 16

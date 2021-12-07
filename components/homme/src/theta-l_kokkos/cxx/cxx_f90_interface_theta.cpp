@@ -123,6 +123,9 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     //5 stage, based on the 2nd order explicit KGU table
     //2nd order implicit table
     params.time_step_type = TimeStepType::ttype10_imex;
+  } else {
+    Errors::runtime_abort("Invalid time_step_time" 
+                          + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
   //set nu_ratios values
