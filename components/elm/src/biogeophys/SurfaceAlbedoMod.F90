@@ -1713,7 +1713,7 @@ contains
 
     ! Assign local pointers to derived subtypes components (gridcell-level)
 
-   associate(&
+    associate(&
           lat            =>    grc_pp%lat                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
           lon            =>    grc_pp%lon                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
           pgridcell      =>    veg_pp%gridcell                    , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
@@ -1732,126 +1732,122 @@ contains
           ftii           =>    surfalb_vars%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
           fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
           fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
- )
+          )
 
 
 
-    coeff_dir(:,0) = coeff_dir(:,1)
-    coeff_rdir(:,0) = coeff_rdir(:,1)
-    coeff_dif(:,0) = coeff_dif(:,1)
-    coeff_rdif(:,0) = coeff_rdif(:,1)
+     coeff_dir(:,0) = coeff_dir(:,1)
+     coeff_rdir(:,0) = coeff_rdir(:,1)
+     coeff_dif(:,0) = coeff_dif(:,1)
+     coeff_rdif(:,0) = coeff_rdif(:,1)
 
-    next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
+     next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
 
-
-    do fp = 1,num_novegsol
-       p = filter_novegsol(fp)
-       g = pgridcell(p)
-       !c = pcolumn(p)
-       cosz = coszen(p)
-       fd_top_adjust(p,1:numrad) = 1
-       fi_top_adjust(p,1:numrad) = 1
+     do fp = 1,num_novegsol
+        p = filter_novegsol(fp)
+        g = pgridcell(p)
+        !c = pcolumn(p)
+        cosz = coszen(p)
+        fd_top_adjust(p,1:numrad) = 1
+        fi_top_adjust(p,1:numrad) = 1
 	   
-    ! make sure the lon is between 0-180 
-    lon_180 = lon(g)
-    if (lon_180 > pi) lon_180 = lon_180-2._r8*pi
-    ! end
+       ! make sure the lon is between 0-180 
+        lon_180 = lon(g)
+         if (lon_180 > pi) lon_180 = lon_180-2._r8*pi    
     
-    
-       if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
-          local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8
+         if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
+            local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8
 
-          if (local_timeofday >= 86400._r8) then
-             local_timeofday = local_timeofday - 86400._r8
-          endif
+            if (local_timeofday >= 86400._r8) then
+               local_timeofday = local_timeofday - 86400._r8
+            endif
     
-          if (local_timeofday < 0._r8) then
-             local_timeofday = local_timeofday + 86400._r8
-          endif
+            if (local_timeofday < 0._r8) then
+               local_timeofday = local_timeofday + 86400._r8
+            endif
           
-          if (cosz == 1._r8) then
-             azi_angle = 0._r8
-             sinz = 0._r8
-             solar_inc = 1
-          else
-             sinz = sqrt(1._r8-cosz*cosz)
-             azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
-             azi_angle = max(-1._r8,min(1._r8,azi_angle))
-             azi_angle = acos(-azi_angle)
-             if (local_timeofday >=43200._r8) then
-                azi_angle = 2._r8*pi - azi_angle
-             endif
-             azi_angle = pi / 2._r8 - azi_angle
-             !write(iulog,*)  'lon180, ',azi_angle !test          
-             solar_inc = 1+(sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
-          endif
+            if (cosz == 1._r8) then
+               azi_angle = 0._r8
+               sinz = 0._r8
+               solar_inc = 1
+            else
+               sinz = sqrt(1._r8-cosz*cosz)
+               azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
+               azi_angle = max(-1._r8,min(1._r8,azi_angle))
+               azi_angle = acos(-azi_angle)
+               if (local_timeofday >=43200._r8) then
+                  azi_angle = 2._r8*pi - azi_angle
+               endif
+               azi_angle = pi / 2._r8 - azi_angle
+               !write(iulog,*)  'lon180, ',azi_angle !test          
+               solar_inc = 1+(sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
+            endif
 
-          izen = int((cosz + 0.05_r8) / 0.15_r8)
-          dzen1 = (cosz - (izen * 0.15_r8 - 0.05_r8)) / 0.15_r8
-          dzen2 = 1._r8 - dzen1
+            izen = int((cosz + 0.05_r8) / 0.15_r8)
+            dzen1 = (cosz - (izen * 0.15_r8 - 0.05_r8)) / 0.15_r8
+            dzen2 = 1._r8 - dzen1
 
-          ftemp1 = coeff_dir(1,izen) * sky_view(g) + &
-                   coeff_dir(2,izen) * solar_inc + coeff_dir(3,izen)
-          ftemp2 = coeff_dir(1,izen+1) * sky_view(g) + &
-                   coeff_dir(2,izen+1) * solar_inc + coeff_dir(3,izen+1)
-          f_dir = ftemp2 * dzen1 + ftemp1 * dzen2
-          f_dir = max(-1._r8,f_dir)
+            ftemp1 = coeff_dir(1,izen) * sky_view(g) + &
+                     coeff_dir(2,izen) * solar_inc + coeff_dir(3,izen)
+            ftemp2 = coeff_dir(1,izen+1) * sky_view(g) + &
+                     coeff_dir(2,izen+1) * solar_inc + coeff_dir(3,izen+1)
+            f_dir = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dir = max(-1._r8,f_dir)
 
-          ftemp1 = coeff_rdir(1,izen) * sky_view(g) + &
-                   coeff_rdir(2,izen) * terrain_config(g) + coeff_rdir(3,izen)
-          ftemp2 = coeff_rdir(1,izen+1) * sky_view(g) + &
-                   coeff_rdir(2,izen+1) * terrain_config(g) + coeff_rdir(3,izen+1)
-          f_rdir_temp = ftemp2 * dzen1 + ftemp1 * dzen2
+            ftemp1 = coeff_rdir(1,izen) * sky_view(g) + &
+                     coeff_rdir(2,izen) * terrain_config(g) + coeff_rdir(3,izen)
+            ftemp2 = coeff_rdir(1,izen+1) * sky_view(g) + &
+                     coeff_rdir(2,izen+1) * terrain_config(g) + coeff_rdir(3,izen+1)
+            f_rdir_temp = ftemp2 * dzen1 + ftemp1 * dzen2
 
-          ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
-                   coeff_dif(2,izen) * sky_view(g) + &
-                   coeff_dif(3,izen) * solar_inc + coeff_dif(4,izen)
-          ftemp2 = coeff_dif(1,izen+1) * stdev_elev(g) + &
-                   coeff_dif(2,izen+1) * sky_view(g) + &
-                   coeff_dif(3,izen+1) * solar_inc + coeff_dif(4,izen+1)
-          f_dif = ftemp2 * dzen1 + ftemp1 * dzen2
-          f_dif = max(-1._r8,f_dif) 
+            ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
+                     coeff_dif(2,izen) * sky_view(g) + &
+                     coeff_dif(3,izen) * solar_inc + coeff_dif(4,izen)
+            ftemp2 = coeff_dif(1,izen+1) * stdev_elev(g) + &
+                     coeff_dif(2,izen+1) * sky_view(g) + &
+                     coeff_dif(3,izen+1) * solar_inc + coeff_dif(4,izen+1)
+            f_dif = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dif = max(-1._r8,f_dif) 
 
-          ftemp1 = coeff_rdif(1,izen) * sky_view(g) + &
-                   coeff_rdif(2,izen) * terrain_config(g) + coeff_rdif(3,izen)
-          ftemp2 = coeff_rdif(1,izen+1) * sky_view(g) + &
-                   coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
-          f_rdif_temp = ftemp2 * dzen1 + ftemp1 * dzen2
+            ftemp1 = coeff_rdif(1,izen) * sky_view(g) + &
+                     coeff_rdif(2,izen) * terrain_config(g) + coeff_rdif(3,izen)
+            ftemp2 = coeff_rdif(1,izen+1) * sky_view(g) + &
+                     coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
+            f_rdif_temp = ftemp2 * dzen1 + ftemp1 * dzen2
 
-          do ib = 1, numrad
-             f_rdir = f_rdir_temp * (albd(p,ib) / 0.1_r8)
-             f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
+            do ib = 1, numrad
+               f_rdir = f_rdir_temp * (albd(p,ib) / 0.1_r8)
+               f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
 
-             fd_prime = 1._r8 + f_dir + f_rdir
-             fi_prime = 1._r8 + f_dif + f_rdif
+               fd_prime = 1._r8 + f_dir + f_rdir
+               fi_prime = 1._r8 + f_dif + f_rdif
 
-             albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
-             albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
+               albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
+               albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
 
-             if (albd_adjust <= 0) then 
-                albd_adjust = 0
-                fd_prime = 1._r8 / (1._r8 - albd(p,ib))
-             endif
+               if (albd_adjust <= 0) then 
+                  albd_adjust = 0
+                  fd_prime = 1._r8 / (1._r8 - albd(p,ib))
+               endif
 
-             if (albi_adjust <= 0) then
-                albi_adjust = 0
-                fi_prime = 1._r8 / (1._r8 - albi(p,ib))
-             endif
+               if (albi_adjust <= 0) then
+                  albi_adjust = 0
+                  fi_prime = 1._r8 / (1._r8 - albi(p,ib))
+               endif
 
-             albd(p,ib) = albd_adjust
-             fabd(p,ib) = fabd(p,ib) * fd_prime
-             ftdd(p,ib) = ftdd(p,ib) * fd_prime
-             ftid(p,ib) = ftid(p,ib) * fd_prime
-             fd_top_adjust(p,ib) = fd_prime
+               albd(p,ib) = albd_adjust
+               fabd(p,ib) = fabd(p,ib) * fd_prime
+               ftdd(p,ib) = ftdd(p,ib) * fd_prime
+               ftid(p,ib) = ftid(p,ib) * fd_prime
+               fd_top_adjust(p,ib) = fd_prime
 
-             albi(p,ib) = albi_adjust
-             fabi(p,ib) = fabi(p,ib) * fi_prime
-             ftii(p,ib) = ftii(p,ib) * fi_prime
-             fi_top_adjust(p,ib) = fi_prime
-          enddo
-
-       endif
-    enddo
+               albi(p,ib) = albi_adjust
+               fabi(p,ib) = fabi(p,ib) * fi_prime
+               ftii(p,ib) = ftii(p,ib) * fi_prime
+               fi_top_adjust(p,ib) = fi_prime
+            enddo
+         endif
+      enddo
 	
      end associate
 
@@ -1941,18 +1937,16 @@ contains
           fabd           =>    surfalb_vars%fabd_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
           ftdd           =>    surfalb_vars%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
           ftid           =>    surfalb_vars%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
- 
- )
+          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation 
+          )
 
     coeff_dir(:,0) = coeff_dir(:,1)
     coeff_rdir(:,0) = coeff_rdir(:,1)
-   
 
     next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
 
-       g = pgridcell(p)
-       fd_top_adjust(p,ib) = 1
+    g = pgridcell(p)
+    fd_top_adjust(p,ib) = 1
 
        ! make sure the lon is between 0-180
        lon_180 = lon(g)
@@ -2119,14 +2113,14 @@ contains
 
     next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
     
-       g = pgridcell(p)
-       fi_top_adjust(p,ib) = 1
+    g = pgridcell(p)
+    fi_top_adjust(p,ib) = 1
        
-       ! make sure the lon is between 0-180
-       lon_180 = lon(g)
-       if (lon_180 > pi) lon_180 = lon_180-2._r8*pi
+    ! make sure the lon is between 0-180
+    lon_180 = lon(g)
+    if (lon_180 > pi) lon_180 = lon_180-2._r8*pi
 
-       if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
+    if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
           local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8  ! need to check make sure is 0-180
 
           if (local_timeofday >= 86400._r8) then
@@ -2157,7 +2151,6 @@ contains
           dzen1 = (cosz - (izen * 0.15_r8 - 0.05_r8)) / 0.15_r8
           dzen2 = 1._r8 - dzen1
 
-
           ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
                    coeff_dif(2,izen) * sky_view(g) + &
                    coeff_dif(3,izen) * solar_inc + coeff_dif(4,izen)
@@ -2173,23 +2166,22 @@ contains
                    coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
           f_rdif_temp = ftemp2 * dzen1 + ftemp1 * dzen2
 
-             f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
+          f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
 
-             fi_prime = 1._r8 + f_dif + f_rdif
+          fi_prime = 1._r8 + f_dif + f_rdif
 
-             albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)  
+          albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)  
 
-             if (albi_adjust <= 0) then
-                albi_adjust = 0
-                fi_prime = 1._r8 / (1._r8 - albi(p,ib))
-             endif
+          if (albi_adjust <= 0) then
+             albi_adjust = 0
+             fi_prime = 1._r8 / (1._r8 - albi(p,ib))
+          endif
 
-             albi(p,ib) = albi_adjust
-             fabi(p,ib) = fabi(p,ib) * fi_prime
-             ftii(p,ib) = ftii(p,ib) * fi_prime
-             fi_top_adjust(p,ib) = fi_prime
-
-       endif
+          albi(p,ib) = albi_adjust
+          fabi(p,ib) = fabi(p,ib) * fi_prime
+          ftii(p,ib) = ftii(p,ib) * fi_prime
+          fi_top_adjust(p,ib) = fi_prime
+    endif
 	
      end associate
 
