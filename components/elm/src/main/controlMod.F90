@@ -51,7 +51,7 @@ module controlMod
   use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
-  use elm_varctl              , only: use_top_solar_rad  ! TOP solar radiation parameterization
+  use elm_varctl              , only: use_top_solar_rad
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -304,10 +304,8 @@ contains
     namelist /elm_inparm/ &
          use_erosion, ero_ccycle
 
-    ! === TOP solar radiation parameterization options  !
     namelist /elm_inparm/ &
          use_top_solar_rad
-    ! End
     
     ! ----------------------------------------------------------------------
     ! Default values
@@ -972,11 +970,11 @@ contains
        write(iulog,*) '   atm topographic data = ',trim(fatmtopo)
     end if
     
-    if (use_top_solar_rad) then  ! TOP solar radiation parameterization
+    if (use_top_solar_rad) then
         write(iulog,*) '  use TOP solar radiation parameterization instead of PP'
     else
         write(iulog,*) '   use_top_solar_rad is False, so do not run TOP solar radiation parameterization'
-    end if  ! End
+    end if
     
     if (use_cn) then
        if (suplnitro /= suplnNon)then
