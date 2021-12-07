@@ -224,8 +224,6 @@ contains
        call surfrd_get_topo(ldomain, flndtopo)  
     endif    
     
-    
-    ! Get topography parameters for TOP solar radiation parameterization
     if (fsurdat /= " " .and. use_top_solar_rad) then
        if (masterproc) then
           write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
