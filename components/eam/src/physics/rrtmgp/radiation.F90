@@ -1555,7 +1555,6 @@ contains
                )
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
-
             end if
          end do
 
