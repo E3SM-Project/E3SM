@@ -945,7 +945,7 @@ contains
                rho(bounds%begp:bounds%endp, :), &
                tau(bounds%begp:bounds%endp, :), &
                canopystate_vars, surfalb_vars, &
-               nextsw_cday, declinp1) ! For TOP solar radiation parameterization
+               nextsw_cday, declinp1)
 
     endif
 
