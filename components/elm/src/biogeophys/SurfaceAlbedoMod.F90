@@ -1286,7 +1286,7 @@ contains
           ! because the product omega*betai, omega*betad is used in solution.
           ! Also, the transmittances and reflectances (tau, rho) are linear
           ! weights of leaf and stem values.
-          cosz = max(0.001_r8, coszen(p)) ! add by Dalei Hao for TOP
+          cosz = max(0.001_r8, coszen(p))
           
           omegal = rho(p,ib) + tau(p,ib)
           asu = 0.5_r8*omegal*gdir(p)/temp0(p) *temp2(p)
@@ -1531,7 +1531,7 @@ contains
 
                 d_ftid = -twostext(p)*h4/sigma*s2 - h*h5*s1 + h*h6/s1 + dh5*s1 + dh6/s1
                 d_fabd = -(dh2+dh3) + (1._r8-albgrd(c,ib))*twostext(p)*s2 - (1._r8-albgri(c,ib))*d_ftid
-                d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2)) * fd_top_adjust(p,ib) ! revised by Dalei Hao for TOP
+                d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2)) * fd_top_adjust(p,ib)
                 d_fabd_sha = d_fabd - d_fabd_sun
 
                 fabd_sun_z(p,iv) = max(d_fabd_sun, 0._r8)
@@ -1597,7 +1597,7 @@ contains
 
                 d_ftii = -h * h9 * s1 + h * h10 / s1 + dh9 * s1 + dh10 / s1
                 d_fabi = -(dh7+dh8) - (1._r8-albgri(c,ib))*d_ftii
-                d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2) * fi_top_adjust(p,ib) ! revised by Dalei Hao for TOP
+                d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2) * fi_top_adjust(p,ib)
                 d_fabi_sha = d_fabi - d_fabi_sun
 
                 fabi_sun_z(p,iv) = max(d_fabi_sun, 0._r8)
@@ -1646,10 +1646,6 @@ contains
 !
 ! !CALLED FROM:
 ! subroutine SurfaceAlbedo
-
-! !REVISION HISTORY:
-! Author: Dalei Hao, 07/16/2020
-!
 
 ! !OTHER LOCAL VARIABLES:
 !
@@ -1888,10 +1884,6 @@ contains
 ! !CALLED FROM:
 ! subroutine SurfaceAlbedo
 
-! !REVISION HISTORY:
-! Author: Dalei Hao, 07/16/2020
-!
-
 !
 ! !OTHER LOCAL VARIABLES:
 !
@@ -2063,10 +2055,6 @@ contains
 !
 ! !CALLED FROM:
 ! subroutine TwoStream
-
-! !REVISION HISTORY:
-! Author: Dalei Hao, 07/16/2020
-!
 
 ! !OTHER LOCAL VARIABLES:
 !
