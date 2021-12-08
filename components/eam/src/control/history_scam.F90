@@ -64,9 +64,13 @@ CONTAINS
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='GLL')
         call addfld ('WTHL_RES',(/ 'ilev' /), 'A', 'W/m2', 'resolved liquid water potential temperature flux',gridname='GLL')
         call addfld ('WQW_RES',(/ 'ilev' /), 'A', 'W/m2', 'resolved total water flux',gridname='GLL')
-        call addfld ('Max_w', (/ 'ilev' /), 'X', 'm/s', 'maximum vertical velocity',gridname='GLL')
-        call addfld ('Min_w', (/ 'ilev' /), 'M', 'm/s', 'minimum vertical velocity',gridname='GLL')
-        call addfld ('Dyn_w', (/ 'ilev' /), 'A', 'm/s', 'vertical velocity',gridname='GLL')
+        call addfld ('U2_RES', (/ 'lev' /), 'A', 'm2/s2', 'resolved zonal velocity varaince',gridname='GLL')
+        call addfld ('V2_RES', (/ 'lev' /), 'A', 'm2/s2', 'resolved meridional velocity varaince',gridname='GLL')
+        call addfld ('W2_RES', (/ 'ilev' /), 'A', 'm2/s2', 'resolved vertical velocity varaince',gridname='GLL')
+        call addfld ('W3_RES', (/ 'ilev' /), 'A', 'm3/s3', 'resolved third moment vertical velocity varaince',gridname='GLL')
+        call addfld ('THL2_RES', (/ 'lev' /), 'A', 'K2', 'resolved liquid water potential temperature variance',gridname='GLL')
+        call addfld ('QW2_RES', (/ 'lev' /), 'A', 'kg2/kg2', 'resolved total water (vapor+liquid) variance',gridname='GLL')
+        call addfld ('QWTHL_RES', (/ 'lev' /), 'A', 'K kg/kg', 'resolved liquid water potential temperature moisture covariance',gridname='GLL')
       else 
         call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname=trim(dyngrid))
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname=trim(dyngrid))
@@ -94,9 +98,13 @@ CONTAINS
       if (scm_multcols) then
         call add_default ('WTHL_RES', 1, ' ')
         call add_default ('WQW_RES', 1, ' ')
-        call add_default ('Max_w', 1, ' ')
-        call add_default ('Min_w', 1, ' ')
-        call add_default ('Dyn_w', 1, ' ')
+        call add_default ('U2_RES', 1, ' ')
+        call add_default ('V2_RES', 1, ' ')
+        call add_default ('W2_RES', 1, ' ')
+        call add_default ('W3_RES', 1, ' ')
+        call add_default ('THL2_RES', 1, ' ')
+        call add_default ('QW2_RES', 1, ' ')
+        call add_default ('QWTHL_RES', 1, ' ')
       endif
    end subroutine scm_intht   
 

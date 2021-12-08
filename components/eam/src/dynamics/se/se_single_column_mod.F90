@@ -42,7 +42,6 @@ subroutine scm_setinitial(elem)
   integer inumliq, inumice, icldliq, icldice
 
   if (.not. use_replay .and. get_nstep() .eq. 0 .and. par%dynproc) then
-
     call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
     call cnst_get_ind('NUMICE', inumice, abrtf=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
@@ -264,7 +263,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 
     ! collect stats from dycore for analysis
     if (dp_crm) then
-      call crm_resolved_flux(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
+      call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
     endif
 
     do ie=1,nelemd_todo
@@ -511,10 +510,12 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
 
 end subroutine iop_domain_relaxation
 
-subroutine crm_resolved_flux(elem,hvcoord,hybrid,t1,&
+subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
                               nelemd_todo,np_todo)
 
-  ! Subroutine intended to compute various statistics for CRM runs
+  ! Subroutine intended to compute various resolved turbulence statistics
+  ! (done so to be consistent with SHOC's definition of each for ease of
+  ! comparison) for DP CRM runs.
 
   use scamMod
   use dimensions_mod, only : np, np, nlev, nlevp, npsq, nelem
@@ -535,10 +536,13 @@ subroutine crm_resolved_flux(elem,hvcoord,hybrid,t1,&
   integer, intent(in) :: nelemd_todo, np_todo, t1
 
   ! Local variables
-  real (kind=real_kind), dimension(nlev) :: domain_pottemp, domain_qw
-  real (kind=real_kind) :: pottemp(np,np,nlev), qw(np,np,nlev)
+  real (kind=real_kind), dimension(nlev) :: domain_thetal, domain_qw, domain_u, domain_v
+  real (kind=real_kind) :: thetal(np,np,nlev), qw(np,np,nlev)
   real (kind=real_kind) :: rho(np,np,nlev), temperature(np,np,nlev)
-  real (kind=real_kind) :: wthl_res(np,np,nlev), wqw_res(np,np,nlev)
+  real (kind=real_kind) :: wthl_res(np,np,nlev+1), wqw_res(np,np,nlev+1)
+  real (kind=real_kind) :: w2_res(np,np,nlev+1), w3_res(np,np,nlev+1)
+  real (kind=real_kind) :: u2_res(np,np,nlev), v2_res(np,np,nlev)
+  real (kind=real_kind) :: thl2_res(np,np,nlev), qw2_res(np,np,nlev), qwthl_res(np,np,nlev)
   real (kind=real_kind) :: pres(nlev)
   integer :: ie, i, j, k
 
@@ -554,31 +558,37 @@ subroutine crm_resolved_flux(elem,hvcoord,hybrid,t1,&
   end do
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Find the domain mean of thetal
+  ! Find the domain mean of thetal, qw, u, and v
   do k=1,nlev
     do ie=1,nelemd_todo
 
       ! Compute potential temperature
-      call get_pottemp(elem(ie),pottemp,hvcoord,t1,1)
+      call get_pottemp(elem(ie),thetal,hvcoord,t1,1)
 
       ! Compute liquid water potential temperature
-      pottemp(:,:,k) = pottemp(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
+      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
       ! Compute total water
       qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
 
       ! Initialize the global buffer
       global_shared_buf(ie,1) = 0.0_real_kind
       global_shared_buf(ie,2) = 0.0_real_kind
+      global_shared_buf(ie,3) = 0.0_real_kind
+      global_shared_buf(ie,4) = 0.0_real_kind
 
       ! Sum each variable for each level
-      global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(pottemp(:,:,k))
+      global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(thetal(:,:,k))
       global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(qw(:,:,k))
+      global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
+      global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
     enddo
 
     ! Compute the domain mean
-    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
-    domain_pottemp(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
+    call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
+    domain_thetal(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
     domain_qw(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
+    domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
+    domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
   enddo
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -586,12 +596,12 @@ subroutine crm_resolved_flux(elem,hvcoord,hybrid,t1,&
   do ie=1,nelemd_todo
 
     ! Compute potential temperature
-    call get_pottemp(elem(ie),pottemp,hvcoord,t1,1)
+    call get_pottemp(elem(ie),thetal,hvcoord,t1,1)
     call get_temperature(elem(ie),temperature,hvcoord,t1)
 
     ! Compute liquid water potential temperature
     do k=1,nlev
-      pottemp(:,:,k) = pottemp(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
+      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
       qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
     enddo
 
@@ -600,27 +610,56 @@ subroutine crm_resolved_flux(elem,hvcoord,hybrid,t1,&
       rho(:,:,k) = pres(k)/(Rgas*temperature(:,:,k))
     enddo
 
-    ! Compute flux
+    ! Compute fluxes
     wthl_res(:,:,:) = 0.0_real_kind ! initialize
+    wqw_res(:,:,:) = 0.0_real_kind
     do k=2,nlev
       wthl_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1) * 0.5_real_kind * &
-                        ((pottemp(:,:,k)-domain_pottemp(k))+&
-                        (pottemp(:,:,k-1)-domain_pottemp(k-1)))
+                        ((thetal(:,:,k)-domain_thetal(k))+&
+                        (thetal(:,:,k-1)-domain_thetal(k-1)))
       wqw_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1) * 0.5_real_kind * &
                         ((qw(:,:,k)-domain_qw(k))+(qw(:,:,k-1)-domain_qw(k-1)))
+
       ! convert to W/m2
       wthl_res(:,:,k) = wthl_res(:,:,k) * 0.5_real_kind*(rho(:,:,k)+rho(:,:,k-1)) * Cp
       wqw_res(:,:,k) = wqw_res(:,:,k) * 0.5_real_kind*(rho(:,:,k)+rho(:,:,k-1)) * latvap
     enddo
 
+    ! Compute variances and covariances on interface grid
+    w2_res(:,:,:) = 0.0_real_kind
+    w3_res(:,:,:) = 0.0_real_kind
+    do k=1,nlev+1
+      w2_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1)**2
+      w3_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1)**3
+    enddo
+
+    ! Compute variances and covariances on midpoint grid
+    u2_res(:,:,:) = 0.0_real_kind
+    v2_res(:,:,:) = 0.0_real_kind
+    thl2_res(:,:,:) = 0.0_real_kind
+    qw2_res(:,:,:) = 0.0_real_kind
+    qwthl_res(:,:,:) = 0.0_real_kind
+    do k=1,nlev
+      u2_res(:,:,k) = (elem(ie)%state%V(:,:,1,k,t1) - domain_u(k))**2
+      v2_res(:,:,k) = (elem(ie)%state%V(:,:,2,k,t1) - domain_v(k))**2
+      thl2_res(:,:,k) = (thetal(:,:,k)-domain_thetal(k))**2
+      qw2_res(:,:,k) = (qw(:,:,k)-domain_qw(k))**2
+      qwthl_res(:,:,k) = (thetal(:,:,k)-domain_thetal(k))* &
+                         (qw(:,:,k)-domain_qw(k))
+    enddo
+
     call outfld('WTHL_RES',wthl_res,npsq,ie)
     call outfld('WQW_RES',wqw_res,npsq,ie)
-    call outfld('Max_w',elem(ie)%state%w_i(:,:,1:nlevp,t1),npsq,ie)
-    call outfld('Min_w',elem(ie)%state%w_i(:,:,1:nlevp,t1),npsq,ie)
-    call outfld('Dyn_w',elem(ie)%state%w_i(:,:,1:nlevp,t1),npsq,ie)
+    call outfld('W2_RES',w2_res,npsq,ie)
+    call outfld('W3_RES',w3_res,npsq,ie)
+    call outfld('U2_RES',u2_res,npsq,ie)
+    call outfld('V2_RES',v2_res,npsq,ie)
+    call outfld('THL2_RES',thl2_res,npsq,ie)
+    call outfld('QW2_RES',qw2_res,npsq,ie)
+    call outfld('QWTHL_RES',qwthl_res,npsq,ie)
 
   enddo
 
-end subroutine crm_resolved_flux
+end subroutine crm_resolved_turb
 
 end module se_single_column_mod
