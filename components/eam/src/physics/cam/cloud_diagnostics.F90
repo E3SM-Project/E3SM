@@ -53,13 +53,13 @@ contains
     use phys_control,  only: phys_getopts
     use physics_buffer,only: pbuf_add_field, dtype_r8, dtype_i4
 
-    character(len=16) :: rad_pkg, microp_pgk, macrop_pgk
+    character(len=16) :: rad_pkg, microp_pkg, macrop_pkg
 
-    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk, macrop_scheme_out=macrop_pgk)
-    rk_clouds = microp_pgk == 'RK'
-    mg_clouds = microp_pgk == 'MG'
-    p3_clouds = microp_pgk == 'P3'
-    shoc_clouds = macrop_pgk == 'SHOC'
+    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pkg, macrop_scheme_out=macrop_pkg)
+    rk_clouds = microp_pkg == 'RK'
+    mg_clouds = microp_pkg == 'MG'
+    p3_clouds = microp_pkg == 'P3'
+    shoc_clouds = macrop_pkg == 'SHOC'
 
     if (rk_clouds) then
        call pbuf_add_field('CLDEMIS','physpkg', dtype_r8,(/pcols,pver/), cldemis_idx)

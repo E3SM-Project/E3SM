@@ -583,7 +583,6 @@ end function shoc_implements_cnst
    real(r8) :: ice_cloud_frac(pcols,pver)          ! ice number aware cloud fraction, 0 or 1
    real(r8) :: precipitating_ice_frac(pcols,pver)        ! precipitating ice fraction, 0 or 1
    real(r8) :: liq_cloud_frac(pcols,pver)     
-   !real(r8) :: tot_cloud_frac(pcols,pver)         
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx, host_dy
