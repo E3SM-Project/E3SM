@@ -607,6 +607,7 @@ end function shoc_implements_cnst
    real(r8) :: minqn, rrho(pcols,pver), rrho_i(pcols,pverp)    ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
+   real(r8) :: inv_exner_surf
  
    real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
    real(r8) :: wtracer_sfc(pcols,edsclr_dim)
@@ -816,9 +817,13 @@ end function shoc_implements_cnst
                       rrho_i(:ncol,:pverp),pver,pverp,ncol,0._r8)
 
    do i=1,ncol
-      !  Surface fluxes provided by host model
+      !  Compute inverse of exner function at surface
+      inv_exner_surf = 1._r8/((state1%pint(i,pverp)/p0_shoc)**(rair/cpair))
 
+      !  Surface fluxes provided by host model
       wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,pverp))       ! Sensible heat flux
+      wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_surf
+
       wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,pverp))      ! Latent heat flux
       upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,pverp)               ! Surface meridional momentum flux
       vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,pverp)               ! Surface zonal momentum flux  
