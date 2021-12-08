@@ -1713,24 +1713,24 @@ contains
     ! Assign local pointers to derived subtypes components (gridcell-level)
 
     associate(&
-          lat            =>    grc_pp%lat                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          lon            =>    grc_pp%lon                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          pgridcell      =>    veg_pp%gridcell                    , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          pcolumn        =>    veg_pp%column                      , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          sky_view       =>    grc_pp%sky_view                    , & ! Output: 
-          terrain_config =>    grc_pp%terrain_config              , & ! Output: 
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
-          sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albd           =>    surfalb_vars%albd_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          albi           =>    surfalb_vars%albi_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation
-          fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
+          lat            =>    grc_pp%lat                         , & ! Input:   latitude             
+          lon            =>    grc_pp%lon                         , & ! Input:   longitude               
+          pgridcell      =>    veg_pp%gridcell                    , & ! Input:   gridcell 
+          pcolumn        =>    veg_pp%column                      , & ! Input:   column 
+          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation 
+          sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
+          terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
+	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
+          sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * sin(aspect)
+          albd           =>    surfalb_vars%albd_patch            , & ! Output:  surface albedo (direct)               
+          albi           =>    surfalb_vars%albi_patch            , & ! Output:  surface albedo (diffuse)              
+          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  flux absorbed by canopy per unit direct flux
+          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  flux absorbed by canopy per unit diffuse flux
+          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  down direct flux below canopy per unit direct flux
+          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  down diffuse flux below canopy per unit direct flux
+          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  down diffuse flux below canopy per unit diffuse flux
+          fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  adjusted factor for direct radiation
+          fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  adjusted factor for diffuse radiation
           )
 
 
@@ -1824,12 +1824,12 @@ contains
                albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
                albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
 
-               if (albd_adjust <= 0) then 
+               if (albd_adjust <= 0._r8) then 
                   albd_adjust = 0._r8
                   fd_prime = 1._r8 / (1._r8 - albd(p,ib))
                endif
 
-               if (albi_adjust <= 0) then
+               if (albi_adjust <= 0._r8) then
                   albi_adjust = 0._r8
                   fi_prime = 1._r8 / (1._r8 - albi(p,ib))
                endif
@@ -1920,20 +1920,20 @@ contains
 ! Assign local pointers to derived subtypes components (gridcell-level)
 
    associate(&
-          lat            =>    grc_pp%lat                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          lon            =>    grc_pp%lon                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          pgridcell      =>    veg_pp%gridcell                    , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          pcolumn        =>    veg_pp%column                      , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          sky_view       =>    grc_pp%sky_view                    , & ! Output: 
-          terrain_config =>    grc_pp%terrain_config              , & ! Output: 
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
-	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albd           =>    surfalb_vars%albd_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for direct radiation 
+          lat            =>    grc_pp%lat                         , & ! Input:   latitude            
+          lon            =>    grc_pp%lon                         , & ! Input:   longitude              
+          pgridcell      =>    veg_pp%gridcell                    , & ! Input:   gridcell
+          pcolumn        =>    veg_pp%column                      , & ! Input:   column
+          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation
+          sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
+          terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
+	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
+	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * cos(aspect)
+          albd           =>    surfalb_vars%albd_patch            , & ! Output:  surface albedo (direct)               
+          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  flux absorbed by canopy per unit direct flux
+          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  down direct flux below canopy per unit direct flux
+          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  down diffuse flux below canopy per unit direct flux
+          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  adjusted factor for direct radiation 
           )
 
     coeff_dir(:,0) = coeff_dir(:,1)
@@ -2080,19 +2080,19 @@ contains
 ! Assign local pointers to derived subtypes components (gridcell-level)
 
    associate(&
-          lat            =>    grc_pp%lat                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          lon            =>    grc_pp%lon                         , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          pgridcell      =>    veg_pp%gridcell                    , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          pcolumn        =>    veg_pp%column                      , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          sky_view       =>    grc_pp%sky_view                    , & ! Output: 
-	  terrain_config =>    grc_pp%terrain_config              , & ! Output: 
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Output: 
-	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Output: 
-          albi           =>    surfalb_vars%albi_patch            , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          fi_top_adjust  =>    surfalb_vars%fi_top_adjust           & ! Output:  [real(r8) (:,:) ]  adjusted factor for diffuse radiation
+          lat            =>    grc_pp%lat                         , & ! Input:   latitude              
+          lon            =>    grc_pp%lon                         , & ! Input:   longitude              
+          pgridcell      =>    veg_pp%gridcell                    , & ! Input:   gridcell
+          pcolumn        =>    veg_pp%column                      , & ! Input:   column
+          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation
+          sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
+	  terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
+	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
+	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * sin(aspect)
+          albi           =>    surfalb_vars%albi_patch            , & ! Output:  surface albedo (diffuse)              
+          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  flux absorbed by canopy per unit diffuse flux
+          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  down diffuse flux below canopy per unit diffuse flux
+          fi_top_adjust  =>    surfalb_vars%fi_top_adjust           & ! Output:  adjusted factor for diffuse radiation
           )
 
     coeff_dif(:,0) = coeff_dif(:,1)
