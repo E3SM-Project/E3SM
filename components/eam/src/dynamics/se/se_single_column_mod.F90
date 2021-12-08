@@ -546,12 +546,6 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   real (kind=real_kind) :: pres(nlev)
   integer :: ie, i, j, k
 
-  ! Needed steps
-  ! Compute liquid water potential temperature
-  ! interpolate thetal to interface grid
-  ! find domain mean of thetal
-  ! compute flux using wi
-
   ! Compute pressure for IOP observations
   do k=1,nlev
     pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
