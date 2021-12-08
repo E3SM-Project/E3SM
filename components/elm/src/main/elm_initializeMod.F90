@@ -283,7 +283,6 @@ contains
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
-    
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     ! 
