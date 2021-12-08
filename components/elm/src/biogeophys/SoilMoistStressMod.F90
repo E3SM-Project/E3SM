@@ -1,6 +1,6 @@
 module SoilMoistStressMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
 
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:

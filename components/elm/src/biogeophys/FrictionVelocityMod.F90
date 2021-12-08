@@ -1,6 +1,6 @@
 module FrictionVelocityMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
 
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -9,7 +9,7 @@ module FrictionVelocityMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod          , only : errMsg => shr_log_errMsg
+  use shr_log_mod          , only : errMsg => shr_log_errMsg
   use FrictionVelocityType , only : frictionvel_type
   use LandunitType         , only : lun_pp
   use VegetationType       , only : veg_pp
