@@ -1675,37 +1675,37 @@ contains
     real(r8) :: coeff_dif(4,0:7)                          ! regression coefficients for f_dif
     real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
 
-    data coeff_dir(:,1) /2.045E+1, 6.792E-1, -2.103E+1/
-    data coeff_dir(:,2) /1.993E+0, 9.284E-1, -2.911E+0/
-    data coeff_dir(:,3) /5.900E-2, 9.863E-1, -1.045E+0/
-    data coeff_dir(:,4) /5.270E-3, 9.942E-1, -9.995E-1/
-    data coeff_dir(:,5) /2.977E-3, 9.959E-1, -9.990E-1/
-    data coeff_dir(:,6) /2.977E-3, 9.959E-1, -9.990E-1/
-    data coeff_dir(:,7) /8.347E-3,        0, -8.393E-3/
+    data coeff_dir(:,1) /2.045E+1_r8, 6.792E-1_r8, -2.103E+1_r8/
+    data coeff_dir(:,2) /1.993E+0_r8, 9.284E-1_r8, -2.911E+0_r8/
+    data coeff_dir(:,3) /5.900E-2_r8, 9.863E-1_r8, -1.045E+0_r8/
+    data coeff_dir(:,4) /5.270E-3_r8, 9.942E-1_r8, -9.995E-1_r8/
+    data coeff_dir(:,5) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
+    data coeff_dir(:,6) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
+    data coeff_dir(:,7) /8.347E-3_r8,       0._r8, -8.393E-3_r8/
 
-    data coeff_rdir(:,1) / 2.351E-1, 1.590E-1, -2.332E-1/
-    data coeff_rdir(:,2) / 1.368E-1, 1.642E-1, -1.358E-1/
-    data coeff_rdir(:,3) / 1.254E-1, 1.653E-1, -1.247E-1/
-    data coeff_rdir(:,4) / 1.274E-1, 1.635E-1, -1.267E-1/
-    data coeff_rdir(:,5) / 1.314E-1, 1.623E-1, -1.307E-1/
-    data coeff_rdir(:,6) / 1.359E-1, 1.620E-1, -1.352E-1/
-    data coeff_rdir(:,7) /-4.463E-6, 1.556E-1,  1.287E-3/
+    data coeff_rdir(:,1) / 2.351E-1_r8, 1.590E-1_r8, -2.332E-1_r8/
+    data coeff_rdir(:,2) / 1.368E-1_r8, 1.642E-1_r8, -1.358E-1_r8/
+    data coeff_rdir(:,3) / 1.254E-1_r8, 1.653E-1_r8, -1.247E-1_r8/
+    data coeff_rdir(:,4) / 1.274E-1_r8, 1.635E-1_r8, -1.267E-1_r8/
+    data coeff_rdir(:,5) / 1.314E-1_r8, 1.623E-1_r8, -1.307E-1_r8/
+    data coeff_rdir(:,6) / 1.359E-1_r8, 1.620E-1_r8, -1.352E-1_r8/
+    data coeff_rdir(:,7) /-4.463E-6_r8, 1.556E-1_r8,  1.287E-3_r8/
 
-    data coeff_dif(:,1) /3.146E-7, 4.385E+0, 6.723E-3, -4.382E+0/
-    data coeff_dif(:,2) /6.001E-7, 4.068E+0, 2.456E-2, -4.085E+0/
-    data coeff_dif(:,3) /7.436E-7, 3.911E+0, 5.606E-2, -3.960E+0/
-    data coeff_dif(:,4) /7.806E-7, 3.763E+0, 1.049E-1, -3.863E+0/
-    data coeff_dif(:,5) /7.581E-7, 3.559E+0, 1.734E-1, -3.727E+0/
-    data coeff_dif(:,6) /7.015E-7, 3.298E+0, 2.543E-1, -3.547E+0/
-    data coeff_dif(:,7) /6.359E-7, 2.984E+0,        0, -2.984E+0/
+    data coeff_dif(:,1) /3.146E-7_r8, 4.385E+0_r8, 6.723E-3_r8, -4.382E+0_r8/
+    data coeff_dif(:,2) /6.001E-7_r8, 4.068E+0_r8, 2.456E-2_r8, -4.085E+0_r8/
+    data coeff_dif(:,3) /7.436E-7_r8, 3.911E+0_r8, 5.606E-2_r8, -3.960E+0_r8/
+    data coeff_dif(:,4) /7.806E-7_r8, 3.763E+0_r8, 1.049E-1_r8, -3.863E+0_r8/
+    data coeff_dif(:,5) /7.581E-7_r8, 3.559E+0_r8, 1.734E-1_r8, -3.727E+0_r8/
+    data coeff_dif(:,6) /7.015E-7_r8, 3.298E+0_r8, 2.543E-1_r8, -3.547E+0_r8/
+    data coeff_dif(:,7) /6.359E-7_r8, 2.984E+0_r8,       0._r8, -2.984E+0_r8/
 
-    data coeff_rdif(:,1) / 1.493E-1, 1.621E-1, -1.483E-1/
-    data coeff_rdif(:,2) / 1.462E-1, 1.654E-1, -1.454E-1/
-    data coeff_rdif(:,3) / 1.454E-1, 1.673E-1, -1.446E-1/
-    data coeff_rdif(:,4) / 1.465E-1, 1.683E-1, -1.457E-1/
-    data coeff_rdif(:,5) / 1.443E-1, 1.682E-1, -1.435E-1/
-    data coeff_rdif(:,6) / 1.446E-1, 1.686E-1, -1.439E-1/
-    data coeff_rdif(:,7) /-3.427E-6, 1.576E-1,  1.199E-3/
+    data coeff_rdif(:,1) / 1.493E-1_r8, 1.621E-1_r8, -1.483E-1_r8/
+    data coeff_rdif(:,2) / 1.462E-1_r8, 1.654E-1_r8, -1.454E-1_r8/
+    data coeff_rdif(:,3) / 1.454E-1_r8, 1.673E-1_r8, -1.446E-1_r8/
+    data coeff_rdif(:,4) / 1.465E-1_r8, 1.683E-1_r8, -1.457E-1_r8/
+    data coeff_rdif(:,5) / 1.443E-1_r8, 1.682E-1_r8, -1.435E-1_r8/
+    data coeff_rdif(:,6) / 1.446E-1_r8, 1.686E-1_r8, -1.439E-1_r8/
+    data coeff_rdif(:,7) /-3.427E-6_r8, 1.576E-1_r8,  1.199E-3_r8/
 
      ! Enforce expected array sizes
     SHR_ASSERT_ALL((ubound(coszen) == (/bounds%endp/)),         errMsg(__FILE__, __LINE__))
@@ -1747,8 +1747,8 @@ contains
         g = pgridcell(p)
         !c = pcolumn(p)
         cosz = coszen(p)
-        fd_top_adjust(p,1:numrad) = 1
-        fi_top_adjust(p,1:numrad) = 1
+        fd_top_adjust(p,1:numrad) = 1._r8
+        fi_top_adjust(p,1:numrad) = 1._r8
 	   
        ! make sure the lon is between 0-180 
         lon_180 = lon(g)
@@ -1768,7 +1768,7 @@ contains
             if (cosz == 1._r8) then
                azi_angle = 0._r8
                sinz = 0._r8
-               solar_inc = 1
+               solar_inc = 1._r8
             else
                sinz = sqrt(1._r8-cosz*cosz)
                azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
@@ -1779,7 +1779,7 @@ contains
                endif
                azi_angle = pi / 2._r8 - azi_angle
                !write(iulog,*)  'lon180, ',azi_angle !test          
-               solar_inc = 1+(sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
+               solar_inc = 1._r8 + (sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
             endif
 
             izen = int((cosz + 0.05_r8) / 0.15_r8)
@@ -1825,12 +1825,12 @@ contains
                albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
 
                if (albd_adjust <= 0) then 
-                  albd_adjust = 0
+                  albd_adjust = 0._r8
                   fd_prime = 1._r8 / (1._r8 - albd(p,ib))
                endif
 
                if (albi_adjust <= 0) then
-                  albi_adjust = 0
+                  albi_adjust = 0._r8
                   fi_prime = 1._r8 / (1._r8 - albi(p,ib))
                endif
 
@@ -1900,21 +1900,21 @@ contains
     real(r8) :: coeff_rdir(3,0:7)                         ! regression coefficients for f_rdir
 
 
-    data coeff_dir(:,1) /2.045E+1, 6.792E-1, -2.103E+1/
-    data coeff_dir(:,2) /1.993E+0, 9.284E-1, -2.911E+0/
-    data coeff_dir(:,3) /5.900E-2, 9.863E-1, -1.045E+0/
-    data coeff_dir(:,4) /5.270E-3, 9.942E-1, -9.995E-1/
-    data coeff_dir(:,5) /2.977E-3, 9.959E-1, -9.990E-1/
-    data coeff_dir(:,6) /2.977E-3, 9.959E-1, -9.990E-1/
-    data coeff_dir(:,7) /8.347E-3,        0, -8.393E-3/
+    data coeff_dir(:,1) /2.045E+1_r8, 6.792E-1_r8, -2.103E+1_r8/
+    data coeff_dir(:,2) /1.993E+0_r8, 9.284E-1_r8, -2.911E+0_r8/
+    data coeff_dir(:,3) /5.900E-2_r8, 9.863E-1_r8, -1.045E+0_r8/
+    data coeff_dir(:,4) /5.270E-3_r8, 9.942E-1_r8, -9.995E-1_r8/
+    data coeff_dir(:,5) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
+    data coeff_dir(:,6) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
+    data coeff_dir(:,7) /8.347E-3_r8,       0._r8, -8.393E-3_r8/
 
-    data coeff_rdir(:,1) / 2.351E-1, 1.590E-1, -2.332E-1/
-    data coeff_rdir(:,2) / 1.368E-1, 1.642E-1, -1.358E-1/
-    data coeff_rdir(:,3) / 1.254E-1, 1.653E-1, -1.247E-1/
-    data coeff_rdir(:,4) / 1.274E-1, 1.635E-1, -1.267E-1/
-    data coeff_rdir(:,5) / 1.314E-1, 1.623E-1, -1.307E-1/
-    data coeff_rdir(:,6) / 1.359E-1, 1.620E-1, -1.352E-1/
-    data coeff_rdir(:,7) /-4.463E-6, 1.556E-1,  1.287E-3/
+    data coeff_rdir(:,1) / 2.351E-1_r8, 1.590E-1_r8, -2.332E-1_r8/
+    data coeff_rdir(:,2) / 1.368E-1_r8, 1.642E-1_r8, -1.358E-1_r8/
+    data coeff_rdir(:,3) / 1.254E-1_r8, 1.653E-1_r8, -1.247E-1_r8/
+    data coeff_rdir(:,4) / 1.274E-1_r8, 1.635E-1_r8, -1.267E-1_r8/
+    data coeff_rdir(:,5) / 1.314E-1_r8, 1.623E-1_r8, -1.307E-1_r8/
+    data coeff_rdir(:,6) / 1.359E-1_r8, 1.620E-1_r8, -1.352E-1_r8/
+    data coeff_rdir(:,7) /-4.463E-6_r8, 1.556E-1_r8,  1.287E-3_r8/
 
 
 ! Assign local pointers to derived subtypes components (gridcell-level)
@@ -1942,7 +1942,7 @@ contains
     next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
 
     g = pgridcell(p)
-    fd_top_adjust(p,ib) = 1
+    fd_top_adjust(p,ib) = 1._r8
 
     ! make sure the lon is between 0-180
     lon_180 = lon(g)
@@ -1962,7 +1962,7 @@ contains
        if (cosz == 1._r8) then
           azi_angle = 0._r8
           sinz = 0._r8
-          solar_inc = 1
+          solar_inc = 1._r8
        else
           sinz = sqrt(1._r8-cosz*cosz)
           azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
@@ -1972,7 +1972,7 @@ contains
              azi_angle = 2._r8*pi - azi_angle
           endif
           azi_angle = pi / 2._r8 - azi_angle
-          solar_inc = 1+(sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
+          solar_inc = 1._r8 + (sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
        endif
 
        izen = int((cosz + 0.05_r8) / 0.15_r8)
@@ -1998,8 +1998,8 @@ contains
 
        albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
 
-       if (albd_adjust <= 0) then 
-          albd_adjust = 0
+       if (albd_adjust <= 0._r8) then 
+          albd_adjust = 0._r8
           fd_prime = 1._r8 / (1._r8 - albd(p,ib))
        endif
 
@@ -2061,21 +2061,21 @@ contains
     real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
 
 
-    data coeff_dif(:,1) /3.146E-7, 4.385E+0, 6.723E-3, -4.382E+0/
-    data coeff_dif(:,2) /6.001E-7, 4.068E+0, 2.456E-2, -4.085E+0/
-    data coeff_dif(:,3) /7.436E-7, 3.911E+0, 5.606E-2, -3.960E+0/
-    data coeff_dif(:,4) /7.806E-7, 3.763E+0, 1.049E-1, -3.863E+0/
-    data coeff_dif(:,5) /7.581E-7, 3.559E+0, 1.734E-1, -3.727E+0/
-    data coeff_dif(:,6) /7.015E-7, 3.298E+0, 2.543E-1, -3.547E+0/
-    data coeff_dif(:,7) /6.359E-7, 2.984E+0,        0, -2.984E+0/
+    data coeff_dif(:,1) /3.146E-7_r8, 4.385E+0_r8, 6.723E-3_r8, -4.382E+0_r8/
+    data coeff_dif(:,2) /6.001E-7_r8, 4.068E+0_r8, 2.456E-2_r8, -4.085E+0_r8/
+    data coeff_dif(:,3) /7.436E-7_r8, 3.911E+0_r8, 5.606E-2_r8, -3.960E+0_r8/
+    data coeff_dif(:,4) /7.806E-7_r8, 3.763E+0_r8, 1.049E-1_r8, -3.863E+0_r8/
+    data coeff_dif(:,5) /7.581E-7_r8, 3.559E+0_r8, 1.734E-1_r8, -3.727E+0_r8/
+    data coeff_dif(:,6) /7.015E-7_r8, 3.298E+0_r8, 2.543E-1_r8, -3.547E+0_r8/
+    data coeff_dif(:,7) /6.359E-7_r8, 2.984E+0_r8,       0._r8, -2.984E+0_r8/
 
-    data coeff_rdif(:,1) / 1.493E-1, 1.621E-1, -1.483E-1/
-    data coeff_rdif(:,2) / 1.462E-1, 1.654E-1, -1.454E-1/
-    data coeff_rdif(:,3) / 1.454E-1, 1.673E-1, -1.446E-1/
-    data coeff_rdif(:,4) / 1.465E-1, 1.683E-1, -1.457E-1/
-    data coeff_rdif(:,5) / 1.443E-1, 1.682E-1, -1.435E-1/
-    data coeff_rdif(:,6) / 1.446E-1, 1.686E-1, -1.439E-1/
-    data coeff_rdif(:,7) /-3.427E-6, 1.576E-1,  1.199E-3/
+    data coeff_rdif(:,1) / 1.493E-1_r8, 1.621E-1_r8, -1.483E-1_r8/
+    data coeff_rdif(:,2) / 1.462E-1_r8, 1.654E-1_r8, -1.454E-1_r8/
+    data coeff_rdif(:,3) / 1.454E-1_r8, 1.673E-1_r8, -1.446E-1_r8/
+    data coeff_rdif(:,4) / 1.465E-1_r8, 1.683E-1_r8, -1.457E-1_r8/
+    data coeff_rdif(:,5) / 1.443E-1_r8, 1.682E-1_r8, -1.435E-1_r8/
+    data coeff_rdif(:,6) / 1.446E-1_r8, 1.686E-1_r8, -1.439E-1_r8/
+    data coeff_rdif(:,7) /-3.427E-6_r8, 1.576E-1_r8,  1.199E-3_r8/
 
 ! Assign local pointers to derived subtypes components (gridcell-level)
 
@@ -2101,7 +2101,7 @@ contains
     next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
     
     g = pgridcell(p)
-    fi_top_adjust(p,ib) = 1
+    fi_top_adjust(p,ib) = 1._r8
        
     ! make sure the lon is between 0-180
     lon_180 = lon(g)
@@ -2121,7 +2121,7 @@ contains
           if (cosz == 1._r8) then
              azi_angle = 0._r8
              sinz = 0._r8
-             solar_inc = 1
+             solar_inc = 1._r8
           else
              sinz = sqrt(1._r8-cosz*cosz)
              azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
@@ -2131,7 +2131,7 @@ contains
                 azi_angle = 2._r8*pi - azi_angle
              endif
              azi_angle = pi / 2._r8 - azi_angle
-             solar_inc = 1+(sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
+             solar_inc = 1._r8 + (sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
           endif
 
           izen = int((cosz + 0.05_r8) / 0.15_r8)
@@ -2159,8 +2159,8 @@ contains
 
           albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)  
 
-          if (albi_adjust <= 0) then
-             albi_adjust = 0
+          if (albi_adjust <= 0._r8) then
+             albi_adjust = 0._r8
              fi_prime = 1._r8 / (1._r8 - albi(p,ib))
           endif
 
