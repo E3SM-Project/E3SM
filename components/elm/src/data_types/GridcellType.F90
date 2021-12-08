@@ -46,9 +46,9 @@ module GridcellType
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
 
-     real(r8), pointer :: stdev_elev   (:) => null()        ! standard deviation of elevation within a gridcell
-     real(r8), pointer :: sky_view     (:) => null()         ! mean of (sky view factor / cos(slope))
-     real(r8), pointer :: terrain_config (:) => null()    ! mean of (terrain configuration factor / cos(slope))
+     real(r8), pointer :: stdev_elev   (:) => null()     ! standard deviation of elevation within a gridcell
+     real(r8), pointer :: sky_view     (:) => null()     ! mean of (sky view factor / cos(slope))
+     real(r8), pointer :: terrain_config (:) => null()   ! mean of (terrain configuration factor / cos(slope))
      real(r8), pointer :: sinsl_cosas  (:) => null()     ! sin(slope)*cos(aspect) / cos(slope)
      real(r8), pointer :: sinsl_sinas  (:) => null()     ! sin(slope)*sin(aspect) / cos(slope)
      
