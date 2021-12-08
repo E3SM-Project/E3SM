@@ -13,7 +13,6 @@ module PhosphorusDynamicsMod
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type
   use elm_varpar          , only : nlevdecomp
   use elm_varctl          , only : use_vertsoilc
 
@@ -47,7 +46,7 @@ module PhosphorusDynamicsMod
 
 contains
   !-----------------------------------------------------------------------
-  subroutine PhosphorusDeposition( bounds, &
+  subroutine PhosphorusDeposition( num_soilc, filter_soilc, &
        atm2lnd_vars )
     ! BY X. SHI
     ! !DESCRIPTION:
@@ -58,12 +57,12 @@ contains
     ! directly into the canopy and mineral P entering the soil pool.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)        , intent(in)    :: bounds
+    integer , intent(in)    :: num_soilc
+    integer , intent(in)    :: filter_soilc(:)
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g,c                    ! indices
+    integer :: g,c,fc                ! indices
     !-----------------------------------------------------------------------
 
     associate(&
@@ -72,7 +71,9 @@ contains
          )
 
       ! Loop through columns
-      do c = bounds%begc, bounds%endc
+      !$acc parallel loop independent gang vector private(c,g) default(present)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
          g = col_pp%gridcell(c)
          pdep_to_sminp(c) = forc_pdep(g)
       end do
@@ -339,7 +340,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use elm_varpar       , only : nlevsoi
+    use elm_varpar       , only : nlevsoi, nlevgrnd
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -350,6 +351,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
+    integer  :: nlevbed				       ! number of layers to bedrock
     real(r8) :: disp_conc                              ! dissolved mineral N concentration (gP/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
     real(r8) :: surface_water(bounds%begc:bounds%endc) ! liquid water to shallow surface depth (kg water/m2)
@@ -358,6 +360,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
+    	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
          h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
          qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
@@ -370,27 +373,26 @@ contains
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
 
       ! for runoff calculation; calculate total water to a given depth
       surface_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         if ( zisoi(j) <= depth_runoff_Ploss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
+            if ( zisoi(j) <= depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-            end do
-         elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+            elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col_pp%dz(c,j))
-            end do
-         endif
+            end if
+         end do
       end do
 
       ! Loop through columns
@@ -437,12 +439,7 @@ contains
     end associate
   end subroutine PhosphorusLeaching
 
-
   !-----------------------------------------------------------------------
-
-
-  !-----------------------------------------------------------------------
-
 
   subroutine PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
        cnstate_vars, dt)
@@ -567,7 +564,6 @@ contains
     use pftvarcon              , only : noveg
     use elm_varpar             , only : ndecomp_pools
     use CNDecompCascadeConType , only : decomp_cascade_con
-
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
@@ -608,8 +604,7 @@ contains
          lamda_ptase          => veg_vp%lamda_ptase                   ,  &
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
-         is_soil               => decomp_cascade_con%is_soil             &
-         )
+         is_soil               => decomp_cascade_con%is_soil)
 
 
     ! set initial values for potential C and N fluxes
@@ -618,7 +613,7 @@ contains
     if(use_fates) then
         ci = bounds%clump_index
 #ifndef _OPENACC
-        max_comps = size(alm_fates%fates(ci)%bc_out(1)%cp_scalar,dim=1)
+        !#fates_py max_comps = size(alm_fates%fates(ci)%bc_out(1)%cp_scalar,dim=1)
         allocate(biochem_pmin_to_plant_vr_patch(max_comps,nlevdecomp))
 #endif
     else
@@ -630,38 +625,37 @@ contains
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-#ifndef _OPENACC
-        if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
-#endif 
+
+        !#fates_py if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
+
         biochem_pmin_vr(c,:) = 0.0_r8
         biochem_pmin_to_ecosysp_vr_col_pot(c,:) = 0._r8
         biochem_pmin_to_plant(c) = 0._r8
 
         if(use_fates) then
-#ifndef _OPENACC                
            do j = 1,nlevdecomp
-              j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-              do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
+              !#fates_py j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+              !#fates_py do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
 
-                 lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ &
-                      max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
+                 !#fates_py lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ &
+                      !#fates_py max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
                  lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
 
-                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / &
-                      sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
+                 !#fates_py fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / &
+                      !#fates_py sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
 
-                 pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
-                 ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
-                      fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                      ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
-                      max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8))
+                 !#fates_py pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
+                 !#fates_py ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
+                      !#fates_py fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                      !#fates_py ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
+                      !#fates_py max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8))
 
-                 biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
-                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
+                 !#fates_py biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
+                 !#fates_py biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
-              end do
-           end  do
-#endif
+
+             !#fates_py end do
+           end do
         else
            do j = 1,nlevdecomp
               do p = col_pp%pfti(c), col_pp%pftf(c)
@@ -734,28 +728,28 @@ contains
                     if ( biochem_pmin_to_ecosysp_vr_col_pot(c,j) > 0.0_r8 ) then
                         biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) * &
                               biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
-                        do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
+                        !#fates_py do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
                             biochem_pmin_to_plant_vr_patch(p,j) = biochem_pmin_to_plant_vr_patch(p,j) * &
                                   biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
-                        end do
+                        !#fates_py end do
                     else
-                        do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
+                        !#fates_py do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
                             biochem_pmin_to_plant_vr_patch(p,j) = 0.0_r8
-                        end do
+                        !#fates_py end do
                         biochem_pmin_vr(c,j) = 0.0_r8
                     end if
                 end if
 
                 ! units:  [g/m2] = [g/m3/s] * [s] [m]
-                j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
-                    alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = &
-                          alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + &
-                          biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)
+                !#fates_py j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+                !#fates_py do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
+                    !#fates_py alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = &
+                          !#fates_py alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + &
+                          !#fates_py biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)
 
                     biochem_pmin_to_plant(c) =  biochem_pmin_to_plant(c) + &
                          biochem_pmin_to_plant_vr_patch(p,j)*dzsoi_decomp(j)
-                end do
+                !#fates_py end do
 
             end do
 #endif

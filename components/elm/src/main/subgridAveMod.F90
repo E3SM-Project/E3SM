@@ -1,6 +1,6 @@
 module subgridAveMod
 
-#include "shr_assert.h"
+ #include "shr_assert.h"
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Utilities to perfrom subgrid averaging
@@ -86,6 +86,7 @@ module subgridAveMod
     module procedure create_scale_c2l_gpu
   end interface
 
+   public :: p2c_1d_filter_parallel
 
   ! WJS (10-14-11): TODO:
   !
@@ -126,8 +127,6 @@ contains
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     if (p2c_scale_type == 'unity') then
        do p = bounds%begp,bounds%endp
@@ -244,8 +243,6 @@ contains
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc, num2d/)), errMsg(__FILE__, __LINE__))
 
     if (p2c_scale_type == 'unity') then
        do p = bounds%begp,bounds%endp
@@ -344,6 +341,41 @@ contains
   end subroutine p2c_2d_gpu
 
   !-----------------------------------------------------------------------
+  subroutine p2c_1d_filter_parallel( numfc, filterc,  pftarr, colarr)
+    !
+    ! !DESCRIPTION:
+    ! perform pft to column averaging for single level pft arrays
+    ! Note: pftarr and colarr are the entire array for a processor
+    !      not divisble by clumps
+    !
+    ! !ARGUMENTS:
+    integer , intent(in)  :: numfc
+    integer , intent(in)  :: filterc(numfc)
+    real(r8), intent(in)  :: pftarr(:)
+    real(r8), intent(out) :: colarr(:)
+
+    ! !LOCAL VARIABLES:
+    integer :: fc,c,p  ! indices
+    real(r8) :: sum1
+    !-----------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+
+    !$acc parallel loop independent gang worker private(c,sum1) &
+    !$acc default(present) create(sum1)
+    do fc = 1,numfc
+       c = filterc(fc)
+       sum1 = 0._r8
+       !$acc loop vector reduction(+:sum1)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          if (veg_pp%active(p)) sum1 = sum1 + pftarr(p) * veg_pp%wtcol(p)
+       end do
+       colarr(c) = sum1
+    end do
+
+end subroutine p2c_1d_filter_parallel
+
+  !-----------------------------------------------------------------------
   subroutine p2c_1d_filter (bounds, numfc, filterc,  pftarr, colarr)
     !
     ! !DESCRIPTION:
@@ -356,7 +388,6 @@ contains
     integer , intent(in)  :: filterc(numfc)
     real(r8), intent(in)  :: pftarr( bounds%begp: )
     real(r8), intent(out) :: colarr( bounds%begc: )
-    !type(column_physical_properties) , target :: col_pp
 
     ! !LOCAL VARIABLES:
     integer :: fc,c,p  ! indices
@@ -425,8 +456,6 @@ contains
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor for column->landunit mapping
     !------------------------------------------------------------------------
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
 
     call create_scale_c2l(bounds,c2l_scale_type,scale_c2l)
 
@@ -498,8 +527,8 @@ contains
           scale_p2c(p) = 1.0_r8
        end do
     else
-      write(iulog,*)'p2l_2d error: scale type ',p2c_scale_type,' not supported'
-      call endrun(msg=errMsg(__FILE__, __LINE__))
+       write(iulog,*)'p2l_2d error: scale type ',p2c_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     larr(bounds%begl : bounds%endl, :) = spval
@@ -736,8 +765,6 @@ contains
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
 
     call build_scale_l2g(bounds, l2g_scale_type, &
          scale_l2g)
@@ -856,10 +883,8 @@ contains
           end if
        end do
     else
-#ifndef _OPENACC
        write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-#endif 
+       all endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     if (p2c_scale_type == unity) then
@@ -867,10 +892,8 @@ contains
           scale_p2c(p) = 1.0_r8
        end do
     else
-#ifndef _OPENACC
        write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
        call endrun(msg=errMsg(__FILE__, __LINE__))
-#endif 
     end if
 
     garr(bounds%begg : bounds%endg, :) = spval
@@ -926,8 +949,6 @@ contains
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
 
     call create_scale_c2l(bounds, c2l_scale_type, scale_c2l)
 
@@ -1115,10 +1136,8 @@ contains
        end if
     end do
     if (found) then
-#ifndef _OPENACC            
-        write(iulog,*) 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
-        call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
-#endif 
+        print *, 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine c2g_1d_gpu
@@ -1624,10 +1643,8 @@ contains
      else if (l2g_scale_type == lake) then
         scale_lookup(istdlak) = 1.0_r8
      else
-#ifndef _OPENACC             
         write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
         call endrun(msg=errMsg(__FILE__, __LINE__))
-#endif 
      end if
 
   end subroutine create_scale_l2g_lookup_gpu

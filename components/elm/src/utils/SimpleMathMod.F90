@@ -1,9 +1,7 @@
 module SimpleMathMod
 
-#include "shr_assert.h"
- 
-use shr_kind_mod , only : r8 => shr_kind_r8
-!------------------------------------------------------------------------------
+!#py #include "shr_assert.h"
+  !------------------------------------------------------------------------------
   !
   ! DESCRIPTIONS:
   ! module contains simple mathematical functions for arrays
@@ -18,16 +16,14 @@ implicit none
   interface array_div_vector
     module procedure array_div_vector_filter, array_div_vector_nofilter
   end interface array_div_vector
-
-  public :: shr_flux_update_stress_elm
 contains
 !--------------------------------------------------------------------------------
   subroutine array_normalization_2d(which_dim, arr2d_inout)
-  !$acc routine seq
-  !DESCRIPTIONS
-  !do normalization for the input array along dimension which_dim
-  !
-  !USES
+    !$acc routine seq
+    !DESCRIPTIONS
+    !do normalization for the input array along dimension which_dim
+    !
+    !USES
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
 
@@ -80,54 +76,50 @@ contains
   end subroutine array_normalization_2d
 
 !--------------------------------------------------------------------------------
-subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, arr2d_inout)
-  !$acc routine seq
+  subroutine array_normalization_2d_filter( lbj2, ubj2, numf, filter, arr2d_inout)
   !DESCRIPTIONS
   !do normalization with filter for the input array along dimension 2
-
   !
   !USES
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
-  integer,  intent(in) :: lbj1         !left bound of dim 1
-  integer,  intent(in) :: lbj2         !left bound of dim 2
   integer,  intent(in) :: ubj1         !right bound of dim 1
   integer,  intent(in) :: ubj2         !right bound of dim 2
   integer,  intent(in) :: numf         !filter size
   integer,  intent(in) :: filter(:)    !filter
-  real(r8), intent(inout) :: arr2d_inout(lbj1: , lbj2: )   !input 2d array
-
+  real(r8), intent(inout) :: arr2d_inout(: , : )   !input 2d array
 
   !local variables
   integer  :: sz1, sz2     !array size
   integer  :: j2           !indices
   integer  :: f, p         !indices
-  real(r8) :: arr_sum(lbj1:ubj1)
+  real(r8) :: arr_sum(numf), sum1
 
-  ! Enforce expected array sizes
-
-
-  arr_sum(:) = 0._r8
-  do j2 = lbj2, ubj2
-    do f = 1, numf
-      p = filter(f)
-      !obtain the total
-      arr_sum(p)=arr_sum(p)+arr2d_inout(p,j2)
+  !$acc enter data create(arr_sum(1:numf))
+  !$acc parallel loop independent gang worker default(present) private(sum1)
+  do f = 1, numf
+     sum1 = 0._r8
+     !$acc loop vector reduction(+:sum1)
+     do j2 = lbj2, ubj2
+        !obtain the total
+        sum1=sum1+arr2d_inout(f,j2)
     enddo
+    arr_sum(f) = sum1
   enddo
 
     !normalize with the total if arr_sum is non-zero
+  !$acc parallel loop independent gang default(present)
   do j2 = lbj2, ubj2
+    !$acc loop vector independent
     do f = 1, numf
-      p = filter(f)
       !I found I have to ensure >0._r8 because of some unknown reason, jyt May 23, 2014
       !I will test this later with arr_sum(p)/=0._r8
-      if(arr_sum(p)>0._r8 .or. arr_sum(p)<0._r8)then
-        arr2d_inout(p,j2) = arr2d_inout(p,j2)/arr_sum(p)
+      if(arr_sum(f)>0._r8 .or. arr_sum(f)<0._r8)then
+        arr2d_inout(f,j2) = arr2d_inout(f,j2)/arr_sum(f)
       endif
     enddo
   enddo
-  return
+  !$acc exit data delete(arr_sum(:))
   end subroutine array_normalization_2d_filter
 !--------------------------------------------------------------------------------
 
@@ -142,6 +134,7 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
   ! USES
   !
   use shr_kind_mod, only: r8 => shr_kind_r8
+  !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
   implicit none
   integer,  intent(in) :: lbj1         !left bound of dim 1
   integer,  intent(in) :: lbj2         !left bound of dim 2
@@ -182,6 +175,8 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
   !USES
   !
   use shr_kind_mod, only: r8 => shr_kind_r8
+  !#py use shr_assert_mod , only : shr_assert
+  !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
   implicit none
   real(r8), intent(in) :: arr1d_in(:)     !scaling factor
   integer,  intent(in) :: which_dim        !which dimension is scaled
@@ -239,7 +234,7 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
     subroutine matvec_acc(START,END_,RES,A,X)
       !$acc routine seq
       !As of Cuda 10.1 calling cuBlas functions from device code
-      !is not supported.  So must create any blas routines with
+      !is not supported.  So must have create any blas routines with
       !acc routine seq manually.  This is for square matrices Matrix Vector Multiplication
       !used only in PhotosynthesisMod::calcstressroot so far
 
@@ -261,72 +256,5 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
 
     end subroutine matvec_acc
 
-
-
-!===============================================================================
-
-! After the stress has been recalculated in iteration loops, call this routine
-! to adjust the value used in the next iteration for improved convergence.
-!
-! We use the sign convention where all arguments are assumed to be positive,
-! except for tau_diff and prev_tau_diff, which can be of either sign.
-subroutine shr_flux_update_stress_elm(wind0, wsresp, tau_est, tau, prev_tau, &
-     tau_diff, prev_tau_diff, wind_adj)
-  !$acc routine seq 
-  ! Wind speed from atmosphere (not updated by iteration) [m/s]
-  real(r8), intent(in) :: wind0
-  ! Response of boundary layer wind to stress changes in a time step [m/s/Pa]
-  real(r8), intent(in) :: wsresp
-  ! Estimated tau that would be in equilibrium with boundary layer wind [Pa]
-  real(r8), intent(in) :: tau_est
-  ! Stress that has just been calculated in this loop [Pa]
-  real(r8), intent(inout) :: tau
-  ! Stress assumed when calculating this tau (use tau_est for first iter.) [Pa]
-  real(r8), intent(inout) :: prev_tau
-  ! Difference between last two values of tau used for iterations [Pa]
-  ! (Use a very large value for first iteration)
-  real(r8), intent(inout) :: tau_diff
-  ! Copy of the input tau_diff (for diagnostic purposes) [Pa]
-  real(r8), intent(out) :: prev_tau_diff
-  ! Wind updated by iteration [m/s]
-  real(r8), intent(out) :: wind_adj
-
-  real(r8) :: wsresp_applied
-
-  ! maximum ratio between abs(tau_diff) and abs(prev_tau_diff)
-  real(r8) :: tau_diff_fac
-
-  ! Using wsresp_applied = 0.5 * wsresp improves accuracy somewhat, similar to
-  ! using the trapezoidal method rather than backward Euler.
-  wsresp_applied = 0.5 * wsresp
-
-  ! Forbid removing more than 99% of wind speed.
-  ! This is applied before anything else to ensure that the applied stress is
-  ! not so strong that it reverses the direction of the winds.
-  if ( (tau - tau_est) * wsresp_applied > 0.99_r8 * wind0 ) then
-     tau = tau_est + 0.99_r8 * wind0 / wsresp_applied
-  end if
-
-  prev_tau_diff = tau_diff
-  tau_diff = tau - prev_tau
-
-  ! damp large changes each iteration for convergence
-  if (tau_diff * prev_tau_diff < 0._r8) then
-     ! if oscillating about the solution, use stronger damping
-     ! this should not be set below 0.5
-     tau_diff_fac = 0.6_r8
-  else
-     tau_diff_fac = 0.95_r8
-  end if
-
-  if (abs(tau_diff) > abs(tau_diff_fac*prev_tau_diff)) then
-     tau_diff = sign(tau_diff_fac*prev_tau_diff, tau_diff)
-     tau = prev_tau + tau_diff
-  end if
-  prev_tau = tau
-
-  wind_adj = wind0 - (tau - tau_est) * wsresp_applied
-
-end subroutine shr_flux_update_stress_elm
 
 end module SimpleMathMod

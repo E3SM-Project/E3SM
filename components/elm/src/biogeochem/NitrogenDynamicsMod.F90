@@ -12,10 +12,9 @@ module NitrogenDynamicsMod
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
   use elm_varctl          , only : use_vertsoilc
-  use subgridAveMod       , only : p2c
+  use subgridAveMod       , only : p2c, p2c_1d_filter_parallel
   use atm2lndType         , only : atm2lnd_type
   use CNStateType         , only : cnstate_type
-  use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf
@@ -111,7 +110,7 @@ contains
   end subroutine readNitrogenDynamicsParams
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenDeposition( bounds, &
+  subroutine NitrogenDeposition( num_soilc, filter_soilc, &
        atm2lnd_vars, dt )
     !
     ! !DESCRIPTION:
@@ -122,13 +121,13 @@ contains
     ! directly into the canopy and mineral N entering the soil pool.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)        , intent(in)    :: bounds
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    integer , intent(in) :: num_soilc
+    integer , intent(in) :: filter_soilc(:)
+    type(atm2lnd_type) , intent(in)    :: atm2lnd_vars
     real(r8),   intent(in) :: dt
     !
     ! !LOCAL VARIABLES:
-    integer :: g,c                    ! indices
+    integer :: g,c,fc                  ! indices
     !-----------------------------------------------------------------------
 
     associate(&
@@ -137,7 +136,9 @@ contains
          )
 
       ! Loop through columns
-      do c = bounds%begc, bounds%endc
+      !$acc parallel loop independent gang worker vector private(g,c) default(present)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
          g = col_pp%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
       end do
@@ -229,7 +230,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use elm_varpar       , only : nlevdecomp, nlevsoi
+    use elm_varpar       , only : nlevdecomp, nlevsoi, nlevgrnd
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -240,6 +241,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
+    integer  :: nlevbed				       ! number of layers to bedrock
     real(r8) :: sf_no3                                 ! soluble fraction of NO3 (unitless)
     real(r8) :: disn_conc                              ! dissolved mineral N concentration (gN/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
@@ -249,41 +251,41 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
+    	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
          h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
-         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
-         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
-         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
+         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
+         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]
+         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)
+         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)
          )
 
 
       ! Assume that 100% of the soil NO3 is in a soluble form
-      sf_no3 =  CNNDynamicsParamsInst%sf_no3 
+      sf_no3 =  CNNDynamicsParamsInst%sf_no3
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
 
       ! for runoff calculation; calculate total water to a given depth
       surface_water(bounds%begc:bounds%endc) = 0._r8
-      do j = 1,nlevsoi
-         if ( zisoi(j) <= depth_runoff_Nloss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
+            if ( zisoi(j) <= depth_runoff_Nloss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-            end do
-         elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+            elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
-            end do
-         endif
+            end if
+         end do
       end do
 
       ! Loop through columns
@@ -362,7 +364,7 @@ contains
   end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFert(bounds, num_soilc, filter_soilc )
+  subroutine NitrogenFert( num_soilc, filter_soilc )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fertilizer for crops
@@ -371,8 +373,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)       , intent(in)    :: bounds
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     !
@@ -385,9 +385,8 @@ contains
          fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]
          )
 
-      call p2c(bounds, num_soilc, filter_soilc, &
-           fert(bounds%begp:bounds%endp), &
-           fert_to_sminn(bounds%begc:bounds%endc))
+      call p2c_1d_filter_parallel( num_soilc, filter_soilc, &
+           fert,  fert_to_sminn )
 
     end associate
   end subroutine NitrogenFert

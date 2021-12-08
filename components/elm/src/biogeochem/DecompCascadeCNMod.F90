@@ -620,10 +620,10 @@ contains
 
     end associate
 
-   end subroutine init_decompcascade_cn
+end subroutine init_decompcascade_cn
 
    !-----------------------------------------------------------------------
-   subroutine decomp_rate_constants_cn(bounds, &
+   subroutine decomp_rate_constants_cn( &
         num_soilc, filter_soilc, &
         canopystate_vars, soilstate_vars, ch4_vars, cnstate_vars)
      !
@@ -633,12 +633,10 @@ contains
      ! written by C. Koven based on original CLM4 decomposition cascade by P. Thornton
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon      , only : secspday
      use elm_varpar      , only : i_cwd
      !
      ! !ARGUMENTS:
-     type(bounds_type)      , intent(in)    :: bounds
      integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
      integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
      type(canopystate_type) , intent(in)    :: canopystate_vars
@@ -647,12 +645,10 @@ contains
      type(cnstate_type)     , intent(inout) :: cnstate_vars
      real(r8)   :: dt                           ! decomp timestep (seconds)
      integer  :: year, mon, day, sec          ! fraction of potential aerobic rate
-
-
      !
      ! !LOCAL VARIABLES:
      real(r8):: dtd                          ! decomp timestep (days)
-     real(r8):: frw(bounds%begc:bounds%endc) ! rooting fraction weight
+     real(r8):: frw(num_soilc) ! rooting fraction weight
      real(r8), allocatable:: fr(:,:)         ! column-level rooting fraction by soil depth
      real(r8):: minpsi, maxpsi               ! limits for soil water scalar for decomp
      real(r8):: psi                          ! temporary soilpsi for water scalar
@@ -665,16 +661,6 @@ contains
      real(r8):: k_s3                         ! decomposition rate constant SOM 3
      real(r8):: k_s4                         ! decomposition rate constant SOM 4
      real(r8):: k_frag                       ! fragmentation rate constant CWD
-     real(r8):: ck_l1                        ! corrected decomposition rate constant litter 1
-     real(r8):: ck_l2                        ! corrected decomposition rate constant litter 2
-     real(r8):: ck_l3                        ! corrected decomposition rate constant litter 3
-     real(r8):: ck_s1                        ! corrected decomposition rate constant SOM 1
-     real(r8):: ck_s2                        ! corrected decomposition rate constant SOM 2
-     real(r8):: ck_s3                        ! corrected decomposition rate constant SOM 3
-     real(r8):: ck_s4                        ! corrected decomposition rate constant SOM 4
-     real(r8):: ck_frag                      ! corrected fragmentation rate constant CWD
-     real(r8):: cwdc_loss                    ! fragmentation rate for CWD carbon (gC/m2/s)
-     real(r8):: cwdn_loss                    ! fragmentation rate for CWD nitrogen (gN/m2/s)
      integer :: i_litr1
      integer :: i_litr2
      integer :: i_litr3
@@ -686,18 +672,15 @@ contains
      real(r8):: Q10                          ! temperature dependence
      real(r8):: froz_q10                     ! separate q10 for frozen soil respiration rates.  default to same as above zero rates
      real(r8):: decomp_depth_efolding        ! (meters) e-folding depth for reduction in decomposition [
-     real(r8):: depth_scalar(bounds%begc:bounds%endc,1:nlevdecomp)
+     real(r8):: depth_scalar(num_soilc,1:nlevdecomp)
      real(r8) :: mino2lim                    ! minimum anaerobic decomposition rate as a
      !-----------------------------------------------------------------------
 
      associate(                                             &
           dz             => col_pp%dz                        , & ! Input:  [real(r8) (:,:)   ]  soil layer thickness (m)
-
           sucsat         => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)
           soilpsi        => soilstate_vars%soilpsi_col    , & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)
-
           alt_indx       => canopystate_vars%alt_indx_col , & ! Input:  [integer  (:)     ]  current depth of thaw
-
           t_soisno       => col_es%t_soisno , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
           o2stress_sat   => ch4_vars%o2stress_sat_col     , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
@@ -787,31 +770,38 @@ contains
           k_frag = k_frag * DecompCNParamsInst%spinup_vector(8)
        endif
 
+       !$acc enter data copyin(froz_q10,Q10,minpsi, mino2lim, decomp_depth_efolding, &
+       !$acc   k_l1,k_l2,k_l3,k_s1,k_s2,k_s3,k_s4, k_frag,&
+       !$acc   i_litr1,i_litr2, i_litr3, i_soil1, i_soil2, i_soil3, i_soil4)
+       !$acc enter data create(depth_scalar(1:num_soilc,1:nlevdecomp))
        !--- time dependent coefficients-----!
        if ( nlevdecomp .eq. 1 ) then
 
           ! calculate function to weight the temperature and water potential scalars
           ! for decomposition control.
 
-
+         #ifndef _OPENACC
+            print *, " WARNING nlevdecomp = 1, not supported with OpenACC!"
+            stop
+         #endif
           ! the following normalizes values in fr so that they
           ! sum to 1.0 across top nlevdecomp levels on a column
-          frw(bounds%begc:bounds%endc) = 0._r8
+          frw(1:num_soilc) = 0._r8
           nlev_soildecomp_standard=5
-          allocate(fr(bounds%begc:bounds%endc,nlev_soildecomp_standard))
+          allocate(fr(1:num_soilc,nlev_soildecomp_standard))
           do j=1,nlev_soildecomp_standard
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                frw(c) = frw(c) + dz(c,j)
+                frw(fc) = frw(fc) + dz(c,j)
              end do
           end do
           do j = 1,nlev_soildecomp_standard
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                if (frw(c) /= 0._r8) then
-                   fr(c,j) = dz(c,j) / frw(c)
+                if (frw(fc) /= 0._r8) then
+                   fr(fc,j) = dz(c,j) / frw(fc)
                 else
-                   fr(c,j) = 0._r8
+                   fr(fc,j) = 0._r8
                 end if
              end do
           end do
@@ -832,10 +822,10 @@ contains
                 !! t_scalar(c,1)=t_scalar(c,1) + (1.5**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))*fr(c,j)
                 if (t_soisno(c,j) >= SHR_CONST_TKFRZ) then
                    t_scalar(c,1)=t_scalar(c,1) + &
-                        (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))*fr(c,j)
+                        (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))*fr(fc,j)
                 else
                    t_scalar(c,1)=t_scalar(c,1) + &
-                        (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))*fr(c,j)
+                        (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))*fr(fc,j)
                 endif
              end do
           end do
@@ -856,7 +846,7 @@ contains
                 psi = min(soilpsi(c,j),maxpsi)
                 ! decomp only if soilpsi is higher than minpsi
                 if (psi > minpsi) then
-                   w_scalar(c,1) = w_scalar(c,1) + (log(minpsi/psi)/log(minpsi/maxpsi))*fr(c,j)
+                   w_scalar(c,1) = w_scalar(c,1) + (log(minpsi/psi)/log(minpsi/maxpsi))*fr(fc,j)
                 end if
              end do
           end do
@@ -876,7 +866,6 @@ contains
              ! Calculate ANOXIA
              if (anoxia) then
                 ! Check for anoxia w/o LCH4 now done in controlMod.
-
                 do j = 1,nlev_soildecomp_standard
                    do fc = 1,num_soilc
                       c = filter_soilc(fc)
@@ -884,19 +873,19 @@ contains
                       if (j==1) o_scalar(c,:) = 0._r8
 
                       if (.not. anoxia_wtsat) then
-                         o_scalar(c,1) = o_scalar(c,1) + fr(c,j) * max(o2stress_unsat(c,j), mino2lim)
+                         o_scalar(c,1) = o_scalar(c,1) + fr(fc,j) * max(o2stress_unsat(c,j), mino2lim)
                       else
-                         o_scalar(c,1) = o_scalar(c,1) + fr(c,j) * &
+                         o_scalar(c,1) = o_scalar(c,1) + fr(fc,j) * &
                               (max(o2stress_unsat(c,j), mino2lim)*(1._r8 - finundated(c)) + &
                               max(o2stress_sat(c,j), mino2lim)*finundated(c) )
                       end if
                    end do
                 end do
              else
-                o_scalar(bounds%begc:bounds%endc,1:nlevdecomp) = 1._r8
+                o_scalar(:,1:nlevdecomp) = 1._r8
              end if
           else
-             o_scalar(bounds%begc:bounds%endc,1:nlevdecomp) = 1._r8
+             o_scalar(:,1:nlevdecomp) = 1._r8
           end if
 
           deallocate(fr)
@@ -912,7 +901,10 @@ contains
           ! atmospheric CO2 concentration in global simulations. This does not impact
           ! the base rates at 25 C, which are calibrated from microcosm studies.
 
+
+          !$acc parallel loop independent gang default(present) async(1)
           do j = 1, nlevdecomp
+             !$acc loop vector independent private(c)
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 !! use separate (possibly equal) t funcs above and below freezing point
@@ -934,7 +926,9 @@ contains
           ! Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
           ! and soil moisture. Soil Biol. Biochem., 15(4):447-453.
 
+          !$acc parallel loop independent gang default(present) async(2)
           do j = 1,nlevdecomp
+             !$acc loop vector independent private(c,maxpsi,psi)
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 maxpsi = sucsat(c,j) * (-9.8e-6_r8)
@@ -945,14 +939,14 @@ contains
                 else
                    w_scalar(c,j) = 0._r8
                 end if
-                if (use_lch4) then
-                   if (anoxia_wtsat .and. t_soisno(c,j) > SHR_CONST_TKFRZ) then ! wet area will have w_scalar of 1 if unfrozen
+                if (use_lch4 .and. anoxia_wtsat) then
+                   if ( t_soisno(c,j) > SHR_CONST_TKFRZ) then ! wet area will have w_scalar of 1 if unfrozen
                       w_scalar(c,j) = w_scalar(c,j)*(1._r8 - finundated(c)) + finundated(c)
                    end if
                 end if
              end do
           end do
-
+          !$acc wait
        end if
 
        if (use_lch4) then
@@ -960,7 +954,9 @@ contains
           ! Check for anoxia w/o LCH4 now done in controlMod.
 
           if (anoxia) then
+             !$acc parallel loop independent gang default(present) async(1)
              do j = 1,nlevdecomp
+                !$acc loop vector independent private(c)
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
 
@@ -973,85 +969,116 @@ contains
                 end do
              end do
           else
-             o_scalar(bounds%begc:bounds%endc,1:nlevdecomp) = 1._r8
+             !$acc parallel loop independent gang default(present) async(1)
+            do j = 1,nlevdecomp
+               !$acc loop vector independent private(c)
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  o_scalar(c,j) = 1._r8
+               end do
+            end do
+
           end if
        else
-          o_scalar(bounds%begc:bounds%endc,1:nlevdecomp) = 1._r8
+          !$acc parallel loop independent gang default(present) async(1)
+         do j = 1,nlevdecomp
+            !$acc loop vector independent private(c)
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               o_scalar(c,j) = 1._r8
+            end do
+         end do
        end if
 
        if (use_vertsoilc) then
           ! add a term to reduce decomposition rate at depth
           ! for now used a fixed e-folding depth
-          do j = 1, nlevdecomp
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+         !$acc parallel loop independent gang default(present) async(2)
+         do j = 1,nlevdecomp
+            !$acc loop vector independent
+            do fc = 1,num_soilc
+                depth_scalar(fc,j) = exp(-zsoi(j)/decomp_depth_efolding)
              end do
           end do
        end if
 
        !Calcluate location and depth-specific acceleration factors
-       do fc=1,num_soilc
-           c = filter_soilc(fc)
-           if (year < 20 .and. spinup_state == 1) then
-               cnstate_vars%scalaravg_col(c,:) = 0._r8
-           else if (year < 40 .and. spinup_state == 1) then
-               cnstate_vars%scalaravg_col(c,:) = cnstate_vars%scalaravg_col(c,:) + &
-                     (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(c,4) ) &
-                     * dt / (86400._r8 * 365._r8 * 20._r8)
-           else
-               if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then
-                    cnstate_vars%scalaravg_col(c,:) = 1.0_r8
-               end if
-           end if
-       end do
-
-       if (use_vertsoilc) then
+       if (year < 20 .and. spinup_state == 1) then
+          !$acc parallel loop independent gang default(present) async(3)
           do j = 1,nlevdecomp
+             !$acc loop vector independent private(c)
              do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                decomp_k(c,j,i_litr1) = k_l1 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_litr2) = k_l2 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_litr3) = k_l3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil1) = k_s1 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil2) = k_s2 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil3) = k_s3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-
-
+                 c = filter_soilc(fc)
+                 cnstate_vars%scalaravg_col(c,j) = 0._r8
              end do
           end do
+       else if (year < 40 .and. spinup_state == 1) then
+          !$acc parallel loop independent gang default(present) async(3)
           do j = 1,nlevdecomp
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-              end do
+             !$acc loop vector independent private(c)
+             do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 cnstate_vars%scalaravg_col(c,j) = cnstate_vars%scalaravg_col(c,j) + &
+                     (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(fc,4) ) &
+                     * dt / (86400._r8 * 365._r8 * 20._r8)
+             end do
           end do
        else
+          !$acc parallel loop independent gang default(present) async(3)
           do j = 1,nlevdecomp
+             !$acc loop vector independent private(c)
              do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                decomp_k(c,j,i_litr1) = k_l1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_litr2) = k_l2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_litr3) = k_l3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil1) = k_s1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil2) = k_s2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil3) = k_s3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-                decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
+                 c = filter_soilc(fc)
+                 if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then
+                    cnstate_vars%scalaravg_col(c,j) = 1.0_r8
+                 end if
              end do
           end do
+       end if
+
+      !$acc wait
+
+       if (use_vertsoilc) then
+          !$acc parallel loop independent gang default(present)
           do j = 1,nlevdecomp
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-              end do
+             !$acc loop vector independent private(c)
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                decomp_k(c,j,i_litr1) = k_l1 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_litr2) = k_l2 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_litr3) = k_l3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil1) = k_s1 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil2) = k_s2 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil3) = k_s3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(fc,j) * o_scalar(c,j) / dtime_mod
+
+             end do
+          end do
+       else
+          !$acc parallel loop independent gang default(present)
+          do j = 1,nlevdecomp
+             !$acc loop vector independent private(c)
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                decomp_k(c,j,i_litr1) = k_l1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_litr2) = k_l2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_litr3) = k_l3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil1) = k_s1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil2) = k_s2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil3) = k_s3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+                decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dtime_mod
+             end do
           end do
        end if
 
 
        if (spinup_state == 1 .and. year >= 40) then
          !adjust decomposition factors based on scalar factors from first 20 years of simulation
+         !$acc parallel loop independent gang default(present)
          do j=1,nlevdecomp
+           !$acc loop vector independent private(c)
            do fc = 1, num_soilc
              c = filter_soilc(fc)
              if ( decomp_cascade_con%spinup_factor(i_litr1) > 1._r8) decomp_k(c,j,i_litr1) = decomp_k(c,j,i_litr1)  &
@@ -1073,6 +1100,9 @@ contains
            end do
          end do
        end if
+       !$acc exit data delete(froz_q10,Q10,minpsi, mino2lim, decomp_depth_efolding, &
+       !$acc   k_l1,k_l2,k_l3,k_s1,k_s2,k_s3,k_s4, k_frag,&
+       !$acc   i_litr1,i_litr2, i_litr3, i_soil1, i_soil2, i_soil3, i_soil4, depth_scalar(:,:) )
      end associate
    end subroutine decomp_rate_constants_cn
 

@@ -25,7 +25,7 @@ module CarbonStateUpdate1Mod
   use VegetationType          , only : veg_pp
   use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux
   use VegetationPropertiesType, only : veg_vp
-  #define is_active_betr_bgc .false. 
+
   !
   implicit none
   save
@@ -137,7 +137,7 @@ contains
   end subroutine CarbonStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf, dt)
+  subroutine CarbonStateUpdate0(p, veg_cs, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
@@ -145,29 +145,22 @@ contains
 
     ! !ARGUMENTS:
       !$acc routine seq
-    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer , value, intent(in)  :: p
     type(vegetation_carbon_state),intent(inout) :: veg_cs
     type(vegetation_carbon_flux) ,intent(inout) :: veg_cf
     real(r8),     intent(in)    :: dt
     !
-    ! !LOCAL VARIABLES:
-    integer :: p  ! indices
-    integer :: fp ! lake filter indices
     !-----------------------------------------------------------------------
 
     ! patch loop
-    do fp = 1,num_soilp
-       p = filter_soilp(fp)
-       ! gross photosynthesis fluxes
-       veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnsun_to_cpool(p)*dt
-       veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnshade_to_cpool(p)*dt
-    end do
+    ! gross photosynthesis fluxes
+    veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnsun_to_cpool(p)*dt
+    veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnshade_to_cpool(p)*dt
 
   end subroutine CarbonStateUpdate0
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdate1(bounds, &
+  subroutine CarbonStateUpdate1(&
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
@@ -177,9 +170,8 @@ contains
     ! variables (except for gap-phase mortality and fire fluxes)
     !
       !$acc routine seq
-    use decompMod           , only : bounds_type
+    use tracer_varcon       , only : is_active_betr_bgc
     ! !ARGUMENTS:
-    type(bounds_type)            , intent(in)    :: bounds
     integer                      , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                      , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -197,7 +189,7 @@ contains
     integer  :: fp,fc     ! lake filter indices
     !-----------------------------------------------------------------------
 
-    associate(                                                                                 &
+    associate(  &
          ivt                   =>    veg_pp%itype                               , & ! Input:  [integer  (:)     ]  pft vegetation type
          woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
          cascade_donor_pool    =>    decomp_cascade_con%cascade_donor_pool      , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step

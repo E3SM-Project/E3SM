@@ -1,8 +1,8 @@
 module quadraticMod
 
-  use abortutils  ,   only: endrun
+  !#py use abortutils  ,   only: endrun
   use shr_kind_mod,   only: r8 => shr_kind_r8
-  use shr_log_mod ,   only: errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod ,   only: errMsg => shr_log_errMsg
   use elm_varctl  ,   only: iulog
 
   implicit none
@@ -22,7 +22,7 @@ contains
      !
      ! !REVISION HISTORY:
      ! 4/5/10: Adapted from /home/bonan/ecm/psn/An_gs_iterative.f90 by Keith Oleson
-     !$acc routine seq 
+     !$acc routine seq
      ! !USES:
      implicit none
      !
@@ -33,19 +33,19 @@ contains
      ! !LOCAL VARIABLES:
      real(r8) :: q                        ! Temporary term for quadratic solution
      !------------------------------------------------------------------------------
-#ifndef _OPENACC 
+#ifndef _OPENACC
      if (a == 0._r8) then
         write (iulog,*) 'Quadratic solution error: a = ',a
         call endrun(msg=errmsg(__FILE__, __LINE__))
      end if
 #endif
-   
+
      if (b >= 0._r8) then
         q = -0.5_r8 * (b + sqrt(b*b - 4._r8*a*c))
      else
         q = -0.5_r8 * (b - sqrt(b*b - 4._r8*a*c))
      end if
-   
+
      r1 = q / a
      if (q /= 0._r8) then
         r2 = c / q
