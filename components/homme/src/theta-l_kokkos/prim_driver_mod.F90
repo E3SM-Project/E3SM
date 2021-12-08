@@ -412,7 +412,7 @@ contains
       compute_diagnostics = .false.
     endif
 
-    call init_logic_for_push_to_c()
+    call init_logic_for_push_to_c(nsplit_iteration)
 
     dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
@@ -525,16 +525,23 @@ contains
 !test with forcing (not performant):
 ! (always forcing and push to c) -> (subcycle) -> (always push to f)
 
-  subroutine init_logic_for_push_to_c()
+  subroutine init_logic_for_push_to_c(nsplit_iter)
 
     use control_mod, only: test_with_forcing
+    integer,              intent(in) :: nsplit_iter
 
     compute_forcing_and_push_to_c = .false.
 
     ! Scream already computes all forcing using the same pointers
     ! stored in Hommexx, so the forcing is already up to date
-#if defined(HOMMEXX_BENCHMARK_NOFORCING) || defined(SCREAM)
+#if defined(HOMMEXX_BENCHMARK_NOFORCING) 
 
+#elif defined(SCREAM)
+
+#elif defined(CAM)
+    if (nsplit_iter == 1) then
+       compute_forcing_and_push_to_c = .true.
+    endif
 #else
     if(test_with_forcing)then
        compute_forcing_and_push_to_c = .true.

@@ -2774,7 +2774,7 @@ sub write_cppdefs
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l_kokkos") {
-        print $fh " -DKOKKOS_TARGET -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+        print $fh " -DKOKKOS_TARGET -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE -DCOMPOSE_PORT"
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
