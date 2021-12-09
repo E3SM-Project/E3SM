@@ -102,11 +102,13 @@ module physics_types
           te_cur,  &! vertically integrated total (kinetic + static) energy of current state
           tw_ini,  &! vertically integrated total water of initial state
           tw_cur,  &! vertically integrated total water of new state
-          tc_cur,  &! vertically integrated total carbon of current state
-          tc_before_physstep, &! total carbon before phys step
-          delta_tc,           &! total carbon difference (after - before)
-          c_emis_sfc,         &! carbon emissions (surface + aircraft)
-          c_emis_air
+          tc_curr,    &! vertically integrated total carbon of current state
+          tc_init,    &! vertically integrated total carbon at start of run
+          tc_prev,    &! vertically integrated total carbon of previous time step
+          c_emis_sfc, &! current surface carbon emissions
+          c_emis_air, &! current aircraft carbon emissions
+          c_iflx_sfc, &! time integrated surface carbon emissions
+          c_iflx_air   ! time integrated aircraft carbon emissions
      integer :: count ! count of values with significant energy or water imbalances
      integer, dimension(:),allocatable           :: &
           latmapback, &! map from column to unique lat for that column
@@ -570,16 +572,20 @@ contains
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
          varname="state%tw_cur",    msg=msg)
-    call shr_assert_in_domain(state%tc_cur(:ncol),      is_nan=.false., &
-         varname="state%tc_cur",    msg=msg)
-    call shr_assert_in_domain(state%tc_before_physstep(:ncol), is_nan=.false., &
-         varname="state%tc_before_physstep", msg=msg)
-    call shr_assert_in_domain(state%delta_tc(:ncol),    is_nan=.false., &
-         varname="state%delta_tc",  msg=msg)
+    call shr_assert_in_domain(state%tc_curr(:ncol),      is_nan=.false., &
+         varname="state%tc_curr",    msg=msg)
+    call shr_assert_in_domain(state%tc_init(:ncol),      is_nan=.false., &
+         varname="state%tc_init",    msg=msg)
+    call shr_assert_in_domain(state%tc_prev(:ncol),      is_nan=.false., &
+         varname="state%tc_prev",    msg=msg)
     call shr_assert_in_domain(state%c_emis_sfc(:ncol),      is_nan=.false., &
          varname="state%c_emis_sfc",    msg=msg)
     call shr_assert_in_domain(state%c_emis_air(:ncol),      is_nan=.false., &
          varname="state%c_emis_air",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sfc(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_sfc",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_air(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_air",    msg=msg)
 
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         is_nan=.false., &
@@ -654,16 +660,20 @@ contains
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_cur",    msg=msg)
-    call shr_assert_in_domain(state%tc_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%tc_cur",    msg=msg)
-    call shr_assert_in_domain(state%tc_before_physstep(:ncol), lt=posinf_r8, gt=neginf_r8, &
-         varname="state%tc_before_physstep", msg=msg)
-    call shr_assert_in_domain(state%delta_tc(:ncol),    lt=posinf_r8, gt=neginf_r8, &
-         varname="state%delta_tc",  msg=msg)
-    call shr_assert_in_domain(state%c_emis_sfc(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%c_emis_sfc",    msg=msg)
-    call shr_assert_in_domain(state%c_emis_air(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%c_emis_air",    msg=msg)
+    call shr_assert_in_domain(state%tc_curr(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_curr",     msg=msg)
+    call shr_assert_in_domain(state%tc_init(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_init",     msg=msg)
+    call shr_assert_in_domain(state%tc_prev(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_prev",     msg=msg)
+    call shr_assert_in_domain(state%c_emis_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_emis_sfc",  msg=msg)
+    call shr_assert_in_domain(state%c_emis_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_emis_air",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_sfc",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_air",  msg=msg)
 
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
@@ -1342,11 +1352,13 @@ end subroutine physics_ptend_copy
        state_out%te_cur(i) = state_in%te_cur(i) 
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
-       state_out%tc_cur(i) = state_in%tc_cur(i)
-       state_out%tc_before_physstep(i) = state_in%tc_before_physstep(i)
-       state_out%delta_tc(i) = state_in%delta_tc(i)
+       state_out%tc_curr(i)    = state_in%tc_curr(i)
+       state_out%tc_init(i)    = state_in%tc_init(i)
+       state_out%tc_prev(i)    = state_in%tc_prev(i)
        state_out%c_emis_sfc(i) = state_in%c_emis_sfc(i)
        state_out%c_emis_air(i) = state_in%c_emis_air(i)
+       state_out%c_iflx_sfc(i) = state_in%c_iflx_sfc(i)
+       state_out%c_iflx_air(i) = state_in%c_iflx_air(i)
     end do
 
     do k = 1, pver
@@ -1679,19 +1691,26 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%tw_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_cur')
 
-  allocate(state%tc_cur(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_cur')
+  allocate(state%tc_curr(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_curr')
 
-  allocate(state%tc_before_physstep(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_before_physstep')
+  allocate(state%tc_init(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_init')
 
-  allocate(state%delta_tc(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%delta_tc')
+  allocate(state%tc_prev(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_prev')
 
   allocate(state%c_emis_sfc(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_emis_sfc')
+
   allocate(state%c_emis_air(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_emis_air')
+
+  allocate(state%c_iflx_sfc(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_sfc')
+
+  allocate(state%c_iflx_air(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_air')
   
   allocate(state%latmapback(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%latmapback')
@@ -1737,11 +1756,13 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
 
-  state%tc_cur(:) = 0._r8
-  state%tc_before_physstep(:) = 0._r8
-  state%delta_tc(:) = 0._r8
+  state%tc_curr(:)    = 0._r8
+  state%tc_init(:)    = 0._r8
+  state%tc_prev(:)    = 0._r8
   state%c_emis_sfc(:) = 0._r8
   state%c_emis_air(:) = 0._r8
+  state%c_iflx_sfc(:) = 0._r8
+  state%c_iflx_air(:) = 0._r8
 
 end subroutine physics_state_alloc
 
@@ -1850,20 +1871,26 @@ subroutine physics_state_dealloc(state)
   deallocate(state%tw_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_cur')
 
-  deallocate(state%tc_cur, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_cur')
+  deallocate(state%tc_curr, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_curr')
 
-  deallocate(state%tc_before_physstep, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_before_physstep')
+  deallocate(state%tc_init, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_init')
 
-  deallocate(state%delta_tc, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%delta_tc')
+  deallocate(state%tc_prev, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_prev')
 
   deallocate(state%c_emis_sfc, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_emis_sfc')
 
   deallocate(state%c_emis_air, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_emis_air')
+
+  deallocate(state%c_iflx_sfc, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_sfc')
+
+  deallocate(state%c_iflx_air, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_air')
   
   deallocate(state%latmapback, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%latmapback')
