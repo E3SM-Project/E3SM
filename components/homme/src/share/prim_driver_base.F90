@@ -1591,7 +1591,7 @@ contains
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
 #ifdef SCREAM
-     adjust_ps=.false.  ! Lagrangian case should adjusting dp3d
+     adjust_ps=.false.  ! Lagrangian case should adjust dp3d
 #else     
      adjust_ps=.true.   ! Preserve buggy v2 behavoir, for now
 #endif     
