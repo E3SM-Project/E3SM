@@ -4045,7 +4045,7 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4" wav_grid="wQU225EC60to30">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_n30np4_TO_wQU225EC60to30_blin.20211130.nc</map>
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_n30np4_to_wQU225EC60to30_bilin.211207.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">
