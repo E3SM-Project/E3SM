@@ -588,8 +588,8 @@ end subroutine linoz_readnl
                               * (chlorine_loading/chlorine_loading_1987)**2 &
                               * delta_t )
 !update from last o3_new due to gas chemisry change
-                                         
-                         delo3_psc= o3_old*(psc_loss -1._r8)
+                    ! use o3_new to prevent negative value                     
+                         delo3_psc= o3_new*(psc_loss -1._r8)
                          o3_new =o3_new + delo3_psc !o3_new:update from gas chem loss
 
                       !
@@ -882,8 +882,8 @@ end subroutine linoz_readnl
                       psc_loss = exp(-linoz_cariolle_psc(i,k) &
                            * (chlorine_loading/chlorine_loading_1987)**2 &
                            * delta_t )
-                      
-                      delta_o3_psc= o3_old*(psc_loss -1._r8)
+                      ! use o3_new to prevent negative value
+                      delta_o3_psc= o3_new*(psc_loss -1._r8)
                       o3_new= delta_o3_psc + o3_new
                       !
                       ! output diagnostic
