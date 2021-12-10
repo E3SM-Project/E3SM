@@ -22,16 +22,20 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_num_elems(state.num_elems())
- , m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+ : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		 params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		 params.nu_p,params.nu_s,params.hypervis_scaling)
+ , m_num_elems(state.num_elems())
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
  , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+ , m_policy_update_states2 (Homme::get_default_team_policy<ExecSpace,TagUpdateStates2>(m_num_elems))
  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
+ , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
  , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -42,12 +46,16 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
-  : m_num_elems(num_elems)
-  , m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
+  : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		  params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		  params.nu_p,params.nu_s,params.hypervis_scaling)
+  , m_num_elems(num_elems)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
+  , m_policy_update_states2 (Homme::get_default_team_policy<ExecSpace,TagUpdateStates2>(m_num_elems))
   , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
   , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
+  , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
   , m_tu(m_policy_update_states)
 {
   init_params(params);
@@ -65,13 +73,41 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
-    Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
-    for (int phys_lev=0; phys_lev<NUM_BIHARMONIC_PHYSICAL_LEVELS; ++phys_lev) {
+    const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
+    const auto etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
+    Kokkos::deep_copy(etai_h, m_hvcoord.etai);
+    Kokkos::deep_copy(etam_h, m_hvcoord.etam);
+
+    for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
       const int ilev = phys_lev / VECTOR_SIZE;
       const int ivec = phys_lev % VECTOR_SIZE;
-      h_nu_scale_top(ilev)[ivec] = lev_nu_scale_top[phys_lev]*m_data.nu_top;
+
+      Real ptop_over_press;
+
+      //prevent padding of nu_scale to get nans to avoid last interface levels
+      //of w, phi to be nans, too
+      if( phys_lev < NUM_PHYSICAL_LEV ){
+        //etai is num_interface_lev, that is, 129 or 73
+        //etam is num_lev, so packs
+        if ( etai_h(0) == 0.0) {
+          ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
+        }else{
+          ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
+        }
+      }else{
+          ptop_over_press = 0.0;
+      }
+
+      auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
+      if ( val < 0.15 ) val = 0.0;
+      h_nu_scale_top(ilev)[ivec] = val;
+
+      //set nlev_tom here for the future
+      //if (val > 0.0) nlev_tom = phys_lev;
+
     }
     Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
+
   }
 
   // Init ElementOps
@@ -105,24 +141,17 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
-  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
-  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
 
   const int nteams = m_tu.get_num_ws_slots();
 
-  // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
+  // Number of scalar/vector int/mid buffers needed, with size nteams/nelems
   const int mid_vectors_nelems = 1;
   const int int_scalars_nelems = 0;
   const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
 
-  const int bhm_scalars_nteams = 2 + (m_process_nh_vars ? 2 : 0);
-  const int bhm_vectors_nteams = 1;
-
   const int size = m_num_elems*(mid_scalars_nelems*size_mid_scalar +
                                 mid_vectors_nelems*size_mid_vector +
-                                int_scalars_nelems*size_int_scalar) +
-                   nteams*(bhm_scalars_nteams*size_bhm_scalar +
-                           bhm_vectors_nteams*size_bhm_vector);
+                                int_scalars_nelems*size_int_scalar);
 
   return size;
 }
@@ -132,8 +161,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV;
-  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
-  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
   auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
@@ -157,24 +184,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
   mem += size_mid_vector*nelems;
-
-  // Biharmonic views (non-persistent views => nteams)
-  m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
-
-  if (m_process_nh_vars) {
-    m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
-    mem += size_bhm_scalar*nteams;
-
-    m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,nteams);
-    mem += size_bhm_scalar*nteams;
-  }
-
-  m_buffers.lapl_theta = decltype(m_buffers.lapl_theta)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
-
-  m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,nteams);
-  mem += size_bhm_vector*nteams;
 
   const int used_mem = reinterpret_cast<Real*>(mem)-mem_in;
   if (used_mem < requested_buffer_size()) {
@@ -206,12 +215,25 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   }
   m_be->register_field(m_buffers.vtens, 2, 0);
   m_be->registration_completed();
-}
+}//initBE
 
 void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real eta_ave_w)
 {
   m_data.np1 = np1;
-  m_data.dt = dt/m_data.hypervis_subcycle;
+
+  m_data.dt = dt;
+  if (m_data.hypervis_subcycle > 0) { 
+    m_data.dt_hvs = dt/m_data.hypervis_subcycle;
+  }else{
+    //won't be used
+    m_data.dt_hvs = -1.0;
+  }
+  if (m_data.hypervis_subcycle_tom > 0) { 
+    m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
+  }else{
+    //won't be used
+    m_data.dt_hvs_tom = -1.0;
+  }
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
@@ -240,7 +262,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     biharmonic_wk_theta ();
     GPTLstop("hvf-bhwk");
 
-    // dispatch parallel_for for first kernel
     Kokkos::parallel_for(m_policy_pre_exchange, *this);
     Kokkos::fence();
 
@@ -253,9 +274,9 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // Update states
     Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
-  }
+  } //subcycle
 
-  // Finally, convert theta back to vtheta, and adjust w at surface
+  // Convert theta back to vtheta, and adjust w at surface
   auto geo = m_geometry;
   auto process_nh_vars = m_process_nh_vars;
   Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
@@ -297,8 +318,32 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
         });
       }
     });
-  });
-}
+  });//conversion back to vtheta
+
+  Kokkos::fence();
+
+  //sponge layer 
+  if(m_data.nu_top > 0){ 
+    for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
+
+      //m_policy_first_laplace has ref states, so cannot be reused now
+      //laplace(fields) --> ttens, etc.
+      Kokkos::parallel_for(m_policy_nutop_laplace, *this);
+      Kokkos::fence();
+
+      //exchange is done on ttens, dptens, vtens, etc.
+      ///? do another timer or the same for all mpi in HV?
+      ///exchange on a subset of levels in future? 
+      assert (m_be->is_registration_completed());
+      GPTLstart("hvf-bexch");
+      m_be->exchange();
+      GPTLstop("hvf-bexch");
+
+      Kokkos::parallel_for(m_policy_update_states2, *this);
+      Kokkos::fence();
+    }
+  } //for for sponge layer
+} //run()
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
 {
@@ -324,6 +369,6 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
     Kokkos::parallel_for(policy, *this);
   }
   Kokkos::fence();
-}
+} //biharmonic
 
 } // namespace Homme

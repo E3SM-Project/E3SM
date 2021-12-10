@@ -13,7 +13,7 @@ module lnd2atmMod
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
   use tracer_varcon        , only : is_active_betr_bgc
-  use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
+  use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g, p2t  
   use lnd2atmType          , only : lnd2atm_type
@@ -409,6 +409,11 @@ contains
     do g = bounds%begg, bounds%endg
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
     enddo
+
+    call c2g( bounds, &
+         col_ws%wslake_col(bounds%begc:bounds%endc), &
+         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb

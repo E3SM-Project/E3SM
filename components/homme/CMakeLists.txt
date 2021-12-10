@@ -54,6 +54,15 @@ IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
 ENDIF()
 
+#option to discard forcings call and push to/from F
+#set it on in cmake file
+SET(BUILD_HOMMEXX_BENCHMARK_NOFORCING OFF CACHE BOOL "")
+if(BUILD_HOMMEXX_BENCHMARK_NOFORCING)
+  message(STATUS "Build without test forcing and pushes to/from F, PERFORMANCE ONLY")
+else()
+  message(STATUS "Option BUILD_HOMMEXX_BENCHMARK_NOFORCING is OFF")
+endif()
+
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 

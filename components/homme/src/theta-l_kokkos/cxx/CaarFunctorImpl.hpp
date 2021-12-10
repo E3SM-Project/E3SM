@@ -287,8 +287,7 @@ struct CaarFunctorImpl {
     m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nslots);
     mem += m_buffers.grad_phinh_i.size();
 
-    int used_mem = (reinterpret_cast<Real*>(mem) - fbm.get_memory());
-    assert (used_mem==requested_buffer_size());
+    assert ((reinterpret_cast<Real*>(mem) - fbm.get_memory())==requested_buffer_size());
   }
 
   void init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {

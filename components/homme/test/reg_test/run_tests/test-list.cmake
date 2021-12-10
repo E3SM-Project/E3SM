@@ -79,14 +79,31 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
 ENDIF()
 
 IF (BUILD_HOMME_THETA_KOKKOS)
-  SET(HOMME_THETA_TESTS_WITH_PROFILE_1
+
+  #cmake/namelist will be built with create-... script
+  SET(TESTS_WITH_AUTO
      theta-f0-tt5-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt5-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
-     theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs3-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs3-hvst5-r3-qz1-nutopon
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
-     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
   )
+  
+  #manually added, create namelists and cmake files for F and cxx by hand
+  #all have to be named theta-f* to make setup work (this could be fixed)
+  SET(TESTS_WITHOUT_AUTO
+     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
+     theta-fhs1
+     theta-fhs2
+     theta-fhs3
+  )
+
+  #all tests that will be used for cxx-vs-F bfb testing
+  SET(HOMME_THETA_TESTS_WITH_PROFILE_1
+     ${TESTS_WITHOUT_AUTO} ${TESTS_WITH_AUTO}
+  )
+
   set(HOMME_THETA_TESTS_WITH_PROFILE "")
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
     LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE

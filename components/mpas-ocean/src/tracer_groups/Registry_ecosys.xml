@@ -687,6 +687,9 @@
 			<var name="avgOceanSurfaceDIC" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
 				description="Ocean Surface DIC concentration"
 			/>
+			<var name="avgOceanSurfaceDOCSemiLabile" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
+				description="Total Ocean Surface DOC semi-labile concentration"
+			/>
 			<var name="avgOceanSurfaceNO3" type="real" dimensions="nCells Time" units="mmol N m^{-3}"
 				description="Ocean Surface NO3 concentration"
 			/>
@@ -732,8 +735,8 @@
 			<var name="iceFluxDust" type="real" dimensions="nCells Time" units="kg m^{-2} s"
 				description="Surface dust flux from sea ice"
 			/>
-			<var name="iceFluxDOC" type="real" dimensions="TWO nCells Time" units="mmol C m^{-2} s"
-				description="Surface Organics flux from sea ice: (1,2)=>(polysaccharides,lipids)"
+			<var name="iceFluxDOC" type="real" dimensions="R3 nCells Time" units="mmol C m^{-2} s"
+				description="Surface Organics flux from sea ice: (1,2,3)=>(polysaccharides,lipids,proteins)"
 			/>
 			<var name="iceFluxDON" type="real" dimensions="nCells Time" units="mmol N m^{-2} s"
 				description="Surface Organic Proteins flux from sea ice"

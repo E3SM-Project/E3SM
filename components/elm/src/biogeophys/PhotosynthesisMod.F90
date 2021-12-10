@@ -14,7 +14,7 @@ module  PhotosynthesisMod
   use elm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
   use elm_varpar          , only : nlevcan
   use elm_varctl          , only : use_hydrstress
-  use elm_varpar          , only : nvegwcs, mxpft
+  use elm_varpar          , only : nvegwcs, mxpft_nc, mxpft
   use elm_varcon          , only : namep, spval
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
@@ -128,9 +128,9 @@ contains
     ! allocate parameters
 
     allocate( this%krmax       (0:mxpft) )          ; this%krmax(:)        = spval
-    allocate( this%kmax        (0:mxpft,nvegwcs) )  ; this%kmax(:,:)       = spval
-    allocate( this%psi50       (0:mxpft,nvegwcs) )  ; this%psi50(:,:)      = spval
-    allocate( this%ck          (0:mxpft,nvegwcs) )  ; this%ck(:,:)         = spval
+    allocate( this%kmax        (0:mxpft_nc,nvegwcs) )  ; this%kmax(:,:)       = spval
+    allocate( this%psi50       (0:mxpft_nc,nvegwcs) )  ; this%psi50(:,:)      = spval
+    allocate( this%ck          (0:mxpft_nc,nvegwcs) )  ; this%ck(:,:)         = spval
     allocate( this%psi_soil_ref(0:mxpft) )          ; this%psi_soil_ref(:) = spval
 
     if ( use_hydrstress .and. nvegwcs /= 4 )then
@@ -157,12 +157,18 @@ contains
     logical            :: readv ! has variable been read in or not
     real(r8)           :: temp1d(0:mxpft) ! temporary to read in parameter
     real(r8)           :: temp2d(0:mxpft,nvegwcs) ! temporary to read in parameter
+    real(r8)           :: temp2dto1d((mxpft+1)*nvegwcs) ! temporary 
+    real(r8)           :: temp1dto2d(mxpft_nc+1,nvegwcs) ! temporary 
     character(len=100) :: tString ! temp. var for reading
+    integer            :: size1d !temp 1d array size
+    integer            :: true_size,true_rows
     !-----------------------------------------------------------------------
     ! read in parameters
     call params_inst%allocParams()
 
-
+    size1d = (mxpft+1)*nvegwcs
+    true_size = (mxpft_nc+1)*nvegwcs
+    true_rows = mxpft_nc+1
     tString = "krmax"
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -171,22 +177,24 @@ contains
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     params_inst%psi_soil_ref=temp1d
-    tString = "lmr_intercept_atkin"
-    call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%lmr_intercept_atkin=temp1d
     tString = "kmax"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%kmax=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%kmax=temp1dto2d
     tString = "psi50"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%psi50=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%psi50=temp1dto2d
     tString = "ck"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%ck=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%ck=temp1dto2d
 
     !$acc update device(            &
     !$acc params_inst%krmax       , &
@@ -602,6 +610,8 @@ contains
 
                vcmax25top = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+               vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
+               jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
 
             else
 

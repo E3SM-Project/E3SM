@@ -244,7 +244,6 @@ contains
 !-----------------------------------------------------------------------
 
 !
-      integer :: k, nVertLevels
       integer,  parameter :: num_water_types = 5  ! max number of different water types
 
       ! I don't understand what the previous two lines are for.  They appear unnecessary
