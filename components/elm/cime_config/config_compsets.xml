@@ -145,7 +145,7 @@
   </compset>
 
   <compset>
-    <alias>I1850CECACTCBC</alias>
+    
     <lname>1850_DATM%QIA_ELM%CECACTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
@@ -637,6 +637,18 @@
     <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
    </compset>
 
+  <!---I E3SMWCv2 compsets-->
+  <compset>
+    <alias>I1850WCCNP</alias>
+    <lname>1850_DATM%E3SMWCv2_ELM%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+   
+  <!---I GSWP3-w5e5 compsets-->
+  <compset>
+    <alias>I1850GSWPw5e5CNP</alias>
+    <lname>1850_DATM%GSWP3w5e5_ELM%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
   <!---I compset system tests -->
 
   <compset>
