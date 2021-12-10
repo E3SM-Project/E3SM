@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
@@ -18,9 +18,11 @@
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
     <desc option="ERA5"> Fifth generation ECMWF reanalysis </desc>
     <desc option="ERA56HR"> Fifth generation ECMWF reanalysis,6 hourly data </desc>
+    <desc option="GSWP3w5e5"> GSWP3w5e5 data set </desc>
     <desc option="MOSARTTEST"> MOSART test data set using older NLDAS data </desc>
     <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
+    <desc option="E3SMWCv2"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
@@ -45,13 +47,13 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA56HR,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA56HR,ELMGSWP3w5e5,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
-      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, ELMERA5,ERA56HR, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
+      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, ELMERA5,ERA56HR, ELMGSWP3w5e5, CLMMOSARTTEST, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
       WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. 
       WARNING for CLMGSWP3v1: Humidity is identically zero for last time step in Dec/2013 and all of 2014 so you should NOT use 2014
 data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
@@ -72,12 +74,14 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
       <value compset="%ERA5">ELMERA5</value>
       <value compset="%ERA56HR">ERA56HR</value>
+      <value compset="%GSWP3w5e5">ELMGSWP3w5e5</value>
       <value compset="%MOSARTTEST">CLMMOSARTTEST</value>
       <value compset="%NLDAS2">CLMNLDAS2</value>
       <value compset="%1PT">CLM1PT</value>
       <value compset="%CPLHIST">CPLHIST</value>
       <value compset="%CFSv2">CFSv2</value>
       <value compset="%CFSR">CFSR</value>
+      <value compset="%E3SMWCv2">E3SMWCv2</value>
     </values>
   </entry>
 
@@ -165,6 +169,22 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       information for that stream.
     </desc>
   </entry>
+  <entry id="DATM_E3SMWCv2_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for datm when DATM_MODE is
+      , NOTE: if this is set to 'null' (the default), then
+      E3SMWCv2 domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
 
   <entry id="DATM_CPLHIST_DIR">
     <type>char</type>
@@ -221,6 +241,45 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>ending year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
+  </entry>
+
+   <entry id="DATM_E3SMWCv2_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Simulation year corresponding to DATM_E3SMWCv2_YR_START (only used
+      when DATM_MODE is E3SMWCv2). A common usage is to set this to
+      RUN_STARTDATE. With this setting, the forcing in the first year of
+      the run will be the forcing of year DATM_E3SMWCv2_YR_START. Another
+      use case is to align the calendar of transient forcing with the
+      model calendar. For example, setting
+      DATM_E3SNWCV2_YR_ALIGN=DATM_E3SMWCv2_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
+  </entry>
+
+  <entry id="DATM_E3SMWCv2_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over (only used when DATM_MODE is E3SMWCv2)</desc>
+  </entry>
+
+  <entry id="DATM_E3SMWCv2_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over (only used when DATM_MODE is E3SMWCv2)</desc>
   </entry>
 
   <entry id="DATM_CLMNCEP_YR_ALIGN">
