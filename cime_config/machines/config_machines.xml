@@ -94,7 +94,7 @@
 	<arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">    
       <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
       <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
       <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
@@ -110,8 +110,6 @@
 	<command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
-        <command name="unload">cuda</command>
-        <command name="unload">cpe-cuda</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
