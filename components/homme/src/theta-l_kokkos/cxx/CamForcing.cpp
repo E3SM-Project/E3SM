@@ -19,7 +19,17 @@ static void apply_cam_forcing_tracers(const Real dt, ForcingFunctor& ff,
                                       const TimeLevel& tl,
                                       const SimulationParams& p) {
   GPTLstart("ApplyCAMForcing_tracers");
-  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, p.moisture);
+
+//original
+//  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, p.moisture);
+
+//!!!! adjustment, 
+//call for ftype0 + CAM, or any ftype standalone homme
+  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, MoistDry::MOIST);
+
+//call for ftype2 + CAM
+//  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, true, MoistDry::MOIST);
+
   GPTLstop("ApplyCAMForcing_tracers"); 
 }
 

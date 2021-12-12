@@ -425,6 +425,9 @@ contains
 
     ! Test forcing is only for standalone Homme (and only for some tests/configurations)
     if (compute_forcing_and_push_to_c) then
+
+!print *, 'OG IN PUSH FORCING', elem(1)%derived%fvtheta(1,1,72),elem_derived_fvtheta(1,1,72,1)
+
       call compute_test_forcing_dummy(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
       call t_startf('push_to_cxx')
       call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
@@ -470,7 +473,7 @@ contains
 
   end subroutine prim_run_subcycle
 
-
+#if 0
   subroutine setup_element_pointers (elem)
     use element_state,  only : allocate_element_arrays, elem_state_v, elem_state_w_i, elem_state_vtheta_dp, &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, elem_state_phis,       & 
@@ -510,11 +513,12 @@ contains
     enddo
 
   end subroutine setup_element_pointers
+#endif
 
 
 !the next 2 routines have logic for push to/from F and for forcing routine
 !
-!there are 3 cases:
+!STANDALONE HOMME there are 3 cases:
 !
 !performance:
 ! (no forcing, no push to c) -> (subcycle) -> (no push to f)
@@ -559,18 +563,42 @@ contains
     type (TimeLevel_t),   intent(in) :: tl
     integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
     logical,              intent(in) :: compute_diagnostics
+ 
+    logical                          :: time_for_homme_output
+
+    time_for_homme_output = &
+         (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics)
 
 #ifdef HOMMEXX_BENCHMARK_NOFORCING
+!standalone homme, only benchmarks
     push_to_f = .false.
-#else
-     
-    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then 
-       push_to_f = .true.
-    endif
-    if (test_with_forcing) then
-       push_to_f = .true.
-    endif
+
+#elif defined(SCREAM)
+!SCREAM run, do nothing
+
+#elif defined(CAM)
+!CAM run, push at the end of nsplit loop
     if (nsplit_iter == nsplit) then
+       push_to_f = .true.
+    endif
+
+!CAM also needs some of homme output
+    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+    if ( time_for_homme_output ) then
+       push_to_f = .true.
+    endif
+
+#else     
+!standalone homme, not benchmarks
+!output
+    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then 
+    if ( time_for_homme_output ) then 
+       push_to_f = .true.
+    endif
+
+!push for standalone homme with forcing, test_with_forcing=false
+!for most standalone homme tests
+    if (test_with_forcing) then
        push_to_f = .true.
     endif
 

@@ -135,18 +135,35 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   
   //decide on tracer forcing
   //SCREAM, CAM -- support only ftype2
+  //
+  //
+  //PROPAGATE the same change to EUL xx part
 #if defined(CAM)
-  apply_forcing = 0;
+//  apply_forcing = (params.ftype == ForcingAlg::FORCING_2 &&
+//                   params.nsplit_iteration == 1 );
+  apply_forcing = 1;
 #elif defined(SCREAM)
   apply_forcing = (params.ftype == ForcingAlg::FORCING_2 &&
-                   nstep_iteration == 1 );
+                   params.nsplit_iteration == 1 );
 #else
   apply_forcing = forcing_0or2;
 #endif
 
+
+//printf("OG before-if: applyforcing %d \n",apply_forcing);
+
+
   if (apply_forcing) {
+
+//printf("OG param nsplit %d, param nsplit iter %d \n",params.nsplit,params.nsplit_iteration);
+//std::cout<< "OG in appl forcing for tracers,dt_q " << std::to_string(dt_q)<<"\n";
+//std::cout<< "OG in appl forcing for tracers,dt_q_nsplit " << std::to_string(dt_q_nsplit)<<"\n";
+
+
+//PROPAGATE THIS TOO
+//do not propagate derived FVtheta ?
     // Apply tracer forcings over tracer time step.
-#ifdef SCREAM
+#if defined(CAM) || defined(SCREAM)
     apply_cam_forcing_tracers(dt_q_nsplit);
 #else
     apply_cam_forcing_tracers(dt_q);
