@@ -140,6 +140,7 @@
     config_use_humics = true
     config_use_DON = true
     config_use_iron = true
+    config_use_macromolecules = false
     config_use_modal_aerosols = false
     config_use_zaerosols = true
     config_skeletal_bgc_flux_type = 'Jin2006'

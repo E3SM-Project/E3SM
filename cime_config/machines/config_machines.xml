@@ -56,7 +56,7 @@
 
   -->
   <machine MACH="perlmutter">
-    <DESC>Perlmutter at NERSC.  Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
+    <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>login</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
@@ -94,7 +94,7 @@
 	<arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">    
       <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
       <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
       <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
@@ -110,7 +110,6 @@
 	<command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
-        <command name="unload">cuda</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -127,15 +126,19 @@
 
       <modules compiler="nvidia.*">
 	<command name="load">PrgEnv-nvidia</command>
-	<command name="load">nvidia/21.7</command>
+	<command name="load">nvidia/21.9</command>
       </modules>
       
       <modules compiler="gnugpu">
-	<command name="load">cuda</command>
+	<command name="load">cpe-cuda</command>
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>
       </modules>      
 
       <modules compiler="nvidiagpu">
-	<command name="load">cuda</command>
+	<command name="load">cpe-cuda</command>
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>        
       </modules>
       
       <modules compiler="gnu">
@@ -147,13 +150,13 @@
       </modules>      
 
       <modules>
-	<command name="load">cray-libsci/21.08.1.2</command>
+	<command name="load">cray-libsci</command>
 	<command name="load">craype</command>
-	<command name="load">cray-mpich/8.1.10</command>
+	<command name="load">cray-mpich/8.1.11</command>
 	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
 	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
-	<command name="load">cmake/3.20.5</command>
+	<command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
 

@@ -694,7 +694,7 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
-<compiler OS="Linux" COMPILER="intel">
+<compiler OS="LINUX" COMPILER="intel">
   <FFLAGS>
     <append> -mcmodel medium -shared-intel </append>
   </FFLAGS>

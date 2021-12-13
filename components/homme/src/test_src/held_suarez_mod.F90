@@ -112,7 +112,6 @@ contains
        enddo
     endif
 
-    
   end subroutine hs_forcing
 
   function hs_v_forcing(hvcoord,ps,v,npts,nlevels) result(hs_v_frc)
@@ -250,6 +249,10 @@ contains
        elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
        elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
 
+#ifdef MODEL_THETA_L
+       elem(ie)%state%w_i = 0.0
+#endif
+
        temperature(:,:,:)=Tinit
 
        ! if topo file was given in the namelist, PHIS was initilized in prim_main
@@ -301,6 +304,7 @@ contains
        endif
        ps=elem(ie)%state%ps_v(:,:,n0)
        call set_thermostate(elem(ie),ps,temperature,hvcoord)
+
     end do
 
   end subroutine hs0_init_state
