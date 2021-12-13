@@ -38,7 +38,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   hypervis_subcycle_tom = 1
   hypervis_subcycle_q = 1
-  se_ftype=2
+  se_ftype=0
   limiter_option    = 9
   planar_slice=.true.
   lx = 20000.0
