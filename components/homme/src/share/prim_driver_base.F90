@@ -1590,7 +1590,7 @@ contains
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+     adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
   endif
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
