@@ -23,12 +23,16 @@ static void apply_cam_forcing_tracers(const Real dt, ForcingFunctor& ff,
 //original
 //  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, p.moisture);
 
-//!!!! adjustment, 
-//call for ftype0 + CAM, or any ftype standalone homme
-  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, MoistDry::MOIST);
-
-//call for ftype2 + CAM
-//  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, true, MoistDry::MOIST);
+  bool adjustment;
+  if ( p.ftype == ForcingAlg::FORCING_0) adjustment = false;
+#ifndef CAM
+//this will change when ftype2 in homme changes
+  if ( p.ftype == ForcingAlg::FORCING_2) adjustment = false;
+#endif
+#ifdef CAM
+  if ( p.ftype == ForcingAlg::FORCING_2) adjustment = true;
+#endif
+  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, adjustment, p.moisture);
 
   GPTLstop("ApplyCAMForcing_tracers"); 
 }
