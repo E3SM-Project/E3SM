@@ -176,6 +176,7 @@ contains
       integer, pointer :: nVertLevels, nCellsSolve
       integer :: iTracer, k, iCell, num_tracers
       integer, dimension(:), pointer :: maxLevelCell
+      integer, pointer :: index_temperature
 
       real(kind=RKIND), dimension(:, :, :), pointer :: &
           tracers, tracerTend
@@ -222,7 +223,7 @@ contains
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracersTendML', activeTracersTendML)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'bruntVaisalaFreqML', bruntVaisalaFreqML)
          call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD', dThreshMLD)
-
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(tracerTendPool, 'activeTracersTend', tracerTend)
 
@@ -255,7 +256,7 @@ contains
 
                   activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
                                                          activeTracerSurfaceFluxTendency(iTracer, k, iCell)*layerThickness(k, iCell)
-                  if (iTracer == 1) THEN
+                  if (iTracer == index_temperature) THEN
                      activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
                                                                  temperatureShortWaveTendency(k, iCell)*layerThickness(k, iCell)
                   endif
@@ -286,7 +287,7 @@ contains
                                                             activeTracerNonLocalTendency(iTracer, k, iCell)*difference
                activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
                                                            activeTracerSurfaceFluxTendency(iTracer, k, iCell)*difference
-               if (iTracer == 1) THEN
+               if (iTracer == index_temperature) THEN
                   activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell) + &
                                                               temperatureShortWaveTendency(k, iCell)*difference
                endif
@@ -305,7 +306,7 @@ contains
                activeTracerNonLocalMLTend(iTracer, iCell) = activeTracerNonLocalMLTend(iTracer, iCell)/dThreshMLD(iCell)
                activeTracerForcingMLTend(iTracer, iCell) = activeTracerForcingMLTend(iTracer, iCell)/dThreshMLD(iCell)
             end do
-            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k, iCell)*layerThickness(k, iCell)
+            bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell) + BruntVaisalaFreqTop(k, iCell)*difference
             bruntVaisalaFreqML(iCell) = bruntVaisalaFreqML(iCell)/dThreshMLD(iCell)
          end do
 
