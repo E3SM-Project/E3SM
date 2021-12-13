@@ -135,13 +135,10 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   const auto dt_q_nsplit = dt * params.dt_tracer_factor * params.nsplit;
   
   //decide on tracer forcing
-  //PROPAGATE the same change to EUL xx part
 #if defined(CAM) || defined(SCREAM)
   //CAM + xx supports only ftype2 and ftype0
-  apply_forcing = 
-             ( params.ftype == ForcingAlg::FORCING_0 || params.ftype == ForcingAlg::FORCING_2 ) &&
-               params.nsplit_iteration == 1;
-//  apply_forcing = 1;
+  apply_forcing = ( params.ftype == ForcingAlg::FORCING_0 ) ||
+                  ( params.ftype == ForcingAlg::FORCING_2  && params.nsplit_iteration == 1 );
 #else
   apply_forcing = forcing_0or2;
 #endif
@@ -152,11 +149,8 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
 //std::cout<< "OG in appl forcing for tracers,dt_q " << std::to_string(dt_q)<<"\n";
 //std::cout<< "OG in appl forcing for tracers,dt_q_nsplit " << std::to_string(dt_q_nsplit)<<"\n";
 
-
-//PROPAGATE THIS TOO
-//do not propagate derived FVtheta ?
-    // Apply tracer forcings over tracer time step.
-    apply_cam_forcing_tracers(dt_q_nsplit);
+    if (params.ftype == ForcingAlg::FORCING_0) apply_cam_forcing_tracers(dt_q);
+    if (params.ftype == ForcingAlg::FORCING_2) apply_cam_forcing_tracers(dt_q_nsplit);
   }
 
   set_tracer_transport_derived_values(params, elements, tl);

@@ -106,26 +106,21 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     tl.update_tracers_levels(params.dt_tracer_factor);
 
     // Apply forcing.
-    // to make it readable, duplicate some code
-
-    //CAM, support only ftype2, _tracers are done in dp_coupling
-#if defined(CAM)
-    if(params.ftype == ForcingAlg::FORCING_2) {
-      apply_cam_forcing_dynamics(dt_remap);
+#if defined(CAM) || defined(SCREAM)
+    //CAM and SCREAM, support only ftype0 and 2
+    if (params.ftype == ForcingAlg::FORCING_0){
+         apply_cam_forcing_tracers(dt_remap);
     }
-
-    //SCREAM, support only ftype2, nothing is done in dp layer
-#elif defined(SCREAM)
-    if(params.ftype == ForcingAlg::FORCING_2) {
-      if(params.nsplit_iteration == 1) 
+    if (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1 ){
          apply_cam_forcing_tracers(dt_remap*params.nsplit);
-      apply_cam_forcing_dynamics(dt_remap);
     }
 
+    apply_cam_forcing_dynamics(dt_remap);
+    
+#else
     //standalone homme, support ftype0 and ftype2
     //ftype0  = ftype2 if dt_remap>=dt_tracer, but
     //ftype0 != ftype2 for dt_remap<dt_tracer
-#else
     if(params.ftype == ForcingAlg::FORCING_0 || 
        params.ftype == ForcingAlg::FORCING_2    ) {
       apply_cam_forcing(dt_remap);

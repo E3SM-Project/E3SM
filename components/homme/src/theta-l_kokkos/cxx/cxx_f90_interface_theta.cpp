@@ -201,6 +201,8 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                    elem_Q_ptr, num_elems));
 }
 
+//currently, we do not need FVTheta and FPHI, because they are computed from FT and FQ
+//in applycamforcing_tracers inside xx
 void push_forcing_to_c (F90Ptr elem_derived_FM,
                         F90Ptr elem_derived_FVTheta,
                         F90Ptr elem_derived_FT,
