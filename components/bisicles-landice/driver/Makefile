@@ -1,6 +1,21 @@
 .SUFFIXES: .F .o
 
-OBJS = glc_comp_mct.o \
+OBJS = \
+       mpi_mod.o \
+       glimmer_global.o \
+       parallel_mpi.o \
+       glc_kinds_mod.o \
+       glc_communicate.o \
+       glimmer_physcon.o \
+       glimmer_paramets.o \
+       glc_constants.o \
+       glc_exit_mod.o \
+       glc_route_ice_runoff.o \
+       glc_coupling_flags.o \
+       glc_fields.o \
+       glc_indexing_info.o \
+       glc_override_frac.o \
+       glc_comp_mct.o \
        glc_communicator.o \
        glc_cpl_indices.o \
        glc_mct_vars.o \
@@ -8,7 +23,53 @@ OBJS = glc_comp_mct.o \
 
 all: $(OBJS)
 
-glc_comp_mct.o: glc_communicator.o glc_cpl_indices.o glc_mct_vars.o glc_import_export.o
+glc_comp_mct.o: \
+       mpi_mod.o \
+       glimmer_global.o \
+       parallel_mpi.o \
+       glc_kinds_mod.o \
+       glc_communicate.o \
+       glimmer_physcon.o \
+       glimmer_paramets.o \
+       glc_constants.o \
+       glc_exit_mod.o \
+       glc_route_ice_runoff.o \
+       glc_coupling_flags.o \
+       glc_fields.o \
+       glc_indexing_info.o \
+       glc_override_frac.o \
+       glc_communicator.o \
+       glc_cpl_indices.o \
+       glc_mct_vars.o \
+       glc_import_export.o
+
+mpi_mod.o:
+
+glimmer_global.o:
+
+parallel_mpi.o:
+ 
+glc_kinds_mod.o:
+
+glc_communicate.o:
+
+glimmer_physcon.o:
+
+glimmer_paramets.o:
+
+glc_constants.o:
+
+glc_exit_mod.o:
+
+glc_route_ice_runoff.o:
+
+glc_coupling_flags.o:
+
+glc_fields.o:
+
+glc_indexing_info.o:
+
+glc_override_frac.o:
 
 glc_communicator.o:
 
