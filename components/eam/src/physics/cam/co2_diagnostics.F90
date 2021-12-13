@@ -21,7 +21,7 @@ use constituents   , only: pcnst, cnst_name
 use cam_logfile    , only: iulog
 use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
-use time_manager   , only: is_first_step, is_last_step
+use time_manager   , only: is_first_step, is_last_step, get_prev_date, get_curr_date, is_end_curr_month
 
 implicit none
 private
@@ -30,6 +30,8 @@ save
 public co2_diags_register            ! setup co2 pbuf fields
 public get_total_carbon
 public get_carbon_emissions
+public get_carbon_sfc_fluxes
+public get_carbon_air_fluxes
 public print_global_carbon_diags
 public print_global_carbon_diags_scl
 
@@ -148,7 +150,6 @@ contains
    end subroutine get_total_carbon
 
    subroutine get_carbon_emissions(state, cam_in, pbuf, dtime)
-      use physconst,      only: rga
       use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 
       type(physics_state), intent(inout) :: state
@@ -162,8 +163,8 @@ contains
       integer i, k, m                       ! column, level, constant indices
       integer index_ac_CO2                  ! pbuf index for aircraft emissions
       real(r8), pointer :: ac_CO2(:,:)      ! aircraft emissions in pbuf
-      real(r8) :: sfc_flux(pcols)           ! constituent surface flux
-      real(r8) :: air_flux(pcols)           ! aircraft emission flux
+      real(r8) :: sfc_flux(pcols)           ! surface carbon flux
+      real(r8) :: air_flux(pcols)           ! aircraft carbon flux
       !------------------------------------------------------------------------
 
       ! Set CO2 global index
@@ -200,8 +201,8 @@ contains
 
       ! sum value and put in state
       do i = 1, ncol
-         state%c_emis_sfc(i) = sfc_flux(i)
-         state%c_emis_air(i) = air_flux(i)
+         state%c_flux_sfc(i) = sfc_flux(i)
+         state%c_flux_air(i) = air_flux(i)
       end do
 
       if ( .not. is_first_step() ) then
@@ -212,6 +213,143 @@ contains
       end if
 
    end subroutine get_carbon_emissions
+
+   subroutine get_carbon_sfc_fluxes(state, cam_in, dtime)
+
+      type(physics_state), intent(inout) :: state
+      type(cam_in_t),      intent(in   ) :: cam_in
+      real(r8), intent(in)               :: dtime        ! physics time step
+
+      ! local variables
+      real(r8) :: tc(state%ncol)            ! vertical integral of total carbon
+      integer ncol                          ! number of atmospheric columns
+      integer i, m                          ! column, constant indices
+      real(r8) :: sfc_flux(pcols)           ! surface carbon flux
+      real(r8) :: sfc_flux_ocn(pcols)       ! surface ocean carbon flux
+      real(r8) :: sfc_flux_fff(pcols)       ! surface fossil fuel carbon flux
+      real(r8) :: sfc_flux_lnd(pcols)       ! surface land carbon flux
+      !------------------------------------------------------------------------
+
+      ! Set CO2 global indices
+      do m = 1, ncnst
+         select case (trim(c_names(m)))
+         case ('CO2_OCN')
+            co2_ocn_glo_ind = c_i(m)
+         case ('CO2_FFF')
+            co2_fff_glo_ind = c_i(m)
+         case ('CO2_LND')
+            co2_lnd_glo_ind = c_i(m)
+         case ('CO2')
+            co2_glo_ind     = c_i(m)
+         end select
+      end do
+
+      ! initialize arrays
+      ncol  = state%ncol
+      do i = 1, ncol
+         sfc_flux(i)     = 0._r8
+         sfc_flux_ocn(i) = 0._r8
+         sfc_flux_fff(i) = 0._r8
+         sfc_flux_lnd(i) = 0._r8
+      end do
+
+      ! gather surface fluxes
+      do i = 1, ncol
+         sfc_flux(i)     = sfc_flux(i)     + cam_in%cflx(i,co2_glo_ind)
+         sfc_flux_ocn(i) = sfc_flux_ocn(i) + cam_in%cflx(i,co2_ocn_glo_ind)
+         sfc_flux_fff(i) = sfc_flux_fff(i) + cam_in%cflx(i,co2_fff_glo_ind)
+         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_lnd_glo_ind)
+      end do
+
+      ! put in state
+      do i = 1, ncol
+         state%c_flux_sfc(i) = sfc_flux(i)
+      end do
+
+      if ( is_start_curr_month() ) then
+         do i = 1, ncol
+            state%c_mflx_sfc(i) = 0._r8
+            state%c_mflx_ocn(i) = 0._r8
+            state%c_mflx_sff(i) = 0._r8
+            state%c_mflx_lnd(i) = 0._r8
+         end do
+      end if
+
+      if ( .not. is_first_step() ) then
+         do i = 1, ncol
+            state%c_iflx_sfc(i) = state%c_iflx_sfc(i) + (sfc_flux(i)     * dtime)
+            state%c_iflx_ocn(i) = state%c_iflx_ocn(i) + (sfc_flux_ocn(i) * dtime)
+            state%c_iflx_sff(i) = state%c_iflx_sff(i) + (sfc_flux_fff(i) * dtime)
+            state%c_iflx_lnd(i) = state%c_iflx_lnd(i) + (sfc_flux_lnd(i) * dtime)
+            state%c_mflx_sfc(i) = state%c_mflx_sfc(i) + (sfc_flux(i)     * dtime)
+            state%c_mflx_ocn(i) = state%c_mflx_ocn(i) + (sfc_flux_ocn(i) * dtime)
+            state%c_mflx_sff(i) = state%c_mflx_sff(i) + (sfc_flux_fff(i) * dtime)
+            state%c_mflx_lnd(i) = state%c_mflx_lnd(i) + (sfc_flux_lnd(i) * dtime)
+         end do
+      end if
+
+   end subroutine get_carbon_sfc_fluxes
+
+   subroutine get_carbon_air_fluxes(state, pbuf, dtime)
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+
+      type(physics_state), intent(inout) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      real(r8), intent(in)               :: dtime        ! physics time step
+
+      ! local variables
+      real(r8) :: tc(state%ncol)            ! vertical integral of total carbon
+      integer ncol                          ! number of atmospheric columns
+      integer i, k, m                       ! column, level, constant indices
+      integer index_ac_CO2                  ! pbuf index for aircraft emissions
+      real(r8), pointer :: ac_CO2(:,:)      ! aircraft emissions in pbuf
+      real(r8) :: air_flux(pcols)           ! aircraft carbon flux
+      !------------------------------------------------------------------------
+
+      ! Set CO2 global index
+      do m = 1, ncnst
+         select case (trim(c_names(m)))
+         case ('CO2')
+            co2_glo_ind = c_i(m)
+         end select
+      end do
+
+      index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
+
+      ! initialize arrays
+      ncol  = state%ncol
+      do i = 1, ncol
+         air_flux(i) = 0._r8
+      end do
+
+      ! gather aircraft fluxes
+
+      do k = 1, pver
+         do i = 1, ncol
+            air_flux(i) = air_flux(i) + ac_CO2(i,k)
+         end do
+      end do
+
+      ! put in state
+      do i = 1, ncol
+         state%c_flux_air(i) = air_flux(i)
+      end do
+
+      if ( is_start_curr_month() ) then
+         do i = 1, ncol
+            state%c_mflx_air(i) = 0._r8
+         end do
+      end if
+
+      if ( .not. is_first_step() ) then
+         do i = 1, ncol
+            state%c_iflx_air(i) = state%c_iflx_air(i) + (air_flux(i) * dtime)
+            state%c_mflx_air(i) = state%c_mflx_air(i) + (air_flux(i) * dtime)
+         end do
+      end if
+
+   end subroutine get_carbon_air_fluxes
 
    subroutine print_global_carbon_diags(state, dtime, nstep)
       use phys_gmean,     only: gmean
@@ -226,24 +364,25 @@ contains
       real(r8) :: tc_glob(7)
 !      real(r8) :: tc_start_glob, tc_end_glob, delta_tc_glob, c_emis_glob, c_air_glob
       real(r8) :: gtc_curr, gtc_init, gtc_prev, gtc_delta
-      real(r8) :: gtc_emis_sfc, gtc_emis_air, gtc_iflx_sfc, gtc_iflx_air
+      real(r8) :: gtc_flux_sfc, gtc_flux_air, gtc_flux_lnd, gtc_flux_ocn
+      real(r8) :: gtc_iflx_sfc, gtc_iflx_air, gtc_iflx_lnd, gtc_iflx_ocn
       real(r8) :: rel_error, expected_tc
       !------------------------------------------------------------------------
 
       do lchnk = begchunk, endchunk
          ncol = state(lchnk)%ncol
          ! carbon at current time step
-         tc(:ncol,lchnk,1) = state(lchnk)%tc_curr(:ncol)
+         tc(:ncol,lchnk, 1) = state(lchnk)%tc_curr(:ncol)
          ! carbon at first time step
-         tc(:ncol,lchnk,2) = state(lchnk)%tc_init(:ncol)
+         tc(:ncol,lchnk, 2) = state(lchnk)%tc_init(:ncol)
          ! carbon for previous time step
-         tc(:ncol,lchnk,3) = state(lchnk)%tc_prev(:ncol)
+         tc(:ncol,lchnk, 3) = state(lchnk)%tc_prev(:ncol)
          ! carbon emissions
-         tc(:ncol,lchnk,4) = state(lchnk)%c_emis_sfc(:ncol)
-         tc(:ncol,lchnk,5) = state(lchnk)%c_emis_air(:ncol)
+         tc(:ncol,lchnk, 4) = state(lchnk)%c_flux_sfc(:ncol)
+         tc(:ncol,lchnk, 5) = state(lchnk)%c_flux_air(:ncol)
          ! time integrated carbon fluxes
-         tc(:ncol,lchnk,6) = state(lchnk)%c_iflx_sfc(:ncol)
-         tc(:ncol,lchnk,7) = state(lchnk)%c_iflx_air(:ncol)
+         tc(:ncol,lchnk, 6) = state(lchnk)%c_iflx_sfc(:ncol)
+         tc(:ncol,lchnk, 7) = state(lchnk)%c_iflx_air(:ncol)
       end do
 
       ! Compute global means of input and output energies and of
@@ -252,25 +391,25 @@ contains
       call gmean(tc, tc_glob, 7)
 !      end if
 
-      gtc_curr     = tc_glob(1)
-      gtc_init     = tc_glob(2)
-      gtc_prev     = tc_glob(3)
-      gtc_emis_sfc = tc_glob(4)
-      gtc_emis_air = tc_glob(5)
-      gtc_iflx_sfc = tc_glob(6)
-      gtc_iflx_air = tc_glob(7)
+      gtc_curr     = tc_glob( 1)
+      gtc_init     = tc_glob( 2)
+      gtc_prev     = tc_glob( 3)
+      gtc_flux_sfc = tc_glob( 4)
+      gtc_flux_air = tc_glob( 5)
+      gtc_iflx_sfc = tc_glob( 6)
+      gtc_iflx_air = tc_glob( 7)
 
 !!      rel_error     = ( (delta_tc_glob / dtime) - c_emis_glob ) / c_emis_glob
 !      expected_tc   = tc_start_glob + (c_emis_glob * dtime) + (c_air_glob * dtime)
 !      rel_error     = ( expected_tc - tc_end_glob  ) / tc_end_glob
-      expected_tc  = gtc_prev + ( (gtc_emis_sfc + gtc_emis_air) * dtime )
+      expected_tc  = gtc_prev + ( (gtc_flux_sfc + gtc_flux_air) * dtime )
       rel_error    = ( expected_tc - gtc_curr ) / gtc_curr
       gtc_delta    = gtc_curr - gtc_prev
 
       if (masterproc) then
          write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, tc start, tc end, diff ", nstep, gtc_prev, gtc_curr, gtc_delta
-         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, d(tc)/dt, emis, rel err", nstep, gtc_delta/dtime, gtc_emis_sfc + gtc_emis_air, rel_error
-         write(iulog,'(1x,a30,1x,i8,2(1x,e25.17))') "nstep, sfc_emis, aircraft_emis", nstep, gtc_emis_sfc, gtc_emis_air
+         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, d(tc)/dt, emis, rel err", nstep, gtc_delta/dtime, gtc_flux_sfc + gtc_flux_air, rel_error
+         write(iulog,'(1x,a30,1x,i8,2(1x,e25.17))') "nstep, sfc_emis, aircraft_emis", nstep, gtc_flux_sfc, gtc_flux_air
       end if
       
    end subroutine print_global_carbon_diags
@@ -285,67 +424,99 @@ contains
       ! local variables
       integer ncol, lchnk
       integer ierr
+      integer, parameter :: c_num_var = 16
       character(len=*), parameter :: sub_name='print_global_carbon_diags_scl: '
       real(r8), parameter :: error_tol = 0.01_r8
       real(r8) :: time_integrated_flux, state_net_change
-      real(r8) :: tc_glob(7)
+      real(r8) :: tc_glob(11)
 !      real(r8) :: tc_start_glob, tc_end_glob, delta_tc_glob, c_emis_glob, c_air_glob
-      real(r8) :: gtc_curr, gtc_init, gtc_prev, gtc_delta
-      real(r8) :: gtc_emis_sfc, gtc_emis_air, gtc_iflx_sfc, gtc_iflx_air
+      real(r8) :: gtc_curr, gtc_init, gtc_mnst, gtc_prev, gtc_delta
+      real(r8) :: gtc_flux_sfc, gtc_flux_air
+      real(r8) :: gtc_mflx_sfc, gtc_mflx_air, gtc_mflx_sff, gtc_mflx_lnd, gtc_mflx_ocn
+      real(r8) :: gtc_iflx_sfc, gtc_iflx_air, gtc_iflx_sff, gtc_iflx_lnd, gtc_iflx_ocn
+      real(r8) :: gtc_flux_tot, gtc_mflx_tot, gtc_iflx_tot
       real(r8) :: rel_error, expected_tc
+      real(r8) :: rel_error_mon, expected_tc_mon
+      real(r8) :: rel_error_run, expected_tc_run
 
       real(r8), pointer :: tc(:,:,:) ! array for holding carbon variables
       !------------------------------------------------------------------------
 
       if ( .not. co2_transport() ) return
 
-      allocate(tc(pcols,begchunk:endchunk,7), stat=ierr)
+      allocate(tc(pcols,begchunk:endchunk,c_num_var), stat=ierr)
       if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate tc'
 
       ncol  = state%ncol
       lchnk = state%lchnk
-      ! carbon at current time step
-      tc(:ncol,lchnk,1) = state%tc_curr(:ncol)
-      ! carbon at first time step
-      tc(:ncol,lchnk,2) = state%tc_init(:ncol)
-      ! carbon for previous time step
-      tc(:ncol,lchnk,3) = state%tc_prev(:ncol)
-      ! carbon emissions
-      tc(:ncol,lchnk,4) = state%c_emis_sfc(:ncol)
-      tc(:ncol,lchnk,5) = state%c_emis_air(:ncol)
-      ! time integrated carbon fluxes
-      tc(:ncol,lchnk,6) = state%c_iflx_sfc(:ncol)
-      tc(:ncol,lchnk,7) = state%c_iflx_air(:ncol)
+      ! carbon at current, initial, month start, and previous time steps
+      tc(:ncol,lchnk, 1) = state%tc_curr(:ncol)
+      tc(:ncol,lchnk, 2) = state%tc_init(:ncol)
+      tc(:ncol,lchnk, 3) = state%tc_mnst(:ncol)
+      tc(:ncol,lchnk, 4) = state%tc_prev(:ncol)
+      ! carbon emissions and fluxes at current time step
+      tc(:ncol,lchnk, 5) = state%c_flux_sfc(:ncol)
+      tc(:ncol,lchnk, 6) = state%c_flux_air(:ncol)
+      ! monthly accumulated carbon emissions and fluxes
+      tc(:ncol,lchnk, 7) = state%c_mflx_sfc(:ncol)
+      tc(:ncol,lchnk, 8) = state%c_mflx_air(:ncol)
+      tc(:ncol,lchnk, 9) = state%c_mflx_sff(:ncol)
+      tc(:ncol,lchnk,10) = state%c_mflx_lnd(:ncol)
+      tc(:ncol,lchnk,11) = state%c_mflx_ocn(:ncol)
+      ! total time integrated carbon emissions and fluxes
+      tc(:ncol,lchnk,12) = state%c_iflx_sfc(:ncol)
+      tc(:ncol,lchnk,13) = state%c_iflx_air(:ncol)
+      tc(:ncol,lchnk,14) = state%c_iflx_sff(:ncol)
+      tc(:ncol,lchnk,15) = state%c_iflx_lnd(:ncol)
+      tc(:ncol,lchnk,16) = state%c_iflx_ocn(:ncol)
 
 
 
-      ! Compute global means of input and output energies and of
-      ! surface pressure for heating rate (assume uniform ptop)
-!      if (nstep > 0) then
-      call gmean(tc, tc_glob, 7)
-!      end if
+      ! Compute global means of carbon variables
+      call gmean(tc, tc_glob, c_num_var)
 
-      gtc_curr     = tc_glob(1)
-      gtc_init     = tc_glob(2)
-      gtc_prev     = tc_glob(3)
-      gtc_emis_sfc = tc_glob(4)
-      gtc_emis_air = tc_glob(5)
-      gtc_iflx_sfc = tc_glob(6)
-      gtc_iflx_air = tc_glob(7)
+      gtc_curr     = tc_glob( 1)
+      gtc_init     = tc_glob( 2)
+      gtc_mnst     = tc_glob( 3)
+      gtc_prev     = tc_glob( 4)
 
-!!      rel_error     = ( (delta_tc_glob / dtime) - c_emis_glob ) / c_emis_glob
-!      expected_tc   = tc_start_glob + (c_emis_glob * dtime) + (c_air_glob * dtime)
-!      rel_error     = ( expected_tc - tc_end_glob  ) / tc_end_glob
-      expected_tc  = gtc_prev + ( (gtc_emis_sfc + gtc_emis_air) * dtime )
-      rel_error    = ( expected_tc - gtc_curr ) / gtc_curr
+      gtc_flux_sfc = tc_glob( 5)
+      gtc_flux_air = tc_glob( 6)
+
+      gtc_mflx_sfc = tc_glob( 7)
+      gtc_mflx_air = tc_glob( 8)
+      gtc_mflx_sff = tc_glob( 9)
+      gtc_mflx_lnd = tc_glob(10)
+      gtc_mflx_ocn = tc_glob(11)
+
+      gtc_iflx_sfc = tc_glob(12)
+      gtc_iflx_air = tc_glob(13)
+      gtc_iflx_sff = tc_glob(14)
+      gtc_iflx_lnd = tc_glob(15)
+      gtc_iflx_ocn = tc_glob(16)
+
+      ! Compute important terms
+      gtc_flux_tot    = gtc_flux_sfc + gtc_flux_air
+      gtc_mflx_tot    = gtc_mflx_sfc + gtc_mflx_air
+      gtc_iflx_tot    = gtc_iflx_sfc + gtc_iflx_air
+
+      expected_tc     = gtc_prev + (gtc_flux_tot * dtime)
+      rel_error       = ( expected_tc - gtc_curr ) / gtc_curr
+
+      expected_tc_mon = gtc_mnst + (gtc_mflx_tot * dtime)
+      rel_error_mon   = (expected_tc_mon - gtc_curr) / gtc_curr
+
+      expected_tc_run = gtc_init + (gtc_iflx_tot * dtime)
+      rel_error_run   = (expected_tc_run - gtc_curr) / gtc_curr
+
       gtc_delta    = gtc_curr - gtc_prev
 
       if (masterproc) then
          write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, tc start, tc end, diff ", nstep, gtc_prev, gtc_curr, gtc_delta
-         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, d(tc)/dt, emis, rel err", nstep, gtc_delta/dtime, gtc_emis_sfc + gtc_emis_air, rel_error
-         write(iulog,'(1x,a30,1x,i8,2(1x,e25.17))') "nstep, sfc_emis, aircraft_emis", nstep, gtc_emis_sfc, gtc_emis_air
+         write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, d(tc)/dt, emis, rel err", nstep, gtc_delta/dtime, gtc_flux_tot, rel_error
+         write(iulog,'(1x,a30,1x,i8,2(1x,e25.17))') "nstep, sfc_emis, aircraft_emis", nstep, gtc_flux_sfc, gtc_flux_air
 
-         write(iulog,'(1x,a37,1x,i8,4(1x,e25.17))') "nstep, tc beg, tc end, d(tc), flux*dt", nstep, gtc_prev, gtc_curr, gtc_delta, dtime*(gtc_emis_sfc+gtc_emis_air)
+         write(iulog,'(1x,a37,1x,i8,4(1x,e25.17))') "nstep, tc beg, tc end, d(tc), flux*dt", nstep, gtc_prev, gtc_curr, gtc_delta, dtime*gtc_flux_tot
       end if
 
       if (masterproc) then
@@ -357,18 +528,17 @@ contains
 
          write(iulog, '(71("-"),"|",20("-"))')
 
-         write(iulog,C_FF) 'Surface  Emissions', gtc_emis_sfc, gtc_emis_sfc * dtime
-         write(iulog,C_FF) 'Aircraft Emissions', gtc_emis_air, gtc_emis_air * dtime
-!         do f = 1, f_size
-!            write(iulog,C_FF)c_f_name(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
-!         end do
+         write(iulog,C_FF) 'Surface  Emissions', gtc_flux_sfc, gtc_flux_sfc * dtime
+         write(iulog,C_FF) 'Aircraft Emissions', gtc_flux_air, gtc_flux_air * dtime
+!         write(iulog,C_FF) 'Land Surface Flux ', gtc_flux_lnd, gtc_flux_lnd * dtime
+!         write(iulog,C_FF) 'Ocean Surface Flux', gtc_flux_ocn, gtc_flux_ocn * dtime
 
          write(iulog, '(71("-"),"|",23("-"))')
 
          write(iulog,C_FF) '   *SUM*', &
-              (gtc_emis_sfc + gtc_emis_air), (gtc_emis_sfc + gtc_emis_air)*dtime
+              gtc_flux_tot, gtc_flux_tot * dtime
 
-         time_integrated_flux = (gtc_emis_sfc + gtc_emis_air) * dtime
+         time_integrated_flux = gtc_flux_tot * dtime
 
          write(iulog, '(71("-"),"|",23("-"))')
 
@@ -378,15 +548,6 @@ contains
          write(iulog,*)''
          write(iulog,C_SA0_2) 'beg', 'end', '*NET CHANGE*'
          write(iulog,C_FS_2) gtc_prev, gtc_curr, gtc_delta
-!         do s = 1,c_s_name_size-1
-!            s_beg = s_totc_beg + s
-!            s_end = s_totc_end + s
-!            write(iulog,C_FS_2)c_s_name(s),&
-!                 budg_stateG(s_beg,ip)*unit_conversion, &
-!                 budg_stateG(s_end,ip)*unit_conversion, &
-!                 (budg_stateG(s_end,ip) - budg_stateG(s_beg,ip))*unit_conversion
-!         end do
-!         write(iulog,C_FS_2)'Grid-level Err', 0._r8, rel_error , 0._r8
 
 
          write(iulog, '(71("-"),"|",23("-"))')
@@ -419,15 +580,24 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
 
-            write(iulog,C_FF) 'Accumulated Surface  Emissions', gtc_iflx_sfc / dtime, gtc_iflx_sfc
+            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_iflx_sfc / dtime, gtc_iflx_sfc
             write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_iflx_air / dtime, gtc_iflx_air
 
             write(iulog, '(71("-"),"|",23("-"))')
 
             write(iulog,C_FF) '   *SUM*', &
-                 (gtc_iflx_sfc + gtc_iflx_air) / dtime, (gtc_iflx_sfc + gtc_iflx_air)
+                 gtc_iflx_tot / dtime, gtc_iflx_tot
 
-            time_integrated_flux = (gtc_iflx_sfc + gtc_iflx_air)
+            time_integrated_flux = gtc_iflx_tot
+
+            write(iulog, '(71("-"),"|",20("-"))')
+            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_iflx_sff / dtime, gtc_iflx_sff
+            write(iulog,C_FF) 'Accumulated Land Surface Flux ', gtc_iflx_lnd / dtime, gtc_iflx_lnd
+            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_iflx_ocn / dtime, gtc_iflx_ocn
+            write(iulog, '(71("-"),"|",20("-"))')
+            write(iulog,C_FF) '   *SUM*', &
+                 (gtc_iflx_sff + gtc_iflx_lnd + gtc_iflx_ocn) / dtime, &
+                 (gtc_iflx_sff + gtc_iflx_lnd + gtc_iflx_ocn)
 
             write(iulog, '(71("-"),"|",23("-"))')
 
@@ -452,7 +622,8 @@ contains
                   write(iulog,*) 'time integrated flux = ', time_integrated_flux
                   write(iulog,*) 'net change in state  = ', state_net_change
                   write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
-                  call endrun(trim(sub_name) // 'Long CO2 conservation failure detected')
+                  write(iulog,*) 'No point in erroring out now, but long-term carbon conservation is bad'
+                  !call endrun(trim(sub_name) // 'Long CO2 conservation failure detected')
                end if
             end if
 
@@ -460,9 +631,65 @@ contains
          end if ! (masterproc)
       end if ! ( is_last_step() )
 
-      !if rel_error > rel_error_threshold then
-         !error out with message about conservation
-      !end if
+      if ( is_end_curr_month() ) then
+         if (masterproc) then
+            write(iulog,*   )   ''
+            write(iulog,*   )   'NET CO2 FLUXES'! : period = whole run,: date = ',cdate,sec
+            write(iulog,C_FA0 ) '  Time  ',   '  Time    '
+            write(iulog,C_FA0 ) 'averaged',   'integrated'
+            write(iulog,C_FA0 ) 'kgCO2/m2/s', 'kgCO2/m2'
+
+            write(iulog, '(71("-"),"|",20("-"))')
+
+            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_mflx_sfc / dtime, gtc_mflx_sfc
+            write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_mflx_air / dtime, gtc_mflx_air
+
+            write(iulog, '(71("-"),"|",23("-"))')
+
+            write(iulog,C_FF) '   *SUM*', &
+                 gtc_mflx_tot / dtime, gtc_mflx_tot
+
+            time_integrated_flux = gtc_mflx_tot
+
+            write(iulog, '(71("-"),"|",20("-"))')
+            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_mflx_sff / dtime, gtc_mflx_sff
+            write(iulog,C_FF) 'Accumulated Land Surface Flux ', gtc_mflx_lnd / dtime, gtc_mflx_lnd
+            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_mflx_ocn / dtime, gtc_mflx_ocn
+            write(iulog, '(71("-"),"|",20("-"))')
+            write(iulog,C_FF) '   *SUM*', &
+                 (gtc_mflx_sff + gtc_mflx_lnd + gtc_mflx_ocn) / dtime, &
+                 (gtc_mflx_sff + gtc_mflx_lnd + gtc_mflx_ocn)
+
+            write(iulog, '(71("-"),"|",23("-"))')
+
+            write(iulog,*)''
+            write(iulog,*)'CO2 MASS (kgCO2/m2)'!: period = month: date = ',cdate,sec
+
+            write(iulog,*)''
+            write(iulog,C_SA0_2) 'beg', 'end', '*NET CHANGE*'
+            write(iulog,C_FS_2) gtc_mnst, gtc_curr, (gtc_curr - gtc_mnst)
+
+
+            write(iulog, '(71("-"),"|",23("-"))')
+
+            write(iulog,C_FS2_2)'       *SUM*', &
+                 (gtc_curr - gtc_mnst), &
+                 (gtc_curr - gtc_mnst)
+
+            state_net_change = (gtc_curr - gtc_mnst)
+
+            if (nstep > 0) then
+               if (abs(time_integrated_flux - state_net_change) > error_tol) then
+                  write(iulog,*) 'time integrated flux = ', time_integrated_flux
+                  write(iulog,*) 'net change in state  = ', state_net_change
+                  write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
+                  call endrun(trim(sub_name) // 'Monthly CO2 conservation failure detected')
+               end if
+            end if
+
+            write(iulog, '(71("-"),"|",23("-"))')
+         end if ! (masterproc)
+      end if ! ( is_last_step() )
       
       deallocate(tc)
 
@@ -1095,5 +1322,20 @@ contains
       deallocate(mass_wet)
 
    end subroutine co2_gmean_check2_wflux
+
+   logical function is_start_curr_month()
+   ! Return true if current timestep is first of the current month
+   ! Based on is_end_curr_month in time_manager.F90
+
+   ! Local variables
+     integer :: &
+        yr,   &! year
+        mon,  &! month
+        day,  &! day of month
+        tod    ! time of day (seconds past 00Z)
+
+     call get_prev_date(yr, mon, day, tod)
+     is_start_curr_month = (day == 1  .and.  tod == 0)
+   end function is_start_curr_month
 
 end module co2_diagnostics

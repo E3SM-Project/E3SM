@@ -46,7 +46,7 @@ module physpkg
                                     modal_aero_wateruptake_reg
 
 !++BEH
-  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2, get_total_carbon, get_carbon_emissions, print_global_carbon_diags, print_global_carbon_diags_scl
+  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2, get_total_carbon, get_carbon_emissions, print_global_carbon_diags, print_global_carbon_diags_scl, get_carbon_sfc_fluxes, get_carbon_air_fluxes
 !--BEH
 
   implicit none
@@ -1424,7 +1424,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
                                   check_tracers_chng, check_tracers_fini
-    use time_manager,       only: get_nstep, is_first_step
+    use time_manager,       only: get_nstep, is_first_step, is_end_curr_month
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
     use cam_control_mod,    only: aqua_planet 
@@ -1628,6 +1628,9 @@ if (l_tracer_aero) then
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
+!++BEH
+    call get_carbon_air_fluxes(state, pbuf, ztodt)
+!--BEH
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1679,6 +1682,10 @@ end if ! l_tracer_aero
     
     end if ! l_vdiff
     endif
+
+    !++BEH collect surface carbon fluxes
+    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
+    !--BEH
 
 
 if (l_rayleigh) then
@@ -1861,12 +1868,14 @@ end if ! l_ac_energy_chk
     !++BEH
     ! Check CO2 conservation
     call get_total_carbon(state, 'wet')
-!    state%delta_tc(1:ncol) = state%tc_cur(1:ncol) - state%tc_before_physstep(1:ncol)
-    call get_carbon_emissions(state, cam_in, pbuf, ztodt)
+!    call get_carbon_emissions(state, cam_in, pbuf, ztodt)
     call print_global_carbon_diags_scl(state, ztodt, nstep)
     state%tc_prev(:ncol) = state%tc_curr(:ncol)
     if (is_first_step()) then
        state%tc_init(:ncol) = state%tc_curr(:ncol)
+    end if
+    if (is_end_curr_month()) then
+       state%tc_mnst(:ncol) = state%tc_curr(:ncol)
     end if
     !--BEH
 
