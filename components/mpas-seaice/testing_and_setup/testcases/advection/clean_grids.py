@@ -8,7 +8,7 @@ mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
 for nGrid in nGrids:
 
-    filein = Dataset("x1.%i.grid.nc" %(nGrid), "r")
+    filein = Dataset("grid.%i.nc" %(nGrid), "r")
 
     nCells = len(filein.dimensions["nCells"])
     nVertices = len(filein.dimensions["nVertices"])

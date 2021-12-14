@@ -111,7 +111,7 @@ def plot_subfigure(axes, fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCe
 def spherical_operators_map():
 
     # grid
-    fileGrid = Dataset("./strain/x1.40962.grid.nc","r")
+    fileGrid = Dataset("./strain/grid.40962.nc","r")
 
     nCells = len(fileGrid.dimensions["nCells"])
     nVertices = len(fileGrid.dimensions["nVertices"])
