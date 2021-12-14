@@ -1,7 +1,6 @@
 module co2_diagnostics
 
-!------------------------------------------------------------------------------------------------
- 
+!-------------------------------------------------------------------------------
 ! Purpose:
 ! Write out mass of CO2 in each tracer (total, fossil fuel, land, and ocean)
 ! I wanted this to go in co2_cyle.F90, but it created a circular dependency
@@ -10,18 +9,22 @@ module co2_diagnostics
 ! Author: Bryce Harrop
 ! 
 !                                              
-!------------------------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
 
-use shr_kind_mod   , only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX, cl =>SHR_KIND_CL
+use shr_kind_mod   , only: r8 => shr_kind_r8
 use camsrfexch     , only: cam_in_t
-use co2_cycle      , only: c_i, co2_transport
+use co2_cycle      , only: c_i, co2_transport, co2_print_diags_timestep, &
+                           co2_print_diags_monthly, co2_print_diags_total, &
+                           co2_conserv_error_tol
 use ppgrid         , only: pver, pcols, begchunk, endchunk
-use physics_types  , only: physics_state, physics_tend, physics_ptend, physics_ptend_init
+use physics_types  , only: physics_state, physics_tend, physics_ptend, &
+                           physics_ptend_init
 use constituents   , only: pcnst, cnst_name
 use cam_logfile    , only: iulog
 use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
-use time_manager   , only: is_first_step, is_last_step, get_prev_date, get_curr_date, is_end_curr_month
+use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
+                           get_curr_date, is_end_curr_month
 
 implicit none
 private
@@ -40,7 +43,7 @@ public co2_gmean_check_wflux         ! printout co2 global means
 public co2_gmean_check2_wflux        ! higher level co2 checker
 
 ! Number of CO2 tracers
-integer, parameter :: ncnst = 4                      ! number of constituents implemented
+integer, parameter :: ncnst = 4      ! number of constituents implemented
 
 character(len=7), dimension(ncnst), parameter :: & ! constituent names
      c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
@@ -73,6 +76,7 @@ character(*),parameter :: C_SA0_2 = "('    ',8x,2(11x,a3,15x),' |',(8x,a12,2x))"
 
 !character(*),parameter :: C_FS3_3 = "('    ',a12,53x,' | ',(f18.2))"
 character(*),parameter :: C_FS3_3 = "('    ',a12,54x,' | ',(f18.2))" ! 71|
+character(*),parameter :: C_RER   = "('    ',a15,8x,e25.17,21x)"
 
 contains
 
@@ -422,13 +426,20 @@ contains
       integer , intent(in) :: nstep        ! current timestep number
 
       ! local variables
-      integer ncol, lchnk
-      integer ierr
-      integer, parameter :: c_num_var = 16
+      integer :: ncol, lchnk
+      integer :: ierr
+      integer :: cdate, year, mon, day, sec
+      integer, parameter :: c_num_var     = 4
+      integer, parameter :: f_ts_num_var  = 2
+      integer, parameter :: f_mon_num_var = 5
+      integer, parameter :: f_run_num_var = 5
       character(len=*), parameter :: sub_name='print_global_carbon_diags_scl: '
-      real(r8), parameter :: error_tol = 0.01_r8
+!      real(r8), parameter :: error_tol = 0.01
       real(r8) :: time_integrated_flux, state_net_change
-      real(r8) :: tc_glob(11)
+      real(r8) :: tc_glob(c_num_var)
+      real(r8) :: flux_ts_glob(f_ts_num_var)
+      real(r8) :: flux_mon_glob(f_mon_num_var)
+      real(r8) :: flux_run_glob(f_run_num_var)
 !      real(r8) :: tc_start_glob, tc_end_glob, delta_tc_glob, c_emis_glob, c_air_glob
       real(r8) :: gtc_curr, gtc_init, gtc_mnst, gtc_prev, gtc_delta
       real(r8) :: gtc_flux_sfc, gtc_flux_air
@@ -439,61 +450,83 @@ contains
       real(r8) :: rel_error_mon, expected_tc_mon
       real(r8) :: rel_error_run, expected_tc_run
 
-      real(r8), pointer :: tc(:,:,:) ! array for holding carbon variables
+      real(r8), pointer :: tc(:,:,:)       ! array for holding carbon variables
+      real(r8), pointer :: flux_ts(:,:,:)  ! array for holding timestep fluxes
+      real(r8), pointer :: flux_mon(:,:,:) ! array for holding monthly fluxes
+      real(r8), pointer :: flux_run(:,:,:) ! array for holding full run fluxes
       !------------------------------------------------------------------------
 
       if ( .not. co2_transport() ) return
 
       allocate(tc(pcols,begchunk:endchunk,c_num_var), stat=ierr)
       if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate tc'
+      allocate(flux_ts(pcols,begchunk:endchunk,f_ts_num_var), stat=ierr)
+      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_ts'
+      allocate(flux_mon(pcols,begchunk:endchunk,f_mon_num_var), stat=ierr)
+      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_mon'
+      allocate(flux_run(pcols,begchunk:endchunk,f_run_num_var), stat=ierr)
+      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_run'
 
       ncol  = state%ncol
       lchnk = state%lchnk
       ! carbon at current, initial, month start, and previous time steps
-      tc(:ncol,lchnk, 1) = state%tc_curr(:ncol)
-      tc(:ncol,lchnk, 2) = state%tc_init(:ncol)
-      tc(:ncol,lchnk, 3) = state%tc_mnst(:ncol)
-      tc(:ncol,lchnk, 4) = state%tc_prev(:ncol)
+      tc(:ncol,lchnk,1) = state%tc_curr(:ncol)
+      tc(:ncol,lchnk,2) = state%tc_init(:ncol)
+      tc(:ncol,lchnk,3) = state%tc_mnst(:ncol)
+      tc(:ncol,lchnk,4) = state%tc_prev(:ncol)
       ! carbon emissions and fluxes at current time step
-      tc(:ncol,lchnk, 5) = state%c_flux_sfc(:ncol)
-      tc(:ncol,lchnk, 6) = state%c_flux_air(:ncol)
+      flux_ts(:ncol,lchnk,1) = state%c_flux_sfc(:ncol)
+      flux_ts(:ncol,lchnk,2) = state%c_flux_air(:ncol)
       ! monthly accumulated carbon emissions and fluxes
-      tc(:ncol,lchnk, 7) = state%c_mflx_sfc(:ncol)
-      tc(:ncol,lchnk, 8) = state%c_mflx_air(:ncol)
-      tc(:ncol,lchnk, 9) = state%c_mflx_sff(:ncol)
-      tc(:ncol,lchnk,10) = state%c_mflx_lnd(:ncol)
-      tc(:ncol,lchnk,11) = state%c_mflx_ocn(:ncol)
+      flux_mon(:ncol,lchnk,1) = state%c_mflx_sfc(:ncol)
+      flux_mon(:ncol,lchnk,2) = state%c_mflx_air(:ncol)
+      flux_mon(:ncol,lchnk,3) = state%c_mflx_sff(:ncol)
+      flux_mon(:ncol,lchnk,4) = state%c_mflx_lnd(:ncol)
+      flux_mon(:ncol,lchnk,5) = state%c_mflx_ocn(:ncol)
       ! total time integrated carbon emissions and fluxes
-      tc(:ncol,lchnk,12) = state%c_iflx_sfc(:ncol)
-      tc(:ncol,lchnk,13) = state%c_iflx_air(:ncol)
-      tc(:ncol,lchnk,14) = state%c_iflx_sff(:ncol)
-      tc(:ncol,lchnk,15) = state%c_iflx_lnd(:ncol)
-      tc(:ncol,lchnk,16) = state%c_iflx_ocn(:ncol)
+      flux_run(:ncol,lchnk,1) = state%c_iflx_sfc(:ncol)
+      flux_run(:ncol,lchnk,2) = state%c_iflx_air(:ncol)
+      flux_run(:ncol,lchnk,3) = state%c_iflx_sff(:ncol)
+      flux_run(:ncol,lchnk,4) = state%c_iflx_lnd(:ncol)
+      flux_run(:ncol,lchnk,5) = state%c_iflx_ocn(:ncol)
 
 
 
       ! Compute global means of carbon variables
-      call gmean(tc, tc_glob, c_num_var)
+      if ( co2_print_diags_timestep .or. co2_print_diags_monthly & 
+           .or. co2_print_diags_total ) then
+         call gmean(tc, tc_glob, c_num_var)
+      end if
 
-      gtc_curr     = tc_glob( 1)
-      gtc_init     = tc_glob( 2)
-      gtc_mnst     = tc_glob( 3)
-      gtc_prev     = tc_glob( 4)
+      if ( co2_print_diags_timestep) then
+         call gmean(flux_ts,  flux_ts_glob,  f_ts_num_var)
+      end if
+      if ( co2_print_diags_monthly) then
+         call gmean(flux_mon, flux_mon_glob, f_mon_num_var)
+      end if
+      if ( co2_print_diags_total) then
+         call gmean(flux_run, flux_run_glob, f_run_num_var)
+      end if
 
-      gtc_flux_sfc = tc_glob( 5)
-      gtc_flux_air = tc_glob( 6)
+      gtc_curr     = tc_glob(1)
+      gtc_init     = tc_glob(2)
+      gtc_mnst     = tc_glob(3)
+      gtc_prev     = tc_glob(4)
 
-      gtc_mflx_sfc = tc_glob( 7)
-      gtc_mflx_air = tc_glob( 8)
-      gtc_mflx_sff = tc_glob( 9)
-      gtc_mflx_lnd = tc_glob(10)
-      gtc_mflx_ocn = tc_glob(11)
+      gtc_flux_sfc = flux_ts_glob(1)
+      gtc_flux_air = flux_ts_glob(2)
 
-      gtc_iflx_sfc = tc_glob(12)
-      gtc_iflx_air = tc_glob(13)
-      gtc_iflx_sff = tc_glob(14)
-      gtc_iflx_lnd = tc_glob(15)
-      gtc_iflx_ocn = tc_glob(16)
+      gtc_mflx_sfc = flux_mon_glob(1)
+      gtc_mflx_air = flux_mon_glob(2)
+      gtc_mflx_sff = flux_mon_glob(3)
+      gtc_mflx_lnd = flux_mon_glob(4)
+      gtc_mflx_ocn = flux_mon_glob(5)
+
+      gtc_iflx_sfc = flux_run_glob(1)
+      gtc_iflx_air = flux_run_glob(2)
+      gtc_iflx_sff = flux_run_glob(3)
+      gtc_iflx_lnd = flux_run_glob(4)
+      gtc_iflx_ocn = flux_run_glob(5)
 
       ! Compute important terms
       gtc_flux_tot    = gtc_flux_sfc + gtc_flux_air
@@ -503,13 +536,17 @@ contains
       expected_tc     = gtc_prev + (gtc_flux_tot * dtime)
       rel_error       = ( expected_tc - gtc_curr ) / gtc_curr
 
-      expected_tc_mon = gtc_mnst + (gtc_mflx_tot * dtime)
+      expected_tc_mon = gtc_mnst + gtc_mflx_tot ! dtime factor already included
       rel_error_mon   = (expected_tc_mon - gtc_curr) / gtc_curr
 
-      expected_tc_run = gtc_init + (gtc_iflx_tot * dtime)
+      expected_tc_run = gtc_init + gtc_iflx_tot ! dtime factor already included
       rel_error_run   = (expected_tc_run - gtc_curr) / gtc_curr
 
       gtc_delta    = gtc_curr - gtc_prev
+
+      ! get the date
+      call get_curr_date(year, mon, day, sec)
+      cdate = year*10000 + mon*100 + day
 
       if (masterproc) then
          write(iulog,'(1x,a30,1x,i8,3(1x,e25.17))') "nstep, tc start, tc end, diff ", nstep, gtc_prev, gtc_curr, gtc_delta
@@ -519,9 +556,9 @@ contains
          write(iulog,'(1x,a37,1x,i8,4(1x,e25.17))') "nstep, tc beg, tc end, d(tc), flux*dt", nstep, gtc_prev, gtc_curr, gtc_delta, dtime*gtc_flux_tot
       end if
 
-      if (masterproc) then
+      if (masterproc .and. co2_print_diags_timestep) then
          write(iulog,*   )   ''
-         write(iulog,*   )   'NET CO2 FLUXES'! : period ',trim(pname(ip)),': date = ',cdate,sec
+         write(iulog,*   )   'NET CO2 FLUXES : period = timestep : date = ',cdate,sec
          write(iulog,C_FA0 ) '  Time  ',   '  Time    '
          write(iulog,C_FA0 ) 'averaged',   'integrated'
          write(iulog,C_FA0 ) 'kgCO2/m2/s', 'kgCO2/m2'
@@ -543,7 +580,7 @@ contains
          write(iulog, '(71("-"),"|",23("-"))')
 
          write(iulog,*)''
-         write(iulog,*)'CO2 MASS (kgCO2/m2)'!: period ',trim(pname(ip)),': date = ',cdate,sec
+         write(iulog,*)'CO2 MASS (kgCO2/m2) : period = timestep : date = ',cdate,sec
 
          write(iulog,*)''
          write(iulog,C_SA0_2) 'beg', 'end', '*NET CHANGE*'
@@ -558,8 +595,12 @@ contains
 
          state_net_change = (gtc_curr - gtc_prev)
 
+         write(iulog,C_RER)'Relative Error:', rel_error
+
          if (nstep > 0) then
-            if (abs(time_integrated_flux - state_net_change) > error_tol) then
+!            if (abs(time_integrated_flux - state_net_change) > co2_conserv_error_tol) then
+!            The above is not the right way to handle the error checking
+            if (abs(rel_error) > co2_conserv_error_tol) then
                write(iulog,*) 'time integrated flux = ', time_integrated_flux
                write(iulog,*) 'net change in state  = ', state_net_change
                write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -570,10 +611,10 @@ contains
          write(iulog, '(71("-"),"|",23("-"))')
       end if
 
-      if ( is_last_step() ) then
+      if ( is_last_step() .and. co2_print_diags_total ) then
          if (masterproc) then
             write(iulog,*   )   ''
-            write(iulog,*   )   'NET CO2 FLUXES'! : period ',trim(pname(ip)),': date = ',cdate,sec
+            write(iulog,*   )   'NET CO2 FLUXES : period = full run : date = ',cdate,sec
             write(iulog,C_FA0 ) '  Time  ',   '  Time    '
             write(iulog,C_FA0 ) 'averaged',   'integrated'
             write(iulog,C_FA0 ) 'kgCO2/m2/s', 'kgCO2/m2'
@@ -602,7 +643,7 @@ contains
             write(iulog, '(71("-"),"|",23("-"))')
 
             write(iulog,*)''
-            write(iulog,*)'CO2 MASS (kgCO2/m2)'!: period ',trim(pname(ip)),': date = ',cdate,sec
+            write(iulog,*)'CO2 MASS (kgCO2/m2) : period = full run : date = ',cdate,sec
 
             write(iulog,*)''
             write(iulog,C_SA0_2) 'beg', 'end', '*NET CHANGE*'
@@ -617,8 +658,10 @@ contains
 
             state_net_change = (gtc_curr - gtc_init)
 
+            write(iulog,C_RER)'Relative Error:', rel_error_run
+
             if (nstep > 0) then
-               if (abs(time_integrated_flux - state_net_change) > error_tol) then
+               if (abs(rel_error_run) > co2_conserv_error_tol) then
                   write(iulog,*) 'time integrated flux = ', time_integrated_flux
                   write(iulog,*) 'net change in state  = ', state_net_change
                   write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -631,10 +674,10 @@ contains
          end if ! (masterproc)
       end if ! ( is_last_step() )
 
-      if ( is_end_curr_month() ) then
+      if ( is_end_curr_month() .and. co2_print_diags_monthly) then
          if (masterproc) then
             write(iulog,*   )   ''
-            write(iulog,*   )   'NET CO2 FLUXES'! : period = whole run,: date = ',cdate,sec
+            write(iulog,*   )   'NET CO2 FLUXES : period = monthly,: date = ',cdate,sec
             write(iulog,C_FA0 ) '  Time  ',   '  Time    '
             write(iulog,C_FA0 ) 'averaged',   'integrated'
             write(iulog,C_FA0 ) 'kgCO2/m2/s', 'kgCO2/m2'
@@ -663,7 +706,7 @@ contains
             write(iulog, '(71("-"),"|",23("-"))')
 
             write(iulog,*)''
-            write(iulog,*)'CO2 MASS (kgCO2/m2)'!: period = month: date = ',cdate,sec
+            write(iulog,*)'CO2 MASS (kgCO2/m2) : period = monthly,: date = ',cdate,sec
 
             write(iulog,*)''
             write(iulog,C_SA0_2) 'beg', 'end', '*NET CHANGE*'
@@ -678,8 +721,10 @@ contains
 
             state_net_change = (gtc_curr - gtc_mnst)
 
+            write(iulog,C_RER)'Relative Error:', rel_error_mon
+
             if (nstep > 0) then
-               if (abs(time_integrated_flux - state_net_change) > error_tol) then
+               if (abs(rel_error_mon) > co2_conserv_error_tol) then
                   write(iulog,*) 'time integrated flux = ', time_integrated_flux
                   write(iulog,*) 'net change in state  = ', state_net_change
                   write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -692,6 +737,9 @@ contains
       end if ! ( is_last_step() )
       
       deallocate(tc)
+      deallocate(flux_ts)
+      deallocate(flux_mon)
+      deallocate(flux_run)
 
    end subroutine print_global_carbon_diags_scl
 
@@ -776,299 +824,6 @@ contains
       
    end subroutine check_co2_change_pr2
 
-!   subroutine check_co2_change(wet_or_dry, state, ptend, cam_in, pbuf)
-!-----------------------------------------------------------------------
-!
-! Purpose:
-! Computes global mean mass, max and min mmr, of constituents on the 
-! physics decomposition. Checks for conservation from previous timestep
-!
-! Author: Bryce Harrop
-!
-!-----------------------------------------------------------------------
-!      use physconst,      only: gravit
-!      use phys_grid,      only: get_ncols_p
-!      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-!      use phys_gmean,     only: gmean
-!
-! Arguments
-!
-!      character(len=3),    intent(in) :: wet_or_dry    ! is co2 wet or dry at this point
-!      type(physics_state), intent(in) :: state
-!      type(physics_buffer_desc), pointer :: pbuf(:)
-!      type(physics_ptend), intent(in) :: ptend
-!      type(cam_in_t),      intent(in) :: cam_in
-      !integer, dimension(:), intent(in) :: cnst_ind_arr
-!
-! Local workspace
-!
-!      character(len=*), parameter :: sub_name='check_co2_change: '
-
-!      integer :: c, i, k, m
-!      integer :: ierr, ncol, idx
-!      integer :: index_co2_ocn, index_co2_fff, index_co2_lnd, index_co2
-!      real(r8)          :: ac_CO2_tot(pcols)
-!      real(r8), pointer :: ac_CO2(:,:)
-
-!      real(r8), pointer :: mass_wet(:,:,:) ! constituent masses assuming moist mmr
-!      real(r8), pointer :: mass_dry(:,:,:) ! constituent masses assuming dry mmr
-!      real(r8) :: mass_wet_mean(ncnst)     ! global mean constituent masses assuming moist mmr
-!      real(r8) :: mass_dry_mean(ncnst)     ! global mean constituent masses assuming dry mmr
-!      real(r8), pointer :: sfc_flux(:,:,:) ! constituent surface flux
-!      real(r8) :: sfc_flux_mean(ncnst)     ! global mean constituent surface flux
-!      real(r8), pointer :: air_flux(:,:)   ! aircraft emission flux
-!      real(r8) :: air_flux_mean            ! global mean aircraft emission flux
-
-!      real(r8), pointer :: mass_cur(:,:,:) ! previous timestep mass
-!      real(r8) :: mass_mean_cur(ncnst)
-
-!      real(r8), pointer :: co2_cur(:,:,:)  ! previous co2 mixing ratios
-!
-!-----------------------------------------------------------------------
-!
-!      if ( .not. co2_transport() ) return
-
-!      allocate(mass_wet(pcols,begchunk:endchunk,ncnst), stat=ierr)
-!      if (ierr /= 0) write(iulog,*) sub_name // 'FAIL to allocate mass_wet'
-
-!      allocate(mass_dry(pcols,begchunk:endchunk,ncnst), stat=ierr)
-!      if (ierr /= 0) write(iulog,*) sub_name // 'FAIL to allocate mass_wet'
-
-!      allocate(sfc_flux(pcols,begchunk:endchunk,ncnst), stat=ierr)
-!      if (ierr /= 0) write(iulog,*) sub_name // 'FAIL to allocate sfc_flux'
-
-!      allocate(air_flux(pcols,begchunk:endchunk), stat=ierr)
-!      if (ierr /= 0) write(iulog,*) sub_name // 'FAIL to allocate air_flux'
-
-!      allocate(mass_cur(pcols,begchunk:endchunk,ncnst), stat=ierr)
-!      if (ierr /= 0) write(iulog,*) sub_name // 'FAIL to allocate air_flux'
-
-!      index_co2_ocn = pbuf_get_index(trim(cnst_name(c_i(1)))//'_cur')
-!      index_co2_fff = pbuf_get_index(trim(cnst_name(c_i(2)))//'_cur')
-!      index_co2_lnd = pbuf_get_index(trim(cnst_name(c_i(3)))//'_cur')
-!      index_co2     = pbuf_get_index(trim(cnst_name(c_i(4)))//'_cur')
-!      index_acco2   = pbuf_get_index('ac_CO2')  
-
-!      call pbuf_get_field(pbuf, index_co2_ocn, co2_ocn_cur)
-!      call pbuf_get_field(pbuf, index_co2_fff, co2_fff_cur)
-!      call pbuf_get_field(pbuf, index_co2_lnd, co2_lnd_cur)
-!      call pbuf_get_field(pbuf, index_co2    , co2_cur)
-!      call pbuf_get_field(pbuf, index_acco2  , ac_CO2)
-
-      ! Set CO2 global indices
-!      do idx = 1, ncnst
-!         select case (trim(c_names(idx)))
-!         case ('CO2_OCN')
-!            co2_ocn_glo_ind = c_i(idx)
-!         case ('CO2_FFF')
-!            co2_fff_glo_ind = c_i(idx)
-!         case ('CO2_LND')
-!            co2_lnd_glo_ind = c_i(idx)
-!         case ('CO2')
-!            co2_glo_ind     = c_i(idx)
-!         end select
-!      end do
-
-!      ncol = state%ncol
-!      c    = state%lchnk
-!      !ncnst = size(cnst_ind_arr)
-!      do m = 1, ncnst
-!!         do c = begchunk, endchunk
-!!            ncols = get_ncols_p(c)
-!            do i = 1, ncol
-
-!               ! Compute column masses assuming both dry and wet mixing ratios
-
-!               mass_wet(i,c,m) = 0.0_r8
-!               do k = 1, pver
-!                  mass_wet(i,c,m) = mass_wet(i,c,m) + &
-!                                    state%pdel(i,k)*state%q(i,k,c_i(m))
-!               end do
-!               mass_wet(i,c,m) = mass_wet(i,c,m)/gravit
-
-!               mass_dry(i,c,m) = 0.0_r8
-!               do k = 1, pver
-!                  mass_dry(i,c,m) = mass_dry(i,c,m) + &
-!                                    state%pdeldry(i,k)*state%q(i,k,c_i(m))
-!               end do
-!               mass_dry(i,c,m) = mass_dry(i,c,m)/gravit
-
-!               sfc_flux(i,c,m) = 0.0_r8
-!               sfc_flux(i,c,m) = sfc_flux(i,c,m) + &
-!                                 cam_in%cflx(i,c_i(m))
-               
-!!               ac_CO2_tot(i) = 0.0_r8
-!!               do k = 1, pver
-!!                  ac_CO2_tot(i) = ac_CO2_tot(i) + ac_CO2(i,k)
-!!               end do
-
-!            end do
-!!         end do
-!!            if (m .eq. co2_glo_ind .or. m .eq. co2_fff_glo_ind) then
-!!               air_flux(:ncol,c,m) = ac_CO2_tot(:ncol)
-!!            else
-!!               air_flux(:ncol,c,m) = 0.0_r8
-!!            end if
-!      end do
-
-!      do i = 1, ncol
-!         ac_CO2_tot(i) = 0.0_r8
-!         do k = 1, pver
-!            ac_CO2_tot(i) = ac_CO2_tot(i) + ac_CO2(i,k)
-!         end do
-!         air_flux(:ncol,c) = ac_CO2_tot(:ncol)
-!      end do
-
-!      do i = 1, ncol
-!         mass_cur(i,c,:) = 0._r8
-!         if (wet_or_dry == 'wet') then
-!            mass_cur(i,c,1) = mass_wet(i,c,1) + &
-!                                 state%pdel(i,k)*co2_ocn_cur(i,k)
-!            mass_cur(i,c,2) = mass_wet(i,c,2) + &
-!                                 state%pdel(i,k)*co2_fff_cur(i,k)
-!            mass_cur(i,c,3) = mass_wet(i,c,3) + &
-!                                 state%pdel(i,k)*co2_lnd_cur(i,k)
-!            mass_cur(i,c,4) = mass_wet(i,c,4) + &
-!                                 state%pdel(i,k)*co2_cur(i,k)
-!         end if
-!      end do
-
-!      ! compute global mean mass
-!      call gmean(mass_wet, mass_wet_mean, ncnst)
-!      call gmean(mass_dry, mass_dry_mean, ncnst)
-!      call gmean(sfc_flux, sfc_flux_mean, ncnst)
-!      call gmean(air_flux, air_flux_mean)
-
-!      call gmean(mass_cur, mass_mean_cur, ncnst)
-
-!      ! report to log file
-!      if (masterproc) then
-
-!         do m = 1, ncnst
-!               write (6,66) trim(title)//' m=',c_i(m), &
-!                  'name='//trim(cnst_name(c_i(m)))//' gavg dry, wet, sfc, air ', &
-!                  mass_dry_mean(c_i(m)), mass_wet_mean(c_i(m)), &
-!                  sfc_flux_mean(c_i(m)), air_flux_mean(c_i(m))
-!66             format (a32,i2,a36,1p,4e25.15)
-!!old version66             format (a32,i2,a36,1p,4e25.13)
-!         end do
-
-!      endif
-
-!      deallocate(air_flux)
-!      deallocate(sfc_flux)
-!      deallocate(mass_dry)
-!      deallocate(mass_wet)
-
-!   end subroutine check_co2_change
-
-!   subroutine check_co2_change_nope(state, pbuf2d)
-      !-----------------------------------------------
-      ! Purpose: check timestep level co2 conservation
-      !
-      ! Author: Bryce Harrop
-      !-----------------------------------------------
-!      use physics_types,  only: physics_state
-!      use ppgrid,         only: begchunk, endchunk, pver, pcols
-!      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
-!                                pbuf_get_chunk, pbuf_get_index
-!      use physconst,      only: rga
-!      use co2_cycle,      only: c_i, co2_transport
-
-!      implicit none
-      
-!      type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
-!      type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
-
-!      !local vars
-!      type(physics_buffer_desc), pointer     :: pbuf_chnk(:)
-
-!      real(r8), pointer :: ac_CO2(:,:)
-
-!      real(r8) :: ftem      (pcols,pver) ! tmp space
-!      real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
-!      real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
-
-!      real(r8) :: ftem(pcols,pver)         ! tmp space
-!      real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
-!      real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
-!      real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
-
-!      integer  :: index_co2_ocn, index_co2_fff, index_co2_lnd, index_co2
-!      integer  :: ichnk, ncol, i, k, m, lchnk
-
-!      if ( .not. co2_transport() ) return
-
-!      do ichnk = begchunk, endchunk
-!         ncol       =  state(ichnk)%ncol
-!         pbuf_chunk => pbuf_get_chunk(pbuf2d, ichnk)
-
-!         index_co2_ocn = pbuf_get_index(trim(cnst_name(c_i(1)))//'_cur')
-!         index_co2_fff = pbuf_get_index(trim(cnst_name(c_i(2)))//'_cur')
-!         index_co2_lnd = pbuf_get_index(trim(cnst_name(c_i(3)))//'_cur')
-!         index_co2     = pbuf_get_index(trim(cnst_name(c_i(4)))//'_cur')
-!         index_acco2   = pbuf_get_index('ac_CO2')   
-
-!         call pbuf_get_field(pbuf_chnk, index_co2_ocn, co2_ocn_cur)
-!         call pbuf_get_field(pbuf_chnk, index_co2_fff, co2_fff_cur)
-!         call pbuf_get_field(pbuf_chnk, index_co2_lnd, co2_lnd_cur)
-!         call pbuf_get_field(pbuf_chnk, index_co2    , co2_cur)
-!         call pbuf_get_field(pbuf_chnk, index_acco2  , ac_CO2)
-
-!         do i = 1, ncol
-!            flux_ocn(i) = cam_in(ichnk)%cflx(i, c_i(1))
-!            flux_fff(i) = cam_in(ichnk)%cflx(i, c_i(2)) + 
-!            flux_lnd(i) = cam_in(ichnk)%cflx(i, c_i(3))
-!            flux(i)     = flux_ocn(i) + flux_fff(i) + flux_lnd(i)
-!         end do ! i = 1, ncol
-
-!      end do ! ichnk = begchunk, endchunk
-
-
-!      static_ener_ac_idx = pbuf_get_index('static_ener_ac')
-!      call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
-!      water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
-!      call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
-
-      !Integrate column static energy
-!      ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
-!    do k=2,pver
-!       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-!    end do
-!    static_ener_ac_2d(:ncol) = ftem(:ncol,1)
-
-!    static_ener_ac_idx = pbuf_get_index('static_ener_ac')
-!    call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
-!    water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
-!    call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
-
-    ! Integrate and compute the difference
-    ! CIDiff = difference of column integrated values
-!    if( nstep == 0 ) then
-!       CIDiff(:ncol) = 0.0_r8
-!       call outfld('DTENDTH', CIDiff, pcols, lchnk )
-!       call outfld('DTENDTQ', CIDiff, pcols, lchnk )
-!    else
-!       ! MSE first
-!       ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
-!       do k=2,pver
-!          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-!       end do
-!       CIDiff(:ncol) = (ftem(:ncol,1) - static_ener_ac_2d(:ncol))*rtdt!
-
-!       call outfld('DTENDTH', CIDiff, pcols, lchnk )
-!       ! Water vapor second
-!       ftem(:ncol,:) = state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
-!       do k=2,pver
-!          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-!       end do
-!       CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
-
-!       call outfld('DTENDTQ', CIDiff, pcols, lchnk )
-!    end if
-      
-
-!   end subroutine check_co2_change_nope
 
    subroutine co2_gmean_check_wflux(title, state, cam_in)
 !-----------------------------------------------------------------------
