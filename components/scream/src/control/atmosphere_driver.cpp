@@ -300,7 +300,7 @@ void AtmosphereDriver::initialize_output_managers () {
 
 
   // Simulation start time. Will be overwritten if this is a restarted run.
-  auto simulation_start_time = m_current_ts;
+  auto case_t0 = m_current_ts;
 
   // IMPORTANT: create model restart OutputManager first! This OM will be able to
   // retrieve the original simulation start date, which we later pass to the
@@ -313,7 +313,7 @@ void AtmosphereDriver::initialize_output_managers () {
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
     om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
-    simulation_start_time = om.simulation_start_time();
+    case_t0 = om.get_case_t0();
   }
 
   // Build one manager per output yaml file
@@ -324,7 +324,7 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::parse_yaml_file(fname,params);
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,simulation_start_time,false,restarted_run);
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run,case_t0);
   }
 
   m_ad_status |= s_output_inited;

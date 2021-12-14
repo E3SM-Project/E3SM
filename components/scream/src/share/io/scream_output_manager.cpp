@@ -17,26 +17,28 @@ void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
        const std::shared_ptr<const gm_type>& grids_mgr,
-       const util::TimeStamp& t0,
+       const util::TimeStamp& run_t0,
        const bool is_model_restart_output,
-       const bool is_restarted_run)
+       const bool is_restarted_run,
+       const util::TimeStamp& case_t0)
 {
   using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
   map_t fms;
   fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(io_comm,params,fms,grids_mgr,t0,is_model_restart_output,is_restarted_run);
+  setup(io_comm,params,fms,grids_mgr,run_t0,is_model_restart_output,is_restarted_run,case_t0);
 }
 
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
        const std::shared_ptr<const gm_type>& grids_mgr,
-       const util::TimeStamp& t0,
+       const util::TimeStamp& run_t0,
        const bool is_model_restart_output,
-       const bool is_restarted_run)
+       const bool is_restarted_run,
+       const util::TimeStamp& case_t0)
 {
   m_io_comm = io_comm;
-  m_t0      = t0;
+  m_run_t0 = m_case_t0 = run_t0;
   m_is_restarted_run = is_restarted_run;
   m_is_model_restart_output = is_model_restart_output;
 
@@ -137,10 +139,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       std::vector<int> date = {start_date/10000, (start_date/100) % 100, start_date % 100};
       std::vector<int> time = {start_time/10000, (start_time/100) % 100, start_time % 100};
-      m_t0 = util::TimeStamp(date,time);
+      m_case_t0 = util::TimeStamp(date,time);
     } else {
-      // Not a model restart output. Trust what the input t0 is.
-      m_t0 = t0;
+      m_case_t0 = case_t0.is_valid() ? case_t0 : run_t0;
     }
 
     if (perform_history_restart) {
@@ -160,7 +161,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   }
 
   if (m_params.get("Save Initial State", false)) {
-    this->run(t0);
+    this->run(m_run_t0);
   }
 }
 /*===============================================================================================*/
@@ -228,8 +229,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (is_checkpoint_step) { 
         set_int_attribute_c2f (filename.c_str(),"avg_count",m_output_control.nsteps_since_last_write);
       }
-      auto t0_date = m_t0.get_date()[0]*10000 + m_t0.get_date()[1]*100 + m_t0.get_date()[2];
-      auto t0_time = m_t0.get_time()[0]*10000 + m_t0.get_time()[1]*100 + m_t0.get_time()[2];
+      auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
+      auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
       set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
       set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
       filespecs.is_open = true;
@@ -247,7 +248,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // Update time and nsteps in the output file
-    pio_update_time(filename,timestamp.seconds_from(m_t0));
+    pio_update_time(filename,timestamp.seconds_from(m_case_t0));
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
@@ -304,19 +305,36 @@ find_filename_in_rpointer (const std::string& casename, const std::string& suffi
 {
   std::string filename;
   bool found = false;
-  std::string content,line;
+  std::string content, line;
   if (m_io_comm.am_i_root()) {
     std::ifstream rpointer_file;
     rpointer_file.open("rpointer.atm");
+
+    auto extract_ts = [&] (const std::string& line) -> util::TimeStamp {
+      auto ts_len = m_run_t0.to_string().size();
+      if (line.find(suffix)<=ts_len) {
+        auto ts_str = line.substr(line.find(suffix)-ts_len,ts_len);
+        auto ts = util::str_to_time_stamp(ts_str);
+        return ts;
+      } else {
+        return util::TimeStamp();
+      }
+    };
+
     // Note: keep swallowing line, even after the first match, since we never wipe
     //       rpointer.atm, so it might contain multiple matches, and we want to pick
     //       the last one (which is the last restart file that was written).
     while (rpointer_file >> line) {
       content += line + "\n";
-      if (line.find(casename) != std::string::npos &&
-          line.find(suffix) != std::string::npos) {
-        found = true;
-        filename = line;
+      if (line.find(casename) != std::string::npos && line.find(suffix) != std::string::npos) {
+        // Extra check: make sure the date in the filename (if present) precedes this->t0.
+        // If there's no time stamp in one of the filenames, we assume this is some sort of
+        // unit test, with no time stamp in the filename, and we accept the filename.
+        auto ts = extract_ts(line);
+        if (not ts.is_valid() || ts<m_run_t0) {
+          found = true;
+          filename = line;
+        }
       }
     }
   }
@@ -329,7 +347,7 @@ find_filename_in_rpointer (const std::string& casename, const std::string& suffi
   //   'Restart'->'Perform Restart' = false
   // in the input parameter list
   EKAT_REQUIRE_MSG (found,
-      "Error! Output restart requested, but the no history restart file found in 'rpointer.atm'.\n"
+      "Error! Output restart requested, but no history restart file found in 'rpointer.atm'.\n"
       "   restart file name root: " + casename + "\n"
       "   rpointer content:\n" + content);
 

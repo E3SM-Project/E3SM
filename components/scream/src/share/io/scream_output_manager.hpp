@@ -71,20 +71,22 @@ public:
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::shared_ptr<fm_type>& field_mgr,
               const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& t0,
+              const util::TimeStamp& run_t0,
               const bool is_model_restart_output,
-              const bool is_restarted_run);
+              const bool is_restarted_run,
+              const util::TimeStamp& case_t0 = util::TimeStamp());
 
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
               const std::shared_ptr<const gm_type>& grids_mgr,
-              const util::TimeStamp& t0,
+              const util::TimeStamp& run_t0,
               const bool is_model_restart_output,
-              const bool is_restarted_run);
+              const bool is_restarted_run,
+              const util::TimeStamp& case_t0 = util::TimeStamp());
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
-  const util::TimeStamp& simulation_start_time () const { return m_t0; }
+  const util::TimeStamp& get_case_t0 () const { return m_case_t0; }
 protected:
 
   std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;
@@ -124,10 +126,11 @@ protected:
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
 
-  // The simulation start date/time. We use this to produce a 'time'
-  // var in the output file, corresponding to seconds_since_start_of_simulation.
-  // Note: in case of restarted runs, this is the start time of the *original* run.
-  util::TimeStamp   m_t0;
+  // The initial time stamp of the simulation and run. For initial runs, they coincide,
+  // but for restarted runs, run_t0>case_t0, with the former being the time at which the
+  // restart happens, and the latter being the start time of the *original* run.
+  util::TimeStamp   m_case_t0;
+  util::TimeStamp   m_run_t0;
 };
 
 } // namespace scream
