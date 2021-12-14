@@ -915,6 +915,12 @@ if ($rad_pkg eq 'rrtmg' or $chem =~ /waccm_mozart/) {
 # COSP simulator
 if ($cfg->get('cosp')) {
     add_default($nl, 'docosp', 'val'=>'.true.');
+
+    # following serves to always set a default when no matching value found in  namelist_defaults_eam.xml
+    my $val = undef;
+    $val = get_default_value('cosp_ncolumns');
+    $val = 50 if (! defined($val) );
+    add_default($nl, 'cosp_ncolumns','val'=>"$val");
 }
 
 
