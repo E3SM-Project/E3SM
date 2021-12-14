@@ -74,6 +74,9 @@ long long operator- (const TimeStamp& ts1, const TimeStamp& ts2);
 int days_in_month (const int year, const int month);
 bool is_leap_year (const int year);
 
+// If input string is not of the format YYYY-MM-DD.hhmmss, returns an invalid time stamp
+TimeStamp str_to_time_stamp (const std::string& s);
+
 } // namespace util
 
 } // namespace scream

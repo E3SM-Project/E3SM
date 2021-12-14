@@ -65,8 +65,9 @@ TimeStamp::TimeStamp(const std::vector<int>& date,
   const auto sec  = time[2];
 
   // Check the days and seconds numbers are non-negative.
-  EKAT_REQUIRE_MSG (mm>0   && mm<=12, "Error! Month out of bounds.\n");
-  EKAT_REQUIRE_MSG (dd>0   && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
+  EKAT_REQUIRE_MSG (yy>=0   && yy<=9999, "Error! Year out of bounds.\n");
+  EKAT_REQUIRE_MSG (mm>0    && mm<=12, "Error! Month out of bounds.\n");
+  EKAT_REQUIRE_MSG (dd>0    && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
   EKAT_REQUIRE_MSG (sec>=0  && sec<60, "Error! Seconds out of bounds.\n");
   EKAT_REQUIRE_MSG (min>=0  && min<60, "Error! Minutes out of bounds.\n");
   EKAT_REQUIRE_MSG (hour>=0 && hour<24, "Error! Hours out of bounds.\n");
@@ -282,6 +283,38 @@ long long operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
 
   return diff;
 }
+
+TimeStamp str_to_time_stamp (const std::string& s)
+{
+  auto is_int = [](const std::string& s) -> bool {
+    for (const auto& c : s) {
+      if (not std::isdigit(c)) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // A time stamp is a string of the form "YYYY-MM-DD.hhmmss"
+  if (s.size()!=17 || s[4]!='-' || s[7]!='-' || s[10]!='.') {
+    return util::TimeStamp();
+  }
+  // Check subtokens are valid ints
+  auto YY  = s.substr(0,4);
+  auto MM  = s.substr(5,2);
+  auto DD  = s.substr(8,2);
+  auto tod = s.substr(11,6);
+  if (not is_int(YY) || not is_int(MM) || not is_int(DD) || not is_int(tod)) {
+    return util::TimeStamp();
+  }
+  std::vector<int> date{std::stoi(YY),std::stoi(MM),std::stoi(DD)};
+  std::vector<int> time{std::stoi(tod)/10000,(std::stoi(tod)/100)%100,(std::stoi(tod))%100};
+
+  try {
+    return util::TimeStamp(date,time);
+  } catch (...) {
+    return util::TimeStamp();
+  }
+};
 
 } // namespace util
 
