@@ -3,9 +3,11 @@
 OBJS = \
        glad_constants.o \
        glad_initialise.o \
+       glad_input_averages.o \
        glad_io.o \
        glad_main.o \
        glad_mbal_coupling.o \
+       glad_output_fluxes.o \
        glad_restart_gcm.o \
        glad_timestep.o \
        glad_type.o \
@@ -27,18 +29,24 @@ OBJS = \
        glide_types.o \
        glimmer_config.o \
        glimmer_coordinates.o \
+       glimmer_filenames.o \
        glimmer_global.o \
        glimmer_log.o \
+       glimmer_map_CFproj.o \
+       glimmer_map_init.o \
        glimmer_map_types.o \
        glimmer_ncdf.o \
        glimmer_ncio.o \
+       glimmer_ncparams.o \
        glimmer_paramets.o \
        glimmer_physcon.o \
        glimmer_scales.o \
+       glimmer_sparse_type.o \
        glimmer_util.o \
        glissade.o \
        mpi_mod.o \
-       parallel_mpi.o
+       parallel_mpi.o \
+       profile.o
 
 all: $(OBJS)
 
@@ -64,6 +72,9 @@ glad_initialise.o: \
        glissade.o \
        parallel_mpi.o
 
+glad_input_averages.o: \
+       glimmer_paramets.o
+
 glad_io.o: \
        glad_type.o \
        glide_types.o \
@@ -85,11 +96,18 @@ glad_mbal_coupling.o: \
        glimmer_config.o \
        glimmer_coordinates.o
 
+glad_output_fluxes.o: \
+       glide_types.o
+
 glad_restart_gcm.o:
 
 glad_timestep.o:
 
-glad_type.o:
+glad_type.o: \
+       glad_input_averages.o \
+       glad_output_fluxes.o \
+       glide_types.o \
+       glimmer_ncparams.o
 
 glc_communicate.o: \
        glc_kinds_mod.o \
@@ -158,7 +176,11 @@ glide_diagnostics.o:
 
 glide_nc_custom.o:
 
-glide_types.o:
+glide_types.o: \
+       glimmer_map_types.o \
+       glimmer_ncdf.o \
+       glimmer_sparse_type.o \
+       profile.o
 
 glimmer_config.o: \
        glimmer_log.o \
@@ -166,16 +188,27 @@ glimmer_config.o: \
 
 glimmer_coordinates.o:
 
+glimmer_filenames.o:
+
 glimmer_global.o:
 
 glimmer_log.o: \
        parallel_mpi.o
 
+glimmer_map_CFproj.o: \
+       glimmer_map_init.o
+
+glimmer_map_init.o:
+
 glimmer_map_types.o:
 
 glimmer_ncdf.o:
 
-glimmer_ncio.o:
+glimmer_ncio.o: \
+       glimmer_map_CFproj.o
+
+glimmer_ncparams.o: \
+       glimmer_filenames.o
 
 glimmer_paramets.o: \
        glimmer_global.o \
@@ -186,6 +219,8 @@ glimmer_physcon.o: \
 
 glimmer_scales.o:
 
+glimmer_sparse_type.o:
+
 glimmer_util.o:
 
 glissade.o:
@@ -195,6 +230,8 @@ mpi_mod.o:
 parallel_mpi.o: \
        glimmer_global.o \
        mpi_mod.o
+
+profile.o:
 
 clean:
 	$(RM) *.o *.mod *.f90
