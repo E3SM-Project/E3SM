@@ -47,6 +47,11 @@ module radiation
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
 
+#ifdef MMF_PRESCRIBED_LW
+   ! use mo_simple_netcdf, only: read_field
+   use netcdf
+#endif
+
    implicit none
    private
    save
@@ -313,6 +318,10 @@ contains
       call pbuf_add_field('QRS', 'global', dtype_r8, (/pcols,pver/), idx)
       call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
 
+#ifdef MMF_PRESCRIBED_LW
+      call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pver/), idx)
+#endif
+
       ! If the namelist has been configured for preserving the spectral fluxes, then create
       ! physics buffer variables to store the results. These are fluxes per
       ! spectral band, as follows:
@@ -371,6 +380,9 @@ contains
                              .or. nstep <= irad_always
             end if
          case ('lw') ! do a longwave heating calc this timestep?
+#ifdef MMF_PRESCRIBED_LW
+            radiation_do = .false.
+#else
             if (iradlw==0) then
                radiation_do = .false.
             else
@@ -378,6 +390,7 @@ contains
                              .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
                              .or. nstep <= irad_always
             end if
+#endif
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
@@ -423,7 +436,7 @@ contains
 
    !================================================================================================
 
-   subroutine radiation_init(state)
+   subroutine radiation_init(state,pbuf2d)
    !-------------------------------------------------------------------------------
    ! Purpose: Initialize the radiation parameterization and add fields to the 
    ! history buffer
@@ -442,6 +455,7 @@ contains
       use time_manager,       only: get_nstep, get_step_size, is_first_restart_step
       use radiation_data,     only: init_rad_data
       use physics_types,      only: physics_state
+      use physics_buffer,     only: physics_buffer_desc, pbuf_get_field, pbuf_get_index, pbuf_get_chunk
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -453,6 +467,8 @@ contains
       ! where this subroutine is called, physics_state has not subset for a
       ! specific chunk (i.e., state is a vector of all chunks, indexed by lchnk)
       type(physics_state), intent(in) :: state(:)
+      ! Fields from other parameterizations that persist across timesteps
+      type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
       integer :: icall, nmodes
       logical :: active_calls(0:N_DIAG)
@@ -474,6 +490,21 @@ contains
       character(len=32) :: subname = 'radiation_init'
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
+
+#ifdef MMF_PRESCRIBED_LW
+      real(r8), pointer :: qrl_prescribed(:)
+      character(len=256) :: prescribed_lw_file_name
+      character(len=8) :: varName
+      integer :: ncid
+      integer :: dimid
+      integer :: nlev
+      integer :: varid
+      integer :: chnk
+      ! real(r8), dimension(:), allocatable :: qrl_data
+      real(r8), dimension(pver) :: qrl_data
+      integer :: qrl_idx
+      type(physics_buffer_desc), pointer :: pbuf_chunk(:) ! temporary pbuf pointer for single chunk
+#endif
 
       !-----------------------------------------------------------------------
 
@@ -910,6 +941,41 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
+#ifdef MMF_PRESCRIBED_LW
+
+      prescribed_lw_file_name = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
+      varName = 'QRL'
+
+      if(nf90_open(trim(prescribed_lw_file_name), NF90_NOWRITE, ncid) /= NF90_NOERR) &
+         call endrun("radiation_init(): can't open file " // trim(prescribed_lw_file_name))
+      ! nlev = get_dim_size(ncid,'lev')
+
+      if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
+         if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
+      else
+         nlev = -1
+      end if
+      
+      if (nlev/=pver) call endrun('MMF_PRESCRIBED_LW: number of vertical levels do not match file!')
+
+      ! qrl_data = read_field(ncid, varName, lev_data)
+
+      if(nf90_inq_varid(ncid, trim(varName), varid) /= NF90_NOERR) &
+        call endrun("MMF_PRESCRIBED_LW - nf90_inq_varid: can't find variable " // trim(varName))
+      if(nf90_get_var(ncid, varid, qrl_data)  /= NF90_NOERR) &
+        call endrun("MMF_PRESCRIBED_LW - nf90_get_var: can't read variable " // trim(varName))
+
+      ncid = nf90_close(ncid)
+
+      qrl_idx = pbuf_get_index('QRL_PRESCRIBED')
+      do chnk=begchunk, endchunk
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
+         call pbuf_get_field(pbuf_chunk, qrl_idx, qrl_prescribed)
+         qrl_prescribed(1:pver) = qrl_data(1:pver)
+      end do
+
+#endif
+
    end subroutine radiation_init
 
    subroutine radiation_final()
@@ -1161,6 +1227,9 @@ contains
       ! Pointers to heating rates on physics buffer
       real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
+#ifdef MMF_PRESCRIBED_LW
+      real(r8), pointer :: qrl_prescribed(:)
+#endif
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these as regular arrays here
@@ -1311,6 +1380,9 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+#ifdef MMF_PRESCRIBED_LW
+      call pbuf_get_field(pbuf, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
+#endif
 
       ! Get pbuf fields
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
@@ -1831,6 +1903,11 @@ contains
                end if
 
             end if  ! radiation_do('lw')
+#ifdef MMF_PRESCRIBED_LW
+            do ic = 1,ncol
+               qrl(ic,1:pver) = qrl_prescribed(1:pver)
+            end do
+#endif
 
          end if  ! active calls
       end do  ! loop over diagnostic calls
