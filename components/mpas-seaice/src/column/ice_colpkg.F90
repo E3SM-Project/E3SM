@@ -3514,8 +3514,9 @@
                                       vicen,    &
                                       strength)
 
-      use ice_constants_colpkg, only: p333, c0, c1, c2, Cf, Cp, Pstar, Cstar, &
+      use ice_constants_colpkg, only: p333, c0, c1, c2, Cp, Pstar, Cstar, &
           rhoi, puny
+      use ice_colpkg_shared, only: Cf
       use ice_mechred, only: asum_ridging, ridge_itd
 
       integer (kind=int_kind), intent(in) :: & 
