@@ -6801,7 +6801,7 @@
           <ntasks_ocn>5440</ntasks_ocn>
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>85</ntasks_cpl>
+          <ntasks_cpl>5440</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>4</nthrds_atm>
