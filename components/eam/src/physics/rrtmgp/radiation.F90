@@ -44,13 +44,6 @@ module radiation
                               initialize_fluxes, reset_fluxes, free_fluxes, expand_day_fluxes, &
                               get_gas_vmr
 
-   use pio,            only: file_desc_t, pio_nowrite
-   use cam_pio_utils,    only: cam_pio_openfile,cam_pio_closefile
-   use cam_grid_support, only: cam_grid_check, cam_grid_id,cam_grid_get_dim_names
-   use ncdio_atm,       only: infld
-   use time_manager,   only: get_curr_date
-   use cam_logfile,     only: iulog
-
    implicit none
    private
    save
@@ -197,7 +190,7 @@ module radiation
    ! Indices to pbuf fields
    integer :: cldfsnow_idx = 0
 
-   !needed for SPA
+   ! needed for SPA
    integer :: aer_tau_bnd_lw_idx(nlwbands), aer_tau_bnd_sw_idx(nswbands),&
               aer_ssa_bnd_sw_idx(nswbands), aer_asm_bnd_sw_idx(nswbands)
    !============================================================================
@@ -237,7 +230,6 @@ contains
                               do_aerosol_rad, do_spa_optics,   &
                               fixed_total_solar_irradiance,    &
                               rrtmgp_enable_temperature_warnings
-
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -424,7 +416,7 @@ contains
             nstep = nstep + 1
             offset = offset + dtime
             if (radiation_do('sw', nstep)) then
-               radiation_nextsw_cday = get_curr_calday(offset=offset) 
+               radiation_nextsw_cday = get_curr_calday(offset=offset)
                dosw = .true.
             end if
          end do
@@ -451,8 +443,6 @@ contains
       use time_manager,       only: get_nstep, get_step_size, is_first_restart_step
       use radiation_data,     only: init_rad_data
       use physics_types, only: physics_state
-      use cam_logfile,     only: iulog
-      use spmd_utils,       only: iam
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -485,18 +475,16 @@ contains
 
       character(len=32) :: subname = 'radiation_init'
 
-      !needed for SPA
-      integer :: month
+      ! needed for SPA
       integer :: band_index
 
       !-----------------------------------------------------------------------
 
-      !sanity check for spa
-      !spa must be active if do_spa_optics, is true
+      ! sanity check for spa
+      ! spa must be active if do_spa_optics, is true
       if(do_spa_optics .and. .not. is_spa_active) then
-         call endrun('SPA must be active if do_spa_optics is true, '//errmsg(__FILE__,__LINE__))
+         call endrun('SPA must be active if do_spa_optics is true, '//errMsg(__FILE__,__LINE__))
       endif
-
 
       ! Initialize cloud optics
       call cloud_rad_props_init()
@@ -898,21 +886,21 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
-      !Set default values for the indices requied to get fields from SPA PBUF fields
+      ! Set default values for the indices requied to get fields from SPA PBUF fields
       aer_tau_bnd_sw_idx(:) = -1
       aer_ssa_bnd_sw_idx(:) = -1
       aer_asm_bnd_sw_idx(:) = -1
       aer_tau_bnd_lw_idx(:) = -1
 
-      if (do_spa_optics) then !initialize SPA
-         !Get PBUF indices for SPA fields
-         do band_index = 1,nswbands !short wave
+      if (do_spa_optics) then ! initialize SPA
+         ! Get PBUF indices for SPA fields
+         do band_index = 1,nswbands ! short wave
             aer_tau_bnd_sw_idx(band_index) = pbuf_get_index(aer_tau_sw_names(band_index))
             aer_ssa_bnd_sw_idx(band_index) = pbuf_get_index(aer_ssa_sw_names(band_index))
             aer_asm_bnd_sw_idx(band_index) = pbuf_get_index(aer_asm_sw_names(band_index))
          end do
 
-         do band_index = 1,nlwbands !long wave
+         do band_index = 1,nlwbands ! long wave
             aer_tau_bnd_lw_idx(band_index) = pbuf_get_index(aer_tau_lw_names(band_index))
          end do
 
@@ -1203,14 +1191,12 @@ contains
 
       ! Radiative fluxes
       type(fluxes_t) :: fluxes_allsky, fluxes_clrsky
-      !type(fluxes_t) :: fluxes_allsky, fluxes_clrsky
 
       ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
       real(r8), dimension(pcols,pver) :: c_cldf  ! Combined cloud/snow fraction
 
-      !needed for SPA
-      integer :: year, month, day, tod, next_month
+      ! needed for SPA
       integer :: band_index
       real(r8), pointer :: aerosol_optical_property(:,:)
 
@@ -1363,7 +1349,7 @@ contains
                   aer_tau_bnd_sw = 0._r8
                   aer_ssa_bnd_sw = 0._r8
                   aer_asm_bnd_sw = 0._r8
-                  !if SPA is active, grab fields read in from the input file and stored in PBUF
+                  ! if SPA is active, grab fields read in from the input file and stored in PBUF
                   if (do_spa_optics) then
                      do band_index = 1, nswbands
                         call pbuf_get_field(pbuf, aer_tau_bnd_sw_idx(band_index), aerosol_optical_property)
@@ -1385,7 +1371,7 @@ contains
                           is_cmip6_volc, &
                           aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
                   )
-                  end if !SPA optics
+                  end if ! SPA optics
                   ! Now reorder bands to be consistent with RRTMGP
                   ! TODO: fix the input files themselves!
                   do icol = 1,size(aer_tau_bnd_sw,1)
@@ -1482,7 +1468,7 @@ contains
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
                   aer_tau_bnd_lw = 0._r8
-                 !if SPA is active, use SPA fields from PBUF
+                 ! if SPA is active, use SPA fields from PBUF
                  if (do_spa_optics) then
                      do band_index = 1, nlwbands
                         call pbuf_get_field(pbuf,aer_tau_bnd_lw_idx(band_index), aerosol_optical_property)
@@ -1601,7 +1587,7 @@ contains
 
       use perf_mod, only: t_startf, t_stopf
       use radiation_utils, only: calculate_heating_rate
-                           
+
 
       ! Inputs
       integer, intent(in) :: ncol
@@ -1614,7 +1600,7 @@ contains
       real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
       real(r8), intent(in), dimension(:,:,:) :: aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd
 
-      ! Incoming solar radiation, scaled for solar zenith angle 
+      ! Incoming solar radiation, scaled for solar zenith angle
       ! and earth-sun distance
       real(r8) :: solar_irradiance_by_gpt(ncol,nswgpts)
 
@@ -1696,9 +1682,6 @@ contains
       end do
 
       ! Allocate shortwave fluxes (allsky and clearsky)
-      ! TODO: why do I need to provide my own routines to do this? Why is
-      ! this not part of the ty_fluxes_byband object?
-      !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
       ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
       ! have vertical dimension nlev_rad (defined at midpoints).
@@ -1868,7 +1851,6 @@ contains
       use ppgrid, only: pver
       use physics_types, only: physics_state
       use cam_history, only: outfld
-      use radconstants, only: rrtmg_lw_cloudsim_band
 
       type(physics_state), intent(in) :: state
       real(r8), intent(in), dimension(:,:,:) :: tau
@@ -1970,10 +1952,6 @@ contains
       ! Map heating rates to CAM columns and levels
       qrl(1:ncol,1:pver) = qrl_rad(1:ncol,ktop:kbot)
       qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
-
-      ! Free fluxes and optical properties
-      call free_optics_lw(cld_optics_lw)
-      call free_optics_lw(aer_optics_lw)
 
    end subroutine radiation_driver_lw
 
@@ -2325,7 +2303,7 @@ contains
       use physconst, only: cpair
       use physics_types, only: physics_state
       use cam_history, only: outfld
-      
+
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
       type(fluxes_t), intent(in) :: flux_all
@@ -2389,7 +2367,7 @@ contains
       use physconst, only: cpair
       use physics_types, only: physics_state
       use cam_history, only: outfld
-      
+
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
       type(fluxes_t), intent(in) :: flux_all
@@ -2450,231 +2428,6 @@ contains
       call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
    end subroutine output_fluxes_lw
-
-   !----------------------------------------------------------------------------
-
-   ! For some reason the RRTMGP flux objects do not include initialization
-   ! routines, but rather expect the user to associate the individual fluxes (which
-   ! are pointers) with appropriate targets. Instead, this routine treats those
-   ! pointers as allocatable members and allocates space for them. TODO: is this
-   ! appropriate use?
-   subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
-
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      integer, intent(in) :: ncol, nlevels, nbands
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      logical, intent(in), optional :: do_direct
-
-      logical :: do_direct_local
-
-      if (present(do_direct)) then
-         do_direct_local = .true.
-      else
-         do_direct_local = .false.
-      end if
-
-      ! Allocate flux arrays
-      ! NOTE: fluxes defined at interfaces, so need to either pass nlevels as
-      ! number of model levels plus one, or allocate as nlevels+1 if nlevels
-      ! represents number of model levels rather than number of interface levels.
-
-      ! Broadband fluxes
-      allocate(fluxes%flux_up(ncol, nlevels))
-      allocate(fluxes%flux_dn(ncol, nlevels))
-      allocate(fluxes%flux_net(ncol, nlevels))
-      if (do_direct_local) allocate(fluxes%flux_dn_dir(ncol, nlevels))
-
-      ! Fluxes by band
-      allocate(fluxes%bnd_flux_up(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_dn(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_net(ncol, nlevels, nbands))
-      if (do_direct_local) allocate(fluxes%bnd_flux_dn_dir(ncol, nlevels, nbands))
-
-      ! Initialize
-      call reset_fluxes(fluxes)
-
-   end subroutine initialize_rrtmgp_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_fluxes(fluxes)
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
-      if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
-      if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
-      if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
-      if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
-      if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
-      if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
-      if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
-   end subroutine free_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_sw(optics)
-      use mo_optical_props, only: ty_optical_props_2str
-      type(ty_optical_props_2str), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      if (allocated(optics%ssa)) deallocate(optics%ssa)
-      if (allocated(optics%g)) deallocate(optics%g)
-      call optics%finalize()
-   end subroutine free_optics_sw
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_lw(optics)
-      use mo_optical_props, only: ty_optical_props_1scl
-      type(ty_optical_props_1scl), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      call optics%finalize()
-   end subroutine free_optics_lw
-
-   !----------------------------------------------------------------------------
-
-   subroutine get_gas_vmr(icall, state, pbuf, gas_names, gas_vmr)
-
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
-      use rad_constituents, only: rad_cnst_get_gas
-
-      integer, intent(in) :: icall
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-      character(len=*), intent(in), dimension(:) :: gas_names
-      real(r8), intent(out), dimension(:,:,:) :: gas_vmr
-
-      ! Mass mixing ratio
-      real(r8), pointer :: mmr(:,:)
-
-      ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
-      ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
-      ! CO and N2, which RRTMG did not have.
-      character(len=3), dimension(8) :: gas_species = (/ &
-         'H2O', 'CO2', 'O3 ', 'N2O', &
-         'CO ', 'CH4', 'O2 ', 'N2 ' &
-      /)
-      real(r8), dimension(8) :: mol_weight_gas = (/ &
-         18.01528, 44.0095, 47.9982, 44.0128, &
-         28.0101, 16.04246, 31.998, 28.0134 &
-      /)  ! g/mol
-
-      ! Molar weight of air
-      real(r8), parameter :: mol_weight_air = 28.97  ! g/mol
-
-      ! Defaults for gases that are not available (TODO: is this still accurate?)
-      real(r8), parameter :: co_vol_mix_ratio = 1.0e-7_r8
-      real(r8), parameter :: n2_vol_mix_ratio = 0.7906_r8
-
-      ! Loop indices
-      integer :: igas
-
-      ! Number of columns
-      integer :: ncol
-
-      ! Name of subroutine for error messages
-      character(len=32) :: subname = 'get_gas_vmr'
-
-      ! Number of columns in chunk
-      ncol = state%ncol
-
-      ! initialize
-      gas_vmr(:,:,:) = 0._r8
-
-      ! For each gas species needed for RRTMGP, read the mass mixing ratio from the
-      ! CAM rad_constituents interface, convert to volume mixing ratios, and
-      ! subset for daytime-only indices if needed.
-      do igas = 1,size(gas_names)
-
-         select case(trim(gas_names(igas)))
-
-            case('CO')
-
-               ! CO not available, use default
-               gas_vmr(igas,1:ncol,1:pver) = co_vol_mix_ratio
-
-            case('N2')
-
-               ! N2 not available, use default
-               gas_vmr(igas,1:ncol,1:pver) = n2_vol_mix_ratio
-
-            case('H2O')
-
-               ! Water vapor is represented as specific humidity in CAM, so we
-               ! need to handle water a little differently
-               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, mmr)
-
-               ! Convert to volume mixing ratio by multiplying by the ratio of
-               ! molecular weight of dry air to molecular weight of gas. Note that
-               ! first specific humidity (held in the mass_mix_ratio array read
-               ! from rad_constituents) is converted to an actual mass mixing
-               ! ratio.
-               gas_vmr(igas,1:ncol,1:pver) = mmr(1:ncol,1:pver) / ( &
-                  1._r8 - mmr(1:ncol,1:pver) &
-               )  * mol_weight_air / mol_weight_gas(igas)
-
-            case DEFAULT
-
-               ! Get mass mixing ratio from the rad_constituents interface
-               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, mmr)
-
-               ! Convert to volume mixing ratio by multiplying by the ratio of
-               ! molecular weight of dry air to molecular weight of gas
-               gas_vmr(igas,1:ncol,1:pver) = mmr(1:ncol,1:pver) &
-                                            * mol_weight_air / mol_weight_gas(igas)
-
-         end select
-
-      end do  ! igas
-
-   end subroutine get_gas_vmr
-
-   !----------------------------------------------------------------------------
-
-   subroutine set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      integer, intent(in) :: ncol
-      character(len=*), intent(in), dimension(:) :: gas_names
-      real(r8), intent(in), dimension(:,:,:) :: gas_vmr
-      type(ty_gas_concs), intent(out) :: gas_concentrations
-
-      ! Local variables
-      real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_out
-
-      ! Loop indices
-      integer :: igas
-
-      ! Character array to hold lowercase gas names
-      character(len=32), allocatable :: gas_names_lower(:)
-
-      ! Name of subroutine for error messages
-      character(len=32) :: subname = 'set_gas_concentrations'
-
-      ! Initialize gas concentrations with lower case names
-      allocate(gas_names_lower(size(gas_names)))
-      do igas = 1,size(gas_names)
-         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
-      end do
-      call handle_error(gas_concentrations%init(gas_names_lower))
-
-      ! For each gas, add level above model top and set values in RRTMGP object
-      do igas = 1,size(gas_names)
-         vol_mix_ratio_out = 0
-         ! Map to radiation grid
-         vol_mix_ratio_out(1:ncol,ktop:kbot) = gas_vmr(igas,1:ncol,1:pver)
-         ! Copy top-most model level to top-most rad level (which could be above
-         ! the top of the model)
-         vol_mix_ratio_out(1:ncol,1) = gas_vmr(igas,1:ncol,1)
-         ! Set volumn mixing ratio in gas concentration object for just columns
-         ! in this chunk
-         call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_names(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) &
-         )
-      end do
-
-   end subroutine set_gas_concentrations
 
    !----------------------------------------------------------------------------
 
