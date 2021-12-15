@@ -7,12 +7,31 @@ Fields:
   Physics GLL:
     Field Names:
       - T_mid
-      - qv
       - horiz_winds
+      - p_int
+      - p_mid
+      - pseudo_density
+      - tke
+      - cldfrac_liq
+      - cldfrac_ice
+      - qv
+      - qc
+      - qr
+      - qi
+      - qm
+      - nc
+      - nr
+      - ni
+      - LW_flux_dn
+      - LW_flux_up
+      - SW_flux_dn
+      - SW_flux_up
   Dynamics:
     Field Names:
       - Qdp_dyn
       - v_dyn
+      - vtheta_dp_dyn
+      - dp3d_dyn
 Output Control:
   Frequency: 2
   Frequency Units: Steps
