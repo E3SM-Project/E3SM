@@ -57,7 +57,7 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     }
 
     // Initialize data structure for bridging to F90
-    PblintdData SDS(shcol, nlev, nlevi);
+    PblintdData SDS(shcol, nlev, nlevi, nlev);
 
     // Test that the inputs are reasonable
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
@@ -140,11 +140,15 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
   {
     auto engine = setup_random_test();
 
+    Int npbl_rand = rand()%71 + 1;
+
     PblintdData f90_data[] = {
-      PblintdData(10, 71, 72),
-      PblintdData(10, 12, 13),
-      PblintdData(7,  16, 17),
-      PblintdData(2, 7, 8),
+      PblintdData(10, 71, 72, 71),
+      PblintdData(10, 71, 72, 1),
+      PblintdData(10, 71, 72, npbl_rand),
+      PblintdData(10, 12, 13, 1),
+      PblintdData(7,  16, 17, 1),
+      PblintdData(2, 7, 8, 1),
     };
 
     // Generate random input data
@@ -160,6 +164,8 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
       PblintdData(f90_data[1]),
       PblintdData(f90_data[2]),
       PblintdData(f90_data[3]),
+      PblintdData(f90_data[4]),
+      PblintdData(f90_data[5]),
     };
 
     // Assume all data is in C layout
@@ -173,7 +179,7 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_f(d.shcol, d.nlev, d.nlevi, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
+      pblintd_f(d.shcol, d.nlev, d.nlevi, d.npbl, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 

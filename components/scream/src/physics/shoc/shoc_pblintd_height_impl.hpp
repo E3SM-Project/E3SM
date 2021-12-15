@@ -46,10 +46,13 @@ void Functions<S,D>::pblintd_height(
   const auto s_rino = ekat::scalarize(rino);
 
   // Compute rino values and find max index s.t. rino(k) >= ricr
-  Int max_indx = -1;
+  Int max_indx = Kokkos::reduction_identity<Int>::max();
 
-  const Int lower_pack_indx = (nlev-npbl)/Spack::n;
-  const Int upper_pack_indx = (nlev-1)/Spack::n+1;
+  const Int lower = nlev-npbl;
+  const Int upper = nlev-1;
+  const Int length = upper-lower;
+  const Int lower_pack_indx = lower/Spack::n;
+  const Int upper_pack_indx = lower_pack_indx + (length+Spack::n-1)/Spack::n;
   Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx),
                           [&] (const Int& k, Int& local_max) {
     auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
@@ -61,6 +64,7 @@ void Functions<S,D>::pblintd_height(
                       ekat::square(u(k) - s_u(nlev-1)) +
                       ekat::square(v(k) - s_v(nlev-1)) +
                       fac*(ustar*ustar)));
+
     if (in_range.any()) {
       rino(k).set(in_range,
                   ggr*(thv(k) - thv_ref)*(z(k) - s_z(nlev-1))/(s_thv(nlev-1)*vvk));
@@ -68,7 +72,7 @@ void Functions<S,D>::pblintd_height(
 
     // Set indices_pack entry to -1 if rino(k)<ricr or
     // if global index is not in [nlev-npbl, nlev-1)
-    indices_pack.set(rino(k)<ricr || !in_range, -1);
+    indices_pack.set(rino(k)<ricr || !in_range, Kokkos::reduction_identity<Int>::max());
 
     // Local max index s.t. rino(k)>=ricr and k in [nlev-npbl, nlev-1)
     if (local_max < ekat::max(indices_pack))
@@ -76,18 +80,16 @@ void Functions<S,D>::pblintd_height(
 
   }, Kokkos::Max<Int>(max_indx));
 
+  std::cout << max_indx << std::endl;
+
   // Set check=false and compute pblh only if
   // there was an index s.t. rino(k)>=ricr.
-  // If no index was found, set max_index=nlev-npbl.
-  if (max_indx != -1) {
+  if (max_indx != Kokkos::reduction_identity<Int>::max()) {
     pblh = s_z(max_indx+1) +
           (ricr - s_rino(max_indx+1))/
           (s_rino(max_indx) - s_rino(max_indx+1))*
           (s_z(max_indx) - s_z(max_indx+1));
-
     check = false;
-  } else {
-    max_indx = nlev-npbl;
   }
 }
 } // namespace shoc
