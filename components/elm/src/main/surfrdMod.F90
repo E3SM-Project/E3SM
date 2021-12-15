@@ -121,7 +121,7 @@ contains
        end if
        deallocate(idata2d)
     else
-        call ncd_io(ncid=ncid, varname='LANDMASK', data=mask, flag='read', readvar=readvar)
+       call ncd_io(ncid=ncid, varname='LANDMASK', data=mask, flag='read', readvar=readvar)
        if (.not. readvar) then
           call ncd_io(ncid=ncid, varname='mask', data=mask, flag='read', readvar=readvar)
        end if
@@ -224,7 +224,7 @@ contains
        
        call ncd_io(ncid=ncid, varname= 'xc', flag='read', data=ldomain%lonc, &
             dim1name=grlnd, readvar=readvar)
-            if (.not. readvar) call endrun( msg=' ERROR: xc NOT on file'//errMsg(__FILE__, __LINE__))
+       if (.not. readvar) call endrun( msg=' ERROR: xc NOT on file'//errMsg(__FILE__, __LINE__))
        
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
@@ -1466,12 +1466,7 @@ contains
 
 
 !-----------------------------------------------------------------------
-!!! TOP solar radiation parameterization
-! !IROUTINE: surfrd_get_topo_for_solar_rad
-
-! !INTERFACE:
   subroutine surfrd_get_topo_for_solar_rad(domain,filename)
-
 ! !DESCRIPTION:
 ! Read the topography parameters for TOP solar radiation parameterization:
 ! Assume domain has already been initialized and read
@@ -1493,18 +1488,18 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    type(file_desc_t) :: ncid      ! netcdf file id
-    integer :: n                   ! indices
-    integer :: ni,nj,ns            ! size of grid on file
-    integer :: dimid,varid         ! netCDF id's
-    integer :: ier                 ! error status
-    real(r8):: eps = 1.0e-12_r8             ! lat/lon error tolerance
-    integer :: beg,end                      ! local beg,end indices
+    type(file_desc_t)   :: ncid             ! netcdf file id
+    integer             :: n                ! indices
+    integer             :: ni,nj,ns         ! size of grid on file
+    integer             :: dimid,varid      ! netCDF id's
+    integer             :: ier              ! error status
+    real(r8)            :: eps = 1.0e-12_r8 ! lat/lon error tolerance
+    integer             :: beg,end          ! local beg,end indices
     logical             :: isgrid2d         ! true => file is 2d lat/lon
     real(r8),pointer    :: lonc(:),latc(:)  ! local lat/lon
     character(len=256)  :: locfn            ! local file name
-    logical :: readvar                      ! is variable on file
-    character(len=32) :: subname = 'surfrd_get_topo_for_solar_rad'     ! subroutine name
+    logical             :: readvar          ! is variable on file
+    character(len=32)   :: subname = 'surfrd_get_topo_for_solar_rad'     ! subroutine name
 !-----------------------------------------------------------------------
 
     if (masterproc) then
@@ -1570,6 +1565,5 @@ contains
 
   end subroutine surfrd_get_topo_for_solar_rad
 
-!----End -------------------------------------------------------------
 
 end module surfrdMod
