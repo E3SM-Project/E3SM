@@ -2079,12 +2079,12 @@ contains
            oceanParticulateIronConc(2,i) = x2i_i % rAttr(index_x2i_So_fep2, n)
            oceanDissolvedIronConc(1,i)   = x2i_i % rAttr(index_x2i_So_fed1, n)
            oceanDissolvedIronConc(2,i)   = x2i_i % rAttr(index_x2i_So_fed2, n)
-           oceanZAerosolConc(1,i)        = x2i_i % rAttr(index_x2i_So_zaer1, n) !JW not used, set to 0?
-           oceanZAerosolConc(2,i)        = x2i_i % rAttr(index_x2i_So_zaer2, n) !JW not used, set to 0?
-           oceanZAerosolConc(3,i)        = x2i_i % rAttr(index_x2i_So_zaer3, n) !JW not used, set to 0?
-           oceanZAerosolConc(4,i)        = x2i_i % rAttr(index_x2i_So_zaer4, n) !JW not used, set to 0?
-           oceanZAerosolConc(5,i)        = x2i_i % rAttr(index_x2i_So_zaer5, n) !JW not used, set to 0?
-           oceanZAerosolConc(6,i)        = x2i_i % rAttr(index_x2i_So_zaer6, n) !JW not used, set to 0?
+           oceanZAerosolConc(1,i)        = 0.0_RKIND
+           oceanZAerosolConc(2,i)        = 0.0_RKIND
+           oceanZAerosolConc(3,i)        = 0.0_RKIND
+           oceanZAerosolConc(4,i)        = 0.0_RKIND
+           oceanZAerosolConc(5,i)        = 0.0_RKIND
+           oceanZAerosolConc(6,i)        = 0.0_RKIND
            ! set aerosols, if configured
            if (config_use_zaerosols) then
               if (config_use_modal_aerosols) then
