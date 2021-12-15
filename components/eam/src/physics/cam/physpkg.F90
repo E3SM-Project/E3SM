@@ -45,10 +45,6 @@ module physpkg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
 
-!++BEH
-  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux, check_co2_change_pr2, get_total_carbon, get_carbon_emissions, print_global_carbon_diags, print_global_carbon_diags_scl, get_carbon_sfc_fluxes, get_carbon_air_fluxes
-!--BEH
-
   implicit none
   private
 
@@ -152,7 +148,6 @@ subroutine phys_register
     use aircraft_emit,      only: aircraft_emit_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
-!    use co2_diagnostics,    only: co2_diags_register
     use cospsimulator_intr, only: cospsimulator_intr_register
     use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
     use subcol,             only: subcol_register
@@ -316,9 +311,6 @@ subroutine phys_register
 
     ! Register diagnostics PBUF
     call diag_register()
-
-    ! co2 diagnostics
-!    call co2_diags_register()
 
     ! Register age of air tracers
     call aoa_tracers_register()
@@ -1019,11 +1011,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #ifdef TRACER_CHECK
        call gmean_mass ('before tphysbc DRY', phys_state)
 #endif
-!++BEH
-!       call gmean_mass ('before tphysbc DRY', phys_state)
-!       call co2_gmean_check ('CO2 before tphysbc DRY', phys_state)
-       call co2_gmean_check_wflux ('CO2 before tphysbc DRY', phys_state, cam_in)
-!--BEH
 
 
        !-----------------------------------------------------------------------
@@ -1076,12 +1063,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
-!++BEH
-!       call gmean_mass ('between DRY', phys_state)
-!       call co2_gmean_check ('CO2 between DRY', phys_state)
-       call co2_gmean_check_wflux ('CO2 between DRY', phys_state, cam_in)
-!B1       call print_global_carbon_diags(phys_state, ztodt, nstep)
-!--BEH
+
     end if
 
 end subroutine phys_run1
@@ -1329,12 +1311,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
-!++BEH
-!    call gmean_mass ('after tphysac FV:WET)', phys_state)
-!    call co2_gmean_check ('CO2 after tphysac FV:WET)', phys_state)
-    call co2_gmean_check_wflux ('CO2 after tphysac FV:WET)', phys_state, cam_in)
-!    call check_co2_change_pr2(phys_state, phys_tend, pbuf2d, cam_in, 'wet')
-!--BEH
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
@@ -1441,6 +1417,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_diagnostics,    only: get_total_carbon, print_global_carbon_diags, &
+                                  get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
 
@@ -1605,10 +1583,6 @@ end if ! l_tracer_aero
 
     call t_stopf('tphysac_init')
 
-!++BEH
-!B1    call get_total_carbon(state, 'dry')
-!B1    state%tc_before_physstep(:ncol) = state%tc_cur(:ncol)
-!--BEH
 
 if (l_tracer_aero) then
     !===================================================
@@ -1630,9 +1604,7 @@ if (l_tracer_aero) then
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
-!++BEH
     call get_carbon_air_fluxes(state, pbuf, ztodt)
-!--BEH
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1685,9 +1657,8 @@ end if ! l_tracer_aero
     end if ! l_vdiff
     endif
 
-    !++BEH collect surface carbon fluxes
+    ! collect surface carbon fluxes
     call get_carbon_sfc_fluxes(state, cam_in, ztodt)
-    !--BEH
 
 
 if (l_rayleigh) then
@@ -1807,19 +1778,6 @@ if (l_ac_energy_chk) then
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
 
-    !-------------- Carbon budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-! Need to make this feature toggle-able
-!if (check_carbon_budget) then
-   if (co2_transport()) then
-      !call co2_gmean_check('End of physics', state)
-      !call gmean_mass_subset('End of physics', state, c_i(:))
-!      call gmean_mass2('End of physics', state)
-!      call co2_gmean_check2('CO2 End of physics', state)
-      call co2_gmean_check2_wflux('CO2 End of physics WET', state, ptend, cam_in, pbuf)
-   end if
-!end if
-    !-------------- Carbon budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
     if (aqua_planet) then
        labort = .false.
        do i=1,ncol
@@ -1867,11 +1825,10 @@ end if ! l_ac_energy_chk
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
 
-    !++BEH
-    ! Check CO2 conservation
+
+    !-------------- Carbon budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     call get_total_carbon(state, 'wet')
-!    call get_carbon_emissions(state, cam_in, pbuf, ztodt)
-    call print_global_carbon_diags_scl(state, ztodt, nstep)
+    call print_global_carbon_diags(state, ztodt, nstep)
     state%tc_prev(:ncol) = state%tc_curr(:ncol)
     if (is_first_step()) then
        state%tc_init(:ncol) = state%tc_curr(:ncol)
@@ -1879,7 +1836,7 @@ end if ! l_ac_energy_chk
     if (is_end_curr_month()) then
        state%tc_mnst(:ncol) = state%tc_curr(:ncol)
     end if
-    !--BEH
+    !-------------- Carbon budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     call check_tracers_fini(tracerint)
 
@@ -1954,7 +1911,6 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
-!BH    use co2_cycle,       only: co2_cycle_set_ptend, co2_transport
 
     implicit none
 
@@ -2741,11 +2697,6 @@ if (l_rad) then
 
 end if ! l_rad
 
-!++BEH tphysbc aircraft emissions
-!BH    ! add tendency from aircraft emissions
-!BH    call co2_cycle_set_ptend(state, pbuf, ptend)
-!BH    call physics_update(state, ptend, ztodt, tend)
-!--BEH
 
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
@@ -2768,11 +2719,6 @@ end if ! l_rad
 
     call check_tracers_fini(tracerint)
 
-    !++BEH
-!B1    call get_total_carbon(state, 'dry')
-!B1    state%delta_tc(1:ncol) = state%tc_cur(1:ncol) - state%tc_before_physstep(1:ncol)
-!B1    call get_carbon_emissions(state, cam_in, pbuf)
-    !--BEH
 
 end subroutine tphysbc
 
