@@ -31,6 +31,7 @@ private
 save
 
 public co2_diags_register            ! setup co2 pbuf fields
+public co2_diags_init                ! set all fields to zero to begin
 public get_total_carbon
 public get_carbon_emissions
 public get_carbon_sfc_fluxes
@@ -90,15 +91,50 @@ contains
 
       if (co2_transport()) then
          do m = 1,4
-!            call outfld(trim(cnst_name(c_i(m)))//'_BOT', state%q(1,pver,c_i(m)), pcols, lchnk)
-!            call outfld(sflxnam(c_i(m)), cam_in%cflx(:,c_i(m)), pcols, lchnk)
-!            call pbuf_add_field(rflx_pname(i), 'physpkg', dtype_r8, (/pcols/), idx)
-!
             call pbuf_add_field(trim(cnst_name(c_i(m)))//'_cur', 'physpkg', dtype_r8, (/pcols/), idx)
          enddo
       endif
 
    end subroutine co2_diags_register
+
+   subroutine co2_diags_init(state)
+      !-------------------------------------------------
+      ! Purpose: initialize state co2 fields to zero
+      !-------------------------------------------------
+      !arguments
+      type(physics_state), intent(inout) :: state(begchunk:endchunk)
+
+      ! local variables
+      integer :: ncol, lchnk, i
+
+      ! zero out all of the state co2 variables
+      do lchnk = begchunk, endchunk
+         ncol = state(lchnk)%ncol
+         do i = 1, ncol
+            ! carbon at current, initial, month start, and previous time steps
+            state(lchnk)%tc_curr(i) = 0._r8
+            state(lchnk)%tc_init(i) = 0._r8
+            state(lchnk)%tc_mnst(i) = 0._r8
+            state(lchnk)%tc_prev(i) = 0._r8
+            ! carbon emissions and fluxes at current timestep
+            state(lchnk)%c_flux_sfc(i) = 0._r8
+            state(lchnk)%c_flux_air(i) = 0._r8
+            ! monthly accumulated carbon emissions and fluxes
+            state(lchnk)%c_mflx_sfc(i) = 0._r8
+            state(lchnk)%c_mflx_air(i) = 0._r8
+            state(lchnk)%c_mflx_sff(i) = 0._r8
+            state(lchnk)%c_mflx_lnd(i) = 0._r8
+            state(lchnk)%c_mflx_ocn(i) = 0._r8
+            ! total time integrated carbon emissions and fluxes
+            state(lchnk)%c_iflx_sfc(i) = 0._r8
+            state(lchnk)%c_iflx_air(i) = 0._r8
+            state(lchnk)%c_iflx_sff(i) = 0._r8
+            state(lchnk)%c_iflx_lnd(i) = 0._r8
+            state(lchnk)%c_iflx_ocn(i) = 0._r8
+         end do
+      end do
+
+   end subroutine co2_diags_init
 
    subroutine get_total_carbon(state, wet_or_dry)
       use physconst,      only: rga

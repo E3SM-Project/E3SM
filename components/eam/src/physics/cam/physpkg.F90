@@ -152,7 +152,7 @@ subroutine phys_register
     use aircraft_emit,      only: aircraft_emit_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
-    use co2_diagnostics,    only: co2_diags_register
+!    use co2_diagnostics,    only: co2_diags_register
     use cospsimulator_intr, only: cospsimulator_intr_register
     use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
     use subcol,             only: subcol_register
@@ -318,7 +318,7 @@ subroutine phys_register
     call diag_register()
 
     ! co2 diagnostics
-    call co2_diags_register()
+!    call co2_diags_register()
 
     ! Register age of air tracers
     call aoa_tracers_register()
@@ -701,6 +701,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use radheat,            only: radheat_init
     use radiation,          only: radiation_init
     use cloud_diagnostics,  only: cloud_diagnostics_init
+    use co2_diagnostics,    only: co2_diags_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
     use microp_driver,      only: microp_driver_init
@@ -825,6 +826,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! co2 cycle            
     if (co2_transport()) then
        call co2_init()
+       call co2_diags_init(phys_state)
     end if
 
     ! CAM3 prescribed ozone

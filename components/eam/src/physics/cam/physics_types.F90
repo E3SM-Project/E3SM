@@ -1837,22 +1837,22 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
 
-  state%tc_curr(:)    = 0._r8
-  state%tc_init(:)    = 0._r8
-  state%tc_mnst(:)    = 0._r8
-  state%tc_prev(:)    = 0._r8
-  state%c_flux_sfc(:) = 0._r8
-  state%c_flux_air(:) = 0._r8
-  state%c_mflx_sfc(:) = 0._r8
-  state%c_mflx_air(:) = 0._r8
-  state%c_mflx_sff(:) = 0._r8
-  state%c_mflx_lnd(:) = 0._r8
-  state%c_mflx_ocn(:) = 0._r8
-  state%c_iflx_sfc(:) = 0._r8
-  state%c_iflx_air(:) = 0._r8
-  state%c_iflx_sff(:) = 0._r8
-  state%c_iflx_lnd(:) = 0._r8
-  state%c_iflx_ocn(:) = 0._r8
+  state%tc_curr(:)    = inf
+  state%tc_init(:)    = inf
+  state%tc_mnst(:)    = inf
+  state%tc_prev(:)    = inf
+  state%c_flux_sfc(:) = inf
+  state%c_flux_air(:) = inf
+  state%c_mflx_sfc(:) = inf
+  state%c_mflx_air(:) = inf
+  state%c_mflx_sff(:) = inf
+  state%c_mflx_lnd(:) = inf
+  state%c_mflx_ocn(:) = inf
+  state%c_iflx_sfc(:) = inf
+  state%c_iflx_air(:) = inf
+  state%c_iflx_sff(:) = inf
+  state%c_iflx_lnd(:) = inf
+  state%c_iflx_ocn(:) = inf
 
 end subroutine physics_state_alloc
 
