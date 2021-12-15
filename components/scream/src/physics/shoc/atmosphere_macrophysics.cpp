@@ -73,8 +73,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
 
   // Input variables
-  add_field<Required>("host_dx",        scalar2d_layout_col, m,  grid_name);
-  add_field<Required>("host_dy",        scalar2d_layout_col, m,  grid_name);
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("p_int",          scalar3d_layout_int, Pa, grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
