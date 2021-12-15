@@ -589,7 +589,7 @@ def strain_scaling(axes, normType, label, xlabel, xMin, xMax, yMin):
 
         for resolution in resolutions:
 
-            filenameGrid = "./strain/x1.%i.grid.nc" %(resolution)
+            filenameGrid = "./strain/grid.%i.nc" %(resolution)
             filenameIC = "./strain/ic_%i.nc" %(resolution)
             filename = "./strain/output_%s_%i/output.2000.nc" %(dirname[method],resolution)
 
