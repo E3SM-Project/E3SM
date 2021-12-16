@@ -80,8 +80,6 @@ void Functions<S,D>::pblintd_height(
 
   }, Kokkos::Max<Int>(max_indx));
 
-  std::cout << max_indx << std::endl;
-
   // Set check=false and compute pblh only if
   // there was an index s.t. rino(k)>=ricr.
   if (max_indx != Kokkos::reduction_identity<Int>::max()) {
