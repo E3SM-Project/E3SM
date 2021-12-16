@@ -45,15 +45,19 @@ void Functions<S,D>::pblintd_height(
   const auto s_thv  = ekat::scalarize(thv);
   const auto s_rino = ekat::scalarize(rino);
 
-  // Compute rino values and find max index s.t. rino(k) >= ricr
-  Int max_indx = Kokkos::reduction_identity<Int>::max();
+  // Compute range for reduction. Only run the
+  // reduction if there is a valid range
+  const Int lower_indx = nlev-npbl;
+  const Int upper_indx = nlev-1;
+  if (lower_indx >= upper_indx) {
+    return;
+  }
+  const Int lower_pack_indx = lower_indx/Spack::n;
+  const Int upper_pack_indx = upper_indx/Spack::n;
 
-  const Int lower = nlev-npbl;
-  const Int upper = nlev-1;
-  const Int length = upper-lower;
-  const Int lower_pack_indx = lower/Spack::n;
-  const Int upper_pack_indx = lower_pack_indx + (length+Spack::n)/Spack::n;
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx),
+  // Compute rino values and find max index k s.t. rino(k) >= ricr
+  Int max_indx = Kokkos::reduction_identity<Int>::max();
+  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx+1),
                           [&] (const Int& k, Int& local_max) {
     auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto in_range = (indices_pack < nlev-1 && indices_pack >= nlev-npbl);
