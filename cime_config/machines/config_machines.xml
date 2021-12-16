@@ -917,7 +917,7 @@
       <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
       <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
       <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
-      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.1c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
       <env name="MOAB_PATH">/nfs/gce/projects/climate/software/moab/devel/mpich-3.4.2/gcc-11.1.0</env>
     </environment_variables>
