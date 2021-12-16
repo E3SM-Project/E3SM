@@ -52,7 +52,7 @@ void Functions<S,D>::pblintd_height(
   const Int upper = nlev-1;
   const Int length = upper-lower;
   const Int lower_pack_indx = lower/Spack::n;
-  const Int upper_pack_indx = lower_pack_indx + (length+Spack::n-1)/Spack::n;
+  const Int upper_pack_indx = lower_pack_indx + (length+Spack::n)/Spack::n;
   Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx),
                           [&] (const Int& k, Int& local_max) {
     auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
