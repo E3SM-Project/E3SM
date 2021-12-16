@@ -25,6 +25,9 @@ module radiation
       rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
    use physconst, only: cpair, cappa
+   use shr_sys_mod,       only: shr_sys_flush
+   use cam_logfile,       only: iulog
+
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -380,9 +383,9 @@ contains
                              .or. nstep <= irad_always
             end if
          case ('lw') ! do a longwave heating calc this timestep?
-#ifdef MMF_PRESCRIBED_LW
-            radiation_do = .false.
-#else
+! #ifdef MMF_PRESCRIBED_LW
+!             radiation_do = .false.
+! #else
             if (iradlw==0) then
                radiation_do = .false.
             else
@@ -390,7 +393,7 @@ contains
                              .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
                              .or. nstep <= irad_always
             end if
-#endif
+! #endif
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
@@ -499,7 +502,7 @@ contains
       integer :: dimid
       integer :: nlev
       integer :: varid
-      integer :: chnk
+      integer :: chnk, k
       ! real(r8), dimension(:), allocatable :: qrl_data
       real(r8), dimension(pver) :: qrl_data
       integer :: qrl_idx
@@ -944,6 +947,7 @@ contains
 #ifdef MMF_PRESCRIBED_LW
 
       prescribed_lw_file_name = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
+      ! prescribed_lw_file_name = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
       varName = 'QRL'
 
       if(nf90_open(trim(prescribed_lw_file_name), NF90_NOWRITE, ncid) /= NF90_NOERR) &
@@ -1176,6 +1180,7 @@ contains
       use modal_aero_data, only: ntot_amode
 #endif
 
+      use time_manager, only: get_nstep
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1229,6 +1234,8 @@ contains
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 #ifdef MMF_PRESCRIBED_LW
       real(r8), pointer :: qrl_prescribed(:)
+      integer :: nstep
+      real(r8) :: ratio
 #endif
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
@@ -1903,10 +1910,41 @@ contains
                end if
 
             end if  ! radiation_do('lw')
+
 #ifdef MMF_PRESCRIBED_LW
-            do ic = 1,ncol
-               qrl(ic,1:pver) = qrl_prescribed(1:pver)
-            end do
+            ! Note that qrl_prescribed is derived from the QRL history variable,
+            ! which is the same as qrl here, except it is divided by cpair
+            ! in the outfld('QRL'...) call within output_fluxes_lw().
+
+            nstep = get_nstep() 
+
+            ! do ic = 1,ncol
+            !    do iz = 1,crm_nz
+            !       ilev = pver - iz + 1
+            !       ratio =  qrl_prescribed(ilev) / qrl(ic,ilev)
+            !       write(iulog,222) nstep, ic, ilev, qrl(ic,ilev), crm_qrl(ic,1,1,iz), qrl_prescribed(ilev), ratio
+            !    end do
+            ! end do
+            ! call shr_sys_flush(iulog)
+            ! call endrun('MMF_PRESCRIBED_LW  stopping')
+
+            ! if (nstep>0) then
+               do ic = 1,ncol
+                  do ilev = 1, pver
+                     qrl(ic,ilev) = qrl_prescribed(ilev) / state%pdel(ic,ilev)
+                  end do
+                  do iy = 1,crm_ny_rad
+                     do ix = 1,crm_nx_rad
+                        do iz = 1,crm_nz
+                           ilev = pver - iz + 1
+                           crm_qrl(ic,ix,iy,iz) = qrl_prescribed(ilev) / state%pdel(ic,ilev)
+                        end do
+                     end do
+                  end do
+               end do
+            ! end if
+
+! 222 format('WHDEBUG-step:',i3,'  c:',i4,'  k:',i3,'  Gqrl:',f6.3,'  Cqrl:',f6.3,'  Pqrl:',f6.3,'  ratio:',f8.2)
 #endif
 
          end if  ! active calls
@@ -1955,7 +1993,12 @@ contains
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
                      do ic = 1,ncol
+#ifdef MMF_GLOBAL_LW
+                        ! only keep SW for this, add LW later in phys_run1() with global avg of QRL
+                        crm_qrad(ic,ix,iy,iz) = ( crm_qrs(ic,ix,iy,iz) ) / cpair
+#else
                         crm_qrad(ic,ix,iy,iz) = (crm_qrs(ic,ix,iy,iz) + crm_qrl(ic,ix,iy,iz)) / cpair
+#endif
                         if (conserve_energy) then
                            ilev = pver - iz + 1
                            crm_qrad(ic,ix,iy,iz) = crm_qrad(ic,ix,iy,iz) * state%pdel(ic,ilev)

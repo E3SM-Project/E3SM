@@ -315,7 +315,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    ! local variables
    integer :: m, mm, c
    integer :: ncnst
-   integer :: ierror   ! Error code
    logical :: use_ECPP
    logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
@@ -879,6 +878,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       do c=begchunk, endchunk
          pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
          ncol = state(c)%ncol
+         lchnk = state(c)%lchnk
 
          call pbuf_get_field(pbuf_chunk, crm_angle_idx, crm_angle)
 
@@ -1167,6 +1167,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       do c=begchunk, endchunk
          pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
          ncol = state(c)%ncol
+         lchnk = state(c)%lchnk
 
          call pbuf_get_field(pbuf_chunk, crm_angle_idx, crm_angle)
 
