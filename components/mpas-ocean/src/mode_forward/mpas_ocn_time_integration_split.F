@@ -1856,6 +1856,10 @@ module ocn_time_integration_split
                      activeTracerNonLocalTendency(iTracer,k,iCell) / &
                                 layerThicknessNew(k,iCell)
                   end do
+
+                  temperatureShortWaveTendency(k,iCell) = &
+                  temperatureShortWaveTendency(k,iCell) / &
+                             layerThicknessNew(k,iCell)
                end do
                end do
 #ifndef MPAS_OPENACC
