@@ -1607,9 +1607,10 @@ module ocn_time_integration_split
                !$acc enter data copyin(landIcePressure)
                !$acc enter data copyin(landIceDraft)
             endif
-            !$acc enter data copyin(highFreqThicknessNew)
-            !$acc enter data copyin(highFreqThicknessCur)
-
+            if (config_use_freq_filtered_thickness) then
+               !$acc enter data copyin(highFreqThicknessNew)
+               !$acc enter data copyin(highFreqThicknessCur)
+            endif
             !$acc enter data copyin(activeTracersTend,  &
             !$acc                   activeTracersCur)
          endif
@@ -1625,6 +1626,7 @@ module ocn_time_integration_split
          endif
 
          if (splitExplicitStep == numTSIterations) then
+            !$acc update device(layerThickEdge)
             !$acc enter data copyin(normalBaroclinicVelocityCur)
             if (config_compute_active_tracer_budgets) then
                !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
@@ -2118,6 +2120,10 @@ module ocn_time_integration_split
             !$acc exit data delete(normalVelocityNew)
             !$acc exit data delete(activeTracersTend)
             !$acc exit data delete(activeTracersCur)
+            if (config_use_freq_filtered_thickness) then
+               !$acc exit data copyout(highFreqThicknessNew)
+               !$acc exit data delete(highFreqThicknessCur)
+            endif
          endif
 
          !$acc exit data delete(layerThicknessTend)
@@ -2131,6 +2137,7 @@ module ocn_time_integration_split
          endif
 
          if (splitExplicitStep == numTSIterations) then
+            !$acc update host(layerThickEdge)
             !$acc exit data copyout(normalVelocityNew)
             !$acc exit data delete(normalBaroclinicVelocityCur)
             if (config_compute_active_tracer_budgets) then
