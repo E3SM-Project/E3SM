@@ -426,7 +426,12 @@
 <flbc_file chem="waccm_mozart_sulfur">atm/waccm/lb/LBC_1765-2005_1.9x2.5_CMIP5_za_c111110.nc</flbc_file>
 
 <!-- Time-variant CO2 fossil fuel emissions -->
-<co2flux_fuel_file  sim_year="1850-2000">atm/cam/ggas/co2flux_fossil_1751-2006-monthly_0.9x1.25_c20100204.nc</co2flux_fuel_file>
+<!-- <co2flux_fuel_file  sim_year="1850-2000">atm/cam/ggas/co2flux_fossil_1751-2006-monthly_0.9x1.25_c20100204.nc</co2flux_fuel_file> -->
+<co2flux_fuel_file  hgrid="ne4np4" npg="2">atm/cam/ggas/ne4pg2_eam_CO2-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gr_175001-201412_c20201111.nc</co2flux_fuel_file>
+<co2flux_fuel_file  hgrid="ne30np4" npg="2">atm/cam/ggas/ne30pg2_eam_CO2-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gr_175001-201412_c20201111.nc</co2flux_fuel_file>
+<ac_CO2_emis hgrid="ne4np4" npg="2">filelist_FUELBURN_hist_ne4pg2.txt</ac_CO2_emis>
+<ac_CO2_emis hgrid="ne30np4" npg="2">filelist_FUELBURN_hist_ne30pg2.txt</ac_CO2_emis>
+<aircraft_datapath>atm/cam/ggas/</aircraft_datapath>
 
 <!-- DMS surface emissions -->
 <bndtvdms          hgrid="64x128"   >atm/cam/scyc/DMS_emissions_64x128_c030722.nc</bndtvdms>

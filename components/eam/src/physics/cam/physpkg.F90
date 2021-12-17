@@ -700,6 +700,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use radheat,            only: radheat_init
     use radiation,          only: radiation_init
     use cloud_diagnostics,  only: cloud_diagnostics_init
+    use co2_diagnostics,    only: co2_diags_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
     use microp_driver,      only: microp_driver_init
@@ -837,6 +838,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! co2 cycle            
     if (co2_transport()) then
        call co2_init()
+       call co2_diags_init(phys_state)
     end if
 
     ! CAM3 prescribed ozone
@@ -1435,7 +1437,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
                                   check_tracers_chng, check_tracers_fini
-    use time_manager,       only: get_nstep
+    use time_manager,       only: get_nstep, is_first_step, is_end_curr_month
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
     use cam_control_mod,    only: aqua_planet 
@@ -1449,7 +1451,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_diagnostics,    only: get_total_carbon, print_global_carbon_diags, &
+                                  get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
 
@@ -1634,6 +1638,7 @@ if (l_tracer_aero) then
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
+    call get_carbon_air_fluxes(state, pbuf, ztodt)
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1685,6 +1690,9 @@ end if ! l_tracer_aero
     
     end if ! l_vdiff
     endif
+
+    ! collect surface carbon fluxes
+    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
 
 
 if (l_rayleigh) then
@@ -1851,6 +1859,19 @@ end if ! l_ac_energy_chk
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
+
+
+    !-------------- Carbon budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+    call get_total_carbon(state, 'wet')
+    call print_global_carbon_diags(state, ztodt, nstep)
+    state%tc_prev(:ncol) = state%tc_curr(:ncol)
+    if (is_first_step()) then
+       state%tc_init(:ncol) = state%tc_curr(:ncol)
+    end if
+    if (is_end_curr_month()) then
+       state%tc_mnst(:ncol) = state%tc_curr(:ncol)
+    end if
+    !-------------- Carbon budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     call check_tracers_fini(tracerint)
 
