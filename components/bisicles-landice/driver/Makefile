@@ -8,6 +8,7 @@ OBJS = \
         glad_io.o \
         glad_main.o \
         glad_mbal_coupling.o \
+        glad_mbal_io.o \
         glad_output_fluxes.o \
         glad_restart_gcm.o \
         glad_timestep.o \
@@ -72,12 +73,16 @@ OBJS = \
         glissade_enthalpy.o \
         glissade_grid_operators.o \
         glissade_masks.o \
+        glissade_remap.o \
         glissade_temp.o \
         glissade_test.o \
         glissade_therm.o \
         glissade_transport.o \
         glissade_velo.o \
         glissade_velo_higher.o \
+        glissade_velo_higher_pcg.o \
+        glissade_velo_higher_slap.o \
+        glissade_velo_sia.o \
         isostasy.o \
         isostasy_elastic.o \
         isostasy_kelvin.o \
@@ -102,8 +107,9 @@ glad_constants.o: \
 
 glad_initialise.o: \
         glad_constants.o \
-        glad_mbal_coupling.o \
         glad_io.o \
+        glad_mbal_coupling.o \
+        glad_mbal_io.o \
         glad_restart_gcm.o \
         glad_type.o \
         glide.o \
@@ -141,6 +147,8 @@ glad_main.o: \
 glad_mbal_coupling.o: \
         glimmer_config.o \
         glimmer_coordinates.o
+
+glad_mbal_io.o:
 
 glad_output_fluxes.o: \
         glide_types.o
@@ -371,7 +379,8 @@ glissade.o: \
 
 glissade_basal_traction.o:
 
-glissade_calving.o:
+glissade_calving.o: \
+        glissade_masks.o
 
 glissade_enthalpy.o:
 
@@ -379,17 +388,31 @@ glissade_grid_operators.o:
 
 glissade_masks.o:
 
+glissade_remap.o:
+
 glissade_temp.o:
 
-glissade_test.o:
+glissade_test.o: \
+        glissade_transport.o
 
 glissade_therm.o:
 
-glissade_transport.o:
+glissade_transport.o: \
+        glissade_remap.o
 
-glissade_velo.o:
+glissade_velo.o: \
+        glissade_velo_higher.o \
+        glissade_velo_sia.o
 
-glissade_velo_higher.o:
+glissade_velo_higher.o: \
+        glissade_velo_higher_pcg.o \
+        glissade_velo_higher_slap.o
+
+glissade_velo_higher_pcg.o:
+
+glissade_velo_higher_slap.o:
+
+glissade_velo_sia.o:
 
 isostasy.o: \
         isostasy_elastic.o
