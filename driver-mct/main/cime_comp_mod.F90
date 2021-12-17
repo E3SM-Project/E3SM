@@ -1686,6 +1686,7 @@ contains
        write(logunit,F0L)'lnd_c2_atm            = ',lnd_c2_atm
        write(logunit,F0L)'lnd_c2_rof            = ',lnd_c2_rof
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
+       write(logunit,F0L)'lnd_c2_iac            = ',lnd_c2_iac
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
@@ -2488,6 +2489,27 @@ contains
        endif
 
        !----------------------------------------------------------
+       !| RUN IAC MODEL
+       !----------------------------------------------------------
+       if (iac_present .and. iacrun_alarm) then
+          call component_run(Eclock_z, iac, iac_run, infodata, &
+               seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
+               seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
+               comp_prognostic=iac_prognostic, comp_num=comp_num_iac, &
+               timer_barrier= 'CPL:IAC_RUN_BARRIER', &
+                  timer_comp_run='CPL:IAC_RUN', &
+                  run_barriers=run_barriers, ymd=ymd, &
+                  tod=tod,comp_layout=iac_layout)
+       endif
+
+       !----------------------------------------------------------
+       !| IAC RECV-POST
+       !----------------------------------------------------------
+       if (iac_present .and. iacrun_alarm) then
+          call cime_run_iac_recv_post()
+       endif
+
+       !----------------------------------------------------------
        !| MAP ATM to OCN
        !  Set a2x_ox as a module variable in prep_ocn_mod
        !  This will be used later in the ice prep and in the
@@ -2556,18 +2578,6 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| RUN IAC MODEL
-       !----------------------------------------------------------
-       if (iac_present .and. iacrun_alarm) then
-          call component_run(Eclock_z, iac, iac_run, infodata, &
-               seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
-               seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
-               comp_prognostic=iac_prognostic, comp_num=comp_num_iac, &
-               timer_barrier= 'CPL:IAC_RUN_BARRIER', timer_comp_run='CPL:IAC_RUN', &
-               run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=iac_layout)
-       endif
-
-       !----------------------------------------------------------
        !| RUN ICE MODEL
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
@@ -2628,13 +2638,6 @@ contains
                   run_barriers=run_barriers, ymd=ymd, tod=tod,comp_layout=ocn_layout)
           endif
        end if
-
-       !----------------------------------------------------------
-       !| IAC RECV-POST
-       !----------------------------------------------------------
-       if (iac_present .and. iacrun_alarm) then
-          call cime_run_iac_recv_post()
-       endif
 
        !----------------------------------------------------------
        !| OCN RECV-POST (cesm1_mod_tight, nuopc_tight)
@@ -3764,7 +3767,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        ! Average our accumulators
-       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+! avd       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
 
        ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
@@ -3967,7 +3970,7 @@ contains
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc) call prep_glc_accum(timer='CPL:lndpost_accl2g')
-       if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
+! avd       if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)

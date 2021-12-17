@@ -9,7 +9,7 @@ module lnd_import_export
   use glc2lndMod   , only: glc2lnd_type
   use lnd2iacMod   , only: lnd2iac_type
   use iac2lndMod   , only: iac2lnd_type
-  use clm_varctl   , only: iac_active
+  use clm_varctl   , only: iac_active, iulog
   use clm_varpar   , only: numpft, numharvest
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
@@ -1165,12 +1165,24 @@ contains
        ! iac coupling
 
        if (iac_active) then
+
+! avd
+write(iulog,*) 'lnd_import iac_active is ',iac_active
+
           do num = 0,numpft
              iac2lnd_vars%pct_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
              iac2lnd_vars%pct_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
              if (num < numharvest) then
                 iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
              end if
+
+!avd
+if (iac2lnd_vars%pct_pft_prev(g,num) /= 0.) then 
+   write(iulog,*) 'lnd_import g=',g,' pft=', num, ' val=', iac2lnd_vars%pct_pft(g,num), &
+       ' prev_val=', iac2lnd_vars%pct_pft_prev(g,num)
+end if
+
+
           end do
        end if
 

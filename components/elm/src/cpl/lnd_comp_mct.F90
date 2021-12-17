@@ -92,7 +92,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
-    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
+!    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -268,8 +268,11 @@ contains
     end if
 
     ! set elm flag denoting active IAC/GCAM component
-    call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
-    call clm_varctl_set_iac_active_only(iac_active)
+    ! avd this infodata isn't set yet, so do it in the iac init
+    !call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
+    !call clm_varctl_set_iac_active_only(iac_active)
+
+!    write(iulog,*) sub, 'local iac_active ',iac_active
 
     ! Initialize clm gsMap, clm domain and clm attribute vectors
 
@@ -355,9 +358,9 @@ contains
     !
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
-    use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-    use elm_instMod     , only : lnd2iac_var, iac2lnd_vars
-    use elm_driver      ,  only : elm_drv
+    use clm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use clm_instMod     , only : lnd2iac_vars, iac2lnd_vars
+    use clm_driver      ,  only : clm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use decompMod       ,  only : get_proc_bounds
@@ -466,7 +469,7 @@ contains
     ! Map to clm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, &
                      iac2lnd_vars)
     call t_stopf ('lc_lnd_import')
 

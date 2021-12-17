@@ -80,6 +80,12 @@ contains
                    errMsg(__FILE__, __LINE__))
     end if
 
+    ! initialize the arrays
+    this%pct_pft(:,:) = 1.0_r8
+    this%pct_pft_prev(:,:) = 1.0_r8
+    this%harvest_frac(:,:) = 1.0_r8
+    harvest(:) = 0.0
+
     ! check that number of pfts is correct
     if ( maxpatch_pft /= numpft+1 )then
        errstr = 'maxpatch_pft does NOT equal numpft+1 - invalid for dyn pft' 
@@ -115,7 +121,8 @@ contains
     ! !USES:
     use clm_time_manager, only : get_curr_yearfrac
     use landunit_varcon , only : istsoil
-    use clm_varctl, only: iac_active
+    use clm_varctl, only: iac_active, iulog
+    use netcdf   !avd
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this
@@ -125,6 +132,13 @@ contains
     integer :: begg, endg
     integer :: begp, endp
     real(r8) :: wt1    ! weight of time1 (prev time point)
+
+! avd
+character(len=128) :: hfile
+integer :: ierr, nmode, ncid, ngcells, pft_varid, pft_prev_varid
+integer :: harv_varid, cid_varid
+integer :: pdimid(2), hdimid(2)
+integer, allocatable :: cell_ids(:)
 
     character(len=*), parameter :: subname = 'update_iac2lnd'
 
@@ -139,6 +153,10 @@ contains
        
        ! the the weight of prev time point
        wt1 = 1.0_r8 - get_curr_yearfrac()
+
+!avd
+write(iulog,*) subname, 'begg,endg=', begg,endg
+write(iulog,*) subname, 'begp,endp=', begp,endp
 
        do p = begp,endp
           g=veg_pp%gridcell(p)
@@ -161,14 +179,59 @@ contains
                              wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
           end if
 
+! avd write these to log for now cuz file is garbage
+if (this%pct_pft_prev(g,pft) /= 0.) then
+!if (g == 1628) then 
+write(iulog,*) 'g=',g,' p=',p,' pft=',pft
+write(iulog,*) 'prev_val=',this%pct_pft_prev(g,pft)
+write(iulog,*) 'val=',this%pct_pft(g,pft)
+write(iulog,*) 'interp=', this%pct_pft(g,pft) + &
+                          wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
+end if
+
        end do
 
        ! sum the harvest data into one field
-       harvest(bounds%begg:bounds%endg) = 0._r8
+       harvest(begg:endg) = 0._r8
        do h=0,(numharvest-1)
-          harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
-                               this%harvest_frac(bounds%begg:bounds%endg,h)
+          harvest(begg:endg) = harvest(begg:endg) + &
+                               this%harvest_frac(begg:endg,h)
        end do
+
+       ! avd - write these values to a file
+       write(iulog,*) subname, 'Writing diagnostic iac2land file'
+
+       ngcells = endg-begg+1
+       allocate(cell_ids(ngcells))
+       p = 1
+       do c = begg,endg
+          cell_ids(p) = c
+          p = p+1
+       end do
+       write(hfile,'(a)') './iac2lnd_update.nc'
+       !nmode = ior(NF90_CLOBBER,NF90_64BIT_OFFSET) 
+       ierr = nf90_create(trim(hfile),nf90_clobber,ncid)
+       ierr = nf90_def_dim(ncid,'ngcells',ngcells,pdimid(1))
+       ierr = nf90_def_dim(ncid,'npfts',17,pdimid(2))
+       ierr = nf90_def_dim(ncid,'ngcells',ngcells,hdimid(1))
+       ierr = nf90_def_dim(ncid,'nharv',5,hdimid(2))
+
+       ierr = nf90_def_var(ncid,'pftdata',NF90_DOUBLE,pdimid,pft_varid)
+       ierr = nf90_def_var(ncid,'prev_pftdata',NF90_DOUBLE,pdimid,pft_prev_varid)
+       ierr = nf90_def_var(ncid,'harvdata',NF90_DOUBLE,hdimid,harv_varid)
+       ierr = nf90_def_var(ncid,'cell_ids',NF90_INT,pdimid(1),cid_varid)
+
+       ierr = nf90_enddef(ncid)
+
+       ierr = nf90_put_var(ncid,pft_varid,this%pct_pft(begg:endg,:))
+
+       ierr = nf90_put_var(ncid,pft_prev_varid,this%pct_pft_prev(begg:endg,:))
+
+       ierr = nf90_put_var(ncid,harv_varid,this%harvest_frac(begg:endg,:))
+
+       ierr = nf90_put_var(ncid,cid_varid,cell_ids)
+
+       ierr = nf90_close(ncid)
 
     endif
   end subroutine update_iac2lnd
