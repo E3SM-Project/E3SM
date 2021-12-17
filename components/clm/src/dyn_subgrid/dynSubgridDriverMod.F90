@@ -180,6 +180,11 @@ contains
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
     use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
+
+! avd
+use clm_varctl, only :  iulog
+!use shr_sys_mod            , only : shr_sys_flush
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -268,7 +273,13 @@ contains
     ! pft and harvest come from iac when active
     ! avd - the above namelist values are false in this case
     !       may want to ensure this with namelist checks
+
+write(iulog,*) 'Before iac_active check=', iac_active, ' and iac2lnd_vars update' 
+
     if (iac_active) then
+
+write(iulog,*) 'Calling iac2lnd_vars update'
+
        call iac2lnd_vars%update_iac2lnd(bounds_proc)
     end if
 

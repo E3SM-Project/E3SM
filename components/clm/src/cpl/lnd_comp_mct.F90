@@ -45,7 +45,7 @@ contains
     use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varctl       , only : clm_varctl_set_iac_active_only
+!    use clm_varctl       , only : clm_varctl_set_iac_active_only
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
@@ -90,7 +90,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
-    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
+!    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -264,8 +264,11 @@ contains
     end if
 
     ! set elm flag denoting active IAC/GCAM component
-    call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
-    call clm_varctl_set_iac_active_only(iac_active)
+    ! avd this infodata isn't set yet, so do it in the iac init
+    !call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
+    !call clm_varctl_set_iac_active_only(iac_active)
+
+!    write(iulog,*) sub, 'local iac_active ',iac_active
 
     ! Initialize clm gsMap, clm domain and clm attribute vectors
 
