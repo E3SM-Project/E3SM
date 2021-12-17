@@ -121,8 +121,8 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="MacroMoleculesSeaIceCoupling" time_levs="1" packages="MacroMoleculesTracersPKG">
-			<var name="avgOceanSurfaceDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-3}"
-				description="Ocean Surface Organics concentration: (1,2)=>(polysaccharides,lipids)"
+			<var name="avgOceanSurfaceDOC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-3}"
+				description="Ocean Surface Organics concentration: (1,2,3)=>(polysaccharides,lipids,proteins)"
 			/>
 			<var name="avgOceanSurfaceDON" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
 				description="Ocean Surface Organic Proteins concentration"

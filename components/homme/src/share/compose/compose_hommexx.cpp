@@ -30,12 +30,11 @@ void set_views (const SetView<double***>& spheremp,
   const auto nel = spheremp.extent_int(0);
   const auto np2 = spheremp.extent_int(1)*spheremp.extent_int(1);
   const auto nlev = dp.extent_int(3);
-  const auto qsize_d = qdp.extent_int(2);
   ta.spheremp = View<Real**>(spheremp.data(), nel, np2);
   ta.dp = View<Real***>(dp.data(), nel, np2, nlev);
   ta.dp3d = View<Real****>(dp3d.data(), nel, dp3d.extent_int(1), np2, nlev);
-  ta.qdp = View<Real*****>(qdp.data(), nel, qdp.extent_int(1), qsize_d, np2, nlev);
-  ta.q = View<Real****>(q.data(), nel, qsize_d, np2, nlev);
+  ta.qdp = View<Real*****>(qdp.data(), nel, qdp.extent_int(1), qdp.extent_int(2), np2, nlev);
+  ta.q = View<Real****>(q.data(), nel, q.extent_int(1), np2, nlev);
   ta.dep_points = View<Real***[3]>(dep_points.data(), nel, dep_points.extent_int(1), np2);
 #else
   slmm_throw_if(true, "Running a Hommexx code path with the non-Hommexx build"

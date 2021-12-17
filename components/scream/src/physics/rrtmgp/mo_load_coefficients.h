@@ -1,7 +1,7 @@
 #ifndef MO_LOAD_COEFFICIENTS_HPP
 #define MO_LOAD_COEFFICIENTS_HPP
 
-#include "cpp/const.h"
+#include "cpp/rrtmgp_const.h"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
 #include <string>

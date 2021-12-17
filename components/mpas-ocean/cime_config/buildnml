@@ -43,7 +43,7 @@ def buildnml(case, caseroot, compname):
     ninst_ocn         = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_ocn_real    = case.get_value("NINST_OCN")
     nthrds_ocn        = case.get_value("NTHRDS_OCN")
-    ntasks_ocn        = case.get_value("NTASKS_OCN")
+    ntasks_ocn        = case.get_value("NTASKS_PER_INST_OCN")
     rundir            = case.get_value("RUNDIR")
     run_type          = case.get_value("RUN_TYPE")
     run_refcase       = case.get_value("RUN_REFCASE")

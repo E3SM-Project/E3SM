@@ -1371,6 +1371,7 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
     use chemistry, only : chem_final
     use wv_saturation, only : wv_sat_final
+    use radiation, only: radiation_final
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1396,6 +1397,10 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     call t_startf ('wv_sat_final')
     call wv_sat_final
     call t_stopf ('wv_sat_final')
+
+    call t_startf ('radiation_final')
+    call radiation_final()
+    call t_stopf ('radiation_final')
 
     call t_startf ('print_cost_p')
     call print_cost_p

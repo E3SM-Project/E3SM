@@ -934,7 +934,9 @@ contains
    real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array
    integer, pointer  :: ft_index_ptr(:)        ! points to either native ELM or FATES PFT array
    real(r8), pointer :: cn_scalar_ptr(:)       ! points to either native ELM or FATES C:N scalar array
+   real(r8), pointer :: cn_scalar_runmean_ptr(:)       ! points to either native ELM or FATES C:N scalar array
    real(r8), pointer :: cp_scalar_ptr(:)       ! points to either native ELM or FATES C:P scalar array
+   real(r8), pointer :: cp_scalar_runmean_ptr(:)       ! points to either native ELM or FATES C:P scalar array
    real(r8), pointer :: plant_nh4demand_vr_ptr(:,:)
    real(r8), pointer :: plant_no3demand_vr_ptr(:,:)
    real(r8), pointer :: plant_pdemand_vr_ptr(:,:)
@@ -987,7 +989,9 @@ contains
         col_plant_no3demand_vr       => col_nf%col_plant_no3demand_vr              , &
         col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr                , &
         cn_scalar                    => cnstate_vars%cn_scalar                                , &
+        cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                           , &
         cp_scalar                    => cnstate_vars%cp_scalar                                , &
+        cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                                , &
         t_scalar                     => col_cf%t_scalar                          , &
         plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr            , &
         plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr            , &
@@ -1128,6 +1132,7 @@ contains
               decompmicc(:)  =  elm_fates%fates(ci)%bc_out(s)%decompmicc(:) ! Should be (nlevdecomp)
 
               cn_scalar_ptr          => elm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
+              cn_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
               plant_nh4demand_vr_ptr => plant_nh4demand_vr_fates
               km_nh4_ptr             => elm_fates%fates(ci)%bc_pconst%eca_km_nh4
               vmax_nh4_ptr           => elm_fates%fates(ci)%bc_pconst%eca_vmax_nh4
@@ -1135,6 +1140,7 @@ contains
               km_no3_ptr             => elm_fates%fates(ci)%bc_pconst%eca_km_no3
               vmax_no3_ptr           => elm_fates%fates(ci)%bc_pconst%eca_vmax_no3
               cp_scalar_ptr          => elm_fates%fates(ci)%bc_out(s)%cp_scalar
+              cp_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cp_scalar
               plant_pdemand_vr_ptr   => plant_pdemand_vr_fates
               km_p_ptr               => elm_fates%fates(ci)%bc_pconst%eca_km_p
               vmax_p_ptr             => elm_fates%fates(ci)%bc_pconst%eca_vmax_p
@@ -1196,6 +1202,7 @@ contains
               km_nh4_ptr    => km_plant_nh4
               vmax_nh4_ptr  => vmax_plant_nh4
               cn_scalar_ptr => cn_scalar
+              cn_scalar_runmean_ptr => cn_scalar_runmean
               km_no3_ptr   => km_plant_no3
               vmax_no3_ptr => vmax_plant_no3
               plant_no3demand_vr_ptr => plant_no3demand_vr_patch
@@ -1214,7 +1221,7 @@ contains
                  end do
               end if
               plant_pdemand_vr_ptr => plant_pdemand_vr_patch
-              cp_scalar_ptr => cp_scalar
+              cp_scalar_runmean_ptr => cp_scalar_runmean
               km_p_ptr      => km_plant_p
               vmax_p_ptr    => vmax_plant_p
            end if
@@ -1273,7 +1280,7 @@ contains
                                    filter_pcomp(1:n_pcomp),           & ! IN
                                    veg_rootc_ptr(pci:pcf,:),          & ! IN
                                    ft_index_ptr(pci:pcf),             & ! IN
-                                   cn_scalar_ptr(pci:pcf),            & ! IN
+                                   cn_scalar_runmean_ptr(pci:pcf),     & ! IN
                                    decompmicc,                        & ! IN
                                    smin_nh4_vr(c,:),                  & ! IN
                                    nu_com,                            & ! IN 
@@ -1391,7 +1398,7 @@ contains
                 veg_rootc_ptr(pci:pcf,:),           & ! IN  
                 ft_index_ptr(pci:pcf),              & ! IN 
                 decompmicc,                         & ! IN  
-                cp_scalar_ptr(pci:pcf),             & ! IN  
+                cp_scalar_runmean_ptr(pci:pcf),     & ! IN  
                 km_p_ptr(:),                        & ! IN 
                 vmax_p_ptr(:),                      & ! IN 
                 km_decomp_p,                        & ! IN  
@@ -1667,11 +1674,11 @@ contains
                  do j = 1, nlevdecomp
                     pnup_pfrootc(p) =  pnup_pfrootc(p) + &
                          plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                         ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                         ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                          * dzsoi_decomp(j)
                     pnup_pfrootc(p) =  pnup_pfrootc(p) + &
                          plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                         ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                         ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                          * dzsoi_decomp(j)
                  end do
               end if
@@ -1973,6 +1980,7 @@ contains
          allocation_stem              => veg_cf%allocation_stem                 , &
          allocation_froot             => veg_cf%allocation_froot                , &
          xsmrpool_turnover            => veg_cf%xsmrpool_turnover               , &
+         nsc_rtime                    => veg_vp%nsc_rtime                       , &
          supplement_to_plantn         => veg_nf%supplement_to_plantn            , &
          supplement_to_plantp         => veg_pf%supplement_to_plantp          &
          )
@@ -2375,7 +2383,7 @@ contains
                 cpool_to_xsmrpool(p) = 0.0_r8
 
                 ! storage pool turnover
-                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0_r8*365.0_r8*secspday)
+                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (nsc_rtime(ivt(p))*365.0_r8*secspday)
              end if
 
              plant_calloc(p) = availc(p)
@@ -2885,7 +2893,7 @@ contains
        filter_pcomp,           & ! IN (i)
        veg_rootc,              & ! IN (icomp,j)
        ft_index,               & ! IN (icomp)
-       cn_scalar,              & ! IN (icomp)
+       cn_scalar_runmean,      & ! IN (icomp)
        decompmicc,             & ! IN (j)
        smin_nh4_vr,            & ! IN (j)
        nu_com,                 & ! IN
@@ -2933,7 +2941,7 @@ contains
     real(r8), intent(in) :: veg_rootc(pci:,:) ! total fine-root biomass of each competitor [gC/m3]
                                               ! (per area of column, not patch)
     integer, intent(in)  :: ft_index(pci:)    ! pft index of plant competitors
-    real(r8), intent(in) :: cn_scalar(pci:)   ! scaling factor implying plant demand
+    real(r8), intent(in) :: cn_scalar_runmean(pci:)   ! scaling factor implying plant demand
     real(r8), intent(in) :: decompmicc(:)     ! microbial decomposer biomass [gC/m3]
     character(len=*), intent(in) :: nu_com    ! Is this ECA or MIC?
     ! NH4 specific arguments
@@ -3031,7 +3039,7 @@ contains
           ! This is the demand per m3 of the column (not patch) 
           ! (for native ELM divide through by the patch weight to get per m3 of patch)
           plant_nh4demand_vr(ip,j) = max(0._r8,vmax_nh4_plant(ft) * veg_rootc(ip,j) * &
-               cn_scalar(ip) * t_scalar(j) *  compet_plant(i))
+               cn_scalar_runmean(ip) * t_scalar(j) *  compet_plant(i))
 
           ! This is the total demand across all plant competitors
           col_plant_nh4demand_vr(j) = col_plant_nh4demand_vr(j) + plant_nh4demand_vr(ip,j)
@@ -3136,7 +3144,7 @@ contains
           ! This is the demand per m3 of the column (not patch) 
           ! (for native ELM divide through by the patch weight to get per m3 of patch)
           plant_no3demand_vr(ip,j) = max(0._r8,vmax_no3_plant(ft) * veg_rootc(ip,j) * &
-               cn_scalar(ip) * t_scalar(j) *  compet_plant(i))
+               cn_scalar_runmean(ip) * t_scalar(j) *  compet_plant(i))
 
           ! This is the total demand across all plant competitors  (weighted in native, because
           ! demand is per m2 of patch
@@ -3219,7 +3227,7 @@ contains
        veg_rootc, & 
        ft_index, &
        decompmicc, &
-       cp_scalar,  & 
+       cp_scalar_runmean,  & 
        km_plant_p, &
        vmax_plant_p, &
        km_decomp_p,  & 
@@ -3256,7 +3264,7 @@ contains
     real(r8), intent(in) :: veg_rootc(pci:,:)
     integer, intent(in)  :: ft_index(pci:)
     real(r8), intent(in) :: decompmicc(:)
-    real(r8), intent(in) :: cp_scalar(pci:)
+    real(r8), intent(in) :: cp_scalar_runmean(pci:)
     real(r8), intent(in) :: km_plant_p(:)
     real(r8), intent(in) :: vmax_plant_p(:)
     real(r8), intent(in) :: km_decomp_p
@@ -3331,7 +3339,7 @@ contains
           ip = filter_pcomp(i)
           ft = ft_index(ip)
           plant_pdemand_vr_patch(ip,j) = max(0._r8,vmax_plant_p(ft) * veg_rootc(ip,j) * & 
-               cp_scalar(ip) * t_scalar(j) * compet_plant(i))
+               cp_scalar_runmean(ip) * t_scalar(j) * compet_plant(i))
           col_plant_pdemand_vr(j) = col_plant_pdemand_vr(j) + plant_pdemand_vr_patch(ip,j)
        end do
 

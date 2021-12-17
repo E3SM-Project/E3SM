@@ -1866,7 +1866,8 @@ contains
       oceanDMSPConc,               &
       oceanHumicsConc,             &
       carbonToNitrogenRatioAlgae,  &
-      carbonToNitrogenRatioDON
+      carbonToNitrogenRatioDON,    &
+      DOCPoolFractions
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       oceanAlgaeConc,              &
@@ -1960,6 +1961,8 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
+         call mpas_pool_get_array(biogeochemistry, 'DOCPoolFractions', DOCPoolFractions)
+
          if (config_use_zaerosols) then
             call mpas_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
             call mpas_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
@@ -2056,12 +2059,13 @@ contains
         if (config_use_column_biogeochemistry) then
            oceanAlgaeConc(1,i)           = x2i_i % rAttr(index_x2i_So_algae1, n)
            oceanAlgaeConc(2,i)           = x2i_i % rAttr(index_x2i_So_algae2, n)
-           oceanAlgaeConc(3,i)           = x2i_i % rAttr(index_x2i_So_algae3, n)
-           oceanDOCConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc1, n)
-           oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n)
+           oceanAlgaeConc(3,i)           = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_algae3, n)
+           oceanDOCConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc1, n) * DOCPoolFractions(1)
+           oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n) * DOCPoolFractions(2)
            oceanDOCConc(3,i)             = 0.0_RKIND
-           oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n) !JW not used, set to 0?
-           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_don1, n)
+           oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n)
+           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_don1, n) * DOCPoolFractions(3) &
+              /carbonToNitrogenRatioDON(1)
            oceanNitrateConc(i)           = x2i_i % rAttr(index_x2i_So_no3, n)
            oceanSilicateConc(i)          = x2i_i % rAttr(index_x2i_So_sio3, n)
            oceanAmmoniumConc(i)          = x2i_i % rAttr(index_x2i_So_nh4, n)
@@ -2573,7 +2577,7 @@ contains
                i2x_i % rAttr(index_i2x_Fioi_algae3,n) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
                i2x_i % rAttr(index_i2x_Fioi_doc1  ,n) = oceanDOCFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_doc2  ,n) = oceanDOCFlux(2,i)
-               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDOCFlux(3,i) !JW set to 0?
+               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(3,i) * carbonToNitrogenRatioDON(1)
                i2x_i % rAttr(index_i2x_Fioi_dic1  ,n) = oceanDICFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_don1  ,n) = oceanDONFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_no3   ,n) = oceanNitrateFlux(i)
