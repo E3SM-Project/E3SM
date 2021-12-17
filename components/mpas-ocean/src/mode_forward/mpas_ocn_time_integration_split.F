@@ -2117,7 +2117,6 @@ module ocn_time_integration_split
             !$acc update host (surfacePressure)
             !$acc update host(zMid, zTop)
             !$acc update host(normalVelocitySurfaceLayer)
-            !$acc exit data delete(normalVelocityNew)
             !$acc exit data delete(activeTracersTend)
             !$acc exit data delete(activeTracersCur)
             if (config_use_freq_filtered_thickness) then
@@ -2126,6 +2125,7 @@ module ocn_time_integration_split
             endif
          endif
 
+         !$acc exit data copyout(normalVelocityNew)
          !$acc exit data delete(layerThicknessTend)
          !$acc exit data delete(layerThicknessCur)
          !$acc exit data delete(normalBarotropicVelocityNew)
@@ -2138,7 +2138,6 @@ module ocn_time_integration_split
 
          if (splitExplicitStep == numTSIterations) then
             !$acc update host(layerThickEdge)
-            !$acc exit data copyout(normalVelocityNew)
             !$acc exit data delete(normalBaroclinicVelocityCur)
             if (config_compute_active_tracer_budgets) then
                !$acc update host(activeTracerHorizontalAdvectionEdgeFlux)
