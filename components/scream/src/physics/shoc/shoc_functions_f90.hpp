@@ -970,7 +970,7 @@ struct ShocMainData : public ShocTestGridDataBase {
 
 struct PblintdHeightData : public PhysicsTestData {
   // Inputs
-  Int shcol, nlev;
+  Int shcol, nlev, npbl;
   Real *z, *u, *v, *ustar, *thv, *thv_ref;
 
   // Inputs/Outputs
@@ -980,10 +980,10 @@ struct PblintdHeightData : public PhysicsTestData {
   // Outputs
   Real *pblh;
 
-  PblintdHeightData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z, &u, &v, &thv, &rino }, { &ustar, &thv_ref, &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_) {}
+  PblintdHeightData(Int shcol_, Int nlev_, Int npbl_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z, &u, &v, &thv, &rino }, { &ustar, &thv_ref, &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_), npbl(npbl_) {}
 
-  PTD_STD_DEF(PblintdHeightData, 2, shcol, nlev);
+  PTD_STD_DEF(PblintdHeightData, 3, shcol, nlev, npbl);
 };
 
 struct VdShocDecompandSolveData : public PhysicsTestData {
@@ -1039,16 +1039,16 @@ struct PblintdCheckPblhData : public PhysicsTestData {
 
 struct PblintdData : public PhysicsTestData {
   // Inputs
-  Int shcol, nlev, nlevi;
+  Int shcol, nlev, nlevi, npbl;
   Real *z, *zi, *thl, *ql, *q, *u, *v, *ustar, *obklen, *kbfs, *cldn;
 
   // Outputs
   Real *pblh;
 
-  PblintdData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &z, &thl, &ql, &q, &u, &v, &cldn }, { &zi }, { &ustar, &obklen, &kbfs, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+  PblintdData(Int shcol_, Int nlev_, Int nlevi_, Int npbl_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &z, &thl, &ql, &q, &u, &v, &cldn }, { &zi }, { &ustar, &obklen, &kbfs, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), npbl(npbl_) {}
 
-  PTD_STD_DEF(PblintdData, 3, shcol, nlev, nlevi);
+  PTD_STD_DEF(PblintdData, 4, shcol, nlev, nlevi, npbl);
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
@@ -1208,7 +1208,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                 Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec,
                 Real* brunt, Real* shoc_ql2);
 
-void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
+void pblintd_height_f(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 
 void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
                                 Real* flux, Real* var);
@@ -1217,7 +1217,7 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
 
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh);
 
-void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
+void pblintd_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_f(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
 void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* zt_grid, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
                           Real* tke, Real* tkh, Real* tk);
