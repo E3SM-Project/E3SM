@@ -3767,7 +3767,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        ! Average our accumulators
-! avd       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
 
        ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
@@ -3970,7 +3970,7 @@ contains
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc) call prep_glc_accum(timer='CPL:lndpost_accl2g')
-! avd       if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
+       if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
