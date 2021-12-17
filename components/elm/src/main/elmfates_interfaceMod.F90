@@ -1165,7 +1165,8 @@ contains
 
              if(use_fates_sp.and.abs(canopystate_inst%tlai_hist_patch(p) - &
                 this%fates(nc)%bc_out(s)%tlai_pa(ifp)).gt.1e-09)then
-               write(iulog,*) 'fates lai not like hlm lai',tlai(p),this%fates(nc)%bc_out(s)%tlai_pa(ifp),ifp
+                write(iulog,*) 'fates lai not like hlm lai',tlai(p),this%fates(nc)%bc_out(s)%tlai_pa(ifp),ifp
+                call endrun(msg=errMsg(sourcefile, __LINE__))
              endif
 
              frac_veg_nosno_alb(p) = this%fates(nc)%bc_out(s)%frac_veg_nosno_alb_pa(ifp)
