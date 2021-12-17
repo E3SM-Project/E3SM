@@ -44,9 +44,9 @@ GllFvRemapImpl::GllFvRemapImpl ()
     m_forcing(Context::singleton().get<ElementsForcing>()),
     m_geometry(Context::singleton().get<ElementsGeometry>()),
     m_tracers(Context::singleton().get<Tracers>()),
-    m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
-    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
-    m_tp_ne_dss(1,1,1), m_tu_ne_dss(m_tp_ne_dss) // throwaway settings
+    // throwaway settings
+    m_tp_ne(1,1,1), m_tp_ne_qsize(1,1,1), m_tp_ne_dss(1,1,1),
+    m_tu_ne(m_tp_ne), m_tu_ne_qsize(m_tp_ne_qsize), m_tu_ne_dss(m_tp_ne_dss)
 {}
 
 void GllFvRemapImpl::reset (const SimulationParams& params) {
@@ -130,7 +130,6 @@ void GllFvRemapImpl
                           " nf must be > 1.", Errors::err_not_implemented);
 
   auto& sp = Context::singleton().get<SimulationParams>();
-  m_data.q_adjustment = sp.ftype != ForcingAlg::FORCING_0;
   m_data.use_moisture = sp.moisture == MoistDry::MOIST;
   // Only in the unit test gllfvremap_ut does theta_hydrostatic_mode not already
   // == sp.theta_hydrostatic_mode.
@@ -287,7 +286,6 @@ g2f_mixing_ratio (const KernelVariables& kv, const int np2, const int nf2, const
                   const WT& w1, const WT& w2, const int iqf, const QT& qf) {
   using g = GllFvRemapImpl;
   using Kokkos::parallel_for;
-  const auto ttrg = Kokkos::TeamThreadRange(kv.team, np2);
   const auto ttrf = Kokkos::TeamThreadRange(kv.team, nf2);
   const auto tvr  = Kokkos::ThreadVectorRange(kv.team, nlev);
 
@@ -532,8 +530,8 @@ void GllFvRemapImpl
 }
 
 void GllFvRemapImpl::
-run_fv_phys_to_dyn (const int timeidx, const Real dt,
-                    const CPhys2T& Ts, const CPhys3T& uvs, const CPhys3T& qs) {
+run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
+                    const CPhys3T& qs) {
 #ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
@@ -668,7 +666,6 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
   const auto q_g = m_tracers.Q;
   const auto fq = m_tracers.fq;
   const auto qlim = m_tracers.qlim;
-  const bool q_adjustment = m_data.q_adjustment;
   const auto tu_ne_qsize = m_tu_ne_qsize;
 
   const auto feq = KOKKOS_LAMBDA (const MT& team) {
@@ -687,7 +684,7 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
       gll_metdet_ie(&gll_metdet(ie,0,0), np2);
     const EVU<const Scalar**> dp_fv_ie(&dp_fv(ie,0,0,0), nf2, nlevpk);
 
-    if (q_adjustment) {
+    {
       // Get limiter bounds.
       const evus2 qf_ie(&r2w(1,0,0,0), nf2, nlevpk);
       loop_ik(ttrf, tvr, [&] (int i, int k) { qf_ie(i,k) = q(ie,i,iq,k); });
@@ -716,36 +713,6 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
       // GLL Q1
       const evus_np2_nlev fq_ie(&fq(ie,iq,0,0,0));
       loop_ik(ttrg, tvr, [&] (int i, int k) { fq_ie(i,k) = qg_ie(i,k) + dqg_ie(i,k); });
-    } else {
-      // FV Q_ten
-      const evus2 dqf_ie(&r2w(0,0,0,0), nf2, nlevpk);
-      loop_ik(ttrf, tvr, [&] (int i, int k) { dqf_ie(i,k) = dt*q(ie,i,iq,k)/dp_fv_ie(i,k); });
-      kv.team_barrier();
-      // GLL Q_ten
-      const evucs_np2_nlev dp_g_ie(&dp_g(ie,timeidx,0,0,0));
-      const evus_np2_nlev dqg_ie(rw2.data());
-      f2g_scalar_dp(kv, nf2, np2, nlevpk, f2g_remapd, fv_metdet_ie, gll_metdet_ie,
-                    dp_fv_ie, dp_g_ie, dqf_ie, evus_np2_nlev(rw1.data()), dqg_ie);
-      kv.team_barrier();
-      // GLL Q1
-      const evucs_np2_nlev qg_ie(&q_g(ie,iq,0,0,0));
-      const evus_np2_nlev fq_ie(&fq(ie,iq,0,0,0));
-      loop_ik(ttrg, tvr, [&] (int i, int k) { fq_ie(i,k) = qg_ie(i,k) + dqg_ie(i,k); });
-      kv.team_barrier();
-      // GLL Q0 -> FV Q0
-      const evus2 qf_ie(&r2w(1,0,0,0), nf2, nlevpk);
-      g2f_mixing_ratio(
-        kv, np2, nf2, nlevpk, g2f_remapd, gll_metdet_ie,
-        w_ff, fv_metdet_ie, dp_g_ie, dp_fv_ie, qg_ie,
-        evus_np2_nlev(rw1.data()), evus_np2_nlev(rw2.data()),
-        0, evus3(qf_ie.data(), nf2, 1, nlevpk));
-      kv.team_barrier();
-      // FV Q1
-      loop_ik(ttrf, tvr, [&] (int i, int k) { qf_ie(i,k) += dqf_ie(i,k); });
-      kv.team_barrier();
-      // Get limiter bounds.
-      calc_extrema(kv, nf2, nlevpk, qf_ie,
-                   evus1(&qlim(ie,iq,0,0), nlevpk), evus1(&qlim(ie,iq,1,0), nlevpk));
     }
   };
   Kokkos::fence();
@@ -771,14 +738,6 @@ run_fv_phys_to_dyn (const int timeidx, const Real dt,
     const evus_np2_nlev fq_ie(&fq(ie,iq,0,0,0));
     limiter_clip_and_sum(kv.team, np2, nlevpk, 1, gll_spheremp_ie, qmin, qmax, dp_g_ie,
                          evus_np2_nlev(rw1.data()), fq_ie);
-    if ( ! q_adjustment) {
-      kv.team_barrier();
-      const auto ttrg = Kokkos::TeamThreadRange(kv.team, np2);
-      const auto tvr  = Kokkos::ThreadVectorRange(kv.team, nlevpk);
-      loop_ik(ttrg, tvr, [&] (int i, int k) {
-        fq_ie(i,k) = dp_g_ie(i,k)*(fq_ie(i,k) - qg_ie(i,k))/dt;
-      });
-    }
   };
   Kokkos::fence();
   parallel_for(m_tp_ne_qsize, geq);

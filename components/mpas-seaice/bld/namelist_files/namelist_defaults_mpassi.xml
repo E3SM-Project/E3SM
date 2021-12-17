@@ -188,6 +188,7 @@
 <config_use_nitrate>false</config_use_nitrate>
 <config_use_carbon>false</config_use_carbon>
 <config_use_chlorophyll>false</config_use_chlorophyll>
+<config_use_macromolecules>false</config_use_macromolecules>
 <config_use_ammonium>false</config_use_ammonium>
 <config_use_silicate>false</config_use_silicate>
 <config_use_DMS>false</config_use_DMS>

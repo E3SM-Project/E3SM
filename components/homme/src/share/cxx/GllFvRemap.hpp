@@ -49,8 +49,8 @@ public:
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)
                           const Phys3T& q);
-  void run_fv_phys_to_dyn(const int time_idx, const Real dt,
-                          const CPhys2T& T, const CPhys3T& uv, const CPhys3T& q);
+  void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
+                          const CPhys3T& q);
   void run_fv_phys_to_dyn_dss();
 
 private:
@@ -58,7 +58,7 @@ private:
 };
 
 extern "C" void
-init_gllfvremap_c(int nelemd, int np, int nf, int nf_max, int ftype,
+init_gllfvremap_c(int nelemd, int np, int nf, int nf_max,
                   const bool theta_hydrostatic_mode,
                   CF90Ptr fv_metdet, CF90Ptr g2f_remapd,
                   CF90Ptr f2g_remapd, CF90Ptr D_f, CF90Ptr Dinv_f);
