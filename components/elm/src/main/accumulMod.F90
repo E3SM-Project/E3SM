@@ -233,8 +233,8 @@ contains
        write(iulog,*)
     endif
 
-1002 format(' No',' Name    ',' Units   ',' Type    ','Period',' Inival',' Description')
-1003 format((1x,i2),(1x,a8),(1x,a8),(1x,a8), (1x,i7),(1x,f4.0),(1x,a40))
+1002 format(' No',' Name    ',' Units   ',' Type          ','Period',' Inival',' Description')
+1003 format((1x,i2),(1x,a8),(1x,a8),(1x,a8), (1x,i10),(1x,f4.0),(1x,a40))
 1004 format((1x,i2),(1x,a8),(1x,a8),(1x,a8),'  N.A.',(1x,f4.0),(1x,a40))
 
   end subroutine print_accum_fields
@@ -250,7 +250,7 @@ contains
     ! is assigned to  indicate the time average is not yet valid.
     !
     ! !USES:
-    use elm_varcon, only : spval, ispval
+    use clm_varcon, only : spval, ispval
     !
     ! !ARGUMENTS:
     implicit none
@@ -311,7 +311,7 @@ contains
     ! is assigned to  indicate the time average is not yet valid.
     !
     ! !USES:
-    use elm_varcon, only : spval
+    use clm_varcon, only : spval
     !
     ! !ARGUMENTS:
     implicit none
@@ -576,7 +576,7 @@ contains
     ! Read/write accumulation restart data
     !
     ! !USES:
-    use elm_varcon      , only : ispval
+    use clm_varcon      , only : ispval
     use restUtilMod     , only : restartvar
     use ncdio_pio       , only : file_desc_t, ncd_double, ncd_int
     !

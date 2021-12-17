@@ -1,3 +1,102 @@
+12/15/2021
+
+* Okay, with one more change to deallocate topo at the end of the iac run,
+  so we can allocate it again next time, and getting the domain stuff
+  working, I have now successfully run two full timesteps.
+
+  So I'm going to try and see how things get coupled back from lnd to iac,
+  and whether that is happening right.  I suspect it is not - the accum
+  calls for averaging the lnd stuff don't bomb, but I'm not convinced they
+  work correctly.
+
+* Also, Alan has said the z->l coupling didn't work, because the order of
+  operations in cime_run() wasn't right.  After looking at what I've
+  currently got in there, I think I may see the issue - we do, in order,
+  iac setup, lnd setup, iac run, lnd run, iac post, lnd post.  I think we
+  have to wrap up iac setup/run/post before we call lnd setup in order to
+  get the output of iac for this timestep to get through the coupler to the
+  lnd model.
+
+  The problem is the iac is weirdly different than the other components -
+  I think they are fine coupling with the previous timestep, so lnd takes
+  the atm post output from last timestep and doesn't worry about it.  But
+  we can't really do that with iac, because that's a whole year previous -
+  so we have to wrap up everything iac before anything else runs.
+
+* Unless, of course, I don't understand what setup-send/post-recv do - I
+  believe setup-send grabs the stuff it needs *from* the copler, and
+  post-recv sends the output of this time step *to* the coupler.  (The
+  "send" and "recv", therefore, is from the perspective of the coupler - so
+  you send stuff to the component first, then you run, then you receive the
+  stuff from the component afterwards.)
+
+! Huh - it looks like we have calls to prep_lnd_calc_z2x_lx() in *both* the
+  iac post-recv and the lnd setup-send functions!  I don't know where it
+  more appropriate - do we couple every land time step, or only at the end
+  of the iac time step?
+
+* Okay, I think it's obvious we couple all ways on the iac time scale, if
+  possible, so l->z should happen in iac setup-send, while z->l, z->a
+  should happen on iac post-recv.  Hopefully that works and the values from
+  z->x coupling stick around.  If not, then maybe we couple z->x in the x
+  component setup-send, instead.
+
+  Also, perhaps l->z coupling needs to happen on the lnd time scale, if the
+  accum/averaging happens in the coupler.
+
+! So, I need to figure out exactly what the coupler does - does stuff
+  coupled once a year stick around that whole year, and does the coupler do
+  the accum/average?
+
+* Okay, it looks like lnd recv-post calls prep_iac_accum() on its time
+  scale, which makes sense.  So then iac setup should call the averaging
+  function - see how rof and glc accum works wrt to land.  I know the glc
+  averaging has its own alarm setup to do the averaging, but we can simply
+  do it in iac setup-send.
+
+* Right, cime_run_glc_setup_send() checks the glc averaging alarm, and if
+  it's sent, then it calls prep_glc_accum_avg().  So, by comparison, we
+  should always call prep_iac_accum_avg() in cime_run_iac_setup_send(), and
+  call prep_iac_accum() in cime_run_lnd_recv_post() (like we currently do).
+
+12/14/2021
+
+* Figured out the memory issue with domain_read_map() in the mksurfdat
+  stuff.  
+
+  TL;DR: domain_clean frees up domain%ns, so have to store ne=ns before the
+  clean and allocate with ne rather than ns; otherwise you end up
+  allocating an undefined number of elements.
+
+  Apparently, every time you call that function, it reinitialized
+  the domain structure, which involves calling domain_clean() to deallocate
+  everything before you reallocate the space.  The problem comes when you
+  call something like:  
+
+      call domain_init(domain, domain%ns)
+
+  The domain_clean() wipes clean the domain structure...including the %ns
+  variable!  Internally, domain_init(domain,ns) uses ns like a regular
+  variable, but it's actually a pointer back to domain%ns, which means the
+  internal ns variable gets reset after the clean.  If you then use ns as
+  the size of the allocate that follows the clean, you end up allocating an
+  arbitrary number of elements.
+
+  Obviously, then, in domain_init() you should use ne=ns and allocate with
+  ne. 
+
+* I've fixed the allocate(foo(ne),...) stuff, but I still wonder why we
+  have to crack and read the grid file using this domain stuff every time?
+  We actually *are* carrying the domain structure from timestep to
+  timestep, and only deallocate/reallocate when calling read_domain_map()
+  again during the next timestep - so there is no memory savings, all we do
+  is take the time and churn to read the file again for no real reason.
+
+  UNLESS that file changes, like we write out a new grid file between
+  timesteps or something, then there doesn't seem to be a reason to call
+  domain_read_map again - we should just switch on "%set" and only call the
+  domain_read if it is not yet set.
+
 11/30/2021
 
 * Huh.  When I ran with lnd ntasks=64, we crash on a different column
