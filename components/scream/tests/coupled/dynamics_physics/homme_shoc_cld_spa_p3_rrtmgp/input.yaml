@@ -12,7 +12,6 @@ Time Stepping:
 Initial Conditions:
   Physics GLL:
     Filename: homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-    w_int: 0.0 # Start from zero vert velocity
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
 

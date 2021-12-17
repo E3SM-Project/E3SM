@@ -13,7 +13,6 @@ Fields:
       - p_mid
       - pseudo_density
       - horiz_winds
-      - w_int
       - phi_int
  
 Output Control:

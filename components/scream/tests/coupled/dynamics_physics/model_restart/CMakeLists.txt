@@ -96,7 +96,7 @@ set (HOMME_TEST_REMAP_FACTOR 1)
 set (HOMME_TEST_TRACERS_FACTOR 1)
 set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
-set (HOMME_TTYPE 5)
+set (HOMME_TTYPE 10)
 set (HOMME_SE_FTYPE 0)
 
 # Hyperviscosity settings
@@ -110,7 +110,7 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-set (HOMME_THETA_HY_MODE true)
+set (HOMME_THETA_HY_MODE false)
 
 # Vert coord settings
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)

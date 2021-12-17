@@ -616,6 +616,7 @@ void HommeDynamics::homme_post_process () {
   if (m_has_w_forcing) {
     w_view  = get_field_out("w_int").get_view<Pack**>();
   }
+  auto has_w_forcing = m_has_w_forcing;
 
   // Establish the boundary condition for the TOA
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
@@ -637,8 +638,11 @@ void HommeDynamics::homme_post_process () {
     // Convert VTheta_dp->VTheta->Theta->T
     auto T   = ekat::subview(T_view,icol);
     auto v   = ekat::subview(v_view,icol);
-    auto w   = ekat::subview(w_view,icol);
     auto qv  = ekat::subview(Q_view,icol,0);
+    decltype(T) w;
+    if (has_w_forcing) {
+      w = ekat::subview(w_view,icol);
+    }
 
     auto T_prev = ekat::subview(T_prev_view,icol);
     auto V_prev = ekat::subview(V_prev_view,icol);
@@ -655,7 +659,7 @@ void HommeDynamics::homme_post_process () {
       T_prev(ilev) = T_val;
       V_prev(0,ilev) = v(0,ilev);
       V_prev(1,ilev) = v(1,ilev);
-      if (m_has_w_forcing) {
+      if (has_w_forcing) {
         V_prev(2,ilev) = w(ilev);
       }
     });
