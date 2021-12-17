@@ -122,7 +122,7 @@ contains
     use clm_time_manager, only : get_curr_yearfrac
     use landunit_varcon , only : istsoil
     use clm_varctl, only: iac_active, iulog
-    use netcdf   !avd
+    use netcdf   !avd - this is for a diagnostic file
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this
@@ -133,7 +133,7 @@ contains
     integer :: begp, endp
     real(r8) :: wt1    ! weight of time1 (prev time point)
 
-! avd
+! avd - diagnostic file
 character(len=128) :: hfile
 integer :: ierr, nmode, ncid, ngcells, pft_varid, pft_prev_varid
 integer :: harv_varid, cid_varid
@@ -155,8 +155,8 @@ integer, allocatable :: cell_ids(:)
        wt1 = 1.0_r8 - get_curr_yearfrac()
 
 !avd
-write(iulog,*) subname, 'begg,endg=', begg,endg
-write(iulog,*) subname, 'begp,endp=', begp,endp
+!write(iulog,*) subname, 'begg,endg=', begg,endg
+!write(iulog,*) subname, 'begp,endp=', begp,endp
 
        do p = begp,endp
           g=veg_pp%gridcell(p)
@@ -175,19 +175,22 @@ write(iulog,*) subname, 'begp,endp=', begp,endp
              ! Note that the following assignment assumes that all Patches share a
              ! single column
              ! iac2lnd indices start at 0 to match pft ids
-             veg_pp%wtcol(p) = this%pct_pft(g,pft) + &
-                             wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
+
+             ! avd - do not actually set the land values because the mapping is
+             !       incorrect such that the land model fails
+             !veg_pp%wtcol(p) = this%pct_pft(g,pft) + &
+             !                wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
           end if
 
-! avd write these to log for now cuz file is garbage
-if (this%pct_pft_prev(g,pft) /= 0.) then
+! avd write these to log
+!if (this%pct_pft_prev(g,pft) /= 0.) then
 !if (g == 1628) then 
-write(iulog,*) 'g=',g,' p=',p,' pft=',pft
-write(iulog,*) 'prev_val=',this%pct_pft_prev(g,pft)
-write(iulog,*) 'val=',this%pct_pft(g,pft)
-write(iulog,*) 'interp=', this%pct_pft(g,pft) + &
-                          wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
-end if
+!write(iulog,*) 'g=',g,' p=',p,' pft=',pft
+!write(iulog,*) 'prev_val=',this%pct_pft_prev(g,pft)
+!write(iulog,*) 'val=',this%pct_pft(g,pft)
+!write(iulog,*) 'interp=', this%pct_pft(g,pft) + &
+!                          wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
+!end if
 
        end do
 
@@ -209,7 +212,6 @@ end if
           p = p+1
        end do
        write(hfile,'(a)') './iac2lnd_update.nc'
-       !nmode = ior(NF90_CLOBBER,NF90_64BIT_OFFSET) 
        ierr = nf90_create(trim(hfile),nf90_clobber,ncid)
        ierr = nf90_def_dim(ncid,'ngcells',ngcells,pdimid(1))
        ierr = nf90_def_dim(ncid,'npfts',17,pdimid(2))

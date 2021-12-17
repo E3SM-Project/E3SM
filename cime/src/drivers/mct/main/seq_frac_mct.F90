@@ -280,16 +280,15 @@ logical :: iamroot
     integer :: debug_old      ! old debug value
 
     character(*),parameter :: fraclist_a = &
-                 'afrac:ifrac:ofrac:lfrac:lfrin:zfrac:zfrin'
+                 'afrac:ifrac:ofrac:lfrac:lfrin:zfrac'
     character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
-    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin:zfrac:zfrin'
+    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin:zfrac'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
-    character(*),parameter :: fraclist_z = 'afrac:zfrac:zfrin:lfrac:lfrin'
+    character(*),parameter :: fraclist_z = 'afrac:zfrac:lfrac:lfrin'
 
-! avd afrac in fraclist_z and zfrin may not be needed
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
@@ -394,8 +393,6 @@ iamroot = seq_comm_iamroot(CPLID)
        call mct_aVect_init(fractions_z,rList=fraclist_z,lsize=lsize)
        call mct_aVect_zero(fractions_z)
 
-       !avd may not need zfrin at all
-       ky = mct_aVect_indexRA(fractions_z,"zfrin",perrWith=subName)
        kz = mct_aVect_indexRA(fractions_z,"zfrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_z%data ,"frac" ,perrWith=subName)
        fractions_z%rAttr(ky,:) = dom_z%data%rAttr(kf,:)
@@ -404,7 +401,7 @@ iamroot = seq_comm_iamroot(CPLID)
        if (atm_present) then
           mapper_z2a => prep_atm_get_mapper_Fz2a()
           call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
-                           fldlist='zfrin', norm=.false.)
+                           fldlist='zfrac', norm=.false.)
        endif
 
     end if
@@ -473,7 +470,6 @@ iamroot = seq_comm_iamroot(CPLID)
        kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
        ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)
        kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)
-       ky = mct_aVect_indexRa(fractions_a,"zfrin",perrWith=subName)
        kz = mct_aVect_indexRa(fractions_a,"zfrac",perrWith=subName)
        lSize = mct_aVect_lSize(fractions_a)
 
@@ -499,7 +495,7 @@ iamroot = seq_comm_iamroot(CPLID)
                 end if
              endif
              if (iac_present) then
-               !if (iamroot) write(logunit,*) subName,'set a_zfrac n to 1'
+               !avd if (iamroot) write(logunit,*) subName,'set a_zfrac n to 1'
                fractions_a%rAttr(kz,n) = 1.0_r8
              end if
           enddo
@@ -508,7 +504,7 @@ iamroot = seq_comm_iamroot(CPLID)
        ! avd right now setting the iac frac for the atmosphere
        ! equal to 1 
        if (iac_present) then
-          if (iamroot) write(logunit,*) subName,'set a_zfrac to 1'
+          ! avd if (iamroot) write(logunit,*) subName,'set a_zfrac to 1'
           fractions_a%rAttr(kz,:) = 1.0_r8
        end if
 

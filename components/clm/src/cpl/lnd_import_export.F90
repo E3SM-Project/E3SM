@@ -1160,10 +1160,6 @@ contains
        ! iac coupling
 
        if (iac_active) then
-
-! avd
-write(iulog,*) 'lnd_import iac_active is ',iac_active
-
           do num = 0,numpft
              iac2lnd_vars%pct_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
              iac2lnd_vars%pct_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
@@ -1172,10 +1168,10 @@ write(iulog,*) 'lnd_import iac_active is ',iac_active
              end if
 
 !avd
-if (iac2lnd_vars%pct_pft_prev(g,num) /= 0.) then 
-   write(iulog,*) 'lnd_import g=',g,' pft=', num, ' val=', iac2lnd_vars%pct_pft(g,num), &
-       ' prev_val=', iac2lnd_vars%pct_pft_prev(g,num)
-end if
+!if (iac2lnd_vars%pct_pft_prev(g,num) /= 0.) then 
+!   write(iulog,*) 'lnd_import g=',g,' pft=', num, ' val=', iac2lnd_vars%pct_pft(g,num), &
+!       ' prev_val=', iac2lnd_vars%pct_pft_prev(g,num)
+!end if
 
 
           end do
