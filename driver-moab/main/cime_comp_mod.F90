@@ -1960,6 +1960,9 @@ contains
     !  need to finish up the computation of the atm - land map ( point cloud)
     if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)
 
+    !  need to finish up the migration of mesh for rof 2 ocn map ( read from file)
+    if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
+
     !----------------------------------------------------------
     !| Update aream in domains where appropriate
     !----------------------------------------------------------
@@ -4608,6 +4611,7 @@ contains
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
+       call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------

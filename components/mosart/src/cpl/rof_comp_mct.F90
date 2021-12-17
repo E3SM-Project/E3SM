@@ -76,6 +76,7 @@ module rof_comp_mct
 !
 #ifdef HAVE_MOAB
   private :: init_rof_moab   ! create moab mesh (cloud of points)
+  private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
 #endif
 ! PRIVATE DATA MEMBERS:
 
@@ -398,6 +399,10 @@ contains
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
     call rof_export_mct( r2x_r )
+#ifdef HAVE_MOAB
+    ! Map roff data to MOAB datatype ; load fields/tags in MOAB from rtmCTL%runoff 
+    call rof_export_moab()
+#endif
     call t_stopf ('lc_rof_export')
 
     ! Check that internal clock is in sync with master clock
@@ -783,7 +788,7 @@ contains
     use shr_const_mod, only: SHR_CONST_PI
     use iMOAB,  only       : iMOAB_CreateVertices, iMOAB_WriteMesh, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -868,6 +873,18 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set mask tag ')
 
+    ! define tags for data that will be sent to coupler
+    ! they will be associated to point cloud vertices
+    tagname='mbForr_rofl'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create mbForr_rofl tag ')
+    tagname='mbForr_rofi'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create mbForr_rofi tag ')
+
     deallocate(moab_vert_coords)
     deallocate(vgids)
 #ifdef MOABDEBUG
@@ -879,6 +896,113 @@ contains
       call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
 #endif
   end subroutine init_rof_moab
+
+
+subroutine rof_export_moab()
+ ! copy 
+     !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Send the runoff model export state to the coupler
+    ! convert from m3/s to kg/m2s
+    !
+    ! ARGUMENTS:
+   use seq_comm_mct,      only: mrofid  ! id of moab rof app
+
+   use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+   implicit none
+   !
+   ! LOCAL VARIABLES
+   integer :: ni, n, nt, nliq, nfrz, lsz, ierr, ent_type
+   integer, save :: num_mb_exports = 0  ! used for debugging
+   character(len=32), parameter :: sub = 'rof_export_moab'
+   real(r8), dimension(:), allocatable :: liqrof  ! temporary
+   real(r8), dimension(:), allocatable :: icerof  ! temporary
+   character*100 outfile, wopts, localmeshfile, tagname, lnum
+   !---------------------------------------------------------------------------
+   
+   nliq = 0
+   nfrz = 0
+   do nt = 1,nt_rtm
+      if (trim(rtm_tracers(nt)) == 'LIQ') then
+         nliq = nt
+      endif
+      if (trim(rtm_tracers(nt)) == 'ICE') then
+         nfrz = nt
+      endif
+   enddo
+   if (nliq == 0 .or. nfrz == 0) then
+      write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+      call shr_sys_abort()
+   endif
+   ! number the local grid
+   lsz = rtmCTL%lnumr
+
+   allocate(liqrof(lsz) ) ! use it for setting fields (moab tags)
+   allocate(icerof(lsz) )
+   liqrof(:) = 0.0
+   icerof(:) = 0.0
+
+   ni = 0
+   if ( ice_runoff )then
+      ! separate liquid and ice runoff
+      do n = rtmCTL%begr,rtmCTL%endr
+         ni = ni + 1
+         liqrof(ni) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+         icerof(ni) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+         if (rtmCTL%mask(n) >= 2) then
+            ! liquid and ice runoff are treated separately - this is what goes to the ocean
+            liqrof(ni) = liqrof(ni) + &
+               rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+            icerof(ni) = icerof(ni) + &
+               rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+            if (ni > rtmCTL%lnumr) then
+               write(iulog,*) sub, ' : ERROR runoff count',n,ni
+               call shr_sys_abort( sub//' : ERROR runoff > expected' )
+            endif
+         endif
+      end do
+   else
+      ! liquid and ice runoff added to liquid runoff, ice runoff is zero
+      do n = rtmCTL%begr,rtmCTL%endr
+         ni = ni + 1
+         liqrof(ni) =  &
+            (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+         if (rtmCTL%mask(n) >= 2) then
+            liqrof(ni) = liqrof(ni) + &
+               (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+            if (ni > rtmCTL%lnumr) then
+               write(iulog,*) sub, ' : ERROR runoff count',n,ni
+               call shr_sys_abort( sub//' : ERROR runoff > expected' )
+            endif
+         endif
+      end do
+   end if
+   tagname='mbForr_rofl'//C_NULL_CHAR
+   ent_type = 0 ! vertices
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, liqrof )
+   if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set mbForr_rofl tag ')
+   tagname='mbForr_rofi'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, icerof )
+   if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set mbForr_rofi tag ')
+
+#ifdef MOABDEBUG
+      num_mb_exports = num_mb_exports +1
+      write(lnum,"(I0.2)")num_mb_exports
+      outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+      if (ierr > 0 )  &
+        call shr_sys_abort( sub//' fail to write the runoff mesh file with data')
 #endif
+
+   deallocate(liqrof)
+   deallocate(icerof)
+! end copy
+end subroutine rof_export_moab
+
+! end #ifdef HAVE_MOAB
+#endif 
 
 end module rof_comp_mct

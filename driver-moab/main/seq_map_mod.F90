@@ -160,7 +160,7 @@ contains
   end subroutine seq_map_init_rcfile
 
 
-  subroutine moab_map_init_rcfile( mbappid, comp_s, comp_d, &
+  subroutine moab_map_init_rcfile( mbappid, mbtsid, type_grid, comp_s, comp_d, &
     maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
 
    use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
@@ -170,6 +170,8 @@ contains
    ! Arguments
    !
    type(integer)        ,intent(in)            :: mbappid  ! moab app id, identifing the map from source to target
+   type(integer)        ,intent(in)            :: mbtsid   ! moab app id, identifying the target (now), for row based distribution
+   type(integer)        ,intent(in)            :: type_grid ! 1 for SE, 2 for PC, 3 for FV; should be a member data
    type(component_type) ,intent(inout)         :: comp_s
    type(component_type) ,intent(inout)         :: comp_d
    character(len=*)     ,intent(in)            :: maprcfile
@@ -190,8 +192,10 @@ contains
    integer(IN)                 :: mapid
    character(CX)               :: sol_identifier !   /* "scalar", "flux", "custom" */
    integer                     :: ierr 
+   integer                     :: col_or_row ! 0 for row based, 1 for col based (we use row distribution now)
+   
 
-   character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
+   character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
    !-----------------------------------------------------
 
    if (seq_comm_iamroot(CPLID) .and. present(string)) then
@@ -203,12 +207,15 @@ contains
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
    !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
-   sol_identifier = 'scalar'//CHAR(0)
+   sol_identifier = 'map-from-file'//CHAR(0)
    mapfile_term = trim(mapfile)//CHAR(0)
    if (seq_comm_iamroot(CPLID)) then
        write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
    endif 
-   ierr = iMOAB_LoadMappingWeightsFromFile( mbappid, sol_identifier, mapfile_term)
+
+   col_or_row = 0 ! row based distribution
+
+   ierr = iMOAB_LoadMappingWeightsFromFile( mbappid, mbtsid, col_or_row, type_grid, sol_identifier, mapfile_term)
    if (ierr .ne. 0) then
       write(logunit,*) subname,' error in loading map file'
       call shr_sys_abort(subname//' ERROR in loading map file')
