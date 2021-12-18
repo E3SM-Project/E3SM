@@ -10,24 +10,35 @@ OBJS = \
         glad_mbal_coupling.o \
         glad_mbal_io.o \
         glad_output_fluxes.o \
+        glad_output_states.o \
         glad_restart_gcm.o \
         glad_timestep.o \
         glad_type.o \
         glam_grid_operators.o \
         glam_strs2.o \
         glam_velo.o \
+        glc_broadcast.o \
         glc_communicate.o \
         glc_comp_mct.o \
         glc_constants.o \
         glc_coupling_flags.o \
         glc_cpl_indices.o \
+        glc_ensemble.o \
+        glc_ErrorMod.o \
         glc_exit_mod.o \
         glc_fields.o \
+        glc_files.o \
+        glc_FinalMod.o \
+        glc_history.o \
         glc_import_export.o \
+        glc_io.o \
+        glc_InitMod.o \
         glc_indexing_info.o \
         glc_kinds_mod.o \
         glc_override_frac.o \
         glc_route_ice_runoff.o \
+        glc_RunMod.o \
+        glc_time_management.o \
         glide.o \
         glide_bwater.o \
         glide_calc_sigma.o \
@@ -83,6 +94,9 @@ OBJS = \
         glissade_velo_higher_pcg.o \
         glissade_velo_higher_slap.o \
         glissade_velo_sia.o \
+        history_tape_base.o \
+        history_tape_coupler.o \
+        history_tape_standard.o \
         isostasy.o \
         isostasy_elastic.o \
         isostasy_kelvin.o \
@@ -140,6 +154,7 @@ glad_main.o: \
         glad_initialise.o \
         glad_timestep.o \
         glimmer_log.o \
+        glad_output_states.o \
         glimmer_paramets.o \
         glimmer_utils.o \
         parallel_mpi.o
@@ -153,12 +168,15 @@ glad_mbal_io.o:
 glad_output_fluxes.o: \
         glide_types.o
 
+glad_output_states.o:
+
 glad_restart_gcm.o:
 
 glad_timestep.o:
 
 glad_type.o: \
         glad_input_averages.o \
+        glad_mbal_coupling.o \
         glad_output_fluxes.o \
         glide_types.o \
         glimmer_ncparams.o
@@ -172,6 +190,10 @@ glam_strs2.o: \
 glam_velo.o: \
         glide_stress.o
 
+glc_broadcast.o: \
+        glc_communicate.o \
+        glc_kinds_mod.o
+
 glc_communicate.o: \
         glc_kinds_mod.o \
         parallel_mpi.o
@@ -182,9 +204,14 @@ glc_comp_mct.o: \
         glc_constants.o \
         glc_coupling_flags.o \
         glc_cpl_indices.o \
+        glc_ErrorMod.o \
         glc_fields.o \
+        glc_FinalMod.o \
         glc_import_export.o \
-        glc_indexing_info.o
+        glc_indexing_info.o \
+        glc_InitMod.o \
+        glc_io.o \
+        glc_RunMod.o
 
 glc_constants.o: \
         glc_kinds_mod.o \
@@ -199,6 +226,10 @@ glc_coupling_flags.o: \
 glc_cpl_indices.o: \
         glc_constants.o
 
+glc_ensemble.o:
+
+glc_ErrorMod.o:
+
 glc_exit_mod.o: \
         glc_communicate.o \
         glc_constants.o \
@@ -207,6 +238,16 @@ glc_exit_mod.o: \
 glc_fields.o: \
         glad_main.o \
         glc_kinds_mod.o
+
+glc_files.o: \
+        glc_ensemble.o
+
+glc_FinalMod.o:
+
+glc_history.o: \
+        history_tape_base.o \
+        history_tape_coupler.o \
+        history_tape_standard.o
 
 glc_import_export.o: \
         glc_communicate.o \
@@ -220,18 +261,31 @@ glc_import_export.o: \
 glc_indexing_info.o: \
         glad_main.o
 
+glc_InitMod.o: \
+        glc_history.o \
+        glc_io.o
+
+glc_io.o:
+
 glc_kinds_mod.o:
 
 glc_override_frac.o: \
+        glc_broadcast.o \
         glc_communicate.o \
         glc_constants.o \
         glc_exit_mod.o \
-        glc_kinds_mod.o
+        glc_files.o \
+        glc_kinds_mod.o \
+        glc_time_management.o
 
 glc_route_ice_runoff.o: \
         glc_constants.o \
         glc_exit_mod.o \
         glc_kinds_mod.o 
+
+glc_RunMod.o:
+
+glc_time_management.o:
 
 glide.o: \
         glide_bwater.o \
@@ -343,6 +397,7 @@ glimmer_ncio.o: \
         glimmer_map_CFproj.o
 
 glimmer_ncparams.o: \
+        glimmer_config.o \
         glimmer_filenames.o
 
 glimmer_paramets.o: \
@@ -413,6 +468,13 @@ glissade_velo_higher_pcg.o:
 glissade_velo_higher_slap.o:
 
 glissade_velo_sia.o:
+
+history_tape_base.o: \
+        glc_io.o
+
+history_tape_coupler.o:
+
+history_tape_standard.o:
 
 isostasy.o: \
         isostasy_elastic.o

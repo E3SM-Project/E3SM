@@ -1,6 +1,6 @@
 module glc_override_frac
 
-#include "shr_assert.h"
+! #include "shr_assert.h"
 
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
