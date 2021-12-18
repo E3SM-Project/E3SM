@@ -498,8 +498,7 @@ contains
       use FatesParameterDerivedMod, only : param_derived
       use FatesInterfaceTypesMod,   only : numpft_fates => numpft
       use elm_varsur,               only : wt_nat_patch
-
-
+      use topounit_varcon           , only: max_topounits, has_topounit
 
       implicit none
 
@@ -511,6 +510,7 @@ contains
       integer                                        :: nclumps   ! Number of threads
       integer                                        :: nc        ! thread index
       integer                                        :: s         ! FATES site index
+      integer                                        :: t         ! topounit index (HLM)
       integer                                        :: c         ! HLM column index
       integer                                        :: l         ! HLM LU index
       integer                                        :: g         ! HLM grid index
@@ -521,6 +521,7 @@ contains
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
+      real(r8)                                       :: wt_nat_patch_toposum 
 
       ! Initialize the FATES communicators with the HLM
       ! This involves to stages
@@ -637,6 +638,8 @@ contains
             ! ---------------------------------------------------------------------------
 
             g = col_pp%gridcell(c)
+            t = col_pp%topounit(c)
+
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
@@ -644,7 +647,16 @@ contains
             this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
             do m = natpft_lb,natpft_ub
                ft = m-natpft_lb
-               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,m)
+               
+               ! For now, sum the weights along all topounits for a given gridcell
+               wt_nat_patch_toposum = sum(wt_nat_patch(g,:,m))
+               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch_toposum 
+
+               !this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
+
+               !write(iulog,*) 'elmfates: has_topounit: ',has_topounit
+               !write(iulog,*) 'elmfates: wt_nat_patch(g,1,m): ', wt_nat_patch(g,1,m)
+               !write(iulog,*) 'elmfates: sum wt_nat_patch: ', wt_nat_patch_toposum
             end do
 
             if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(natpft_lb:natpft_ub))-1.0_r8).gt.1.0e-9)then
