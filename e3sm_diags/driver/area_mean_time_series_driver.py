@@ -7,8 +7,11 @@ import cdutil
 
 import e3sm_diags
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import mean
 from e3sm_diags.plot.cartopy import area_mean_time_series_plot
+
+logger = custom_logger(__name__)
 
 RefsTestMetrics = collections.namedtuple("RefsTestMetrics", ["refs", "test", "metrics"])
 
@@ -47,7 +50,7 @@ def run_diag(parameter):
         # [   ]   [   ]
         regions_to_data = collections.OrderedDict()
         save_data = {}
-        print("Variable: {}".format(var))
+        logger.info("Variable: {}".format(var))
 
         # Get land/ocean fraction for masking.
         # For now, we're only using the climo data that we saved below.
@@ -62,16 +65,14 @@ def run_diag(parameter):
         for region in regions:
             # The regions that are supported are in e3sm_diags/derivations/default_regions.py
             # You can add your own if it's not in there.
-            print("Selected region: {}".format(region))
+            logger.info("Selected region: {}".format(region))
             test_data = utils.dataset.Dataset(parameter, test=True)
             test = test_data.get_timeseries_variable(var)
-            print(
-                "Start and end time for selected time slices for test data: ",
-                test.getTime().asComponentTime()[0],
-                test.getTime().asComponentTime()[-1],
+            logger.info(
+                "Start and end time for selected time slices for test data: "
+                f"{test.getTime().asComponentTime()[0]} "
+                f"{test.getTime().asComponentTime()[-1]}",
             )
-
-            # print('test shape',test.shape, test.long_name, test.units)
 
             parameter.viewer_descr[var] = getattr(test, "long_name", var)
             # Get the name of the data, appended with the years averaged.
@@ -105,7 +106,6 @@ def run_diag(parameter):
 
                 try:
                     ref = ref_data.get_timeseries_variable(var)
-                    # print('ref shape',ref.shape, ref.long_name, ref.units)
 
                     ref_domain = utils.general.select_region(
                         region, ref, land_frac, ocean_frac, parameter
@@ -113,14 +113,21 @@ def run_diag(parameter):
 
                     ref_domain = cdutil.averager(ref_domain, axis="xy")
                     cdutil.setTimeBoundsMonthly(ref_domain)
-                    # print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
+                    logger.info(
+                        (
+                            "Start and end time for selected time slices for ref data: "
+                            f"{ref_domain.getTime().asComponentTime()[0]} "
+                            f"{ref_domain.getTime().asComponentTime()[-1]}"
+                        )
+                    )
+
                     ref_domain_year = cdutil.YEAR(ref_domain)
                     ref_domain_year.ref_name = ref_name
                     save_data[ref_name] = ref_domain_year.asma().tolist()
 
                     refs.append(ref_domain_year)
                 except Exception:
-                    print(
+                    logger.exception(
                         "No valid value for reference datasets available for the specified time range"
                     )
 
@@ -130,7 +137,6 @@ def run_diag(parameter):
                 utils.general.get_output_dir(parameter.current_set, parameter),
                 parameter.output_file + ".json",
             )
-            # print('Data saved in: ' + fnm)
 
             with open(fnm, "w") as outfile:
                 json.dump(save_data, outfile)

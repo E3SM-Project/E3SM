@@ -7,12 +7,14 @@ import numpy as np
 from cartopy.mpl.ticker import LatitudeFormatter
 
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot import get_colormap
 
 matplotlib.use("Agg")
 import matplotlib.colors as colors  # isort:skip  # noqa: E402
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
+logger = custom_logger(__name__)
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -156,7 +158,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -182,7 +184,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f
-            print("Sub-plot saved in: " + fname)
+            logger.info(f"Sub-plot saved in: {fname}")
 
             i += 1
 

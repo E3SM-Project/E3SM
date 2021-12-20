@@ -9,11 +9,14 @@ import numpy
 import scipy.io
 
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy.streamflow_plot import (
     plot_annual_map,
     plot_annual_scatter,
     plot_seasonality_map,
 )
+
+logger = custom_logger(__name__)
 
 
 def get_drainage_area_error(
@@ -122,7 +125,7 @@ def run_diag(parameter):
     gauges_list.pop(0)
     gauges = numpy.array(gauges_list)
     if parameter.print_statements:
-        print("gauges.shape={}".format(gauges.shape))
+        logger.info("gauges.shape={}".format(gauges.shape))
 
     variables = parameter.variables
     for var in variables:
@@ -137,7 +140,7 @@ def run_diag(parameter):
         # Move the ref lat lon to grid center
         lat_lon = (bins + 0.5) * resolution
         if parameter.print_statements:
-            print("lat_lon.shape={}".format(lat_lon.shape))
+            logger.info("lat_lon.shape={}".format(lat_lon.shape))
 
         # Define the export matrix
         export = generate_export(
@@ -158,13 +161,17 @@ def run_diag(parameter):
         # `export[numpy.isnan(export[:,0]),:]` => rows of `export` where the Boolean column was True
         # Gauges will thus only be plotted if they have a non-nan value for both test and ref.
         if parameter.print_statements:
-            print("export.shape before removing ref nan means={}".format(export.shape))
+            logger.info(
+                "export.shape before removing ref nan means={}".format(export.shape)
+            )
         export = export[~numpy.isnan(export[:, 0]), :]
         if parameter.print_statements:
-            print("export.shape before removing test nan means={}".format(export.shape))
+            logger.info(
+                "export.shape before removing test nan means={}".format(export.shape)
+            )
         export = export[~numpy.isnan(export[:, 1]), :]
         if parameter.print_statements:
-            print("export.shape after both nan removals={}".format(export.shape))
+            logger.info("export.shape after both nan removals={}".format(export.shape))
 
         if area_upstream is not None:
             # Set the max area error (percent) for all plots
@@ -175,10 +182,12 @@ def run_diag(parameter):
             # `export[export[:,2]<=max_area_error,:]` is `export` with only the rows where the above is `True`.
             export = export[export[:, 2] <= max_area_error, :]
             if parameter.print_statements:
-                print("export.shape after max_area_error cut={}".format(export.shape))
+                logger.info(
+                    "export.shape after max_area_error cut={}".format(export.shape)
+                )
 
         if parameter.print_statements:
-            print("Variable: {}".format(var))
+            logger.info("Variable: {}".format(var))
 
         if parameter.test_title == "":
             parameter.test_title = parameter.test_name_yrs
@@ -213,10 +222,10 @@ def setup_ref(parameter, var, using_ref_mat_file):
         ref_data_ts = ref_data.get_timeseries_variable(var)
         var_array = ref_data_ts(cdutil.region.domain(latitude=(-90.0, 90, "ccb")))
         if parameter.print_statements:
-            print("ref var original dimensions={}".format(var_array.shape))
+            logger.info("ref var original dimensions={}".format(var_array.shape))
         var_transposed = numpy.transpose(var_array, (2, 1, 0))
         if parameter.print_statements:
-            print("ref var transposed dimensions={}".format(var_transposed.shape))
+            logger.info("ref var transposed dimensions={}".format(var_transposed.shape))
         ref_array = var_transposed.astype(numpy.float64)
     else:
         # Load the observed streamflow dataset (GSIM)
@@ -242,7 +251,7 @@ def setup_ref(parameter, var, using_ref_mat_file):
     if parameter.print_statements:
         # GSIM: 1380 x 30961
         # wrmflow: 720 x 360 x 360
-        print("ref_array.shape={}".format(ref_array.shape))
+        logger.info("ref_array.shape={}".format(ref_array.shape))
 
     return ref_array
 
@@ -256,20 +265,22 @@ def setup_test(parameter, var, using_test_mat_file):
         test_data_ts = test_data.get_timeseries_variable(var)
         var_array = test_data_ts(cdutil.region.domain(latitude=(-90.0, 90, "ccb")))
         if parameter.print_statements:
-            print("test var original dimensions={}".format(var_array.shape))
+            logger.info("test var original dimensions={}".format(var_array.shape))
         var_transposed = numpy.transpose(var_array, (2, 1, 0))
         if parameter.print_statements:
-            print("test var transposed dimensions={}".format(var_transposed.shape))
+            logger.info(
+                "test var transposed dimensions={}".format(var_transposed.shape)
+            )
         test_array = var_transposed.astype(numpy.float64)
         areatotal2 = test_data.get_static_variable("areatotal2", var)
         area_upstream = numpy.transpose(areatotal2, (1, 0)).astype(numpy.float64)
         if parameter.print_statements:
-            print("area_upstream dimensions={}".format(area_upstream.shape))
+            logger.info("area_upstream dimensions={}".format(area_upstream.shape))
     else:
         area_upstream, test_array = debugging_case_setup_test(parameter)
     if parameter.print_statements:
         # For edison: 720x360x600
-        print("test_array.shape={}".format(test_array.shape))
+        logger.info("test_array.shape={}".format(test_array.shape))
     if type(area_upstream) == cdms2.tvariable.TransientVariable:
         area_upstream = area_upstream.getValue()
 
@@ -315,12 +326,12 @@ def get_e3sm_flow(parameter, data_mat):
         # `edison` file uses this block
         e3sm_flow = data_mat["E3SMflow"]
         if parameter.print_statements:
-            print('e3sm_flow = data_mat["E3SMflow"]')
+            logger.info('e3sm_flow = data_mat["E3SMflow"]')
     else:
         # `test` file uses this block
         e3sm_flow = data_mat
         if parameter.print_statements:
-            print("e3sm_flow = data_mat")
+            logger.info("e3sm_flow = data_mat")
     return e3sm_flow
 
 
@@ -330,16 +341,16 @@ def get_area_upstream(parameter, e3sm_flow):
             # `edison` file uses this block
             area_upstream = e3sm_flow["uparea"][0][0].astype(numpy.float64)
             if parameter.print_statements:
-                print('e3sm_flow["uparea"] was indexed into for later use')
+                logger.info('e3sm_flow["uparea"] was indexed into for later use')
         else:
             area_upstream = e3sm_flow["uparea"].astype(numpy.float64)
             if parameter.print_statements:
-                print('e3sm_flow["uparea"] will be used')
+                logger.info('e3sm_flow["uparea"] will be used')
     except KeyError:
         # `test` file uses this block
         area_upstream = None
         if parameter.print_statements:
-            print("WARNING: uparea not found and will thus not be used")
+            logger.warning("WARNING: uparea not found and will thus not be used")
     return area_upstream
 
 
@@ -348,12 +359,12 @@ def get_test_array(parameter, e3sm_flow):
         # `edison` file uses this block
         test_array = e3sm_flow["wrmflow"][0][0].astype(numpy.float64)
         if parameter.print_statements:
-            print('e3sm_flow["wrmflow"] was indexed into for later use')
+            logger.info('e3sm_flow["wrmflow"] was indexed into for later use')
     else:
         # `test` file uses this block
         test_array = e3sm_flow["wrmflow"].astype(numpy.float64)
         if parameter.print_statements:
-            print('e3sm_flow["wrmflow"] will be used')
+            logger.info('e3sm_flow["wrmflow"] will be used')
     return test_array
 
 
@@ -371,10 +382,10 @@ def generate_export(
     # Annual mean of test, annual mean of ref, error for area, lat, lon
     export = numpy.zeros((lat_lon.shape[0], 9))
     if parameter.print_statements:
-        print("export.shape={}".format(export.shape))
+        logger.info("export.shape={}".format(export.shape))
     for i in range(lat_lon.shape[0]):
         if parameter.print_statements and (i % 1000 == 0):
-            print("On gauge #{}".format(i))
+            logger.info("On gauge #{}".format(i))
         if parameter.max_num_gauges and i >= parameter.max_num_gauges:
             break
         lat_ref = lat_lon[i, 1]

@@ -6,10 +6,12 @@ import matplotlib
 import numpy as np
 
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
+logger = custom_logger(__name__)
 
 panel = [
     (0.075, 0.70, 0.6, 0.225),
@@ -183,14 +185,14 @@ def plot(period_new, parameter, test, ref):
     # => {parameter.results_dir}/qbo/{parameter.case_id}
     output_dir = get_output_dir(parameter.current_set, parameter)
     if parameter.print_statements:
-        print("Output dir: {}".format(output_dir))
+        logger.info("Output dir: {}".format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/qbo/{parameter.case_id}
     original_output_dir = get_output_dir(
         parameter.current_set, parameter, ignore_container=True
     )
     if parameter.print_statements:
-        print("Original output dir: {}".format(original_output_dir))
+        logger.info("Original output dir: {}".format(original_output_dir))
     # parameter.output_file is defined in e3sm_diags/driver/qbo_driver.py
     # {parameter.results_dir}/qbo/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
@@ -206,7 +208,7 @@ def plot(period_new, parameter, test, ref):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         original_plot_file_path = original_file_path + plot_suffix
-        print("Plot saved in: " + original_plot_file_path)
+        logger.info(f"Plot saved in: {original_plot_file_path}")
 
     # TODO: The subplots don't come out so nicely. Same for ENSO Diags
     #  See Issue 294
@@ -225,7 +227,7 @@ def plot(period_new, parameter, test, ref):
         #     # Get the filename that the user has passed in and display that.
         #     # When running in a container, the paths are modified.
         #     original_subplot_file_path = original_file_path + subplot_suffix
-        #     print('Sub-plot saved in: ' + original_subplot_file_path)
+        #     logger.info('Sub-plot saved in: ' + original_subplot_file_path)
         page = fig.get_size_inches()
         i = 0
         for p in panel:
@@ -242,7 +244,7 @@ def plot(period_new, parameter, test, ref):
             # Get the filename that the user has passed in and display that.
             # When running in a container, the paths are modified.
             original_subplot_file_path = original_file_path + subplot_suffix
-            print("Sub-plot saved in: " + original_subplot_file_path)
+            logger.info(f"Sub-plot saved in: {original_subplot_file_path}")
             i += 1
 
     plt.close()

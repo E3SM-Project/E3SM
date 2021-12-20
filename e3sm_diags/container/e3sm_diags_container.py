@@ -9,6 +9,10 @@ import os
 import subprocess
 import sys
 
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
+
 # Change these commands if needed.
 SHIFTER_COMMAND = "shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path"
 SHIFTER_COMMAND += (
@@ -35,7 +39,7 @@ def run_cmd(cmd):
     """
     Given a command, run it.
     """
-    print("Using the command: {}".format(cmd))
+    logger.info("Using the command: {}".format(cmd))
     subprocess.Popen(cmd, shell=True).wait()
     # This doesn't work: p = subprocess.Popen(cmd.split(), shell=True)
 

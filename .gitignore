@@ -50,6 +50,7 @@ coverage.xml
 .hypothesis/
 tests/integration/integration_test_data
 tests/integration/integration_test_images
+tests/integration/all_sets_results/
 tests/integration/all_sets_results_test/
 tests/integration/image_check_failures/
 tests/v*_all_sets/

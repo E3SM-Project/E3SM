@@ -9,9 +9,12 @@ import numpy
 
 import e3sm_diags
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from e3sm_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 from e3sm_diags.plot import plot
+
+logger = custom_logger(__name__)
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -95,7 +98,7 @@ def run_diag(parameter, default_plevs=ZonalMean2dParameter().plevs):
                 ocean_frac = f("OCNFRAC")
 
         for var in variables:
-            print("Variable: {}".format(var))
+            logger.info("Variable: {}".format(var))
             parameter.var_id = var
 
             mv1 = test_data.get_climo_variable(var, season)
@@ -147,8 +150,7 @@ def run_diag(parameter, default_plevs=ZonalMean2dParameter().plevs):
                     not isinstance(plevs, numpy.ndarray) and not plevs
                 ):
                     plevs = default_plevs
-
-                # print('Selected pressure level: {}'.format(plevs))
+                logger.info(f"Selected pressure level: {plevs}")
 
                 mv1_p = utils.general.convert_to_pressure_levels(
                     mv1, plevs, test_data, var, season
@@ -203,7 +205,7 @@ def run_diag(parameter, default_plevs=ZonalMean2dParameter().plevs):
             # For variables without a z-axis.
             elif mv1.getLevel() is None and mv2.getLevel() is None:
                 for region in regions:
-                    # print("Selected region: {}".format(region))
+                    logger.info(f"Selected region: {region}")
 
                     mv1_domain = utils.general.select_region(
                         region, mv1, land_frac, ocean_frac, parameter

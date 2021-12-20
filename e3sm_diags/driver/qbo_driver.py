@@ -9,7 +9,10 @@ import scipy.fftpack
 
 from e3sm_diags.derivations import default_regions
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy.qbo_plot import plot
+
+logger = custom_logger(__name__)
 
 
 def unify_plev(var):
@@ -162,7 +165,7 @@ def run_diag(parameter):
     parameter.ref_yrs = utils.general.get_yrs(ref_data)
     for variable in variables:
         if parameter.print_statements:
-            print("Variable={}".format(variable))
+            logger.info("Variable={}".format(variable))
         test_var = test_data.get_timeseries_variable(variable)
         ref_var = ref_data.get_timeseries_variable(variable)
         qbo_region = default_regions.regions_specs[region]["domain"]  # type: ignore
@@ -259,7 +262,7 @@ def run_diag(parameter):
                 ),
                 parameter.output_file + "_{}.json".format(dict_type),
             )
-            print("Metrics saved in: {}".format(json_output_file_name))
+            logger.info("Metrics saved in: {}".format(json_output_file_name))
 
         plot(period_new, parameter, test, ref)
     return parameter

@@ -11,6 +11,9 @@ import numpy
 from matplotlib.colors import LinearSegmentedColormap
 
 import e3sm_diags
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
 
 
 def _get_plot_fcn(backend, set_name):
@@ -25,7 +28,9 @@ def _get_plot_fcn(backend, set_name):
         return module.plot  # type: ignore
 
     except ModuleNotFoundError:
-        print("Plotting for set {} with {} is not supported".format(set_name, backend))
+        logger.error(
+            "Plotting for set {} with {} is not supported".format(set_name, backend)
+        )
         traceback.print_exc()
 
 
@@ -45,10 +50,11 @@ def plot(set_name, ref, test, diff, metrics_dict, parameter):
             try:
                 plot_fcn(ref, test, diff, metrics_dict, parameter)
             except Exception as e:
-                print(
+                logger.exception(
                     "Error while plotting {} with backend {}".format(
                         set_name, parameter.backend
-                    )
+                    ),
+                    exc_info=True,
                 )
                 traceback.print_exc()
                 if parameter.debug:

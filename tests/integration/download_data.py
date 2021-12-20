@@ -2,6 +2,8 @@ import os
 import re
 import urllib.request
 
+from tests.integration.config import TEST_DATA_DIR, TEST_IMAGES_DIR, TEST_ROOT_PATH
+
 
 # https://stackoverflow.com/questions/49113616/how-to-download-file-using-python
 def retrieve_file(url, file_path):
@@ -15,6 +17,7 @@ def retrieve_file(url, file_path):
 
 
 def download_files(url_prefix, url_suffix, directory_prefix=None):
+    print(f"Downloading {url_suffix}")
     print("url_prefix={}".format(url_prefix))
     print("url_suffix={}".format(url_suffix))
     print("(local) directory_prefix={}".format(directory_prefix))
@@ -67,17 +70,17 @@ def download_files(url_prefix, url_suffix, directory_prefix=None):
 
 
 def download():
-    print("Downloading integration_test_data")
     download_files(
         "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/integration",
-        "integration_test_data",
+        TEST_DATA_DIR,
+        directory_prefix=TEST_ROOT_PATH,
     )
-    print("Downloading integration_test_images")
     download_files(
         "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/integration/expected",
-        "integration_test_images",
+        TEST_IMAGES_DIR,
+        directory_prefix=TEST_ROOT_PATH,
     )
-    print("Downloaded integration_test_data and integration_test_images")
+    print(f"Downloaded {TEST_DATA_DIR} and {TEST_ROOT_PATH}")
 
 
 if __name__ == "__main__":

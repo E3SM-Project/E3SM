@@ -2,6 +2,10 @@ import MV2
 import numpy
 import numpy.ma as ma
 
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
+
 
 def composite_diurnal_cycle(var, season, fft=True):
     """
@@ -46,8 +50,8 @@ def composite_diurnal_cycle(var, season, fft=True):
         24 / (var_time_absolute[1].hour - var_time_absolute[0].hour)
     )  # This only valid for time interval >= 1hour
     start_time = var_time_absolute[0].hour
-    print("start_time", var_time_absolute[0], var_time_absolute[0].hour)
-    print("var_time_freq={}".format(time_freq))
+    logger.info(f"start_time {var_time_absolute[0]} {var_time_absolute[0].hour}")
+    logger.info("var_time_freq={}".format(time_freq))
 
     # Convert to masked array
     v = var.asma()
@@ -183,11 +187,11 @@ def fastAllGridFT(x, t):
     # value of maximum for nth component (= 1/2 peak-to-peak amplitude)
     maxvalue = numpy.zeros((3, nx, ny))
 
-    print(
+    logger.info(
         "Calling numpy FFT function and converting from complex-valued FFT to real-valued amplitude and phase"
     )
     X = numpy.fft.ifft(x, axis=0)
-    print("FFT output shape={}".format(X.shape))
+    logger.info("FFT output shape={}".format(X.shape))
 
     # Converting from complex-valued FFT to real-valued amplitude and phase
     a = X.real

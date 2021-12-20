@@ -12,6 +12,9 @@ import MV2
 
 from e3sm_diags import container
 from e3sm_diags.derivations.default_regions import points_specs, regions_specs
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
 
 
 def strictly_increasing(L):
@@ -93,7 +96,6 @@ def get_yrs(dataset, season=""):
         try:
             yrs_averaged = dataset.get_attr_from_climo("yrs_averaged", season)
         except Exception:
-            # print("No 'yrs_averaged' exists in the global attributes.")
             yrs_averaged = ""
     else:
         start_yr, end_yr, sub_monthly = dataset.get_start_and_end_years()
@@ -175,10 +177,8 @@ def select_region_lat_lon(region, var, parameter):
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]["domain"]  # type: ignore
-        # print('Domain: ', domain)
     except Exception:
         pass
-        # print("No domain selector.")
 
     var_selected = var(domain)
     var_selected.units = var.units
@@ -210,10 +210,8 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]["domain"]  # type: ignore
-        # print('Domain: ', domain)
     except Exception:
         pass
-        # print("No domain selector.")
 
     var_domain_selected = var_domain(domain)
     var_domain_selected.units = var.units
@@ -235,7 +233,7 @@ def select_point(region, var):
             squeeze=1,
         )
     except Exception:
-        print("No point selected.")
+        logger.info("No point selected.")
 
     return var_selected
 
@@ -309,7 +307,7 @@ def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter
             try:
                 variable.id = parameter.var_id
             except AttributeError:
-                print("Could not save variable.id for {}".format(variable_name))
+                logger.error("Could not save variable.id for {}".format(variable_name))
             file_name = "{}_{}_{}.nc".format(
                 parameter.output_file, variable_name, label
             )
@@ -318,7 +316,7 @@ def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter
                 try:
                     file_test.write(variable)
                 except AttributeError:
-                    print("Could not write variable {}".format(variable_name))
+                    logger.error("Could not write variable {}".format(variable_name))
 
 
 def save_ncfiles(set_num, test, ref, diff, parameter):

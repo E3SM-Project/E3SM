@@ -14,17 +14,22 @@ import cdms2
 import e3sm_diags
 from e3sm_diags.derivations.acme import derived_variables
 from e3sm_diags.e3sm_diags_driver import get_parameters
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.parser.core_parser import CoreParser
+
+logger = custom_logger(__name__)
 
 
 def main():
     vars_in_e3sm_diags = list_of_vars_in_e3sm_diags()
     vars_with_derived_vars = sorted(check_for_derived_vars(vars_in_e3sm_diags))
-    print("Below are the variables needed to run all of the diagnostics in e3sm_diags.")
-    print(
+    logger.info(
+        "Below are the variables needed to run all of the diagnostics in e3sm_diags."
+    )
+    logger.info(
         "NOTE: This list doesn't include auxiliary variables such as hyam, hybm, PS, etc."
     )
-    print(vars_with_derived_vars)
+    logger.info(vars_with_derived_vars)
 
 
 def list_of_vars_in_user_file():
@@ -36,7 +41,7 @@ def list_of_vars_in_user_file():
     # path = parser.parse_args().path
     # path = DUMMY_FILE_PATH
     path = parser.parse_args().path
-    print("Using the file: {}".format(path))
+    logger.info("Using the file: {}".format(path))
 
     if not os.path.exists(path):
         msg = "The file ({}) does not exist.".format(path)
@@ -58,11 +63,10 @@ def list_of_vars_in_e3sm_diags():
     # Get all of the 'variables' parameter from each file.
     vars_used = []
     try:
-        print("something")
+        logger.info("Using user arguments.")
         parameters = get_parameters(parser)
-        print("USING USER ARGUMENTS")
     except Exception as e:
-        print(e)
+        logger.error(e)
         # Looks for these files in their installed location.
         pth = os.path.join(e3sm_diags.INSTALL_PATH)
         # The first '*' is the folder of the set, the second is the actual file.
@@ -76,11 +80,10 @@ def list_of_vars_in_e3sm_diags():
         )
 
     for p in parameters:
-        print("p.variables", p.variables)
+        logger.info(f"p.variables {p.variables}")
         vars_used.extend(p.variables)
 
-    # print('vars_used', sorted(list(set(vars_used))))
-    # We convert to a set because we only want one of each variable.
+    logger.info(f"Variables used: {sorted(list(set(vars_used)))}")
     return set(vars_used)
 
 

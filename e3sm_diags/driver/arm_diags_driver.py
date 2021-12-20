@@ -8,7 +8,10 @@ import numpy as np
 import e3sm_diags
 import e3sm_diags.derivations.acme
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy import arm_diags_plot
+
+logger = custom_logger(__name__)
 
 RefsTestMetrics = collections.namedtuple(
     "RefsTestMetrics", ["refs", "test", "metrics", "misc"]
@@ -56,13 +59,13 @@ def run_diag_diurnal_cycle(parameter):
     seasons = ["DJF", "MAM", "JJA", "SON"]
 
     for region in regions:
-        print("Selected region: {}".format(region))
+        logger.info("Selected region: {}".format(region))
         vars_to_data = collections.OrderedDict()
 
         for season in seasons:
-            print("Season: {}".format(season))
+            logger.info("Season: {}".format(season))
             for var in variables:
-                print("Variable: {}".format(var))
+                logger.info("Variable: {}".format(var))
                 test_data = utils.dataset.Dataset(parameter, test=True)
                 test = test_data.get_timeseries_variable(var, single_point=True)
                 test.lat = test_data.get_static_variable("lat", var)
@@ -142,7 +145,7 @@ def run_diag_diurnal_cycle(parameter):
                     ),
                     parameter.output_file + ".json",
                 )
-                print("Metrics saved in: " + fnm)
+                logger.info("Metrics saved in: " + fnm)
 
                 arm_diags_plot.plot_diurnal_cycle(var, vars_to_data[season], parameter)
 
@@ -159,13 +162,13 @@ def run_diag_diurnal_cycle_zt(parameter):
     plevs = np.linspace(100, 1000, 37)
 
     for region in regions:
-        print("Selected region: {}".format(region))
+        logger.info("Selected region: {}".format(region))
         vars_to_data = collections.OrderedDict()
 
         for season in seasons:
-            print("Season: {}".format(season))
+            logger.info("Season: {}".format(season))
             for var in variables:
-                print("Variable: {}".format(var))
+                logger.info("Variable: {}".format(var))
                 test_data = utils.dataset.Dataset(parameter, test=True)
                 test = test_data.get_timeseries_variable(var, single_point=True)
                 test.lat = test_data.get_static_variable("lat", var)
@@ -252,7 +255,7 @@ def run_diag_diurnal_cycle_zt(parameter):
                     ),
                     parameter.output_file + ".json",
                 )
-                print("Metrics saved in: " + fnm)
+                logger.info("Metrics saved in: " + fnm)
 
             if season == "ANNUALCYCLE":
                 arm_diags_plot.plot_diurnal_cycle_zt(
@@ -274,13 +277,13 @@ def run_diag_annual_cycle(parameter):
     for region in regions:
         # The regions that are supported are in e3sm_diags/derivations/default_regions.py
         # You can add your own if it's not in there.
-        print("Selected region: {}".format(region))
+        logger.info("Selected region: {}".format(region))
         vars_to_data = collections.OrderedDict()
 
         for season in seasons:
-            print("Season: {}".format(season))
+            logger.info("Season: {}".format(season))
             for var in variables:
-                print("Variable: {}".format(var))
+                logger.info("Variable: {}".format(var))
                 test_data = utils.dataset.Dataset(parameter, test=True)
                 test = test_data.get_climo_variable(var, season)
                 if test.getLevel():
@@ -358,7 +361,7 @@ def run_diag_annual_cycle(parameter):
                     ),
                     parameter.output_file + ".json",
                 )
-                print("Metrics saved in: " + fnm)
+                logger.info(f"Metrics saved in: {fnm}")
 
             if season == "ANNUALCYCLE":
                 arm_diags_plot.plot_annual_cycle(var, vars_to_data[season], parameter)
@@ -375,7 +378,7 @@ def run_diag_convection_onset(parameter):
     for region in regions:
         # The regions that are supported are in e3sm_diags/derivations/default_regions.py
         # You can add your own if it's not in there.
-        print("Selected region: {}".format(region))
+        logger.info("Selected region: {}".format(region))
 
         test_data = utils.dataset.Dataset(parameter, test=True)
 
@@ -414,7 +417,7 @@ def run_diag_convection_onset(parameter):
 
 
 def run_diag_pdf_daily(parameter):
-    print("'run_diag_pdf_daily' is not yet implemented.")
+    logger.info("'run_diag_pdf_daily' is not yet implemented.")
 
 
 def run_diag(parameter):

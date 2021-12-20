@@ -12,8 +12,11 @@ import scipy.stats
 import e3sm_diags
 from e3sm_diags.derivations import default_regions
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import corr, max_cdms, mean, min_cdms, rmse, std
 from e3sm_diags.plot.cartopy.enso_diags_plot import plot_map, plot_scatter
+
+logger = custom_logger(__name__)
 
 
 def calculate_nino_index(nino_region_str, parameter, test=False, ref=False):
@@ -55,7 +58,7 @@ def calculate_nino_index(nino_region_str, parameter, test=False, ref=False):
     nino_index = numpy.reshape(sst_anomaly, (num_years * 12))
 
     if parameter.print_statements:
-        print("nino_index_obs", nino_index)
+        logger.info(f"nino_index_obs {nino_index}")
     return nino_index
 
 
@@ -71,13 +74,13 @@ def calculate_nino_index_model(data, nino_region_str, parameter):
             sst = data.get_timeseries_variable("SST")
         except RuntimeError as e1:
             if str(e1).startswith("Neither does SST nor the variables in"):
-                print(
-                    "Handling the following exception by looking for surface temperature:",
-                    e1,
+                logger.info(
+                    "Handling the following exception by looking for surface "
+                    f"temperature: {e1}",
                 )
                 # Try surface temperature.
                 sst = data.get_timeseries_variable("TS")
-                print(
+                logger.info(
                     "Simulated sea surface temperature not found, using surface temperature instead."
                 )
             else:
@@ -90,21 +93,21 @@ def calculate_nino_index_model(data, nino_region_str, parameter):
         sst_avg_anomaly = cdutil.ANNUALCYCLE.departures(sst_avg)
         nino_index = sst_avg_anomaly
     except RuntimeError as e2:
-        print(
-            "Handling the following exception by trying built-in HadISST nino index time series:",
-            e2,
+        logger.info(
+            "Handling the following exception by trying built-in HadISST nino index "
+            f"time series: {e2}"
         )
         test = data.test
         ref = data.ref
         nino_index = calculate_nino_index(
             nino_region_str, parameter, test=test, ref=ref
         )
-        print(
+        logger.info(
             "Simulated surface temperature not found, using built-in HadISST nino index time series instead."
         )
 
     if parameter.print_statements:
-        print("nino_index_model", nino_index)
+        logger.info(f"nino_index_model {nino_index}")
 
     return nino_index
 
@@ -119,7 +122,7 @@ def perform_regression(data, parameter, var, region, land_frac, ocean_frac, nino
     cdutil.setTimeBoundsMonthly(domain)
     # Get anomaly from annual cycle climatology
     if parameter.print_statements:
-        print("domain.shape: {}".format(domain.shape))
+        logger.info("domain.shape: {}".format(domain.shape))
     anomaly = cdutil.ANNUALCYCLE.departures(domain)
     nlat = len(anomaly.getLatitude())
     nlon = len(anomaly.getLongitude())
@@ -131,7 +134,7 @@ def perform_regression(data, parameter, var, region, land_frac, ocean_frac, nino
     # confidence_levels = numpy.zeros_like(reg_coe)
     for ilat in range(nlat):
         if parameter.print_statements:
-            print("ilat: {}".format(ilat))
+            logger.info("ilat: {}".format(ilat))
         for ilon in range(nlon):
             dependent_var = anomaly[:, ilat, ilon]
             independent_var = nino_index
@@ -150,11 +153,11 @@ def perform_regression(data, parameter, var, region, land_frac, ocean_frac, nino
             else:
                 confidence_levels[ilat, ilon] = 0
     if parameter.print_statements:
-        print("confidence in fn:", confidence_levels.shape)
+        logger.info(f"confidence in fn: {confidence_levels.shape}")
     sst_units = "degC"
     reg_coe.units = "{}/{}".format(ts_var.units, sst_units)
     if parameter.print_statements:
-        print("reg_coe.shape: {}".format(reg_coe.shape))
+        logger.info("reg_coe.shape: {}".format(reg_coe.shape))
     return domain, reg_coe, confidence_levels
 
 
@@ -190,7 +193,7 @@ def run_diag_map(parameter):
     run_type = parameter.run_type
 
     if parameter.print_statements:
-        print("run_type: {}".format(run_type))
+        logger.info("run_type: {}".format(run_type))
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
     if run_type == "model_vs_model":
@@ -210,7 +213,7 @@ def run_diag_map(parameter):
 
     for season in seasons:
         if parameter.print_statements:
-            print("Season: {}".format(season))
+            logger.info("Season: {}".format(season))
         # Get the name of the data, appended with the years averaged.
         parameter.test_name_yrs = utils.general.get_name_and_yrs(
             parameter, test_data, season
@@ -233,12 +236,12 @@ def run_diag_map(parameter):
 
         for var in variables:
             if parameter.print_statements:
-                print("Variable: {}".format(var))
+                logger.info("Variable: {}".format(var))
             parameter.var_id = "{}-regression-over-nino".format(var)
 
             for region in regions:
                 if parameter.print_statements:
-                    print("Selected region: {}".format(region))
+                    logger.info("Selected region: {}".format(region))
 
                 # This will be the title of the plot.
                 parameter.main_title = (
@@ -354,7 +357,7 @@ def run_diag_map(parameter):
                     ),
                     parameter.output_file + ".json",
                 )
-                print("Metrics saved in: {}".format(metrics_output_file_name))
+                logger.info("Metrics saved in: {}".format(metrics_output_file_name))
 
                 # Plot
                 parameter.var_region = region
@@ -388,7 +391,7 @@ def run_diag_scatter(parameter):
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
     if parameter.print_statements:
-        print("run_type: {}".format(run_type))
+        logger.info("run_type: {}".format(run_type))
     if run_type == "model_vs_model":
         x["test"] = calculate_nino_index_model(test_data, x["region"], parameter)
         x["ref"] = calculate_nino_index_model(ref_data, x["region"], parameter)

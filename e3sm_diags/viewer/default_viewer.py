@@ -12,10 +12,12 @@ from typing import Dict
 import numpy
 from cdp.cdp_viewer import OutputViewer
 
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.parser import SET_TO_PARSER
 
 from . import lat_lon_viewer, utils
 
+logger = custom_logger(__name__)
 # A dictionary of the sets to a better name which
 # is displayed in the viewer.
 # These are all of the sets that this viewer supports.
@@ -122,7 +124,7 @@ def create_viewer(root_dir, parameters):
                                 row_name,
                             )
                         else:
-                            print(
+                            logger.warning(
                                 (
                                     "JSON does not exist: {}".format(
                                         metrics_path + ".json"

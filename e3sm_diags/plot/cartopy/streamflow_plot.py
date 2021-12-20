@@ -12,12 +12,14 @@ from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
 from e3sm_diags.derivations.default_regions import regions_specs
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
 
 matplotlib.use("Agg")
 import matplotlib.colors as colors  # isort:skip  # noqa: E402
 import matplotlib.lines as lines  # isort:skip  # noqa: E402
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
+logger = custom_logger(__name__)
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -214,7 +216,7 @@ def plot_panel_seasonality_map(
     # https://matplotlib.org/tutorials/colors/colorbar_only.html
     num_colors = len(color_list)
     if parameter.print_statements:
-        print("num_colors={}".format(num_colors))
+        logger.info("num_colors={}".format(num_colors))
     cmap = colors.ListedColormap(color_list)
     cbar_label = "Peak month"
 
@@ -225,7 +227,7 @@ def plot_panel_seasonality_map(
     # `bounds` should be one longer than `ticks`.
     bounds += [bounds[-1] + 1]
     if parameter.print_statements:
-        print("bounds={}".format(bounds))
+        logger.info("bounds={}".format(bounds))
     norm = colors.BoundaryNorm(bounds, cmap.N)
     cbar = fig.colorbar(
         matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
@@ -305,14 +307,14 @@ def plot_seasonality_map(export, parameter):
     # => {parameter.results_dir}/streamflow/{parameter.case_id}
     output_dir = get_output_dir(parameter.current_set, parameter)
     if parameter.print_statements:
-        print("Output dir: {}".format(output_dir))
+        logger.info("Output dir: {}".format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/streamflow/{parameter.case_id}
     original_output_dir = get_output_dir(
         parameter.current_set, parameter, ignore_container=True
     )
     if parameter.print_statements:
-        print("Original output dir: {}".format(original_output_dir))
+        logger.info("Original output dir: {}".format(original_output_dir))
     # parameter.output_file_seasonality_map is defined in e3sm_diags/parameter/streamflow_parameter.py
     # {parameter.results_dir}/streamflow/{parameter.case_id}/{parameter.output_file_seasonality_map}
     file_path = os.path.join(output_dir, parameter.output_file_seasonality_map)
@@ -331,7 +333,7 @@ def plot_seasonality_map(export, parameter):
         # When running in a container, the paths are modified.
         original_plot_file_path = original_file_path + plot_suffix
         # Always print, even without `parameter.print_statements`
-        print("Plot saved in: " + original_plot_file_path)
+        logger.info(f"Plot saved in: {original_plot_file_path}")
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -352,7 +354,7 @@ def plot_seasonality_map(export, parameter):
             # When running in a container, the paths are modified.
             original_subplot_file_path = original_file_path + subplot_suffix
             # Always print, even without `parameter.print_statements`
-            print("Sub-plot saved in: " + original_subplot_file_path)
+            logger.info(f"Sub-plot saved in: {original_subplot_file_path}")
             i += 1
 
     plt.close()
@@ -493,7 +495,7 @@ def setup_annual_map(parameter, panel_type, bias_array):
         if parameter.print_statements:
             value_min = np.floor(np.min(bias_array))
             value_max = np.ceil(np.max(bias_array))
-            print(
+            logger.info(
                 "Bias of mean annual discharge {} min={}, max={}".format(
                     panel_type, value_min, value_max
                 )
@@ -591,14 +593,14 @@ def plot_annual_map(export, bias, parameter):
     # => {parameter.results_dir}/streamflow/{parameter.case_id}
     output_dir = get_output_dir(parameter.current_set, parameter)
     if parameter.print_statements:
-        print("Output dir: {}".format(output_dir))
+        logger.info("Output dir: {}".format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/streamflow/{parameter.case_id}
     original_output_dir = get_output_dir(
         parameter.current_set, parameter, ignore_container=True
     )
     if parameter.print_statements:
-        print("Original output dir: {}".format(original_output_dir))
+        logger.info("Original output dir: {}".format(original_output_dir))
     # parameter.output_file_annual_map is defined in e3sm_diags/parameter/streamflow_parameter.py
     # {parameter.results_dir}/streamflow/{parameter.case_id}/{parameter.output_file_annual_map}
     file_path = os.path.join(output_dir, parameter.output_file_annual_map)
@@ -617,7 +619,7 @@ def plot_annual_map(export, bias, parameter):
         # When running in a container, the paths are modified.
         original_plot_file_path = original_file_path + plot_suffix
         # Always print, even without `parameter.print_statements`
-        print("Plot saved in: " + original_plot_file_path)
+        logger.info(f"Plot saved in: {original_plot_file_path}")
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -638,7 +640,8 @@ def plot_annual_map(export, bias, parameter):
             # When running in a container, the paths are modified.
             original_subplot_file_path = original_file_path + subplot_suffix
             # Always print, even without `parameter.print_statements`
-            print("Sub-plot saved in: " + original_subplot_file_path)
+            logger.info(f"Sub-plot saved in: {original_subplot_file_path}")
+
             i += 1
 
     plt.close()
@@ -709,14 +712,14 @@ def plot_annual_scatter(xs, ys, zs, parameter):
     # => {parameter.results_dir}/streamflow/{parameter.case_id}
     output_dir = get_output_dir(parameter.current_set, parameter)
     if parameter.print_statements:
-        print("Output dir: {}".format(output_dir))
+        logger.info("Output dir: {}".format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/streamflow/{parameter.case_id}
     original_output_dir = get_output_dir(
         parameter.current_set, parameter, ignore_container=True
     )
     if parameter.print_statements:
-        print("Original output dir: {}".format(original_output_dir))
+        logger.info("Original output dir: {}".format(original_output_dir))
     # parameter.output_file_annual_scatter is defined in e3sm_diags/parameter/streamflow_parameter.py
     # {parameter.results_dir}/streamflow/{parameter.case_id}/{parameter.output_file_annual_scatter}
     file_path = os.path.join(output_dir, parameter.output_file_annual_scatter)
@@ -734,6 +737,6 @@ def plot_annual_scatter(xs, ys, zs, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         original_plot_file_path = original_file_path + plot_suffix
-        print("Plot saved in: " + original_plot_file_path)
+        logger.info(f"Plot saved in: {original_plot_file_path}")
 
     plt.close()

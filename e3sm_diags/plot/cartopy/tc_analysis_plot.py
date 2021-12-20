@@ -7,9 +7,12 @@ import numpy as np
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
+logger = custom_logger(__name__)
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -143,7 +146,7 @@ def plot_map(test_data, ref_data, region, parameter):
             output_file_name + "." + f,
         )
         plt.savefig(fnm)
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
         plt.close()
 
 
@@ -207,7 +210,7 @@ def plot(test, ref, parameter, basin_dict):
             output_file_name + "." + f,
         )
         plt.savefig(fnm)
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
         plt.close()
 
     # TC frequency of each basins
@@ -222,7 +225,7 @@ def plot(test, ref, parameter, basin_dict):
     rects2 = ax.bar(ind - width / 2, ref_vals, width, color="black")
     test_vals = num_test / np.sum(num_test)
     rects1 = ax.bar(ind + width / 2, test_vals, width, color="darkgrey")
-    print(
+    logger.info(
         "total number based on 6 basins",
         np.sum(num_test),
         num_test,
@@ -258,7 +261,7 @@ def plot(test, ref, parameter, basin_dict):
             output_file_name + "." + f,
         )
         plt.savefig(fnm)
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
         plt.close()
 
     fig1 = plt.figure(figsize=(12, 6))
@@ -298,7 +301,7 @@ def plot(test, ref, parameter, basin_dict):
             output_file_name + "." + f,
         )
         plt.savefig(fnm)
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
         plt.close()
 
     fig, axes = plt.subplots(2, 3, figsize=(12, 6), sharex=True, sharey=True)
@@ -339,7 +342,7 @@ def plot(test, ref, parameter, basin_dict):
             output_file_name + "." + f,
         )
         plt.savefig(fnm)
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
         plt.close()
 
     ##########################################################

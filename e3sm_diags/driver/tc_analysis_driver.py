@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 
     from e3sm_diags.parameter.core_parameter import CoreParameter
 
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
 
 # Years include 1979–2018 according to Balaguru et al. 2020
 OBS_START_YR = 1979
@@ -159,8 +162,8 @@ def generate_tc_metrics_from_te_stitch_file(te_stitch_file: str) -> Dict[str, An
 
     # TODO: Add tests to cover this function
     """
-    print("\nGenerating TC Metrics from TE Stitch Files")
-    print("============================================")
+    logger.info("\nGenerating TC Metrics from TE Stitch Files")
+    logger.info("============================================")
     with open(te_stitch_file) as f:
         lines = f.readlines()
 
@@ -221,8 +224,8 @@ def _calc_num_storms_and_max_len(lines: List[str]) -> Tuple[int, int]:
             num_points = num_points + 1
             max_len = max(max_len, num_points)
 
-    print("Number of storms:", num_storms)
-    print("Max length of storms:", max_len)
+    logger.info(f"Number of storms: {num_storms}")
+    logger.info(f"Max length of storms: {max_len}")
     return num_storms, max_len
 
 
@@ -266,7 +269,7 @@ def _get_vars_from_te_stitch(
     vars_dict["year_start"] = year_start
     vars_dict["year_end"] = year_end
     vars_dict["num_years"] = year_end - year_start + 1
-    print(
+    logger.info(
         f"TE Start Year: {vars_dict['year_start']}, TE End Year: {vars_dict['year_end']}, Total Years: {vars_dict['num_years']}"
     )
 
@@ -368,8 +371,8 @@ def generate_tc_metrics_from_obs_files(reference_data_path: str) -> Dict[str, An
 
     # TODO: Add tests to cover this function
     """
-    print("\nGenerating TC Metrics from Obs Files")
-    print("======================================")
+    logger.info("\nGenerating TC Metrics from Obs Files")
+    logger.info("======================================")
     # Using IBTrACS data, store a tuple for each basin
     # (mean ace, tc_intensity_dist, seasonal_cycle, # observed hurricane per year,
     # # of storms over the ocean)

@@ -12,10 +12,13 @@ import cdp.cdp_run
 
 import e3sm_diags
 from e3sm_diags import container
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.parameter.core_parameter import CoreParameter
 from e3sm_diags.parser import SET_TO_PARSER
 from e3sm_diags.parser.core_parser import CoreParser
 from e3sm_diags.viewer.main import create_viewer
+
+logger = custom_logger(__name__)
 
 
 def get_default_diags_path(set_name, run_type, print_path=True):
@@ -28,8 +31,7 @@ def get_default_diags_path(set_name, run_type, print_path=True):
     pth = os.path.join(e3sm_diags.INSTALL_PATH, folder, fnm)
 
     if print_path:
-        print("Using {} for {}.".format(pth, set_name))
-
+        logger.info("Using {} for {}.".format(pth, set_name))
     if not os.path.exists(pth):
         raise RuntimeError(
             "Plotting via set '{}' not supported, file {} not installed".format(
@@ -65,15 +67,13 @@ def _save_env_yml(results_dir):
     output, err = p.communicate()
 
     if err:
-        print("Error when creating env yml file:")
-        print(err)
-
+        logger.exception("Error when creating env yml file: ")
+        logger.exception(err)
     else:
         fnm = os.path.join(results_dir, "environment.yml")
         with open(fnm, "w") as f:
             f.write(output.decode("utf-8"))
-
-        print("Saved environment yml file to: {}".format(fnm))
+        logger.info("Saved environment yml file to: {}".format(fnm))
 
 
 def _save_parameter_files(results_dir, parser):
@@ -86,14 +86,14 @@ def _save_parameter_files(results_dir, parser):
         if container.is_container():
             f.write("# e3sm_diags was ran in a container.\n")
         f.write(cmd_used)
-    print("Saved command used to: {}".format(fnm))
+    logger.info("Saved command used to: {}".format(fnm))
 
     args = parser.view_args()
 
     if hasattr(args, "parameters") and args.parameters:
         fnm = args.parameters
         if not os.path.isfile(fnm):
-            print("File does not exist: {}".format(fnm))
+            logger.warning("File does not exist: {}".format(fnm))
         else:
             with open(fnm, "r") as f:
                 contents = "".join(f.readlines())
@@ -102,12 +102,12 @@ def _save_parameter_files(results_dir, parser):
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, "w") as f:
                 f.write(contents)
-            print("Saved py file to: {}".format(new_fnm))
+            logger.info("Saved py file to: {}".format(new_fnm))
 
     if hasattr(args, "other_parameters") and args.other_parameters:
         fnm = args.other_parameters[0]
         if not os.path.isfile(fnm):
-            print("File does not exist: {}".format(fnm))
+            logger.warning("File does not exist: {}".format(fnm))
         else:
             with open(fnm, "r") as f:
                 contents = "".join(f.readlines())
@@ -116,7 +116,7 @@ def _save_parameter_files(results_dir, parser):
             new_fnm = os.path.join(results_dir, new_fnm)
             with open(new_fnm, "w") as f:
                 f.write(contents)
-            print("Saved cfg file to: {}".format(new_fnm))
+            logger.info("Saved cfg file to: {}".format(new_fnm))
 
 
 def _save_python_script(results_dir, parser):
@@ -143,7 +143,7 @@ def _save_python_script(results_dir, parser):
     fnm = py_files[-1]
 
     if not os.path.isfile(fnm):
-        print("File does not exist: {}".format(fnm))
+        logger.warning("File does not exist: {}".format(fnm))
         return
 
     with open(fnm, "r") as f:
@@ -153,7 +153,7 @@ def _save_python_script(results_dir, parser):
     new_fnm = os.path.join(results_dir, new_fnm)
     with open(new_fnm, "w") as f:
         f.write(contents)
-    print("Saved Python script to: {}".format(new_fnm))
+    logger.info("Saved Python script to: {}".format(new_fnm))
 
 
 def save_provenance(results_dir, parser):
@@ -278,7 +278,7 @@ def run_diag(parameters):
             print("")
             results.append(single_result)
         except Exception:
-            print("Error in {}".format(mod_str))
+            logger.exception("Error in {}".format(mod_str), exc_info=True)
             traceback.print_exc()
             if parameters.debug:
                 sys.exit()
@@ -315,7 +315,7 @@ def main(parameters=[]):
         save_provenance(parameters[0].results_dir, parser)
 
     if container.is_container():
-        print("Running e3sm_diags in a container.")
+        logger.info("Running e3sm_diags in a container.")
         # Modify the parmeters so that it runs in
         # the container as if it usually runs.
         for p in parameters:
@@ -335,20 +335,22 @@ def main(parameters=[]):
             container.decontainerize_parameter(p)
 
     if not parameters:
-        print("There was not a single valid diagnostics run, no viewer created.")
+        logger.warning(
+            "There was not a single valid diagnostics run, no viewer created."
+        )
     else:
         # If you get `AttributeError: 'NoneType' object has no attribute 'no_viewer'` on this line
         # then `run_diag` likely returns `None`.
 
         if parameters[0].no_viewer:
-            print("Viewer not created because the no_viewer parameter is True.")
+            logger.info("Viewer not created because the no_viewer parameter is True.")
         else:
             path = os.path.join(parameters[0].results_dir, "viewer")
             if not os.path.exists(path):
                 os.makedirs(path)
 
             index_path = create_viewer(path, parameters)
-            print("Viewer HTML generated at {}".format(index_path))
+            logger.info("Viewer HTML generated at {}".format(index_path))
 
     actual_parameters = create_parameter_dict(parameters)
     if parameters[0].fail_on_incomplete and (actual_parameters != expected_parameters):

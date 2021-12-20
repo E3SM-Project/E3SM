@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import cdms2
@@ -6,10 +5,7 @@ import cdms2
 from e3sm_diags.derivations import acme as acme_derivations
 from e3sm_diags.driver.utils.dataset import Dataset
 from e3sm_diags.parameter.core_parameter import CoreParameter
-
-
-def get_abs_file_path(relative_path):
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+from tests.integration.config import TEST_DATA_PATH
 
 
 class TestDataset(unittest.TestCase):
@@ -17,9 +13,7 @@ class TestDataset(unittest.TestCase):
         self.parameter = CoreParameter()
 
     def test_convert_units(self):
-        with cdms2.open(
-            get_abs_file_path("integration_test_data/precc.nc")
-        ) as precc_file:
+        with cdms2.open(f"{TEST_DATA_PATH}/precc.nc") as precc_file:
             var = precc_file("PRECC")
 
         new_var = acme_derivations.convert_units(var, "mm/day")
@@ -81,7 +75,7 @@ class TestDataset(unittest.TestCase):
         # We pass in the path to a file, so the input directory
         # to the tests doesn't need to be like how it is for when e3sm_diags
         # is ran wit a bunch of diags.
-        self.parameter.reference_data_path = "./integration_test_data"
+        self.parameter.reference_data_path = TEST_DATA_PATH
         self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"
         data = Dataset(self.parameter, ref=True)
         self.assertEqual(data.get_attr_from_climo("Conventions", "ANN"), "CF-1.0")

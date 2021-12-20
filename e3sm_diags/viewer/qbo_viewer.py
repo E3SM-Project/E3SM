@@ -2,8 +2,12 @@ import os
 
 from cdp.cdp_viewer import OutputViewer
 
+from e3sm_diags.logger import custom_logger
+
 from .default_viewer import create_metadata
 from .utils import add_header, h1_to_h3
+
+logger = custom_logger(__name__)
 
 
 def create_viewer(root_dir, parameters):
@@ -37,7 +41,7 @@ def create_viewer(root_dir, parameters):
         relative_path = os.path.join("..", set_name, param.case_id, param.output_file)
         image_relative_path = "{}.{}".format(relative_path, ext)
         if param.print_statements:
-            print("image_relative_path: {}".format(image_relative_path))
+            logger.info("image_relative_path: {}".format(image_relative_path))
         formatted_files = []
         if param.save_netcdf:
             nc_files = []

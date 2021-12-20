@@ -13,6 +13,9 @@ from matplotlib.colors import hsv_to_rgb
 
 from e3sm_diags.derivations.default_regions import regions_specs
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
 
 matplotlib.use("Agg")  # noqa: E402
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
@@ -269,14 +272,14 @@ def plot(test_tmax, test_amp, ref_tmax, ref_amp, parameter):
     # => {parameter.results_dir}/enso_diags/{parameter.case_id}
     output_dir = get_output_dir(parameter.current_set, parameter)
     if parameter.print_statements:
-        print("Output dir: {}".format(output_dir))
+        logger.info("Output dir: {}".format(output_dir))
     # get_output_dir => {parameter.orig_results_dir}/{set_name}/{parameter.case_id}
     # => {parameter.orig_results_dir}/enso_diags/{parameter.case_id}
     original_output_dir = get_output_dir(
         parameter.current_set, parameter, ignore_container=True
     )
     if parameter.print_statements:
-        print("Original output dir: {}".format(original_output_dir))
+        logger.info("Original output dir: {}".format(original_output_dir))
     # parameter.output_file is defined in e3sm_diags/driver/enso_diags_driver.py
     # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
@@ -292,7 +295,7 @@ def plot(test_tmax, test_amp, ref_tmax, ref_amp, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         original_plot_file_path = original_file_path + plot_suffix
-        print("Plot saved in: " + original_plot_file_path)
+        logger.info(f"Plot saved in: {original_plot_file_path}")
 
     # Save individual subplots
     for f in parameter.output_format_subplot:
@@ -312,7 +315,7 @@ def plot(test_tmax, test_amp, ref_tmax, ref_amp, parameter):
             # Get the filename that the user has passed in and display that.
             # When running in a container, the paths are modified.
             original_subplot_file_path = original_file_path + subplot_suffix
-            print("Sub-plot saved in: " + original_subplot_file_path)
+            logger.info(f"Sub-plot saved in: {original_subplot_file_path}")
             i += 1
 
     plt.close()

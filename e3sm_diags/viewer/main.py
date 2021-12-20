@@ -4,6 +4,7 @@ import os
 from bs4 import BeautifulSoup
 
 import e3sm_diags
+from e3sm_diags.logger import custom_logger
 
 from . import (
     annual_cycle_zonal_mean_viewer,
@@ -17,6 +18,8 @@ from . import (
     tc_analysis_viewer,
     utils,
 )
+
+logger = custom_logger(__name__)
 
 # A mapping of each diagnostics set to the viewer
 # that handles creating of the HTML pages.
@@ -117,10 +120,10 @@ def create_viewer(root_dir, parameters):
     title_and_url_list = []
     # Now call the viewers with the list of parameters as the arguments.
     for set_name, parameters in set_to_parameters.items():
-        print(set_name, root_dir)
+        logger.info(f"{set_name} {root_dir}")
         viewer_function = SET_TO_VIEWER[set_name]
         result = viewer_function(root_dir, parameters)
-        print(result)
+        logger.info(result)
         title_and_url_list.append(result)
 
     # Add the provenance in the index as well.

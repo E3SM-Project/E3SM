@@ -2,6 +2,10 @@ import cdutil
 import genutil
 import numpy
 
+from e3sm_diags.logger import custom_logger
+
+logger = custom_logger(__name__)
+
 
 def corr(model, obs, axis="xy"):
     corr = -numpy.infty
@@ -10,7 +14,7 @@ def corr(model, obs, axis="xy"):
             genutil.statistics.correlation(model, obs, axis=axis, weights="generate")
         )
     except Exception as err:
-        print(err)
+        logger.error(err)
 
     return corr
 
@@ -32,7 +36,7 @@ def rmse(model, obs, axis="xy"):
     try:
         rmse = float(genutil.statistics.rms(model, obs, axis=axis, weights="generate"))
     except Exception as err:
-        print(err)
+        logger.error(err)
     return rmse
 
 
@@ -41,6 +45,6 @@ def std(variable, axis="xy"):
     try:
         std = float(genutil.statistics.std(variable, axis=axis, weights="generate"))
     except Exception as err:
-        print(err)
+        logger.error(err)
 
     return std

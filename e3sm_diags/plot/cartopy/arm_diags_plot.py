@@ -6,10 +6,13 @@ import numpy as np
 
 from e3sm_diags.driver.utils.diurnal_cycle import fastAllGridFT
 from e3sm_diags.driver.utils.general import get_output_dir
+from e3sm_diags.logger import custom_logger
 
 matplotlib.use("agg")
 
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
+logger = custom_logger(__name__)
 
 
 def plot_convection_onset_statistics(
@@ -308,7 +311,7 @@ def plot_convection_onset_statistics(
             get_output_dir(parameter.current_set, parameter, ignore_container=True),
             output_file_name + "." + f,
         )
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
 
     plt.close()
 
@@ -389,7 +392,7 @@ def plot_annual_cycle(var, vars_to_data, parameter):
             get_output_dir(parameter.current_set, parameter, ignore_container=True),
             output_file_name + "." + f,
         )
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
 
     plt.close()
 
@@ -449,7 +452,7 @@ def plot_diurnal_cycle(var, vars_to_data, parameter):
             get_output_dir(parameter.current_set, parameter, ignore_container=True),
             output_file_name + "." + f,
         )
-        print("Plot saved in: " + fnm)
+        logger.info(f"Plot saved in: {fnm}")
 
     plt.close()
 
@@ -541,6 +544,6 @@ def plot_diurnal_cycle_zt(var, vars_to_data, parameter):
                 get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 output_file_name + "." + f,
             )
-            print("Plot saved in: " + fnm)
+            logger.info(f"Plot saved in: {fnm}")
 
         plt.close()

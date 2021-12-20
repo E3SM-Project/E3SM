@@ -6,8 +6,11 @@ import cdms2
 
 import e3sm_diags
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from e3sm_diags.plot import plot
+
+logger = custom_logger(__name__)
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -68,7 +71,7 @@ def run_diag(parameter):
                 ocean_frac = f("OCNFRAC")
 
         for var in variables:
-            print("Variable: {}".format(var))
+            logger.info("Variable: {}".format(var))
             parameter.var_id = var
 
             mv1 = test_data.get_climo_variable(var, season)
@@ -81,7 +84,7 @@ def run_diag(parameter):
             )
 
             for region in regions:
-                print("Selected region: {}".format(region))
+                logger.info("Selected region: {}".format(region))
 
                 mv1_domain = utils.general.select_region(
                     region, mv1, land_frac, ocean_frac, parameter
