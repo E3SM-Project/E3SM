@@ -352,12 +352,13 @@ contains
                      print*,  'maxiters, tolerance =', options%base%maxiters, options%base%tolerance
                   endif
 
-                   call dslugm(matrix%order, rhs, solution, matrix%nonzeros, &
-                               matrix_row, matrix_col, matrix_val, &
-                               isym, options%gmres_saved_vectors, options%itol, &
-                               options%base%tolerance, options%base%maxiters, &
-                               niters, err, ierr, iunit, &
-                               workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                  ! TJL - call dslugm(matrix%order, rhs, solution, matrix%nonzeros, &
+                  ! TJL -             matrix_row, matrix_col, matrix_val, &
+                  ! TJL -             isym, options%gmres_saved_vectors, options%itol, &
+                  ! TJL -             options%base%tolerance, options%base%maxiters, &
+                  ! TJL -             niters, err, ierr, iunit, &
+                  ! TJL -             workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                  write(*,*) 'TJL - Skipped a call to dslugm...'
 
                   if (verbose_slap) print*, 'GMRES: iters, err =', niters, err
 
@@ -371,11 +372,12 @@ contains
                    !       If we pass in the entire matrix, then the preconditioner is fragile in the sense
                    !        that it can fail with very small departures from symmetry (due to roundoff errors)
 
-                   call dsiccg(matrix%order, rhs, solution, matrix%nonzeros, &
-                               matrix_row, matrix_col, matrix_val, &
-                               isym, options%itol, options%base%tolerance, options%base%maxiters,&
-                               niters, err, ierr, iunit, &
-                               workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                   ! TJL - call dsiccg(matrix%order, rhs, solution, matrix%nonzeros, &
+                   ! TJL -             matrix_row, matrix_col, matrix_val, &
+                   ! TJL -             isym, options%itol, options%base%tolerance, options%base%maxiters,&
+                   ! TJL -             niters, err, ierr, iunit, &
+                   ! TJL -             workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                  write(*,*) 'TJL - Skipped a call to dsiccg...'
 
                   if (verbose_slap) print*, 'PCG_inch: iters, err =', niters, err
 
@@ -386,11 +388,12 @@ contains
                      print*,  'maxiters, tolerance =', options%base%maxiters, options%base%tolerance
                   endif
 
-                  call dslucs(matrix%order, rhs, solution, matrix%nonzeros, &
-                              matrix_row, matrix_col, matrix_val, &
-                              isym, options%itol, options%base%tolerance, options%base%maxiters,&
-                              niters, err, ierr, iunit, &
-                              workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                  ! TJL - call dslucs(matrix%order, rhs, solution, matrix%nonzeros, &
+                  ! TJL -             matrix_row, matrix_col, matrix_val, &
+                  ! TJL -             isym, options%itol, options%base%tolerance, options%base%maxiters,&
+                  ! TJL -             niters, err, ierr, iunit, &
+                  ! TJL -             workspace%rwork, size(workspace%rwork), workspace%iwork, size(workspace%iwork))
+                  write(*,*) 'TJL - Skipped a call to dslucs...'
 
                   if (verbose_slap) print*, 'BiCG: iters, err =', niters, err
 

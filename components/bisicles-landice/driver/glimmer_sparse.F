@@ -431,8 +431,9 @@ contains
 
         !Output sparse matrix data to the file
 
-        call dcpplt(matrix%order, matrix%nonzeros, matrix%row, matrix%col, matrix%val,&
-                    isym, lunit)
+        ! TJL - call dcpplt(matrix%order, matrix%nonzeros, matrix%row, matrix%col, matrix%val,&
+        ! TJL -             isym, lunit)
+        write(*,*) 'TJL - Skipped a call to dcpplt...'
 
         write(lunit,*) '***Sparse matrix structure ends.  Value listing begins'
         do i=1,matrix%nonzeros

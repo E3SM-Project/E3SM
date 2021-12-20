@@ -137,8 +137,9 @@ contains
 
     ! convert from SLAP Triad to SLAP Column format
     call copy_sparse_matrix(model%lithot%fd_coeff,model%lithot%fd_coeff_slap)
-    call ds2y(model%general%nsn*model%general%ewn*model%lithot%nlayer,model%lithot%fd_coeff_slap%nonzeros, &
-         model%lithot%fd_coeff_slap%col,model%lithot%fd_coeff_slap%row,model%lithot%fd_coeff_slap%val, 0)
+    ! TJL - call ds2y(model%general%nsn*model%general%ewn*model%lithot%nlayer,model%lithot%fd_coeff_slap%nonzeros, &
+    ! TJL -      model%lithot%fd_coeff_slap%col,model%lithot%fd_coeff_slap%row,model%lithot%fd_coeff_slap%val, 0)
+    write(*,*) 'TJL - Skipped a call to ds2y...'
 
     ! initialise result vector
     do k=1,model%lithot%nlayer
@@ -189,10 +190,11 @@ contains
     end do
 
     ! solve matrix equation
-    call dslucs(model%general%nsn*model%general%ewn*model%lithot%nlayer, model%lithot%rhs, model%lithot%answer, &
-         model%lithot%fd_coeff_slap%nonzeros, model%lithot%fd_coeff_slap%col,model%lithot%fd_coeff_slap%row, &
-         model%lithot%fd_coeff_slap%val, isym,itol,tol,itmax,iter,err,ierr,0, &
-         model%lithot%rwork, model%lithot%mxnelt, model%lithot%iwork, model%lithot%mxnelt)
+    ! TJL - call dslucs(model%general%nsn*model%general%ewn*model%lithot%nlayer, model%lithot%rhs, model%lithot%answer, &
+    ! TJL -      model%lithot%fd_coeff_slap%nonzeros, model%lithot%fd_coeff_slap%col,model%lithot%fd_coeff_slap%row, &
+    ! TJL -      model%lithot%fd_coeff_slap%val, isym,itol,tol,itmax,iter,err,ierr,0, &
+    ! TJL -      model%lithot%rwork, model%lithot%mxnelt, model%lithot%iwork, model%lithot%mxnelt)
+    write(*,*) 'TJL - Skipped a call to dslucs...'
 
     if (ierr /= 0) then
       print *, 'pcg error ', ierr, itmax, iter

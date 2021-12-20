@@ -1775,7 +1775,8 @@ function slapsolvstr(ewn, nsn, upn, &
 
   pcgsize(2) = ct_nonzero - 1
 
-  call ds2y(pcgsize(1),pcgsize(2),pcgrow,pcgcol,pcgval,isym)
+  ! TJL - call ds2y(pcgsize(1),pcgsize(2),pcgrow,pcgcol,pcgval,isym)
+  write(*,*) 'TJL - Skipped a call to ds2y...'
 
 !** plot the matrix to check that it has the correct form
 !call dcpplt(pcgsize(1),pcgsize(2),pcgrow,pcgcol,pcgval,isym,ulog)      
@@ -1814,8 +1815,9 @@ function slapsolvstr(ewn, nsn, upn, &
   end do
   end do
 
-  call dslucs(pcgsize(1),rhsd,answer,pcgsize(2),pcgrow,pcgcol,pcgval, &
-              isym,itol,tol,itmax,iter,err,ierr,0,rwork,mxnelt,iwork,mxnelt)
+  ! TJL - call dslucs(pcgsize(1),rhsd,answer,pcgsize(2),pcgrow,pcgcol,pcgval, &
+  ! TJL -             isym,itol,tol,itmax,iter,err,ierr,0,rwork,mxnelt,iwork,mxnelt)
+  write(*,*) 'TJL - Skipped a call to dslucs...'
 
   if (ierr /= 0) then
     print *, 'pcg error ', ierr, itmax, iter, tol, err

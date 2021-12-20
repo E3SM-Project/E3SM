@@ -420,7 +420,8 @@ contains
     type(sparse_matrix_type) :: matrix
      
     if(is_triad_format(matrix)) then
-        call ds2y(matrix%order, matrix%nonzeros, matrix%row, matrix%col, matrix%val, 0)
+        ! TJL - call ds2y(matrix%order, matrix%nonzeros, matrix%row, matrix%col, matrix%val, 0)
+        write(*,*) 'TJL - Skipped a call to ds2y...'
     end if
   end subroutine
 
