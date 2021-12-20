@@ -78,6 +78,7 @@ OBJS = \
         glimmer_sparse_slap.o \
         glimmer_sparse_type.o \
         glimmer_utils.o \
+        glimmer_vers.o \
         glissade.o \
         glissade_basal_traction.o \
         glissade_calving.o \
@@ -417,6 +418,8 @@ glimmer_sparse_slap.o:
 glimmer_sparse_type.o:
 
 glimmer_utils.o:
+
+glimmer_vers.o:
 
 glissade.o: \
         felix_dycore_interface.o \
