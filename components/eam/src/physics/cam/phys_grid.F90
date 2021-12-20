@@ -520,7 +520,7 @@ contains
     cost_d(:) = 1.0_r8
     use_cost_d = .false.
     if ((.not. single_column) .and. dycore_is('SE')) then
-      call get_horiz_grid_d(ngcols, cost_d_out=cost_d)
+!      call get_horiz_grid_d(ngcols, cost_d_out=cost_d)
       if (minval(cost_d) .ne. maxval(cost_d)) use_cost_d = .true.
     endif
 
