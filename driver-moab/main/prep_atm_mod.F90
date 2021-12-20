@@ -353,7 +353,7 @@ contains
     integer                  :: context_id ! used to define context for coverage (this case, ocean on coupler)
     integer                  :: atm_id
     character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
-    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
+    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
 
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
@@ -415,14 +415,18 @@ contains
       monotonicity = 0 !
       noConserve = 0
       validate = 1
+      fInverseDistanceMap = 0
       if (iamroot_CPLID) then
         write(logunit,*) 'launch iMOAB weights with args ', mbintxoa, wgtIdef, &
-                                                trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                                fNoBubble, monotonicity, volumetric, noConserve, validate
+                                            trim(dm1), orderATM, trim(dm2), orderOCN, &
+                                            fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                            noConserve, validate, &
+                                            trim(dofnameATM), trim(dofnameOCN)
       end if
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                                fNoBubble, monotonicity, volumetric, noConserve, validate, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing weights atm/ocn '
@@ -496,7 +500,7 @@ contains
     integer                  :: context_id ! used to define context for coverage (this case, land on coupler)
     integer                  :: atm_id
     character*32             :: dm1, dm2, dofnameATM, dofnameLND, wgtIdef
-    integer                  :: orderLND, orderATM, volumetric, noConserve, validate
+    integer                  :: orderLND, orderATM, volumetric, fInverseDistanceMap, noConserve, validate
     integer                  :: fNoBubble, monotonicity
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
     integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
@@ -560,10 +564,12 @@ contains
       monotonicity = 0 !
       noConserve = 0
       validate = 1
+      fInverseDistanceMap = 0
 
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderLND, &
-                                                fNoBubble, monotonicity, volumetric, noConserve, validate, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameLND) )
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing weights atm land '
