@@ -55,6 +55,7 @@ module cam_cpl_indices
   integer :: index_x2a_Sf_lfrac        ! surface land fraction           
   integer :: index_x2a_Sf_ifrac        ! surface ice fraction            
   integer :: index_x2a_Sf_ofrac        ! surface ocn fraction            
+  integer :: index_x2a_Sf_zfrac        ! surface iac fraction            
   integer :: index_x2a_Sx_tref         ! 2m reference temperature        
   integer :: index_x2a_Sx_qref         ! 2m reference specific humidity  
   integer :: index_x2a_Sx_avsdr        ! albedo, visible, direct         
@@ -121,6 +122,7 @@ contains
     index_x2a_Sf_ifrac      = mct_avect_indexra(x2a,'Sf_ifrac')
     index_x2a_Sf_ofrac      = mct_avect_indexra(x2a,'Sf_ofrac')
     index_x2a_Sf_lfrac      = mct_avect_indexra(x2a,'Sf_lfrac')
+    index_x2a_Sf_zfrac      = mct_avect_indexra(x2a,'Sf_zfrac')
 
     index_x2a_Sx_u10        = mct_avect_indexra(x2a,'Sx_u10')
     index_x2a_Faxx_taux     = mct_avect_indexra(x2a,'Faxx_taux')

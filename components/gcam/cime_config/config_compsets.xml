@@ -17,4 +17,9 @@
      <alias>ZLND</alias>
      <lname>2000_DATM%QIA_CLM45%CNPRDCTCBC_SICE_SOCN_SROF_SGLC_SWAV_GCAM</lname>
    </compset>
-</compsets>
+
+   <compset>
+    <alias>ZATM</alias>
+    <lname>2000_CAM5_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM</lname>
+   </compset>
+</compsets>	

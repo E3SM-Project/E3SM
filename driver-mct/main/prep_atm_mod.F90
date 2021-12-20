@@ -245,7 +245,7 @@ contains
 
           call seq_map_init_rcfile(mapper_Fz2a, iac(1), atm(1), &
                'seq_maps.rc','iac2atm_fmapname:','iac2atm_fmaptype:',samegrid_az, &
-               'mapper_Fo2a initialization',esmf_map_flag)
+               'mapper_Fz2a initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -390,8 +390,8 @@ contains
           itemc_lnd(kl) = trim(field_lnd(kl)(scan(field_lnd(kl),'_'):))
        enddo
        do kz = 1,nzflds
-          field_lnd(kz) = mct_aVect_getRList2c(kz, z2x_a)
-          itemc_lnd(kz) = trim(field_lnd(kz)(scan(field_lnd(kz),'_'):))
+          field_iac(kz) = mct_aVect_getRList2c(kz, z2x_a)
+          itemc_iac(kz) = trim(field_iac(kz)(scan(field_iac(kz),'_'):))
        enddo
        do ki = 1,niflds
           field_ice(ki) = mct_aVect_getRList2c(ki, i2x_a)
@@ -604,7 +604,7 @@ contains
        do i=1,z2x_SharedIndices%shared_real%num_indices
           i1=z2x_SharedIndices%shared_real%aVindices1(i)
           o1=z2x_SharedIndices%shared_real%aVindices2(i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = z2x%'//trim(field_ice(i1))
+          mrgstr(o1) = trim(mrgstr(o1))//' = z2x%'//trim(field_iac(i1))
        enddo
        do i=1,xao_SharedIndices%shared_real%num_indices
           i1=xao_SharedIndices%shared_real%aVindices1(i)

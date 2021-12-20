@@ -167,13 +167,14 @@ contains
           call mct_aVect_zero(g2x_lx(egi))
        end do
 
-       if (iac_present) then
+! KVC: If we keep this if statement, then land only runs don't work
+!       if (iac_present) then
           allocate(z2x_lx(num_inst_iac))
           do ezi = 1,num_inst_iac
              call mct_avect_init(z2x_lx(ezi), rList=seq_flds_z2x_fields, lsize=lsize_l)
              call mct_avect_zero(z2x_lx(ezi))
           end do
-       end if
+!       end if
 
        samegrid_al = .true.
        samegrid_lr = .true.
