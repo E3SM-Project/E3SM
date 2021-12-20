@@ -1314,9 +1314,9 @@ end subroutine micro_p3_readnl
            numrain(:ncol,top_lev:) * rho(:ncol,top_lev:), &
            rho(:ncol,top_lev:), rho_h2o)
 
-      aqrain = rain * cld_frac_r
-      anrain = numrain * cld_frac_r
-      freqr = cld_frac_r
+      aqrain(:ncol,top_lev:) = rain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
+      anrain(:ncol,top_lev:) = numrain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
+      freqr(:ncol,top_lev:) = cld_frac_r(:ncol,top_lev:)
       reff_rain(:ncol,top_lev:) = drout2(:ncol,top_lev:) * &
            1.5_rtype * 1.e6_rtype
    end where
@@ -1356,16 +1356,16 @@ end subroutine micro_p3_readnl
 
     !WRITE OUTPUT
     !=============
-   call outfld('AQRAIN',      aqrain,      psetcols, lchnk)
-   call outfld('ANRAIN',      anrain,      psetcols, lchnk)
+   call outfld('AQRAIN',      aqrain,      pcols,    lchnk)
+   call outfld('ANRAIN',      anrain,      pcols,    lchnk)
    call outfld('AREL',        efcout,      pcols,    lchnk)
    call outfld('AREI',        efiout,      pcols,    lchnk) 
    call outfld('AWNC' ,       ncout,       pcols,    lchnk)
    call outfld('AWNI' ,       niout,       pcols,    lchnk)
-   call outfld('FICE',        nfice,       psetcols, lchnk)
+   call outfld('FICE',        nfice,       pcols,    lchnk)
    call outfld('FREQL',       freql,       pcols,    lchnk)
    call outfld('FREQI',       freqi,       pcols,    lchnk)
-   call outfld('FREQR',       freqr,       psetcols, lchnk)
+   call outfld('FREQR',       freqr,       pcols,    lchnk)
    call outfld('CDNUMC',      cdnumc,      pcols,    lchnk)
 
    call outfld('CLOUDFRAC_LIQ_MICRO',  cld_frac_l,      pcols, lchnk)
