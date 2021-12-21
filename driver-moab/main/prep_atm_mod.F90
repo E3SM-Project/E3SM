@@ -563,7 +563,7 @@ contains
       fNoBubble = 1
       monotonicity = 0 !
       noConserve = 0
-      validate = 1
+      validate = 0
       fInverseDistanceMap = 0
 
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
