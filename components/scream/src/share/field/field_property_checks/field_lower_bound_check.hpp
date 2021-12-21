@@ -3,7 +3,7 @@
 
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
+#include <limits>
 
 namespace scream
 {

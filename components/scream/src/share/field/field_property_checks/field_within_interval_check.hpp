@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 #define SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 
+#include "share/field/field_property_check.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
@@ -26,9 +27,9 @@ public:
   // can repair fields that fail the check by overwriting nonpositive values
   // with the given lower bound. If can_repair is false, the check cannot
   // apply repairs to the field.
-  explicit FieldWithinIntervalCheck (const_RT lower_bound,
-                                     const_RT upper_bound,
-                                     bool can_repair = true) :
+  FieldWithinIntervalCheck (const_RT lower_bound,
+                            const_RT upper_bound,
+                            bool can_repair = true) :
     m_lower_bound(lower_bound),
     m_upper_bound(upper_bound),
     m_can_repair(can_repair) {

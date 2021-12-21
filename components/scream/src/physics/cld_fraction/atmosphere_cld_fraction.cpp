@@ -56,8 +56,8 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
-  get_field_out("cldfrac_ice").add_property_check(frac_interval_check);
-  get_field_out("cldfrac_tot").add_property_check(frac_interval_check);
+  add_property_check<Computed>(get_field_out("cldfrac_ice").get_header().get_identifier(),frac_interval_check);
+  add_property_check<Computed>(get_field_out("cldfrac_tot").get_header().get_identifier(),frac_interval_check);
 }
 
 // =========================================================================================

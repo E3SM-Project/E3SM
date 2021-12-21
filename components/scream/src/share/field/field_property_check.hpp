@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_PROPERTY_CHECK_HPP
 #define SCREAM_FIELD_PROPERTY_CHECK_HPP
 
+#include <string>
 #include <type_traits>
 
 namespace scream

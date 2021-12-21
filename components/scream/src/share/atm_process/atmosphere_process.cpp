@@ -137,108 +137,88 @@ void AtmosphereProcess::set_computed_group (const FieldGroup<Real>& group) {
 }
 
 void AtmosphereProcess::check_required_fields () const { 
-  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-  // so don't run checks here, and let the *real* atm process do the checks
-  if (this->type()==AtmosphereProcessType::Group) {
-    return;
-  }
-
-  // First run any process specific checks.
-  // check_required_fields_impl();
-  // Now run all field property checks on all fields
-  for (const auto& field : m_fields_in) {
-    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
-        "Error! Found an input field that is still not initialized.\n"
-        "    field: " + field.get_header().get_identifier().name() + "\n"
-        "    grid name: " + field.get_header().get_identifier().get_grid_name() + "\n"
-        "    atm process: " + this->name() + "\n");
-    for (const auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Input field field property check failed.\n"
-         "   field: " + field.get_header().get_identifier().name() + "\n"
-         "   grid name: " + field.get_header().get_identifier().get_grid_name() + "\n"
-         "   property check: " + pc.name() + "\n"
-         "   atm process: " + this->name() + "\n");
-  }}
-  for (const auto& group : m_groups_in) {
-    if (group.m_bundle) {
-      auto& field = *group.m_bundle;
-      EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
-          "Error! Found an input group bundled field that is still not initialized.\n"
-          "    group name: " + group.m_info->m_group_name + "\n"
-          "    grid name: " + group.grid_name() + "\n"
-          "    atm process: " + this->name() + "\n");
-      for (const auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Input group bundled field field property check failed.\n"
-           "   group name: " + group.m_info->m_group_name + "\n"
-           "   grid name: " + group.grid_name() + "\n"
-           "   property check: " + pc.name() + "\n"
-           "   atm process: " + this->name() + "\n");
-      }
-    }
-    for (auto it : group.m_fields) {
-      auto& field = *it.second;
-      EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
-          "Error! Found an input group containing a field that is still not initialized.\n"
-          "    atm process: " + this->name() + "\n"
-          "    group name: " + group.m_info->m_group_name + "\n"
-          "    grid name: " + group.grid_name() + "\n"
-          "    field name: " + field.get_header().get_identifier().name() + "\n");
-      for (const auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Input group field field property check failed.\n"
-           "   group name: " + group.m_info->m_group_name + "\n"
-           "   grid name: " + group.grid_name() + "\n"
-           "   field: " + field.get_header().get_identifier().name() + "\n"
-           "   property check: " + pc.name() + "\n"
-           "   atm process: " + this->name() + "\n");
+  // Loop over all the field checks on input fields, and execute them
+  for (const auto& fp_it : m_property_checks_in) {
+    const auto& fid   = fp_it.first;
+    const auto& fname = fid.name();
+    const auto& gname = fid.get_grid_name();
+    const auto& prop_check = *fp_it.second;
+    if (has_required_field(fid)) {
+      auto& f = get_field_in(fname,gname);
+      EKAT_REQUIRE_MSG(prop_check.check(f),
+          "Error! Input field property check failed.\n"
+          "       Atm proc: " + this->name() + "\n"
+          "       Field:    " + fname + "\n"
+          "       Check:    " + prop_check.name() + "\n"
+          " NOTE: we don't allow repairing input fields.\n");
+    } else {
+      auto& group = get_group_in(fname,gname);
+      if (group.m_bundle) {
+        EKAT_REQUIRE_MSG(prop_check.check(*group.m_bundle),
+            "Error! Input field property check failed.\n"
+            "       Atm proc: " + this->name() + "\n"
+            "       Field:    " + group.m_info->m_group_name + "\n"
+            "       Check:    " + prop_check.name() + "\n"
+            " NOTE: we don't allow repairing input fields.\n");
+      } else {
+        for (const auto& it : group.m_fields) {
+          const auto& f = *it.second;
+          EKAT_REQUIRE_MSG(prop_check.check(f),
+              "Error! Input field property check failed.\n"
+              "       Atm proc: " + this->name() + "\n"
+              "       Field:    " + fname + "\n"
+              "       Check:    " + prop_check.name() + "\n"
+              " NOTE: we don't allow repairing input fields.\n");
+        }
       }
     }
   }
 }
 
 void AtmosphereProcess::check_computed_fields () {
-  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-  // so don't run checks here, and let the *real* atm process do the checks
-  if (this->type()==AtmosphereProcessType::Group) {
-    return;
-  }
-  // First run any process specific checks, so that derived class have a chance
-  // to repair computed fields if desired/doable/appropriate.
-  check_computed_fields_impl();
-  // Now run all field property checks on all fields
-  for (const auto& field : m_fields_out) {
-    for (const auto& pc : field.get_property_checks()) {
-      EKAT_REQUIRE_MSG(pc.check(field),
-         "Error: Output field field property check failed.\n"
-         "   field: " + field.get_header().get_identifier().name() + "\n"
-         "   grid name: " + field.get_header().get_identifier().get_grid_name() + "\n"
-         "   property check: " + pc.name() + "\n"
-         "   atm process: " + this->name() + "\n");
-  }}
-  for (const auto& group : m_groups_out) {
-    if (group.m_bundle) {
-      auto& field = *group.m_bundle;
-      for (const auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Output group bundled field field property check failed.\n"
-           "   group name: " + group.m_info->m_group_name + "\n"
-           "   grid name: " + group.grid_name() + "\n"
-           "   property check: " + pc.name() + "\n"
-           "   atm process: " + this->name() + "\n");
+  // Loop over all the field checks on input fields, and execute them
+  for (const auto& fp_it : m_property_checks_out) {
+    const auto& fid   = fp_it.first;
+    const auto& fname = fid.name();
+    const auto& gname = fid.get_grid_name();
+    const auto& prop_check = *fp_it.second;
+    if (has_computed_field(fid)) {
+      auto& f = get_field_out(fname,gname);
+      const auto check = prop_check.check(f);
+      EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
+          "Error! Output field property check failed (and cannot be repaired).\n"
+          "       Atm proc: " + this->name() + "\n"
+          "       Field:    " + fname + "\n"
+          "       Check:    " + prop_check.name() + "\n");
+      if (not check) {
+        prop_check.repair(f);
       }
-    }
-    for (auto it : group.m_fields) {
-      auto& field = *it.second;
-      for (const auto& pc : field.get_property_checks()) {
-        EKAT_REQUIRE_MSG(pc.check(field),
-           "Error: Output group field field property check failed.\n"
-           "   group name: " + group.m_info->m_group_name + "\n"
-           "   grid name: " + group.grid_name() + "\n"
-           "   field: " + field.get_header().get_identifier().name() + "\n"
-           "   property check: " + pc.name() + "\n"
-           "   atm process: " + this->name() + "\n");
+    } else {
+      auto& group = get_group_out(fname,gname);
+      if (group.m_bundle) {
+        auto& f = *group.m_bundle;
+        const auto check = prop_check.check(f);
+        EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
+            "Error! Output field property check failed (and cannot be repaired).\n"
+            "       Atm proc: " + this->name() + "\n"
+            "       Field:    " + group.m_info->m_group_name + "\n"
+            "       Check:    " + prop_check.name() + "\n");
+        if (not check) {
+          prop_check.repair(f);
+        }
+      } else {
+        for (const auto& it : group.m_fields) {
+          auto& f = *it.second;
+          const auto check = prop_check.check(f);
+          EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
+              "Error! Output field property check failed (and cannot be repaired).\n"
+              "       Atm proc: " + this->name() + "\n"
+              "       Field:    " + it.first + "\n"
+              "       Check:    " + prop_check.name() + "\n");
+          if (not check) {
+            prop_check.repair(f);
+          }
+        }
       }
     }
   }

@@ -81,9 +81,6 @@ protected:
   // We can do it the first time that the 'tracers' group is set
   void set_computed_group_impl (const FieldGroup<Real>& group);
 
-  // Override the check computed fields impl so we can repair slightly negative tracer values.
-  void check_computed_fields_impl ();
-
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
