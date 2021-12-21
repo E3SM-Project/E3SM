@@ -4,7 +4,6 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_request.hpp"
-#include "share/util/map_key_iterator.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_types.hpp"
 
