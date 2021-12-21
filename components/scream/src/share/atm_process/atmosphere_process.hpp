@@ -205,11 +205,6 @@ public:
 
 protected:
 
-  enum RequestType {
-    Required,
-    Computed,
-    Updated   // For convenience, triggers Required+Computed
-  };
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
