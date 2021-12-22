@@ -1363,13 +1363,6 @@
 <hypervis_order >     2 </hypervis_order>
 <hypervis_scaling> 3.0 </hypervis_scaling>
 
-<!-- special TEMPORARY defaults for scream for upstream merge  -->
-<nu hgrid="ne4np4"> 5.0e17  </nu>
-<hypervis_scaling hgrid="ne4np4" > 0 </hypervis_scaling>
-
-
-
-
 <!-- -1.0 indicates use the value for nu -->
 <nu_q> -1.0 </nu_q>
 <nu_p> -1.0 </nu_p>
