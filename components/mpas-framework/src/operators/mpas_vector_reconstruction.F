@@ -416,11 +416,13 @@ module mpas_vector_reconstruction
 !
 !  routine mpas_reconstruct_2d_gpu
 !
-!> \brief   2d MPAS Vector reconstruction routine
-!> \author  Xylar Asay-Davis, Todd Ringler
-!> \date    03/28/13
+!> \brief   2d MPAS Vector reconstruction routine for OpenACC
+!> \author  Bob Robey
+!> \date    11/16/21
 !> \details 
-!>  Purpose: reconstruct vector field at cell centers based on radial basis functions
+!>  Purpose: reconstruct vector field at cell centers based on radial basis functions. This
+!>    version is for the OpenACC version without changing the original CPU version. The 
+!>    code is based on the mpas_reconstruct_2d subroutine
 !>  Input: grid meta data and vector component data residing at cell edges
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at cell centers
 !-----------------------------------------------------------------------
@@ -551,11 +553,13 @@ module mpas_vector_reconstruction
 !
 !  routine mpas_reconstruct_1d_gpu
 !
-!> \brief   1d MPAS Vector reconstruction routine
-!> \author  Xylar Asay-Davis, Todd Ringler, Matt Hoffman
-!> \date    03/28/13
+!> \brief   1d MPAS Vector reconstruction routine for OpenACC
+!> \author  Bob Robey
+!> \date    11/16/21
 !> \details 
-!>  Purpose: reconstruct vector field at cell centers based on radial basis functions
+!>  Purpose: reconstruct vector field at cell centers based on radial basis functions. This
+!>    version is for the OpenACC version without changing the original CPU version. The
+!>    code is based on the mpas_reconstruct_1d_subroutine
 !>  Input: grid meta data and vector component data residing at cell edges
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at cell centers
 !-----------------------------------------------------------------------

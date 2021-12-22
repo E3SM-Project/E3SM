@@ -4926,12 +4926,13 @@ module mpas_pool_routines
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_config_real_scalar
 !
-!> \brief MPAS Pool Real Config Access Routine
-!> \author Michael Duda, Doug Jacobsen
-!> \date   03/27/2014
+!> \brief MPAS Pool Scalar Real Config Access Routine
+!> \author Bob Robey
+!> \creation date   11/16/2021
 !> \details
-!> This subroutine returns the value associated with a config option with the
-!> name key in inPool.
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_real, but 
+!> sets value to be a scalar real instead of a pointer to a real.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_pool_get_config_real_scalar(inPool, key, value, record)!{{{
@@ -4968,12 +4969,13 @@ module mpas_pool_routines
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_config_int_scalar
 !
-!> \brief MPAS Pool Integer Config Access Routine
-!> \author Michael Duda, Doug Jacobsen
-!> \date   03/27/2014
+!> \brief MPAS Pool Scalar Integer Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
 !> \details
-!> This subroutine returns the value associated with a config option with the
-!> name key in inPool.
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_int, but 
+!> sets value to be a scalar integer instead of a pointer to a integer.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_pool_get_config_int_scalar(inPool, key, value, record)!{{{
@@ -5010,12 +5012,13 @@ module mpas_pool_routines
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_config_char_scalar
 !
-!> \brief MPAS Pool Character Config Access Routine
-!> \author Michael Duda, Doug Jacobsen
-!> \date   03/27/2014
+!> \brief MPAS Pool Scalar Character Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
 !> \details
-!> This subroutine returns the value associated with a config option with the
-!> name key in inPool.
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_char, but 
+!> sets value to be a scalar character instead of a pointer to a character.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_pool_get_config_char_scalar(inPool, key, value, record)!{{{
@@ -5053,12 +5056,13 @@ module mpas_pool_routines
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_config_logical_scalar
 !
-!> \brief MPAS Pool Logical Config Access Routine
-!> \author Michael Duda, Doug Jacobsen
-!> \date   03/27/2014
+!> \brief MPAS Pool Scalar Logical Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
 !> \details
-!> This subroutine returns the value associated with a config option with the
-!> name key in inPool.
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_logical, but 
+!> sets value to be a scalar logical instead of a pointer to a logical.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_pool_get_config_logical_scalar(inPool, key, value, record)!{{{
