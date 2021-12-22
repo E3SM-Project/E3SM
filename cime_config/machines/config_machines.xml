@@ -860,12 +860,12 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="false">
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <init_path lang="python">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/init/perl</init_path>
+      <init_path lang="sh">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">/projects/sems/install/rhel7-x86_64/sems/v2/lmod/lmod/8.3/gcc/10.1.0/zbzzu7k/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
