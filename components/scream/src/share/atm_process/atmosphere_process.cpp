@@ -20,14 +20,18 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 }
 
 void AtmosphereProcess::run (const int dt) {
-  // Make sure required fields are valid
-  check_required_fields();
+  if (m_params.get("Enable Input Fields Checks", true)) {
+    // Run any check on required fields that has been stored in this AP
+    check_required_fields();
+  }
 
   // Let the derived class do the actual run
   run_impl(dt);
 
-  // Make sure computed fields are valid
-  check_computed_fields();
+  if (m_params.get("Enable Output Fields Checks", true)) {
+    // Run any check on required fields that has been stored in this AP
+    check_computed_fields();
+  }
 
   // Update all output fields time stamps
   m_time_stamp += dt;

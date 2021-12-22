@@ -1,16 +1,19 @@
 #include <catch2/catch.hpp>
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 
+#include "share/field//field_property_checks/field_nan_check.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/remap/inverse_remapper.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 
 namespace scream {
 
@@ -267,6 +270,54 @@ TEST_CASE("atm_proc_dag", "") {
     dag.write_dag("broken_atm_proc_dag.dot",4);
 
     REQUIRE (dag.has_unmet_dependencies());
+  }
+}
+
+TEST_CASE("field_checks", "") {
+  using namespace scream;
+  using namespace ekat::units;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  auto gm = create_gm(comm);
+  auto grid = gm->get_grid("Point Grid");
+
+  // Create a parameter list
+  ekat::ParameterList params ("Atmosphere Processes");
+  params.set<std::string>("Process Name", "Foo");
+  params.set<std::string>("Grid Name", "Point Grid");
+
+  const auto lt = grid->get_3d_scalar_layout(true);
+  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"Point Grid");
+  FieldIdentifier fid_T("Temperature",lt,K,"Point Grid");
+  Field<Real> T(fid_T), T_tend(fid_T_tend);
+  T.allocate_view();
+  T_tend.allocate_view();
+  T_tend.deep_copy(ekat::ScalarTraits<Real>::invalid());
+
+  auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
+  util::TimeStamp t0(1,1,1,1,1,1);
+  for (bool check : {true, false}) {
+    params.set("Enable Input Fields Checks",check);
+
+    // Create the process
+    auto foo = create_atmosphere_process<Foo>(comm,params);
+    foo->set_grids(gm);
+
+    foo->set_required_field(T_tend);
+    foo->set_computed_field(T);
+    foo->initialize(t0,RunType::Initial);
+
+    foo->add_property_check<Required>(fid_T_tend,nan_check);
+    // Cannot check an output field that is not computed
+    REQUIRE_THROWS(foo->add_property_check<Computed>(fid_T_tend,nan_check));
+
+    if (check) {
+      REQUIRE_THROWS (foo->run(1));
+    } else {
+      REQUIRE_NOTHROW (foo->run(1));
+    }
   }
 }
 
