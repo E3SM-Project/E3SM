@@ -890,11 +890,11 @@
         <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial" compiler="gnu9">
-        <command name="load">sems-netcdf</command>
+        <command name="load">sems-netcdf/4.7.3/base</command>
       </modules>
       <modules mpilib="!mpi-serial" compiler="gnu9">
         <command name="load">sems-openmpi/4.0.2</command>
-        <command name="load">sems-netcdf</command>
+        <command name="load">sems-netcdf/4.7.3/parallel</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
