@@ -814,7 +814,7 @@ contains
               min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-
+            p = ifp+col_pp%pfti(c)
             this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
                  veg_es%t_veg24(p)
 
