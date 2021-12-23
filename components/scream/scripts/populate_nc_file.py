@@ -11,7 +11,7 @@ class PopulateNcFile(object):
 
     ###########################################################################
     def __init__(self,nc_file,import_file=None,map_file=None,overwrite=False,
-                 add_variables=None,import_variables=None,
+                 add_dimensions=None,add_variables=None,import_variables=None,
                  compute_variables=None,remove_variables=None,vector_variables=None):
     ###########################################################################
 
@@ -20,6 +20,8 @@ class PopulateNcFile(object):
         self._ofile = pathlib.Path(nc_file).resolve().absolute()
         self._ifile = pathlib.Path(import_file).resolve().absolute()
         self._mfile = pathlib.Path(map_file).resolve().absolute()
+
+        self._adims     = add_dimensions
 
         self._avars     = add_variables
         self._ivars     = import_variables
@@ -30,20 +32,22 @@ class PopulateNcFile(object):
         expect (self._ofile.exists(), "Error! File '{}' does not exist.".format(self._ofile))
 
     ###########################################################################
-    def get_database(self,nc_file,mode):
+    def get_database(self,nc_file,mode,check_dims=True):
     ###########################################################################
 
         expect (nc_file.exists(), "Error! Nc file {} does not exists.".format(nc_file))
 
         ds = Dataset(nc_file,mode,persist=True)
-        expect ('ncol' in ds.dimensions,
-                "no ncol")
-        expect ('ncol' in ds.dimensions and ds.dimensions['ncol'].size>0,
-                "Error! NetCDF file '{}' does not contain a valid 'ncol' dimension."
-                .format(nc_file))
-        expect ('lev' in ds.dimensions and ds.dimensions['lev'].size>0,
-                "Error! NetCDF file '{}' does not contain a valid 'lev' dimension."
-                .format(nc_file))
+        if check_dims:
+            expect ('ncol' in ds.dimensions,
+                    "Error! NetCDF file '{}' does not contain a 'ncol' dimension."
+                    .format(nc_file))
+            expect ('ncol' in ds.dimensions and ds.dimensions['ncol'].size>0,
+                    "Error! NetCDF file '{}' does not contain a valid 'ncol' dimension."
+                    .format(nc_file))
+            expect ('lev' in ds.dimensions and ds.dimensions['lev'].size>0,
+                    "Error! NetCDF file '{}' does not contain a valid 'lev' dimension."
+                    .format(nc_file))
 
         return ds
 
@@ -197,6 +201,28 @@ class PopulateNcFile(object):
                 except ValueError:
                     expect(False, "Error! Something went wrong converting strings '{}' to floats.".format(vals))
 
+    ###########################################################################
+    def add_dimensions(self):
+    ###########################################################################
+
+        ds = self.get_database(self._ofile,'a',check_dims=False)
+        for item in self._adims:
+            expect ('=' in item,
+                    "Error! Add dimension using 'name=length' format.\n")
+            tokens = item.split('=')
+            expect (len(tokens)==2,
+                    "Error! Add dimension using 'name=length' format.\n")
+
+            name = tokens[0]
+            size = int(tokens[1])
+
+            expect (not name in ds.dimensions,
+                    "Error! Dimension {} already exists in file {}/\n"
+                    .format(name,self._ofile))
+            expect (size>0,
+                    "Error! Invalid extent for dimension {}".format(name))
+
+            ds.createDimension(name,size)
 
     ###########################################################################
     def add_variables(self):
@@ -441,6 +467,9 @@ class PopulateNcFile(object):
     ###########################################################################
     def run(self):
     ###########################################################################
+
+        # Add dimensions
+        self.add_dimensions()
 
         # Add vars, initing to constant value
         self.add_variables()

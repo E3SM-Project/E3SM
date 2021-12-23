@@ -174,7 +174,7 @@ contains
 	 
      !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
      real(r8) :: qflx_irrig_grid(bounds%begg:bounds%endg)      ! irrigation at grid level [mm/s] 
-     real(r8) :: irrigated_ppg(bounds%begg:bounds%endg)        ! irrigated pft per grid
+     integer :: irrigated_ppg(bounds%begg:bounds%endg)        ! irrigated pft per grid
      integer :: gg
      !-----------------------------------------------------------------------
 
@@ -255,13 +255,13 @@ contains
        dtime = get_step_size()
 
        do gg = bounds%begg,bounds%endg
-          irrigated_ppg(gg) = 0._r8
+          irrigated_ppg(gg) = 0
        end do
          
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
-          if (irrigated(veg_pp%itype(p)) == 1._r8) then
+          if (irrigated(veg_pp%itype(p)) == 1) then
              irrigated_ppg(g) = irrigated_ppg(g) + 1
           endif
        end do
@@ -380,48 +380,54 @@ contains
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
-          if(irrigate) then
-           if (tw_irr) then ! else one way  
-               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
+          if(irrigate) then          
+            if (tw_irr) then ! else one way  
+               if (pgwgt(p) > 0._r8) then
+                  qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
+               else
+                  qflx_supply(p) = 0._r8
+               end if
                qflx_real_irrig(p) = 0._r8 
                qflx_surf_irrig(p) = 0._r8
                qflx_grnd_irrig(p) = 0._r8
                qflx_over_supply(p) = 0._r8
-
-             if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
-               if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
-               qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-               qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
- 
-               if (extra_gw_irr) then ! if always met by additional extra gw pumping
-                 if (qflx_supply(p) > 0._r8) then					 
-                   qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain%f_grd(g)*qflx_irrig(p)
-                  !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
-                 else if (qflx_irrig(p) > 0._r8) then
-                   qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
-                 else
-                 qflx_grnd_irrig(p) = 0._r8
-                endif	
-               endif			   
-               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
-               end if		
-             end if       
-           else  ! one way coupling
+               
+               if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
+                  if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
+                     qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
+                     qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
+                     
+                     if (extra_gw_irr) then ! if always met by additional extra gw pumping
+                        if (qflx_supply(p) > 0._r8) then				
+                           if (pgwgt(p) > 0._r8) then	 
+                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain%f_grd(g)*qflx_irrig(p)
+                              !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
+                           end if
+                        else if (qflx_irrig(p) > 0._r8) then
+                           qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
+                        else
+                           qflx_grnd_irrig(p) = 0._r8
+                        endif	
+                     endif			   
+                     qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
+                     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
+                  end if		
+               end if       
+            else  ! one way coupling
                qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
                qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
                qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
                qflx_supply(p) = 0._r8 !no water supplied by MOSART 
-           end if
-          else
-               qflx_surf_irrig(p) = 0._r8
-               qflx_grnd_irrig(p) = 0._r8
-               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) 
-               qflx_over_supply(p) = 0._r8
-               qflx_supply(p) = 0._r8 !no water supplied by MOSART
-          end if
+            end if
+         else
+            qflx_surf_irrig(p) = 0._r8
+            qflx_grnd_irrig(p) = 0._r8
+            qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) 
+            qflx_over_supply(p) = 0._r8
+            qflx_supply(p) = 0._r8 !no water supplied by MOSART
+         end if
 
           ! Done irrigation
 

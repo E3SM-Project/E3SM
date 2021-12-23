@@ -475,7 +475,7 @@ protected:
           }
           x_i(k)[0] = s;
 
-          const auto this_pack_end = pack_info::vec_end(num_mid_levels,k);
+          const auto this_pack_end = pack_info::vec_end(num_mid_levels+1,k);
           for (int i=1; i<this_pack_end; ++i) {
             x_i(k)[i] = x_i(k)[i-1] + dx_m(k)[i-1];
           }

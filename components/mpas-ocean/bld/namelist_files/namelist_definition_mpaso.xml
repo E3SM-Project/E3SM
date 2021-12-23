@@ -2100,7 +2100,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Diables tendencies on the velocity field from the Coriolis force and momentum advection.
+Disables tendencies on the velocity field from the Coriolis force and momentum advection.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2537,17 +2537,17 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
+<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, couple ecosys fields with sea ice
+if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
+<entry id="config_use_ecosysTracers_sea_ice_coupling" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
-if true, get river nutrient fluxes from coupler instead of from monthly forcing file
+if true, couple ecosys fields with sea ice
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2743,6 +2743,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tracer_forcing_idealAgeTracers -->
 
 <entry id="config_use_idealAgeTracers" type="logical"
@@ -2801,79 +2802,81 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tracer_forcing_CFCTracers -->
 
 <entry id="config_use_CFCTracers" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, the 'CFCTracers' category is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, the 'CFCGRP' category is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_surface_bulk_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_surface_restoring" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, surface restoring source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface restoring source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_interior_restoring" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, interior restoring source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, interior restoring source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_exponential_decay" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, exponential decay source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, exponential decay source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_idealAge_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, idealAge forcing source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, idealAge forcing source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFCTracers_ttd_forcing" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, transit time distribution forcing source is applied to tracers in 'CFCTracers' category
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, transit time distribution forcing source is applied to tracers in 'CFCGRP' category
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFC11" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, CFC11 tracer is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC11 is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_CFC12" type="logical"
-        category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
-if true, CFC12 tracer is enabled for the run
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC12 is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- AM_globalStats -->
 
@@ -5840,19 +5843,19 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_start" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_start_delay" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis begins
+Number of days after start of simulation when harmonic analysis begins. This is referenced relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_end" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_duration" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis ends
+Length of harmonic analysis period. The analysis begins after config_AM_harmonicAnalysis_start_delay days and ends after config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration days relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5951,6 +5954,7 @@ Controls if P1 constituent is used in harmonic analysis
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- AM_conservationCheck -->
 

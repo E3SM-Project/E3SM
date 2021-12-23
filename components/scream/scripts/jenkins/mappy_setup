@@ -1,3 +1,4 @@
+source /projects/sems/modulefiles/utils/sems-archive-modules-init.sh
 module load sems-env
 export PATH=/ascldap/users/jgfouca/packages/Python-3.8.5/bin:$PATH
 

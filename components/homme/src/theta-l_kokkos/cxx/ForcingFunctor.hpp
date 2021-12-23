@@ -312,7 +312,7 @@ public:
       auto pnh    = Homme::subview(m_pnh,kv.ie,igp,jgp);
       auto exner  = Homme::subview(m_exner,kv.ie,igp,jgp);
       if (m_hydrostatic) {
-      auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
+        auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
         m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,pnh);
         m_eos.compute_exner(kv,pnh,exner);
       } else {
@@ -347,13 +347,17 @@ public:
         auto qdp = Homme::subview(m_tracers.qdp,kv.ie,m_np1_qdp,0,igp,jgp);
         auto dp_adj = Homme::subview(m_dp_adj,kv.ie,igp,jgp);
         if (m_adjustment) {
+          Real added_mass = 0;
           Dispatch<ExecSpace>::parallel_reduce(
             kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
             [&](const int &k, Real &accumulator) {
               const int ilev = k / VECTOR_SIZE;
               const int ivec = k % VECTOR_SIZE;
               accumulator += dp(ilev)[ivec]*(fq(ilev)[ivec]-q(ilev)[ivec]);
-            },ps);
+            },added_mass);
+          Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+              ps += added_mass;
+          });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int ilev) {
@@ -405,12 +409,12 @@ public:
           qdp_ilev += compute_fqdt_pack(ilev,fq,qdp);
         }
 
-        if (m_moist) {
-          dp(ilev) = dp_adj(ilev);
-        }
-
         // Update tracers concentration
-        Q(ilev) = qdp_ilev/dp(ilev);
+        if (m_moist) {
+          Q(ilev) = qdp_ilev/dp_adj(ilev);
+        } else {
+          Q(ilev) = qdp_ilev/dp(ilev);
+        }
       });
     });
   }
@@ -442,11 +446,12 @@ public:
       const Real ps = m_state.m_ps_v(kv.ie,m_np1,igp,jgp);
 
       if (m_moist) {
-        // Need to update pnh and exner. Currently, pnh is storing pnh-pi
-
+        // Need to update dp, pnh and exner. Currently, pnh is storing pnh-pi
         if (m_adjust_ps) {
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                [&](const int ilev) {
+            dp(ilev) = dp_adj(ilev);
+
             pnh(ilev) += m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) +
                                    ps *m_hvcoord.hybrid_bm(ilev);
           });
@@ -457,6 +462,7 @@ public:
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                [&](const int ilev) {
             pnh(ilev) += exner(ilev);
+            dp(ilev) = dp_adj(ilev);
           });
         }
         

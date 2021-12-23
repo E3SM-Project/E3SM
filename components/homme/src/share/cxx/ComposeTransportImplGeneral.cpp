@@ -66,10 +66,11 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
                                 d.m_divdp.data() :
                                 s.m_dp3d.data()),
         nel, (independent_time_steps ? 1 : NUM_TIME_LEVELS), np, np, nlev),
-      homme::compose::SetView<Real******>(reinterpret_cast<Real*>(t.qdp.data()),
-                                          nel, Q_NUM_TIME_LEVELS, QSIZE_D, np, np, nlev),
+      homme::compose::SetView<Real******>(
+        reinterpret_cast<Real*>(t.qdp.data()),
+        nel, t.qdp.extent_int(1), t.qdp.extent_int(2), np, np, nlev),
       homme::compose::SetView<Real*****> (reinterpret_cast<Real*>(t.Q.data()),
-                                          nel, QSIZE_D, np, np, nlev),
+                                          nel, t.Q.extent_int(1), np, np, nlev),
       m_data.dep_pts);
   }
   m_data.independent_time_steps = independent_time_steps;

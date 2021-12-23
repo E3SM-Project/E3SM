@@ -4,7 +4,7 @@
 #include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 #include "cpp/rte/mo_fluxes.h"
-#include "cpp/const.h"
+#include "cpp/rrtmgp_const.h"
 #include "physics/share/physics_constants.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"

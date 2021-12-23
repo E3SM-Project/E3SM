@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     Real ustar = ustar_min;
 
     // Initialize dtata structure for bridging to F90
-    PblintdHeightData SDS(shcol,nlev);
+    PblintdHeightData SDS(shcol,nlev,nlev);
 
     // Require that the inputs are reasonable
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
@@ -172,11 +172,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
   {
     auto engine = setup_random_test();
 
+    Int npbl_rand = rand()%72 + 1;
+
     PblintdHeightData f90_data[] = {
-      PblintdHeightData(10, 72),
-      PblintdHeightData(10, 12),
-      PblintdHeightData(7, 16),
-      PblintdHeightData(2, 7),
+      PblintdHeightData(10, 72, 1),
+      PblintdHeightData(10, 72, 72),
+      PblintdHeightData(10, 72, npbl_rand),
+      PblintdHeightData(10, 12, 1),
+      PblintdHeightData(7, 16, 1),
+      PblintdHeightData(2, 7, 1),
     };
 
     // Generate random input data
@@ -191,6 +195,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       PblintdHeightData(f90_data[1]),
       PblintdHeightData(f90_data[2]),
       PblintdHeightData(f90_data[3]),
+      PblintdHeightData(f90_data[4]),
+      PblintdHeightData(f90_data[5]),
     };
 
     // Assume all data is in C layout
@@ -204,7 +210,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_height_f(d.shcol, d.nlev, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
+      pblintd_height_f(d.shcol, d.nlev, d.npbl, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 

@@ -229,8 +229,7 @@ contains
       integer :: err_tmp
       integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: iEdge, variableIndex, nVariables, nSums, nMaxes, nMins
-      integer :: k, i, fileID
-      integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
+      integer :: i, fileID
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_activeTracers
 
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
@@ -240,7 +239,7 @@ contains
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_TimeInterval_type) :: timeStep
 
-      real (kind=RKIND) :: localCFL, localSum, dt, currentVolume
+      real (kind=RKIND) :: localCFL, dt, currentVolume
       real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, &
                                     areaEdgeGlobal, areaTriangleGlobal, totalVolumeChange, netFreshwaterInput, &
                                     absoluteFreshWaterConservation, relativeFreshWaterConservation, &
@@ -264,7 +263,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, &
           verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
-      real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, &
+      real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, &
              verticalSumMins_tmp, verticalSumMaxes_tmp
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
@@ -1488,7 +1487,7 @@ contains
       localVertSumMax
 
       integer :: elementIndex
-      real (kind=RKIND) :: colSum, colRMS, colSumAbs
+      real (kind=RKIND) :: colSum, colRMS
 
       localSum = 0.0_RKIND
       localRMS = 0.0_RKIND
@@ -1526,8 +1525,7 @@ contains
          localVertSumMax
 
       integer :: elementIndex
-      real (kind=RKIND) :: thicknessWeightedColSum, thicknessWeightedColRMS, thicknessWeightedColSumAbs
-      real (kind=RKIND), dimension(nVertLevels, nElements) :: hTimesField
+      real (kind=RKIND) :: thicknessWeightedColSum, thicknessWeightedColRMS
 
       localSum = 0.0_RKIND
       localRMS = 0.0_RKIND

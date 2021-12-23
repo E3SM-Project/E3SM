@@ -428,10 +428,10 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: isotropy
   end subroutine isotropic_ts_f
 
-  subroutine pblintd_height_f(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
+  subroutine pblintd_height_f(shcol, nlev, npbl, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
     use iso_c_binding
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, npbl
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, u, v, thv
     real(kind=c_real) , intent(in), dimension(shcol) :: ustar, thv_ref
     real(kind=c_real) , intent(out), dimension(shcol) :: pblh
@@ -472,10 +472,10 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(inout), dimension(shcol) :: pblh
   end subroutine pblintd_check_pblh_f
 
-  subroutine pblintd_f(shcol, nlev, nlevi, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh) bind(C)
+  subroutine pblintd_f(shcol, nlev, nlevi, npbl, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh) bind(C)
     use iso_c_binding
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, npbl
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, thl, ql, q, u, v, cldn
     real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: zi
     real(kind=c_real) , intent(in), dimension(shcol) :: ustar, obklen, kbfs
