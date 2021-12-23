@@ -80,8 +80,6 @@ CONTAINS
     integer(IN)                      :: nyg            ! global dim j-direction
     integer(IN)                      :: phase          ! initialization phase
     integer(IN)                      :: ierr           ! error code
-    logical                          :: atm_present    ! if true, component is present
-    logical                          :: atm_prognostic ! if true, component is prognostic
     integer (IN)                     :: start_tod, start_ymd
     integer                          :: lsize
     type(c_ptr) :: x2a_ptr, a2x_ptr
@@ -100,6 +98,7 @@ CONTAINS
          infodata=infodata)
     call seq_infodata_getData(infodata, atm_phase=phase)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
+    call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
     if (phase > 1) RETURN
 
