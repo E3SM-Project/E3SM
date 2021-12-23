@@ -3,7 +3,6 @@
 
 #include "cpp/rrtmgp_const.h"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
-
 #include "YAKL/YAKL.h"
 
 void read_atmos(std::string input_file, real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,

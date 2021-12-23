@@ -6,7 +6,6 @@
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 #include "cpp/rte/mo_rte_sw.h"
 #include "cpp/rte/mo_rte_lw.h"
-#include "cpp/rrtmgp_const.h"
 
 namespace scream {
     namespace rrtmgp {
