@@ -82,11 +82,11 @@
       <value compset="_EAM%ADIAB"     >-phys adiabatic</value>
 
       <!-- SCREAM configurations -->
-      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates</value>
-      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates</value>
+      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
 
       <!-- Doubly Periodic SCREAM -->
-      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa</value>
+      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
 
       <!-- Aquaplanet -->
       <value compset="_EAM%AQUA"   >-nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
