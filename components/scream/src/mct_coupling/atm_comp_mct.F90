@@ -170,7 +170,7 @@ CONTAINS
   end subroutine atm_init_mct
 
   !===============================================================================
-  subroutine atm_run_mct(EClock, cdata, x2d, d2x)
+  subroutine atm_run_mct(EClock, cdata, x2a, a2x)
     use iso_c_binding,  only: c_double
     use scream_f2c_mod, only: scream_run
 
@@ -178,8 +178,8 @@ CONTAINS
 
     type(ESMF_Clock) ,intent(inout) :: EClock     ! clock
     type(seq_cdata)  ,intent(inout) :: cdata
-    type(mct_aVect)  ,intent(inout) :: x2d        ! driver -> dead
-    type(mct_aVect)  ,intent(inout) :: d2x        ! dead   -> driver
+    type(mct_aVect)  ,intent(inout) :: x2a        ! driver     -> atmosphere 
+    type(mct_aVect)  ,intent(inout) :: a2x        ! atmosphere -> driver
 
     !--- local ---
     type(seq_infodata_type), pointer :: infodata
@@ -219,16 +219,14 @@ CONTAINS
   end subroutine atm_run_mct
 
   !===============================================================================
-  subroutine atm_final_mct(EClock, cdata, x2d, d2x)
+  subroutine atm_final_mct(EClock, cdata, x2a, a2x)
     use scream_f2c_mod, only: scream_finalize
-
-    ! !DESCRIPTION: finalize method for dead model
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2d        ! driver -> dead
-    type(mct_aVect)             ,intent(inout) :: d2x        ! dead   -> driver
+    type(mct_aVect)             ,intent(inout) :: x2a        ! driver     -> atmosphere 
+    type(mct_aVect)             ,intent(inout) :: a2x        ! atmosphere -> driver
 
     !-------------------------------------------------------------------------------
 
