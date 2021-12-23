@@ -116,7 +116,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k, nCells
-      integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 

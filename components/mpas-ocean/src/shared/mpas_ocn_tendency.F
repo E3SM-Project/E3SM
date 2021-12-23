@@ -557,9 +557,6 @@ contains
          config_use_tracerGroup_idealAge_forcing,     &
          config_use_tracerGroup_ttd_forcing
 
-      real (kind=RKIND), pointer :: &
-         salinity_restoring_constant_piston_velocity
-
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
          penetrativeTemperatureFlux, &! heat flux penetrating below sfc
          tracerGroupExponentialDecayRate ! exp decay rate for forcing

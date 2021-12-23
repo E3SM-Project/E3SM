@@ -1,0 +1,10 @@
+ fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc'
+ flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc'
+ do_transient_pfts = .true
+ do_transient_crops = .true.
+ irrigate = .true.
+ create_crop_landunit = .true.
+ tw_irr = .true.
+ extra_gw_irr = .false.
+ firrig_data = .true.
+ use_lake_wat_storage=.true.

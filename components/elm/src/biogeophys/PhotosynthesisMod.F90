@@ -14,7 +14,7 @@ module  PhotosynthesisMod
   use elm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
   use elm_varpar          , only : nlevcan
   use elm_varctl          , only : use_hydrstress
-  use elm_varpar          , only : nvegwcs, mxpft
+  use elm_varpar          , only : nvegwcs, mxpft_nc, mxpft
   use elm_varcon          , only : namep, spval
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
@@ -128,9 +128,9 @@ contains
     ! allocate parameters
 
     allocate( this%krmax       (0:mxpft) )          ; this%krmax(:)        = spval
-    allocate( this%kmax        (0:mxpft,nvegwcs) )  ; this%kmax(:,:)       = spval
-    allocate( this%psi50       (0:mxpft,nvegwcs) )  ; this%psi50(:,:)      = spval
-    allocate( this%ck          (0:mxpft,nvegwcs) )  ; this%ck(:,:)         = spval
+    allocate( this%kmax        (0:mxpft_nc,nvegwcs) )  ; this%kmax(:,:)       = spval
+    allocate( this%psi50       (0:mxpft_nc,nvegwcs) )  ; this%psi50(:,:)      = spval
+    allocate( this%ck          (0:mxpft_nc,nvegwcs) )  ; this%ck(:,:)         = spval
     allocate( this%psi_soil_ref(0:mxpft) )          ; this%psi_soil_ref(:) = spval
 
     if ( use_hydrstress .and. nvegwcs /= 4 )then
@@ -157,12 +157,18 @@ contains
     logical            :: readv ! has variable been read in or not
     real(r8)           :: temp1d(0:mxpft) ! temporary to read in parameter
     real(r8)           :: temp2d(0:mxpft,nvegwcs) ! temporary to read in parameter
+    real(r8)           :: temp2dto1d((mxpft+1)*nvegwcs) ! temporary 
+    real(r8)           :: temp1dto2d(mxpft_nc+1,nvegwcs) ! temporary 
     character(len=100) :: tString ! temp. var for reading
+    integer            :: size1d !temp 1d array size
+    integer            :: true_size,true_rows
     !-----------------------------------------------------------------------
     ! read in parameters
     call params_inst%allocParams()
 
-
+    size1d = (mxpft+1)*nvegwcs
+    true_size = (mxpft_nc+1)*nvegwcs
+    true_rows = mxpft_nc+1
     tString = "krmax"
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -171,22 +177,24 @@ contains
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     params_inst%psi_soil_ref=temp1d
-    tString = "lmr_intercept_atkin"
-    call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%lmr_intercept_atkin=temp1d
     tString = "kmax"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%kmax=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%kmax=temp1dto2d
     tString = "psi50"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%psi50=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%psi50=temp1dto2d
     tString = "ck"
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    params_inst%ck=temp2d
+    temp2dto1d(:) = reshape(temp2d(:,:),(/size1d/))
+    temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
+    params_inst%ck=temp1dto2d
 
     !$acc update device(            &
     !$acc params_inst%krmax       , &
@@ -602,6 +610,8 @@ contains
 
                vcmax25top = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
+               vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
+               jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
 
             else
 
@@ -3355,22 +3365,9 @@ contains
           ! cannot invert the matrix, solve for x algebraically assuming no flux
           exit
        end if
-       if (laisun(p)>tol_lai.and.laisha(p)>tol_lai)then
-          !dx = matmul(A,f)
-          !cu_error = cublasdgemv(h, 0,nvegwcs , nvegwcs, 1d0, A, nvegwcs, f, 1, 0d0, dx, 1)
-          call matvec_acc(1,nvegwcs,dx,A,f)
-       else
-          !reduces to 3x3 system
-          !in this case, dx is not always [sun,sha,xyl,root]
-          !sun and sha flip depending on which is lai==0
-          dx(sun)=0._r8
-          !dx(sha:root)=matmul(A(sha:root,sha:root),f(sha:root))
-          call matvec_acc(sha,root,dx,A,f )
-          !NOTE: root-sha +1 = 3 is hardcoded
-          !!cu_error = cublasdgemv(h, 0,root-sha +1 ,root-sha +1, 1d0, &
-          !!                      A(sha:root,sha:root), root-sha +1, f(sha:root), 1, 0d0, dx(sha:root), 1)
-
-       endif
+       !dx = matmul(A,f)
+       !cu_error = cublasdgemv(h, 0,nvegwcs , nvegwcs, 1d0, A, nvegwcs, f, 1, 0d0, dx, 1)
+       call matvec_acc(1,nvegwcs,dx,A,f)
 
 
        if ( maxval(abs(dx)) > 50000._r8) then
@@ -3378,28 +3375,13 @@ contains
        end if
 
 
-       if (laisun(p)>tol_lai.and.laisha(p)>tol_lai)then
-          x=x+dx
-       elseif (laisha(p)>tol_lai) then
-          x=x+dx
-          x(sun)=x(xyl) ! psi_sun = psi_xyl because laisun==0
-       else
-          x(xyl:root)=x(xyl:root)+dx(xyl:root)
-          x(sun)=x(sun)+dx(sha)  ! implementation ugly bit, chose to flip dx(sun) and dx(sha) for laisha==0 case
-          x(sha)=x(xyl) ! psi_sha = psi_xyl because laisha==0
-
-       endif
-
+       x=x+dx
 
        if ( sqrt(sum(dx*dx)) < toldx) then
           !step in vegwp small -> exit
           exit
        end if
 
-       ! this is a catch to force spac gradient to atmosphere
-       if ( x(xyl) > x(root) ) x(xyl) = x(root)
-       if ( x(sun) > x(xyl) )  x(sun) = x(xyl)
-       if ( x(sha) > x(xyl) )  x(sha) = x(xyl)
 
     end do
 
@@ -3567,72 +3549,51 @@ contains
          - tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * dfr * (x(root)-x(xyl)-grav1)&
          - sum(k_soil_root(p,1:nlevsoi))
 
+    if (laisha(p)<=tol_lai) then
+      A(2,2) = -1._r8
+      A(2,3) = 1._r8
+    end if
+
+    if (laisun(p)<=tol_lai) then
+      A(1,1) = -1._r8
+      A(1,3) = 1._r8
+    end if
+
+
     invfactor=1._r8
     A=invfactor*A
 
     !matrix inversion
-    if (laisun(p)>tol_lai .and. laisha(p)>tol_lai) then
-       ! general case
 
-       determ=A(4,4)*A(2,2)*A(3,3)*A(1,1) - A(4,4)*A(2,2)*A(3,1)*A(1,3)&
+    determ=A(4,4)*A(2,2)*A(3,3)*A(1,1) - A(4,4)*A(2,2)*A(3,1)*A(1,3)&
             - A(4,4)*A(3,2)*A(2,3)*A(1,1) - A(4,3)*A(1,1)*A(2,2)*A(3,4)
-       if ( abs(determ) <= 1.e-50_r8 ) then
-          flag = .true.  !tells calling function that the matrix is not invertible
-          return
-       else
-          flag = .false.
-       end if
+    if ( abs(determ) <= 1.e-50_r8 ) then
+       flag = .true.  !tells calling function that the matrix is not invertible
+       return
+    else
+       flag = .false.
+    end if
 
-       leading = 1._r8/determ
+    leading = 1._r8/determ
 
        !algebraic inversion of the matrix
-       invA(1,1)=leading*A(4,4)*A(2,2)*A(3,3) - leading*A(4,4)*A(3,2)*A(2,3) - leading*A(4,3)*A(2,2)*A(3,4)
-       invA(2,1)=leading*A(2,3)*A(4,4)*A(3,1)
-       invA(3,1)=-leading*A(4,4)*A(2,2)*A(3,1)
-       invA(4,1)=leading*A(4,3)*A(2,2)*A(3,1)
-       invA(1,2)=leading*A(1,3)*A(4,4)*A(3,2)
-       invA(2,2)=leading*A(4,4)*A(3,3)*A(1,1)-leading*A(4,4)*A(3,1)*A(1,3)-leading*A(4,3)*A(1,1)*A(3,4)
-       invA(3,2)=-leading*A(1,1)*A(4,4)*A(3,2)
-       invA(4,2)=leading*A(4,3)*A(1,1)*A(3,2)
-       invA(1,3)=-leading*A(1,3)*A(2,2)*A(4,4)
-       invA(2,3)=-leading*A(2,3)*A(1,1)*A(4,4)
-       invA(3,3)=leading*A(2,2)*A(1,1)*A(4,4)
-       invA(4,3)=-leading*A(4,3)*A(1,1)*A(2,2)
-       invA(1,4)=leading*A(1,3)*A(3,4)*A(2,2)
-       invA(2,4)=leading*A(2,3)*A(3,4)*A(1,1)
-       invA(3,4)=-leading*A(3,4)*A(1,1)*A(2,2)
-       invA(4,4)=leading*A(2,2)*A(3,3)*A(1,1)-leading*A(2,2)*A(3,1)*A(1,3)-leading*A(3,2)*A(2,3)*A(1,1)
-       invA=invfactor*invA !undo inversion scaling
-    else
-       ! if laisun or laisha ==0 invert the corresponding 3x3 matrix
-       ! if both are zero, this routine is not called
-       if (laisha(p)<=tol_lai) then
-          ! shift nonzero matrix values so that both 3x3 cases can be inverted with the same code
-          A(2,2)=A(1,1)
-          A(3,2)=A(3,1)
-          A(2,3)=A(1,3)
-       endif
-       determ=A(2,2)*A(3,3)*A(4,4)-A(3,4)*A(2,2)*A(4,3)-A(2,3)*A(3,2)*A(4,4)
-       if ( abs(determ) <= 1.e-50_r8 ) then
-          flag = .true.  !tells calling function that the matrix is not invertible
-          return
-       else
-          flag = .false.
-       end if
-
-       !algebraic inversion of the 3x3 matrix stored in A(2:4,2:4)
-       invA(2,2)=A(3,3)*A(4,4)-A(3,4)*A(4,3)
-       invA(2,3)=-A(2,3)*A(4,4)
-       invA(2,4)=A(3,4)*A(2,3)
-       invA(3,2)=-A(3,2)*A(4,4)
-       invA(3,3)=A(2,2)*A(4,4)
-       invA(3,4)=-A(3,4)*A(2,2)
-       invA(4,2)=A(3,2)*A(4,3)
-       invA(4,3)=-A(2,2)*A(4,3)
-       invA(4,4)=A(2,2)*A(3,3)-A(2,3)*A(3,2)
-       invA=1._r8/determ*invA
-
-    endif
+    invA(1,1)=leading*A(4,4)*A(2,2)*A(3,3) - leading*A(4,4)*A(3,2)*A(2,3) - leading*A(4,3)*A(2,2)*A(3,4)
+    invA(2,1)=leading*A(2,3)*A(4,4)*A(3,1)
+    invA(3,1)=-leading*A(4,4)*A(2,2)*A(3,1)
+    invA(4,1)=leading*A(4,3)*A(2,2)*A(3,1)
+    invA(1,2)=leading*A(1,3)*A(4,4)*A(3,2)
+    invA(2,2)=leading*A(4,4)*A(3,3)*A(1,1)-leading*A(4,4)*A(3,1)*A(1,3)-leading*A(4,3)*A(1,1)*A(3,4)
+    invA(3,2)=-leading*A(1,1)*A(4,4)*A(3,2)
+    invA(4,2)=leading*A(4,3)*A(1,1)*A(3,2)
+    invA(1,3)=-leading*A(1,3)*A(2,2)*A(4,4)
+    invA(2,3)=-leading*A(2,3)*A(1,1)*A(4,4)
+    invA(3,3)=leading*A(2,2)*A(1,1)*A(4,4)
+    invA(4,3)=-leading*A(4,3)*A(1,1)*A(2,2)
+    invA(1,4)=leading*A(1,3)*A(3,4)*A(2,2)
+    invA(2,4)=leading*A(2,3)*A(3,4)*A(1,1)
+    invA(3,4)=-leading*A(3,4)*A(1,1)*A(2,2)
+    invA(4,4)=leading*A(2,2)*A(3,3)*A(1,1)-leading*A(2,2)*A(3,1)*A(1,3)-leading*A(3,2)*A(2,3)*A(1,1)
+    invA=invfactor*invA !undo inversion scaling
 
     end associate
 
@@ -3711,12 +3672,12 @@ contains
     !!TODO         tsai(p)*params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1)
 
     if (laisha(p)<tol_lai) then
-       ! special case for laisha ~ 0
-       ! flip sunlit and shade fluxes to match special case handling in spacA
-       temp=f(sun)
-       f(sun)=f(sha)
-       f(sha)=temp
-    endif
+      f(sha) = x(sha) - x(xyl)
+    end if
+    if (laisun(p)<tol_lai) then
+      f(sun) = x(sun) - x(xyl)
+    end if
+
 
     end associate
 

@@ -11,6 +11,7 @@
 #include "HybridVCoord.hpp"
 #include "Tracers.hpp"
 #include "mpi/Connectivity.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -105,7 +106,7 @@ TEST_CASE("remap", "remap_testing") {
 
   // Create and init elements/tracers
   auto& elems = c.create<Elements>();
-  elems.init(num_elems,false,true);
+  elems.init(num_elems,false,true,PhysicalConstants::rearth0);
   const auto max_pressure = 1000.0 + hvcoord.ps0; // This ensures max_p > ps0
   auto& geo = elems.m_geometry;
   elems.m_geometry.randomize(seed); // Only needed for phis and gradphis

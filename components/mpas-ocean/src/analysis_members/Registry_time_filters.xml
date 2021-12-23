@@ -103,7 +103,7 @@
 		<stream name="timeFiltersRestart" type="input;output"
 				mode="forward;analysis"
 				filename_template="restarts/timeFiltersRestart.$Y-$M-$D_$h.nc"
-				filename_interval="01-00-00_00:00:00"
+				filename_interval="output_interval"
 				input_interval="initial_only"
 				output_interval="stream:restart:output_interval"
 				packages="timeFiltersAMPKG"

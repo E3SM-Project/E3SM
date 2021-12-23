@@ -15,16 +15,12 @@
 
 namespace Homme {
 
-void init_gllfvremap_c (int nelemd, int np, int nf, int nf_max, int ftype,
+void init_gllfvremap_c (int nelemd, int np, int nf, int nf_max,
                         bool theta_hydrostatic_mode,
                         CF90Ptr fv_metdet, CF90Ptr g2f_remapd,
                         CF90Ptr f2g_remapd, CF90Ptr D_f, CF90Ptr Dinv_f) {
   auto& c = Context::singleton();
   auto& s = c.get<SimulationParams>();
-  assert(ftype >= 0 && ftype <= 4);
-  s.ftype = (ftype == 0 ? ForcingAlg::FORCING_0 :
-             ftype == 1 ? ForcingAlg::FORCING_1 :
-             ForcingAlg::FORCING_2);
   auto& g = c.get<GllFvRemap>();
   g.init_data(nf, nf_max, theta_hydrostatic_mode, fv_metdet, g2f_remapd,
               f2g_remapd, D_f, Dinv_f);
@@ -68,9 +64,9 @@ void GllFvRemap
 }
 
 void GllFvRemap
-::run_fv_phys_to_dyn (const int time_idx, const Real dt,
-                      const CPhys2T& T, const CPhys3T& uv, const CPhys3T& q) {
-  m_impl->run_fv_phys_to_dyn(time_idx, dt, T, uv, q);
+::run_fv_phys_to_dyn (const int time_idx, const CPhys2T& T, const CPhys3T& uv,
+                      const CPhys3T& q) {
+  m_impl->run_fv_phys_to_dyn(time_idx, T, uv, q);
 }
 
 void GllFvRemap::run_fv_phys_to_dyn_dss () { m_impl->run_fv_phys_to_dyn_dss(); }

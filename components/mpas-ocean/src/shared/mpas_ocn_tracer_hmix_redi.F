@@ -129,15 +129,15 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2, iCellSelf
-      integer :: i, k, iTr, nTracers, nCells, nEdges, km1, kp1, nCellsP1
+      integer :: i, k, iTr, nTracers, nCells, nEdges, nCellsP1
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell, minLevelCell, maxLevelCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell, cellsOnCell
 
-      real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
-      real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
+      real(kind=RKIND) :: tempTracer, invAreaCell
+      real(kind=RKIND) :: flux, flux_term2, flux_term3, dTracerDx, coef
       real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
@@ -478,7 +478,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: k, iEdge
-      integer, pointer :: nVertLevels, nEdges
+      integer, pointer :: nEdges
 
       err = 0
 
@@ -496,7 +496,6 @@ contains
          call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
          call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
