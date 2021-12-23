@@ -72,8 +72,9 @@ module radiation_data
   integer          :: rad_data_histfile_num = 2
   character(len=1) :: rad_data_avgflag = 'A'
 
-  ! MG microphys check
+  ! MG or P3 microphys check
   logical, public :: mg_microphys
+  logical, public :: p3_microphys
 
 contains
 
@@ -137,6 +138,7 @@ contains
    
     call phys_getopts(microp_scheme_out=microp_scheme)
     mg_microphys =  (trim(microp_scheme) == 'MG')
+    p3_microphys =  (trim(microp_scheme) == 'P3')
 
     cld_ifld    = pbuf_get_index('CLD')
     concld_ifld = pbuf_get_index('CONCLD')
@@ -151,6 +153,12 @@ contains
        iclwp_ifld    = pbuf_get_index('ICLWP')
        icswp_ifld    = pbuf_get_index('ICSWP')
        cldfsnow_ifld = pbuf_get_index('CLDFSNOW')
+    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+       dei_ifld      = pbuf_get_index('DEI')
+       mu_ifld       = pbuf_get_index('MU')
+       lambdac_ifld  = pbuf_get_index('LAMBDAC')
+       iciwp_ifld    = pbuf_get_index('ICIWP')
+       iclwp_ifld    = pbuf_get_index('ICLWP')
     endif
 
     call addfld (lndfrc_fldn, horiz_only,    rad_data_avgflag, 'fraction',&
@@ -231,6 +239,17 @@ contains
             'radiation input: In-cloud snow water path')
        call addfld (cldfsnow_fldn, (/ 'lev' /), rad_data_avgflag, 'fraction',&
             'radiation input: cloud liquid drops + snow')
+    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+       call addfld (dei_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
+            'radiation input: effective ice partical diameter')
+       call addfld (mu_fldn,        (/ 'lev' /), rad_data_avgflag,     ' ',&
+            'radiation input: ice gamma parameter for optics (radiation)')
+       call addfld (lambdac_fldn,        (/ 'lev' /), rad_data_avgflag,' ',&
+            'radiation input: slope of droplet distribution for optics (radiation)')
+       call addfld (iciwp_fldn,    (/ 'lev' /), rad_data_avgflag,  'kg/m2',&
+            'radiation input: In-cloud ice water path')
+       call addfld (iclwp_fldn,    (/ 'lev' /), rad_data_avgflag,  'kg/m2',&
+            'radiation input: In-cloud liquid water path')
     endif
 
     call add_default (lndfrc_fldn,    rad_data_histfile_num, ' ')
@@ -273,6 +292,12 @@ contains
        call add_default (iclwp_fldn,     rad_data_histfile_num, ' ')
        call add_default (icswp_fldn,     rad_data_histfile_num, ' ')
        call add_default (cldfsnow_fldn,  rad_data_histfile_num, ' ')
+    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+       call add_default (dei_fldn,       rad_data_histfile_num, ' ')
+       call add_default (mu_fldn,        rad_data_histfile_num, ' ')
+       call add_default (lambdac_fldn,   rad_data_histfile_num, ' ')
+       call add_default (iciwp_fldn,     rad_data_histfile_num, ' ')
+       call add_default (iclwp_fldn,     rad_data_histfile_num, ' ')
     endif
 
     ! rad constituents
@@ -431,6 +456,23 @@ contains
 
        call pbuf_get_field(pbuf,  cldfsnow_ifld, ptr, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
        call outfld(cldfsnow_fldn, ptr, pcols, lchnk   )
+
+    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+
+       call pbuf_get_field(pbuf,  dei_ifld, ptr     )
+       call outfld(dei_fldn,      ptr, pcols, lchnk   )       
+
+       call pbuf_get_field(pbuf,  mu_ifld, ptr      )
+       call outfld(mu_fldn,       ptr, pcols, lchnk   ) 
+
+       call pbuf_get_field(pbuf,  lambdac_ifld, ptr )
+       call outfld(lambdac_fldn,  ptr, pcols, lchnk   )       
+
+       call pbuf_get_field(pbuf,  iciwp_ifld, ptr   )
+       call outfld(iciwp_fldn,    ptr, pcols, lchnk   )       
+
+       call pbuf_get_field(pbuf,  iclwp_ifld, ptr   )
+       call outfld(iclwp_fldn,    ptr, pcols, lchnk   )       
 
     endif
 

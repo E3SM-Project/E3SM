@@ -1,0 +1,40 @@
+%YAML 1.1
+---
+# This input file is for a free-standing rrtmgp test that runs using initial conditions read from a SCREAMv0 run
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+Atmosphere Processes:
+  Number of Entries: 1
+
+  Process 0:
+    Process Name: RRTMGP
+    Grid: Point Grid
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    Orbital Year: 1990
+    Can Initialize All Inputs: true
+
+Grids Manager:
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns: 218
+    Number of Vertical Levels: 72
+
+# Specifications for setting initial conditions
+Initial Conditions:
+  Point Grid:
+    Filename: rrtmgp_init_ne2np4.nc
+    Load Latitude:  true
+    Load Longitude: true
+
+# The parameters for I/O control
+Scorpio:
+  Output YAML Files: ["rrtmgp_standalone_output.yaml"]
+...

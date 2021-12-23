@@ -55,7 +55,10 @@ real(r8)             :: premib                    ! Bottom height for mid-level 
 integer              :: iceopt                    ! option for ice cloud closure 
                                                   ! 1=wang & sassen 2=schiller (iciwc)  
                                                   ! 3=wood & field, 4=Wilson (based on smith)
-                                                  ! 5=modified slingo (ssat & empyt cloud)        
+                                                  ! 5=modified slingo (ssat & empyt cloud)       
+                                                  ! 6=Gettelman (based on Heymsfield)
+                                                  ! 7=All-or-nothing
+real(r8)             :: minice                    ! Minimum ice mass mixing ratio used to calculate ice cloud fraction (iceopt>=4)
 real(r8)             :: icecrit                   ! Critical RH for ice clouds in Wilson & Ballard closure
                                                   ! ( smaller = more ice clouds )
 
@@ -113,7 +116,7 @@ subroutine cldfrc2m_init()
 
    call cldfrc_getparams(rhminl_out=rhminl_const, rhminl_adj_land_out=rhminl_adj_land_const,  &
                          rhminh_out=rhminh_const, premit_out=premit, premib_out=premib, &
-                         iceopt_out=iceopt, icecrit_out=icecrit)
+                         iceopt_out=iceopt, icecrit_out=icecrit, minice_out=minice)
 
    if( masterproc ) then
       write(iulog,*) 'cldfrc2m parameters:'
@@ -123,6 +126,7 @@ subroutine cldfrc2m_init()
       write(iulog,*) '  premit          = ', premit
       write(iulog,*) '  premib          = ', premib
       write(iulog,*) '  iceopt          = ', iceopt
+      write(iulog,*) '  minice          = ', minice
       write(iulog,*) '  icecrit         = ', icecrit
       write(iulog,*) '  rhmini          = ', rhmini_const
       write(iulog,*) '  rhmaxi          = ', rhmaxi_const
@@ -728,7 +732,6 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
    real(r8) es, qs
 
    real(r8) rhi                             ! grid box averaged relative humidity over ice
-   real(r8) minice                          ! minimum grid box avg ice for having a 'cloud'
    real(r8) mincld                          ! minimum ice cloud fraction threshold
    real(r8) icimr                           ! in cloud ice mixing ratio
    real(r8) rhdif                           ! working variable for slingo scheme
@@ -759,7 +762,6 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
      Kc = 75._r8
    ! Wilson & Ballard closure ( Option.4. smaller = more ice clouds)
    ! Slingo modified (option 5)
-     minice = 1.e-12_r8
      mincld = 1.e-4_r8
 
    rhmaxi = rhmaxi_const
@@ -855,6 +857,12 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
            endif
 
         endif
+     elseif (iceopt.eq.7) then
+       ! All-or-nothing ice cloud fraction scheme
+       aist = 0._r8
+       if (qi.ge.minice) then
+         aist = 1._r8
+       endif
      endif 
 
    ! 0.999_r8 is added to prevent infinite 'ql_st' at the end of instratus_condensate
@@ -925,7 +933,6 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
    real(r8) qsat_in(pcols)
 
    real(r8) rhi                             ! grid box averaged relative humidity over ice
-   real(r8) minice                          ! minimum grid box avg ice for having a 'cloud'
    real(r8) mincld                          ! minimum ice cloud fraction threshold
    real(r8) icimr                           ! in cloud ice mixing ratio
    real(r8) rhdif                           ! working variable for slingo scheme
@@ -953,7 +960,6 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
      Kc = 75._r8
    ! Wilson & Ballard closure ( Option.4. smaller = more ice clouds)
    ! Slingo modified (option 5)
-     minice = 1.e-12_r8
      mincld = 1.e-4_r8
 
      rhmaxi          = rhmaxi_const
@@ -1059,7 +1065,13 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
         icicval = icicval / rho / 1000._r8
         aist =  max(0._r8,min(qi/icicval,1._r8))
         aist =  min(aist,1._r8)
-
+     elseif (iceopt.eq.7) then
+       ! All-or-nothing scheme: 100% ice cloud fraction if enough ice is
+       ! present, 0% otherwise.
+       aist = 0.0_r8
+       if (qi.ge.minice) then
+         aist = 1.0_r8
+       endif
      endif     
 
      if (iceopt.eq.5 .or. iceopt.eq.6) then

@@ -4,7 +4,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
                    t3, t3m1, t3m2, &
                    q3, q3m1, q3m2, ztodt, t2, &
                    fu, fv, qfcst,etamid, &
-                   qminus, nlon)
+                   qminus, nlon, &
+                   tdiff_ret,qdiff_ret)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -53,6 +54,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: q3m2(plev,pcnst)   ! constituent conc(time n: h2o first)
    real(r8), intent(in) :: etamid(plev)       ! vertical coords at midpoints
    real(r8), intent(inout) :: qfcst(plon,plev,pcnst)
+   real(r8), intent(out) :: tdiff_ret(plev)  ! temperature difference compared to obs
+   real(r8), intent(out) :: qdiff_ret(plev)  ! q difference compared to obs
 
    real(r8), intent(in) :: ztodt                       ! twice time step unless nstep=0
    integer lat               ! latitude index for S->N storage
@@ -78,7 +81,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) pdelm1f(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
    real(r8) pdelb(plon,plev)  ! pressure diff bet intfcs (press defined using the "B" part 
    real(r8) pdela(plon,plev)
-   real(r8) weight,fac
+   real(r8) weight,fac,fac_t
    real(r8) psfcst
    real(r8) tfcst(plev)
    real(r8) ufcst(plev)
@@ -133,6 +136,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) rtau(plev)
    real(r8) relaxt(plev)
    real(r8) relaxq(plev)
+   real(r8) relaxu(plev)
+   real(r8) relaxv(plev)   
    logical relax
 !
 !  diagnostic variables for estimating vertical advection terms
@@ -186,7 +191,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+        tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
       end do
       do m=1,pcnst
          do k=1,plev
@@ -196,7 +201,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if
+   end if 
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
@@ -254,10 +259,17 @@ subroutine forecast(lat, psm1, psm2,ps, &
 ! TIME FOR VERTICAL ADVECTION STEP
 !
 !
-!  Eularian forecast for u,v and t
+!  Eulerian forecast for u,v,t, and q
 !
+!  If three-dimensional forcing is not provided in the IOP-forcing file
+!    and we are running with multiple columns (i.e. doubly periodic CRM)
+!    then we need to add the effects of large-scale vertical advection for
+!    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
+!    an Eulerian calculation for this.  If we are in pure SCM mode then the
+!    dynamical core calculates the LS vertical advection thus this section
+!    can be skipped if single_column = .true. AND dp_crm = .false.
 
-   if (dycore_is('EUL')) then 
+   if (dp_crm .and. iop_dosubsidence) then
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
@@ -270,6 +282,12 @@ subroutine forecast(lat, psm1, psm2,ps, &
        ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
+   
+       do m=1,pcnst
+         qfcst(1,k,m) = qminus(1,k,m) & 
+           - fac*(wfldint(k+1) * (qminus(1,k+1,m) - qminus(1,k,m)) &
+           + wfldint(k)*(qminus(1,k,m) - qminus(1,k-1,m)))
+       enddo 
 
      end do
 
@@ -282,12 +300,25 @@ subroutine forecast(lat, psm1, psm2,ps, &
      tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
      vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k+1) * &
+         (qminus(1,k+1,m) - qminus(1,k,m)))
+     enddo
 
      k = plev
      fac = ztodt/(2.0_r8*pdelm1(plev))
      tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
      vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k) * &
+         (qminus(1,k,m) - qminus(1,k-1,m)))
+     enddo
+
+     ! thermal expansion term due to LS vertical advection
+     do k=1,plev
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k))
+     enddo
 
 !
 !  SLT is used for constituents only
@@ -303,7 +334,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
        end do
      end do
    
-   else if (dycore_is('SE')) then
+   else
    
      tfcst(:) = t3m2(:)
      qfcst(1,:,:) = q3m2(:,:)
@@ -465,11 +496,11 @@ end if
    do k=1,plev
      tfcst(k) = tfcst(k) &
 #ifndef MODEL_THETA_L
-         ! this term is already taken into account through
-         !  LS vertical advection in theta-l dycore
-         + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+       ! this term is already taken into account through
+       !  LS vertical advection term in theta-l dycore
+       + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
 #endif
-         + ztodt*(t2(k) + divt(k))
+       + ztodt*(t2(k) + divt(k))
      do m=1,pcnst
        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
      end do
@@ -528,22 +559,24 @@ end if
       enddo
    endif
 !
+   
    if(.not.l_uvadvect) then
-      if (use_iop .and. have_v .and. have_u) then
+
+      if (use_iop .and. have_v .and. have_u .and. .not. dp_crm) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
          enddo
-!
+
       else
-!
+
          do k=1,plev
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
-!
+
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
-!      
+      
    else
 !
       do k=1,plev
@@ -560,7 +593,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (scm_relaxation) then
+   if (iop_nudge_tq .and. .not. dp_crm) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics
@@ -573,6 +606,9 @@ end if
 !    to the code we move the outfld calls for the relaxed variables
 !    (in this case T and q) from linemsbc into this routine after the
 !    relaxation terms have been applied.
+
+!    Note that doubly periodic CRM mode has it's own nudging routine, thus
+!      is not used here.
 !
       do k=1,plev
          relaxt(k) = 0.0_r8
@@ -580,11 +616,13 @@ end if
       end do
 !
       do k=1,plev
-           
-        if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
-          pmidm1(k) .ge. scm_relaxation_high*100._r8) then
 
-          rtau(k)   = 10800._r8          ! 3-hr adj. time scale
+        ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
+        !   is in units of [hPa], thus convert iop_nudge_tq_low/high
+        if (pmidm1(k) .le. iop_nudge_tq_low*100._r8 .and. &
+          pmidm1(k) .ge. iop_nudge_tq_high*100._r8) then
+
+          rtau(k)   = iop_nudge_tscale          ! 3-hr adj. time scale
           rtau(k)   = max(ztodt,rtau(k))
           relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
           relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)
@@ -610,6 +648,9 @@ end if
       qdiff(k) = q3(k,1) - qobs(k)
       udiff(k) = u3(k)   - uobs(k)
       vdiff(k) = v3(k)   - vobs(k)
+      
+      tdiff_ret(k) = tdiff(k)
+      qdiff_ret(k) = qdiff(k)
    end do
 
 !
@@ -624,8 +665,6 @@ end if
 
    call outfld('TOBS',tobs,plon,lat)
    call outfld('QOBS',qobs,plon,lat)
-   call outfld('TDIFF',tdiff,plon,lat)
-   call outfld('QDIFF',qdiff,plon,lat)
    if( use_iop ) then
       call outfld('DIVQ',divq,plon,lat)
       call outfld('DIVT',divt,plon,lat)

@@ -1,0 +1,26 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+Atmosphere Processes:
+  Number of Entries: 1
+
+  Process 0:
+    Process Name: ZM
+    Grid: Point Grid
+    Can Initialize All Inputs: true
+
+Grids Manager:
+  Type: Mesh Free
+  Reference Grid: Point Grid
+  Mesh Free:
+    Number of Global Columns:   32
+    Number of Vertical Levels: 128
+...

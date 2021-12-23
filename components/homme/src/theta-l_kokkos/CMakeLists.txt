@@ -1,5 +1,4 @@
 # macro for building theta primitive equations executable using Kokkos for on-node parallelism
-
 MACRO(THETAL_KOKKOS_SETUP)
 
   SET (KOKKOS_TARGET TRUE)
@@ -12,17 +11,17 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
   SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
-  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/src/share/timing)
-  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
 
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
     ${TARGET_DIR}/cxx
-    ${UTILS_TIMING_SRC_DIR}
     ${UTILS_TIMING_DIR}
+    ${UTILS_TIMING_SRC_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${SRC_SHARE_DIR}/compose
-    ${CMAKE_BINARY_DIR}/src/share/cxx
+    ${HOMME_BINARY_DIR}/src/share/cxx
   )
 
   SET (EXEC_INCLUDE_DIRS
@@ -130,7 +129,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TARGET_F90}
     ${SRC_SHARE_F90}
     ${TEST_SRC_F90}
-    ${SRC_DIR}/checksum_mod.F90 
+    ${SRC_DIR}/checksum_mod.F90
     ${SRC_DIR}/common_io_mod.F90
     ${SRC_DIR}/common_movie_mod.F90
     ${SRC_DIR}/interpolate_driver_mod.F90
@@ -144,11 +143,11 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_DIR}/surfaces_mod.F90
     ${SRC_DIR}/test_mod.F90
     ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_const_mod.F90 
+    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
+    ${UTILS_SHARE_DIR}/shr_sys_mod.F90
+    ${UTILS_SHARE_DIR}/shr_file_mod.F90
+    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
+    ${UTILS_SHARE_DIR}/shr_const_mod.F90
     ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   )
 

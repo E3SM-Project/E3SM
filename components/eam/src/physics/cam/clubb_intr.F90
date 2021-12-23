@@ -3099,7 +3099,7 @@ end subroutine clubb_init_cnst
     real(r8),            intent(out)    :: obklen(pcols)        ! Obukhov length [ m ]
     real(r8),            intent(out)    :: ustar(pcols)         ! Surface friction velocity [ m/s ]
 
-#ifdef CLUBB_SGS
+#if defined(CLUBB_SGS) || defined(SHOC_SGS)
 
     ! --------------- !
     ! Local Variables !
@@ -3126,7 +3126,7 @@ end subroutine clubb_init_cnst
 #endif
     obklen(pcols) = 0.0_r8
     ustar(pcols)  = 0.0_r8
-#ifdef CLUBB_SGS
+#if defined(CLUBB_SGS) || defined(SHOC_SGS)
 
     ! ----------------------- !
     ! Main Computation Begins !

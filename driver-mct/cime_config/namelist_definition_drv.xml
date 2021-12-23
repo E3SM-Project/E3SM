@@ -1463,6 +1463,7 @@
     <values>
       <value>$EPS_AGRID</value>
       <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
+      <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
     </values>
   </entry>
 

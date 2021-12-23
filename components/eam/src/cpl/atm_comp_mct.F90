@@ -53,8 +53,10 @@ module atm_comp_mct
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
-  use scamMod          , only: single_column,scmlat,scmlon
+
+  use scamMod          , only: single_column,scmlat,scmlon,scm_multcols
   use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
+
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -262,6 +264,7 @@ CONTAINS
             brnch_retain_casename=brnch_retain_casename,                              &
             hostname=hostname, username=username, model_version=version,              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
+            scm_multcols=scm_multcols,                                                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present,                         &
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
@@ -292,7 +295,7 @@ CONTAINS
        call t_startf('read_namelist')
        filein = "atm_in" // trim(inst_suffix)
        call read_namelist(single_column_in=single_column, scmlat_in=scmlat, &
-            scmlon_in=scmlon, nlfilename_in=filein)
+            scmlon_in=scmlon, scm_multcols_in=scm_multcols, nlfilename_in=filein)
        call t_stopf('read_namelist')
        !
        ! Initialize cam time manager

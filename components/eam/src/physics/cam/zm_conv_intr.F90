@@ -82,7 +82,6 @@ subroutine zm_conv_register
 ! deep gbm cloud liquid water (kg/kg)    
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
 
-
 ! DCAPE-UPL
 
    if (trigdcape_ull .or. trig_dcape_only) then
@@ -155,7 +154,7 @@ subroutine zm_conv_init(pref_edge)
 
     call addfld ('MAXI',horiz_only , 'A','level'    ,'model level of launching parcel')
 
-    call addfld ('CAPE',       horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
+    call addfld ('CAPE_ZM',horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
     call addfld ('FREQZM',horiz_only  ,'A','fraction', 'Fractional occurance of ZM convection') 
 
     call addfld ('ZMMTT',     (/ 'lev' /), 'A', 'K/s', 'T tendency - ZM convective momentum transport')
@@ -221,6 +220,10 @@ subroutine zm_conv_init(pref_edge)
     no_deep_pbl = phys_deepconv_pbl()
     call zm_convi(limcnv,no_deep_pbl_in = no_deep_pbl)
 
+    dp_flxprc_idx   = pbuf_get_index('DP_FLXPRC')
+    dp_flxsnw_idx   = pbuf_get_index('DP_FLXSNW')
+    dp_cldliq_idx   = pbuf_get_index('DP_CLDLIQ')
+    dp_cldice_idx   = pbuf_get_index('DP_CLDICE')
     cld_idx         = pbuf_get_index('CLD')
     icwmrdp_idx     = pbuf_get_index('ICWMRDP')
     rprddp_idx      = pbuf_get_index('RPRDDP')
@@ -418,7 +421,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     t_star, q_star, dcape)  
    call t_stopf ('zm_convr')
 
-   call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
+   call outfld('CAPE_ZM', cape, pcols, lchnk)        ! RBN - CAPE output
 !
 ! Output fractional occurance of ZM convection
 !

@@ -1,0 +1,23 @@
+%YAML 1.1
+---
+Casename: homme_standalone_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  Physics GLL:
+    - T_mid
+    - qv
+    - ps
+    - p_int
+    - p_mid
+    - pseudo_density
+    - horiz_winds
+    - w_int
+    - phi_int
+ 
+Output Control:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

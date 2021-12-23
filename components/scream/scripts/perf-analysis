@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+
+"""
+Run different versions of an app and compare performance. It is
+expected that this will be run from micro-apps directory.
+"""
+
+from utils import expect, check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, os, socket
+from collections import OrderedDict
+
+from perf_analysis import PerfAnalysis, ScalingExp
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <NAME>:<VALUE> [<NAME>:<VALUE>] [--cxx=<CXX_COMPILER>] [-n num_runs] [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run p3 ref with 1 horizontal and 111 vertical columns over 300s with 30s timesteps and 10 internal repitions \033[0m
+    > {0} ni:1 nk:111 dt:30 ts:10 kdir:1 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=ref:"micro-sed/p3_ref" -d
+
+    \033[1;32m# Run p3 ref comparing against p3 vanilla with same params as above except scaling ni to 1024  \033[0m
+    > {0} ni:1 nk:111 dt:30 ts:10 kdir:1 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=ref:"micro-sed/p3_ref" --test=vanilla:"micro-sed/p3_vanilla" -s ni:2:1024 -d
+
+    \033[1;32m# Run lin-interp ref comparing against lin-interp vanilla scaling from ncol=1000 to 128,000 \033[0m
+    > {0} ncol:1000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=ref:lin-interp/li_ref --test=vanilla:lin-interp/li_vanilla -s ncol:2:128000 -d
+
+    \033[1;32m# Run main SCREAM P3 scaling from ncol=64 to 8192, doubling ncol \033[0m
+    > {0} ni:64 --test=ref:"src/physics/p3/tests/p3_run_and_cmp_cxx -r 10 -s 30 -i NI -p yes -c yes foo" -s ni:2:8192 --cd
+
+    \033[1;32m# Run main SCREAM SHOC scaling from ncol=64 to 8192, doubling ncol \033[0m
+    > {0} ni:64 --test=ref:"src/physics/shoc/tests/shoc_run_and_cmp_cxx -r 10 -s 30 -i NI foo" -s ni:2:8192 --cd
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("argmap", nargs="+", help="Argument map, NAME:STARTING_VAL. First arg is assumed to be the arg/s used in the core metric")
+
+    parser.add_argument("--kokkos", help="Kokkos location")
+
+    parser.add_argument("--cxx", default=os.getenv("MPICXX"), help="c++ compiler")
+
+    parser.add_argument("--cc", default=os.getenv("MPICC"), help="c compiler")
+
+    parser.add_argument("--f90", default=os.getenv("MPIF90"), help="f90 compiler")
+
+    parser.add_argument("-n", "--num-runs", type=int, default=1, help="Number of times to repeat run")
+
+    parser.add_argument("-t", "--test", dest="tests", action="append",
+                        help="Select which tests/exes to run. First one will be used as reference point. Format is TESTNAME:CMD. Supports string replacement via using the arg name in all caps; any arg not replaced in this manner will have its value appended to the test cmd as an arg.")
+
+    parser.add_argument("-c", "--cmake-options", default="",
+                        help="Extra options to pass to cmake")
+
+    parser.add_argument("-u", "--use-existing", action="store_true",
+                        help="Use existing build directory (assumes pwd is build dir)")
+
+    parser.add_argument("-s", "--scaling",
+                        help="Do a scaling experiment. Format is VARNAME:SCALE_FACTOR:MAX")
+
+    parser.add_argument("-p", "--plot-friendly", action="store_true",
+                        help="Project plot-friendly output")
+
+    parser.add_argument("-T", "--force-threads", type=int, help="Override the machine default for threads.")
+
+    parser.add_argument("-m", "--machine", default=socket.gethostname().rstrip("0123456789"), help="Manually set machine. Defaults to hostname.")
+
+    parser.add_argument("-d", "--scream-docs", action="store_true",
+                        help="Measure something in the scream-docs repo instead of main repo")
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Increase verbosity")
+
+    parser.add_argument("--cd", action="store_true",
+                        help="Change directory to the dir containing the exe before running")
+
+    args = parser.parse_args(args[1:])
+
+    args.cmake_options += " -DCMAKE_BUILD_TYPE=Release"
+    if args.kokkos:
+        args.cmake_options += " -DKokkos_DIR={}".format(args.kokkos)
+
+    if args.cxx:
+        args.cmake_options += " -DCMAKE_CXX_COMPILER={}".format(args.cxx)
+
+    if args.cc:
+        args.cmake_options += " -DCMAKE_C_COMPILER={}".format(args.cc)
+
+    if args.f90:
+        args.cmake_options += " -DCMAKE_Fortran_COMPILER={}".format(args.f90)
+
+    args.cmake_options += " -C ../cmake/machine-files/{}.cmake".format(args.machine)
+
+    expect(not args.plot_friendly or args.scaling, "Doesn't make sense to have plot friendly output without a scaling experiment")
+    expect(args.tests, "Need at least one test/exe")
+
+    argmap = OrderedDict()
+    for argdef in args.argmap:
+        expect(argdef.count(":") == 1, "Arg definition '{}' had wrong format, expect NAME:VAL".format(argdef))
+        argname, starting_val = argdef.split(":")
+        argmap[argname] = float(starting_val) if "." in starting_val else int(starting_val)
+
+    if args.scaling is None:
+        scaling_exp = ScalingExp(argmap, args.force_threads, "{}:2.0:{}".format(list(argmap.keys())[0], list(argmap.values())[0]), args.machine)
+    else:
+        scaling_exp = ScalingExp(argmap, args.force_threads, args.scaling, args.machine)
+        expect(not (scaling_exp.varname == "threads" and args.force_threads is None),
+               "Need to set --force-threads if doing a threading scaling experiment")
+
+    testmap = OrderedDict()
+    for argtest in args.tests:
+        expect(argtest.count(":") == 1, "test definition '{}' had wrong format, expect NAME:CMDS".format(argtest))
+        testname, testdef = argtest.split(":")
+        testmap[testname] = testdef
+
+    delattr(args, "scaling")
+    delattr(args, "kokkos")
+    delattr(args, "cxx")
+    delattr(args, "cc")
+    delattr(args, "f90")
+    args.scaling_exp = scaling_exp
+    args.argmap = argmap
+    args.tests = testmap
+    return args
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    pa = PerfAnalysis(**vars(parse_command_line(sys.argv, description)))
+
+    pa.machine_specific_init()
+
+    success = pa.perf_analysis()
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

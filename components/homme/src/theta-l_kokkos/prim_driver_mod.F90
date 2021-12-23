@@ -3,8 +3,6 @@
 #endif
 module prim_driver_mod
 
-  use prim_driver_base,     only: deriv1, smooth_topo_datasets
-  use prim_cxx_driver_base, only: prim_init1, prim_finalize
   use kinds,                only : real_kind
   use dimensions_mod,       only : qsize, nelemd, np, qsize
   use element_mod,          only : element_t
@@ -471,7 +469,6 @@ contains
 
   end subroutine prim_run_subcycle
 
-
   subroutine setup_element_pointers (elem)
     use element_state,  only : allocate_element_arrays, elem_state_v, elem_state_w_i, elem_state_vtheta_dp, &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, elem_state_phis,       & 
@@ -507,9 +504,7 @@ contains
       elem(ie)%accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
       elem(ie)%accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
       elem(ie)%accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
-
     enddo
-
   end subroutine setup_element_pointers
 
 

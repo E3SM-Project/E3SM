@@ -18,7 +18,7 @@ module ncdio_atm
   use shr_scam_mod,   only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils,     only: masterproc
   use cam_abortutils, only: endrun
-  use scamMod,        only: scmlat,scmlon,single_column
+  use scamMod,        only: scmlat,scmlon,single_column,scm_multcols
   use cam_logfile,    only: iulog
   !
   ! !PUBLIC TYPES:
@@ -38,6 +38,8 @@ module ncdio_atm
      module procedure infld_real_2d_2d
      module procedure infld_real_2d_3d
      module procedure infld_real_3d_3d
+     module procedure infld_real_3d_4d
+     module procedure infld_real_4d_4d
   end interface
 
 
@@ -104,6 +106,10 @@ contains
     ! Offsets for reading global variables
     integer                   :: strt(1) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt (1) = 1 ! ncol count for netcdf 1-d
+        
+    ! Offsets for reading global variables for when SCM functionality is used for multiple columns
+    integer                   :: strt_iop(2) = 1 ! start ncol index for netcdf 1-d
+    integer                   :: cnt_iop (2) = 1 ! ncol count for netcdf 1-d
     character(len=PIO_MAX_NAME) :: tmpname
     character(len=128)        :: errormsg
 
@@ -113,6 +119,8 @@ contains
     ! For SCAM
     real(r8)                  :: closelat, closelon
     integer                   :: lonidx, latidx
+   
+    real(r8), allocatable :: field_iop(:,:)
 
     nullify(iodesc)
 
@@ -155,6 +163,7 @@ contains
     ! Check if field is on file; get netCDF variable id
     !
     call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens, readvar_tmp)
+    
     !
     ! If field is on file:
     !
@@ -198,14 +207,30 @@ contains
         end if
       end if
 
-      if (single_column .and. dim1e == 1) then
+      if (single_column .and. dim1e == 1 .and. .not. scm_multcols) then
+      
         ! Specifically, this condition is for when the single column model 
         !  is run in the Spectral Element dycore
         cnt(1) = 1 
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
+        if (scm_multcols) field(:,:) = field(dim1b,dim2b)
 
+      else if (scm_multcols) then
+      
+        cnt_iop(1) = 1
+        cnt_iop(2) = 1 
+        call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+        strt_iop(1) = lonidx
+        strt_iop(2) = 1
+        allocate(field_iop(1:cnt_iop(1),1:cnt_iop(2)))
+        ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
+
+        field(:,:) = field_iop(1,1)
+        
+        deallocate(field_iop)
+      
       else
 
       ! NB: strt and cnt were initialized to 1
@@ -262,6 +287,9 @@ contains
     !EOP
     !
     ! !LOCAL VARIABLES:
+    
+    real(r8), allocatable :: field_iop(:,:,:)
+    
     type(io_desc_t), pointer  :: iodesc
     integer                   :: grid_map  ! grid ID for data mapping
     integer                   :: i, j      ! indices
@@ -282,6 +310,9 @@ contains
     integer                   :: cnt (2) ! lon, lat counts for netcdf 2-d
     character(len=PIO_MAX_NAME) :: tmpname
     character(len=128)        :: errormsg
+    
+    integer                   :: strt_iop(3) ! start lon, lat indices for netcdf 2-d
+    integer                   :: cnt_iop (3) ! lon, lat counts for netcdf 2-d
 
     real(r8), pointer         :: tmp2d(:,:) ! input data for permutation
 
@@ -388,12 +419,31 @@ contains
 
         field_dnames(1) = dimname1
         field_dnames(2) = dimname2
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b
           cnt = arraydimsize
           call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+
+          if (scm_multcols) then
+
+            strt_iop(1) = lonidx
+            strt_iop(2) = 1
+            strt_iop(3) = 1
+            cnt_iop(1) = 1
+            cnt_iop(2) = cnt(2)
+            cnt_iop(3) = 1
+            allocate(field_iop(1:cnt_iop(1), 1:cnt_iop(2), 1:cnt_iop(3)))
+            ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
+    
+            do i = dim1b, dim1e 
+              field(i,:) = field_iop(1,:,1)
+            enddo
+            deallocate(field_iop)
+
+          else ! if not small planet
+  
           if (trim(field_dnames(1)) == 'lon') then
             strt(1) = lonidx ! First dim always lon for Eulerian dycore
           else
@@ -425,6 +475,8 @@ contains
           else
             ierr = pio_get_var(ncid, varid, strt, cnt, field)
           end if
+  
+          endif ! if scm_multcols
         else
           ! All distributed array processing
           call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:2),      &
@@ -802,7 +854,7 @@ contains
         field_dnames(2) = dimname2
         field_dnames(3) = dimname3
 
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b
@@ -858,6 +910,458 @@ contains
     end if ! end of call infld_real_2d_3d instead
 
   end subroutine infld_real_3d_3d
+
+!-----------------------------------------------------------------------
+  !BOP
+  !
+  ! !IROUTINE: infld_real_3d_4d
+  !
+  ! !INTERFACE:
+  subroutine infld_real_3d_4d(varname, ncid, dimname1, dimname2, dimname3,              &
+       dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,                             &
+       field, readvar, gridname, timelevel)
+    !
+    ! !DESCRIPTION: 
+    ! Netcdf I/O of initial real field from netCDF file
+    ! Read a 2-D field (or slice) into a 3-D variable
+    !
+    ! !USES
+    !
+
+    use pio,              only: pio_get_var, pio_read_darray, pio_setdebuglevel
+    use pio,              only: PIO_MAX_NAME, pio_inquire, pio_inq_dimname
+    use cam_grid_support, only: cam_grid_check, cam_grid_get_decomp, cam_grid_id
+    use cam_pio_utils,    only: cam_permute_array, calc_permutation, cam_pio_check_var
+
+    !
+    ! !ARGUMENTS:
+    implicit none
+    character(len=*),  intent(in)     :: varname  ! variable name
+    type(file_desc_t), intent(inout)  :: ncid     ! input unit
+    character(len=*),  intent(in)     :: dimname1 ! name of 1st array dimensions of field on file (array order)
+    character(len=*),  intent(in)     :: dimname2 ! name of 2nd array dimensions of field on file (array order)
+    character(len=*),  intent(in)     :: dimname3 ! name of 3rd array dimensions of field on file (array order)
+    integer,           intent(in)     :: dim1b    ! start of first  dimension of array to be returned
+    integer,           intent(in)     :: dim1e    ! end   of first  dimension of array to be returned
+    integer,           intent(in)     :: dim2b    ! start of second dimension of array to be returned
+    integer,           intent(in)     :: dim2e    ! end   of second dimension of array to be returned
+    integer,           intent(in)     :: dim3b    ! start of third  dimension of array to be returned
+    integer,           intent(in)     :: dim3e    ! end   of third  dimension of array to be returned
+    integer,           intent(in)     :: dim4b    ! start of fourth  dimension of array to be returned
+    integer,           intent(in)     :: dim4e    ! end   of fourth  dimension of array to be returned
+    real(r8), target,  intent(out)    :: field(dim1b:dim1e,dim2b:dim2e,dim3b:dim3e,dim4b:dim4e) ! array to be returned (decomposed or global)
+    logical,           intent(out)    :: readvar  ! true => variable is on initial dataset
+    character(len=*), optional, intent(in) :: gridname ! Name of variable's grid
+    integer, optional, intent(in)     :: timelevel
+    !
+    !EOP
+    !
+    ! !LOCAL VARIABLES:
+    type(io_desc_t), pointer  :: iodesc
+    integer                   :: grid_map  ! grid ID for data mapping
+    integer                   :: i, j, k   ! indices
+    integer                   :: ierr      ! error status
+    type(var_desc_t)          :: varid     ! variable id
+
+    integer                   :: arraydimsize(4) ! field dimension lengths
+    integer                   :: arraydimids(3) ! Dimension IDs
+    integer                   :: permutation(3)
+    logical                   :: ispermuted
+
+    integer                   :: ndims ! number of dimensions
+    integer                   :: dimids(PIO_MAX_VAR_DIMS) ! file variable dims
+    integer                   :: dimlens(PIO_MAX_VAR_DIMS) ! file variable shape
+
+    ! Offsets for reading global variables
+    integer                   :: strt(3) = 1 ! start ncol, lev indices for netcdf 2-d
+    integer                   :: cnt (3) = 1 ! ncol, lev counts for netcdf 2-d
+    character(len=PIO_MAX_NAME) :: tmpname
+
+    real(r8), pointer         :: tmp3d(:,:,:) ! input data for permutation
+
+    logical                   :: readvar_tmp ! if true, variable is on tape
+    character(len=32)         :: subname='INFLD_REAL_3D_4D' ! subroutine name
+    character(len=128)        :: errormsg
+    character(len=PIO_MAX_NAME) :: field_dnames(3)
+
+    ! For SCAM
+    real(r8)                  :: closelat, closelon
+    integer                   :: lonidx, latidx
+
+    nullify(iodesc)
+
+    !
+    !-----------------------------------------------------------------------
+    !
+    !    call pio_setdebuglevel(3)
+
+    !
+    ! Error conditions
+    !
+    if (present(gridname)) then
+      grid_map = cam_grid_id(trim(gridname))
+    else
+      grid_map = cam_grid_id('physgrid')
+    end if
+    if (.not. cam_grid_check(grid_map)) then
+      if(masterproc) then
+        if (present(gridname)) then
+          write(errormsg, *)': invalid gridname, "',trim(gridname),'", specified for field ',trim(varname)
+        else
+          write(errormsg, *)': Internal error, no "physgrid" gridname'
+        end if
+      end if
+      call endrun(trim(subname)//errormsg)
+    end if
+
+    if (debug .and. masterproc) then
+      if (present(gridname)) then
+        write(iulog, '(5a)') trim(subname),': field = ',trim(varname),', grid = ',trim(gridname)
+      else
+        write(iulog, '(4a)') trim(subname),': field = ',trim(varname),', grid = physgrid'
+      end if
+      call shr_sys_flush(iulog)
+    end if
+
+    !
+    ! Read netCDF file
+    !
+    !
+    ! Check if field is on file; get netCDF variable id
+    !
+    call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens, readvar_tmp)
+    !
+    ! If field is on file:
+    !
+    if (readvar_tmp) then
+      if (debug .and. masterproc) then
+        write(iulog, '(2a,8(i0,a))') trim(subname),': field(',                &
+             dim1b,':',dim1e,',',dim2b,':',dim2e,',',dim3b,':',dim3e,',',dim4b,':',dim4e,         &
+             '), file(',dimlens(1),',',dimlens(2),',',dimlens(3),')'
+        call shr_sys_flush(iulog)
+      end if
+      !
+      ! Get array dimension id's and sizes
+      !
+      ! Only do this check if the dimension name does not include '_d'
+      if (index(dimname1,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname1, arraydimids(1))
+      if (index(dimname2,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname2, arraydimids(2))
+      if (index(dimname3,'_d')==0) ierr = PIO_inq_dimid(ncid, dimname3, arraydimids(3))
+      arraydimsize(1) = (dim1e - dim1b + 1)
+      arraydimsize(2) = (dim2e - dim2b + 1)
+      arraydimsize(3) = (dim3e - dim3b + 1)
+      arraydimsize(4) = (dim4e - dim4b + 1)
+      do j = 1, 4
+        if (arraydimsize(j) /= size(field, j)) then
+          write(errormsg, *) ': Mismatch between array bounds and field size for', &
+               trim(varname), ', dimension', j
+          call endrun(trim(subname)//errormsg)
+        end if
+      end do
+
+      if (ndims > 4) then
+        call endrun(trim(subname)//': too many dimensions for '//trim(varname))
+      else if (ndims < 3) then
+        call endrun(trim(subname)//': too few dimensions for '//trim(varname))
+      else
+        ! Check to make sure that the fourth dimension is time
+        if (ndims == 4) then
+          ierr = pio_inq_dimname(ncid, dimids(4), tmpname)
+          if (trim(tmpname) /= 'time') then
+            call endrun(trim(subname)//': dimension mismatch for'//trim(varname))
+          end if
+        end if
+      end if
+
+      if(ndims == 4) then
+        if(present(timelevel)) then
+          call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
+        end if
+      end if
+   
+      field_dnames(1) = dimname1
+      field_dnames(2) = dimname2
+      field_dnames(3) = dimname3
+      ! NB: strt and cnt were initialized to 1
+      call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:3),        &
+             pio_double, iodesc, field_dnames=field_dnames)
+      call pio_read_darray(ncid, varid, iodesc, field, ierr)
+    end if  ! end of readvar_tmp
+
+    readvar = readvar_tmp
+
+    return
+
+  end subroutine infld_real_3d_4d
+
+ !-----------------------------------------------------------------------
+  !BOP
+  !
+  ! !IROUTINE: infld_real_4d_4d
+  !
+  ! !INTERFACE:
+  subroutine infld_real_4d_4d(varname, ncid, dimname1, dimname2, dimname3, dimname4,    &
+       dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,                              &
+       field, readvar, gridname, timelevel)
+    !
+    ! !DESCRIPTION: 
+    ! Netcdf I/O of initial real field from netCDF file
+    ! Read a 3-D field (or slice) into a 3-D variable
+    !
+    ! !USES
+    !
+
+    use pio,              only: pio_get_var, pio_read_darray, pio_setdebuglevel
+    use pio,              only: PIO_MAX_NAME, pio_inquire, pio_inq_dimname
+    use cam_grid_support, only: cam_grid_check, cam_grid_get_decomp, cam_grid_id
+    use cam_pio_utils,    only: cam_permute_array, calc_permutation, cam_pio_check_var
+
+    !
+    ! !ARGUMENTS:
+    implicit none
+    character(len=*),  intent(in)     :: varname  ! variable name
+    type(file_desc_t), intent(inout)  :: ncid     ! input unit
+    character(len=*),  intent(in)     :: dimname1 ! name of 1st array dimensions of field on file (array order)
+    character(len=*),  intent(in)     :: dimname2 ! name of 2nd array dimensions of field on file (array order)
+    character(len=*),  intent(in)     :: dimname3 ! name of 3rd array dimensions of field on file (array order)
+    character(len=*),  intent(in)     :: dimname4 ! name of 3rd array dimensions of field on file (array order)
+    integer,           intent(in)     :: dim1b    ! start of first  dimension of array to be returned
+    integer,           intent(in)     :: dim1e    ! end   of first  dimension of array to be returned
+    integer,           intent(in)     :: dim2b    ! start of second dimension of array to be returned
+    integer,           intent(in)     :: dim2e    ! end   of second dimension of array to be returned
+    integer,           intent(in)     :: dim3b    ! start of third  dimension of array to be returned
+    integer,           intent(in)     :: dim3e    ! end   of third  dimension of array to be returned
+    integer,           intent(in)     :: dim4b    ! start of third  dimension of array to be returned
+    integer,           intent(in)     :: dim4e    ! end   of third  dimension of array to be returned
+    real(r8), target,  intent(out)    :: field(dim1b:dim1e,dim2b:dim2e,dim3b:dim3e,dim4b:dim4e) ! array to be returned (decomposed or global)
+    logical,           intent(out)    :: readvar  ! true => variable is on initial dataset
+    character(len=*), optional, intent(in) :: gridname ! Name of variable's grid
+    integer, optional, intent(in)     :: timelevel
+    !
+    !EOP
+    !
+    ! !LOCAL VARIABLES:
+    type(io_desc_t), pointer  :: iodesc
+    integer                   :: grid_map  ! grid ID for data mapping
+    integer                   :: i, j, k, l   ! indices
+    integer                   :: ierr      ! error status
+    type(var_desc_t)          :: varid     ! variable id
+
+    integer                   :: arraydimsize(4) ! field dimension lengths
+    integer                   :: arraydimids(4) ! Dimension IDs
+    integer                   :: permutation(4)
+    logical                   :: ispermuted
+
+    integer                   :: ndims ! number of dimensions
+    integer                   :: pdims ! number of dimensions w/o timeslice
+    integer                   :: dimids(PIO_MAX_VAR_DIMS) ! file variable dims
+    integer                   :: dimlens(PIO_MAX_VAR_DIMS) ! file variable shape
+
+    ! Offsets for reading global variables
+    integer                   :: strt(4)     ! start lon, lev, lat indices for netcdf 3-d
+    integer                   :: cnt (4)     ! lon, lat counts for netcdf 3-d
+    character(len=PIO_MAX_NAME) :: tmpname
+
+    real(r8), pointer         :: tmp3d(:,:,:,:) ! input data for permutation
+
+    logical                   :: readvar_tmp ! if true, variable is on tape
+    character(len=32)         :: subname='INFLD_REAL_4D_4D' ! subroutine name
+    character(len=128)        :: errormsg
+    character(len=PIO_MAX_NAME) :: field_dnames(4)
+    character(len=PIO_MAX_NAME) :: file_dnames(5)
+
+    ! For SCAM
+    real(r8)                  :: closelat, closelon
+    integer                   :: lonidx, latidx
+
+    nullify(iodesc)
+
+    !
+    !-----------------------------------------------------------------------
+    !
+    !    call pio_setdebuglevel(3)
+
+    ! Should we be using a different interface?
+    if ((trim(dimname1) == trim(dimname2)) .or. (len_trim(dimname2) == 0)) then
+      call infld(varname, ncid, dimname1, dimname3, dimname4,                          &
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,                          &
+           field, readvar, gridname, timelevel)
+    else if ((trim(dimname1) == trim(dimname3)) .or. (len_trim(dimname3) == 0)) then
+      call infld(varname, ncid, dimname1, dimname2, dimname4,                           &
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,                          &
+           field, readvar, gridname, timelevel)
+    else if ((trim(dimname1)==trim(dimname4)) .or. (len_trim(dimname4)==0)) then
+       call infld(varname, ncid, dimname1, dimname2, dimname3,                           &
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,& 
+           field, readvar, gridname, timelevel)
+    else if (trim(dimname2)==trim(dimname3)) then
+        call infld(varname, ncid, dimname1, dimname2, dimname4,&
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,&
+           field, readvar, gridname, timelevel)
+    else if (trim(dimname2)==trim(dimname4)) then                 
+        call infld(varname, ncid, dimname1, dimname2, dimname3,&
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,&
+           field, readvar, gridname, timelevel)
+    else if (trim(dimname3)==trim(dimname4)) then                  
+        call infld(varname, ncid, dimname1, dimname2, dimname3,&
+           dim1b, dim1e, dim2b, dim2e, dim3b, dim3e, dim4b, dim4e,&
+           field, readvar, gridname, timelevel)
+
+    else
+
+      !
+      ! Error conditions
+      !
+      if (present(gridname)) then
+        grid_map = cam_grid_id(trim(gridname))
+      else
+        grid_map = cam_grid_id('physgrid')
+      end if
+      if (.not. cam_grid_check(grid_map)) then
+        if(masterproc) then
+          if (present(gridname)) then
+            write(errormsg, *)': invalid gridname, "',trim(gridname),'", specified for field ',trim(varname)
+          else
+            write(errormsg, *)': Internal error, no "physgrid" gridname'
+          end if
+        end if
+        call endrun(trim(subname)//errormsg)
+      end if
+
+      if (debug .and. masterproc) then
+        if (present(gridname)) then
+          write(iulog, '(5a)') trim(subname),': field = ',trim(varname),', grid = ',trim(gridname)
+        else
+          write(iulog, '(4a)') trim(subname),': field = ',trim(varname),', grid = physgrid'
+        end if
+        call shr_sys_flush(iulog)
+      end if
+
+      !
+      ! Read netCDF file
+      !
+      !
+      ! Check if field is on file; get netCDF variable id
+      !
+      call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens,    &
+           readvar_tmp, dimnames=file_dnames)
+      !
+      ! If field is on file:
+      !
+      if (readvar_tmp) then
+        if (debug .and. masterproc) then
+          write(iulog, '(2a,9(i0,a))') trim(subname),': field(',              &
+               dim1b,':',dim1e,',',dim2b,':',dim2e,',',dim3b,':',dim3e,',',dim4b,':',dim4e,       &
+               '),file(',dimlens(1),',',dimlens(2),',',dimlens(3),',',dimlens(4),')'
+          call shr_sys_flush(iulog)
+        end if
+        !
+        ! Get array dimension id's and sizes
+        !
+        ierr = PIO_inq_dimid(ncid, dimname1, arraydimids(1))
+        ierr = PIO_inq_dimid(ncid, dimname2, arraydimids(2))
+        ierr = PIO_inq_dimid(ncid, dimname3, arraydimids(3))
+        ierr = PIO_inq_dimid(ncid, dimname4, arraydimids(4))
+        arraydimsize(1) = (dim1e - dim1b + 1)
+        arraydimsize(2) = (dim2e - dim2b + 1)
+        arraydimsize(3) = (dim3e - dim3b + 1)
+        arraydimsize(4) = (dim4e - dim4b + 1)
+
+        do j = 1, 4
+          if (arraydimsize(j) /= size(field, j)) then
+            write(errormsg, *) ': Mismatch between array bounds and field size for ', &
+                 trim(varname), ', dimension', j
+            call endrun(trim(subname)//errormsg)
+          end if
+        end do
+
+        pdims = ndims
+        if (ndims > 5) then
+          call endrun(trim(subname)//': too many dimensions for '//trim(varname))
+        else if (ndims < 4) then
+          call endrun(trim(subname)//': too few dimensions for '//trim(varname))
+        else
+          ! Check to make sure that the fourth dimension is time
+          if (ndims == 5) then
+            ierr = pio_inq_dimname(ncid, dimids(5), tmpname)
+            if (trim(tmpname) /= 'time') then
+              call endrun(trim(subname)//': dimension mismatch for '//trim(varname))
+            end if
+            pdims = 4
+          end if
+        end if
+
+        if(ndims == 5) then
+          if(present(timelevel)) then
+            call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
+          end if
+        end if
+
+        field_dnames(1) = dimname1
+        field_dnames(2) = dimname2
+        field_dnames(3) = dimname3
+        field_dnames(4) = dimname4
+
+        if (single_column) then
+          ! This could be generalized but for now only handles a single point
+          strt(1) = dim1b
+          strt(2) = dim2b
+          strt(3) = dim3b
+          strt(4) = dim4b
+          cnt = arraydimsize
+          call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          if (trim(field_dnames(1)) == 'lon') then
+            strt(1) = lonidx ! First dim always lon for Eulerian dycore
+          else
+            call endrun(trim(subname)//': lon should be first dimension for '//trim(varname))
+          end if
+          if (trim(field_dnames(2)) == 'lat') then
+            strt(2) = latidx
+          else if (trim(field_dnames(3)) == 'lat') then
+            strt(3) = latidx
+          else
+            call endrun(trim(subname)//': lat dimension not found for '//trim(varname))
+          end if
+
+          ! Check for permuted dimensions ('out of order' array)
+          call calc_permutation(dimids, arraydimids, permutation, ispermuted)
+          if (ispermuted) then
+            call cam_permute_array(strt, permutation)
+            call cam_permute_array(cnt, permutation)
+            allocate(tmp3d(1:cnt(1), 1:cnt(2), 1:cnt(3), 1:cnt(4)))
+            ierr = pio_get_var(ncid, varid, strt, cnt, tmp3d)
+            do l = dim4b, dim4e
+              do k = dim3b, dim3e
+                 do j = dim2b, dim2e
+                    do i = dim1b, dim1e
+                    ! We don't need strt anymore, reuse it
+                      strt(1) = i - dim1b + 1
+                      strt(2) = j - dim2b + 1
+                      strt(3) = k - dim3b + 1
+                      strt(4) = l - dim4b + 1
+                      call cam_permute_array(strt, permutation)
+                      field(i,j,k,l) = tmp3d(strt(1), strt(2), strt(3), strt(4))
+                    end do  
+                 end do
+              end do
+            end do
+            deallocate(tmp3d)
+          else
+            ierr = pio_get_var(ncid, varid, strt, cnt, field)
+          end if
+        else
+          ! All distributed array processing
+          call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:pdims),  &
+               pio_double, iodesc, field_dnames=field_dnames, file_dnames=file_dnames(1:4))
+          call pio_read_darray(ncid, varid, iodesc, field, ierr)
+        end if ! end of single column
+      end if  ! end of readvar_tmp
+
+      readvar = readvar_tmp
+
+    end if ! end of call infld_real_2d_3d instead
+
+  end subroutine infld_real_4d_4d
 
 
 end module ncdio_atm

@@ -1,0 +1,27 @@
+%YAML 1.1
+---
+Casename: shoc_standalone_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  - T_mid
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - qv
+  - qc
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  - omega
+  - p_int
+  - p_mid
+  - phis
+  - pseudo_density
+Output Control:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

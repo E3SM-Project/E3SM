@@ -66,7 +66,6 @@ public:
                       const Real* sphere_cart = nullptr, const Real* sphere_latlon = nullptr);
 
   void set_phis (const int ie, CF90Ptr& phis);
-
 private:
   bool m_consthv;
   int m_num_elems;

@@ -88,6 +88,7 @@ module physpkg
   character(len=16) :: microp_scheme 
   integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
   logical           :: do_clubb_sgs
+  logical           :: do_shoc_sgs
   logical           :: use_subcol_microp   ! if true, use subcolumns in microphysics
   logical           :: state_debug_checks  ! Debug physics_state.
   logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
@@ -124,6 +125,7 @@ subroutine phys_register
     use microp_aero,        only: microp_aero_register
     use macrop_driver,      only: macrop_driver_register
     use clubb_intr,         only: clubb_register_cam
+    use shoc_intr,          only: shoc_register_e3sm
     use conv_water,         only: conv_water_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
@@ -143,6 +145,7 @@ subroutine phys_register
     use prescribed_ozone,   only: prescribed_ozone_register
     use prescribed_volcaero,only: prescribed_volcaero_register
     use prescribed_aero,    only: prescribed_aero_register
+    use read_spa_data,      only: read_spa_data_register
     use prescribed_ghg,     only: prescribed_ghg_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
@@ -168,6 +171,7 @@ subroutine phys_register
                       microp_scheme_out        = microp_scheme,   &
                       cld_macmic_num_steps_out = cld_macmic_num_steps, &
                       do_clubb_sgs_out         = do_clubb_sgs,     &
+		      do_shoc_sgs_out          = do_shoc_sgs, &
                       do_aerocom_ind3_out      = do_aerocom_ind3,  &
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
@@ -215,14 +219,17 @@ subroutine phys_register
        ! cloud water
        if( microp_scheme == 'RK' ) then
           call stratiform_register()
-       elseif( microp_scheme == 'MG' ) then
-          if (.not. do_clubb_sgs) call macrop_driver_register()
+       elseif( microp_scheme == 'MG' .or. microp_scheme == 'P3' ) then
+          if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_register()
           call microp_aero_register()
           call microp_driver_register()
        end if
        
        ! Register CLUBB_SGS here
        if (do_clubb_sgs) call clubb_register_cam()
+       
+       ! Register SHOC_SGS here
+       if (do_shoc_sgs) call shoc_register_e3sm()
        
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
@@ -269,6 +276,7 @@ subroutine phys_register
        call prescribed_volcaero_register()
        call prescribed_ozone_register()
        call prescribed_aero_register()
+       call read_spa_data_register()
        call prescribed_ghg_register()
        call sslt_rebin_register
 
@@ -304,7 +312,7 @@ subroutine phys_register
        call cospsimulator_intr_register
 
        ! vertical diffusion
-       if (.not. do_clubb_sgs) call vd_register()
+       if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call vd_register()
 
        if (do_aerocom_ind3) call output_aerocom_aie_register()
     
@@ -684,6 +692,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use prescribed_ozone,   only: prescribed_ozone_init
     use prescribed_ghg,     only: prescribed_ghg_init
     use prescribed_aero,    only: prescribed_aero_init
+    use read_spa_data,      only: read_spa_data_init
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
@@ -724,6 +733,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use ionosphere,	    only: ionos_init  ! Initialization of ionosphere module (WACCM-X)
     use majorsp_diffusion,  only: mspd_init   ! Initialization of major species diffusion module (WACCM-X)
     use clubb_intr,         only: clubb_ini_cam
+    use shoc_intr,          only: shoc_init_e3sm
     use sslt_rebin,         only: sslt_rebin_init
     use tropopause,         only: tropopause_init
     use solar_data,         only: solar_data_init
@@ -818,6 +828,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_ozone_init()
     call prescribed_ghg_init()
     call prescribed_aero_init()
+    call read_spa_data_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
@@ -847,7 +858,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call rayleigh_friction_init()
 
     call pbl_utils_init(gravit, karman, cpair, rair, zvir)
-    if (.not. do_clubb_sgs) call vertical_diffusion_init(pbuf2d)
+    if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call vertical_diffusion_init(pbuf2d)
 
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
        call mspd_init ()
@@ -860,7 +871,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call tsinti(tmelt, latvap, rair, stebol, latice)
 
     call t_startf ('radiation_init')
-    call radiation_init(phys_state)
+    call radiation_init(phys_state,pbuf2d)
     call t_stopf ('radiation_init')
 
     call rad_solar_var_init()
@@ -874,12 +885,12 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call cldfrc_init(dp1)! for passing dp1 on to clubb
     call cldfrc2m_init()
 
-    call convect_deep_init(pref_edge)
+    call convect_deep_init(pref_edge, pbuf2d)
 
     if( microp_scheme == 'RK' ) then
        call stratiform_init()
-    elseif( microp_scheme == 'MG' ) then 
-       if (.not. do_clubb_sgs) call macrop_driver_init(pbuf2d)
+    elseif( microp_scheme == 'MG' .or. microp_scheme == 'P3' ) then 
+       if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
        call conv_water_init
@@ -887,6 +898,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
+    
+    ! initiate SHOC within E3SM
+    if (do_shoc_sgs) call shoc_init_e3sm(pbuf2d,dp1)
 
     call qbo_init
 
@@ -1534,6 +1548,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     nstep = get_nstep()
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
+                       do_shoc_sgs_out        = do_shoc_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,deep_scheme_out        = deep_scheme        &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -1654,10 +1669,10 @@ end if ! l_tracer_aero
     ! Call vertical diffusion code (pbl, free atmosphere and molecular)
     !===================================================
 
-    ! If CLUBB is called, do not call vertical diffusion, but obukov length and
+    ! If CLUBB (or SHOC) is called, do not call vertical diffusion, but obukov length and
     !   surface friction velocity still need to be computed.  In addition, 
     !   surface fluxes need to be updated here for constituents 
-    if (do_clubb_sgs) then
+    if (do_clubb_sgs .or. do_shoc_sgs) then
 
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
        
@@ -1696,7 +1711,7 @@ if (l_rayleigh) then
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('rayleigh_friction')
 
-    if (do_clubb_sgs) then
+    if (do_clubb_sgs .or. do_shoc_sgs) then
       call check_energy_chng(state, tend, "vdiff", nstep, ztodt, zero, zero, zero, zero)
     else
       call check_energy_chng(state, tend, "vdiff", nstep, ztodt, cam_in%cflx(:,1), zero, &
@@ -1918,6 +1933,7 @@ subroutine tphysbc (ztodt,               &
     use mo_gas_phase_chemdr,only: map2chm
     use clybry_fam,         only: clybry_fam_adj
     use clubb_intr,      only: clubb_tend_cam
+    use shoc_intr,       only: shoc_tend_e3sm
     use sslt_rebin,      only: sslt_rebin_adv
     use tropopause,      only: tropopause_output
     use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
@@ -1926,6 +1942,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use debug_info,      only: get_debug_chunk, get_debug_macmiciter
     use lnd_infodata,    only: precip_downscaling_method
 
     implicit none
@@ -2104,6 +2121,8 @@ subroutine tphysbc (ztodt,               &
 
     lchnk = state%lchnk
     ncol  = state%ncol
+
+    call get_debug_chunk(lchnk)
 
     rtdt = 1._r8/ztodt
 
@@ -2417,7 +2436,7 @@ end if
        call t_stopf('stratiform_tend')
      end if !l_st_mac
 
-    elseif( microp_scheme == 'MG' ) then
+    elseif( microp_scheme == 'MG' .or. microp_scheme == 'P3' ) then
        ! Start co-substepping of macrophysics and microphysics
        cld_macmic_ztodt = ztodt/cld_macmic_num_steps
 
@@ -2428,6 +2447,8 @@ end if
        snow_pcw_macmic = 0._r8
 
        do macmic_it = 1, cld_macmic_num_steps
+
+          call get_debug_macmiciter(macmic_it)
 
         if (l_st_mac) then
 
@@ -2453,7 +2474,7 @@ end if
           call t_startf('macrop_tend')
 
           ! don't call Park macrophysics if CLUBB is called
-          if (macrop_scheme .ne. 'CLUBB_SGS') then
+          if (macrop_scheme .ne. 'CLUBB_SGS' .and. macrop_scheme .ne. 'SHOC_SGS') then
 
              call macrop_driver_tend( &
                   state,           ptend,          cld_macmic_ztodt, &
@@ -2500,10 +2521,17 @@ end if
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
-   
+           if (do_clubb_sgs) then
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
+	   endif
+	   
+	   if (do_shoc_sgs) then
+             call shoc_tend_e3sm(state,ptend,pbuf,cld_macmic_ztodt,&
+                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
+                dlf, det_s, det_ice, lcldo)
+	   endif	   
 
                 !  Since we "added" the reserved liquid back in this routine, we need 
                 !    to account for it in the energy checker
@@ -2522,6 +2550,8 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+		     
+	
  
           endif
 
@@ -2637,7 +2667,9 @@ end if
 
          call t_startf('tphysbc_aerosols')
 
-         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
+         if (do_clubb_sgs .or. do_shoc_sgs) then
+            sh_e_ed_ratio = 0.0_r8
+         endif
 
          ! Aerosol wet removal (including aerosol water uptake)
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
@@ -2770,6 +2802,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_ozone,    only: prescribed_ozone_adv
   use prescribed_ghg,      only: prescribed_ghg_adv
   use prescribed_aero,     only: prescribed_aero_adv
+  use read_spa_data,       only: read_spa_data_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
@@ -2801,6 +2834,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_ozone_adv(phys_state, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
+  call read_spa_data_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
 
   call t_startf('prescribed_volcaero_adv')

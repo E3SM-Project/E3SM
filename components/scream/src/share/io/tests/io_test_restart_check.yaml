@@ -1,0 +1,14 @@
+%YAML 1.1
+---
+Casename: io_output_restart_check_np${MPI_RANKS}
+Averaging Type: Average
+Grids: [Point Grid]
+Max Snapshots Per File: 1
+Fields:
+  Point Grid: [field_1, field_2, field_3, field_4]
+Output Control:
+  Frequency: 10
+  Frequency Units: Steps
+Restart:
+  Casename: io_output_restart_np${MPI_RANKS}
+...

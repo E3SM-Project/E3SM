@@ -401,6 +401,31 @@ _TESTS = {
         "time"    : "03:00:00",
     },
 
+    "e3sm_scream" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "ERS.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "ERS.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-HR.eam-double_memleak_tol",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-LR.eam-double_memleak_tol",
+            "REP.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "REP.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "PEM.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "PEM.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "SMS_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            "ERS_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            "ERP_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            )
+    },
+
+    "e3sm_scream_v1" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2000SCREAMv1.scream-30min_ts",
+            )
+    },
 
     "e3sm_gpu" : {
         "tests"    : (
