@@ -1143,7 +1143,8 @@ contains
         enddo
      endif
 #endif
-
+     ! this routine will set dpnh_dp_i(nlevp)=1 - a very good approximation, that will
+     ! then be corrected below, after the DSS.  
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
