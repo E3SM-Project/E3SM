@@ -16,7 +16,6 @@ module imex_mod
   use control_mod,        only: theta_hydrostatic_mode, qsplit
   use perf_mod,           only: t_startf, t_stopf
 #ifdef HOMMEXX_BFB_TESTING
-  use bfb_mod,            only: tridiag_diagdom_bfb_a1x1
   use iso_c_binding,      only: c_loc
 #endif
 
@@ -127,15 +126,6 @@ contains
     real (kind=real_kind) :: dw,dx,alpha_k,alphas(np,np)
     integer :: i,j,k,l,ie,nt
     integer :: nsafe,verbosity
-
-!#define HOMME_IMEX_MKLSOLVE
-#ifdef HOMME_IMEX_MKLSOLVE
-    real (kind=real_kind) :: JacDt(nlev,np,np)  , JacLt(nlev-1,np,np)
-    real (kind=real_kind) :: JacUt(nlev-1,np,np), JacU2t(nlev-2,np,np)
-    real (kind=real_kind) :: Ipiv(nlev,np,np)
-    real (kind=real_kind) :: Fnt(np,np,nlev), xt(nlev,np,np)
-    integer :: info(np,np)
-#endif
 
 #undef NEWTONCOND
 #ifdef NEWTONCOND
@@ -283,44 +273,7 @@ contains
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
-#ifdef HOMME_IMEX_MKLSOLVE
-          do j=1,np
-             do i=1,np
-                do k = 1,nlev-1
-                   JacLt(k,i,j) = JacL(i,j,k)
-                   JacUt(k,i,j) = JacU(i,j,k)
-                end do
-                do k = 1,nlev
-                   JacDt(k,i,j) = JacD(i,j,k)
-                   xt(k,i,j) = x(i,j,k)
-                end do
-# ifdef HOMMEXX_BFB_TESTING
-                ! Note: the C function is designed to accept both single and double precision,
-                !       so we need to pass also the size of a real (last argument)
-                call tridiag_diagdom_bfb_a1x1(nlev, JacLt(:,i,j), jacDt(:,i,j), jacUt(:,i,j), &
-                                              xt(:,i,j),INT(SIZEOF(JacL)/SIZE(JacL),4))
-# else
-
-#ifdef NEWTONCOND
-                ! nlev condition number: 500e3 with phi, 850e3 with dphi
-                anorm=DLANGT('1-norm', nlev, JacLt(:,i,j),JacDt(:,i,j),JacUt(:,i,j))
-                call DGTTRF(nlev, JacLt(:,i,j), JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j), Ipiv(:,i,j), info )
-                call DGTCON('1',nlev,JacLt(:,i,j),JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j),Ipiv(:,i,j),&
-                     ANORM, RCOND, WORK, IWORK, info2 )
-#else
-                call DGTTRF(nlev, JacLt(:,i,j), JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j), Ipiv(:,i,j), info(i,j) )
-#endif
-                ! Tridiagonal solve
-                call DGTTRS( 'N', nlev,1, JacLt(:,i,j), JacDt(:,i,j), JacUt(:,i,j), JacU2t(:,i,j), Ipiv(:,i,j),xt(:,i,j), nlev, info(i,j) )
-                do k = 1,nlev
-                   x(i,j,k) = xt(k,i,j)
-                end do
-#endif
-             end do
-          end do
-#else
           call solve_strict_diag_dominant_tridiag(JacL, JacD, JacU, x)
-#endif
 
           do k = 1,nlev-1
              dphi(:,:,k) = dphi_n0(:,:,k) + &
