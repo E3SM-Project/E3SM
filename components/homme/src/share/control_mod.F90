@@ -74,11 +74,9 @@ module control_mod
 
 ! vert_remap_q_alg:   -1  PPM remap without monotone filter, used for some test cases
 !                      0  Zerroukat monotonic splines
-!                      1  PPM vertical remap with mirroring at the boundaries
-!                         (solid wall bc's, high-order throughout)
-!                      2  PPM, switching to piecewise constant at boundaries   
+!                      1  PPM vertical remap with constant extension at the boundaries
 !                     10  PPM with linear extrapolation at boundaries, with column limiter
-!                     11  PPM with unlimited linear extrapolation ab boundaries
+!                     11  PPM with unlimited linear extrapolation at boundaries
  integer, public :: vert_remap_q_alg = 0    ! tracers
 
 ! advect theta 0: conservation form 

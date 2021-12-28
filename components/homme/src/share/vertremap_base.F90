@@ -622,9 +622,6 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
            call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), 0, ext(1), ext(2))
         else
-           !values for gs>1 are not used
-           !For remap_alg == 2 values might be used in computations that are then overwritten,
-           ! so they should be set but wont effect answer
            do k = 1 , gs
               ao(1   -k) = ao(1)
               ao(nlev+k) = ao(nlev)
