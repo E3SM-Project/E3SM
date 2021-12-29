@@ -14,7 +14,7 @@ interface
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
-                                       dt_tracer_factor) bind(c)
+                                       dt_tracer_factor, rearth) bind(c)
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
     ! Inputs
@@ -22,7 +22,8 @@ interface
     integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize
-    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
+    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
+                                        rearth
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
