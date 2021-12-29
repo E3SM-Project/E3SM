@@ -271,6 +271,13 @@
     <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <!-- ********** F compsets with transient SST (AMIP) ********** -->
+
+  <compset>
+    <alias>F20TR-MMFXX-CMIP6</alias>
+    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <!-- ******************************* -->
   <!-- ******************************* -->
 
