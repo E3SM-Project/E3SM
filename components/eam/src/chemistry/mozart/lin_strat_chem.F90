@@ -1114,7 +1114,8 @@ end subroutine linoz_readnl
     integer :: ispc, i, k, kmax
     real(r8):: efactor, dx
 
-    real(r8), parameter :: tau_30d = 1._r8/(30._r8*86400._r8)      ! inverse of (30 days*86400 sec/day)
+    !real(r8), parameter :: tau_30d = 1._r8/(30._r8*86400._r8)      ! inverse of (30 days*86400 sec/day)
+    real(r8), parameter :: tau_30d = 30._r8*86400._r8      ! inverse of (30 days*86400 sec/day)
     integer , parameter :: ms = 18      ! 
     
      efactor  = 1._r8 - exp(-delta_t/tau_30d)
