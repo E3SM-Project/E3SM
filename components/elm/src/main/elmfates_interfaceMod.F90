@@ -98,7 +98,7 @@ module ELMFatesInterfaceMod
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs, col_cf
    use ColumnDataType    , only : col_nf, col_pf
-   use VegetationDataType, only : veg_es, veg_wf
+   use VegetationDataType, only : veg_es, veg_wf, veg_ws
    use LandunitType      , only : lun_pp
 
    use landunit_varcon   , only : istsoil
@@ -2212,6 +2212,12 @@ contains
              this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = albgrd_col(c,:)
              this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = albgri_col(c,:)
 
+             if (veg_es%t_veg(p) <= tfrz) then
+                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
+             else
+                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
+             end if
+             
           else
 
              this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) = .false.
