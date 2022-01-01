@@ -120,13 +120,16 @@ module ELMFatesInterfaceMod
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : zero_bcs
    use FatesInterfaceMod     , only : FatesInterfaceInit
-
+   use FatesInterfaceMod     , only : UpdateFatesRMeansTStep
+   use FatesInterfaceMod     , only : InitTimeAveragingGlobals
+   
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
    use FatesInterfaceTypesMod, only : hlm_numlevgrnd
+   use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
    use EDInitMod             , only : zero_site
@@ -209,7 +212,8 @@ module ELMFatesInterfaceMod
       procedure, private :: init_soil_depths
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
-
+      procedure, public  :: WrapUpdateFatesRmean
+      
    end type hlm_fates_interface_type
 
    ! hlm_bounds_to_fates_bounds is not currently called outside the interface.
@@ -229,7 +233,8 @@ module ELMFatesInterfaceMod
         __FILE__
 
    public  :: ELMFatesGlobals
-
+   public  :: ELMFatesTimesteps
+   
 contains
 
 
@@ -473,7 +478,18 @@ contains
 
      return
    end subroutine ELMFatesGlobals
-
+   
+   ! ====================================================================================
+   
+   subroutine ELMFatesTimesteps()
+     
+     hlm_stepsize = real(get_step_size(),r8)
+     
+     call InitTimeAveragingGlobals()
+     
+     return
+   end subroutine ELMFatesTimesteps
+   
    ! ====================================================================================
 
    subroutine init(this, bounds_proc )
@@ -815,8 +831,6 @@ contains
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             p = ifp+col_pp%pfti(c)
-            this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
-                 veg_es%t_veg24(p)
 
             this%fates(nc)%bc_in(s)%precip24_pa(ifp) = &
                   top_af_inst%prec24h(t)
@@ -2352,6 +2366,29 @@ end subroutine wrap_update_hifrq_hist
 
  ! ======================================================================================
 
+ subroutine WrapUpdateFatesRmean(this, nc)
+   
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer,intent(in) :: nc
+   
+   ! !LOCAL VARIABLES:
+   integer                     :: s,c,p,ifp  ! indices and loop counters
+   
+   do s = 1, this%fates(nc)%nsites
+      c = this%f2hmap(nc)%fcolumn(s)
+      do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
+         p = ifp+col_pp%pfti(c)
+         this%fates(nc)%bc_in(s)%t_veg_pa(ifp) = veg_es%t_veg(p)
+      end do
+   end do
+
+   call UpdateFatesRMeansTStep(this%fates(nc)%sites,this%fates(nc)%bc_in)
+   
+  end subroutine WrapUpdateFatesRmean
+
+ 
+ ! ======================================================================================
+ 
  subroutine init_history_io(this,bounds_proc)
 
    use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
