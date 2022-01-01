@@ -205,6 +205,7 @@ contains
             ! only send fast runoff directly to streams
             qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
          endif
+         qflx_surf(c) = 0._r8
       end do
 
       ! Determine water in excess of ponding limit for urban roof and impervious road.
@@ -221,6 +222,7 @@ contains
                xs(c) = max(0._r8, &
                     h2osoi_liq(c,1)/dtime + qflx_top_soil(c) - qflx_evap_grnd(c) - &
                     pondmx_urban/dtime)
+               xs(c) = 0._r8
                if (xs(c) > 0.) then
                   h2osoi_liq(c,1) = pondmx_urban
                else
@@ -457,6 +459,7 @@ contains
              else
                 qflx_h2osfc_surf(c)= 0._r8
              endif
+             qflx_h2osfc_surf(c)= 0._r8
 
              ! cutoff lower limit
              if ( qflx_h2osfc_surf(c) < 1.0e-8) qflx_h2osfc_surf(c) = 0._r8
