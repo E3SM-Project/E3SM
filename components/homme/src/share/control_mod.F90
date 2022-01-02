@@ -78,6 +78,7 @@ module control_mod
 !                     10  PPM with linear extrapolation at boundaries, with column limiter
 !                     11  PPM with unlimited linear extrapolation at boundaries
  integer, public :: vert_remap_q_alg = 0    ! tracers
+ integer, public :: vert_remap_u_alg = -2   ! remap for dynamics. default -2 means inherit vert_remap_q_alg
 
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
