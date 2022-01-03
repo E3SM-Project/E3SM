@@ -302,13 +302,14 @@ contains
 
    subroutine print_global_carbon_diags(state, dtime, nstep)
       use phys_gmean,     only: gmean
+      use phys_grid,      only: get_ncols_p
 
-      type(physics_state), intent(in   ) :: state
+      type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
       real(r8), intent(in) :: dtime        ! physics time step
       integer , intent(in) :: nstep        ! current timestep number
 
       ! local variables
-      integer :: ncol, lchnk
+      integer :: ncol, lchnk, i
       integer :: ierr
       integer :: cdate, year, mon, day, sec
       integer, parameter :: c_num_var     = 4
@@ -330,45 +331,39 @@ contains
       real(r8) :: rel_error_mon, expected_tc_mon
       real(r8) :: rel_error_run, expected_tc_run
 
-      real(r8), pointer :: tc(:,:,:)       ! array for holding carbon variables
-      real(r8), pointer :: flux_ts(:,:,:)  ! array for holding timestep fluxes
-      real(r8), pointer :: flux_mon(:,:,:) ! array for holding monthly fluxes
-      real(r8), pointer :: flux_run(:,:,:) ! array for holding full run fluxes
+      real(r8) :: tc(      pcols,begchunk:endchunk,c_num_var)     ! array for holding carbon variables
+      real(r8) :: flux_ts( pcols,begchunk:endchunk,f_ts_num_var)  ! array for holding timestep fluxes
+      real(r8) :: flux_mon(pcols,begchunk:endchunk,f_mon_num_var) ! array for holding monthly fluxes
+      real(r8) :: flux_run(pcols,begchunk:endchunk,f_run_num_var) ! array for holding full run fluxes
       !------------------------------------------------------------------------
 
       if ( .not. co2_transport() ) return
 
-      allocate(tc(pcols,begchunk:endchunk,c_num_var), stat=ierr)
-      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate tc'
-      allocate(flux_ts(pcols,begchunk:endchunk,f_ts_num_var), stat=ierr)
-      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_ts'
-      allocate(flux_mon(pcols,begchunk:endchunk,f_mon_num_var), stat=ierr)
-      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_mon'
-      allocate(flux_run(pcols,begchunk:endchunk,f_run_num_var), stat=ierr)
-      if (ierr /= 0) write(iulog,*) trim(sub_name) // 'FAIL to allocate flux_run'
-
-      ncol  = state%ncol
-      lchnk = state%lchnk
-      ! carbon at current, initial, month start, and previous time steps
-      tc(:ncol,lchnk,1) = state%tc_curr(:ncol)
-      tc(:ncol,lchnk,2) = state%tc_init(:ncol)
-      tc(:ncol,lchnk,3) = state%tc_mnst(:ncol)
-      tc(:ncol,lchnk,4) = state%tc_prev(:ncol)
-      ! carbon emissions and fluxes at current time step
-      flux_ts(:ncol,lchnk,1) = state%c_flux_sfc(:ncol)
-      flux_ts(:ncol,lchnk,2) = state%c_flux_air(:ncol)
-      ! monthly accumulated carbon emissions and fluxes
-      flux_mon(:ncol,lchnk,1) = state%c_mflx_sfc(:ncol)
-      flux_mon(:ncol,lchnk,2) = state%c_mflx_air(:ncol)
-      flux_mon(:ncol,lchnk,3) = state%c_mflx_sff(:ncol)
-      flux_mon(:ncol,lchnk,4) = state%c_mflx_lnd(:ncol)
-      flux_mon(:ncol,lchnk,5) = state%c_mflx_ocn(:ncol)
-      ! total time integrated carbon emissions and fluxes
-      flux_run(:ncol,lchnk,1) = state%c_iflx_sfc(:ncol)
-      flux_run(:ncol,lchnk,2) = state%c_iflx_air(:ncol)
-      flux_run(:ncol,lchnk,3) = state%c_iflx_sff(:ncol)
-      flux_run(:ncol,lchnk,4) = state%c_iflx_lnd(:ncol)
-      flux_run(:ncol,lchnk,5) = state%c_iflx_ocn(:ncol)
+      do lchnk = begchunk, endchunk
+         ncol = get_ncols_p(lchnk)
+         do i = 1, ncol
+            ! total carbon mass at different time points
+            tc(i,lchnk,1) = state(lchnk)%tc_curr(i)
+            tc(i,lchnk,2) = state(lchnk)%tc_init(i)
+            tc(i,lchnk,3) = state(lchnk)%tc_mnst(i)
+            tc(i,lchnk,4) = state(lchnk)%tc_prev(i)
+            ! carbon emissions and fluxes at current time step
+            flux_ts(i,lchnk,1) = state(lchnk)%c_flux_sfc(i)
+            flux_ts(i,lchnk,2) = state(lchnk)%c_flux_air(i)
+            ! monthly accumulated carbon emissions and fluxes
+            flux_mon(i,lchnk,1) = state(lchnk)%c_mflx_sfc(i)
+            flux_mon(i,lchnk,2) = state(lchnk)%c_mflx_air(i)
+            flux_mon(i,lchnk,3) = state(lchnk)%c_mflx_sff(i)
+            flux_mon(i,lchnk,4) = state(lchnk)%c_mflx_lnd(i)
+            flux_mon(i,lchnk,5) = state(lchnk)%c_mflx_ocn(i)
+            ! total time integrated carbon emissions and fluxes
+            flux_run(i,lchnk,1) = state(lchnk)%c_iflx_sfc(i)
+            flux_run(i,lchnk,2) = state(lchnk)%c_iflx_air(i)
+            flux_run(i,lchnk,3) = state(lchnk)%c_iflx_sff(i)
+            flux_run(i,lchnk,4) = state(lchnk)%c_iflx_lnd(i)
+            flux_run(i,lchnk,5) = state(lchnk)%c_iflx_ocn(i)
+         end do
+      end do
 
 
 
@@ -607,11 +602,6 @@ contains
             write(iulog, '(71("-"),"|",23("-"))')
          end if ! (masterproc)
       end if ! ( is_last_step() )
-      
-      deallocate(tc)
-      deallocate(flux_ts)
-      deallocate(flux_mon)
-      deallocate(flux_run)
 
    end subroutine print_global_carbon_diags
 

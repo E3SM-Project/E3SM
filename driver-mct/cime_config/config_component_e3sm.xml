@@ -270,6 +270,7 @@
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
       <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
+      <value compset="_BGC%LNDATM">CO2B</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

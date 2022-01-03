@@ -1223,9 +1223,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
-    use time_manager,   only: get_nstep
+    use time_manager,   only: get_nstep, is_first_step, is_end_curr_month
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
+    use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags
     !
     ! Input arguments
     !
@@ -1342,6 +1343,24 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
 
+    !
+    ! Check for carbon conservation
+    !
+    do c = begchunk, endchunk
+       call get_total_carbon(phys_state(c), 'wet')
+    end do
+    call print_global_carbon_diags(phys_state, ztodt, nstep)
+    do c = begchunk, endchunk
+       ncol = get_ncols_p(c)
+       phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
+       if (is_first_step()) then
+          phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
+       end if
+       if (is_end_curr_month()) then
+          phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
+       end if
+    end do
+
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
 
@@ -1452,8 +1471,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
-    use co2_diagnostics,    only: get_total_carbon, print_global_carbon_diags, &
-                                  get_carbon_sfc_fluxes, get_carbon_air_fluxes
+    use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
 
@@ -1859,19 +1877,6 @@ end if ! l_ac_energy_chk
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
-
-
-    !-------------- Carbon budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    call get_total_carbon(state, 'wet')
-    call print_global_carbon_diags(state, ztodt, nstep)
-    state%tc_prev(:ncol) = state%tc_curr(:ncol)
-    if (is_first_step()) then
-       state%tc_init(:ncol) = state%tc_curr(:ncol)
-    end if
-    if (is_end_curr_month()) then
-       state%tc_mnst(:ncol) = state%tc_curr(:ncol)
-    end if
-    !-------------- Carbon budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     call check_tracers_fini(tracerint)
 
