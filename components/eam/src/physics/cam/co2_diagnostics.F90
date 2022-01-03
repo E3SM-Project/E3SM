@@ -2,13 +2,14 @@ module co2_diagnostics
 
 !-------------------------------------------------------------------------------
 ! Purpose:
-! Write out mass of CO2 in each tracer (total, fossil fuel, land, and ocean)
-! I wanted this to go in co2_cyle.F90, but it created a circular dependency
-! with camsrfexch.F90, so this became its own module.
+! Gather CO2 mass, surface fluxes, and aircraft emissions,
+! then check global mean carbon mass conservation for different periods
+! Conservation check frequency controlled by following namelist flags:
+!   co2_print_diags_timestep - time step level checking (default off)
+!   co2_print_diags_monthly  - monthly level checking   (default on)
+!   co2_print_diags_total    - full run checking        (default on)
 !
 ! Author: Bryce Harrop
-! 
-!                                              
 !-------------------------------------------------------------------------------
 
 use shr_kind_mod   , only: r8 => shr_kind_r8
@@ -103,6 +104,10 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine get_total_carbon(state, wet_or_dry)
+      !-------------------------------------------------
+      ! Purpose: sum column carbon and store in state
+      ! Called by: phys_run2
+      !-------------------------------------------------
       use physconst,      only: rga
 
       type(physics_state), intent(inout) :: state
@@ -160,6 +165,10 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine get_carbon_sfc_fluxes(state, cam_in, dtime)
+      !-------------------------------------------------
+      ! Purpose: store surface carbon exchange in state
+      ! Called by: tphysac
+      !-------------------------------------------------
 
       type(physics_state), intent(inout) :: state
       type(cam_in_t),      intent(in   ) :: cam_in
@@ -241,6 +250,10 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine get_carbon_air_fluxes(state, pbuf, dtime)
+      !-------------------------------------------------
+      ! Purpose: store aircraft CO2 emissions in state
+      ! Called by: tphysac
+      !-------------------------------------------------
       use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
 
       type(physics_state), intent(inout) :: state
@@ -307,6 +320,10 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine print_global_carbon_diags(state, dtime, nstep)
+      !-------------------------------------------------
+      ! Purpose: Write out conservation checks
+      ! Called by: phys_run2
+      !-------------------------------------------------
       use phys_gmean,     only: gmean
       use phys_grid,      only: get_ncols_p
 
