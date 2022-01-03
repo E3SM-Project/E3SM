@@ -114,6 +114,8 @@ contains
       integer i, k, m                       ! column, level, constant indices
       !------------------------------------------------------------------------
 
+      if ( .not. co2_transport() ) return
+
       ! Set CO2 global index
       do m = 1, ncnst
          select case (trim(c_names(m)))
@@ -172,6 +174,8 @@ contains
       real(r8) :: sfc_flux_fff(pcols)       ! surface fossil fuel carbon flux
       real(r8) :: sfc_flux_lnd(pcols)       ! surface land carbon flux
       !------------------------------------------------------------------------
+
+      if ( .not. co2_transport() ) return
 
       ! Set CO2 global indices
       do m = 1, ncnst
@@ -251,6 +255,8 @@ contains
       real(r8), pointer :: ac_CO2(:,:)      ! aircraft emissions in pbuf
       real(r8) :: air_flux(pcols)           ! aircraft carbon flux
       !------------------------------------------------------------------------
+
+      if ( .not. co2_transport() ) return
 
       ! Set CO2 global index
       do m = 1, ncnst
