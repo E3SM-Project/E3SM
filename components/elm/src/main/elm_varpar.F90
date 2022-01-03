@@ -66,6 +66,8 @@ module elm_varpar
 
   integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
+  integer, parameter :: max_tide_coeffs = 37 ! Number in NOAA tide tables
+
   ! constants for decomposition cascade
 
   integer :: i_met_lit 

@@ -310,7 +310,11 @@ contains
 #if (defined HUM_HOL || defined MARSH)
      use pftvarcon        , only : humhol_ht, humhol_dist, hum_frac, qflx_h2osfc_surfrate
 #endif
+#if defined MARSH
+      use pftvarcon       , only : num_tide_comps, tide_baseline,tide_coeff_period, tide_coeff_phase, tide_coeff_amp
+#endif
      use clm_time_manager , only : get_step_size, get_curr_date, get_curr_time
+     use elm_varcon       , only : secspday
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds
@@ -366,6 +370,8 @@ contains
      integer  :: jwt(bounds%begc:bounds%endc)
      integer  :: yr, mon, day, tod               !
      integer  :: days, seconds               !
+     integer  :: ii
+     real(r8) :: h2osfc_before
      !-----------------------------------------------------------------------
 
      associate(                                                                &
@@ -544,7 +550,6 @@ contains
              if (c .eq. 1) then
                 qflx_surf(1) = qflx_surf(1) + qflx_in_h2osfc(c)
                 qflx_surf_input(2) = qflx_surf_input(2) + qflx_in_h2osfc(c)
-                call get_curr_time(days, seconds)
                 qflx_in_h2osfc(c) = 0._r8  !TAO 22/8/2018 changing to sin function gave an error
              end if
 #endif
@@ -567,14 +572,19 @@ contains
 #elif (defined MARSH)   
              qflx_tide(c) = 0._r8
              if (h2osfc(c) .gt. 0._r8 .and. c==1) then
-                !qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0,h2osfc(c) / dtime) TAO 29/8/2018
-                qflx_h2osfc_surf(c) = min(1.0e-7_r8*h2osfc(c)**2.0,h2osfc(c) / dtime) 
+                qflx_h2osfc_surf(c) = min(qflx_h2osfc_surfrate*h2osfc(c)**2.0_r8,h2osfc(c) / dtime) 
              else if (c .eq. 2) then
                 call get_curr_time (days, seconds)
                 qflx_h2osfc_surf(c) = 0._r8
-                ! bsulman TODO: Change tidal cycle amplitude to parameter
-                qflx_tide(c) = ((500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds*3.1415_r8*0.00000001_r8) / 0.91518_r8) + 800_r8)) - h2osfc(c)) / dtime !TAO
-                h2osfc(c) = 500_r8 * (sin((0.00003_r8*3.1415_r8*seconds) + 513.4328_r8)) / 2.0_r8 + ((sin(seconds*3.1415_r8*0.00000001_r8) / 0.91518_r8) + 800_r8) ! (seconds/2.920463_r8) changed from 0. to sine function TAO 27/8/2018
+                ! bsulman : Changed to use flexible set of parameters up to full NOAA tidal components (37 coefficients)
+                ! Tidal cycle is the sum of all the sinusoidal components
+               h2osfc_before = h2osfc(c)
+               h2osfc(c) = 0.0_r8
+                do ii=1,num_tide_comps
+                  h2osfc(c) =    h2osfc(c)    +  tide_coeff_amp(ii) * sin(2.0_r8*SHR_CONST_PI*(1/tide_coeff_period(ii)*(days*secspday+seconds) + tide_coeff_phase(ii)))
+                enddo
+                h2osfc(c) = max(h2osfc(c) + tide_baseline, 0.0)
+                qflx_tide(c) = (h2osfc(c)-h2osfc_before)/dtime
 
 #else
              if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
