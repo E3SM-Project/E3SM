@@ -4,5 +4,6 @@ set(NETCDF_PATH "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf
 set(PNETCDF_PATH "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0")
 set(LAPACK_LIBDIR "/software/tools/compilers/intel_2017/mkl/lib/intel64")
 string(APPEND SLIBS " -L${NETCDF_PATH}/lib -Wl,-rpath=${NETCDF_PATH}/lib -lnetcdff -lnetcdf")
+string(APPEND CXX_LIBS " -lstdc++")
 set(MPICXX "mpic++")
-set(SCXX "gcpp")
+set(SCXX "g++")
