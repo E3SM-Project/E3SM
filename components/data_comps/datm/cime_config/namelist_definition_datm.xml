@@ -224,10 +224,8 @@
       <value datm_mode="CORE_RYF0304_JRA" >CORE_RYF0304_JRA.GISS.LWDN,CORE_RYF0304_JRA.GISS.SWDN,CORE_RYF0304_JRA.GCGCS,CORE_RYF0304_JRA.NCEP</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
-    </values>
-    <value datm_mode="E3SMWCv2">E3SMWCv2Forcing.Solar,E3SMWCv2Forcing.nonSolarFlux,E3SMWCv2Forcing.State</value>
+      <value datm_mode="E3SMWCv2">E3SMWCv2Forcing.Solar,E3SMWCv2Forcing.nonSolarFlux,E3SMWCv2Forcing.State</value>
     </values>   
-
   </entry>
 
   <entry id="strm_domdir">
@@ -241,12 +239,12 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CLM1PT.ELM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CPLHISTForcing">null</value>
-      <value stream="E3SMWCv2Forcing">null</value>
+      <value stream="E3SMWCv2">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
       <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
-      <value stream="ELMGSWP3w5e5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106</value>
+      <value stream="ELMGSWP3w5e5">$DIN_LOC_ROOT/share/domains</value>
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
       <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
@@ -306,7 +304,7 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CLM1PT.ELM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CPLHISTForcing">null</value>
-      <value stream="E3SMWCv2Forcing">null</value>
+      <value stream="E3SMWCv2">v2.LR.piControl_land.cpl.ha2x3h.0476-01.nc</value>
       <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEPv7">domain.lnd.360x720_cruncep.130305.nc</value>
@@ -2731,10 +2729,11 @@
       <value>-999</value>
       <value stream="CLM1PT">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_ALIGN</value>
-      <value stream="E3SMWCv2Forcing">$DATM_E3SMWCv2_YR_ALIGN</value
+      <value stream="E3SMWCv2Forcing">$DATM_E3SMWCv2_YR_ALIGN</value>
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE2_NYF">1</value>
@@ -2783,6 +2782,7 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_START</value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE2_NYF">1</value>
@@ -2852,6 +2852,7 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CORE2_NYF">1</value>
@@ -3108,6 +3109,7 @@
       <value datm_mode="CLM1PT">nn</value>
       <value stream="CLMCRUNCEP" atm_grid="hcru">copy</value>
       <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
+      <value stream="ELMGSWP3w5e5" atm_grid="hcru">copy</value>
       <value stream="CLMNLDAS2" atm_grid="0.125nldas2">copy</value>
       <value stream="co2tseries">nn</value>
     </values>
