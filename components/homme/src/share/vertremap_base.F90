@@ -539,6 +539,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
   real(kind=real_kind) :: mymass, massn1, massn2, ext(2)
   integer :: i, j, k, q, kk, kid(nlev)
+  logical :: limit_linear_extrap
 
   call t_startf('remap_Q_ppm')
   do j = 1 , nx
@@ -611,16 +612,17 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
         !Fill in ghost values.
-        if (remap_alg==10) then
-           ext(1) = minval(ao(1:nlev))
-           ext(2) = maxval(ao(1:nlev))
-           call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), 1,ext(1), ext(2))
+
+
+        if (remap_alg == 10 .or. remap_alg == 11) then
+           limit_linear_extrap = (remap_alg == 10)
+           if (limit_linear_extrap) then
+              ext(1) = minval(ao(1:nlev))
+              ext(2) = maxval(ao(1:nlev))
+           end if
+           call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), limit_linear_extrap, ext(1), ext(2))
            call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
-                ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), 1, ext(1), ext(2))
-        else if (remap_alg==11) then
-           call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), 0,ext(1), ext(2))
-           call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
-                ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), 0, ext(1), ext(2))
+                ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), limit_linear_extrap, ext(1), ext(2))
         else
            do k = 1 , gs
               ao(1   -k) = ao(1)
@@ -776,7 +778,7 @@ end function integrate_parabola
 
     real(kind=real_kind) :: den,num,a
     real(kind=real_kind) :: z3,z4
-    integer :: limit
+    logical :: limit
 
     ! In exact arithmetic, the following is equivalent to
     !   x1 = half*dx1
@@ -799,7 +801,7 @@ end function integrate_parabola
     a  = num/den
     y4 = (1-a)*y1 + a*y2
 
-    if (limit==1) then
+    if (limit) then
        y3 = max(lo, min(hi, y3))
        y4 = max(lo, min(hi, y4))
     endif
