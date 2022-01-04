@@ -63,7 +63,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
   /* Helper functions */
-  void count_pio_atm_file();
+  int count_pio_atm_file();
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

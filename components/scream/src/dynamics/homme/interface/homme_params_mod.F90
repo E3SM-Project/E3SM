@@ -132,9 +132,10 @@ contains
       hypervis_scaling,         &
       hypervis_subcycle,        &
       hypervis_subcycle_tom,    &
-      moisture,                 & ! Unused in SCREAM
-      statefreq,                & ! Unused in SCREAM
-      mesh_file,                & ! Unused in SCREAM
+      moisture,                 &
+      mesh_file,                &
+      statefreq,                &
+      disable_diagnostics,      &
       se_ftype
 
     namelist /vert_nl/    &
@@ -517,6 +518,7 @@ contains
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
     use dimensions_mod,    only: qsize, nlev
     use control_mod,       only: ftype, use_moisture
+    use homme_context_mod, only: tl
     !
     ! Input(s)
     !
@@ -531,6 +533,8 @@ contains
     call c_f_pointer(param_name_c,param_name)
     len = index(param_name, C_NULL_CHAR) -1
     select case(param_name(1:len))
+      case("num_steps")
+        tl%nstep = param_value
       case("ne")
         ne = param_value
       case("ftype")

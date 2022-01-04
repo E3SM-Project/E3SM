@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_NAN_CHECK_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
 
@@ -28,15 +29,15 @@ public:
 
   bool check(const Field<const_RT>& field) const override {
     const auto& layout = field.get_header().get_identifier().get_layout();
-    const auto& dims = layout.dims();
-    const int dim0 = dims[0];
+    const auto extents = layout.extents();
+    const auto size = layout.size();
 
     int num_nans = 0;
     switch (layout.rank()) {
       case 1:
         {
           auto v = field.template get_view<const_RT*>();
-          Kokkos::parallel_reduce(dim0, KOKKOS_LAMBDA(int i, int& result) {
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
             if (std::isnan(v(i))) {
               ++result;
             }
@@ -46,10 +47,9 @@ public:
       case 2:
         {
           auto v = field.template get_view<const_RT**>();
-          const int dim1 = dims[1];
-          Kokkos::parallel_reduce(dim0*dim1, KOKKOS_LAMBDA(int idx, int& result) {
-            const int i = idx / dim1;
-            const int j = idx % dim1;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+            int i,j;
+            unflatten_idx(idx,extents,i,j);
             if (std::isnan(v(i,j))) {
               ++result;
             }
@@ -59,12 +59,9 @@ public:
       case 3:
         {
           auto v = field.template get_view<const_RT***>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          Kokkos::parallel_reduce(dim0*dim1*dim2, KOKKOS_LAMBDA(int idx, int& result) {
-            const int i = (idx / dim2) / dim1;
-            const int j = (idx / dim2) % dim1;
-            const int k =  idx % dim2;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+            int i,j,k;
+            unflatten_idx(idx,extents,i,j,k);
             if (std::isnan(v(i,j,k))) {
               ++result;
             }
@@ -74,14 +71,9 @@ public:
       case 4:
         {
           auto v = field.template get_view<const_RT****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3, KOKKOS_LAMBDA(int idx, int& result) {
-            const int i = ((idx / dim3) / dim2) / dim1;
-            const int j = ((idx / dim3) / dim2) % dim1;
-            const int k =  (idx / dim3) % dim2;
-            const int l =   idx % dim3;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+            int i,j,k,l;
+            unflatten_idx(idx,extents,i,j,k,l);
             if (std::isnan(v(i,j,k,l))) {
               ++result;
             }
@@ -91,17 +83,22 @@ public:
       case 5:
         {
           auto v = field.template get_view<const_RT*****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          const int dim4 = dims[4];
-          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3*dim4, KOKKOS_LAMBDA(int idx, int& result) {
-            const int i = (((idx / dim4) / dim3) / dim2) / dim1;
-            const int j = (((idx / dim4) / dim3) / dim2) % dim1;
-            const int k =  ((idx / dim4) / dim3) % dim2;
-            const int l =   (idx / dim4) % dim3;
-            const int m =    idx % dim4;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,extents,i,j,k,l,m);
             if (std::isnan(v(i,j,k,l,m))) {
+              ++result;
+            }
+          }, Kokkos::Sum<int>(num_nans));
+        }
+        break;
+      case 6:
+        {
+          auto v = field.template get_view<const_RT******>();
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+            int i,j,k,l,m,n;
+            unflatten_idx(idx,extents,i,j,k,l,m,n);
+            if (isnan(v(i,j,k,l,m,n))) {
               ++result;
             }
           }, Kokkos::Sum<int>(num_nans));

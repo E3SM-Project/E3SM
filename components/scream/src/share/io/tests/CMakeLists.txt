@@ -9,7 +9,7 @@ CreateUnitTest(io_test "io.cpp" scream_io LABELS "io"
 ## Test restart
 # Each restart test is a "setup" for the restart_check test,
 # and cannot run in parallel with other restart tests
-CreateUnitTest(restart_test "restart.cpp" scream_io LABELS "io"
+CreateUnitTest(output_restart_test "restart.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   PROPERTIES RESOURCE_LOCK rpointer_file FIXTURES_SETUP restart_setup
 )

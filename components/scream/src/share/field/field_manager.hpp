@@ -1,8 +1,6 @@
 #ifndef SCREAM_FIELD_MANAGER_HPP
 #define SCREAM_FIELD_MANAGER_HPP
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_units.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_request.hpp"
@@ -13,12 +11,15 @@
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
+#include "ekat/util/ekat_units.hpp"
 
 #include <algorithm>
 #include <initializer_list>
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 
 namespace scream
 {
@@ -69,6 +70,14 @@ public:
   void registration_ends ();
   void clean_up ();
 
+  // Adds an externally-constructed field to the FieldManager. Allows the FM
+  // to make the field available as if it had been built with the usual
+  // registration procedures.
+  // This can be used to allow atm procs to create some helper fields internally,
+  // but still leverage the FM class for certain features (e.g., I/O).
+  // NOTE: the repo must be in closed state, and the FieldManager must not already
+  //       store a field with the same name.
+  void add_field (const Field<RealType>& f);
 
   // Get information about the state of the repo
   int size () const { return m_fields.size(); }
@@ -79,6 +88,11 @@ public:
 
   // Get the group_name->group_info map of all stored groups
   const group_info_map& get_groups_info () const { return m_field_groups; }
+
+  // Adds $field_name to group $group_name (creating the group, if necessary).
+  // NOTE: if $group_name is allocated as a bundled field, this throws.
+  // NOTE: must be called after registration ends
+  void add_to_group (const std::string& field_name, const std::string& group_name);
 
   // Query for a particular field or group of fields
   bool has_field (const std::string& name) const { return m_fields.find(name)!=m_fields.end(); }
@@ -114,7 +128,6 @@ protected:
   // When registering subfields, we might end up registering the subfield before
   // the parent field. So at registration time, simply keep track of the subfields,
   // and create them at registration_ends() time, after all other fields.
-  std::map<std::string,FieldRequest> m_subfield_requests;
 
   // The map group_name -> FieldGroupInfo
   group_info_map      m_field_groups;
@@ -181,25 +194,11 @@ void FieldManager<RealType>::register_field (const FieldRequest& req)
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
 
-    // Do not allow to mix subfield requests with normal requests for now.
-    // TODO: you might be able to relax this. It's ok if field F was requested as subfield of G,
-    //       and also requested without knowledge of parent fields.
-    EKAT_REQUIRE_MSG (
-        (req.subview_info.dim_idx==-1) ||
-        m_subfield_requests.find(id.name())==m_subfield_requests.end() ||
-        m_subfield_requests.at(id.name()).subview_info==req.subview_info,
-        "Error! Inconsistent requests for a subfield.");
   }
 
-  if (req.subview_info.dim_idx>=0) {
-    // This is a request for a subfield. Store request info, so we can correctly set up
-    // the subfield at the end of registration_ends() call
-    m_subfield_requests.emplace(id.name(),req);
-  } else {
-    // Make sure the field can accommodate the requested value type
-    constexpr int real_size = sizeof(RealType);
-    m_fields[id.name()]->get_header().get_alloc_properties().request_allocation(real_size,req.pack_size);
-  }
+  // Make sure the field can accommodate the requested value type
+  constexpr int real_size = sizeof(RealType);
+  m_fields[id.name()]->get_header().get_alloc_properties().request_allocation(real_size,req.pack_size);
 
   // Finally, add the field to the given groups
   // Note: we do *not* set the group info struct in the field header yet.
@@ -246,7 +245,32 @@ void FieldManager<RealType>::register_group (const GroupRequest& req)
 }
 
 template<typename RealType>
-bool FieldManager<RealType>::has_field (const identifier_type& id) const {
+void FieldManager<RealType>::
+add_to_group (const std::string& field_name, const std::string& group_name)
+{
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+      "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
+  auto& group = m_field_groups[group_name];
+  if (not group) {
+    group = std::make_shared<FieldGroupInfo>(group_name);
+  }
+  EKAT_REQUIRE_MSG (not group->m_bundled,
+      "Error! Cannot add fields to a group that is bundled.\n"
+      "   group name: " + field_name + "\n");
+
+  EKAT_REQUIRE_MSG (has_field(field_name),
+      "Error! Cannot add field to group, since the field is not present in this FieldManager.\n"
+      "   field name: " + field_name + "\n"
+      "   group name: " + group_name + "\n");
+
+  group->m_fields_names.push_back(field_name);
+  auto& ft = get_field(field_name).get_header().get_tracking();
+  ft.add_to_group(group);
+}
+
+template<typename RealType>
+bool FieldManager<RealType>::has_field (const identifier_type& id) const
+{
   return has_field(id.name()) && m_fields.at(id.name())->get_header()->get_identifier()==id;
 }
 
@@ -505,6 +529,7 @@ registration_ends ()
   // extensive changes in Homme. Instead, we hack our way around this limitatin
   // (for now), and rearrange groups/fields so that we can expect qv to be the
   // first tracer.
+  bool qv_must_come_first = false;
   if (has_field("qv")) {
     auto it = ekat::find(groups_to_bundle,"tracers");
     if (it!=groups_to_bundle.end()) {
@@ -518,6 +543,7 @@ registration_ends ()
       groups_to_bundle.push_front("__qv__");
       m_field_groups.emplace("__qv__",std::make_shared<group_info_type>("__qv__"));
       m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
+      qv_must_come_first = true;
     }
   }
 
@@ -647,22 +673,24 @@ registration_ends ()
 
       // WARNING: this lines should be removed if we move away from Homme's requirement that
       //          qv be the first tracer
-      auto qv_it = ekat::find(cluster_ordered_fields,"qv");
-      if (qv_it!=cluster_ordered_fields.end()) {
-        // Check that qv comes first or last (if last, reverse the list). If not, error out.
-        // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
-        EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || std::next(qv_it,1)==cluster_ordered_fields.end(),
-            "Error! The water vapor field has to be the first tracer, but it is not.\n");
+      if (qv_must_come_first) {
+        auto qv_it = ekat::find(cluster_ordered_fields,"qv");
+        if (qv_it!=cluster_ordered_fields.end()) {
+          // Check that qv comes first or last (if last, reverse the list). If not, error out.
+          // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
+          EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || std::next(qv_it,1)==cluster_ordered_fields.end(),
+              "Error! The water vapor field has to be the first tracer, but it is not.\n");
 
-        if (qv_it!=cluster_ordered_fields.begin()) {
-          // Note: reversing the order of the fields preserves subgroups contiguity
-          cluster_ordered_fields.reverse();
-        }
+          if (qv_it!=cluster_ordered_fields.begin()) {
+            // Note: reversing the order of the fields preserves subgroups contiguity
+            cluster_ordered_fields.reverse();
+          }
 
-        // Remove __qv__ from the cluster (if present)
-        auto qv_gr_it = ekat::find(cluster,"__qv__");
-        if (qv_gr_it!=cluster.end()) {
-          cluster.erase(qv_gr_it);
+          // Remove __qv__ from the cluster (if present)
+          auto qv_gr_it = ekat::find(cluster,"__qv__");
+          if (qv_gr_it!=cluster.end()) {
+            cluster.erase(qv_gr_it);
+          }
         }
       }
 
@@ -863,22 +891,8 @@ registration_ends ()
       // If the field has been already allocated, then it was in a bunlded group, so skip it.
       continue;
     }
-
-    // Skip requests for subfields, since we need to have all fields allocated first
-    if (m_subfield_requests.find(it.first)==m_subfield_requests.end()) {
-      // A brand new field. Allocate it
-      it.second->allocate_view();
-    }
-  }
-
-  // Now allocate subfields
-  for (const auto& it : m_subfield_requests) {
-    auto f = get_field_ptr(it.first);
-    const auto& sv_info = it.second.subview_info;
-    const auto& fid = f->get_header().get_identifier();
-    const auto& p = m_fields.at(it.second.parent_name);
-
-    *f = p->subfield (fid.name(),fid.get_units(),sv_info.dim_idx,sv_info.slice_idx,sv_info.dynamic);
+    // A brand new field. Allocate it
+    it.second->allocate_view();
   }
 
   for (const auto& it : m_field_groups) {
@@ -908,6 +922,27 @@ void FieldManager<RealType>::clean_up() {
 
   // Reset repo state
   m_repo_state = RepoState::Clean;
+}
+
+template<typename RealType>
+void FieldManager<RealType>::add_field (const Field<RealType>& f) {
+  // This method has a few restrictions on the input field.
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+      "Error! The method 'add_field' can only be called on a closed repo.\n");
+  EKAT_REQUIRE_MSG (f.is_allocated(),
+      "Error! The method 'add_field' requires the input field to be already allocated.\n");
+  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==m_grid->name(),
+      "Error! Input field to 'add_field' is defined on a grid different from the one stored.\n"
+      "  - field manager grid: " + m_grid->name() + "\n"
+      "  - input field grid:   " + f.get_header().get_identifier().get_grid_name() + "\n");
+  EKAT_REQUIRE_MSG (not has_field(f.get_header().get_identifier().name()),
+      "Error! The method 'add_field' requires the input field to not be already existing.\n"
+      "  - field name: " + f.get_header().get_identifier().name() + "\n");
+  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0,
+      "Error! The method 'add_field' requires the input field to not be part of any group.\n");
+
+  // All good, add the field to the repo
+  m_fields[f.get_header().get_identifier().name()] = std::make_shared<Field<Real>>(f);
 }
 
 template<typename RealType>

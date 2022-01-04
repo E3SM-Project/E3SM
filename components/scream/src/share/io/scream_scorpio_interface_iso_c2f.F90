@@ -37,11 +37,11 @@ contains
     type(pio_atm_file_t), pointer :: atm_file
     character(len=256)      :: filename
     logical (kind=c_bool)   :: res
-    logical :: found, is_open
+    logical :: found
 
     call convert_c_string(filename_in,filename)
-    call lookup_pio_atm_file(filename,atm_file,found,is_open)
-    if (found .and. is_open) then
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
       res = atm_file%purpose .eq. purpose
     else
       res = .false.
@@ -255,11 +255,12 @@ contains
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
-  subroutine count_pio_atm_file_c2f() bind(c)
+  function count_pio_atm_file_c2f() bind(c) result(file_count)
     use scream_scorpio_interface, only : count_pio_atm_file
+    integer(kind=c_int) :: file_count
 
-    call count_pio_atm_file()
-  end subroutine count_pio_atm_file_c2f
+    file_count = count_pio_atm_file()
+  end function count_pio_atm_file_c2f
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
   ! Purpose: To convert a c_string pointer to the proper fortran string format.

@@ -83,10 +83,9 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
     auto homme_process = std::dynamic_pointer_cast<const HommeDynamics>(process);
     EKAT_REQUIRE_MSG (process, "Error! Cast to HommeDynamics failed.\n");
 
-    const auto phinh_i = homme_process->get_internal_field("phinh_i","Dynamics").get_view<Real*****>();
+    const auto phinh_i = homme_process->get_internal_field("phi_int_dyn","Dynamics").get_view<Real****>();
 
     int nelem = Homme::Context::singleton().get<Homme::ElementsGeometry>().num_elems();
-    int n0 = Homme::Context::singleton().get<Homme::TimeLevel>().n0;
     constexpr int NVL = HOMMEXX_NUM_PHYSICAL_LEV;
 
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*NP*NP),
@@ -94,7 +93,7 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
       const int ie = idx/(NP*NP);
       const int ip = (idx/NP)%NP;
       const int jp = idx%NP;
-      EKAT_KERNEL_ASSERT(phinh_i(ie,n0,ip,jp,NVL) == phis(ie,ip,jp));
+      EKAT_KERNEL_ASSERT(phinh_i(ie,ip,jp,NVL) == phis(ie,ip,jp));
     });
   }
 

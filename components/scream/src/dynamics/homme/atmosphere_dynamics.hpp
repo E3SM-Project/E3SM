@@ -24,6 +24,8 @@ class HommeDynamics : public AtmosphereProcess
 public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
+  template<int N>
+  using view_Nd_type = typename field_type::view_ND_type<Real,N>;
 
   // Constructor(s)
   HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -45,9 +47,6 @@ public:
   // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
-  // Retrieves an internal field, given field name and grid name.
-  const Field<Real>& get_internal_field (const std::string& name, const std::string& grid) const;
-
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
@@ -63,18 +62,23 @@ protected:
   void init_homme_views ();
 
   // Propagates initial conditions to homme
-  void import_initial_conditions ();
+  void initialize_homme_state ();
+  // Restart homme
+  void restart_homme_state ();
 
   // Updates p_mid
   void update_pressure ();
 
-  void initialize_impl ();
+  // Copy initial states from n0 timelevel to other timelevels
+  void copy_dyn_states_to_all_timelevels ();
 
+  void initialize_impl (const RunType run_type);
 protected:
   void run_impl        (const int dt);
   void finalize_impl   ();
 
-  // Dynamics updates the "tracers" group, and needs to do some extra checks on the group.
+  // For simplicity, it's best to store the size of the tracers as soon as it is available.
+  // We can do it the first time that the 'tracers' group is set
   void set_computed_group_impl (const FieldGroup<Real>& group);
 
   // Override the check computed fields impl so we can repair slightly negative tracer values.
@@ -87,24 +91,27 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  // Creates an internal field, not to be shared with the AD's FieldManager
-  void create_internal_field (const std::string& name,
-                              const std::vector<FieldTag>& tags,
-                              const std::vector<int>& dims,
-                              const std::string& grid);
+  // Creates an helper field, not to be shared with the AD's FieldManager
+  void create_helper_field (const std::string& name,
+                            const std::vector<FieldTag>& tags,
+                            const std::vector<int>& dims,
+                            const std::string& grid);
 
-  // Some helper fields. WARNING: only one copy for each internal field!
-  std::map<std::string,field_type>  m_internal_fields;
+  // Some helper fields.
+  std::map<std::string,field_type>  m_helper_fields;
 
   // Remapper for inputs and outputs, plus a special one for initial conditions
   std::shared_ptr<AbstractRemapper<Real>>   m_p2d_remapper;
   std::shared_ptr<AbstractRemapper<Real>>   m_d2p_remapper;
-  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper_fwd;
-  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper_bwd;
+  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper;
 
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
   std::shared_ptr<const AbstractGrid>  m_ref_grid;
+
+  // Store these flag, so we can keep more readable code later
+  bool  m_computes_w_int;
+  bool  m_has_w_forcing;
 };
 
 } // namespace scream

@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
 
@@ -45,15 +46,15 @@ public:
     using minmax_t = typename Kokkos::MinMax<non_const_RT>::value_type;
 
     const auto& layout = field.get_header().get_identifier().get_layout();
-    const auto& dims = layout.dims();
-    const int dim0 = dims[0];
+    const auto extents = layout.extents();
+    const auto size = layout.size();
 
     minmax_t minmax;
     switch (layout.rank()) {
       case 1:
         {
           auto v = field.template get_view<const_RT*>();
-          Kokkos::parallel_reduce(dim0, KOKKOS_LAMBDA(int i, minmax_t& result) {
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, minmax_t& result) {
             result.min_val = ekat::impl::min(result.min_val, v(i));
             result.max_val = ekat::impl::max(result.max_val, v(i));
           }, Kokkos::MinMax<RT>(minmax));
@@ -62,10 +63,9 @@ public:
       case 2:
         {
           auto v = field.template get_view<const_RT**>();
-          const int dim1 = dims[1];
-          Kokkos::parallel_reduce(dim0*dim1, KOKKOS_LAMBDA(int idx, minmax_t& result) {
-            const int i = idx / dim1;
-            const int j = idx % dim1;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            int i,j;
+            unflatten_idx(idx,extents,i,j);
             result.min_val = ekat::impl::min(result.min_val, v(i,j));
             result.max_val = ekat::impl::max(result.max_val, v(i,j));
           }, Kokkos::MinMax<RT>(minmax));
@@ -74,12 +74,9 @@ public:
       case 3:
         {
           auto v = field.template get_view<const_RT***>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          Kokkos::parallel_reduce(dim0*dim1*dim2, KOKKOS_LAMBDA(int idx, minmax_t& result) {
-            const int i = (idx / dim2) / dim1;
-            const int j = (idx / dim2) % dim1;
-            const int k =  idx % dim2;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            int i,j,k;
+            unflatten_idx(idx,extents,i,j,k);
             result.min_val = ekat::impl::min(result.min_val, v(i,j,k));
             result.max_val = ekat::impl::max(result.max_val, v(i,j,k));
           }, Kokkos::MinMax<RT>(minmax));
@@ -88,14 +85,9 @@ public:
       case 4:
         {
           auto v = field.template get_view<const_RT****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3, KOKKOS_LAMBDA(int idx, minmax_t& result) {
-            const int i = ((idx / dim3) / dim2) / dim1;
-            const int j = ((idx / dim3) / dim2) % dim1;
-            const int k =  (idx / dim3) % dim2;
-            const int l =   idx % dim3;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            int i,j,k,l;
+            unflatten_idx(idx,extents,i,j,k,l);
             result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l));
             result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l));
           }, Kokkos::MinMax<RT>(minmax));
@@ -104,18 +96,22 @@ public:
       case 5:
         {
           auto v = field.template get_view<const_RT*****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          const int dim4 = dims[4];
-          Kokkos::parallel_reduce(dim0*dim1*dim2*dim3*dim4, KOKKOS_LAMBDA(int idx, minmax_t& result) {
-            const int i = (((idx / dim4) / dim3) / dim2) / dim1;
-            const int j = (((idx / dim4) / dim3) / dim2) % dim1;
-            const int k =  ((idx / dim4) / dim3) % dim2;
-            const int l =   (idx / dim4) % dim3;
-            const int m =    idx % dim4;
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,extents,i,j,k,l,m);
             result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l,m));
             result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l,m));
+          }, Kokkos::MinMax<RT>(minmax));
+        }
+        break;
+      case 6:
+        {
+          auto v = field.template get_view<const_RT******>();
+          Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+            int i,j,k,l,m,n;
+            unflatten_idx(idx,extents,i,j,k,l,m,n);
+            result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l,m,n));
+            result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l,m,n));
           }, Kokkos::MinMax<RT>(minmax));
         }
         break;
@@ -134,8 +130,8 @@ public:
         "Error! Cannot repair check '" + name() + "', for field '" + field.get_header().get_identifier().name() + "'.\n");
 
     const auto& layout = field.get_header().get_identifier().get_layout();
-    const auto& dims = layout.dims();
-    const int dim0 = dims[0];
+    const auto extents = layout.extents();
+    const auto size = layout.size();
 
     auto lb = m_lower_bound;
     auto ub = m_upper_bound;
@@ -143,7 +139,7 @@ public:
       case 1:
         {
           auto v = field.template get_view<non_const_RT*>();
-          Kokkos::parallel_for(dim0, KOKKOS_LAMBDA(int i) {
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int i) {
             auto& ref = v(i);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
@@ -153,10 +149,10 @@ public:
       case 2:
         {
           auto v = field.template get_view<non_const_RT**>();
-          const int dim1 = dims[1];
-          Kokkos::parallel_for(dim0*dim1, KOKKOS_LAMBDA(int idx) {
-            const int i = idx / dim1;
-            const int j = idx % dim1;
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
+            int i,j;
+            unflatten_idx(idx,extents,i,j);
+
             auto& ref = v(i,j);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
@@ -166,12 +162,10 @@ public:
       case 3:
         {
           auto v = field.template get_view<non_const_RT***>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          Kokkos::parallel_for(dim0*dim1*dim2, KOKKOS_LAMBDA(int idx) {
-            const int i = (idx / dim2) / dim1;
-            const int j = (idx / dim2) % dim1;
-            const int k =  idx % dim2;
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
+            int i,j,k;
+            unflatten_idx(idx,extents,i,j,k);
+
             auto& ref = v(i,j,k);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
@@ -181,14 +175,10 @@ public:
       case 4:
         {
           auto v = field.template get_view<non_const_RT****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          Kokkos::parallel_for(dim0*dim1*dim2*dim3, KOKKOS_LAMBDA(int idx) {
-            const int i = ((idx / dim3) / dim2) / dim1;
-            const int j = ((idx / dim3) / dim2) % dim1;
-            const int k =  (idx / dim3) % dim2;
-            const int l =   idx % dim3;
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l;
+            unflatten_idx(idx,extents,i,j,k,l);
+
             auto& ref = v(i,j,k,l);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
@@ -198,17 +188,24 @@ public:
       case 5:
         {
           auto v = field.template get_view<non_const_RT*****>();
-          const int dim1 = dims[1];
-          const int dim2 = dims[2];
-          const int dim3 = dims[3];
-          const int dim4 = dims[4];
-          Kokkos::parallel_for(dim0*dim1*dim2*dim3*dim4, KOKKOS_LAMBDA(int idx) {
-            const int i = (((idx / dim4) / dim3) / dim2) / dim1;
-            const int j = (((idx / dim4) / dim3) / dim2) % dim1;
-            const int k =  ((idx / dim4) / dim3) % dim2;
-            const int l =   (idx / dim4) % dim3;
-            const int m =    idx % dim4;
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,extents,i,j,k,l,m);
+
             auto& ref = v(i,j,k,l,m);
+            ref = ekat::impl::min(ub, ref);
+            ref = ekat::impl::max(lb, ref);
+          });
+        }
+        break;
+      case 6:
+        {
+          auto v = field.template get_view<non_const_RT******>();
+          Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m,n;
+            unflatten_idx(idx,extents,i,j,k,l,m,n);
+
+            auto& ref = v(i,j,k,l,m,n);
             ref = ekat::impl::min(ub, ref);
             ref = ekat::impl::max(lb, ref);
           });

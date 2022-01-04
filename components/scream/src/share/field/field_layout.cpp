@@ -1,4 +1,5 @@
 #include "field_layout.hpp"
+#include <Kokkos_CopyViews.hpp>
 
 namespace scream
 {
@@ -8,6 +9,8 @@ FieldLayout::FieldLayout (const std::initializer_list<FieldTag>& tags)
  , m_tags(tags)
 {
   m_dims.resize(m_rank,-1);
+  m_extents = decltype(m_extents)("",m_rank);
+  Kokkos::deep_copy(m_extents,-1);
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags)
@@ -15,6 +18,8 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags)
  , m_tags(tags)
 {
   m_dims.resize(m_rank,-1);
+  m_extents = decltype(m_extents)("",m_rank);
+  Kokkos::deep_copy(m_extents,-1);
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
@@ -23,6 +28,8 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
  , m_tags(tags)
 {
   m_dims.resize(m_rank,-1);
+  m_extents = decltype(m_extents)("",m_rank);
+  Kokkos::deep_copy(m_extents,-1);
   set_dimensions(dims);
 }
 
@@ -52,6 +59,11 @@ void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(dimension>0, "Error! Dimensions must be positive.");
   EKAT_REQUIRE_MSG(m_dims[idim] == -1, "Error! You cannot reset field dimensions once set.\n");
   m_dims[idim] = dimension;
+
+  auto extents = Kokkos::create_mirror_view(m_extents);
+  Kokkos::deep_copy(extents,m_extents);
+  extents(idim) = dimension;
+  Kokkos::deep_copy(m_extents,extents);
 }
 
 void FieldLayout::set_dimensions (const std::vector<int>& dims) {

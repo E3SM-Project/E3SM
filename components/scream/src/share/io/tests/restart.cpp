@@ -101,7 +101,7 @@ TEST_CASE("restart","io")
   // group, should be 
   auto fm_res = get_test_fm(grid);
   auto res_params = get_in_params();
-  input_type ins_input(io_comm,res_params,fm_res);
+  input_type ins_input(res_params,fm_res);
   ins_input.read_variables();
 
   // Restart group fields must all match

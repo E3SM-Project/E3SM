@@ -52,7 +52,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 }
 
 // =========================================================================================
-void CldFraction::initialize_impl ()
+void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);

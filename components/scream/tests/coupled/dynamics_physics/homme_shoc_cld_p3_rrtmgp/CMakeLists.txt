@@ -30,14 +30,14 @@ set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
 set (HOMME_TEST_TIME_STEP 300)
-SET (HOMME_THETA_FORM 1)
-SET (HOMME_TTYPE 5)
-SET (HOMME_SE_FTYPE 0)
+set (HOMME_THETA_FORM 1)
+set (HOMME_TTYPE 5)
+set (HOMME_SE_FTYPE 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
-SET (HOMME_TEST_HVS 1)
-SET (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS 1)
+set (HOMME_TEST_HVS_TOM 0)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -45,7 +45,7 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-SET (HOMME_THETA_HY_MODE true)
+set (HOMME_THETA_HY_MODE true)
 
 # Vert coord settings
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
@@ -56,7 +56,7 @@ configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc
                ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc COPYONLY)
 
 # Create vcoord directory
@@ -69,18 +69,18 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
 # P3 data files
-CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
                ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
-CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
                ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1 COPYONLY)
 # RRTMGP data files
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
+configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
+configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC

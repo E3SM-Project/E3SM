@@ -13,18 +13,46 @@ namespace scream
 AtmosphereInput::
 AtmosphereInput (const ekat::Comm& comm,
                  const ekat::ParameterList& params)
- : m_comm (comm)
+ : m_comm   (comm)
+ , m_params (params)
 {
-  set_parameters (params);
+  m_filename = m_params.get<std::string>("Filename");
+
+  // This ensures that the nc file is open, even if init() doesn't
+  // get called. This allows users to read global scalar values from
+  // an nc file, by easily creating an AtmosphereInput on the fly.
+  scorpio::register_file(m_filename,scorpio::Read);
 }
 
 AtmosphereInput::
-AtmosphereInput (const ekat::Comm& comm,
-                 const ekat::ParameterList& params,
+AtmosphereInput (const ekat::ParameterList& params,
                  const std::shared_ptr<const fm_type>& field_mgr,
                  const std::shared_ptr<const gm_type>& grids_mgr)
- : AtmosphereInput(comm,params)
+ : AtmosphereInput(field_mgr->get_grid()->get_comm(),params)
 {
+  // Sets the internal field mg, possibly sets up the remapper,
+  // and init scorpio internal structures
+  init (field_mgr, grids_mgr);
+}
+
+AtmosphereInput::
+AtmosphereInput (const ekat::ParameterList& params,
+                 const std::shared_ptr<const grid_type>& grid,
+                 const std::map<std::string,view_1d_host>& host_views_1d,
+                 const std::map<std::string,FieldLayout>&  layouts)
+ : AtmosphereInput(grid->get_comm(),params)
+{
+  // Sets the grid, the host views, and init scorpio internal structures
+  init (grid,host_views_1d,layouts);
+}
+
+void AtmosphereInput::
+init (const std::shared_ptr<const fm_type>& field_mgr,
+      const std::shared_ptr<const gm_type>& grids_mgr)
+{
+  // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
+  set_fields_and_grid_names (field_mgr->get_grid()->name());
+
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
 
@@ -32,14 +60,14 @@ AtmosphereInput (const ekat::Comm& comm,
   init_scorpio_structures ();
 }
 
-AtmosphereInput::
-AtmosphereInput (const ekat::Comm& comm,
-                 const ekat::ParameterList& params,
-                 const std::shared_ptr<const grid_type>& grid,
-                 const std::map<std::string,view_1d_host>& host_views_1d,
-                 const std::map<std::string,FieldLayout>&  layouts)
- : AtmosphereInput(comm,params)
+void AtmosphereInput::
+init (const std::shared_ptr<const grid_type>& grid,
+      const std::map<std::string,view_1d_host>& host_views_1d,
+      const std::map<std::string,FieldLayout>&  layouts)
 {
+  // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
+  set_fields_and_grid_names (grid->name());
+
   // Set the grid associated with the input views
   set_grid(grid);
 
@@ -51,34 +79,24 @@ AtmosphereInput (const ekat::Comm& comm,
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::
-set_parameters (const ekat::ParameterList& params) {
-  m_filename = params.get<std::string>("Filename");
 
+void AtmosphereInput::
+set_fields_and_grid_names (const std::string& grid_name) {
   // The user might just want to read some global attributes (no fields),
   // so get the list of fields names only if present.
   using vos_t = std::vector<std::string>;
-  if (params.isParameter("Fields")) {
-    m_fields_names = params.get<vos_t>("Fields");
-  } else if (params.isSublist("Fields")) {
-    EKAT_REQUIRE_MSG (params.isParameter("Grid"),
-        "Error! To specify fields, you have two choices:\n"
-        "  - use the parameter 'Fields'\n"
-        "  - specify grid in parameter 'Grid', and fields in 'Fields->$grid_name'\n");
-
-    const auto& gname = params.get<std::string>("Grid");
-    EKAT_REQUIRE_MSG (params.sublist("Fields").isParameter(gname),
-        "Error! To specify fields, you have two choices:\n"
-        "  - use the parameter 'Fields'\n"
-        "  - specify grid in parameter 'Grid', and fields in 'Fields->$grid_name'\n");
-
-    m_fields_names = params.sublist("Fields").get<vos_t>(gname);
+  if (m_params.isParameter("Field Names")) {
+    m_fields_names = m_params.get<vos_t>("Field Names");
+    if (m_params.isParameter("IO Grid Name")) {
+      m_io_grid_name = m_params.get<std::string>("IO Grid Name");
+    }
+  } else if (m_params.isSublist("Fields") && grid_name!="") {
+    const auto& pl = m_params.sublist("Fields").sublist(grid_name);
+    m_fields_names = pl.get<vos_t>("Field Names");
+    if (pl.isParameter("IO Grid Name")) {
+      m_io_grid_name = pl.get<std::string>("IO Grid Name");
+    }
   }
-
-  // This ensures that the nc file is open, even if init() doesn't
-  // get called. This allows users to read global scalar values from
-  // an nc file, by easily creating an AtmosphereInput on the fly.
-  scorpio::register_file(m_filename,scorpio::Read);
 }
 
 void AtmosphereInput::
@@ -86,104 +104,89 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Sanity checks
-  EKAT_REQUIRE_MSG (not m_field_mgr, "Error! Field manager was already set.\n");
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
+  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_views,
+      "Error! Input class was already inited with user-provided views.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_fields,
+      "Error! Input class was already inited with fields.\n");
 
   m_field_mgr = field_mgr;
 
-  if (not m_field_mgr->get_grid()->is_unique()) {
-    // The grid is not unique. Build a unique field manager
-    // and a remapper, and we call this method again.
-    build_remapper(grids_mgr);
-  } else {
-    // The grid is unique. Store it (and performs some checks)
-    set_grid(m_field_mgr->get_grid());
+  std::shared_ptr<const grid_type> fm_grid, io_grid;
+  io_grid = fm_grid = m_field_mgr->get_grid();
 
-    for (auto const& name : m_fields_names) {
-      auto f = m_field_mgr->get_field(name);
-      const auto& fh  = f.get_header();
-      const auto& fap = fh.get_alloc_properties();
-      const auto& fid = fh.get_identifier();
-      const auto& fl  = fid.get_layout();
+  if (m_io_grid_name!="" && m_io_grid_name!=fm_grid->name()) {
+    // We build a remapper, to remap fields from the fm grid to the io grid
+    io_grid = grids_mgr->get_grid(m_io_grid_name);
+    m_remapper = grids_mgr->create_remapper(io_grid,fm_grid);
 
-      // Store the layout
-      m_layouts.emplace(name,fl);
-
-      // If we can alias the field's host view, do it.
-      // Otherwise, create a temporary.
-      bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
-      if (can_alias_field_view) {
-        auto data = f.get_internal_view_data<Host>();
-        m_host_views_1d[name] = view_1d_host(data,fl.size());
-      } else {
-        // We have padding, or the field is a subfield (or both).
-        // Either way, we need a temporary view.
-        m_host_views_1d[name] = view_1d_host("",fl.size());
-      }
+    // Register all input fields in the remapper.
+    m_remapper->registration_begins();
+    for (const auto& fname : m_fields_names) {
+      auto f = m_field_mgr->get_field(fname);
+      const auto& tgt_fid = f.get_header().get_identifier();
+      m_remapper->register_field_from_tgt(tgt_fid);
     }
+    m_remapper->registration_ends();
+
+    // Now create a new FM on io grid, and create copies of input fields from FM.
+    auto io_fm = std::make_shared<fm_type>(io_grid);
+    io_fm->registration_begins();
+    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+      const auto& src_fid = m_remapper->get_src_field_id(i);
+      io_fm->register_field(FieldRequest(src_fid));
+    }
+    io_fm->registration_ends();
+
+    // Now that fields have been allocated on the io grid, we can bind them in the remapper
+    for (const auto& fname : m_fields_names) {
+      auto src = io_fm->get_field(fname);
+      auto tgt = m_field_mgr->get_field(fname);
+      m_remapper->bind_field(src,tgt);
+    }
+
+    // This should never fail, but just in case
+    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+        "Error! Something went wrong while building the scorpio input remapper.\n");
+
+    // Reset field mgr
+    m_field_mgr = io_fm;
   }
+
+  // Store grid and fm
+  set_grid(io_grid);
+
+  // Init fields specs
+  register_fields_specs();
+
+  m_inited_with_fields = true;
 }
 
 void AtmosphereInput::
-build_remapper(const std::shared_ptr<const gm_type>& grids_mgr) {
-  EKAT_REQUIRE_MSG (grids_mgr,
-      "Error! Cannot build a remapper without a valid grids manager.\n");
+register_fields_specs() {
+  for (auto const& name : m_fields_names) {
+    auto f = m_field_mgr->get_field(name);
+    const auto& fh  = f.get_header();
+    const auto& fap = fh.get_alloc_properties();
+    const auto& fid = fh.get_identifier();
+    const auto& fl  = fid.get_layout();
 
-  auto fm_grid = m_field_mgr->get_grid();
-  auto unique_grid = fm_grid->get_unique_grid();
-  // The fm is not on a unique grid. We need to create a helper fm,
-  // with all the import fields defined on the unique grid,
-  // set up scorpio with the helper fm, then create a remapper
-  // from the unique grid to the input fm grid.
-  EKAT_REQUIRE_MSG (unique_grid,
-      "Error! The grid stored in the input field manager is not unique,\n"
-      "       and is not storing a unique grid.\n"
-      "    grid name: " + fm_grid->name());
+    // Store the layout
+    m_layouts.emplace(name,fl);
 
-  // Create the remapper and register fields from the fid's taken from the input fm
-  m_remapper = grids_mgr->create_remapper(unique_grid,fm_grid);
-  m_remapper->registration_begins();
-  for (const auto& fname : m_fields_names) {
-    auto f = m_field_mgr->get_field(fname);
-    const auto& tgt_fid = f.get_header().get_identifier();
-
-    m_remapper->register_field_from_tgt(tgt_fid);
+    // If we can alias the field's host view, do it.
+    // Otherwise, create a temporary.
+    bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+    if (can_alias_field_view) {
+      auto data = f.get_internal_view_data<Host>();
+      m_host_views_1d[name] = view_1d_host(data,fl.size());
+    } else {
+      // We have padding, or the field is a subfield (or both).
+      // Either way, we need a temporary view.
+      m_host_views_1d[name] = view_1d_host("",fl.size());
+    }
   }
-  m_remapper->registration_ends();
-
-  // Now register the fields in the unique_fm. To generate their
-  // field identifiers, use the src fids from the remapper
-  auto unique_fm = std::make_shared<fm_type>(unique_grid);
-  unique_fm->registration_begins();
-  for (int i=0; i<m_remapper->get_num_fields(); ++i) {
-    const auto& src_fid = m_remapper->get_src_field_id(i);
-    auto f = m_field_mgr->get_field(src_fid.name());
-
-    const int ps = f.get_header().get_alloc_properties().get_largest_pack_size();
-    FieldRequest src_freq(src_fid,ps);
-    unique_fm->register_field(src_freq);
-  }
-  unique_fm->registration_ends();
-
-  // Finally, bind the src/tgt fields in the remapper
-  for (const auto& fname : m_fields_names) {
-    auto src = unique_fm->get_field(fname);
-    auto tgt = m_field_mgr->get_field(fname);
-    m_remapper->bind_field(src,tgt);
-  }
-
-  // This should never fail, but just in case
-  EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
-      "Error! Something went wrong while building the scorpio input remapper.\n");
-
-  // Invalidate field mgr ptr, so the checks in the following call don't' throw
-  m_field_mgr = nullptr;
-
-  // Replace the field mgr with the unique one
-  // NOTE: this call to set_field_manager should not have to call build_remapper anymore.
-  //       Therefore, pass nullptr as grids manager, in case there's some bug and this function
-  //       gets called again (recursively). A nullptr will cause this function to crap out.
-  set_field_manager(unique_fm,nullptr);
 }
 
 /* ---------------------------------------------------------- */
@@ -191,7 +194,7 @@ void AtmosphereInput::
 set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 {
   // Sanity checks
-  EKAT_REQUIRE_MSG (not m_grid, "Error! Grid pointer was already set.\n");
+  EKAT_REQUIRE_MSG (not m_io_grid, "Error! Grid pointer was already set.\n");
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
   EKAT_REQUIRE_MSG (grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -206,7 +209,10 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       "       Consider decreasing the size of IO MPI group.\n");
 
   // The grid is good. Store it.
-  m_grid = grid;
+  m_io_grid = grid;
+
+  // Reset the comm
+  m_comm = m_io_grid->get_comm();
 }
 
 /* ---------------------------------------------------------- */
@@ -216,8 +222,8 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 //       last time level set by running eam_update_timesnap.
 void AtmosphereInput::read_variables (const int time_index)
 {
-  EKAT_REQUIRE_MSG (m_is_inited,
-      "Error! The init method has not been called yet.\n");
+  EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
+      "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
 
   for (auto const& name : m_fields_names) {
 
@@ -279,6 +285,48 @@ void AtmosphereInput::read_variables (const int time_index)
               }}}
               break;
             }
+          case 4:
+            {
+              // Reshape temp_view to a 4d view, then copy
+              auto dst = f.get_view<RT****,Host>();
+              auto src = view_Nd_host<4>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      dst(i,j,k,l) = src(i,j,k,l);
+              }}}}
+              break;
+            }
+          case 5:
+            {
+              // Reshape temp_view to a 5d view, then copy
+              auto dst = f.get_view<RT*****,Host>();
+              auto src = view_Nd_host<5>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      for (int m=0; m<fl.dim(4); ++m) {
+                        dst(i,j,k,l,m) = src(i,j,k,l,m);
+              }}}}}
+              break;
+            }
+          case 6:
+            {
+              // Reshape temp_view to a 6d view, then copy
+              auto dst = f.get_view<RT******,Host>();
+              auto src = view_Nd_host<6>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4),fl.dim(5));
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  for (int k=0; k<fl.dim(2); ++k) {
+                    for (int l=0; l<fl.dim(3); ++l) {
+                      for (int m=0; m<fl.dim(4); ++m) {
+                        for (int n=0; n<fl.dim(5); ++n) {
+                          dst(i,j,k,l,m,n) = src(i,j,k,l,m,n);
+              }}}}}}
+              break;
+            }
           default:
             EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
         }
@@ -305,6 +353,10 @@ set_views (const std::map<std::string,view_1d_host>& host_views_1d,
            const std::map<std::string,FieldLayout>&  layouts)
 {
   // Sanity checks
+  EKAT_REQUIRE_MSG (not m_inited_with_views,
+      "Error! Input class was already inited with user-provided views.\n");
+  EKAT_REQUIRE_MSG (not m_inited_with_fields,
+      "Error! Input class was already inited with fields.\n");
   EKAT_REQUIRE_MSG (host_views_1d.size()==m_fields_names.size(),
       "Error! Input host views map has the wrong size.\n"
       "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
@@ -320,12 +372,24 @@ set_views (const std::map<std::string,view_1d_host>& host_views_1d,
     m_layouts.emplace(name,layouts.at(name));
     m_host_views_1d[name] = host_views_1d.at(name);
   }
+
+  m_inited_with_views = true;
 }
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize() 
 {
   scorpio::eam_pio_closefile(m_filename);
+
+  m_field_mgr = nullptr;
+  m_io_grid   = nullptr;
+  m_remapper  = nullptr;
+
+  m_host_views_1d.clear();
+  m_layouts.clear();
+
+  m_inited_with_views = false;
+  m_inited_with_fields = false;
 } // finalize
 
 /* ---------------------------------------------------------- */
@@ -337,8 +401,6 @@ void AtmosphereInput::init_scorpio_structures()
 
   // Finish the definition phase for this file.
   scorpio::set_decomp  (m_filename); 
-
-  m_is_inited = true;
 }
 
 /* ---------------------------------------------------------- */
@@ -352,7 +414,11 @@ void AtmosphereInput::register_variables()
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
-    auto io_decomp_tag = get_io_decomp(vec_of_dims);
+    auto io_decomp_tag = get_io_decomp(m_layouts.at(name));
+
+    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
+    // may need to delete this line when switching to full C++/C implementation.
+    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
 
     // Register the variable
     // TODO  Need to change dtype to allow for other variables. 
@@ -375,23 +441,24 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
     dims_names[i] = scorpio::get_nc_tag_name(layout.tag(i),layout.dim(i));
   }
 
-  // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
-  // may need to delete this line when switching to full C++/C implementation.
-  std::reverse(dims_names.begin(),dims_names.end());
-
   return dims_names;
 }
 
 /* ---------------------------------------------------------- */
-std::string AtmosphereInput::get_io_decomp(const std::vector<std::string>& dims_names)
+std::string AtmosphereInput::
+get_io_decomp(const FieldLayout& layout)
 {
   // Given a vector of dimensions names, create a unique decomp string to register with I/O
   // Note: We are hard-coding for only REAL input here.
   // TODO: would be to allow for other dtypes
   std::string io_decomp_tag = "Real";
-  for (auto it = dims_names.crbegin(); it!=dims_names.crend(); ++it) {
-    const auto& dim = *it;
-    io_decomp_tag += "-" + dim;
+  auto dims_names = get_vec_of_dims(layout);
+  for (size_t i=0; i<dims_names.size(); ++i) {
+    io_decomp_tag += "-" + dims_names[i];
+    // If tag==CMP, we already attached the length to the tag name
+    if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
+      io_decomp_tag += "_" + std::to_string(layout.dim(i));
+    }
   }
 
   return io_decomp_tag;
@@ -419,21 +486,27 @@ get_var_dof_offsets(const FieldLayout& layout)
   // check this during set_grid) that the grid global gids are in the interval
   // [gid_0, gid_0+num_global_dofs), the offset is simply given by
   // (dof_gid-gid_0)*column_size (for partitioned arrays).
+  // NOTE: a "dof" in the grid object is not the same as a "dof" in scorpio.
+  //       For a SEGrid 3d vector field with (MPI local) layout (nelem,2,np,np,nlev),
+  //       scorpio sees nelem*2*np*np*nlev dofs, while the SE grid sees nelem*np*np dofs.
+  //       All we need to do in this routine is to compute the offset of all the entries
+  //       of the MPI-local array w.r.t. the global array. So long as the offsets are in
+  //       the same order as the corresponding entry in the data to be read/written, we're good.
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
-    const int num_cols = m_grid->get_num_local_dofs();
+    const int num_cols = m_io_grid->get_num_local_dofs();
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     int col_size = layout.size() / num_cols;
 
-    auto dofs = m_grid->get_dofs_gids();
+    auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
     Kokkos::deep_copy(dofs_h,dofs);
 
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
     // computing it inside might cause deadlocks.
-    auto min_gid = m_grid->get_global_min_dof_gid();
+    auto min_gid = m_io_grid->get_global_min_dof_gid();
     for (int icol=0; icol<num_cols; ++icol) {
       // Get chunk of var_dof to fill
       auto start = var_dof.begin()+icol*col_size;

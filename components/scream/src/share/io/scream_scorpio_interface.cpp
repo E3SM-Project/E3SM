@@ -30,7 +30,7 @@ extern "C" {
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
 
-  void count_pio_atm_file_c2f();
+  int count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
@@ -123,9 +123,9 @@ void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void count_pio_atm_file() {
+int count_pio_atm_file() {
 
-  count_pio_atm_file_c2f();
+  return count_pio_atm_file_c2f();
 
 }
 /* ----------------------------------------------------------------- */

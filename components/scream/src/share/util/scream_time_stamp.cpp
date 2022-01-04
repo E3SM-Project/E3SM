@@ -50,10 +50,12 @@ TimeStamp::TimeStamp()
 }
 
 TimeStamp::TimeStamp(const std::vector<int>& date,
-                     const std::vector<int>& time)
+                     const std::vector<int>& time,
+                     const int num_steps)
 {
   EKAT_REQUIRE_MSG (date.size()==3, "Error! Date should consist of three ints: [year, month, day].\n");
   EKAT_REQUIRE_MSG (time.size()==3, "Error! Time of day should consist of three ints: [hour, min, sec].\n");
+  EKAT_REQUIRE_MSG (num_steps>=0,   "Error! Number of steps should be a non-negative number.\n");
 
   const auto yy   = date[0];
   const auto mm   = date[1];
@@ -63,8 +65,9 @@ TimeStamp::TimeStamp(const std::vector<int>& date,
   const auto sec  = time[2];
 
   // Check the days and seconds numbers are non-negative.
-  EKAT_REQUIRE_MSG (mm>0   && mm<=12, "Error! Month out of bounds.\n");
-  EKAT_REQUIRE_MSG (dd>0   && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
+  EKAT_REQUIRE_MSG (yy>=0   && yy<=9999, "Error! Year out of bounds.\n");
+  EKAT_REQUIRE_MSG (mm>0    && mm<=12, "Error! Month out of bounds.\n");
+  EKAT_REQUIRE_MSG (dd>0    && dd<=days_in_month(yy,mm), "Error! Day out of bounds.\n");
   EKAT_REQUIRE_MSG (sec>=0  && sec<60, "Error! Seconds out of bounds.\n");
   EKAT_REQUIRE_MSG (min>=0  && min<60, "Error! Minutes out of bounds.\n");
   EKAT_REQUIRE_MSG (hour>=0 && hour<24, "Error! Hours out of bounds.\n");
@@ -72,11 +75,13 @@ TimeStamp::TimeStamp(const std::vector<int>& date,
   // All good, store
   m_date = date;
   m_time = time;
+  m_num_steps = num_steps;
 }
 
 TimeStamp::TimeStamp(const int yy, const int mm, const int dd,
-                     const int h, const int min, const int sec)
- : TimeStamp({yy,mm,dd},{h,min,sec})
+                     const int h, const int min, const int sec,
+                     const int num_steps)
+ : TimeStamp({yy,mm,dd},{h,min,sec},num_steps)
 {
   // Nothing to do here
 }
@@ -127,6 +132,12 @@ double TimeStamp::frac_of_year_in_days () const {
   return doy;
 }
 
+void TimeStamp::set_num_steps (const int num_steps) {
+  EKAT_REQUIRE_MSG (m_num_steps==0,
+      "Error! Cannot reset m_num_steps once the count started.\n");
+  m_num_steps = num_steps;
+}
+
 TimeStamp& TimeStamp::operator+=(const int seconds) {
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
@@ -139,7 +150,8 @@ TimeStamp& TimeStamp::operator+=(const int seconds) {
   auto& mm = m_date[1];
   auto& yy = m_date[0];
 
-  EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time, sorry.\n");
+  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
+  ++m_num_steps;
   sec += seconds;
 
   // Carry over
@@ -271,6 +283,38 @@ long long operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
 
   return diff;
 }
+
+TimeStamp str_to_time_stamp (const std::string& s)
+{
+  auto is_int = [](const std::string& s) -> bool {
+    for (const auto& c : s) {
+      if (not std::isdigit(c)) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // A time stamp is a string of the form "YYYY-MM-DD.hhmmss"
+  if (s.size()!=17 || s[4]!='-' || s[7]!='-' || s[10]!='.') {
+    return util::TimeStamp();
+  }
+  // Check subtokens are valid ints
+  auto YY  = s.substr(0,4);
+  auto MM  = s.substr(5,2);
+  auto DD  = s.substr(8,2);
+  auto tod = s.substr(11,6);
+  if (not is_int(YY) || not is_int(MM) || not is_int(DD) || not is_int(tod)) {
+    return util::TimeStamp();
+  }
+  std::vector<int> date{std::stoi(YY),std::stoi(MM),std::stoi(DD)};
+  std::vector<int> time{std::stoi(tod)/10000,(std::stoi(tod)/100)%100,(std::stoi(tod))%100};
+
+  try {
+    return util::TimeStamp(date,time);
+  } catch (...) {
+    return util::TimeStamp();
+  }
+};
 
 } // namespace util
 
