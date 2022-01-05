@@ -33,6 +33,9 @@
          <group>build_component_cam</group>
          <file>env_build.xml</file>
          <desc>EAM-SE cmake target (only used with EAM_DYCORE == 'se')</desc>
+         <values>
+            <value compset="_EAM%MMF">preqx</value>
+         </values>
   </entry>
 
   <entry id="CAM_CONFIG_OPTS">
@@ -62,6 +65,7 @@
       <value compset="_EAM%MMFXX"      >-crm samxx</value>
       <value compset="_EAM%MMFOMP"     >-crm samomp</value>
       <value compset="_EAM%MMF[1XO]"   >-MMF_microphysics_scheme sam1mom -chem none</value>
+      <value compset="_EAM%MMFXX-P3"   >-MMF_microphysics_scheme p3 -chem none </value>
       <value compset="_EAM%MMF2"       >-MMF_microphysics_scheme m2005 </value>
       <value compset="_EAM%MMF2-ECPP"  >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -use_ECPP </value>
       <value compset="_EAM%MMF.*-AQUA" >-aquaplanet </value>

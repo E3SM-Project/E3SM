@@ -1759,14 +1759,17 @@ if (defined $opts{'use_MMF'}) {
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     }
-    if (defined $opts{'use_MMF_VT'}) {
-        $cfg_cppdefs .= " -DMMF_VT "
-    }
-    # For now, the P3/SHOC build still tries to build Kokkos, 
-    # so just disable COMPOSE and use Eulerian tracer transport
-    if ( $crm eq 'samxx' and $MMF_microphysics_scheme eq 'p3' ) {
-      $disable_compose = 'TRUE'
-    }
+    if (defined $opts{'use_MMF_VT'}) { $cfg_cppdefs .= " -DMMF_VT " }
+
+    # Misc workarounds for build issues during MMF+P3 development
+    # - define "p3" CPP variable to address namespace issue
+    # - MMF w/ P3/SHOC results in a kokkos build error due to ekat
+    # so disable COMPOSE and use Eulerian tracer transport
+    # if ( $crm eq 'samxx' and $MMF_microphysics_scheme eq 'p3' ) {
+      # $cfg_cppdefs .= " -Dp3 ";
+      # $disable_compose = 'TRUE';
+      # $cfg_ref->set('dyn_target', 'preqx');
+    # }
 }
 
 # Configure CAM to produce IOP files for SCAM
@@ -2645,7 +2648,7 @@ sub write_filepath
       elsif($opts{'dyn_target'} eq 'theta-l') {
         print $fh "$camsrcdir/homme/src/theta-l\n";
         print $fh "$camsrcdir/homme/src/theta-l/share\n";
-        if ($disable_compose eq 'False') {
+        if ($disable_compose eq 'FALSE') {
           print $fh "$camsrcdir/homme/src/share/compose\n";
         }
       }

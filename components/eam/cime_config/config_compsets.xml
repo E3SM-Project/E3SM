@@ -236,6 +236,12 @@
     <alias>F-MMFXX</alias>
     <lname>2010_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+  <!-- Temporary compset for P3 development -->
+  <compset>
+    <alias>F-MMFXX-P3</alias>
+    <lname>2010_EAM%MMFXX-P3_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <!-- Temporary compset for P3 development -->
   <compset>
     <alias>F-MMFOMP</alias>
     <lname>2010_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
