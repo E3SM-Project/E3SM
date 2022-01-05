@@ -16,10 +16,17 @@ void ice_fall() {
   auto &ncrms         = :: ncrms;
   auto &precsfc       = :: precsfc;
   auto &precssfc      = :: precssfc;
+  auto &microphysics_scheme = :: microphysics_scheme;
+
+  int index_cloud_ice;
 
   int1d  kmax("kmax",ncrms);
   int1d  kmin("kmin",ncrms);
   real4d fz  ("fz"  ,nz,ny,nx,ncrms);
+
+
+  if (microphysics_scheme == "sam1mom") { index_cloud_ice = 0; }
+  if (microphysics_scheme == "p3")      { index_cloud_ice = idx_qi; }
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

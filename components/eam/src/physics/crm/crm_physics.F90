@@ -27,14 +27,8 @@ module crm_physics
 
    integer, public :: ncrms = -1 ! total number of CRMs summed over all chunks in task
 
-   ! Constituent names
-#if defined(p3)
-   character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                                                    'RAINQM','NUMRAI', 'CLDRIM','BVRIM '/)
-#else
-   character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                                                    'RAINQM', 'SNOWQM','NUMRAI','NUMSNO'/)
-#endif
+   ! Constituent names - assigned according to MMF_microphysics_scheme
+   character(len=8) :: cnst_names(8)
 
    integer :: ixcldliq  = -1   ! cloud liquid amount index
    integer :: ixcldice  = -1   ! cloud ice amount index
@@ -73,7 +67,7 @@ module crm_physics
    integer :: crm_t_prev_idx   = -1
    integer :: crm_q_prev_idx   = -1
 
-   logical :: do_prescribed_CCN        = .false.   ! Use prescribed CCN
+   logical :: do_prescribed_CCN        = .false.   ! Use prescribed CCN for P3 (?)
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 contains
 !===================================================================================================
@@ -162,6 +156,7 @@ subroutine crm_physics_register()
    ! constituents
    !----------------------------------------------------------------------------
    if ( MMF_microphysics_scheme .eq. 'p3' ) then
+      cnst_names(:) = (/'CLDLIQ','CLDICE','NUMLIQ','NUMICE','RAINQM','NUMRAI', 'CLDRIM','BVRIM '/)
       call cnst_add(cnst_names(1),  mwdry, cpair, 0._r8, ixcldliq, longname='Grid box averaged cld liquid amount',is_convtran1=.true.)
       call cnst_add(cnst_names(2),  mwdry, cpair, 0._r8, ixcldice, longname='Grid box averaged cld ice amount',   is_convtran1=.true.)
       call cnst_add(cnst_names(3),  mwh2o, cpair, 0._r8, ixnumliq, longname='Grid box averaged cld liquid number',is_convtran1=.true.)
@@ -171,6 +166,7 @@ subroutine crm_physics_register()
       call cnst_add(cnst_names(7),  mwh2o, cpair, 0._r8, ixcldrim, longname='Grid box averaged rime amount',      is_convtran1=.true.)
       call cnst_add(cnst_names(8),  mwh2o, cpair, 0._r8, ixrimvol, longname='Grid box averaged rime volume',      is_convtran1=.true.)
    else
+      cnst_names(:) = (/'CLDLIQ','CLDICE','NUMLIQ','NUMICE','RAINQM','SNOWQM','NUMRAI','NUMSNO'/)
       call cnst_add(cnst_names(1),  mwdry, cpair, 0._r8, ixcldliq, longname='Grid box averaged cld liquid amount',is_convtran1=.true.)
       call cnst_add(cnst_names(2),  mwdry, cpair, 0._r8, ixcldice, longname='Grid box averaged cld ice amount',   is_convtran1=.true.)
       call cnst_add(cnst_names(3),  mwh2o, cpair, 0._r8, ixnumliq, longname='Grid box averaged cld liquid number',is_convtran1=.true.)
@@ -950,13 +946,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_qr(i,:,:,k) = state(c)%q(i,m,ixrain)
-                  crm_qm(i,:,:,k) = state(c)%q(i,m,ixcldrim)
                   crm_nc(i,:,:,k) = state(c)%q(i,m,ixnumliq)
                   crm_ni(i,:,:,k) = state(c)%q(i,m,ixnumice)
                   crm_nr(i,:,:,k) = state(c)%q(i,m,ixnumrain)
+                  crm_qm(i,:,:,k) = state(c)%q(i,m,ixcldrim)
                   crm_bm(i,:,:,k) = state(c)%q(i,m,ixrimvol)
                end if
-
             end do
          end do
 

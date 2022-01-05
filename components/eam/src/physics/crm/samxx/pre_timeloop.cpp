@@ -347,21 +347,24 @@ void pre_timeloop() {
 
   } else if (microphysics_scheme == "p3") {
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
-      micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
-      micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
-      micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
-      micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm) = crm_state_qr(k,j,i,icrm);
-      micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm) = crm_state_nr(k,j,i,icrm);
-      micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
-      micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
-      qn(k,j,i,icrm)                    = crm_state_qn(k,j,i,icrm);
-      t_prev(k,j+offy_s,i+offx_s,icrm)  = crm_state_t_prev(plev-k-1,icrm);
-      q_prev(k,j+offy_s,i+offx_s,icrm)  = crm_state_q_prev(plev-k-1,icrm);
+      micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+      // micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
+      micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
+      micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
+      micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
+      micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = crm_state_qr(k,j,i,icrm);
+      micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = crm_state_nr(k,j,i,icrm);
+      micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
+      micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
+      qc(k,j,i,icrm)                               = crm_state_qc(k,j,i,icrm);
+      t_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_t_prev(plev-k-1,icrm);
+      q_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_q_prev(plev-k-1,icrm);
    });
   }
 
-  micro_init();
+  if (microphysics_scheme == "sam1mom") { micro_init(); }
+  if (microphysics_scheme == "p3"     ) { micro_p3_init(); }
+  
   sgs_init();
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

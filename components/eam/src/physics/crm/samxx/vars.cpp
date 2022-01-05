@@ -52,6 +52,7 @@ void allocate() {
   mkadv            = real3d( "mkadv           " , nmicro_fields, nz, ncrms);
   mkdiff           = real3d( "mkdiff          " , nmicro_fields, nz, ncrms);
   qn               = real4d( "qn              " , nzm, ny, nx, ncrms);
+  qc               = real4d( "qc              " , nzm, ny, nx, ncrms);
   qpsrc            = real2d( "qpsrc           " , nz, ncrms);
   qpevp            = real2d( "qpevp           " , nz, ncrms);
   flag_precip      = intHost1d( "flag_precip     " , nmicro_fields);
@@ -536,6 +537,7 @@ void finalize() {
   mkadv            = real3d();
   mkdiff           = real3d();
   qn               = real4d();
+  qc               = real4d();
   qpsrc            = real2d();
   qpevp            = real2d();
   flag_precip      = intHost1d();
@@ -1670,6 +1672,7 @@ void perturb_arrays() {
     perturb( mkadv             , mag );
     perturb( mkdiff            , mag );
     perturb( qn                , mag );
+    perturb( qc                , mag );
     perturb( qpsrc             , mag );
     perturb( qpevp             , mag );
     perturb( t_vt_tend        , mag );
@@ -1821,6 +1824,7 @@ real3d mkwsb           ;
 real3d mkadv           ;
 real3d mkdiff          ;
 real4d qn              ;
+real4d qc              ;
 real2d qpsrc           ;
 real2d qpevp           ;
 intHost1d flag_precip  ;

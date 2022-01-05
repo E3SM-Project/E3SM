@@ -354,6 +354,7 @@ extern real3d mkwsb           ;
 extern real3d mkadv           ;
 extern real3d mkdiff          ;
 extern real4d qn              ;
+extern real4d qc              ;
 extern real2d qpsrc           ;
 extern real2d qpevp           ;
 extern intHost1d flag_precip  ;

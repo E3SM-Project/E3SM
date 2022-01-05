@@ -4,7 +4,6 @@
 #include "YAKL.h"
 #include <iomanip>
 
-// #include "share/scream_types.hpp"
 #include "scream_types.hpp"
 
 using yakl::c::Bounds;
@@ -29,8 +28,8 @@ void DEBUG_SCALAR(T var) {
   std::cout << std::setprecision(16) << std::scientific << var << std::endl;
 }
 
-//typedef double real;
-using real = typename scream::Real;
+typedef double real;
+// using real = typename scream::Real;
 
 int  constexpr crm_nx     = CRM_NX;
 int  constexpr crm_ny     = CRM_NY;
@@ -210,11 +209,10 @@ bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics f
 //#if defined(sam1mom)
 //int  constexpr nmicro_fields = 2;
 //#elif defined(p3)
-int constexpr nmicro_fields = 9;
+int constexpr nmicro_fields = 8;
 //#endif
 int  constexpr index_water_vapor = 0;
-int  constexpr index_cloud_ice = 0;
-int  constexpr num_tracers = 10;
+// int  constexpr index_cloud_ice = 0;
 
 real constexpr rhor = 1000.; // Density of water, kg/m3
 real constexpr rhos = 100.;  // Density of snow, kg/m3

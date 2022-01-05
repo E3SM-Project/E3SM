@@ -2,10 +2,50 @@
 #include "micro_p3.h"
 
 // temporarily disable all this code for now
-#ifdef use_p3
+// #ifdef use_p3
 
 using namespace scream;
 using namespace scream::p3;
+
+void micro_p3_init() {
+  auto &fluxbmk = ::fluxbmk;
+  auto &fluxtmk = ::fluxtmk;
+  auto &mkwle   = ::mkwle;
+  auto &mkwsb   = ::mkwsb;
+  auto &mkadv   = ::mkadv;
+  auto &mkdiff  = ::mkdiff;
+  auto &qpsrc   = ::qpsrc;
+  auto &qpevp   = ::qpevp;
+  auto &ncrms   = ::ncrms;
+
+  // for (int l=0; l<nmicro_fields; k++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
+    fluxbmk(l,j,i,icrm) = 0.0;
+    fluxtmk(l,j,i,icrm) = 0.0;
+  });
+
+  micro_p3_diagnose();
+
+  // for (int l=0; l<nmicro_fields; k++) {
+  //  for (int k=0; k<nz; k++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<3>(nmicro_fields,nz,ncrms) , YAKL_LAMBDA (int l, int k, int icrm) {
+    mkwle (l,k,icrm) = 0.0;
+    mkwsb (l,k,icrm) = 0.0;
+    mkadv (l,k,icrm) = 0.0;
+    mkdiff(l,k,icrm) = 0.0;
+  });
+  
+  // for (int k=0; k<nz; k++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    qpsrc(k,icrm) = 0.0;
+    qpevp(k,icrm) = 0.0;
+  });
+}
 
 void micro_p3_diagnose() {
   auto &qv          = :: qv;
@@ -16,11 +56,13 @@ void micro_p3_diagnose() {
   auto &micro_field = :: micro_field;
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    qv(k,j,i,icrm)  = micro_field(ixqv,    k,j+offy_s,i+offx_s,icrm);
-    qcl(k,j,i,icrm) = micro_field(ixcldliq,k,j+offy_s,i+offx_s,icrm);
-    qci(k,j,i,icrm) = micro_field(ixcldice,k,j+offy_s,i+offx_s,icrm);
-    qpl(k,j,i,icrm) = micro_field(ixrain,  k,j+offy_s,i+offx_s,icrm);
-    qpi(k,j,i,icrm) = micro_field(ixcldrim,k,j+offy_s,i+offx_s,icrm);
+    // qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    // qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
+    qcl(k,j,i,icrm) = qc(k,j,i,icrm);
+    qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
+    qci(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+    qpi(k,j,i,icrm) = 0. // P3 doesn't have a "precipitating" ice category, so put it all as "cloud ice"
   });
 }
 
@@ -198,18 +240,20 @@ void micro_p3_proc() {
  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    qc_in(icol,ilev) = micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm); 
-    nc_in(icol,ilev) = micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm);
-    qr_in(icol,ilev) = micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm);
-    nr_in(icol,ilev) = micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm);
-    qi_in(icol,ilev) = micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm);
-    qm_in(icol,ilev) = micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm);
-    ni_in(icol,ilev) = micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm);
-    bm_in(icol,ilev) = micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm);
-    qv_in(icol,ilev) = micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm);
+    qv_in(icol,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
+    // qc_in(icol,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm); 
+    qc_in(icol,ilev) = qc(k,j,i,icrm);
+    nc_in(icol,ilev) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
+    qr_in(icol,ilev) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
+    nr_in(icol,ilev) = micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm);
+    qi_in(icol,ilev) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+    qm_in(icol,ilev) = micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm);
+    ni_in(icol,ilev) = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
+    bm_in(icol,ilev) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
   });
 
-  view_2d qc_d("qc", ncol, npack),
+  view_2d qv_d("qv", ncol, npack),
+          qc_d("qc", ncol, npack),
           nc_d("nc", ncol, npack),
           qr_d("qr", ncol, npack),
           nr_d("nr", ncol, npack),
@@ -217,7 +261,6 @@ void micro_p3_proc() {
           qm_d("qm", ncol, npack),
           ni_d("ni", ncol, npack),
           bm_d("bm", ncol, npack),
-          qv_d("qv", ncol, npack),
           th_atm_d("th", ncol, npack);
 
   array_to_view(qc_in.myData, ncol, nlev, qc_d);
@@ -378,15 +421,16 @@ void micro_p3_proc() {
      int icrm = (icol/nx)/ny;
      int k    = ilev*Spack::n + s;
      if (k < nlev) {
-        micro_field(ixcldliq, k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
-        micro_field(ixnumliq, k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
-        micro_field(ixrain,   k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];
-        micro_field(ixnumrain,k,j+offy_s,i+offx_s,icrm) = prog_state.nr(icol,ilev)[s];
-        micro_field(ixcldice, k,j+offy_s,i+offx_s,icrm) = prog_state.qi(icol,ilev)[s];
-        micro_field(ixcldrim, k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
-        micro_field(ixnumice, k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
-        micro_field(ixrimvol, k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
-        micro_field(ixqv,     k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s];      
+        micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];      
+        // micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
+        qc(k,j,i,icrm)                               = prog_state.qc(icol,ilev)[s];
+        micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
+        micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];
+        micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = prog_state.nr(icol,ilev)[s];
+        micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = prog_state.qi(icol,ilev)[s];
+        micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
+        micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
+        micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
      } 
   });
 
@@ -420,4 +464,4 @@ void micro_p3_proc() {
   if (docloud)  micro_p3_diagnose();   // leave this line here
 }
 
-#endif
+// #endif

@@ -76,6 +76,8 @@ void shoc_proc() {
   const Real shoc_ice_deep = 25.e-6;
   const Real shoc_ice_sh   = 50.e-6;
 
+  int  constexpr num_tracers = 10;
+
   real2d inv_exner("inv_exner", ncol, nlev);
   real2d rvm("rvm", ncol, nlev);
   real2d rcm("rcm", ncol, nlev);

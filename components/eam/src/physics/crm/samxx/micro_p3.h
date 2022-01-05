@@ -9,18 +9,18 @@
 #include "p3_f90.hpp"
 
 enum {
-   ixqv = 0,
-   ixcldliq,      //cloud liquid amount index, qc
-   ixcldice,      // ice index qi
-   ixnumliq,      // cloud liquid number index nc
-   ixnumice,      // cloud ice number index ni
-   ixrain,        // rain index  qr
-   ixnumrain,     // rain number index nr
-   ixcldrim,      // rime index    qm
-   ixrimvol       // rime volume index bm
+   idx_qt = 0,  // total water (qv + qc)
+   // idx_qc,      // cloud liq amount
+   idx_qi,      // cloud ice amount
+   idx_qr,      // rain amount
+   idx_nc,      // cloud liq number
+   idx_ni,      // cloud ice number
+   idx_nr,      // rain number
+   idx_qm,      // ice rime amount
+   idx_bm       // ice rime volume
 };
 
+void micro_p3_init();
 void micro_p3_proc();
-
 
 
