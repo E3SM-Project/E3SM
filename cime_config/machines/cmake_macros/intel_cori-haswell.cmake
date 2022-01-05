@@ -1,5 +1,3 @@
-set(ALBANY_PATH "/global/cfs/cdirs/e3sm/software/albany-trilinos/albany-install-2020-08-07")
-string(APPEND FFLAGS " -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2 -debug minimal -qno-opt-dynamic-align")
 endif()
