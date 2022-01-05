@@ -376,7 +376,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // TODO: this *relies* on the two added checks to be run in the same order as they
   //       are added here. To avoid this assumption, we need a more flexible lower bound
   //       check, which has one LB for check and one LB for repair.
-  const Real tol = -1e-20;
+  const Real tol = -1e-17;
   auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol,false);
   auto lower_bound_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0,true);
   add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),lower_bound_check);
