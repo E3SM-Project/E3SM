@@ -37,6 +37,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
+  use CNPBudgetMod           , only : CNPBudget_Reset
   use elm_varctl             , only : do_budgets
   !
   implicit none
@@ -757,6 +758,12 @@ contains
             alm_fates, glc2lnd_vars, crop_vars)
 
     end if
+
+    ! Prevent situation on restart where states get reset at nstep=1 but cumulative fluxes never get reset
+    if (get_nstep() <= 1 .and. do_budgets) then
+      call WaterBudget_Reset('all')
+      call CNPBudget_Reset('all')
+    endif
        
     ! ------------------------------------------------------------------------
     ! If appropriate, create interpolated initial conditions
