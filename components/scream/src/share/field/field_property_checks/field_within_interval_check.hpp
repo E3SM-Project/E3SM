@@ -40,7 +40,12 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const override { return "Within Interval [" + std::to_string(m_lower_bound) + "," + std::to_string(m_upper_bound) + "] Field Check"; }
+  std::string name () const override {
+    // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
+    std::stringstream ss;
+    ss << "Within Interval [" << m_lower_bound << ", " << m_upper_bound << "] Check";
+    return ss.str();
+  }
 
   bool check(const Field<const_RT>& field) const override {
     using RT = non_const_RT;
