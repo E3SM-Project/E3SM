@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 """
-Dump the SCREAM-approved environment setup commands for a machine
+Dump the SCREAM-approved environment setup commands for a machine.
+This can be used with a bash function or the source_to_load_scream_env.sh
+script to conveniently load the SCREAM-approved env into your current shell.
 """
 
 from utils import check_minimum_python_version
@@ -33,6 +35,9 @@ OR
     \033[1;32m# A more-flexible bash function \033[0m
     load_scream () {{ eval $({0} $1); }}
     > load_scream mappy
+
+    \033[1;32m# Use the provided shell script to load env \033[0m
+    > SCREAM_MACHINE=mappy . scream/scripts/source_to_load_scream_env.sh
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
