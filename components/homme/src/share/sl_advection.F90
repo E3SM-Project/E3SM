@@ -137,7 +137,7 @@ contains
   subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, limiter_option_out, &
        cdr_check, geometry_type) bind(c)
     use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
-         hypervis_power, nu_q, hypervis_scaling, limiter_option, geometry
+         nu_q, hypervis_scaling, limiter_option, geometry
     use iso_c_binding, only: c_int, c_double
 
     real(c_double), intent(out) :: nu_q_out, hv_scaling
@@ -153,9 +153,6 @@ contains
     geometry_type = 0 ! sphere
     if (trim(geometry) == "plane") geometry_type = 1
 
-    ! Assert some things.
-    if (nu_q > 0 .and. hv_q > 0 .and. hypervis_power /= 0) &
-         call abortmp('SL transport: hypervis_power /= 0')
   end subroutine sl_get_params
 
   subroutine prim_advec_tracers_remap_ALE(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)

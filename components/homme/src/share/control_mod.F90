@@ -171,23 +171,16 @@ module control_mod
   integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
                                                               ! 1 = use (approx.) laplace on p surfaces
 
-  real (kind=real_kind), public :: hypervis_power=0           ! if not 0, use variable hyperviscosity based on element area
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
 
   !three types of hyper viscosity are supported right now:
   ! (1) const hv:    nu * del^2 del^2
-  ! (2) scalar hv:   nu(lat,lon) * del^2 del^2
-  ! (3) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
+  ! (2) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
   !
-  ! (1) default:  hypervis_power=0, hypervis_scaling=0
-  ! (2) Original version for var-res grids. (M. Levy)
-  !            scalar coefficient within each element
-  !            hypervisc_scaling=0
-  !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
-  ! (3) tensor HV var-res grids 
+  ! (1) hypervis_scaling=0
+  ! (2) tensor HV var-res grids  
   !            tensor within each element:
-  !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
-  !            hypervis_power=0
+  !            set hypervis_scaling > 0 (typical values would be 3.0)
   !            (\div * tensor * \grad) operator uses cartesian laplace
   !
 

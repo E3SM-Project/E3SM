@@ -257,7 +257,7 @@ contains
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor_inv, scale_factor,dd_pi
-    use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
+    use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
                             fine_ne, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
@@ -337,121 +337,7 @@ contains
     min_max_dx=ParallelMin(min_max_dx,hybrid)
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  SCALAR, RESOLUTION-AWARE HYPERVISCOSITY
-!  this block of code initializes the variable_hyperviscsoity() array
-!  based on largest length scale in each element and user specified scaling
-!  it then limits the coefficient if the user specifed a max CFL
-!  this limiting is based on the smallest length scale of each element
-!  since that controls the CFL.
-!  Mike Levy 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if (hypervis_power /= 0) then
-
-        min_hypervis = 1d99
-        max_hypervis = 0
-        avg_hypervis = 0
-
-
-        max_unif_dx = min_max_dx  ! use this for average resolution, unless:
-!       viscosity in namelist specified for smallest element:
-        if (fine_ne>0) then
-           ! viscosity in namelist specified for regions with a resolution
-           ! equivilant to a uniform grid with ne=fine_ne
-           if (np /= 4 ) call abortmp('ERROR: setting fine_ne only supported with NP=4')
-           max_unif_dx = (111.28*30)/dble(fine_ne)   ! in km
-        endif
-
-! 
-! note: if L = eigenvalue of metinv, then associated length scale (km) is
-! dx = 1.0d0/( sqrt(L)*0.5d0*dble(np-1)*rrearth*1000.0d0)
-!
-!       for viscosity *tensor*, we take at each point: 
-!            nu1 = nu*(dx1/max_unif_dx)**3.2      dx1 associated with eigenvalue 1
-!            nu2 = nu*(dx2/max_unif_dx)**3.2      dx2 associated with eigenvalue 2
-!       with this approach:
-!          - with this formula, no need to adjust for CFL violations
-!          - if nu comes from a 3.2 scaling that is stable for coarse and fine resolutions,
-!            this formulat will be stable.  
-!          - gives the correct answer in long skinny rectangles:
-!            large viscosity in the long direction, small viscosity in the short direction 
-!            
-!
-
-        normDinv_hypervis = 0
-
-        do ie=nets,nete
-           ! variable viscosity based on map from ulatlon -> ucontra
-
-           ! dx_long
-           elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
-           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * &
-                (lambda_vis**2) * ((scale_factor_inv*elem(ie)%normDinv)**4)
-
-            ! Check to see if this is stable
-            if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
-                stable_hv = sqrt( max_hypervis_courant / &
-                     (  dtnu * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4 ) )
-
-#if 0
-         ! Useful print statements for debugging the adjustments to hypervis 
-                 print*, "Adjusting hypervis on elem ", elem(ie)%GlobalId
-                 print*, "From ", nu*elem(ie)%variable_hyperviscosity(1,1)**2, " to ", nu*stable_hv
-                 print*, "Difference = ", nu*(/elem(ie)%variable_hyperviscosity(1,1)**2-stable_hv/)
-                 print*, "Factor of ", elem(ie)%variable_hyperviscosity(1,1)**2/stable_hv
-                 print*, " "
-#endif
-
-!                make sure that: elem(ie)%hv_courant <=  max_hypervis_courant 
-                elem(ie)%variable_hyperviscosity = stable_hv
-                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4               
-            end if
-            normDinv_hypervis = max(normDinv_hypervis, elem(ie)%hv_courant/dtnu)
-
-            min_hypervis = min(min_hypervis, elem(ie)%variable_hyperviscosity(1,1))
-            max_hypervis = max(max_hypervis, elem(ie)%variable_hyperviscosity(1,1))
-            global_shared_buf(ie,1) = elem(ie)%variable_hyperviscosity(1,1)
-        end do
-
-        min_hypervis = ParallelMin(min_hypervis, hybrid)
-        max_hypervis = ParallelMax(max_hypervis, hybrid)
-        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-        avg_hypervis = global_shared_sum(1)/dble(nelem)
-
-        normDinv_hypervis = ParallelMax(normDinv_hypervis, hybrid)
-
-        ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
-        call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
-        do ie=nets,nete
-            zeta(:,:,ie) = elem(ie)%variable_hyperviscosity(:,:)*elem(ie)%spheremp(:,:)
-            call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
-        end do
-        call bndry_exchangeV(hybrid,edgebuf)
-        do ie=nets,nete
-            call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
-            elem(ie)%variable_hyperviscosity(:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
-        end do
-        call FreeEdgeBuffer(edgebuf)
-
-        ! replace hypervis w/ bilinear based on continuous corner values
-        do ie=nets,nete
-            noreast = elem(ie)%variable_hyperviscosity(np,np)
-            nw = elem(ie)%variable_hyperviscosity(1,np)
-            se = elem(ie)%variable_hyperviscosity(np,1)
-            sw = elem(ie)%variable_hyperviscosity(1,1)
-            do i=1,np
-                x = gp%points(i)
-                do j=1,np
-                    y = gp%points(j)
-                    elem(ie)%variable_hyperviscosity(i,j) = 0.25d0*( &
-                                            (1.0d0-x)*(1.0d0-y)*sw + &
-                                            (1.0d0-x)*(y+1.0d0)*nw + &
-                                            (x+1.0d0)*(1.0d0-y)*se + &
-                                            (x+1.0d0)*(y+1.0d0)*noreast)
-                end do
-            end do
-        end do
-    else  if (hypervis_scaling/=0) then
+    if (hypervis_scaling/=0) then
        ! tensorHV.  New eigenvalues are the eigenvalues of the tensor V
        ! formulas here must match what is in cube_mod.F90
        ! for tensorHV, we scale out the rearth dependency
@@ -472,7 +358,6 @@ contains
 !  Oksana Guba
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    if (hypervis_scaling /= 0) then
-#if 1
     call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
     do rowind=1,2
       do colind=1,2
@@ -489,10 +374,8 @@ contains
       enddo !rowind
     enddo !colind
     call FreeEdgeBuffer(edgebuf)
-#endif
 
 !IF BILINEAR MAP OF V NEEDED
-#if 1
     do rowind=1,2
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
@@ -515,7 +398,6 @@ contains
 	end do
       enddo !rowind
     enddo !colind
-#endif
     endif
     deallocate(gp%points)
     deallocate(gp%weights)
@@ -576,12 +458,6 @@ contains
       if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', &
            1.0d0/(dcmip16_mu_s*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
 
-      if (hypervis_power /= 0) then
-        write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
-                                  nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
-!         print*, 'fine_ne = ', fine_ne
-!         print*, 'Using max_unif_dx = ', max_unif_dx
-      end if
       write(iulog,*) 'tstep_type = ',tstep_type
     end if
 
