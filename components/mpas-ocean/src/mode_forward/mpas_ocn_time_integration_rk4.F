@@ -105,6 +105,9 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: swForcingPool
+      type (mpas_pool_type), pointer :: seafloorTendPool
+      type (mpas_pool_type), pointer :: seafloorTracersPool
+      type (mpas_pool_type), pointer :: provisSeafloorTracersPool
 
       integer :: rk_step
 
@@ -134,6 +137,7 @@ module ocn_time_integration_rk4
       logical, pointer :: config_verify_not_dry
       logical, pointer :: config_prevent_drying
       logical, pointer :: config_zero_drying_velocity
+      logical, pointer :: config_use_benthosTracers
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       ! State indices
@@ -143,7 +147,8 @@ module ocn_time_integration_rk4
       ! Diagnostics Indices
 
       ! Mesh array pointers
-      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop                              
+      integer, pointer :: nBenthicVertLevels
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
 
       ! Provis Array Pointers
@@ -151,11 +156,13 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessProvis
       real (kind=RKIND), dimension(:,:), pointer :: lowFreqDivergenceProvis
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupProvis
+      real (kind=RKIND), dimension(:,:,:), pointer :: benthosTracersProvis
 
-      ! Tend Array Pointers
+      ! Tend Array Pointers                                                                                      
+      real (kind=RKIND), dimension(:), pointer :: benthosInterfaceLayerThickness
       real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessTend, lowFreqDivergenceTend, normalVelocityTend, &
                                                     layerThicknessTend
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupTend
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupTend, benthosTracersTend
 
       ! State Array Pointers
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityCur, normalVelocityNew
@@ -164,7 +171,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:), pointer :: lowFreqDivergenceCur, lowFreqDivergenceNew
       real (kind=RKIND), dimension(:), pointer :: sshCur, sshNew
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroup, tracersCur, tracersNew
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroup, tracersCur, tracersNew                        
+      real (kind=RKIND), dimension(:,:,:), pointer :: benthosTracers, benthosTracersCur, benthosTracersNew
 
       ! Diagnostics Field Pointers
       type (field1DReal), pointer :: boundaryLayerDepthField, effectiveDensityField
@@ -282,6 +290,27 @@ module ocn_time_integration_rk4
                end if
             end if
          end do
+         if (config_use_benthosTracers) then    ! need to add benthosStorage                                     
+            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)                                        
+            call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)                     
+            call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)                        
+            call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)                               
+            call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur,1)                 
+            call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
+            call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
+                                                                                                               
+            if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then                          
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k)
+                  do iCell = 1, nCells  ! couple tracers to thickness
+                     do k = 1, nBenthicVertLevels+1
+                        benthosTracersNew(:, k, iCell) = benthosTracersCur(:, k, iCell) * benthosInterfaceLayerThickness(k)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+            end if                                                                                               
+         end if
 
          if (associated(highFreqThicknessCur)) then
               !$omp parallel
@@ -529,6 +558,13 @@ module ocn_time_integration_rk4
               call mpas_dmpar_field_halo_exch(domain, trim(groupItr % memberName))
            end if
         end do
+
+        if (config_use_benthosTracers) then
+           call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+           call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+           call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
+           call mpas_dmpar_field_halo_exch(domain, 'benthosTracersTend')
+        end if
 
         call mpas_timer_stop("RK4 tracer prognostic halo update")
 
@@ -904,7 +940,7 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, forcingPool
       type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
-      type (mpas_pool_type), pointer :: swForcingPool, tracersPool
+      type (mpas_pool_type), pointer :: swForcingPool, tracersPool, diagnosticsPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, normalVelocityCur
@@ -926,6 +962,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -965,7 +1002,7 @@ module ocn_time_integration_rk4
       endif
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
-                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+                            diagnosticsPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
 
@@ -978,7 +1015,7 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, forcingPool
       type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
-      type (mpas_pool_type), pointer :: swForcingPool, tracersPool
+      type (mpas_pool_type), pointer :: swForcingPool, tracersPool, diagnosticsPool
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, normalVelocityCur
@@ -998,6 +1035,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -1042,7 +1080,7 @@ module ocn_time_integration_rk4
       endif
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
-                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+                           diagnosticsPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
 
@@ -1053,6 +1091,7 @@ module ocn_time_integration_rk4
       integer, intent(out) :: err
 
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_GM
+      logical, pointer :: config_use_benthosTracers
 
       integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, k
@@ -1060,12 +1099,15 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: statePool, tendPool, meshPool, scratchPool
       type (mpas_pool_type), pointer :: provisStatePool, forcingPool
       type (mpas_pool_type), pointer :: tracersPool, tracersTendPool, provisTracersPool
+      type (mpas_pool_type), pointer :: seafloorTracersPool, seafloorTendPool, provisSeafloorTracersPool
 
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocityCur, normalVelocityProvis, normalVelocityTend
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, layerThicknessProvis, layerThicknessTend
       real (kind=RKIND), dimension(:, :), pointer :: lowFreqDivergenceCur, lowFreqDivergenceProvis, lowFreqDivergenceTend
-
+      real (kind=RKIND), dimension(:), pointer :: benthosInterfaceLayerThickness
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupCur, tracersGroupProvis, tracersGroupTend
+      real (kind=RKIND), dimension(:, :, :), pointer :: benthosTracersCur, benthosTracersProvis, benthosTracersTend
+      integer, pointer :: nBenthicVertLevels
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
 
@@ -1079,6 +1121,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(block % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(block % configs, 'config_prescribe_thickness', config_prescribe_thickness)
       call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
+      call mpas_pool_get_config(block % configs, 'config_use_benthosTracers', config_use_benthosTracers)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1162,6 +1205,31 @@ module ocn_time_integration_rk4
          end if
       end do
 
+      if (config_use_benthosTracers) then
+         call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+         call mpas_pool_get_subpool(provisStatePool, 'seafloorTracers', provisSeafloorTracersPool)
+         call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+         call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+         call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur, 1)
+         call mpas_pool_get_array(provisSeafloorTracersPool, 'benthosTracers', benthosTracersProvis, 1)
+         call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
+         call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
+
+         if (associated(benthosTracersProvis) .and. associated(benthosTracersCur) .and. associated(benthosTracersTend)) then
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k)
+                  do iCell = 1, nCells
+                     do k = 1, nBenthicVertLevels+1
+                       benthosTracersProvis(:, k, iCell) = ( benthosInterfaceLayerThickness(k) * benthosTracersCur(:, k, iCell)  &
+                                                 + rkSubstepWeight * benthosTracersTend(:, k, iCell) &
+                                                   ) / benthosInterfaceLayerThickness(k)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+         end if
+      end if
+
       if (associated(lowFreqDivergenceCur)) then
          !$omp parallel
          !$omp do schedule(runtime)
@@ -1231,6 +1299,7 @@ module ocn_time_integration_rk4
 
       type (mpas_pool_type), pointer :: statePool, tendPool, meshPool
       type (mpas_pool_type), pointer :: tracersPool, tracersTendPool
+      type (mpas_pool_type), pointer :: seafloorTracersPool, seafloorTendPool
 
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocityNew, normalVelocityTend
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessNew, layerThicknessTend
@@ -1238,10 +1307,13 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: lowFreqDivergenceNew, lowFreqDivergenceTend
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew, tracersGroupTend
+      real (kind=RKIND), dimension(:, :, :), pointer :: benthosTracersNew, benthosTracersTend
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
+      integer, pointer :: nBenthicVertLevels
 
       logical, pointer :: config_use_tracerGroup
+      logical, pointer :: config_use_benthosTracers
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
@@ -1321,6 +1393,28 @@ module ocn_time_integration_rk4
          end if
       end do
 
+      ! benthos BGC tracers
+      call mpas_pool_get_config(block % configs, 'config_use_benthosTracers', config_use_benthosTracers)
+      if (config_use_benthosTracers) then
+         call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+         call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+         call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+         call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
+         call mpas_pool_get_array(seafloorTendPool, 'benthosTracersTend', benthosTracersTend)
+         if ( associated(benthosTracersNew) .and. associated(benthosTracersTend) ) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell = 1, nCells
+               do k = 1, nBenthicVertLevels+1
+                  benthosTracersNew(:, k, iCell) = benthosTracersNew(:, k, iCell) + rkWeight &
+                                                * benthosTracersTend(:, k, iCell)
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+      end if
+
       if (associated(highFreqThicknessNew)) then
          !$omp parallel
          !$omp do schedule(runtime)
@@ -1354,13 +1448,18 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: statePool, meshPool, forcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), pointer :: seafloorTracersPool, seafloorTendPool, tendPool
 
+      real (kind=RKIND), dimension(:), pointer :: benthosInterfaceLayerThickness
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessNew, normalVelocityNew
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew
+      real (kind=RKIND), dimension(:, :, :), pointer :: benthosTracersNew
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
+      integer, pointer :: nBenthicVertLevels
 
       logical, pointer :: config_use_tracerGroup
+      logical, pointer :: config_use_benthosTracers
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
@@ -1407,6 +1506,26 @@ module ocn_time_integration_rk4
             end if
          end if
       end do
+      call mpas_pool_get_config(block % configs, 'config_use_benthosTracers', config_use_benthosTracers)
+      if (config_use_benthosTracers) then
+         call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+         call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+         call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+         call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
+         call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
+         if (associated(benthosTracersNew)) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell = 1, nCells
+               do k = 1, nBenthicVertLevels+1
+                   benthosTracersNew(:, k, iCell) = benthosTracersNew(:, k, iCell) / benthosInterfaceLayerThickness(k)
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+      end if
 
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 

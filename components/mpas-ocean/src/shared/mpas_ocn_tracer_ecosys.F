@@ -585,12 +585,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: ecosysAuxiliary  ! additional forcing fields
+      type (mpas_pool_type), pointer :: ecosysAuxiliary  ! additional forcing fields     
+      type (mpas_pool_type), pointer :: ecosysBenthosForcing  ! forcing fields for benthos BGC
       type (mpas_pool_type), pointer :: ecosysDiagFieldsLevel1,  &  ! diagnostics
                                         ecosysDiagFieldsLevel2,  &
                                         ecosysDiagFieldsLevel3,  &
                                         ecosysDiagFieldsLevel4,  &
                                         ecosysDiagFieldsLevel5
+
+      logical, pointer ::  &
+         config_use_benthosTracers
 
       !
       ! level 1 diagnostics
@@ -728,6 +732,15 @@ contains
          ecosys_diag_bsiToSed,       &
          ecosys_diag_dustToSed,      &
          ecosys_diag_OtherRemin
+
+      ! two dimensional arrays for benthos module (nx,nz)                                
+      ! NJ:add benthos_bsiToSed and benthos_dustToSed
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         benthos_pocToSed, &
+         benthos_ponToSed, &
+         benthos_popToSed, &
+         benthos_pfeToSed, &
+         benthos_calcToSed
 
       ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -958,6 +971,18 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_SiO3_RESTORE', ecosys_diag_SiO3_RESTORE)
       endif
 
+      ! for use in the benthos submodule 
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_benthosTracers', config_use_benthosTracers)               
+      if (config_use_benthosTracers) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysBenthosForcing', ecosysBenthosForcing)                    
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_calcToSed', benthos_calcToSed)                   
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_pocToSed)                     
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_ponToSed)                     
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_popToSed)                     
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pfeToSed', benthos_pfeToSed)
+      endif
+
       numColumns = 1
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
@@ -1038,6 +1063,31 @@ contains
                marbl_instances(1)%interior_tendency_saved_state%state(interior_pH_indexInMARBL)%field_3d(iLevel,1)
             PH_PREV_ALT_CO2_3D(iLevel,iCell) = &
                marbl_instances(1)%interior_tendency_saved_state%state(interior_pH_altCO2_indexInMARBL)%field_3d(iLevel,1)
+            !                                                                                                     
+            ! Benthos Forcing Fields                                                                              
+            !
+
+            if (config_use_benthosTracers) then
+               benthos_calcToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_calcToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)
+
+               benthos_pocToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_pocToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)
+
+               benthos_pfeToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_pfeToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)
+
+               benthos_ponToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_ponToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)
+
+               benthos_popToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_popToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                  ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
+            endif  !  config_ecosysTracers_diagnostic_fields_level3
 
             !
             ! level 1 diagnostics, full depth

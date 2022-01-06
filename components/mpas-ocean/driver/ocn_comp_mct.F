@@ -57,6 +57,7 @@ module ocn_comp_mct
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
    use ocn_tracer_CFC
+   use ocn_tracer_benthos
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
@@ -201,6 +202,7 @@ contains
 
     logical, pointer :: config_use_ecosysTracers
     logical, pointer :: config_use_CFCTracers
+    logical, pointer :: config_use_benthosTracers, config_use_benthos_monthly_forcing
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
@@ -709,6 +711,16 @@ contains
         call mpas_timer_stop('io_CFC')
     endif
 
+    ! read initial data required for benthos forcing                                              
+    call mpas_pool_get_config(domain % configs, 'config_use_benthosTracers', config_use_benthosTracers)
+    call mpas_pool_get_config(domain % configs, 'config_use_benthos_monthly_forcing', config_use_benthos_monthly_forcing)
+
+    if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
+       call mpas_timer_start('io_benthos',.false.)
+        call ocn_get_benthos_data(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_benthos')
+    endif
+
     ! read initial data required for monthly surface salinity restoring
     call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
                                                  config_use_activeTracers_surface_restoring)
@@ -886,6 +898,7 @@ contains
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
       logical, pointer :: config_use_CFCTracers
+      logical, pointer :: config_use_benthosTracers, config_use_benthos_monthly_forcing
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -1005,6 +1018,15 @@ contains
            call ocn_get_CFCData(domain % streamManager, domain, domain_ptr % clock, .false.)
            call mpas_timer_stop('io_CFC')
          endif
+
+         ! read next time level  data required for benthos forcing
+         call mpas_pool_get_config(domain % configs, 'config_use_benthosTracers', config_use_benthosTracers)
+        call mpas_pool_get_config(domain % configs, 'config_use_benthos_monthly_forcing', config_use_benthos_monthly_forcing)
+        if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
+           call mpas_timer_start('io_benthos',.false.)
+           call ocn_get_benthos_data(domain_ptr % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_benthos')
+        endif
 
          ! read next time level data required for monthly surface salinity restoring
          call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
@@ -1130,6 +1152,9 @@ contains
          if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
 
          if (config_use_CFCTracers) call ocn_CFC_forcing_write_restart(domain_ptr)
+
+         if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) &
+            call ocn_benthos_forcing_write_restart(domain_ptr)
 
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
              call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
