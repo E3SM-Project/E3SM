@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
 
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
