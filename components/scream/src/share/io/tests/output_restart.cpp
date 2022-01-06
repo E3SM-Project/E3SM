@@ -1,6 +1,4 @@
 #include <catch2/catch.hpp>
-#include <iostream>
-#include <fstream>
 
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -20,8 +18,13 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util//scream_setup_random_test.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
+
+#include <iostream>
+#include <fstream>
+
 namespace {
 using namespace scream;
 using namespace ekat::units;
@@ -38,7 +41,8 @@ get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 ekat::ParameterList get_in_params();
 
-void randomize_fields (const FieldManager<Real>& fm, const int seed);
+template<typename Engine>
+void randomize_fields (const FieldManager<Real>& fm, Engine& engine);
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
@@ -46,22 +50,19 @@ void time_advance (const FieldManager<Real>& fm,
 
 TEST_CASE("restart","io")
 {
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   Int num_gcols = 2*io_comm.size();
   Int num_levs = 3;
 
+  auto engine = setup_random_test(&io_comm);
+
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_gcols,num_levs);
   auto grid = gm->get_grid("Point Grid");
   auto field_manager = get_test_fm(grid);
-  randomize_fields(*field_manager,seed);
+  randomize_fields(*field_manager,engine);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -255,10 +256,9 @@ backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm)
 }
 
 /*===================================================================================================================*/
-void randomize_fields (const FieldManager<Real>& fm, const int seed)
+template<typename Engine>
+void randomize_fields (const FieldManager<Real>& fm, Engine& engine)
 {
-  using rngAlg = std::mt19937_64;
-  rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
 
