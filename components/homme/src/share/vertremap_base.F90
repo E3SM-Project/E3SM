@@ -630,7 +630,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
            enddo
         endif
         !Compute monotonic and conservative PPM reconstruction over every cell
-        coefs(:,:) = compute_ppm( ao , ppmdx, remap_alg )
+        coefs(:,:) = compute_ppm( ao , ppmdx)
         !Compute tracer values on the new grid by integrating from the old cell bottom to the new
         !cell interface to form a new grid mass accumulation. Taking the difference between
         !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
@@ -681,11 +681,10 @@ end function compute_ppm_grids
 
 
 !This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
-function compute_ppm( a , dx, remap_alg )    result(coefs)
+function compute_ppm( a , dx )    result(coefs)
   implicit none
   real(kind=real_kind), intent(in) :: a    (    -1:nlev+2)  !Cell-mean values
   real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
-  integer :: remap_alg
   real(kind=real_kind) ::             coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
   real(kind=real_kind) :: ai (0:nlev  )                     !fourth-order accurate, then limited interface values
   real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
