@@ -89,7 +89,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     set_field_manager(io_fm);
   }
 
-
   // Setup I/O structures
   init ();
 }
