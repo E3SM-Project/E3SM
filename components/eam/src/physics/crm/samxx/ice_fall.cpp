@@ -18,12 +18,11 @@ void ice_fall() {
   auto &precssfc      = :: precssfc;
   auto &microphysics_scheme = :: microphysics_scheme;
 
-  int index_cloud_ice;
-
   int1d  kmax("kmax",ncrms);
   int1d  kmin("kmin",ncrms);
   real4d fz  ("fz"  ,nz,ny,nx,ncrms);
 
+  int index_cloud_ice;
 
   if (microphysics_scheme == "sam1mom") { index_cloud_ice = 0; }
   if (microphysics_scheme == "p3")      { index_cloud_ice = idx_qi; }
@@ -114,8 +113,6 @@ void ice_fall() {
     fz(nz-1,j,i,icrm) = 0.0;
   });
 
-  int constexpr ici = index_cloud_ice;
-
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
@@ -126,7 +123,7 @@ void ice_fall() {
       // The cloud ice increment is the difference of the fluxes.
       real dqi  = coef*(fz(k,j,i,icrm)-fz(k+1,j,i,icrm));
       // Add this increment to both non-precipitating and total water.
-      micro_field(ici,k,offy_s+j,offx_s+i,icrm) += dqi;
+      micro_field(index_cloud_ice,k,offy_s+j,offx_s+i,icrm) += dqi;
       // Include this effect in the total moisture budget.
       //$acc atomic update
       yakl::atomicAdd(qifall(k,icrm),dqi);

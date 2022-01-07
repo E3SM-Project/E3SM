@@ -7,6 +7,26 @@
 using namespace scream;
 using namespace scream::p3;
 
+void micro_p3_diagnose() {
+  auto &qv          = :: qv;
+  auto &qcl         = :: qcl;
+  auto &qci         = :: qci;
+  auto &qpl         = :: qpl;
+  auto &qpi         = :: qpi;
+  auto &micro_field = :: micro_field;
+
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    // qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    // qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
+    qcl(k,j,i,icrm) = qc(k,j,i,icrm);
+    qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
+    qci(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+    qpi(k,j,i,icrm) = 0.; // P3 doesn't have a "precipitating" ice category, so put it all as "cloud ice"
+  });
+}
+
+
 void micro_p3_init() {
   auto &fluxbmk = ::fluxbmk;
   auto &fluxtmk = ::fluxtmk;
@@ -44,25 +64,6 @@ void micro_p3_init() {
   parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpsrc(k,icrm) = 0.0;
     qpevp(k,icrm) = 0.0;
-  });
-}
-
-void micro_p3_diagnose() {
-  auto &qv          = :: qv;
-  auto &qcl         = :: qcl;
-  auto &qci         = :: qci;
-  auto &qpl         = :: qpl;
-  auto &qpi         = :: qpi;
-  auto &micro_field = :: micro_field;
-
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    // qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-    // qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
-    qcl(k,j,i,icrm) = qc(k,j,i,icrm);
-    qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
-    qci(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
-    qpi(k,j,i,icrm) = 0. // P3 doesn't have a "precipitating" ice category, so put it all as "cloud ice"
   });
 }
 
@@ -146,9 +147,9 @@ void micro_p3_proc() {
  auto &latitude0          = :: latitude0;
  auto &z0                 = :: z0;
  auto &nc_nuceat_tend     = :: nc_nuceat_tend;
- auto &nccn_prescribed    = :: nccn_prescribed;
+ // auto &nccn_prescribed    = :: nccn_prescribed;
  auto &ni_activated       = :: ni_activated;
- auto &relvar             = :: relvar;
+ // auto &relvar             = :: relvar;
  auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
  auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
  auto &precip_total_tend  = :: precip_total_tend;
@@ -157,9 +158,9 @@ void micro_p3_proc() {
  auto &mu                 = :: mu;
  auto &lambdac            = :: lambdac;
  auto &t_prev             = :: t_prev;
- auto &qv_prev            = :: qv_prev;
+ auto &q_prev             = :: q_prev;
  auto &docloud            = :: docloud;
- auto &ast                = :: ast;
+ // auto &ast                = :: ast;
 
  // output 
  auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
@@ -203,7 +204,7 @@ void micro_p3_proc() {
  real2d dz_in("dz", ncol, nlev);
  real2d dpres_in("dpres",ncol, nlev);
  real2d exner_in("exner",ncol, nlev);
- real2d qv_prev_in("qv_prev",ncol, nlev);
+ real2d q_prev_in("q_prev",ncol, nlev);
  real2d t_prev_in("t_prev",ncol, nlev);
  
  real2d ast_in("ast_in",ncol, nlev);
@@ -280,15 +281,15 @@ void micro_p3_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
     int ilev = k;
-    nccn_prescribed_in(icol,ilev) = nccn_prescribed(k,icrm)*0.0; // TODO: we zero out the nccn_prescribed because of the missing of model
-    nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm)*0.0;  // TODO: we zero out the nc_nuceat_tend because of the missing of model
-    ni_activated_in(icol,ilev)    = ni_activated(k,icrm)*0.0;    // TODO: we zero out the ni_activated because of the missing of model
-    inv_qc_relvar_in(icol,ilev)   = relvar(k,icrm);
+    nccn_prescribed_in(icol,ilev) = 0.; //nccn_prescribed(k,icrm)*0.0; // TODO: we zero out the nccn_prescribed because of the missing of model
+    nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
+    ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
+    inv_qc_relvar_in(icol,ilev)   = 0.; // relvar(k,icrm);
     pres_in(icol,ilev)            = pres(k,icrm);
     dz_in(icol,ilev)              = dz(icrm);
     dpres_in(icol,ilev)           = pdel(k,icrm);
-    ast_in(icol,ilev)             = ast(k,icrm);
-    qv_prev_in(icol,ilev)         = qv_prev(k,j,i,icrm);
+    ast_in(icol,ilev)             = 0.; // ast(k,icrm);
+    q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
   });
 
@@ -306,7 +307,7 @@ void micro_p3_proc() {
           dpres_d("dpres", ncol, npack),
           exner_d("exner", ncol, npack),
           t_prev_d("t_prev", ncol, npack),
-          qv_prev_d("qv_prev", ncol, npack),
+          q_prev_d("q_prev", ncol, npack),
           cld_frac_i_d("cld_frac_i", ncol, npack),
           cld_frac_l_d("cld_frac_l", ncol, npack),
           cld_frac_r_d("cld_frac_r", ncol, npack);
@@ -320,14 +321,14 @@ void micro_p3_proc() {
   array_to_view(dpres_in.myData, ncol, nlev, dpres_d);
   array_to_view(exner_in.myData, ncol, nlev, exner_d);
   array_to_view(t_prev_in.myData, ncol, nlev, t_prev_d);
-  array_to_view(qv_prev_in.myData, ncol, nlev, qv_prev_d);
+  array_to_view(q_prev_in.myData, ncol, nlev, q_prev_d);
   array_to_view(cld_frac_i_in.myData, ncol, nlev, cld_frac_i_d);
   array_to_view(cld_frac_l_in.myData, ncol, nlev, cld_frac_l_d);
   array_to_view(cld_frac_r_in.myData, ncol, nlev, cld_frac_r_d);
 
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
                                       cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
-                                      exner_d, qv_prev_d, t_prev_d};
+                                      exner_d, q_prev_d, t_prev_d};
 
   view_2d qv2qi_depos_tend_d("qv2qi_depos_tend", ncol, npack),
           diag_eff_radius_qc_d("diag_eff_radius_qc", ncol, npack),
