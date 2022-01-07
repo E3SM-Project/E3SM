@@ -840,7 +840,7 @@ contains
                    d = d - fd/dfdd
                 enddo
                 !--  update the submerged areal fraction using the new d value
-                frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) * 0._r8
 
              else
                 frac_h2osfc(c) = 0._r8
