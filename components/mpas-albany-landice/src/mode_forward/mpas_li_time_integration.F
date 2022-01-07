@@ -159,7 +159,6 @@ module li_time_integration
          block => block % next
       end do
 
-
       ! ===
       ! === Perform timestep
       ! ===
@@ -203,7 +202,6 @@ module li_time_integration
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
       err = ior(err, err_tmp)
       call mpas_log_write('  Completed timestep.  New time is: ' // trim(timeStamp), flushNow=.true.)
-
 
       block => domain % blocklist
       do while (associated(block))

@@ -138,6 +138,15 @@
                             possible_values="Any positive integer value greater than or equal to 0"
                     
 		/>
+                <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
+                    description="File containing the interpolation weights for regridding from MPAS mesh to a Gaussian Grid."
+                    possible_values="Any file name string"
+
+        />
+                <nml_option name="config_SLM_to_MALI_weights_file" type="character" default_value="grid_to_mpas.nc" units="unitless"
+                    description="File containing the interpolation weights for regridding from a Gaussien grid to the MPAS mesh."
+                    possible_values="Any file name string"
+        />
 	</nml_record>
 
 	<nml_record name="calving" in_defaults="true">

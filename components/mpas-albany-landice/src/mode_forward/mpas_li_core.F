@@ -435,17 +435,13 @@ module li_core
             timestepNumber = timestepNumber + 1
             block => block % next
          end do
-			
-         write(6,*) '<<< 2. mpas_li_core.F L442: Starting timestep number', timestepNumber
-			
+
          call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
 
          ! ===
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-		   write(6,*)'<<< 2.25 mpas_li_core.F L461: call li_timestep from mpas_li_time_integration.F'
-			call mpas_log_write('<<< mpas_li_core.F L461: call li_timestep')
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
 
@@ -1139,14 +1135,11 @@ module li_core
       ierr = ior(ierr, err_tmp)
 
       ! Set up the coupling time interval if MALI is coupled to sea-level model 
-	   write(6,*)'<<< 1. (mpas_li_core.F L1134: config uplift method:  '   , config_uplift_method
       if (trim(config_uplift_method) == "sealevelmodel") then
-			write(6,*)'<<< Setting up an alarm for MALI-SLM coupling time interval>>>'
 			call mpas_set_timeInterval(slm_coupling_interval, timeString=config_slm_coupling_interval, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
 	      call mpas_add_clock_alarm(core_clock, 'slmCouplingInterval', alarmTime=startTime, &
 	           alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
-         ! Reset the alarm for checking for force setting of the adaptive timestep interval
          if (mpas_is_alarm_ringing(core_clock, 'slmCouplingInterval', ierr=err_tmp)) then
             ierr = ior(ierr, err_tmp)
 		      call mpas_reset_clock_alarm(core_clock, 'slmCouplingInterval', ierr=err_tmp)
