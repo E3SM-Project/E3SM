@@ -1,8 +1,8 @@
-INCLUDE (ScreamUtils)
+include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "shoc;cld;spa;p3;rrtmgp;physics")
-SET (NEED_LIBS shoc cld_fraction spa p3 scream_rrtmgp scream_control scream_share physics_share)
+set (TEST_LABELS "shoc;cld;spa;p3;rrtmgp;physics")
+set (NEED_LIBS shoc cld_fraction spa p3 scream_rrtmgp scream_control scream_share physics_share)
 CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   PROPERTIES FIXTURES_SETUP shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
@@ -45,9 +45,9 @@ configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coe
 configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 ## Copy (and configure) yaml files needed by tests
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_spa_p3_rrtmgp_output.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_spa_p3_rrtmgp_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_spa_p3_rrtmgp_output.yaml)
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
@@ -55,15 +55,14 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_spa_p3_rrtmgp_output.yaml
 if (SCREAM_TEST_MAX_RANKS GREATER 1)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "shoc_cld_spa_p3_rrtmgp")
+
+  set (BASE_TEST_NAME "shoc_cld_spa_p3_rrtmgp")
   foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
     set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-    configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake
-                    ${CMAKE_CURRENT_BINARY_DIR}/CprncTest_np${MPI_RANKS}.cmake @ONLY)
-    set(TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+    set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
-              COMMAND cmake -P CprncTest_np${MPI_RANKS}.cmake
+              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}

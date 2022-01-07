@@ -62,10 +62,8 @@ set_tests_properties (model_restarted PROPERTIES
 set (SRC_FILE model_output_baseline.INSTANT.Steps_x2.2021-10-12.121000.nc)
 set (TGT_FILE model_output.INSTANT.Steps_x2.2021-10-12.121000.nc)
 
-configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake
-                ${CMAKE_CURRENT_BINARY_DIR}/CprncTest.cmake @ONLY)
 add_test (NAME model_restart_check
-          COMMAND cmake -P CprncTest.cmake
+          COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set_tests_properties (model_restart_check PROPERTIES
                       RESOURCE_GROUPS "devices:1"
