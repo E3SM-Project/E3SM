@@ -271,7 +271,7 @@ contains
                k = k + 1
                depth = depth + layerThickness(k, iCell)
             end do
-            !need the clearn up of how much is left to get to MLD mld - depth
+            !add partial thickness of last layer to get to MLD
             depth = depth - layerThickness(k, iCell)
             difference = dThreshMLD(iCell) - depth
             do iTracer = 1, num_tracers
