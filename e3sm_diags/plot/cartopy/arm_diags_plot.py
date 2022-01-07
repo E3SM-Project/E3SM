@@ -306,9 +306,8 @@ def plot_convection_onset_statistics(
         )
         plt.savefig(fnm, transparent=True, bbox_inches="tight")
         # Get the filename that the user has passed in and display that.
-        # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(parameter.current_set, parameter, ignore_container=True),
+            get_output_dir(parameter.current_set, parameter),
             output_file_name + "." + f,
         )
         logger.info(f"Plot saved in: {fnm}")
@@ -387,9 +386,8 @@ def plot_annual_cycle(var, vars_to_data, parameter):
         )
         plt.savefig(fnm)
         # Get the filename that the user has passed in and display that.
-        # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(parameter.current_set, parameter, ignore_container=True),
+            get_output_dir(parameter.current_set, parameter),
             output_file_name + "." + f,
         )
         logger.info(f"Plot saved in: {fnm}")
@@ -447,9 +445,8 @@ def plot_diurnal_cycle(var, vars_to_data, parameter):
         )
         plt.savefig(fnm)
         # Get the filename that the user has passed in and display that.
-        # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(parameter.current_set, parameter, ignore_container=True),
+            get_output_dir(parameter.current_set, parameter),
             output_file_name + "." + f,
         )
         logger.info(f"Plot saved in: {fnm}")
@@ -539,9 +536,8 @@ def plot_diurnal_cycle_zt(var, vars_to_data, parameter):
             )
             plt.savefig(fnm)
             # Get the filename that the user has passed in and display that.
-            # When running in a container, the paths are modified.
             fnm = os.path.join(
-                get_output_dir(parameter.current_set, parameter, ignore_container=True),
+                get_output_dir(parameter.current_set, parameter),
                 output_file_name + "." + f,
             )
             logger.info(f"Plot saved in: {fnm}")

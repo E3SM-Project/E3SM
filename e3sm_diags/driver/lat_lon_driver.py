@@ -202,12 +202,9 @@ def run_diag(parameter):
                         with open(fnm, "w") as outfile:
                             json.dump(metrics_dict, outfile)
                         # Get the filename that the user has passed in and display that.
-                        # When running in a container, the paths are modified.
                         fnm = os.path.join(
                             utils.general.get_output_dir(
-                                parameter.current_set,
-                                parameter,
-                                ignore_container=True,
+                                parameter.current_set, parameter
                             ),
                             parameter.output_file + ".json",
                         )
@@ -278,13 +275,8 @@ def run_diag(parameter):
                     with open(fnm, "w") as outfile:
                         json.dump(metrics_dict, outfile)
                     # Get the filename that the user has passed in and display that.
-                    # When running in a container, the paths are modified.
                     fnm = os.path.join(
-                        utils.general.get_output_dir(
-                            parameter.current_set,
-                            parameter,
-                            ignore_container=True,
-                        ),
+                        utils.general.get_output_dir(parameter.current_set, parameter),
                         parameter.output_file + ".json",
                     )
                     logger.info(f"Metrics saved in {fnm}")

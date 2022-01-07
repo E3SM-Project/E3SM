@@ -21,14 +21,14 @@ Some of the current diagnostics sets in ``e3sm_diags`` are
 If you have any questions or issues regarding this,
 please make a Github issue on the e3sm_diags repo.
 
-First off, to develop, you must have an 
+First off, to develop, you must have an
 :ref:`e3sm_diags development environment installed <dev-env>`.
 
 Below are the components needed to add new diags:
 
 1. **Parameters:** A set of variables that a user uses to define things pertaining
 to a diagnostics run. These can be anything, from the path of the reference/test
-data to parameters related to the plots created. As a reference, 
+data to parameters related to the plots created. As a reference,
 :doc:`look here for existing parameters and their description <../available-parameters>`.
 
 2. **Driver:** The main code which takes a set of parameters and does the
@@ -594,10 +594,8 @@ In this script, we're using the ``projection`` and ``central_lon`` parameters.
 
             # Save figure
             # Get the filename that the user has passed in and display that.
-            # When running in a container, the paths are modified.
             file_name = '{}_{}.png'.format(var, season)
-            path = os.path.join(get_output_dir('diff_diags', parameter,
-                ignore_container=True), file_name)
+            path = os.path.join(get_output_dir('diff_diags', parameter), file_name)
             plt.savefig(path)
             print('Plot saved in: ' + path)
             plt.close()

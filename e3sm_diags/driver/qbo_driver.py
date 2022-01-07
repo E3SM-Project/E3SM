@@ -255,11 +255,8 @@ def run_diag(parameter):
                     json_dict = ref_json
                 json.dump(json_dict, outfile)
             # Get the file name that the user has passed in and display that.
-            # When running in a container, the paths are modified.
             json_output_file_name = os.path.join(
-                utils.general.get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                utils.general.get_output_dir(parameter.current_set, parameter),
                 parameter.output_file + "_{}.json".format(dict_type),
             )
             logger.info("Metrics saved in: {}".format(json_output_file_name))

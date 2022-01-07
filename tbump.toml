@@ -35,9 +35,6 @@ src = "conda/meta.yaml"
 src = "conda/e3sm_diags_env.yml"
 search = "e3sm_diags={current_version}"
 
-[[file]]
-src = "Dockerfile"
-
 # You can specify a list of commands to
 # run after the files have been patched
 # and before the git commit is made

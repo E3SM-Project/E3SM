@@ -170,7 +170,6 @@ This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/ac
   Jobs:
 
     1. Publish new release docs
-    2. Publish Anaconda package
 
 Style Guide
 -----------

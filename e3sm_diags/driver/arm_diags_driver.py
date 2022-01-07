@@ -138,11 +138,8 @@ def run_diag_diurnal_cycle(parameter):
                 with open(fnm, "w") as outfile:
                     json.dump(metrics_dict, outfile)
                 # Get the filename that the user has passed in and display that.
-                # When running in a container, the paths are modified.
                 fnm = os.path.join(
-                    utils.general.get_output_dir(
-                        parameter.current_set, parameter, ignore_container=True
-                    ),
+                    utils.general.get_output_dir(parameter.current_set, parameter),
                     parameter.output_file + ".json",
                 )
                 logger.info("Metrics saved in: " + fnm)
@@ -248,11 +245,8 @@ def run_diag_diurnal_cycle_zt(parameter):
                 with open(fnm, "w") as outfile:
                     json.dump(metrics_dict, outfile)
                 # Get the filename that the user has passed in and display that.
-                # When running in a container, the paths are modified.
                 fnm = os.path.join(
-                    utils.general.get_output_dir(
-                        parameter.current_set, parameter, ignore_container=True
-                    ),
+                    utils.general.get_output_dir(parameter.current_set, parameter),
                     parameter.output_file + ".json",
                 )
                 logger.info("Metrics saved in: " + fnm)
@@ -354,11 +348,8 @@ def run_diag_annual_cycle(parameter):
                 with open(fnm, "w") as outfile:
                     json.dump(metrics_dict, outfile)
                 # Get the filename that the user has passed in and display that.
-                # When running in a container, the paths are modified.
                 fnm = os.path.join(
-                    utils.general.get_output_dir(
-                        parameter.current_set, parameter, ignore_container=True
-                    ),
+                    utils.general.get_output_dir(parameter.current_set, parameter),
                     parameter.output_file + ".json",
                 )
                 logger.info(f"Metrics saved in: {fnm}")

@@ -102,9 +102,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
         )
         plt.savefig(fnm)
         # Get the filename that the user has passed in and display that.
-        # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(parameter.current_set, parameter, ignore_container=True),
+            get_output_dir(parameter.current_set, parameter),
             parameter.output_file + "." + f,
         )
         logger.info(f"Plot saved in: {fnm}")
@@ -129,7 +128,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(parameter.current_set, parameter, ignore_container=True),
+                get_output_dir(parameter.current_set, parameter),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

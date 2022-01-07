@@ -10,7 +10,6 @@ import cdutil
 import genutil
 import MV2
 
-from e3sm_diags import container
 from e3sm_diags.derivations.default_regions import points_specs, regions_specs
 from e3sm_diags.logger import custom_logger
 
@@ -364,17 +363,13 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
                 file_diff.write(diff)
 
 
-def get_output_dir(set_num, parameter, ignore_container=False):
+def get_output_dir(set_num, parameter):
     """
     Get the directory of where to save the outputs for a run.
-    If ignore_container is True and the software is being ran in a container,
-      get the path that the user passed in.
     """
     results_dir = parameter.results_dir
-    if ignore_container and container.is_container():
-        results_dir = parameter.orig_results_dir
-
     pth = os.path.join(results_dir, "{}".format(set_num), parameter.case_id)
+
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir.
         try:
