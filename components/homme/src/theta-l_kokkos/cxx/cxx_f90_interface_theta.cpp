@@ -68,10 +68,6 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
-  } else if (remap_alg == 2) {
-    params.remap_alg = RemapAlg::PPM_FIXED_PARABOLA;
-  } else if (remap_alg == 3) {
-    params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
   } else if (remap_alg == 10) {
     params.remap_alg = RemapAlg::PPM_LIMITED_EXTRAP;
   }
