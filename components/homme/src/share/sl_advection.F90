@@ -9,7 +9,8 @@ module sl_advection
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
-  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option
+  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option,&
+                                 vert_remap_q_alg
   use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
@@ -325,7 +326,8 @@ contains
                deriv, dp_tol, elem(ie)%derived%divdp)
           wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
           wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
-          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp)
+          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp,&
+               vert_remap_q_alg)
           elem(ie)%derived%vn0(:,:,1,:) = wr(:,:,:,1)/elem(ie)%derived%divdp
           elem(ie)%derived%vn0(:,:,2,:) = wr(:,:,:,2)/elem(ie)%derived%divdp
        end do
@@ -1060,7 +1062,7 @@ contains
        end if
 #endif
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp), np, qsize, elem(ie)%derived%divdp, &
-            elem(ie)%state%dp3d(:,:,:,tl%np1))
+            elem(ie)%state%dp3d(:,:,:,tl%np1),vert_remap_q_alg)
        do q = 1,qsize
           elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Qdp(:,:,:,q,np1_qdp)/ &
                                       elem(ie)%state%dp3d(:,:,:,tl%np1)

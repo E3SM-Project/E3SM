@@ -181,15 +181,10 @@ TEST_CASE("remap", "remap_testing") {
   };
 
   SECTION ("run_remap") {
-    auto remap_algs = {RemapAlg::PPM_FIXED_PARABOLA, RemapAlg::PPM_MIRRORED, RemapAlg::PPM_FIXED_MEANS,
-                       RemapAlg::PPM_LIMITED_EXTRAP};
+    auto remap_algs = {RemapAlg::PPM_MIRRORED, RemapAlg::PPM_LIMITED_EXTRAP};
     auto remap_alg_f90 = [](const RemapAlg alg)->int {
       if (alg==RemapAlg::PPM_MIRRORED) {
         return 1;
-      } else if (alg==RemapAlg::PPM_FIXED_PARABOLA) {
-        return 2;
-      } else if (alg==RemapAlg::PPM_FIXED_MEANS) {
-        return 3;
       } else if (alg==RemapAlg::PPM_LIMITED_EXTRAP) {
         return 10;
       }

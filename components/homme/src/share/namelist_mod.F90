@@ -100,6 +100,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     hv_theta_correction, &
     hv_theta_thresh, &
     vert_remap_q_alg, &
+    vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
     timestep_make_subcycle_parameters_consistent
 
@@ -308,6 +309,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_correction,   &
       hv_theta_thresh,   &
       vert_remap_q_alg, &
+      vert_remap_u_alg, &
       se_fv_phys_remap_alg
 
 
@@ -779,6 +781,7 @@ endif
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_thresh,1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vert_remap_u_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
@@ -943,7 +946,9 @@ endif
        endif
     endif
 #endif
-
+    ! set defautl for dynamics remap
+    if (vert_remap_u_alg == -2) vert_remap_u_alg = vert_remap_q_alg
+    
     ! more thread error checks:  
 #ifdef HORIZ_OPENMP
     if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
@@ -1165,8 +1170,9 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
-
+       
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
+       write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_tstep         = ", tstep
