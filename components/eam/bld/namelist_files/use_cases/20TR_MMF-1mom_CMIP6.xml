@@ -36,9 +36,6 @@
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
 <chlorine_loading_type      >SERIAL</chlorine_loading_type>
 
-<!-- Turn off ozone dry deposition -->
-<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
-
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>
 
