@@ -5,12 +5,6 @@ if (compile_threaded)
   string(APPEND LDFLAGS " -fopenmp")
 endif()
 
-string(APPEND FFLAGS " -fallow-argument-mismatch -Wno-implicit-interface -fallow-invalid-boz -fno-tree-pta ")
-
-if (NOT DEBUG)
-  string(APPEND FFLAGS " -O2")
-  string(APPEND CFLAGS " -O2")
-endif()
 string(APPEND SLIBS " -L$ENV{PNETCDF_PATH}/lib -lpnetcdf")
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
 set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
