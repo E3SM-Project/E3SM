@@ -443,6 +443,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   if (m_has_w_forcing) {
     w  = get_field_in("w_int").get_view<const Pack**>();
   }
+  const auto has_w_forcing = m_has_w_forcing;
   Kokkos::parallel_for(KT::RangePolicy(0,ncols*npacks),
                        KOKKOS_LAMBDA(const int& idx) {
     const int icol = idx / npacks;
@@ -466,7 +467,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
           auto& fv    = FM(icol,1,ilev);
     fv = (v_new - v_old) / dt;
 
-    if (m_has_w_forcing) {
+    if (has_w_forcing) {
       // Vertical velocity forcing
       // Recall: fm(2) stores forcing for w_i at [0,num_int_levels-1],
       //         since w_i at surf is determined with no penetration bc.
@@ -616,7 +617,7 @@ void HommeDynamics::homme_post_process () {
   if (m_has_w_forcing) {
     w_view  = get_field_out("w_int").get_view<Pack**>();
   }
-  auto has_w_forcing = m_has_w_forcing;
+  const auto has_w_forcing = m_has_w_forcing;
 
   // Establish the boundary condition for the TOA
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
@@ -909,6 +910,7 @@ void HommeDynamics::restart_homme_state () {
     w_view = m_helper_fields.at("w_prev").get_view<Pack**>();
   }
 
+  const auto has_w_forcing = m_has_w_forcing;
   const auto policy = ESU::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
     const int icol = team.league_rank();
@@ -921,7 +923,7 @@ void HommeDynamics::restart_homme_state () {
       // Init v_prev from uv and, possibly, w
       V_prev_view(icol,0,ilev) = uv_view(icol,0,ilev);
       V_prev_view(icol,1,ilev) = uv_view(icol,1,ilev);
-      if (m_has_w_forcing) {
+      if (has_w_forcing) {
         V_prev_view(icol,2,ilev) = w_view (icol,  ilev);
       } else {
         V_prev_view(icol,2,ilev) = 0;
@@ -1068,6 +1070,7 @@ void HommeDynamics::initialize_homme_state () {
   if (m_has_w_forcing) {
     w_int = get_field_out("w_int",rgn).get_view<Real**>();
   }
+  const auto has_w_forcing = m_has_w_forcing;
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,ncols*nlevs),
                        KOKKOS_LAMBDA (const int idx) {
     const int icol = idx / nlevs;
@@ -1075,7 +1078,7 @@ void HommeDynamics::initialize_homme_state () {
 
     FM_ref(icol,0,ilev) = horiz_winds(icol,0,ilev);
     FM_ref(icol,1,ilev) = horiz_winds(icol,1,ilev);
-    if (m_has_w_forcing) {
+    if (has_w_forcing) {
       FM_ref(icol,2,ilev) = w_int(icol,ilev);
     } else {
       // Unfortunately, Homme *does* use FM_w even in hydrostatic mode (missing ifdef).
