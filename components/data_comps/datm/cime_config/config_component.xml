@@ -83,7 +83,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist</valid_values>
+    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist,e3smwcv2</valid_values>
     <default_value>clim_2000</default_value>
     <values match="last">
       <value compset="^1850_"   >clim_1850</value>
@@ -111,7 +111,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
 
   <entry id="DATM_TOPO">
     <type>char</type>
-    <valid_values>none,observed,cplhist</valid_values>
+    <valid_values>none,observed,cplhist,e3smwcv2</valid_values>
     <default_value>observed</default_value>
     <values match="last">
       <!-- Only needed for compsets with active land; for other compsets, turn it off -->
@@ -222,13 +222,38 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
     <file>env_run.xml</file>
     <desc>ending year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
   </entry>
+ 
+  <entry id="DATM_E3SMWCv2_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for datm when DATM_MODE is
+      E3SMWCv2, NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+  
+  <entry id="DATM_E3SMWCv2_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for when DATM_MODE is E3SMWCv2)</desc>
+  </entry>
 
-   <entry id="DATM_E3SMWCv2_YR_ALIGN">
+  <entry id="DATM_E3SMWCv2_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values match="last">
-      <value   compset="1850.*_DATM%E3SMWCv2">$DATM_E3SMWCv2_YR_START</value>
+      <value   compset="1850.*_DATM%E3SMWCv2">1</value>
       <value   compset="2000.*_DATM%E3SMWCv2">$DATM_E3SMWCv2_YR_START</value>
       <value   compset="HIST.*_DATM%E3SMWCv2">$DATM_E3SMWCv2_YR_START</value>
       <value   compset="20TR.*_DATM%E3SMWCv2">$DATM_E3SMWCv2_YR_START</value>
@@ -352,16 +377,19 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="1850.*_DATM%QIA">1972</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
+      <value   compset="1850.*_DATM%GSWP3w5e5">1925</value>
       <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2000.*_DATM%WISOQIA">2004</value>
       <value   compset="2000.*_DATM%QIA">2004</value>
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
       <value   compset="HIST.*_DATM%GSW">1920</value>
+      <value   compset="HIST.*_DATM%GSWP3w5e5">2014</value>
       <value   compset="HIST.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="20TR.*_DATM%QIA">1972</value>
       <value   compset="20TR.*_DATM%CRU">1920</value>
       <value   compset="20TR.*_DATM%GSW">1920</value>
+      <value   compset="20TR.*_DATM%GSWP3w5e5">2014</value>
       <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="SSP.*_DATM%QIA">2004</value>
@@ -372,7 +400,6 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2000.*_DATM%CRU">2010</value>
       <value   compset="2003.*_DATM%CRU">2003</value>
       <value   compset="2010.*_DATM%CRU">2014</value>
-      <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="2000.*_DATM%GSW">2010</value>
       <value   compset="2010.*_DATM%GSW">2013</value>   <!-- NOTE: 2014 data is bad so ending in 2013 see issue #3653 -->
       <value   compset="2003.*_DATM%GSW">2003</value>

@@ -149,6 +149,23 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             nmlgen.add_default("domainfile", value=full_domain_path)
         else:
             nmlgen.add_default("domainfile", value='null')
+    
+    if "E3SMWCv2" in datm_mode:
+        datm_e3smwcv2_domain_file = case.get_value("DATM_E3SMWCv2_DOMAIN_FILE")
+        if datm_e3smwcv2_domain_file == 'null':
+            logger.info("   ....  Obtaining DATM model domain info from first stream file: {}".format(streams[0]))
+        else:
+            logger.info("   ....  Obtaining DATM model domain info from stream {}".format(streams[0]))
+        nmlgen.add_default("domainfile", value=datm_e3smwcv2_domain_file)
+    else:
+        atm_domain_file = case.get_value("ATM_DOMAIN_FILE")
+        atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
+        if atm_domain_file != "UNSET":
+            full_domain_path = os.path.join(atm_domain_path, atm_domain_file)
+            nmlgen.add_default("domainfile", value=full_domain_path)
+        else:
+            nmlgen.add_default("domainfile", value='null')
+
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
