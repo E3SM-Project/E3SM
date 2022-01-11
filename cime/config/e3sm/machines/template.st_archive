@@ -85,7 +85,8 @@ def _main_func(description):
         logger.warn("WARNING: Use of the --last-date option with --force-move may corrupt your run directory! Use at your own risk!")
 
     with Case(caseroot, read_only=False) as case:
-        success = case.case_st_archive(last_date, archive_incomplete_logs=not no_incomplete_logs, copy_only=copy_only)
+        success = case.case_st_archive(last_date, archive_incomplete_logs=not no_incomplete_logs,
+                                       copy_only=copy_only, no_resubmit=True)
 
     sys.exit(0 if success else 1)
 
