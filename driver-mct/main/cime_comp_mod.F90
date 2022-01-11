@@ -145,6 +145,9 @@ module cime_comp_mod
   use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
   use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
   use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
 
   ! list of fields transferred between components
   use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
@@ -2321,6 +2324,7 @@ contains
     call t_adj_detailf(+2)
 
     call seq_diag_zero_mct(mode='all')
+    call seq_diagBGC_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
 
        if (iamroot_CPLID) then
@@ -4638,12 +4642,15 @@ contains
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
           call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
        endif
        if (rof_present) then
           call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+          call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
+          call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
        call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
     end if
@@ -4675,14 +4682,17 @@ contains
        call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
           call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+          call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
+          call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
        call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        call seq_diag_accum_mct()
+       call seq_diagBGC_accum_mct()
        call t_drvstopf  ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
@@ -4692,6 +4702,7 @@ contains
                budget_ltend, infodata)
        endif
        call seq_diag_zero_mct(EClock=EClock_d)
+       call seq_diagBGC_zero_mct(EClock=EClock_d)
 
        call t_drvstopf  ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.)
     end if
@@ -4722,6 +4733,8 @@ contains
        call t_drvstartf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
        call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+            do_o2x=.true., do_x2o=.true., do_xao=.true.)
+       call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
             do_o2x=.true., do_x2o=.true., do_xao=.true.)
        call t_drvstopf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.)
     end if
