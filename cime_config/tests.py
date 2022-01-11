@@ -245,6 +245,17 @@ _TESTS = {
                )
         },
 
+    #e3sm performance-benching of production-like runs
+    "e3sm_prod_bench" : {
+        "tests"   : (
+            "PFS.ne30pg2_r05_oECv3.F2010.bench-noio",
+            "PFS.ne30pg2_r05_oECv3.F20TR.bench-noio",
+            "PFS.ne30pg2_r05_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.bench-noio",
+            )
+        },
+
     "fates" : {
         "tests" : (
             "ERS_Ld9.1x1_brazil.IELMFATES",
