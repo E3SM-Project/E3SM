@@ -334,7 +334,7 @@ module CNPBudgetMod
   real(r8), public :: p_budg_stateG(p_s_size, p_size) ! global sum, valid only on root pe
 
   !----- formats -----
-  character(*),parameter :: C_FA0  = "('    ',12x,(42x,a10,2x),' | ',(3x,a10,2x))"
+  character(*),parameter :: C_FA0  = "('    ',12x,(40x,a12,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: C_FF = "('    ',a51,f15.8,' | ',f18.2)"
   character(*),parameter :: FF2= "('    ',a12,a15,' | ',f18.2)"
   character(*),parameter :: C_FS = "('    ',a12,7(f18.2),26x,' | ',(f18.2))"
@@ -866,8 +866,8 @@ contains
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
-    write(iulog,C_FA0 )'  Time  ','  Time    '
-    write(iulog,C_FA0 )'averaged','integrated'
+    write(iulog,C_FA0 )'    Time    ','  Time    '
+    write(iulog,C_FA0 )'  averaged  ','integrated'
     write(iulog,C_FA0 )'kgC/m2/s*1e6','kgC/m2*1e6'
 
     write(iulog,'(71("-"),"|",20("-"))')
