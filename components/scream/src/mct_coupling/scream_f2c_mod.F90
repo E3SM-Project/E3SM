@@ -42,14 +42,14 @@ interface
   ! responsible to handle import/export operation from/into the component
   ! coupler surface fluxes/state structures
   subroutine scream_setup_surface_coupling (x2a_names, x2a_indices, x2a_ptr, vec_comp_x2a, &
-                                            num_cpl_imports, num_scream_imports, &
+                                            flip_sign, num_cpl_imports, num_scream_imports, &
                                             a2x_names, a2x_indices, a2x_ptr, vec_comp_a2x, &
                                             can_be_exported_during_init, num_cpl_exports) bind(c)
     use iso_c_binding, only: c_ptr, c_int
     !
     ! Input(s)
     !
-    type(c_ptr),         intent(in) :: x2a_indices, x2a_names, x2a_ptr, vec_comp_x2a
+    type(c_ptr),         intent(in) :: x2a_indices, x2a_names, x2a_ptr, vec_comp_x2a, flip_sign
     type(c_ptr),         intent(in) :: a2x_indices, a2x_names, a2x_ptr, vec_comp_a2x, can_be_exported_during_init
     integer(kind=c_int), intent(in) :: num_cpl_imports, num_scream_imports, num_cpl_exports
   end subroutine scream_setup_surface_coupling

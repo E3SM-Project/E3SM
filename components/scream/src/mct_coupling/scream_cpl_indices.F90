@@ -22,6 +22,11 @@ module scream_cpl_indices
   integer(kind=c_int), public, allocatable, target :: vec_comp_a2x(:)
   integer(kind=c_int), public, allocatable, target :: vec_comp_x2a(:)
 
+  ! Stores whether or not the sign of a field's values should be flip (useful for fluxes
+  ! during import phase, as surface at atmosphere have different interpretations of the
+  ! positive direction).
+  logical(kind=c_bool), public, allocatable, target :: flip_sign(:)
+
   ! Stores whether or not field can be exported during initialization
   logical(kind=c_bool), public, allocatable, target :: can_be_exported_during_init(:)
 
@@ -55,6 +60,7 @@ module scream_cpl_indices
     allocate (vec_comp_x2a(num_cpl_imports))
     allocate (vec_comp_a2x(num_cpl_exports))
 
+    allocate (flip_sign(num_cpl_imports))
     allocate (can_be_exported_during_init(num_cpl_exports))
 
     ! Initialize arrays
@@ -62,6 +68,7 @@ module scream_cpl_indices
       index_x2a(i) = i
       scr_names_x2a(i) = 'unused'
       vec_comp_x2a(i) = -1
+      flip_sign(i) = .false.
     enddo
     do i=1,num_cpl_exports
       index_a2x(i) = i
@@ -97,6 +104,13 @@ module scream_cpl_indices
 
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_u')) = 0
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_v')) = 1
+
+    ! The sign of the import fluxes must be fliped
+    flip_sign(mct_avect_indexra(x2a,'Faxx_taux')) = .true.
+    flip_sign(mct_avect_indexra(x2a,'Faxx_tauy')) = .true.
+    flip_sign(mct_avect_indexra(x2a,'Faxx_sen'))  = .true.
+    flip_sign(mct_avect_indexra(x2a,'Faxx_evap')) = .true.
+    flip_sign(mct_avect_indexra(x2a,'Faxx_lwup')) = .true.
 
     ! SCREAM needs to run before this field can be exported
     can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_rainl')) = .false.

@@ -69,7 +69,8 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports,
 void SurfaceCoupling::
 register_import(const std::string& fname,
                 const int cpl_idx,
-                const int vecComp)
+                const int vecComp,
+                const bool flip_sign)
 {
   // Two separate checks rather than state==Open, so we can print more specific error messages
   EKAT_REQUIRE_MSG (m_state!=RepoState::Clean,
@@ -105,6 +106,9 @@ register_import(const std::string& fname,
 
     // Set cpl index
     info.cpl_idx = cpl_idx;
+
+    // Store whether or not the sign is interpreted differently between surface and atmosphere
+    info.flip_sign = flip_sign;
 
     // Get column offset and stride
     get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
@@ -281,6 +285,8 @@ void SurfaceCoupling::do_import ()
 
     auto offset = icol*info.col_stride + info.col_offset;
     info.data[offset] = cpl_imports_view_d(icol,info.cpl_idx);
+
+    if (info.flip_sign) info.data[offset] *= -1;
   });
 }
 

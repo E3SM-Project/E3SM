@@ -50,10 +50,13 @@ public:
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
 
-  // Register import scream fields
+  // Register import scream fields. For fluxes, the surface model considers the
+  // positive direction of a value as being towards earth, but atmosphere views positive
+  // as being out to space. For such fields, flip_sign=true should be set.
   void register_import (const std::string& fname,
                         const int cpl_idx,
-                        const int vecComp = -1);
+                        const int vecComp = -1,
+                        const bool flip_sign = false);
 
   // Register export scream fields. Since do_export() can be called during initialization,
   // some scream fields may not have valid entries (i.e., computed fields with no IC).
@@ -117,6 +120,11 @@ protected:
     // initialization. This is useful since inside SCREAM some fields require computation
     // internally.
     bool do_initial_export;
+
+    // Boolean that dictates whether the data should be multiplied by -1. This is useful
+    // for fluxes, where the surface model considers the positive direction as down to earth,
+    // but the atmosphere views the positive direction as being out to space.
+    bool flip_sign;
 
     // Pointer to the scream field device memory
     ValueType*  data;

@@ -355,7 +355,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Register fields in the coupler. These match the scr_names_x2a/a2x from
   // scream_cpl_indices.F90. When radiation is fully implemented, RRTMGP
-  // fields will be replaced with correct fields.
+  // fields will be replaced with correct fields. For fluxes, we flip the sign.
   coupler.register_import("unused",           0);
   coupler.register_import("unused",           1);
   coupler.register_import("unused",           2);
@@ -375,12 +375,12 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("unused",           16);
   coupler.register_import("unused",           17);
   coupler.register_import("unused",           18);
-  coupler.register_import("surf_mom_flux",    19, 0);
-  coupler.register_import("surf_mom_flux",    20, 1);
+  coupler.register_import("surf_mom_flux",    19, 0,  true);
+  coupler.register_import("surf_mom_flux",    20, 1,  true);
   coupler.register_import("unused",           21);
-  coupler.register_import("surf_sens_flux",   22);
-  coupler.register_import("surf_lw_flux_up",  23);
-  coupler.register_import("surf_latent_flux", 24);
+  coupler.register_import("surf_sens_flux",   22, -1, true);
+  coupler.register_import("surf_lw_flux_up",  23, -1, true);
+  coupler.register_import("surf_latent_flux", 24, -1, true);
   coupler.register_import("unused",           25);
   coupler.register_import("unused",           26);
   coupler.register_import("unused",           27);
@@ -485,15 +485,16 @@ TEST_CASE ("recreate_mct_coupling")
 
       // Imports
 
-      REQUIRE (sfc_alb_dir_vis_h (icol)    == import_raw_data[3 + icol*num_cpl_imports]);  // 1st scream import (4th cpl import)
-      REQUIRE (sfc_alb_dir_nir_h (icol)    == import_raw_data[4 + icol*num_cpl_imports]);  // 2nd scream import (5th cpl import)
-      REQUIRE (sfc_alb_dif_vis_h (icol)    == import_raw_data[5 + icol*num_cpl_imports]);  // 3rd scream import (6th cpl import)
-      REQUIRE (sfc_alb_dif_nir_h (icol)    == import_raw_data[6 + icol*num_cpl_imports]);  // 4th scream import (7th cpl import)
-      REQUIRE (surf_mom_flux_h   (icol, 0) == import_raw_data[19 + icol*num_cpl_imports]); // 5th scream import (20th cpl import)
-      REQUIRE (surf_mom_flux_h   (icol, 1) == import_raw_data[20 + icol*num_cpl_imports]); // 6th scream import (21st cpl import)
-      REQUIRE (surf_sens_flux_h  (icol)    == import_raw_data[22 + icol*num_cpl_imports]); // 7th scream import (23rd cpl import)
-      REQUIRE (surf_lw_flux_up_h (icol)    == import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
-      REQUIRE (surf_latent_flux_h(icol)    == import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
+      REQUIRE (sfc_alb_dir_vis_h (icol)    ==  import_raw_data[3 + icol*num_cpl_imports]);  // 1st scream import (4th cpl import)
+      REQUIRE (sfc_alb_dir_nir_h (icol)    ==  import_raw_data[4 + icol*num_cpl_imports]);  // 2nd scream import (5th cpl import)
+      REQUIRE (sfc_alb_dif_vis_h (icol)    ==  import_raw_data[5 + icol*num_cpl_imports]);  // 3rd scream import (6th cpl import)
+      REQUIRE (sfc_alb_dif_nir_h (icol)    ==  import_raw_data[6 + icol*num_cpl_imports]);  // 4th scream import (7th cpl import)
+      // These imports should have opposite signs
+      REQUIRE (surf_mom_flux_h   (icol, 0) == -import_raw_data[19 + icol*num_cpl_imports]); // 5th scream import (20th cpl import)
+      REQUIRE (surf_mom_flux_h   (icol, 1) == -import_raw_data[20 + icol*num_cpl_imports]); // 6th scream import (21st cpl import)
+      REQUIRE (surf_sens_flux_h  (icol)    == -import_raw_data[22 + icol*num_cpl_imports]); // 7th scream import (23rd cpl import)
+      REQUIRE (surf_lw_flux_up_h (icol)    == -import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
+      REQUIRE (surf_latent_flux_h(icol)    == -import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
 
       // Exports
 
