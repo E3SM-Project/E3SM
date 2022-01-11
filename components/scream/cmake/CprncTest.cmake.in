@@ -2,7 +2,7 @@
 #  cmake -P CprncTest.cmake src_nc_file tgt_nc_file
 
 if (NOT ${CMAKE_ARGC} EQUAL 5)
-  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src ant tgt nc file).")
+  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src and tgt nc file).")
 endif()
 
 set (SRC_FILE ${CMAKE_ARGV3})
