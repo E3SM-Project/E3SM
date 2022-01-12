@@ -3558,7 +3558,7 @@ contains
             write(iulog,*)'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)', &
                  nstep,c,errch4(c)
             g = col_pp%gridcell(c)
-            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+            write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g),col_pp%gridcell(c),c
             call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
                  errMsg(__FILE__, __LINE__))
          end if

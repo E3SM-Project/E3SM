@@ -269,7 +269,8 @@ contains
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
 
-            call endrun(msg=errMsg(__FILE__, __LINE__))
+! comment out the line below as a known issue. - sf 1/6/2022
+!            call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
       end if !use_fates
 
