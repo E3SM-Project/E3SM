@@ -56,7 +56,7 @@ CONTAINS
     use scream_cpl_indices, only: scream_set_cpl_indices, num_cpl_exports, &
                                   num_cpl_imports, num_scream_imports, &
                                   scr_names_x2a, scr_names_a2x, index_x2a, index_a2x, vec_comp_x2a, vec_comp_a2x, &
-                                  flip_sign, can_be_exported_during_init
+                                  can_be_exported_during_init
     use ekat_string_utils,  only: string_f2c
 
     use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
@@ -154,7 +154,7 @@ CONTAINS
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
     call scream_setup_surface_coupling (c_loc(scr_names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), c_loc(vec_comp_x2a), &
-                                        c_loc(flip_sign), num_cpl_imports, num_scream_imports, &
+                                        num_cpl_imports, num_scream_imports, &
                                         c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), c_loc(vec_comp_a2x), &
                                         c_loc(can_be_exported_during_init), num_cpl_exports)
 

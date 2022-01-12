@@ -375,12 +375,12 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("unused",           16);
   coupler.register_import("unused",           17);
   coupler.register_import("unused",           18);
-  coupler.register_import("surf_mom_flux",    19, 0,  true);
-  coupler.register_import("surf_mom_flux",    20, 1,  true);
+  coupler.register_import("surf_mom_flux",    19, 0);
+  coupler.register_import("surf_mom_flux",    20, 1);
   coupler.register_import("unused",           21);
-  coupler.register_import("surf_sens_flux",   22, -1, true);
-  coupler.register_import("surf_lw_flux_up",  23, -1, true);
-  coupler.register_import("surf_latent_flux", 24, -1, true);
+  coupler.register_import("surf_sens_flux",   22);
+  coupler.register_import("surf_lw_flux_up",  23);
+  coupler.register_import("surf_latent_flux", 24);
   coupler.register_import("unused",           25);
   coupler.register_import("unused",           26);
   coupler.register_import("unused",           27);
