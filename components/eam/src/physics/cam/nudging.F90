@@ -744,7 +744,7 @@ contains
    use dycore        ,only: dycore_is
    use dyn_grid      ,only: get_horiz_grid_dim_d
    use phys_grid     ,only: get_rlat_p,get_rlon_p,get_ncols_p
-   use cam_history   ,only: addfld
+   use cam_history   ,only: addfld, horiz_only
    use shr_const_mod ,only: SHR_CONST_PI
 
    ! Local values
@@ -835,10 +835,10 @@ contains
    call addfld('Nudge_T',(/ 'lev' /),'A','K/s'    ,'T Nudging Tendency')
    call addfld('Nudge_Q',(/ 'lev' /),'A','kg/kg/s','Q Nudging Tendency')
 
-   call addfld('Nudge_U_vint',(/ 'lev' /),'A','kg/m/s2','Vertical integral of U Nudging Tendency')
-   call addfld('Nudge_V_vint',(/ 'lev' /),'A','kg/m/s2','Vertical integral of V Nudging Tendency')
-   call addfld('Nudge_T_vint',(/ 'lev' /),'A','W/m2'   ,'Vertical integral of T Nudging Tendency')
-   call addfld('Nudge_Q_vint',(/ 'lev' /),'A','kg/m2/s','Vertical integral of Q Nudging Tendency')
+   call addfld('Nudge_U_vint',horiz_only,'A','kg/m/s2','Vertical integral of U Nudging Tendency')
+   call addfld('Nudge_V_vint',horiz_only,'A','kg/m/s2','Vertical integral of V Nudging Tendency')
+   call addfld('Nudge_T_vint',horiz_only,'A','W/m2'   ,'Vertical integral of T Nudging Tendency')
+   call addfld('Nudge_Q_vint',horiz_only,'A','kg/m2/s','Vertical integral of Q Nudging Tendency')
 
    !-----------------------------------------
    ! Values initialized only by masterproc
@@ -1612,7 +1612,7 @@ contains
    integer indw,ncol,lchnk
    logical lq(pcnst)
    integer Year, Month, Day, Sec
-   real(r8) ftem(pcols,pver) ! temporary workspace
+   real(r8) ftem(pcols,pver), ftem2(pcols) ! temporary workspace
 
    call cnst_get_ind('Q',indw)
    lq(:)   =.false.
@@ -1659,16 +1659,20 @@ contains
      call outfld('Nudge_Q',phys_tend%q(1,1,indw),pcols,lchnk)
     
      ftem(:ncol,:pver) = phys_tend%u(:ncol,:pver)*(phys_state%pdel(:ncol,:pver)/gravit)
-     call outfld('Nudge_U_vint',ftem                 ,pcols,lchnk)
+     ftem2(1:ncol)     = sum( ftem(1:ncol,:), 2 )
+     call outfld('Nudge_U_vint',ftem2           ,pcols,lchnk)
 
      ftem(:ncol,:pver) = phys_tend%v(:ncol,:pver)*(phys_state%pdel(:ncol,:pver)/gravit)
-     call outfld('Nudge_V_vint',ftem                 ,pcols,lchnk)
+     ftem2(1:ncol)     = sum( ftem(1:ncol,:), 2 )
+     call outfld('Nudge_V_vint',ftem2           ,pcols,lchnk)
 
      ftem(:ncol,:pver) = phys_tend%s(:ncol,:pver)*(phys_state%pdel(:ncol,:pver)/gravit)
-     call outfld('Nudge_T_vint',ftem                 ,pcols,lchnk)
+     ftem2(1:ncol)     = sum( ftem(1:ncol,:), 2 )
+     call outfld('Nudge_T_vint',ftem2           ,pcols,lchnk)
 
      ftem(:ncol,:pver) = phys_tend%q(:ncol,:pver,indw)*(phys_state%pdel(:ncol,:pver)/gravit)
-     call outfld('Nudge_Q_vint',ftem                 ,pcols,lchnk)
+     ftem2(1:ncol)     = sum( ftem(1:ncol,:), 2 )
+     call outfld('Nudge_Q_vint',ftem2           ,pcols,lchnk)
 
    endif
 
