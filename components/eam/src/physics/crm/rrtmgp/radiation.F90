@@ -1392,6 +1392,11 @@ contains
                   call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
                end if
 
+               ! TEMPORARY - use simple cloud optics for P3 for development
+               if (use_MMF .and. (trim(MMF_microphysics_scheme) .eq. 'p3')) then 
+                  call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
+               end if
+
                ! Get albedo. This uses CAM routines internally and just provides a
                ! wrapper to improve readability of the code here.
                call set_albedo(cam_in, albedo_dir_col(1:nswbands,1:ncol), albedo_dif_col(1:nswbands,1:ncol))
@@ -2740,8 +2745,9 @@ contains
       ! Reset to false if using MMF with 1-mom scheme
       call phys_getopts(use_MMF_out           = use_MMF          )
       call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
-         do_snow_optics = .false.
+      if (use_MMF 
+         if (trim(MMF_microphysics_scheme) == 'sam1mom') do_snow_optics = .false.
+         if (trim(MMF_microphysics_scheme) == 'p3')      do_snow_optics = .false.
       end if
 
       return
