@@ -25,7 +25,8 @@ use cam_logfile    , only: iulog
 use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
 use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
-                           get_curr_date, is_end_curr_month
+                           get_curr_date, is_end_curr_month, & 
+                           is_first_restart_step
 
 implicit none
 private
@@ -232,7 +233,7 @@ contains
          end do
       end if
 
-      if ( .not. is_first_step() ) then
+      if ( .not. is_first_step() .and. .not. is_first_restart_step() ) then
          do i = 1, ncol
             state%c_iflx_sfc(i) = state%c_iflx_sfc(i) + (sfc_flux(i)     * dtime)
             state%c_iflx_ocn(i) = state%c_iflx_ocn(i) + (sfc_flux_ocn(i) * dtime)
@@ -308,7 +309,7 @@ contains
          end do
       end if
 
-      if ( .not. is_first_step() ) then
+      if ( .not. is_first_step() .and. .not. is_first_restart_step() ) then
          do i = 1, ncol
             state%c_iflx_air(i) = state%c_iflx_air(i) + (air_flux(i) * dtime)
             state%c_mflx_air(i) = state%c_mflx_air(i) + (air_flux(i) * dtime)
@@ -449,7 +450,7 @@ contains
       cdate = year*10000 + mon*100 + day
 
       ! Time step level write outs----------------------------------------------
-      if (masterproc .and. co2_print_diags_timestep) then
+      if (masterproc .and. co2_print_diags_timestep .and. (.not. is_first_restart_step())) then
          write(iulog,*   )   ''
          write(iulog,*   )   'NET CO2 FLUXES : period = timestep : date = ',cdate,sec
          write(iulog,C_FA0 ) '  Time  ',   '  Time    '

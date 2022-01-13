@@ -1223,10 +1223,12 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
-    use time_manager,   only: get_nstep, is_first_step, is_end_curr_month
+    use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
+                              is_first_restart_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags
+    use co2_cycle,      only: co2_transport
     !
     ! Input arguments
     !
@@ -1346,20 +1348,22 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     ! Check for carbon conservation
     !
-    do c = begchunk, endchunk
-       call get_total_carbon(phys_state(c), 'wet')
-    end do
-    call print_global_carbon_diags(phys_state, ztodt, nstep)
-    do c = begchunk, endchunk
-       ncol = get_ncols_p(c)
-       phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
-       if (is_first_step()) then
-          phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
-       end if
-       if (is_end_curr_month()) then
-          phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
-       end if
-    end do
+    if (co2_transport()) then
+       do c = begchunk, endchunk
+          call get_total_carbon(phys_state(c), 'wet')
+       end do
+       call print_global_carbon_diags(phys_state, ztodt, nstep)
+       do c = begchunk, endchunk
+          ncol = get_ncols_p(c)
+          phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
+          if (is_first_step() .or. is_first_restart_step()) then
+             phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+          if (is_end_curr_month()) then
+             phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+       end do
+    end if
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
