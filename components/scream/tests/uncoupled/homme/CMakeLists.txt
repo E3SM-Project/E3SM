@@ -5,7 +5,7 @@ include (ScreamUtils)
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
 # Create the test
-SET (TEST_LABELS "dynamics;driver")
+set (TEST_LABELS "dynamics;driver")
 set (NEED_LIBS ${dynLibName} scream_control scream_share)
 
 CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
@@ -20,7 +20,7 @@ SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
@@ -31,14 +31,14 @@ set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
 set (HOMME_TEST_TIME_STEP 300)
-SET (HOMME_THETA_FORM 1)
-SET (HOMME_TTYPE 5)
-SET (HOMME_SE_FTYPE 0)
+set (HOMME_THETA_FORM 1)
+set (HOMME_TTYPE 5)
+set (HOMME_SE_FTYPE 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
-SET (HOMME_TEST_HVS 1)
-SET (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS 1)
+set (HOMME_TEST_HVS_TOM 0)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -46,7 +46,7 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-SET (HOMME_THETA_HY_MODE true)
+set (HOMME_THETA_HY_MODE true)
 
 # Vert coord settings
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
@@ -75,15 +75,13 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
 if (SCREAM_TEST_MAX_RANKS GREATER 1)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "homme")
+  set (BASE_TEST_NAME "homme")
   foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
     set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-    configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake
-                    ${CMAKE_CURRENT_BINARY_DIR}/CprncTest_np${MPI_RANKS}.cmake @ONLY)
-    set(TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+    set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME} 
-              COMMAND cmake -P CprncTest_np${MPI_RANKS}.cmake
+              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}

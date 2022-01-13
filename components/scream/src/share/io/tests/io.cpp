@@ -75,7 +75,7 @@ TEST_CASE("input_output_basic","io")
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
     ekat::ParameterList params;
-    ekat::parse_yaml_file("io_test_" + type +"_np" + std::to_string(io_comm.size()) + ".yaml",params);
+    ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
     OutputManager om;
     om.setup(io_comm,params,field_manager,gm,t0,false,false);
     io_comm.barrier();
@@ -371,10 +371,10 @@ ekat::ParameterList get_in_params(const std::string& type,
   auto t_first_write = t0 + (multisnap ? dt : dt*max_steps);
 
   std::string filename =
-        "io_" + std::string(multisnap ? "multisnap" : "output")
-      + "_test_np" + std::to_string(comm.size())
+        "io_" + std::string(multisnap ? "multisnap_test" : "output_test")
       + "." + (multisnap ? ekat::upper_case("Instant") : ekat::upper_case(type))
       + ".Steps_x1" + std::string(multisnap ? "" : "0")
+      + ".np" + std::to_string(comm.size())
       + "." + t_first_write.to_string() + ".nc";
 
   in_params.set<std::string>("Filename",filename);

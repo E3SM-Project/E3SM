@@ -1,11 +1,4 @@
 #include <catch2/catch.hpp>
-#include <iostream>
-#include <fstream> 
-
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "scream_config.h"
-#include "share/scream_types.hpp"
 
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
@@ -20,68 +13,70 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/util//scream_setup_random_test.hpp"
+
+#include "share/scream_types.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
-namespace {
-using namespace scream;
-using namespace ekat::units;
-using input_type = AtmosphereInput;
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
+
+#include <iostream>
+#include <fstream>
+
+namespace scream {
 
 std::shared_ptr<FieldManager<Real>>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 
-std::shared_ptr<FieldManager<Real>>
-backup_fm(const std::shared_ptr<FieldManager<Real>>& src);
-
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
-ekat::ParameterList get_in_params();
-
-void randomize_fields (const FieldManager<Real>& fm, const int seed);
+template<typename Engine>
+void randomize_fields (const FieldManager<Real>& fm, Engine& engine);
 
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt);
 
-TEST_CASE("restart","io")
-{
-  std::random_device rd;
-  const unsigned int catchRngSeed = Catch::rngSeed();
-  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+std::shared_ptr<FieldManager<Real>>
+backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm);
 
+TEST_CASE("output_restart","io")
+{
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.
-  ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  ekat::Comm io_comm(MPI_COMM_WORLD);
   Int num_gcols = 2*io_comm.size();
   Int num_levs = 3;
+
+  auto engine = setup_random_test(&io_comm);
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_gcols,num_levs);
   auto grid = gm->get_grid("Point Grid");
   auto field_manager = get_test_fm(grid);
-  randomize_fields(*field_manager,seed);
-
-  // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
-
-  // Construct a timestamp
-  util::TimeStamp t0 ({2000,1,1},{0,0,0});
+  randomize_fields(*field_manager,engine);
   const auto& out_fields = field_manager->get_groups_info().at("output")->m_fields_names;
 
+  // Initialize the pio_subsystem for this test:
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm);
+
+  // Timestamp of the simulation initial time
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});
+
   // Create an Output manager for testing output
-  std::string param_filename = "io_test_restart_np" + std::to_string(io_comm.size()) + ".yaml";
+  std::string param_filename = "io_test_restart.yaml";
   ekat::ParameterList output_params;
   ekat::parse_yaml_file(param_filename,output_params);
   OutputManager output_manager;
   output_manager.setup(io_comm,output_params,field_manager,gm,t0,false,false);
 
   // We advance the fields, by adding dt to each entry of the fields at each time step
-  // The restart data is written every 5 time steps, while the output freq is 10.
-  // We run for 17 steps, which means that after 17 steps we should have both a restart
-  // and a history restart files, with solution at t=15. 
+  // The output restart data is written every 5 time steps, while the output freq is 10.
+  // We run for 15 steps, which means that after 15 steps we should have a history restart
+  // file, with output history right in the middle between two output steps.
 
   // Time-advance all fields
   const int dt = 1;
@@ -93,42 +88,10 @@ TEST_CASE("restart","io")
     output_manager.run(time);
   }
 
-  // Create a copy of the field manager current status, for checking restart
-  auto fm_15 = backup_fm(field_manager);
-
-  // Restart the simulation from t=15. The restart group should match
-  // what was in the fm at t=15, while field_3, which is not in the restart
-  // group, should be 
-  auto fm_res = get_test_fm(grid);
-  auto res_params = get_in_params();
-  input_type ins_input(res_params,fm_res);
-  ins_input.read_variables();
-
-  // Restart group fields must all match
-  for (const auto& fn : {"field_1", "field_2", "field_4"}) {
-    auto res_f = field_manager->get_field(fn);
-    auto tgt_f = fm_15->get_field(fn);
-
-    // The stored values must match
-    REQUIRE ( views_are_equal(res_f,tgt_f) );
-
-    // The time stamps must match
-    const auto& res_ts = res_f.get_header().get_tracking().get_time_stamp();
-    const auto& tgt_ts = tgt_f.get_header().get_tracking().get_time_stamp();
-    REQUIRE (res_ts==tgt_ts);
-  }
-  // "field_3" is not in restart group, so it should contain all -1
-  // Create a dummy field of equal layout, and simply call 'views_are_equal'
-  auto f3 = fm_res->get_field("field_3");
-  Field<Real> f_check(f3.get_header().get_identifier());
-  f_check.allocate_view();
-  f_check.deep_copy(-1.0);
-  REQUIRE (views_are_equal(f_check,f3));
-
   // THIS IS HACKY BUT VERY IMPORTANT!
-  // E3SM relies on the 'rpointer.atm' file to write/read the name of the restart files.
-  // As of this point, rpointer contains the restart info for the timestep 15.
-  // But when we run the next 5 time steps, we will reach another restart checkpoint,
+  // E3SM relies on the 'rpointer.atm' file to write/read the name of the model/output
+  // restart files. As of this point, rpointer contains the restart info for the timestep 15.
+  // But when we run the next 5 time steps, we will reach another checkpoint step,
   // at which point the rpointer file will be updated, and the info about the
   // restart files at timestep 15 will be lost.
   // To overcome this, we open the rpointer fiile NOW, store its content in a string,
@@ -144,8 +107,9 @@ TEST_CASE("restart","io")
     }
     rpointer_file_in.close();
   }
-  // Wait for rank 0 to be done storing the rpointer file content
-  io_comm.barrier();
+
+  // Create a copy of the FM at the current state (used later to emulate a "restarted state")
+  auto fm_res = backup_fm(field_manager);
 
   // Continue initial simulation for 5 more steps, to get to the next output step
   for (int i=0; i<5; ++i) {
@@ -162,18 +126,20 @@ TEST_CASE("restart","io")
     rpointer_file_out << rpointer_content;
     rpointer_file_out.close();
   }
-  // Wait for rank 0 to be done hacking the rpointer file
-  io_comm.barrier();
 
-  // Creating a new scorpio output (via the output manager) should
-  // restart the output from the saved history.
-
-  // Create Output manager, and read the restart
+  // Now we redo the timesteps 16-20 with a fresh new output manager,
+  // but we specify to the output manager that this is a restarted simulation.
+  // NOTE: we use fm_res (the copy of field_manager at t=15), since we don't want
+  //       to have to do a state restart, which would/could mix issues related to
+  //       model restart with the testing of output history restart.
   util::TimeStamp time_res ({2000,1,1},{0,0,15});
+  std::string param_filename_res = "io_test_restart_check.yaml";
+
   ekat::ParameterList output_params_res;
-  ekat::parse_yaml_file(param_filename,output_params_res);
+  ekat::parse_yaml_file(param_filename_res,output_params_res);
+
   OutputManager output_manager_res;
-  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,t0,false,true);
+  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,time_res,false,true,t0);
 
   // Run 5 more steps from the restart, to get to the next output step.
   // We should be generating the same output file as before.
@@ -186,12 +152,14 @@ TEST_CASE("restart","io")
 
   // Finalize everything
   scorpio::eam_pio_finalize();
-} // TEST_CASE restart
+} 
 
-/*===================================================================================================================*/
+/*=============================================================================================*/
 std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
   using FL = FieldLayout;
   using FR = FieldRequest;
   using SL = std::list<std::string>;
@@ -222,10 +190,10 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
 
   // Register fields with fm
   fm->registration_begins();
-  fm->register_field(FR{fid1,SL{"output","restart"}});
-  fm->register_field(FR{fid2,SL{"output","restart"}});
-  fm->register_field(FR{fid3,"output"});
-  fm->register_field(FR{fid4,SL{"output","restart"}});
+  fm->register_field(FR{fid1,SL{"output"}});
+  fm->register_field(FR{fid2,SL{"output"}});
+  fm->register_field(FR{fid3,SL{"output"}});
+  fm->register_field(FR{fid4,SL{"output"}});
   fm->registration_ends();
 
   // Initialize fields to -1.0, and set initial time stamp
@@ -233,32 +201,16 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   fm->init_fields_time_stamp(time);
   for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
     fm->get_field(fn).deep_copy(-1.0);
+    fm->get_field(fn).sync_to_host();
   }
 
   return fm;
 }
 
-std::shared_ptr<FieldManager<Real>>
-backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm)
+/*=================================================================================================*/
+template<typename Engine>
+void randomize_fields (const FieldManager<Real>& fm, Engine& engine)
 {
-  // Now, create a copy of the field manager current status, for comparisong
-  auto dst_fm = get_test_fm(src_fm->get_grid());
-  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
-          auto f_dst = dst_fm->get_field(fn);
-    const auto f_src = src_fm->get_field(fn);
-    f_dst.deep_copy(f_src);
-
-    auto src_ts = f_src.get_header().get_tracking().get_time_stamp();
-    f_dst.get_header().get_tracking().update_time_stamp(src_ts);
-  }
-  return dst_fm;
-}
-
-/*===================================================================================================================*/
-void randomize_fields (const FieldManager<Real>& fm, const int seed)
-{
-  using rngAlg = std::mt19937_64;
-  rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
 
@@ -273,8 +225,9 @@ void randomize_fields (const FieldManager<Real>& fm, const int seed)
   randomize(f4,engine,pdf);
 }
 
-/*===================================================================================================================*/
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
+/*=============================================================================================*/
+std::shared_ptr<GridsManager>
+get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
   ekat::ParameterList gm_params;
   gm_params.sublist("Mesh Free").set("Number of Global Columns",num_gcols);
@@ -283,31 +236,7 @@ std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int n
   gm->build_grids(std::set<std::string>{"Point Grid"});
   return gm;
 }
-/*===================================================================================================================*/
-ekat::ParameterList get_in_params()
-{
-  ekat::ParameterList in_params("Input Parameters");
-  std::string filename;
-
-  // Get input file name from rpointer.atm
-  std::ifstream rpointer_file("rpointer.atm");
-  EKAT_REQUIRE_MSG (rpointer_file.is_open(), "Error! Could not open rpointer.atm file.\n");
-  bool found = false;
-  while (rpointer_file >> filename) {
-    if (filename.find(".rhist.") != std::string::npos) {
-      found = true;
-      break;
-  }}
-  EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
-
-  std::vector<std::string> fnames = {"field_1", "field_2", "field_4"};
-  in_params.set("Fields",fnames);
-  in_params.set<std::string>("Filename",filename);
-
-  return in_params;
-}
-/*===================================================================================================================*/
-
+/*===================================================================================================*/
 void time_advance (const FieldManager<Real>& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt) {
@@ -356,4 +285,21 @@ void time_advance (const FieldManager<Real>& fm,
   }
 }
 
-} // undefined namespace
+std::shared_ptr<FieldManager<Real>>
+backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm)
+{
+  // Now, create a copy of the field manager current status, for comparisong
+  auto dst_fm = get_test_fm(src_fm->get_grid());
+  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
+          auto f_dst = dst_fm->get_field(fn);
+    const auto f_src = src_fm->get_field(fn);
+    f_dst.deep_copy(f_src);
+
+    auto src_ts = f_src.get_header().get_tracking().get_time_stamp();
+    f_dst.get_header().get_tracking().update_time_stamp(src_ts);
+  }
+  return dst_fm;
+}
+
+
+} // namespace scream

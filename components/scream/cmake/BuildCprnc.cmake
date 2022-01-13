@@ -23,5 +23,8 @@ macro(BuildCprnc)
     add_subdirectory($ENV{CIMEROOT}/tools/cprnc ${BLDROOT})
 
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")
+
+    configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake.in
+                    ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake @ONLY)
   endif()
 endmacro()

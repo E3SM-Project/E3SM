@@ -5,7 +5,7 @@ include (ScreamUtils)
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 
 # Create the test
-SET (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
+set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
 CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_LIBS}"
                LABELS ${TEST_LABELS} 
@@ -20,7 +20,7 @@ SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rrtmgp_output.yaml
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_p3_rrtmgp_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_p3_rrtmgp_output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
@@ -89,15 +89,14 @@ configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/
 if (SCREAM_TEST_MAX_RANKS GREATER 1)
   include (BuildCprnc)
   BuildCprnc()
-  SET (BASE_TEST_NAME "homme_shoc_cld_p3_rrtmgp")
+
+  set (BASE_TEST_NAME "homme_shoc_cld_p3_rrtmgp")
   foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
     set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-    configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake
-                    ${CMAKE_CURRENT_BINARY_DIR}/CprncTest_np${MPI_RANKS}.cmake @ONLY)
-    set(TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+    set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME} 
-              COMMAND cmake -P CprncTest_np${MPI_RANKS}.cmake
+              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}
