@@ -521,7 +521,6 @@ contains
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
-      real(r8)                                       :: wt_nat_patch_toposum 
 
       ! Initialize the FATES communicators with the HLM
       ! This involves to stages
@@ -638,25 +637,30 @@ contains
             ! ---------------------------------------------------------------------------
 
             g = col_pp%gridcell(c)
-            t = col_pp%topounit(c)
 
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
+
+            ! Check whether or not the surface dataset has topounits.  If it doesn't set the
+            ! index t to max_topounits, which should be 1.  Otherwise, determine the index
+            ! from the columntype
+            if (has_topounit) then
+               t = col_pp%topounit(c)
+            else
+               if (max_topounits .ne. 1) then
+                  write(iulog,*) 'max_topounits should only be one when has_topounit is false'
+                  write(iulog,*) 'max_topounits, has_topounit: ', max_topounits, has_topounit
+                  call endrun(msg=errMsg(sourcefile, __LINE__))
+               else
+                  t = max_topounits
+               endif
+            endif
 
             ! initialize static layers for reduced complexity FATES versions from HLM
             this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
             do m = natpft_lb,natpft_ub
                ft = m-natpft_lb
-               
-               ! For now, sum the weights along all topounits for a given gridcell
-               wt_nat_patch_toposum = sum(wt_nat_patch(g,:,m))
-               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch_toposum 
-
-               !this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
-
-               !write(iulog,*) 'elmfates: has_topounit: ',has_topounit
-               !write(iulog,*) 'elmfates: wt_nat_patch(g,1,m): ', wt_nat_patch(g,1,m)
-               !write(iulog,*) 'elmfates: sum wt_nat_patch: ', wt_nat_patch_toposum
+               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
             end do
 
             if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(natpft_lb:natpft_ub))-1.0_r8).gt.1.0e-9)then
