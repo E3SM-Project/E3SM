@@ -31,6 +31,7 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
+#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -377,10 +378,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //       are added here. To avoid this assumption, we need a more flexible lower bound
   //       check, which has one LB for check and one LB for repair.
   const Real tol = -1e-17;
-  auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol,false);
-  auto lower_bound_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0,true);
-  add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),lower_bound_check);
-  add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),lower_bound_repair);
+  auto lb_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol,false);
+  auto lb_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0,true);
+  auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(lb_check,lb_repair);
+  add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),check_and_repair);
 }
 
 void HommeDynamics::run_impl (const int dt)
