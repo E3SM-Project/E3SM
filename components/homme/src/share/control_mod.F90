@@ -264,9 +264,10 @@ module control_mod
   real (kind=real_kind), public :: bubble_xyradius = 2000.0!bubble radius along x or y axis
   real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
-  logical,               public :: bubble_moist  = .FALSE. ! 
-  real (kind=real_kind), public :: bubble_moist_dq = 0.0   !bubble dQ parameter
-  integer,               public :: bubble_prec_type = 0    !0 kessler, 1 rj
+  logical,               public :: bubble_moist  = .FALSE.    ! 
+  real (kind=real_kind), public :: bubble_moist_drh = 0.0     !bubble dRH parameter
+  real (kind=real_kind), public :: bubble_rh_background = 0.0 !bubble RH parameter
+  integer,               public :: bubble_prec_type = 0       !0 kessler, 1 rj
   logical,               protected :: case_planar_bubble = .FALSE.
 
   public :: set_planar_defaults
