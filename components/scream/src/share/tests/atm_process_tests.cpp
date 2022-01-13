@@ -299,7 +299,7 @@ TEST_CASE("field_checks", "") {
   auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
   util::TimeStamp t0(1,1,1,1,1,1);
   for (bool check : {true, false}) {
-    params.set("Enable Input Fields Checks",check);
+    params.set("Enable Input Field Checks",check);
 
     // Create the process
     auto foo = create_atmosphere_process<Foo>(comm,params);
