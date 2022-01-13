@@ -268,7 +268,7 @@
 
   <compset>
     <alias>F20TR-MMFXX</alias>
-    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
