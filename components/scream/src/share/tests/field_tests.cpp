@@ -11,6 +11,7 @@
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
 #include "share/field/field_property_checks/field_upper_bound_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
+#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
@@ -852,6 +853,36 @@ TEST_CASE("field_property_check", "") {
     f1.sync_to_host();
     for (int i=0; i<num_reals; ++i) {
       REQUIRE(f1_data[i] == 1.0);
+    }
+  }
+
+  SECTION ("check_and_repair_wrapper") {
+    Field<Real> f1(fid);
+    f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    // Two separate FPC for check and for repair
+    constexpr Real ub_check  = 1.0;
+    constexpr Real ub_repair = 0.0;
+    auto check  = std::make_shared<FieldUpperBoundCheck<Real> >(ub_check);
+    auto repair = std::make_shared<FieldUpperBoundCheck<Real> >(ub_repair);
+
+    auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(check, repair);
+    REQUIRE(check_and_repair->can_repair());
+
+    // Assign out-of-bound values to the field, and ensure check fails
+    auto f1_data = f1.get_internal_view_data<Host>();
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = 2.0;
+    }
+    f1.sync_to_dev();
+    REQUIRE(not check_and_repair->check(f1));
+
+    // Repair the field, and make sure the field values match ub_repair
+    check_and_repair->repair(f1);
+    f1.sync_to_host();
+    for (int i=0; i<num_reals; ++i) {
+      REQUIRE(f1_data[i] == ub_repair);
     }
   }
 }
