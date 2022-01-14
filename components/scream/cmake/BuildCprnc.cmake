@@ -9,6 +9,14 @@ macro(BuildCprnc)
 
   # Make sure this is built only once
   if (NOT TARGET cprnc)
+    if (SCREAM_CIME_BUILD)
+      string (CONCAT MSG
+              "WARNING! By default, scream should not build tests in a CIME build,\n"
+              "and cprnc should only be built by scream in case tests are enabled.\n"
+              "If you explicitly requested tests to be on in a CIME build,\n"
+              "then you can discard this warning. Otherwise, please, contact developers.\n")
+      message("${MSG}")
+    endif()
     set(BLDROOT ${PROJECT_BINARY_DIR}/externals/cprnc)
     file(WRITE ${BLDROOT}/Macros.cmake
       "
@@ -18,9 +26,8 @@ macro(BuildCprnc)
       set(NETCDF_PATH ${NetCDF_Fortran_PATHS})
       "
     )
-    set(SRC_ROOT ${PROJECT_SOURCE_DIR}/../..)
-    set(ENV{CIMEROOT} ${SRC_ROOT}/cime)
-    add_subdirectory($ENV{CIMEROOT}/tools/cprnc ${BLDROOT})
+    set(SRC_ROOT ${SCREAM_SOURCE_DIR}/../..)
+    add_subdirectory(${SRC_ROOT}/cime/tools/cprnc ${BLDROOT})
 
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")
 
