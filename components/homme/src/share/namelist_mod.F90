@@ -64,6 +64,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     nu_div,        &
     nu_p,          &
     nu_top,        &
+    tom_sponge_start, &
     dcmip16_mu,     &
     dcmip16_mu_s,   &
     dcmip16_mu_q,   &
@@ -285,6 +286,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       nu_div,        &
       nu_p,          &
       nu_top,        &
+      tom_sponge_start, &
       dcmip16_mu,     &
       dcmip16_mu_s,   &
       dcmip16_mu_q,   &
@@ -793,6 +795,7 @@ endif
     call MPI_bcast(nu_div,          1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(tom_sponge_start,1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)
@@ -1208,6 +1211,7 @@ end if
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
+       write(iulog,'(a,2e9.2)')"viscosity:  tom_sponge_start  = ",tom_sponge_start
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s

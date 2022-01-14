@@ -161,6 +161,7 @@ module control_mod
   real (kind=real_kind), public :: nu_q    = -1               ! default = nu   tracer viscosity
   real (kind=real_kind), public :: nu_p    = -1               ! default = nu   ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
+  real (kind=real_kind), public :: tom_sponge_start=0         ! start of sponge layer, in hPa
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
