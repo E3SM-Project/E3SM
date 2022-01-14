@@ -21,15 +21,10 @@ namespace scream
  *  Every call to the actual remap methods doesn't do anything.
  */
 
-template<typename RealType>
-class DoNothingRemapper : public AbstractRemapper<RealType>
+class DoNothingRemapper : public AbstractRemapper
 {
 public:
-  using base_type       = AbstractRemapper<RealType>;
-  using field_type      = typename base_type::field_type;
-  using identifier_type = typename base_type::identifier_type;
-  using layout_type     = typename base_type::layout_type;
-  using grid_ptr_type   = typename base_type::grid_ptr_type;
+  using base_type       = AbstractRemapper;
 
   DoNothingRemapper (const grid_ptr_type from, const grid_ptr_type to)
    : base_type(from,to)

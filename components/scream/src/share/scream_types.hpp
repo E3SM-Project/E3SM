@@ -37,6 +37,14 @@ enum class RunType {
   Restarted
 };
 
+// An enum for specifying fields data type
+enum class DataType {
+  int_t,
+  float_t,
+  double_t,
+  real_t
+};
+
 // We cannot expect BFB results between f90 and cxx if optimizations are on.
 // Same goes for cuda-memcheck because it makes the bfb math layer prohibitively
 // expensive and so must be turned off.

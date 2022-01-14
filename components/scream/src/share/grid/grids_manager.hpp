@@ -24,7 +24,7 @@ public:
   using grid_type         = AbstractGrid;
   using grid_ptr_type     = std::shared_ptr<const grid_type>;
   using grid_repo_type    = std::map<std::string, grid_ptr_type>;
-  using remapper_type     = AbstractRemapper<Real>;
+  using remapper_type     = AbstractRemapper;
   using remapper_ptr_type = std::shared_ptr<remapper_type>;
 
   GridsManager () = default;
@@ -65,7 +65,7 @@ public:
 
     if (from_grid->name()==to_grid->name()) {
       // We can handle the identity remapper from here
-      remapper = std::make_shared<IdentityRemapper<Real> >(from_grid);
+      remapper = std::make_shared<IdentityRemapper>(from_grid);
     } else {
       remapper = do_create_remapper(from_grid,to_grid);
     }

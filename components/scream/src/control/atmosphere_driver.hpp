@@ -40,7 +40,7 @@ namespace control {
 class AtmosphereDriver
 {
 public:
-  using field_mgr_type = FieldManager<Real>;
+  using field_mgr_type = FieldManager;
   using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
 
   AtmosphereDriver () = default;

@@ -88,13 +88,13 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   auto dyn_grid = m_grids.at("Dynamics");
 
   if (from=="Physics GLL" || to=="Physics GLL") {
-    using PDR = PhysicsDynamicsRemapper<remapper_type::real_type>;
+    using PDR = PhysicsDynamicsRemapper;
 
     auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics GLL"),dyn_grid);
     if (p2d) {
       return pd_remapper;
     } else {
-      return std::make_shared<InverseRemapper<Real>>(pd_remapper);
+      return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
     ekat::error::runtime_abort("Error! P-D remapping only implemented for 'Physics GLL' phys grid.\n");

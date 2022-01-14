@@ -22,8 +22,6 @@ class SPA : public AtmosphereProcess
 {
 public:
   using gid_type         = AbstractGrid::gid_type;
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
 
   using SPAFunc         = spa::SPAFunctions<Real, DefaultDevice>;
   using Spack           = SPAFunc::Spack;

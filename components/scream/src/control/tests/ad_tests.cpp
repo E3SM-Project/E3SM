@@ -48,7 +48,7 @@ TEST_CASE ("ad_tests","[!throws]")
     const auto& fn = f.get_header().get_identifier().name();
 
     // Create 'target' field
-    Field<Real> check(f.get_header().get_identifier());
+    Field check(f.get_header().get_identifier());
     check.allocate_view();
 
     // Fill target field based on what IC were in the yaml file

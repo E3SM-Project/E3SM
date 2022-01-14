@@ -4,7 +4,7 @@
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
-TEST_CASE("field_layout") {
+TEST_CASE("contiguous_superset") {
   using namespace scream;
 
   std::string A = "A";

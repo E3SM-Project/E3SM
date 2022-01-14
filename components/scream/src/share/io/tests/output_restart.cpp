@@ -26,21 +26,21 @@
 
 namespace scream {
 
-std::shared_ptr<FieldManager<Real>>
+std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 template<typename Engine>
-void randomize_fields (const FieldManager<Real>& fm, Engine& engine);
+void randomize_fields (const FieldManager& fm, Engine& engine);
 
-void time_advance (const FieldManager<Real>& fm,
+void time_advance (const FieldManager& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt);
 
-std::shared_ptr<FieldManager<Real>>
-backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm);
+std::shared_ptr<FieldManager>
+backup_fm (const std::shared_ptr<FieldManager>& src_fm);
 
 TEST_CASE("output_restart","io")
 {
@@ -155,7 +155,7 @@ TEST_CASE("output_restart","io")
 } 
 
 /*=============================================================================================*/
-std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
+std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
@@ -165,7 +165,7 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   using SL = std::list<std::string>;
 
   // Create a fm
-  auto fm = std::make_shared<FieldManager<Real>>(grid);
+  auto fm = std::make_shared<FieldManager>(grid);
 
   const int num_lcols = grid->get_num_local_dofs();
   const int num_levs = grid->get_num_vertical_levels();
@@ -209,7 +209,7 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
 
 /*=================================================================================================*/
 template<typename Engine>
-void randomize_fields (const FieldManager<Real>& fm, Engine& engine)
+void randomize_fields (const FieldManager& fm, Engine& engine)
 {
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
@@ -237,7 +237,7 @@ get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
   return gm;
 }
 /*===================================================================================================*/
-void time_advance (const FieldManager<Real>& fm,
+void time_advance (const FieldManager& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt) {
   for (const auto& fname : fnames) {
@@ -285,8 +285,8 @@ void time_advance (const FieldManager<Real>& fm,
   }
 }
 
-std::shared_ptr<FieldManager<Real>>
-backup_fm (const std::shared_ptr<FieldManager<Real>>& src_fm)
+std::shared_ptr<FieldManager>
+backup_fm (const std::shared_ptr<FieldManager>& src_fm)
 {
   // Now, create a copy of the field manager current status, for comparisong
   auto dst_fm = get_test_fm(src_fm->get_grid());

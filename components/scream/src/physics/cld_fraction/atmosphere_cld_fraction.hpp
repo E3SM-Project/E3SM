@@ -20,9 +20,6 @@ namespace scream
 class CldFraction : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
   using Spack           = CldFractionFunc::Spack;
   using Smask           = CldFractionFunc::Smask;

@@ -34,7 +34,7 @@ using input_type = AtmosphereInput;
 const int packsize = 2;
 using Pack         = ekat::Pack<Real,packsize>;
 
-std::shared_ptr<FieldManager<Real>>
+std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 
 std::shared_ptr<GridsManager>
@@ -276,14 +276,14 @@ TEST_CASE("input_output_basic","io")
 /* ----------------------------------*/
 
 /*===================================================================================================================*/
-std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
+std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
   using FR = FieldRequest;
 
   // Create a fm
-  auto fm = std::make_shared<FieldManager<Real>>(grid);
+  auto fm = std::make_shared<FieldManager>(grid);
 
   const int num_lcols = grid->get_num_local_dofs();
   const int num_levs = grid->get_num_vertical_levels();

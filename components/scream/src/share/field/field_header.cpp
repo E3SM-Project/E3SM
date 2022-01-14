@@ -1,4 +1,6 @@
 #include "share/field/field_header.hpp"
+#include "share/util/scream_utils.hpp"
+
 #include "ekat/std_meta/ekat_std_utils.hpp"
 
 namespace scream
@@ -7,6 +9,7 @@ namespace scream
 FieldHeader::FieldHeader (const identifier_type& id)
  : m_identifier (id)
  , m_tracking (create_tracking())
+ , m_alloc_prop (get_type_size(id.data_type()))
 {
   // Nothing to be done here
 }

@@ -2,13 +2,34 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
+
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "ekat/util/ekat_meta_utils.hpp"
 
 #include <vector>
 
 namespace scream
 {
+
+// A list of currently supported Field data types
+using FieldValidDataTypes = ekat::TypeList<int,float,double>;
+using FieldValidDataNames = ekat::TypeList<std::string,std::string,std::string>;
+
+inline ekat::TypeMap<FieldValidDataTypes,FieldValidDataNames>
+field_valid_data_types ()
+{
+  ekat::TypeMap<FieldValidDataTypes,FieldValidDataNames> map;
+  map.at<int>() = "int";
+  map.at<float>() = "float";
+  map.at<double>() = "double";
+
+  return map;
+}
+
+inline bool is_valid_field_data_type (const std::string& name) {
+  return name=="real" || field_valid_data_types().has_v(name);
+}
 
 /*
  *  A small class to hold basic info about a field
@@ -29,10 +50,17 @@ public:
   // Constructor(s)
   FieldIdentifier () = delete;
   FieldIdentifier (const FieldIdentifier&) = default;
+
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
                    const Units& units,
                    const std::string& grid_name);
+
+  FieldIdentifier (const std::string& name,
+                   const layout_type& layout,
+                   const Units& units,
+                   const std::string& grid_name,
+                   const std::string& data_type);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
   FieldIdentifier& operator= (const FieldIdentifier&) = delete;
@@ -45,6 +73,7 @@ public:
   const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
   const Units&            get_units      () const { return m_units;     }
   const std::string&      get_grid_name  () const { return m_grid_name; }
+  const std::string&      data_type      () const { return m_data_type; }
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }
@@ -70,6 +99,8 @@ protected:
   Units           m_units;
 
   ci_string       m_grid_name;
+
+  ci_string       m_data_type;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.

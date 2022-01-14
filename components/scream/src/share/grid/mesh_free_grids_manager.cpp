@@ -22,7 +22,7 @@ MeshFreeGridsManager::
 do_create_remapper (const grid_ptr_type from_grid,
                     const grid_ptr_type to_grid) const
 {
-  return std::make_shared<DoNothingRemapper<Real> >(from_grid,to_grid);
+  return std::make_shared<DoNothingRemapper>(from_grid,to_grid);
 }
 
 void MeshFreeGridsManager::

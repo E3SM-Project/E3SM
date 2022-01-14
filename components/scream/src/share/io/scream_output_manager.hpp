@@ -58,7 +58,7 @@ namespace scream
 class OutputManager
 {
 public:
-  using fm_type = FieldManager<Real>;
+  using fm_type = FieldManager;
   using gm_type = GridsManager;
 
   // Constructor(s) & Destructor

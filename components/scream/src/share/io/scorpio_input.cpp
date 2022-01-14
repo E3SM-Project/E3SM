@@ -126,6 +126,8 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
     for (const auto& fname : m_fields_names) {
       auto f = m_field_mgr->get_field(fname);
       const auto& tgt_fid = f.get_header().get_identifier();
+      EKAT_REQUIRE_MSG(tgt_fid.data_type()==field_valid_data_types ().at<Real>(),
+          "Error! I/O supports only Real data, for now.\n");
       m_remapper->register_field_from_tgt(tgt_fid);
     }
     m_remapper->registration_ends();
@@ -179,7 +181,7 @@ register_fields_specs() {
     // Otherwise, create a temporary.
     bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
     if (can_alias_field_view) {
-      auto data = f.get_internal_view_data<Host>();
+      auto data = f.get_internal_view_data<Real,Host>();
       m_host_views_1d[name] = view_1d_host(data,fl.size());
     } else {
       // We have padding, or the field is a subfield (or both).
@@ -239,9 +241,6 @@ void AtmosphereInput::read_variables (const int time_index)
       const auto& fl  = fh.get_identifier().get_layout();
       const auto& fap = fh.get_alloc_properties();
 
-      using field_type = decltype(f);
-      using RT         = typename field_type::RT;
-
       // Check if the stored 1d view is sharing the data ptr with the field
       const bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
 
@@ -256,7 +255,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 1:
             {
               // No reshape needed, simply copy
-              auto dst = f.get_view<RT*,Host>();
+              auto dst = f.get_view<Real*,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 dst(i) = view_1d(i);
               }
@@ -265,7 +264,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 2:
             {
               // Reshape temp_view to a 2d view, then copy
-              auto dst = f.get_view<RT**,Host>();
+              auto dst = f.get_view<Real**,Host>();
               auto src = view_Nd_host<2>(view_1d.data(),fl.dim(0),fl.dim(1));
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
@@ -276,7 +275,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 3:
             {
               // Reshape temp_view to a 3d view, then copy
-              auto dst = f.get_view<RT***,Host>();
+              auto dst = f.get_view<Real***,Host>();
               auto src = view_Nd_host<3>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2));
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
@@ -288,7 +287,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 4:
             {
               // Reshape temp_view to a 4d view, then copy
-              auto dst = f.get_view<RT****,Host>();
+              auto dst = f.get_view<Real****,Host>();
               auto src = view_Nd_host<4>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3));
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
@@ -301,7 +300,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 5:
             {
               // Reshape temp_view to a 5d view, then copy
-              auto dst = f.get_view<RT*****,Host>();
+              auto dst = f.get_view<Real*****,Host>();
               auto src = view_Nd_host<5>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4));
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
@@ -315,7 +314,7 @@ void AtmosphereInput::read_variables (const int time_index)
           case 6:
             {
               // Reshape temp_view to a 6d view, then copy
-              auto dst = f.get_view<RT******,Host>();
+              auto dst = f.get_view<Real******,Host>();
               auto src = view_Nd_host<6>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4),fl.dim(5));
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {

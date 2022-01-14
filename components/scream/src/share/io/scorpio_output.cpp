@@ -61,6 +61,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto f = m_field_mgr->get_field(fname);
       const auto& src_fid = f.get_header().get_identifier();
+      EKAT_REQUIRE_MSG(src_fid.data_type()==field_valid_data_types ().at<Real>(),
+          "Error! I/O supports only Real data, for now.\n");
       m_remapper->register_field_from_src(src_fid);
     }
     m_remapper->registration_ends();
@@ -331,7 +333,7 @@ void AtmosphereOutput::register_views()
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
-      m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Host>(),size));
+      m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Real,Host>(),size));
     } else {
       // Create a local host view.
       m_host_views_1d.emplace(name,view_1d_host("",size));

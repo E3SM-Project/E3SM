@@ -41,9 +41,6 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-
   // Constructors
   P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params);
 

@@ -96,7 +96,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
 // =========================================================================================
 void SHOCMacrophysics::
-set_computed_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup& group)
 {
   EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
                    "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");
@@ -347,8 +347,8 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
-  auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(150, 500);
+  auto positivity_check = std::make_shared<FieldPositivityCheck>();
 
   add_property_check<Computed>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
   add_property_check<Computed>(get_field_out("tke").get_header().get_identifier(),positivity_check);

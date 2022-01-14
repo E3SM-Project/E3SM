@@ -26,14 +26,10 @@ public:
   template<typename DevT, typename DataT>
   using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
-  using field_mgr_type = const FieldManager<Real>;
+  using field_mgr_type = const FieldManager;
   using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
   using grid_type       = const AbstractGrid;
   using grid_ptr        = std::shared_ptr<grid_type>;
-
-  // Use const type for exports, to protect against bugs
-  using import_field_type  = Field<      Real>;
-  using export_field_type  = Field<const Real>;
 
   // MCT always passes data as double. Also, we can't enforce const correctness there
   using cpl_data_ptr_type = double*;
@@ -89,7 +85,6 @@ protected:
   // A device-friendly helper struct, storing information about the import/export.
   // Templated on the value type of the scream field associated with the import/export.
   // This can be either 'Real' or 'const Real'
-  template<typename ValueType>
   struct Info {
     // Set to invalid, for ease of checking
     KOKKOS_INLINE_FUNCTION
@@ -119,7 +114,7 @@ protected:
     bool do_initial_export;
 
     // Pointer to the scream field device memory
-    ValueType*  data;
+    Real*  data;
   };
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -129,12 +124,11 @@ protected:
   void get_col_info (const std::shared_ptr<const FieldHeader>& fh,
                      int vecComp, int& col_offset, int& col_stride) const;
 
-  using import_value_type  = import_field_type::RT;
-  using export_value_type  = export_field_type::RT;
+  using value_type = Real;
 
   // Packed, device-friendly verson of the helper structures above
-  view_1d<device_type,Info<import_value_type>>  m_scream_imports_dev;
-  view_1d<device_type,Info<export_value_type>>  m_scream_exports_dev;
+  view_1d<device_type,Info>  m_scream_imports_dev;
+  view_1d<device_type,Info>  m_scream_exports_dev;
   decltype(m_scream_imports_dev)::HostMirror    m_scream_imports_host;
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
@@ -149,7 +143,7 @@ protected:
 
   // Dummy field to allow for the storage of the FieldIdentifier for debugging (not currently used)
   // and the FieldHeader needed to set up column info for export fields which must be computed.
-  Field<const Real> dummy_field;
+  Field dummy_field;
 
   // The type for device and host view storing a 2d array with dims (num_cols,num_fields).
   // The field idx strides faster, since that's what mct does (so we can "view" the

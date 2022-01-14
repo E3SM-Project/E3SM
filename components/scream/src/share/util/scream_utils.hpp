@@ -1,6 +1,8 @@
 #ifndef SCREAM_UTILS_HPP
 #define SCREAM_UTILS_HPP
 
+#include "share/scream_types.hpp"
+
 #include <ekat/ekat_assert.hpp>
 #include <ekat/kokkos/ekat_kokkos_types.hpp>
 #include <ekat/mpi/ekat_comm.hpp>
@@ -11,6 +13,19 @@
 #include <map>
 
 namespace scream {
+
+inline int get_type_size (const std::string& type) {
+  static std::map<std::string,int> sizes;
+  if (sizes.size()==0) {
+    sizes["int"] = sizeof(int);
+    sizes["float"] = sizeof(float);
+    sizes["double"] = sizeof(double);
+    sizes["real"] = sizeof(Real);
+  }
+
+  return sizes.at(type);
+}
+
 
 // Micro-utility, that given an enum returns the underlying int.
 // The only use of this is if you need to sort scoped enums.

@@ -240,7 +240,7 @@ void AtmosphereDriver::create_fields()
   }
   for (const auto& it : m_atm_process_group->get_required_group_requests()) {
     auto fm = get_field_mgr(it.grid);
-    auto group = fm->get_const_field_group(it.name);
+    auto group = fm->get_field_group(it.name).get_const();
     m_atm_process_group->set_required_group(group);
   }
   for (const auto& req : m_atm_process_group->get_required_field_requests()) {
@@ -518,7 +518,7 @@ void AtmosphereDriver::set_initial_conditions ()
   std::map<std::string,std::vector<std::string>> fields_inited;
 
   // Helper lambda, to reduce code duplication
-  auto process_ic_field = [&](const Field<const Real>& f) {
+  auto process_ic_field = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
     const auto& grid_name = fid.get_grid_name();
     const auto& fname = fid.name();

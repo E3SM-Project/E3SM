@@ -70,12 +70,8 @@ namespace scream
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using TimeStamp      = util::TimeStamp;
-  using ci_string      = ekat::CaseInsensitiveString;
-  using       field_type = Field<      Real>;
-  using const_field_type = Field<const Real>;
-  using       group_type = FieldGroup<      Real>;
-  using const_group_type = FieldGroup<const Real>;
+  using TimeStamp   = util::TimeStamp;
+  using ci_string   = ekat::CaseInsensitiveString;
 
   template<typename T>
   using str_map = std::map<std::string,T>;
@@ -127,10 +123,10 @@ public:
   //       overriding the corresponding _impl method should be enough. The class
   //       AtmosphereProcessGroup is the big exception to this, since it needs
   //       to perform some extra action *before* setting the field/group.
-  virtual void set_required_field (const Field<const Real>& f);
-  virtual void set_computed_field (const Field<Real>& f);
-  virtual void set_required_group (const FieldGroup<const Real>& group);
-  virtual void set_computed_group (const FieldGroup<Real>& group);
+  virtual void set_required_field (const Field& f);
+  virtual void set_computed_field (const Field& f);
+  virtual void set_required_group (const FieldGroup& group);
+  virtual void set_computed_group (const FieldGroup& group);
 
   // These methods checks that all the in/out fields of this atm process are valid.
   // For each field, these routines run all the property checks stored in the field.
@@ -156,13 +152,13 @@ public:
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
   //       the bundled field (if present) will be added as required fields for this atm proc.
   //       See field_group.hpp for more info about groups of fields.
-  const std::list<const_field_type>& get_fields_in  () const { return m_fields_in;  }
-  const std::list<      field_type>& get_fields_out () const { return m_fields_out; }
-  const std::list<const_group_type>& get_groups_in  () const { return m_groups_in;  }
-  const std::list<      group_type>& get_groups_out () const { return m_groups_out; }
+  const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
+  const std::list<Field>& get_fields_out () const { return m_fields_out; }
+  const std::list<FieldGroup>& get_groups_in  () const { return m_groups_in;  }
+  const std::list<FieldGroup>& get_groups_out () const { return m_groups_out; }
 
   // The base class does not store internal fields.
-  virtual const std::list<field_type>& get_internal_fields  () const { return m_internal_fields; }
+  virtual const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
   bool has_required_field (const FieldIdentifier& id) const;
@@ -180,30 +176,30 @@ public:
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.
   //       In that case, the single copy is returned, regardless of the associated grid name.
-  const Field<const Real>& get_field_in(const std::string& field_name, const std::string& grid_name) const;
-        Field<const Real>& get_field_in(const std::string& field_name, const std::string& grid_name);
-  const Field<const Real>& get_field_in(const std::string& field_name) const;
-        Field<const Real>& get_field_in(const std::string& field_name);
+  const Field& get_field_in(const std::string& field_name, const std::string& grid_name) const;
+        Field& get_field_in(const std::string& field_name, const std::string& grid_name);
+  const Field& get_field_in(const std::string& field_name) const;
+        Field& get_field_in(const std::string& field_name);
 
-  const Field<      Real>& get_field_out(const std::string& field_name, const std::string& grid_name) const;
-        Field<      Real>& get_field_out(const std::string& field_name, const std::string& grid_name);
-  const Field<      Real>& get_field_out(const std::string& field_name) const;
-        Field<      Real>& get_field_out(const std::string& field_name);
+  const Field& get_field_out(const std::string& field_name, const std::string& grid_name) const;
+        Field& get_field_out(const std::string& field_name, const std::string& grid_name);
+  const Field& get_field_out(const std::string& field_name) const;
+        Field& get_field_out(const std::string& field_name);
 
-  const FieldGroup<const Real>& get_group_in(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup<const Real>& get_group_in(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup<const Real>& get_group_in(const std::string& group_name) const;
-        FieldGroup<const Real>& get_group_in(const std::string& group_name);
+  const FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name) const;
+        FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
+  const FieldGroup& get_group_in(const std::string& group_name) const;
+        FieldGroup& get_group_in(const std::string& group_name);
 
-  const FieldGroup<      Real>& get_group_out(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup<      Real>& get_group_out(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup<      Real>& get_group_out(const std::string& group_name) const;
-        FieldGroup<      Real>& get_group_out(const std::string& group_name);
+  const FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name) const;
+        FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
+  const FieldGroup& get_group_out(const std::string& group_name) const;
+        FieldGroup& get_group_out(const std::string& group_name);
 
-  const Field<Real>& get_internal_field(const std::string& field_name, const std::string& grid_name) const;
-        Field<Real>& get_internal_field(const std::string& field_name, const std::string& grid_name);
-  const Field<Real>& get_internal_field(const std::string& field_name) const;
-        Field<Real>& get_internal_field(const std::string& field_name);
+  const Field& get_internal_field(const std::string& field_name, const std::string& grid_name) const;
+        Field& get_internal_field(const std::string& field_name, const std::string& grid_name);
+  const Field& get_internal_field(const std::string& field_name) const;
+        Field& get_internal_field(const std::string& field_name);
 
   // Create a property check for in/out/inout fields of this AP. The check is to be run
   // before and/or after run_impl, depending on the request type template.
@@ -212,8 +208,8 @@ public:
   template<RequestType RT, template<typename> class FPC, typename... Args>
   void add_property_check (const FieldIdentifier& fid, const Args... args);
 
-  template<RequestType RT, template<typename> class FPC>
-  void add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC<Real>>& prop_check);
+  template<RequestType RT, typename FPC>
+  void add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC>& prop_check);
 
 protected:
 
@@ -332,8 +328,8 @@ protected:
 
   // These three methods modify the FieldTracking of the input field (see field_tracking.hpp)
   void update_time_stamps ();
-  void add_me_as_provider (const Field<Real>& f);
-  void add_me_as_customer (const Field<const Real>& f);
+  void add_me_as_provider (const Field& f);
+  void add_me_as_customer (const Field& f);
 
   // The base class already registers the required/computed/updated fields/groups in
   // the set_required/computed_field and set_required/computed_group routines.
@@ -341,10 +337,10 @@ protected:
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
   // we provide empty implementations.
-  virtual void set_required_field_impl (const Field<const Real>& /* f */) {}
-  virtual void set_computed_field_impl (const Field<      Real>& /* f */) {}
-  virtual void set_required_group_impl (const FieldGroup<const Real>& /* group */) {}
-  virtual void set_computed_group_impl (const FieldGroup<      Real>& /* group */) {}
+  virtual void set_required_field_impl (const Field& /* f */) {}
+  virtual void set_computed_field_impl (const Field& /* f */) {}
+  virtual void set_required_group_impl (const FieldGroup& /* group */) {}
+  virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
   // The Base class already runs all registered field checks for all fields.
   // Similar to the set_required/computed_field_impl comment above, it is
@@ -356,7 +352,7 @@ protected:
   virtual void check_computed_fields_impl () {}
 
   // Adds a field to the list of internal fields
-  void add_internal_field (const Field<Real>& f);
+  void add_internal_field (const Field& f);
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
@@ -388,33 +384,33 @@ private:
   void set_fields_and_groups_pointers ();
 
   // Getters that can be called on both const and non-const objects
-  Field<const Real>& get_field_in_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field<const Real>& get_field_in_impl(const std::string& field_name) const;
-  Field<      Real>& get_field_out_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field<      Real>& get_field_out_impl(const std::string& field_name) const;
-  Field<      Real>& get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field<      Real>& get_internal_field_impl(const std::string& field_name) const;
+  Field& get_field_in_impl(const std::string& field_name, const std::string& grid_name) const;
+  Field& get_field_in_impl(const std::string& field_name) const;
+  Field& get_field_out_impl(const std::string& field_name, const std::string& grid_name) const;
+  Field& get_field_out_impl(const std::string& field_name) const;
+  Field& get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const;
+  Field& get_internal_field_impl(const std::string& field_name) const;
 
-  FieldGroup<const Real>& get_group_in_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup<const Real>& get_group_in_impl(const std::string& group_name) const;
-  FieldGroup<      Real>& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup<      Real>& get_group_out_impl(const std::string& group_name) const;
+  FieldGroup& get_group_in_impl(const std::string& group_name, const std::string& grid_name) const;
+  FieldGroup& get_group_in_impl(const std::string& group_name) const;
+  FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
+  FieldGroup& get_group_out_impl(const std::string& group_name) const;
 
   // Store input/output/internal fields and groups.
-  std::list<const_group_type>  m_groups_in;
-  std::list<      group_type>  m_groups_out;
-  std::list<const_field_type>  m_fields_in;
-  std::list<      field_type>  m_fields_out;
-  std::list<      field_type>  m_internal_fields;
+  std::list<FieldGroup>   m_groups_in;
+  std::list<FieldGroup>   m_groups_out;
+  std::list<Field>        m_fields_in;
+  std::list<Field>        m_fields_out;
+  std::list<Field>        m_internal_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
   // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
-  str_map<str_map< const_group_type* >> m_groups_in_pointers;
-  str_map<str_map<       group_type* >> m_groups_out_pointers;
-  str_map<str_map< const_field_type* >> m_fields_in_pointers;
-  str_map<str_map<       field_type* >> m_fields_out_pointers;
-  str_map<str_map<       field_type* >> m_internal_fields_pointers;
+  str_map<str_map<FieldGroup*>> m_groups_in_pointers;
+  str_map<str_map<FieldGroup*>> m_groups_out_pointers;
+  str_map<str_map<Field*>> m_fields_in_pointers;
+  str_map<str_map<Field*>> m_fields_out_pointers;
+  str_map<str_map<Field*>> m_internal_fields_pointers;
 
   // The list of in/out field/group requests.
   std::set<FieldRequest>   m_required_field_requests;
@@ -423,7 +419,7 @@ private:
   std::set<GroupRequest>   m_computed_group_requests;
 
   // List of property checks for fields
-  using prop_check_ptr = std::shared_ptr<FieldPropertyCheck<Real>>; 
+  using prop_check_ptr = std::shared_ptr<FieldPropertyCheck>; 
   std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_in;
   std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_out;
 
@@ -443,9 +439,9 @@ void AtmosphereProcess::add_property_check (const FieldIdentifier& fid, const Ar
   add_property_check(fid,fpc);
 }
 
-template<RequestType RT, template<typename> class FPC>
+template<RequestType RT, typename FPC>
 void AtmosphereProcess::
-add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC<Real>>& fpc) {
+add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC>& fpc) {
   switch (RT) {
     case Updated:
       add_property_check<Required>(fid,fpc);

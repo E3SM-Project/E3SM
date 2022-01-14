@@ -55,13 +55,13 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
+  auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck>(0,1);
   add_property_check<Computed>(get_field_out("cldfrac_ice").get_header().get_identifier(),frac_interval_check);
   add_property_check<Computed>(get_field_out("cldfrac_tot").get_header().get_identifier(),frac_interval_check);
 }
 
 // =========================================================================================
-void CldFraction::run_impl (const int dt)
+void CldFraction::run_impl (const int /* dt */)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 

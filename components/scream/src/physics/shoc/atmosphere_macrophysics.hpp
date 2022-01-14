@@ -49,8 +49,6 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
 
   // Constructors
   SHOCMacrophysics (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -407,7 +405,7 @@ protected:
   void finalize_impl   ();
 
   // SHOC updates the 'tracers' group.
-  void set_computed_group_impl (const FieldGroup<Real>& group);
+  void set_computed_group_impl (const FieldGroup& group);
 
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;

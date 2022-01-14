@@ -7,7 +7,7 @@ namespace scream {
 
 void AtmProcDAG::
 create_dag(const group_type& atm_procs,
-           const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) {
+           const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs) {
 
   cleanup ();
 
@@ -334,7 +334,7 @@ void AtmProcDAG::cleanup () {
 
 void AtmProcDAG::
 add_nodes (const group_type& atm_procs,
-           const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) {
+           const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs) {
   
   const int num_procs = atm_procs.get_num_processes();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);

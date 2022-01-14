@@ -1,679 +1,104 @@
 #ifndef SCREAM_FIELD_UTILS_HPP
 #define SCREAM_FIELD_UTILS_HPP
 
-#include "share/field/field.hpp"
-
-#include <limits>
+#include "share/field/field_utils_impl.hpp"
 
 namespace scream {
 
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==1,"Error! Wrong overload of unflatten_idx called.\n");
-  i = idx;
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i, int& j)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==2,"Error! Wrong overload of unflatten_idx called.\n");
-
-  i = idx / dims[1];
-  j = idx % dims[1];
-
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (j>=0 && j<dims[1],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i, int& j, int& k)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==3,"Error! Wrong overload of unflatten_idx called.\n");
-
-  i = (idx / dims[2]) / dims[1];
-  j = (idx / dims[2]) % dims[1];
-  k =  idx % dims[2];
-
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (j>=0 && j<dims[1],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (k>=0 && k<dims[2],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i, int& j, int& k, int& l)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==4,"Error! Wrong overload of unflatten_idx called.\n");
-
-  i = ((idx / dims[3]) / dims[2]) / dims[1];
-  j = ((idx / dims[3]) / dims[2]) % dims[1];
-  k =  (idx / dims[3]) % dims[2];
-  l =   idx % dims[3];
-
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (j>=0 && j<dims[1],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (k>=0 && k<dims[2],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (l>=0 && l<dims[3],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i, int& j, int& k, int& l, int& m)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==5,"Error! Wrong overload of unflatten_idx called.\n");
-
-  i = (((idx / dims[4]) / dims[3]) / dims[2]) / dims[1];
-  j = (((idx / dims[4]) / dims[3]) / dims[2]) % dims[1];
-  k =  ((idx / dims[4]) / dims[3]) % dims[2];
-  l =   (idx / dims[4]) % dims[3];
-  m =    idx % dims[4];
-
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (j>=0 && j<dims[1],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (k>=0 && k<dims[2],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (l>=0 && l<dims[3],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (m>=0 && m<dims[4],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
-    int& i, int& j, int& k, int& l, int& m, int& n)
-{
-  EKAT_KERNEL_REQUIRE_MSG (dims.size()==6,"Error! Wrong overload of unflatten_idx called.\n");
-
-  i = ((((idx / dims[5]) / dims[4]) / dims[3]) / dims[2]) / dims[1];
-  j = ((((idx / dims[5]) / dims[4]) / dims[3]) / dims[2]) % dims[1];
-  k =  (((idx / dims[5]) / dims[4]) / dims[3]) % dims[2];
-  l =   ((idx / dims[5]) / dims[4]) % dims[3];
-  m =    (idx / dims[5]) % dims[4];
-  n =     idx % dims[5];
-
-  EKAT_KERNEL_REQUIRE_MSG (i>=0 && i<dims[0],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (j>=0 && j<dims[1],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (k>=0 && k<dims[2],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (l>=0 && l<dims[3],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (m>=0 && m<dims[4],"Error! Flatten index out of bounds.\n");
-  EKAT_KERNEL_REQUIRE_MSG (n>=0 && n<dims[5],"Error! Flatten index out of bounds.\n");
-}
-
-template<typename... Props>
-KOKKOS_INLINE_FUNCTION
-void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims, int* indices) {
-  const int rank = dims.size();
-  switch(rank) {
-    case 1:
-      unflatten_idx(idx,dims,indices[0]);
-      break;
-    case 2:
-      unflatten_idx(idx,dims,indices[0],indices[1]);
-      break;
-    case 3:
-      unflatten_idx(idx,dims,indices[0],indices[1],indices[2]);
-      break;
-    case 4:
-      unflatten_idx(idx,dims,indices[0],indices[1],indices[2],indices[3]);
-      break;
-    case 5:
-      unflatten_idx(idx,dims,indices[0],indices[1],indices[2],indices[3],indices[4]);
-      break;
-    case 6:
-      unflatten_idx(idx,dims,indices[0],indices[1],indices[2],indices[3],indices[4],indices[5]);
-      break;
-    default:
-      EKAT_KERNEL_ERROR_MSG ("Error! Unsupported rank.\n");
-  }
-}
-
 // Check that two fields store the same entries.
 // NOTE: if the field is padded, padding entries are NOT checked.
-template<typename RT1, typename RT2>
-bool views_are_equal(const Field<RT1>& f1, const Field<RT2>& f2) {
-  static_assert(
-      std::is_same<typename std::remove_cv<RT1>::type,
-                   typename std::remove_cv<RT2>::type>::value,
-      "Error! Real types must be the same (except possibly for cv qualifiers).\n");
-
-  // Get physical layout (shoudl be the same for both fields)
-  const auto& l1 = f1.get_header().get_identifier().get_layout();
-  const auto& l2 = f2.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG (l1==l2,
-      "Error! Input fields have different layouts.\n");
-
-  // For simplicity, we perform the check on Host only. This is not a big
-  // limitation, since this code is likely used only in testing.
-  f1.sync_to_host();
-  f2.sync_to_host();
-
-  // Reshape based on the rank, then loop over all entries.
-  const auto& dims = l1.dims();
-  switch (l1.rank()) {
-    case 1:
-      {
-        auto v1 = f1.template get_view<RT1*,Host>();
-        auto v2 = f2.template get_view<RT2*,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          if (v1(i) != v2(i)) {
-            return false;
-          }
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v1 = f1.template get_view<RT1**,Host>();
-        auto v2 = f2.template get_view<RT2**,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            if (v1(i,j) != v2(i,j)) {
-              return false;
-            }
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v1 = f1.template get_view<RT1***,Host>();
-        auto v2 = f2.template get_view<RT2***,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              if (v1(i,j,k) != v2(i,j,k)) {
-                return false;
-              }
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v1 = f1.template get_view<RT1****,Host>();
-        auto v2 = f2.template get_view<RT2****,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                if (v1(i,j,k,l) != v2(i,j,k,l)) {
-                  return false;
-                }
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v1 = f1.template get_view<RT1*****,Host>();
-        auto v2 = f2.template get_view<RT2*****,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  if (v1(i,j,k,l,m) != v2(i,j,k,l,m)) {
-                    return false;
-                  }
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v1 = f1.template get_view<RT1******,Host>();
-        auto v2 = f2.template get_view<RT2******,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  for (int n=0; n<dims[5]; ++n) {
-                    if (v1(i,j,k,l,m,n) != v2(i,j,k,l,m,n)) {
-                      return false;
-                    }
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+inline bool views_are_equal(const Field& f1, const Field& f2) {
+  const auto& dt = f1.get_header().get_identifier().data_type();
+  if (dt=="int") {
+    return impl::views_are_equal<const int>(f1,f2);
+  } else if (dt=="double") {
+    return impl::views_are_equal<const double>(f1,f2);
+  } else if (dt=="float") {
+    return impl::views_are_equal<const float>(f1,f2);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unsupported field data type '" + dt + "'.\n");
   }
-
-  // If we get here, then all entries matched.
-  return true;
 }
 
-template<typename RT, typename Engine, typename PDF>
-void randomize (const Field<RT>& f, Engine& engine, PDF&& pdf)
+template<typename Engine, typename PDF>
+void randomize (const Field& f, Engine& engine, PDF&& pdf)
 {
   EKAT_REQUIRE_MSG(f.is_allocated(),
       "Error! Cannot randomize the values of a field not yet allocated.\n");
 
-  const auto& fl = f.get_header().get_identifier().get_layout();
-  switch (fl.rank()) {
-    case 1:
-      {
-        auto v = f.template get_view<RT*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          v(i) = pdf(engine);
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v = f.template get_view<RT**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            v(i,j) = pdf(engine);
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.template get_view<RT***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              v(i,j,k) = pdf(engine);
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v = f.template get_view<RT****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                v(i,j,k,l) = pdf(engine);
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v = f.template get_view<RT*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  v(i,j,k,l,m) = pdf(engine);
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v = f.template get_view<RT******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
-                    v(i,j,k,l,m,n) = pdf(engine);
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  // Deduce scalar type from pdf
+  using ST = decltype(pdf(engine));
 
-  // Sync the dev view with the host view.
-  f.sync_to_dev();
+  // Check compatibility between PDF and field data type
+  const auto& dt = f.get_header().get_identifier().data_type();
+  EKAT_REQUIRE_MSG (
+      (std::is_same<ST,int>::value && dt=="int") ||
+      (std::is_same<ST,float>::value && dt=="float") ||
+      (std::is_same<ST,double>::value && dt=="double"),
+      "Error! Field data type incompatible with input PDF.\n");
+
+  impl::randomize<ST>(f,engine,pdf);
 }
 
-inline Real frobenius_norm(const Field<const Real>& f)
+template<typename ST>
+ST frobenius_norm(const Field& f)
 {
-  const auto& fl = f.get_header().get_identifier().get_layout();
-  f.sync_to_host();
+  // Check compatibility between ST and field data type
+  const auto& dt = f.get_header().get_identifier().data_type();
+  EKAT_REQUIRE_MSG (dt=="float" || dt=="double" || dt=="real",
+      "Error! Frobenius norm only allowed for floating-point field value types.\n");
 
-  // Note: use Kahan algorithm to increase accuracy
-  Real norm = 0;
-  Real c = 0;
-  Real temp,y;
-  switch (fl.rank()) {
-    case 1:
-      {
-        auto v = f.template get_view<Real*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          y = std::pow(v(i),2) - c;
-          temp = norm + y;
-          c = (temp - norm) - y;
-          norm = temp;
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v = f.template get_view<Real**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            y = std::pow(v(i,j),2) - c;
-            temp = norm + y;
-            c = (temp - norm) - y;
-            norm = temp;
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.template get_view<Real***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              y = std::pow(v(i,j,k),2) - c;
-              temp = norm + y;
-              c = (temp - norm) - y;
-              norm = temp;
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v = f.template get_view<Real****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                y = std::pow(v(i,j,k,l),2) - c;
-                temp = norm + y;
-                c = (temp - norm) - y;
-                norm = temp;
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v = f.template get_view<Real*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  y = std::pow(v(i,j,k,l,m),2) - c;
-                  temp = norm + y;
-                  c = (temp - norm) - y;
-                  norm = temp;
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v = f.template get_view<Real******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
-                    y = std::pow(v(i,j,k,l,m,n),2) - c;
-                    temp = norm + y;
-                    c = (temp - norm) - y;
-                    norm = temp;
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  EKAT_REQUIRE_MSG (
+      (std::is_same<ST,float>::value && dt=="float") ||
+      (std::is_same<ST,double>::value && dt=="double"),
+      "Error! Field data type incompatible with template argument.\n");
 
-  return std::sqrt(norm);
+  return impl::frobenius_norm<ST>(f);
 }
 
-inline Real field_sum(const Field<const Real>& f)
+template<typename ST>
+ST field_sum(const Field& f)
 {
-  const auto& fl = f.get_header().get_identifier().get_layout();
-  f.sync_to_host();
+  // Check compatibility between ST and field data type
+  const auto& dt = f.get_header().get_identifier().data_type();
 
-  // Note: use Kahan algorithm to increase accuracy
-  Real sum = 0;
-  Real c = 0;
-  Real temp,y;
-  switch (fl.rank()) {
-    case 1:
-      {
-        auto v = f.template get_view<Real*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          y = v(i) - c;
-          temp = sum + y;
-          c = (temp - sum) - y;
-          sum = temp;
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v = f.template get_view<Real**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            y = v(i,j) - c;
-            temp = sum + y;
-            c = (temp - sum) - y;
-            sum = temp;
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.template get_view<Real***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              y = v(i,j,k) - c;
-              temp = sum + y;
-              c = (temp - sum) - y;
-              sum = temp;
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v = f.template get_view<Real****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                y = v(i,j,k,l) - c;
-                temp = sum + y;
-                c = (temp - sum) - y;
-                sum = temp;
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v = f.template get_view<Real*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  y = v(i,j,k,l,m) - c;
-                  temp = sum + y;
-                  c = (temp - sum) - y;
-                  sum = temp;
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v = f.template get_view<Real******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
-                    y = v(i,j,k,l,m,n) - c;
-                    temp = sum + y;
-                    c = (temp - sum) - y;
-                    sum = temp;
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  EKAT_REQUIRE_MSG (
+      (std::is_same<ST,int>::value && dt=="int") ||
+      (std::is_same<ST,float>::value && dt=="float") ||
+      (std::is_same<ST,double>::value && dt=="double"),
+      "Error! Field data type incompatible with template argument.\n");
 
-  return sum;
+  return impl::field_sum<ST>(f);
 }
 
-inline Real field_max(const Field<const Real>& f)
+template<typename ST>
+ST field_max(const Field& f)
 {
-  const auto& fl = f.get_header().get_identifier().get_layout();
-  f.sync_to_host();
+  // Check compatibility between ST and field data type
+  const auto& dt = f.get_header().get_identifier().data_type();
 
-  Real max = std::numeric_limits<Real>::min();
-  switch (fl.rank()) {
-    case 1:
-      {
-        auto v = f.template get_view<Real*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          max = std::max(max,v(i));
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v = f.template get_view<Real**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            max = std::max(max,v(i,j));
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.template get_view<Real***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              max = std::max(max,v(i,j,k));
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v = f.template get_view<Real****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                max = std::max(max,v(i,j,k,l));
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v = f.template get_view<Real*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  max = std::max(max,v(i,j,k,l,m));
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v = f.template get_view<Real******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
-                    max = std::max(max,v(i,j,k,l,m,n));
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  EKAT_REQUIRE_MSG (
+      (std::is_same<ST,int>::value && dt=="int") ||
+      (std::is_same<ST,float>::value && dt=="float") ||
+      (std::is_same<ST,double>::value && dt=="double"),
+      "Error! Field data type incompatible with template argument.\n");
 
-  return max;
+  return impl::field_max<ST>(f);
 }
 
-inline Real field_min(const Field<const Real>& f)
+template<typename ST>
+ST field_min(const Field& f)
 {
-  const auto& fl = f.get_header().get_identifier().get_layout();
-  f.sync_to_host();
+  // Check compatibility between ST and field data type
+  const auto& dt = f.get_header().get_identifier().data_type();
 
-  Real min = std::numeric_limits<Real>::max();
-  switch (fl.rank()) {
-    case 1:
-      {
-        auto v = f.template get_view<Real*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          min = std::min(min,v(i));
-        }
-      }
-      break;
-    case 2:
-      {
-        auto v = f.template get_view<Real**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            min = std::min(min,v(i,j));
-        }}
-      }
-      break;
-    case 3:
-      {
-        auto v = f.template get_view<Real***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              min = std::min(min,v(i,j,k));
-        }}}
-      }
-      break;
-    case 4:
-      {
-        auto v = f.template get_view<Real****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                min = std::min(min,v(i,j,k,l));
-        }}}}
-      }
-      break;
-    case 5:
-      {
-        auto v = f.template get_view<Real*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  min = std::min(min,v(i,j,k,l,m));
-        }}}}}
-      }
-      break;
-    case 6:
-      {
-        auto v = f.template get_view<Real******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
-                    min = std::min(min,v(i,j,k,l,m,n));
-        }}}}}}
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
-  }
+  EKAT_REQUIRE_MSG (
+      (std::is_same<ST,int>::value && dt=="int") ||
+      (std::is_same<ST,float>::value && dt=="float") ||
+      (std::is_same<ST,double>::value && dt=="double"),
+      "Error! Field data type incompatible with template argument.\n");
 
-  return min;
+  return impl::field_min<ST>(f);
 }
 
 } // namespace scream
