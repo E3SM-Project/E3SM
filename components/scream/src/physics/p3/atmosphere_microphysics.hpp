@@ -103,7 +103,6 @@ public:
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        std::cout<<"--BALLI[RUN] preproc opr assign qc_dry:"<<icol<<","<<ipack<<","<<qc(icol,ipack)<<std::endl;
         //since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the followinf constituents
         qc_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); // qv is wet at this point
 
