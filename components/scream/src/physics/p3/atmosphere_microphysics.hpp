@@ -120,7 +120,7 @@ public:
         rimvol(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixrimvol),  qv_wet);
         //qv_prev_dry(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack));
         */
-        //NOTE: At this point, qv is still in wet mmr. Convert "qv" to "qv_dry" in the end 
+        //NOTE: At this point, qv is still in wet mmr. Convert "qv" to "qv_dry" in the end
         //after converting all other constituents to dry mmr
         qv_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
 
@@ -182,9 +182,9 @@ public:
       T_atm          = T_atm_;
       cld_frac_t     = cld_frac_t_;
       qv             = qv_;
-      qv_dry         = qv_;
       qc             = qc_ ;
 
+      qv_dry         = qv_;
       qc_dry         = qc_;
       // OUT
       inv_exner = inv_exner_;
@@ -219,11 +219,18 @@ public:
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        qc_wet(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));
-        
+        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));
+
+        //NOTE: At this point, qv is still in dry mmr (updated by P3_main). Convert dry "qv" to wet "qv" in the end
+        //after converting all other constituents to wet mmr
+        qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
+
 
         // Update qv_prev
         qv_prev(icol,ipack) = qv(icol,ipack);
+
+
+
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
@@ -237,7 +244,6 @@ public:
     view_2d       T_prev;
     view_2d       qv;
     view_2d       qc;
-    view_2d       qc_wet;
     view_2d       qv_prev;
     view_2d       diag_eff_radius_qc;
     view_2d       diag_eff_radius_qi;
@@ -255,7 +261,6 @@ public:
       pmid        = pmid_;
       qv          = qv_;
       qc          = qc_;
-      qc_wet      = qc_;
       // OUT
       T_atm              = T_atm_;
       T_prev             = T_prev_;
