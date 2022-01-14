@@ -49,7 +49,7 @@ TEST_CASE("p3-stand-alone", "") {
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");
   }
-  for (int i=0; i<nsteps; ++i) {
+  for (int i=0; i<2; ++i) {
     ad.run(dt);
     if (atm_comm.am_i_root()) {
       std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";

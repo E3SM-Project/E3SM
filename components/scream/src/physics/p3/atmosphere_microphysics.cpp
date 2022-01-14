@@ -204,7 +204,7 @@ void P3Microphysics::initialize_impl ()
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
   const  auto& cld_frac_t     = get_field_in("cldfrac_tot").get_view<const Pack**>();
   const  auto& qv             = get_field_out("qv").get_view<Pack**>();
-
+  const  auto& qc             = get_field_out("qc").get_view<Pack**>();
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
   auto th_atm     = m_buffer.th_atm;
@@ -213,11 +213,12 @@ void P3Microphysics::initialize_impl ()
   auto cld_frac_r = m_buffer.cld_frac_r;
   auto dz         = m_buffer.dz;
 
-  // -- Set values for the post-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv,
+  // -- Set values for the pre-amble structure
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv, qc,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
-  prog_state.qc     = get_field_out("qc").get_view<Pack**>();
+  std::cout<<"--BALLI[INIT]:Set pointers for q quantities:"<<std::endl;
+  prog_state.qc     = p3_preproc.qc_dry;
   prog_state.nc     = get_field_out("nc").get_view<Pack**>();
   prog_state.qr     = get_field_out("qr").get_view<Pack**>();
   prog_state.nr     = get_field_out("nr").get_view<Pack**>();
@@ -268,7 +269,8 @@ void P3Microphysics::initialize_impl ()
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
   // -- Set values for the post-amble structure
-  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv,qv_prev,
+  std::cout<<"BALLI[POST----]"<<std::endl;
+  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv, prog_state.qc,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }
 

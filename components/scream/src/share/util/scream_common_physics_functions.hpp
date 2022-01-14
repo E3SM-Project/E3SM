@@ -137,28 +137,34 @@ struct PhysicsFunctions
   static ScalarT calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
-  //   drymmr = wetmmr / (1 - qv)
+  // Computes drymmr (mass of a constituent divided by mass of dry air; commonly known as mixing ratio)
+  // for any wetmmr constituent (mass of a constituent divided by mass of dry air plus water
+  // vapor) using qv_wet (mass of water vapor divided by mass of dry air plus
+  // water vapor; see specific humidity):
+  //   drymmr = wetmmr / (1 - qv_wet)
   // where
   //   drymmr         is the dry mass mixing ratio of a species
   //   wetmmr         is the wet mass mixing ratio of a species
-  //   qv             is specific humidity of water vapor
+  //   qv_wet         is water vapor wet mass mixing ratio
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv);
+  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv_wet);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate the wet mass mixing ratio given the dry mass mixing ratio:
-  //   wetmmr = drymmr * (1 - qv)
+  // Computes wetmmr (mass of a constituent divided by mass of dry air plus water vapor)
+  // for any drymmr constituent (mass of a constituent divided by mass of dry air;
+  // commonly known as mixing ratio) using qv_dry (mass of water vapor divided by mass
+  // of dry air):
+  //   wetmmr = drymmr / (1 + qv_dry)
   // where
   //   wetmmr         is the wet mass mixing ratio of a species
   //   drymmr         is the dry mass mixing ratio of a species
-  //   qv             is specific humidity of water vapor
+  //   qv_dry         is specific humidity of water vapor
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv);
+  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -313,7 +319,7 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static void calculate_drymmr_from_wetmmr (const MemberType& team,
                              const InputProviderX& wetmmr,
-                             const InputProviderQ& qv,
+                             const InputProviderQ& qv_wet,
                              const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,
