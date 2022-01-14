@@ -5,6 +5,7 @@
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
+#include "share/field/field_property_check.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
@@ -16,6 +17,7 @@
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 
+#include <memory>
 #include <string>
 #include <set>
 #include <list>
@@ -203,13 +205,17 @@ public:
   const Field<Real>& get_internal_field(const std::string& field_name) const;
         Field<Real>& get_internal_field(const std::string& field_name);
 
-protected:
+  // Create a property check for in/out/inout fields of this AP. The check is to be run
+  // before and/or after run_impl, depending on the request type template.
+  // NOTE: if, say,  RT=Computed, but the field is not computed (e.g., it's an input),
+  //       this methods will throw.
+  template<RequestType RT, template<typename> class FPC, typename... Args>
+  void add_property_check (const FieldIdentifier& fid, const Args... args);
 
-  enum RequestType {
-    Required,
-    Computed,
-    Updated   // For convenience, triggers Required+Computed
-  };
+  template<RequestType RT, template<typename> class FPC>
+  void add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC<Real>>& prop_check);
+
+protected:
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -352,9 +358,6 @@ protected:
   // Adds a field to the list of internal fields
   void add_internal_field (const Field<Real>& f);
 
-  // FieldGroup<Real>& get_internal_group(const std::string& group_name, const std::string& grid_name);
-  // FieldGroup<Real>& get_internal_group(const std::string& group_name);
-
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
   // Note: these methods do *not* create a copy of the field/group. Also, notice that
@@ -419,10 +422,50 @@ private:
   std::set<GroupRequest>   m_required_group_requests;
   std::set<GroupRequest>   m_computed_group_requests;
 
+  // List of property checks for fields
+  using prop_check_ptr = std::shared_ptr<FieldPropertyCheck<Real>>; 
+  std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_in;
+  std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_out;
+
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
   TimeStamp m_time_stamp;
 };
+
+// ====================== IMPLEMENTATION ======================= //
+
+template<RequestType RT, template<typename> class FPC, typename... Args>
+void AtmosphereProcess::add_property_check (const FieldIdentifier& fid, const Args... args) {
+  auto fpc = std::make_shared<FPC<Real>>(args...);
+  add_property_check(fid,fpc);
+}
+
+template<RequestType RT, template<typename> class FPC>
+void AtmosphereProcess::
+add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC<Real>>& fpc) {
+  switch (RT) {
+    case Updated:
+      add_property_check<Required>(fid,fpc);
+      add_property_check<Computed>(fid,fpc);
+      break;
+    case Required:
+    {
+      EKAT_REQUIRE_MSG(has_required_field(fid) || has_required_group(fid.name(),fid.get_grid_name()),
+        "Error! Cannot create property check '" + fpc->name() + "' for field '" + fid.get_id_string() + "'.\n"
+        "       Field is not required by atm process '" + this->name() + "'.\n");
+      m_property_checks_in.push_back(std::make_pair(fid,fpc));
+      break;
+    }
+    case Computed:
+    {
+      EKAT_REQUIRE_MSG(has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Cannot create property check '" + fpc->name() + "' for field '" + fid.get_id_string() + "'.\n"
+        "       Field is not computed by atm process '" + this->name() + "'.\n");
+      m_property_checks_out.push_back(std::make_pair(fid,fpc));
+      break;
+    }
+  }
+}
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

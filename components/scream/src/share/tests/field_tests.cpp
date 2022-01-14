@@ -11,6 +11,7 @@
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
 #include "share/field/field_property_checks/field_upper_bound_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
+#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
@@ -705,12 +706,6 @@ TEST_CASE("field_property_check", "") {
   // Check positivity.
   SECTION ("field_positivity_check") {
     Field<Real> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
-    REQUIRE(not positivity_check->can_repair());
-    // Note: Here we will test the ability to add a check to a field and then
-    //       access it using get_property_checks.  Subsequent tests will use
-    //       the checker directly on the field.
-    f1.add_property_check(positivity_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -719,23 +714,20 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,pos_pdf);
     f1.sync_to_dev();
-    for (const auto& p : f1.get_property_checks()) {
-      REQUIRE(p.check(f1));
-    }
+
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+    REQUIRE(not positivity_check->can_repair());
+    REQUIRE(positivity_check->check(f1));
 
     // Assign non-positive values to the field and make sure it fails the check.
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
-    for (const auto& p : f1.get_property_checks()) {
-      REQUIRE(not p.check(f1));
-    }
+    REQUIRE(not positivity_check->check(f1));
   }
 
   // Check positivity with repairs.
   SECTION ("field_positivity_check_with_repairs") {
     Field<Real> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
-    REQUIRE(positivity_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -744,6 +736,9 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
+
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
+    REQUIRE(positivity_check->can_repair());
     REQUIRE(not positivity_check->check(f1));
     positivity_check->repair(f1);
     REQUIRE(positivity_check->check(f1));
@@ -752,9 +747,10 @@ TEST_CASE("field_property_check", "") {
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
     Field<Real> f1(fid);
-    auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
 
     // Assign  values to the field and make sure it passes our test for NaNs.
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -772,10 +768,11 @@ TEST_CASE("field_property_check", "") {
   // Check that the values of a field lie within an interval.
   SECTION ("field_within_interval_check") {
     Field<Real> f1(fid);
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
-    REQUIRE(interval_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
+    REQUIRE(interval_check->can_repair());
 
     // Assign in-bound values to the field and make sure it passes the within-interval check
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -797,10 +794,11 @@ TEST_CASE("field_property_check", "") {
   // Check that the values of a field are above a lower bound
   SECTION ("field_lower_bound_check") {
     Field<Real> f1(fid);
-    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real> >(-1.0);
-    REQUIRE(lower_bound_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real> >(-1.0);
+    REQUIRE(lower_bound_check->can_repair());
 
     // Assign in-bound values to the field and make sure it passes the lower_bound check
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -821,8 +819,7 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(lower_bound_check->check(f1));
     // Should have repaired to the lower bound:
     f1.sync_to_host();
-    for (int i=0; i<num_reals; ++i)
-    {
+    for (int i=0; i<num_reals; ++i) {
       REQUIRE(f1_data[i] == -1.0);
     }
   }
@@ -854,9 +851,38 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(upper_bound_check->check(f1));
     // Should have repaired to the upper bound:
     f1.sync_to_host();
-    for (int i=0; i<num_reals; ++i)
-    {
+    for (int i=0; i<num_reals; ++i) {
       REQUIRE(f1_data[i] == 1.0);
+    }
+  }
+
+  SECTION ("check_and_repair_wrapper") {
+    Field<Real> f1(fid);
+    f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    // Two separate FPC for check and for repair
+    constexpr Real ub_check  = 1.0;
+    constexpr Real ub_repair = 0.0;
+    auto check  = std::make_shared<FieldUpperBoundCheck<Real> >(ub_check);
+    auto repair = std::make_shared<FieldUpperBoundCheck<Real> >(ub_repair);
+
+    auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(check, repair);
+    REQUIRE(check_and_repair->can_repair());
+
+    // Assign out-of-bound values to the field, and ensure check fails
+    auto f1_data = f1.get_internal_view_data<Host>();
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = 2.0;
+    }
+    f1.sync_to_dev();
+    REQUIRE(not check_and_repair->check(f1));
+
+    // Repair the field, and make sure the field values match ub_repair
+    check_and_repair->repair(f1);
+    f1.sync_to_host();
+    for (int i=0; i<num_reals; ++i) {
+      REQUIRE(f1_data[i] == ub_repair);
     }
   }
 }

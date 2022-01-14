@@ -189,9 +189,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // get_field_out("ni").add_property_check(positivity_check);
   // get_field_out("bm").add_property_check(positivity_check);
   auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
-  get_field_out("T_mid").add_property_check(T_interval_check);
+  add_property_check<Updated>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
   
-
   // Initialize p3
   p3_init();
 

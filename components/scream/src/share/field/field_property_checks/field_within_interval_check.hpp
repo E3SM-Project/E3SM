@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 #define SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 
+#include "share/field/field_property_check.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
@@ -26,9 +27,9 @@ public:
   // can repair fields that fail the check by overwriting nonpositive values
   // with the given lower bound. If can_repair is false, the check cannot
   // apply repairs to the field.
-  explicit FieldWithinIntervalCheck (const_RT lower_bound,
-                                     const_RT upper_bound,
-                                     bool can_repair = true) :
+  FieldWithinIntervalCheck (const_RT lower_bound,
+                            const_RT upper_bound,
+                            bool can_repair = true) :
     m_lower_bound(lower_bound),
     m_upper_bound(upper_bound),
     m_can_repair(can_repair) {
@@ -39,7 +40,12 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const override { return "Within Interval [" + std::to_string(m_lower_bound) + "," + std::to_string(m_upper_bound) + "] Field Check"; }
+  std::string name () const override {
+    // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
+    std::stringstream ss;
+    ss << "Within Interval [" << m_lower_bound << ", " << m_upper_bound << "] Check";
+    return ss.str();
+  }
 
   bool check(const Field<const_RT>& field) const override {
     using RT = non_const_RT;

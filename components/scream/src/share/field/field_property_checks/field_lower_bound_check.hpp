@@ -3,7 +3,7 @@
 
 #include "share/field/field_property_checks/field_within_interval_check.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
+#include <limits>
 
 namespace scream
 {
@@ -36,7 +36,12 @@ public:
   // Overrides.
 
   // The name of the field check
-  std::string name () const override { return "Lower Bound Check of " + std::to_string(this->m_lower_bound); }
+  std::string name () const override {
+    // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
+    std::stringstream ss;
+    ss << "Lower Bound Check of " << this->m_lower_bound;
+    return ss.str();
+  }
 
 };
 

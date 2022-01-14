@@ -157,8 +157,6 @@ public:
       // if we have dy!=dx.
       cell_length(i) = sqrt(area(i));
 
-      const int nlev_v = (nlev-1)/Spack::n;
-      const int nlev_p = (nlev-1)%Spack::n;
       const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
       const auto& inv_exner_int_surf = 1/exner_int;
 

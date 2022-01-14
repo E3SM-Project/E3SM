@@ -31,6 +31,7 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
+#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -363,6 +364,24 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Complete homme model initialization
   prim_init_model_f90 ();
+
+  // Set up field property checks
+  // Note: We are seeing near epsilon negative values in a handful of places,
+  // The strategy is to
+  // 1. First check that no values are sufficiently negative as to require an error.
+  //    i.e. below some tolerance.
+  // 2. Clip all negative values to zero.
+  // TODO: Construct a more robust check that compares the value of Q against an
+  // average value or maximum value over each column.  That way we can use a relative
+  // error as our threshold, rather than an arbitrary tolerance.
+  // TODO: this *relies* on the two added checks to be run in the same order as they
+  //       are added here. To avoid this assumption, we need a more flexible lower bound
+  //       check, which has one LB for check and one LB for repair.
+  const Real tol = -1e-17;
+  auto lb_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol,false);
+  auto lb_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0,true);
+  auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(lb_check,lb_repair);
+  add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),check_and_repair);
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -1183,31 +1202,6 @@ void HommeDynamics::update_pressure() {
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
   });
-}
-// =========================================================================================
-void HommeDynamics::
-check_computed_fields_impl () {
-    // Note: We are seeing near epsilon negative values in a handful of places,
-    // The strategy is to 
-    // 1. First check that no values are sufficiently negative as to require an error.
-    //    i.e. below some tolerance.
-    // 2. Clip all negative values to zero.
-    // TODO: Construct a more robust check that compares the value of Q against an
-    // average value or maximum value over each column.  That way we can use a relative
-    // error as our threshold, rather than an arbitrary tolerance.
-   
-    // Grab the pointer to the tracer group. 
-    const auto& rgn = m_ref_grid->name();
-          auto& Q   = *get_group_out("Q",rgn).m_bundle;
-    // Create a local copy of a lower bound check to ensure we are not encountering truly
-    // bad negative tracer values.
-    Real tol = -1e-20;
-    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol);
-    lower_bound_check->check(Q);
-    // Now repair negative tracers using a lower bounds check at 0.0
-    auto lower_bound_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0);
-    lower_bound_repair->repair(Q);
-  
 }
 // =========================================================================================
 

@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_NAN_CHECK_HPP
 #define SCREAM_FIELD_NAN_CHECK_HPP
 
+#include "share/field/field_property_check.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 

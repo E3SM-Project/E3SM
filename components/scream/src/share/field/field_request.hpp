@@ -7,6 +7,12 @@
 
 namespace scream {
 
+enum RequestType {
+  Required,
+  Computed,
+  Updated   // For convenience, triggers Required+Computed
+};
+
 // Whether the bundling of a field group (see below) is needed, optional, or not needed.
 enum class Bundling : int {
   Required,

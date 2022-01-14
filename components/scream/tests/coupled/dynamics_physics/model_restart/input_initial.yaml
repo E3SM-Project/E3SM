@@ -20,6 +20,7 @@ Atmosphere Processes:
   Schedule Type: Sequential
   Process 0:
     Process Name: Homme
+    Enable Output Field Checks: false
   Process 1:
     Process Name: SHOC
     Grid: Physics GLL
