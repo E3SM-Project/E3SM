@@ -217,7 +217,6 @@ void P3Microphysics::initialize_impl ()
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv, qc,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
-  std::cout<<"--BALLI[INIT]:Set pointers for q quantities:"<<std::endl;
   prog_state.qc     = p3_preproc.qc_dry;
   prog_state.nc     = get_field_out("nc").get_view<Pack**>();
   prog_state.qr     = get_field_out("qr").get_view<Pack**>();
@@ -227,7 +226,7 @@ void P3Microphysics::initialize_impl ()
   prog_state.ni     = get_field_out("ni").get_view<Pack**>();
   prog_state.bm     = get_field_out("bm").get_view<Pack**>();
   prog_state.th     = p3_preproc.th_atm;
-  prog_state.qv     = p3_preproc.qv;
+  prog_state.qv     = p3_preproc.qv_dry;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = get_field_in("nc_nuceat_tend").get_view<const Pack**>();
   diag_inputs.nccn            = get_field_in("nc_activated").get_view<const Pack**>();
@@ -269,7 +268,6 @@ void P3Microphysics::initialize_impl ()
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
   // -- Set values for the post-amble structure
-  std::cout<<"BALLI[POST----]"<<std::endl;
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv, prog_state.qc,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }

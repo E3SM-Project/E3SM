@@ -5,14 +5,12 @@ namespace scream {
 void P3Microphysics::run_impl (const int dt)
 {
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
-  std::cout<<"--BALLI:Run calling preproc:"<<m_num_cols<<std::endl;
   Kokkos::parallel_for(
     "p3_main_local_vals",
     Kokkos::RangePolicy<>(0,m_num_cols),
     p3_preproc
   ); // Kokkos::parallel_for(p3_main_local_vals)
   Kokkos::fence();
-  std::cout<<"--BALLI:Run preproc DONE:"<<m_num_cols<<std::endl;
 
   // Update the variables in the p3 input structures with local values.
 

@@ -75,7 +75,6 @@ public:
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
-      //std::cout<<"--BALLI[RUN]preproc for col:"<<icol<<std::endl;
       for (int ipack=0;ipack<m_npack;ipack++) {
         // The ipack slice of input variables used more than once
         const Spack& pmid_pack(pmid(icol,ipack));
@@ -108,25 +107,9 @@ public:
         //since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the followinf constituents
         qc_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); // qv is wet at this point
 
-        /*
-        cldliq(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixcldliq),  qv_wet);
-        numliq(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixnumliq),  qv_wet);
-        rain(icol, ipack)        = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixrain),    qv_wet);
-        numrain(icol, ipack)     = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixnumrain), qv_wet);
-        ice(icol, ipack)         = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixcldice),  qv_wet);
-        //Aaron, changed ixqm to ixcldrim to match Kai's code
-        qm(icol, ipack)          = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixcldrim),  qv_wet);
-        numice(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixnumice),  qv_wet);
-        rimvol(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(state%q(:,:,ixrimvol),  qv_wet);
-        //qv_prev_dry(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack));
-        */
         //NOTE: At this point, qv is still in wet mmr. Convert "qv" to "qv_dry" in the end
         //after converting all other constituents to dry mmr
         qv_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
-
-
-
-        std::cout<<"--BALLI[RUN]:preproc opr after qc_dry assign:"<<qc_dry(icol, ipack)<<","<<qc(icol,ipack)<<std::endl;
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
@@ -172,8 +155,6 @@ public:
            const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
            )
     {
-
-      std::cout<<"--BALLI[INIT]:Set var preamble called"<<std::endl;
       m_ncol = ncol;
       m_npack = npack;
       // IN
@@ -228,9 +209,6 @@ public:
 
         // Update qv_prev
         qv_prev(icol,ipack) = qv(icol,ipack);
-
-
-
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
@@ -253,7 +231,6 @@ public:
                     const view_2d& qv_, const view_2d& qc_, const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
                     const view_2d& diag_eff_radius_qi_)
     {
-      std::cout<<"--BALLI[INIT]:Set var POSTamble called"<<std::endl;
       m_ncol  = ncol;
       m_npack = npack;
       // IN

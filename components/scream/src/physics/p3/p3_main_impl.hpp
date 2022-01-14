@@ -185,7 +185,6 @@ Int Functions<S,D>
     const auto ocld_frac_r         = ekat::subview(diagnostic_inputs.cld_frac_r, i);
     const auto ocol_location       = ekat::subview(infrastructure.col_location, i);
     const auto oqc                 = ekat::subview(prognostic_state.qc, i);
-    std::cout<<"BALLI[RUN-P3_MAIN] top of func. qc subview at 0 for col :"<<i<<","<<oqc(0)<<std::endl;
     const auto onc                 = ekat::subview(prognostic_state.nc, i);
     const auto oqr                 = ekat::subview(prognostic_state.qr, i);
     const auto onr                 = ekat::subview(prognostic_state.nr, i);
@@ -240,7 +239,6 @@ Int Functions<S,D>
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
 
-    std::cout<<"BALLI[RUN-P3_MAIN] after part1 qc subview at 0 for col :"<<i<<","<<oqc(0)<<std::endl;
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {
       return; // this is how you do a "continue" in a kokkos lambda
@@ -261,7 +259,6 @@ Int Functions<S,D>
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       pratot, prctot, hydrometeorsPresent, nk);
 
-    std::cout<<"BALLI[RUN-P3_MAIN] after part2 qc subview at 0 for col :"<<i<<","<<oqc(0)<<std::endl;
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
     //      (This is not done above simply for efficiency purposes.)
@@ -312,7 +309,7 @@ Int Functions<S,D>
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
       orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc);
-    std::cout<<"BALLI[RUN-P3_MAIN] after part3 qc subview at 0 for col :"<<i<<","<<oqc(0)<<std::endl;
+
     //
     // merge ice categories with similar properties
 
