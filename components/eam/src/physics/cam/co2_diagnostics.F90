@@ -25,18 +25,20 @@ use cam_logfile    , only: iulog
 use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
 use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
-                           get_curr_date, is_end_curr_month, & 
-                           is_first_restart_step
+                           get_curr_date, is_end_curr_month
 
 implicit none
 private
 save
 
 public co2_diags_init
+public co2_diags_register
 public get_total_carbon
 public get_carbon_sfc_fluxes
 public get_carbon_air_fluxes
 public print_global_carbon_diags
+public co2_diags_store_fields
+public co2_diags_read_fields
 
 ! Number of CO2 tracers
 integer, parameter :: ncnst = 4      ! number of CO2 constituents
@@ -101,6 +103,37 @@ contains
       end do
 
    end subroutine co2_diags_init
+
+!-------------------------------------------------------------------------------
+
+   subroutine co2_diags_register()
+      !-------------------------------------------------
+      ! Purpose: register co2 fields into pbuf
+      !-------------------------------------------------
+      use physics_buffer, only: pbuf_add_field, dtype_r8
+
+      integer :: idx
+
+      if ( .not. co2_transport() ) return
+
+      ! prior CO2 amounts
+      call pbuf_add_field('tc_init',    'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('tc_mnst',    'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('tc_prev',    'global', dtype_r8, (/pcols/), idx)
+      ! monthly accumulated carbon emissions and fluxes
+      call pbuf_add_field('c_mflx_sfc', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_mflx_air', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_mflx_sff', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_mflx_lnd', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_mflx_ocn', 'global', dtype_r8, (/pcols/), idx)
+      ! total accumulated carbon emissions and fluxes
+      call pbuf_add_field('c_iflx_sfc', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_iflx_air', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_iflx_sff', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_iflx_lnd', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_iflx_ocn', 'global', dtype_r8, (/pcols/), idx)
+
+   end subroutine co2_diags_register
 
 !-------------------------------------------------------------------------------
 
@@ -233,7 +266,7 @@ contains
          end do
       end if
 
-      if ( .not. is_first_step() .and. .not. is_first_restart_step() ) then
+      if ( .not. is_first_step() ) then
          do i = 1, ncol
             state%c_iflx_sfc(i) = state%c_iflx_sfc(i) + (sfc_flux(i)     * dtime)
             state%c_iflx_ocn(i) = state%c_iflx_ocn(i) + (sfc_flux_ocn(i) * dtime)
@@ -309,7 +342,7 @@ contains
          end do
       end if
 
-      if ( .not. is_first_step() .and. .not. is_first_restart_step() ) then
+      if ( .not. is_first_step() ) then
          do i = 1, ncol
             state%c_iflx_air(i) = state%c_iflx_air(i) + (air_flux(i) * dtime)
             state%c_mflx_air(i) = state%c_mflx_air(i) + (air_flux(i) * dtime)
@@ -450,7 +483,8 @@ contains
       cdate = year*10000 + mon*100 + day
 
       ! Time step level write outs----------------------------------------------
-      if (masterproc .and. co2_print_diags_timestep .and. (.not. is_first_restart_step())) then
+      if (masterproc .and. co2_print_diags_timestep) then
+
          write(iulog,*   )   ''
          write(iulog,*   )   'NET CO2 FLUXES : period = timestep : date = ',cdate,sec
          write(iulog,C_FA0 ) '  Time  ',   '  Time    '
@@ -499,7 +533,7 @@ contains
          end if
 
          write(iulog, '(71("-"),"|",23("-"))')
-      end if
+      end if ! (masterproc .and. co2_print_diags_timestep)
 
       ! Whole run write outs----------------------------------------------------
       if ( is_last_step() .and. co2_print_diags_total ) then
@@ -562,10 +596,10 @@ contains
 
             write(iulog, '(71("-"),"|",23("-"))')
          end if ! (masterproc)
-      end if ! ( is_last_step() )
+      end if ! ( is_last_step() .and. co2_print_diags_total )
 
       ! Monthly write outs------------------------------------------------------
-      if ( is_end_curr_month() .and. co2_print_diags_monthly) then
+      if ( is_end_curr_month() .and. co2_print_diags_monthly ) then
          if (masterproc) then
             write(iulog,*   )   ''
             write(iulog,*   )   'NET CO2 FLUXES : period = monthly,: date = ',cdate,sec
@@ -625,9 +659,225 @@ contains
 
             write(iulog, '(71("-"),"|",23("-"))')
          end if ! (masterproc)
-      end if ! ( is_last_step() )
+      end if ! ( is_end_curr_month() .and. co2_print_diags_monthly )
 
    end subroutine print_global_carbon_diags
+
+!-------------------------------------------------------------------------------
+
+   subroutine co2_diags_store_fields(state, pbuf2d)
+      !-------------------------------------------------
+      ! Purpose: Store prior CO2 fields in physics buffer
+      ! Called by: phys_run2
+      !-------------------------------------------------
+      use physics_types,  only: physics_state
+      use ppgrid,         only: begchunk, endchunk
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
+                                pbuf_get_index, pbuf_get_chunk
+
+
+      !args
+      type(physics_state), intent(in)        :: state(begchunk:endchunk)
+      type(physics_buffer_desc), pointer     :: pbuf2d(:,:)
+
+      !local vars
+      type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+
+      integer  :: chnk, ncol, i
+      real(r8), pointer, dimension(:) :: tmpptr_tc_init
+      real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
+      real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_ocn
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_sfc
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_ocn
+      integer :: tc_init_idx    = 0
+      integer :: tc_mnst_idx    = 0
+      integer :: tc_prev_idx    = 0
+      integer :: c_mflx_sfc_idx = 0
+      integer :: c_mflx_air_idx = 0
+      integer :: c_mflx_sff_idx = 0
+      integer :: c_mflx_lnd_idx = 0
+      integer :: c_mflx_ocn_idx = 0
+      integer :: c_iflx_sfc_idx = 0
+      integer :: c_iflx_air_idx = 0
+      integer :: c_iflx_sff_idx = 0
+      integer :: c_iflx_lnd_idx = 0
+      integer :: c_iflx_ocn_idx = 0
+
+      if ( .not. co2_transport() ) return
+
+      ! total carbon
+      tc_init_idx    = pbuf_get_index('tc_init')
+      tc_mnst_idx    = pbuf_get_index('tc_mnst')
+      tc_prev_idx    = pbuf_get_index('tc_prev')
+      ! monthly fluxes
+      c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
+      c_mflx_air_idx = pbuf_get_index('c_mflx_air')
+      c_mflx_sff_idx = pbuf_get_index('c_mflx_sff')
+      c_mflx_lnd_idx = pbuf_get_index('c_mflx_lnd')
+      c_mflx_ocn_idx = pbuf_get_index('c_mflx_ocn')
+      ! total fluxes
+      c_iflx_sfc_idx = pbuf_get_index('c_iflx_sfc')
+      c_iflx_air_idx = pbuf_get_index('c_iflx_air')
+      c_iflx_sff_idx = pbuf_get_index('c_iflx_sff')
+      c_iflx_lnd_idx = pbuf_get_index('c_iflx_lnd')
+      c_iflx_ocn_idx = pbuf_get_index('c_iflx_ocn')
+
+      do chnk = begchunk,endchunk
+         ncol = state(chnk)%ncol
+         pbuf_chnk => pbuf_get_chunk(pbuf2d, chnk)
+         ! total carbon
+         call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
+         call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
+         call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         ! monthly fluxes
+         call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
+         call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
+         call pbuf_get_field(pbuf_chnk, c_mflx_sff_idx, tmpptr_c_mflx_sff )
+         call pbuf_get_field(pbuf_chnk, c_mflx_lnd_idx, tmpptr_c_mflx_lnd )
+         call pbuf_get_field(pbuf_chnk, c_mflx_ocn_idx, tmpptr_c_mflx_ocn )
+         ! total fluxes
+         call pbuf_get_field(pbuf_chnk, c_iflx_sfc_idx, tmpptr_c_iflx_sfc )
+         call pbuf_get_field(pbuf_chnk, c_iflx_air_idx, tmpptr_c_iflx_air )
+         call pbuf_get_field(pbuf_chnk, c_iflx_sff_idx, tmpptr_c_iflx_sff )
+         call pbuf_get_field(pbuf_chnk, c_iflx_lnd_idx, tmpptr_c_iflx_lnd )
+         call pbuf_get_field(pbuf_chnk, c_iflx_ocn_idx, tmpptr_c_iflx_ocn )
+         do i = 1, ncol
+            ! total carbon
+            tmpptr_tc_init(i)    = state(chnk)%tc_init(i)
+            tmpptr_tc_mnst(i)    = state(chnk)%tc_mnst(i)
+            tmpptr_tc_prev(i)    = state(chnk)%tc_prev(i)
+            ! monthly fluxes
+            tmpptr_c_mflx_sfc(i) = state(chnk)%c_mflx_sfc(i)
+            tmpptr_c_mflx_air(i) = state(chnk)%c_mflx_air(i)
+            tmpptr_c_mflx_sff(i) = state(chnk)%c_mflx_sff(i)
+            tmpptr_c_mflx_lnd(i) = state(chnk)%c_mflx_lnd(i)
+            tmpptr_c_mflx_ocn(i) = state(chnk)%c_mflx_ocn(i)
+            ! total fluxes
+            tmpptr_c_iflx_sfc(i) = state(chnk)%c_iflx_sfc(i)
+            tmpptr_c_iflx_air(i) = state(chnk)%c_iflx_air(i)
+            tmpptr_c_iflx_sff(i) = state(chnk)%c_iflx_sff(i)
+            tmpptr_c_iflx_lnd(i) = state(chnk)%c_iflx_lnd(i)
+            tmpptr_c_iflx_ocn(i) = state(chnk)%c_iflx_ocn(i)
+         end do
+      end do
+   end subroutine co2_diags_store_fields
+
+!-------------------------------------------------------------------------------
+
+   subroutine co2_diags_read_fields(state, pbuf2d)
+      !-------------------------------------------------
+      ! Purpose: Retrieve prior CO2 fields and 
+      !          set their appropriate state fields
+      ! Called by: phys_run2
+      !-------------------------------------------------
+      use physics_types,  only: physics_state
+      use ppgrid,         only: begchunk, endchunk
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_field, &
+                                pbuf_get_index, pbuf_get_chunk
+
+      type(physics_state), intent(inout) :: state(begchunk:endchunk)
+      type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+      ! local variables
+      type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+      integer ncol                           ! number of atmospheric columns
+      integer chnk                           ! local chunk
+      integer i                              ! column index
+      real(r8), pointer, dimension(:) :: tmpptr_tc_init
+      real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
+      real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_mflx_ocn
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_sfc
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_iflx_ocn
+      integer :: tc_init_idx    = 0
+      integer :: tc_mnst_idx    = 0
+      integer :: tc_prev_idx    = 0
+      integer :: c_mflx_sfc_idx = 0
+      integer :: c_mflx_air_idx = 0
+      integer :: c_mflx_sff_idx = 0
+      integer :: c_mflx_lnd_idx = 0
+      integer :: c_mflx_ocn_idx = 0
+      integer :: c_iflx_sfc_idx = 0
+      integer :: c_iflx_air_idx = 0
+      integer :: c_iflx_sff_idx = 0
+      integer :: c_iflx_lnd_idx = 0
+      integer :: c_iflx_ocn_idx = 0
+      !------------------------------------------------------------------------
+
+      if ( .not. co2_transport() ) return
+
+      ! acquire prior carbon totals from physics buffer
+      tc_init_idx    = pbuf_get_index('tc_init')
+      tc_mnst_idx    = pbuf_get_index('tc_mnst')
+      tc_prev_idx    = pbuf_get_index('tc_prev')
+      ! monthly fluxes
+      c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
+      c_mflx_air_idx = pbuf_get_index('c_mflx_air')
+      c_mflx_sff_idx = pbuf_get_index('c_mflx_sff')
+      c_mflx_lnd_idx = pbuf_get_index('c_mflx_lnd')
+      c_mflx_ocn_idx = pbuf_get_index('c_mflx_ocn')
+      ! total fluxes
+      c_iflx_sfc_idx = pbuf_get_index('c_iflx_sfc')
+      c_iflx_air_idx = pbuf_get_index('c_iflx_air')
+      c_iflx_sff_idx = pbuf_get_index('c_iflx_sff')
+      c_iflx_lnd_idx = pbuf_get_index('c_iflx_lnd')
+      c_iflx_ocn_idx = pbuf_get_index('c_iflx_ocn')
+
+      do chnk=begchunk,endchunk
+         ncol = state(chnk)%ncol
+         pbuf_chnk => pbuf_get_chunk(pbuf2d, chnk)
+         ! total carbon
+         call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
+         call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
+         call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         ! monthly fluxes
+         call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
+         call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
+         call pbuf_get_field(pbuf_chnk, c_mflx_sff_idx, tmpptr_c_mflx_sff )
+         call pbuf_get_field(pbuf_chnk, c_mflx_lnd_idx, tmpptr_c_mflx_lnd )
+         call pbuf_get_field(pbuf_chnk, c_mflx_ocn_idx, tmpptr_c_mflx_ocn )
+         ! total fluxes
+         call pbuf_get_field(pbuf_chnk, c_iflx_sfc_idx, tmpptr_c_iflx_sfc )
+         call pbuf_get_field(pbuf_chnk, c_iflx_air_idx, tmpptr_c_iflx_air )
+         call pbuf_get_field(pbuf_chnk, c_iflx_sff_idx, tmpptr_c_iflx_sff )
+         call pbuf_get_field(pbuf_chnk, c_iflx_lnd_idx, tmpptr_c_iflx_lnd )
+         call pbuf_get_field(pbuf_chnk, c_iflx_ocn_idx, tmpptr_c_iflx_ocn )
+         do i = 1, ncol
+            ! total carbon
+            state(chnk)%tc_init(i)    = tmpptr_tc_init(i)
+            state(chnk)%tc_mnst(i)    = tmpptr_tc_mnst(i)
+            state(chnk)%tc_prev(i)    = tmpptr_tc_prev(i)
+            ! monthly fluxes
+            state(chnk)%c_mflx_sfc(i) = tmpptr_c_mflx_sfc(i)
+            state(chnk)%c_mflx_air(i) = tmpptr_c_mflx_air(i)
+            state(chnk)%c_mflx_sff(i) = tmpptr_c_mflx_sff(i)
+            state(chnk)%c_mflx_lnd(i) = tmpptr_c_mflx_lnd(i)
+            state(chnk)%c_mflx_ocn(i) = tmpptr_c_mflx_ocn(i)
+            ! total fluxes
+            state(chnk)%c_iflx_sfc(i) = tmpptr_c_iflx_sfc(i)
+            state(chnk)%c_iflx_air(i) = tmpptr_c_iflx_air(i)
+            state(chnk)%c_iflx_sff(i) = tmpptr_c_iflx_sff(i)
+            state(chnk)%c_iflx_lnd(i) = tmpptr_c_iflx_lnd(i)
+            state(chnk)%c_iflx_ocn(i) = tmpptr_c_iflx_ocn(i)
+         end do
+      end do
+
+   end subroutine co2_diags_read_fields
 
 !-------------------------------------------------------------------------------
 

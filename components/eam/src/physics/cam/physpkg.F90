@@ -136,6 +136,7 @@ subroutine phys_register
     use convect_shallow,    only: convect_shallow_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
+    use co2_diagnostics,    only: co2_diags_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -261,6 +262,7 @@ subroutine phys_register
 
        ! co2 constituents
        call co2_register()
+       call co2_diags_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -1224,10 +1226,11 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use metdata,        only: get_met_srf2
 #endif
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
-                              is_first_restart_step
+                              is_first_restart_step, is_last_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
-    use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags
+    use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
+                              co2_diags_store_fields, co2_diags_read_fields
     use co2_cycle,      only: co2_transport
     !
     ! Input arguments
@@ -1296,6 +1299,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
+    ! Get carbon conservation fields from pbuf if restarting
+    if ( co2_transport() ) then
+       if ( is_first_restart_step() ) then
+          call co2_diags_read_fields(phys_state, pbuf2d)
+       end if
+    end if
+
     call system_clock(count=beg_proc_cnt)
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
@@ -1348,7 +1358,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     ! Check for carbon conservation
     !
-    if (co2_transport()) then
+    if ( co2_transport() ) then
        do c = begchunk, endchunk
           call get_total_carbon(phys_state(c), 'wet')
        end do
@@ -1356,13 +1366,16 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        do c = begchunk, endchunk
           ncol = get_ncols_p(c)
           phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
-          if (is_first_step() .or. is_first_restart_step()) then
+          if ( is_first_step() ) then
              phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
-          if (is_end_curr_month()) then
+          if ( is_end_curr_month() ) then
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
        end do
+       if ( is_last_step() ) then
+          call co2_diags_store_fields(phys_state, pbuf2d)
+       end if
     end if
 
     call t_startf ('physpkg_st2')
