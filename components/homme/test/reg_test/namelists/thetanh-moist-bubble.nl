@@ -55,7 +55,8 @@
   bubble_moist=.true.
   bubble_T0=300.0
   bubble_dT=2.0
-  bubble_moist_dq=0.2
+  bubble_rh_background=0.7
+  bubble_moist_drh=0.2
   bubble_prec_type=0
 /
 &vert_nl

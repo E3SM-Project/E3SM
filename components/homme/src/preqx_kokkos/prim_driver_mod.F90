@@ -8,6 +8,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
+  use physical_constants, only : rearth
 
   implicit none
 
@@ -88,7 +89,7 @@ contains
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
                                    transport_alg,                                                 &
-                                   dt_remap_factor, dt_tracer_factor)
+                                   dt_remap_factor, dt_tracer_factor, rearth)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

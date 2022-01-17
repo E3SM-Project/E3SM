@@ -154,7 +154,7 @@ program mksurfdat
 
     character(len=32) :: subname = 'mksrfdat'  ! program name
 
-    namelist /clmexp/              &
+    namelist /elmexp/              &
 	 mksrf_fgrid,              &	
 	 mksrf_gridtype,           &	
          mksrf_fvegtyp,            &
@@ -319,7 +319,7 @@ program mksurfdat
     all_urban         = .false.
     no_inlandwet      = .true.
 
-    read(5, clmexp, iostat=ier)
+    read(5, elmexp, iostat=ier)
     if (ier /= 0) then
        write(6,*)'error: namelist input resulted in error code ',ier
        call abort()

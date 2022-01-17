@@ -5784,6 +5784,12 @@ Second-order viscosity applied only near the model top [m^2/s].
 Default: Set by build-namelist.
 </entry>
 
+<entry id="tom_sponge_start" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Bottom of sponge layer in hPa.
+Default: 0 (use default value based on reference pressure at model top).
+</entry>
+
 <entry id="fine_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 baseline ne for scalar hypervis tuning

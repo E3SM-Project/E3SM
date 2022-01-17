@@ -17,6 +17,8 @@
   tstep_type        = 9
   rsplit            = 2
   qsplit            = 2
+  vert_remap_q_alg  = 10
+  vert_remap_u_alg  = 11
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
   nu_p              = 3e16  

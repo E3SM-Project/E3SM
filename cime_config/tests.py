@@ -169,6 +169,7 @@ _TESTS = {
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
@@ -183,8 +184,8 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010",
+            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
+            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 
@@ -243,6 +244,17 @@ _TESTS = {
                "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
+        },
+
+    #e3sm performance-benching of production-like runs
+    "e3sm_prod_bench" : {
+        "tests"   : (
+            "PFS.ne30pg2_r05_oECv3.F2010.bench-noio",
+            "PFS.ne30pg2_r05_oECv3.F20TR.bench-noio",
+            "PFS.ne30pg2_r05_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.bench-noio",
+            )
         },
 
     "fates" : {

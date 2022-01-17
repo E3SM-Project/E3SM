@@ -13,7 +13,6 @@
 #include "ReferenceElement.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
-#include "PhysicalConstants.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
@@ -62,6 +61,12 @@ public:
     setup (geometry, ref_FE);
   }
 
+  //only for unit tests
+  SphereOperators (const Real rearth)
+  {
+    m_rearth   = rearth;
+    m_rrearth  = 1./rearth;
+  }
 
   void setup (const ElementsGeometry& geometry,
               const ReferenceElement& ref_FE) {
@@ -75,6 +80,8 @@ public:
     m_metdet   = geometry.m_metdet;
     m_metinv   = geometry.m_metinv;
     m_spheremp = geometry.m_spheremp;
+    m_rearth   = geometry.m_rearth;
+    m_rrearth  = 1./geometry.m_rearth;
   }
 
   template<typename... Tags>
@@ -143,8 +150,8 @@ public:
         dsdx += dvv(l, i) * scalar(j, i);
         dsdy += dvv(l, i) * scalar(i, j);
       }
-      temp_v_buf(0, j, l) = dsdx * PhysicalConstants::rrearth;
-      temp_v_buf(1, l, j) = dsdy * PhysicalConstants::rrearth;
+      temp_v_buf(0, j, l) = dsdx * m_rrearth;
+      temp_v_buf(1, l, j) = dsdy * m_rrearth;
     });
     kv.team_barrier();
 
@@ -180,8 +187,8 @@ public:
         dsdx += dvv(l, i) * scalar(j, i);
         dsdy += dvv(l, i) * scalar(i, j);
       }
-      temp_v_buf(0, j, l) = dsdx * PhysicalConstants::rrearth;
-      temp_v_buf(1, l, j) = dsdy * PhysicalConstants::rrearth;
+      temp_v_buf(0, j, l) = dsdx * m_rrearth;
+      temp_v_buf(1, l, j) = dsdy * m_rrearth;
     });
     kv.team_barrier();
 
@@ -232,7 +239,7 @@ public:
         dvdy += dvv(igp, kgp) * gv_buf(1, kgp, jgp);
       }
       div_v(igp,jgp) = (dudx + dvdy) * ((1.0 / metdet(igp,jgp)) *
-                                         PhysicalConstants::rrearth);
+                                         m_rrearth);
     });
     kv.team_barrier();
   }
@@ -281,7 +288,7 @@ public:
       for (int jgp = 0; jgp < NP; ++jgp) {
         dd -= (spheremp(ngp, jgp) * gv_buf(0, ngp, jgp) * dvv(jgp, mgp) +
                spheremp(jgp, mgp) * gv_buf(1, jgp, mgp) * dvv(jgp, ngp)) *
-              PhysicalConstants::rrearth;
+              m_rrearth;
       }
       div_v(ngp, mgp) = dd;
     });
@@ -329,7 +336,7 @@ public:
       }
 
       vort(igp, jgp) = (dvdx - dudy) * ((1.0 / metdet(igp, jgp)) *
-                                        PhysicalConstants::rrearth);
+                                        m_rrearth);
     });
     kv.team_barrier();
   }
@@ -394,8 +401,8 @@ public:
           v0 += dvv(jgp, kgp) * scalar(igp, kgp, ilev);
           v1 += dvv(igp, kgp) * scalar(kgp, jgp, ilev);
         }
-        v0 *= PhysicalConstants::rrearth;
-        v1 *= PhysicalConstants::rrearth;
+        v0 *= m_rrearth;
+        v1 *= m_rrearth;
         grad_s(0,igp,jgp,ilev) = D_inv(0,0,igp,jgp) * v0 + D_inv(0,1,igp,jgp) * v1;
         grad_s(1,igp,jgp,ilev) = D_inv(1,0,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1;
       });
@@ -428,8 +435,8 @@ public:
           dsdx += dvv(jgp, kgp) * scalar(igp, kgp, ilev);
           dsdy += dvv(igp, kgp) * scalar(kgp, jgp, ilev);
         }
-        dsdx *= PhysicalConstants::rrearth;
-        dsdy *= PhysicalConstants::rrearth;
+        dsdx *= m_rrearth;
+        dsdy *= m_rrearth;
         grad_s(0,igp,jgp,ilev) += D_inv(0,0,igp,jgp) * dsdx + D_inv(0,1,igp,jgp) * dsdy;
         grad_s(1,igp,jgp,ilev) += D_inv(1,0,igp,jgp) * dsdx + D_inv(1,1,igp,jgp) * dsdy;
       });
@@ -494,7 +501,7 @@ public:
           dudx += dvv(jgp, kgp) * gv_buf(0, igp, kgp, ilev);
           dvdy += dvv(igp, kgp) * gv_buf(1, kgp, jgp, ilev);
         }
-        combine<CM>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * PhysicalConstants::rrearth),
+        combine<CM>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * m_rrearth),
                      div_v(igp, jgp, ilev), alpha, beta);
       });
     });
@@ -549,7 +556,7 @@ public:
         }
         const Scalar qtensijk0 = add_hyperviscosity ? qtens(igp,jgp,ilev) : 0;
         qtens(igp,jgp,ilev) = (qdp(igp,jgp,ilev) +
-                               alpha*((dudx + dvdy) * (1.0 / metdet(igp,jgp) * PhysicalConstants::rrearth)) +
+                               alpha*((dudx + dvdy) * (1.0 / metdet(igp,jgp) * m_rrearth)) +
                                qtensijk0);
       });
     });
@@ -599,7 +606,7 @@ public:
           dudy += dvv(igp, kgp) * vcov_buf(0, kgp, jgp, ilev);
         }
         vort(igp, jgp, ilev) = (dvdx - dudy) * (1.0 / metdet(igp, jgp) *
-                                                PhysicalConstants::rrearth);
+                                                m_rrearth);
       });
     });
     kv.team_barrier();
@@ -649,7 +656,7 @@ public:
           dudy += dvv(igp, kgp) * sphere_buf(0, kgp, jgp, ilev);
         }
         vort(igp, jgp, ilev) = (dvdx - dudy) * (1.0 / metdet(igp, jgp) *
-                                                PhysicalConstants::rrearth);
+                                                m_rrearth);
       });
     });
     kv.team_barrier();
@@ -700,7 +707,7 @@ public:
           // Here, v is the temporary buffer, aliased on the input v.
           dd -= (spheremp(ngp, jgp) * v(0, ngp, jgp, ilev) * dvv(jgp, mgp) +
                  spheremp(jgp, mgp) * v(1, jgp, mgp, ilev) * dvv(jgp, ngp)) *
-                PhysicalConstants::rrearth;
+                m_rrearth;
         }
         div_v(ngp, mgp, ilev) = dd;
       });
@@ -804,8 +811,8 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
         const auto& sb0 = sphere_buf(0, igp, jgp, ilev);
         const auto& sb1 = sphere_buf(1, igp, jgp, ilev);
-        curls(0,igp,jgp,ilev) = (D(0,0,igp,jgp) * sb0 + D(1,0,igp,jgp) * sb1) * PhysicalConstants::rrearth;
-        curls(1,igp,jgp,ilev) = (D(0,1,igp,jgp) * sb0 + D(1,1,igp,jgp) * sb1) * PhysicalConstants::rrearth;
+        curls(0,igp,jgp,ilev) = (D(0,0,igp,jgp) * sb0 + D(1,0,igp,jgp) * sb1) * m_rrearth;
+        curls(1,igp,jgp,ilev) = (D(0,1,igp,jgp) * sb0 + D(1,1,igp,jgp) * sb1) * m_rrearth;
       });
     });
     kv.team_barrier();
@@ -837,10 +844,10 @@ public:
         }
         curls(0,ngp,mgp,ilev) = beta*curls(0,ngp,mgp,ilev) + alpha *
                                 ( D(0,0,ngp,mgp)*sb0 + D(1,0,ngp,mgp)*sb1 )
-                                * PhysicalConstants::rrearth;
+                                * m_rrearth;
         curls(1,ngp,mgp,ilev) = beta*curls(1,ngp,mgp,ilev) + alpha *
                                 ( D(0,1,ngp,mgp)*sb0 + D(1,1,ngp,mgp)*sb1 )
-                              * PhysicalConstants::rrearth;
+                              * m_rrearth;
       });
     });
     kv.team_barrier();
@@ -881,8 +888,8 @@ public:
           b1 -= (mpnj * metinv(1,0,ngp,mgp) * md * snj * djm +
                  mpjm * metinv(1,1,ngp,mgp) * md * sjm * djn);
         }
-        grads(0,ngp,mgp,ilev) = (D(0,0,ngp,mgp) * b0 + D(1,0,ngp,mgp) * b1) * PhysicalConstants::rrearth;
-        grads(1,ngp,mgp,ilev) = (D(0,1,ngp,mgp) * b0 + D(1,1,ngp,mgp) * b1) * PhysicalConstants::rrearth;
+        grads(0,ngp,mgp,ilev) = (D(0,0,ngp,mgp) * b0 + D(1,0,ngp,mgp) * b1) * m_rrearth;
+        grads(1,ngp,mgp,ilev) = (D(0,1,ngp,mgp) * b0 + D(1,1,ngp,mgp) * b1) * m_rrearth;
       });
     });
     kv.team_barrier();
@@ -938,13 +945,13 @@ public:
                                 + vec_sph2cart(0,1,igp,jgp)*laplace1(igp,jgp,ilev)
                                 + vec_sph2cart(0,2,igp,jgp)*laplace2(igp,jgp,ilev)
                                 + 2.0*spheremp(igp,jgp)*vector(0,igp,jgp,ilev)
-                                        *(PhysicalConstants::rrearth)*(PhysicalConstants::rrearth);
+                                        *(m_rrearth)*(m_rrearth);
 
         laplace(1,igp,jgp,ilev) = vec_sph2cart(1,0,igp,jgp)*laplace0(igp,jgp,ilev)
                                 + vec_sph2cart(1,1,igp,jgp)*laplace1(igp,jgp,ilev)
                                 + vec_sph2cart(1,2,igp,jgp)*laplace2(igp,jgp,ilev)
                                 + 2.0*spheremp(igp,jgp)*vector(1,igp,jgp,ilev)
-                                        *(PhysicalConstants::rrearth)*(PhysicalConstants::rrearth);
+                                        *(m_rrearth)*(m_rrearth);
 #else
         laplace(0,igp,jgp,ilev) = vec_sph2cart(0,0,igp,jgp)*laplace0(igp,jgp,ilev)
                                 + vec_sph2cart(0,1,igp,jgp)*laplace1(igp,jgp,ilev)
@@ -996,7 +1003,7 @@ public:
     vorticity_sphere<NUM_LEV_REQUEST,NUM_LEV_IN,NUM_LEV_REQUEST>(kv,vector,vort);
     curl_sphere_wk_testcov_update<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,-1.0,1.0,vort,grad_curl_cov);
 
-    const auto re2 = PhysicalConstants::rrearth*PhysicalConstants::rrearth;
+    const auto re2 = m_rrearth*m_rrearth;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                         [&](const int loop_idx) {
       const int igp = loop_idx / NP; //slow
@@ -1031,6 +1038,9 @@ public:
   ExecViewManaged<const Real * [NP][NP]>        m_metdet;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_d;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_dinv;
+
+  Real m_rearth;
+  Real m_rrearth;
 };
 
 } // namespace Homme

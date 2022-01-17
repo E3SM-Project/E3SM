@@ -39,7 +39,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling,
                                const int& ftype, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg,
-                               const int& dt_remap_factor, const int& dt_tracer_factor)
+                               const int& dt_remap_factor, const int& dt_tracer_factor,
+                               const double& rearth)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -62,13 +63,9 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
-  } else if (remap_alg == 2) {
-    params.remap_alg = RemapAlg::PPM_FIXED_PARABOLA;
-  } else if (remap_alg == 3) {
-    params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
   }
   if (time_step_type==5) {
-    params.time_step_type = TimeStepType::ULLRICH_RK35;;
+    params.time_step_type = TimeStepType::ttype5;
   }
 
   params.limiter_option                = limiter_option;
@@ -92,6 +89,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
   params.use_cpstar                    = use_cpstar;
   params.transport_alg                 = transport_alg;
+  params.rearth                        = rearth;
 
   //set nu_ratios values
   if (params.nu != params.nu_div) {
@@ -236,7 +234,7 @@ void init_elements_c (const int& num_elems)
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv, /* alloc_gradphis = */ false);
+  e.init (num_elems, consthv, /* alloc_gradphis = */ false, params.rearth);
 
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
