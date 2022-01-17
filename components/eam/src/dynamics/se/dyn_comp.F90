@@ -113,8 +113,8 @@ CONTAINS
     integer :: npes_se_stride
 
 #ifdef KOKKOS_TARGET
-#ifdef _OPENMP
-    call endrun( 'kokkos dycore does not run with threads')
+#if defined(HORIZ_OPENMP) || defined(COLUMN_OPENMP)
+    call endrun( 'in this EAM configuration, kokkos dycore does not run with threads yet')
 #endif
 #endif
 
