@@ -922,10 +922,10 @@ if ($co2_cycle) {
 	# (user specification has higher precedence than the true value set above)
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
-	    add_default($nl, 'co2flux_fuel_vrt_emis_file', 'sim_year'=>$sim_year);
 	}
-
-        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.true.');
+ 	
+	#change the default value from '.true.' to '.false.'
+        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.false.');
 
         # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
         # (user specification has higher precedence than the true value set above)
@@ -937,10 +937,6 @@ if ($co2_cycle) {
 
             add_default($nl, 'aircraft_datapath');
             add_default($nl, 'aircraft_type');
-            # This should be the same file as the one in the aircraft_specifier file.
-            # This is a workaround to get this filepath into the cam.input_data_list file
-            # to allow the CESM scripts to obtain all required data for a run.
-            add_default($nl, 'aircraft_co2_file');
 	}		   
     }
 }
