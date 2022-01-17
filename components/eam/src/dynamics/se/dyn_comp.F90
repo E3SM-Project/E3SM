@@ -113,6 +113,12 @@ CONTAINS
     integer :: npes_se
     integer :: npes_se_stride
 
+#ifdef KOKKOS_TARGET
+#ifdef _OPENMP
+    call endrun( 'kokkos dycore does not run with threads')
+#endif
+#endif
+
     !----------------------------------------------------------------------
 
     ! Initialize dynamics grid variables
