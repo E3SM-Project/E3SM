@@ -786,7 +786,6 @@ if (defined $opts{'dyn'}) {
         }
         if (substr($opts{'dyn_target'},0,5) eq 'theta') {
             # theta-l (f code) and theta-l_kokkos (cxx code) use 'theta-l' namelist defaults
-            # ??????????????? or theta ?
             $cfg_ref->set('dyn_target', 'theta-l');
         }
         print  "SE dycore target options:\n";

@@ -145,10 +145,6 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
 
   if (apply_forcing) {
 
-//printf("OG param nsplit %d, param nsplit iter %d \n",params.nsplit,params.nsplit_iteration);
-//std::cout<< "OG in appl forcing for tracers,dt_q " << std::to_string(dt_q)<<"\n";
-//std::cout<< "OG in appl forcing for tracers,dt_q_nsplit " << std::to_string(dt_q_nsplit)<<"\n";
-
     if (params.ftype == ForcingAlg::FORCING_0) apply_cam_forcing_tracers(dt_q);
     if (params.ftype == ForcingAlg::FORCING_2) apply_cam_forcing_tracers(dt_q_nsplit);
   }

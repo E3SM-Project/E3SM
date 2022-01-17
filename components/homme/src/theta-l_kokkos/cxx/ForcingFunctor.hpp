@@ -199,10 +199,6 @@ public:
     constexpr int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
     constexpr int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
-//printf("OG in TagStates!!!!!!!");
-
-
-
     KernelVariables kv(team, m_tu_states);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -224,16 +220,6 @@ public:
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-#if 0
-//printf("i %d,j %d",igp,jgp);
-if(kv.ie == 0   &&  ilev == (NUM_LEV-1) && igp ==0 && jgp == 0){
- //for(int ii=0; ii< 4; ++ii)
- //        for (int jj=0; jj<4; ++jj){
- //      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,ii,jj);
-//printf("i %d,j %d,u after subcycle is %1.29e \n",ii,jj, u(0)[0]);
-printf("OG fvtheta %1.15e , vtheta %1.15e \n",fvtheta(ilev)[7], vtheta(ilev)[7]);
-}
-#endif
 
         vtheta(ilev) += m_dt*fvtheta(ilev);
         phi(ilev) += m_dt*fphi(ilev);
@@ -259,7 +245,6 @@ printf("OG fvtheta %1.15e , vtheta %1.15e \n",fvtheta(ilev)[7], vtheta(ilev)[7])
     m_np1_qdp = np1_qdp;
     m_adjustment = adjustment;
 
-//this should sit in SP
     m_moist = (moisture==MoistDry::MOIST);
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);

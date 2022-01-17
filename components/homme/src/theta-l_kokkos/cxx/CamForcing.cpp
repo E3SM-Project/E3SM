@@ -20,9 +20,6 @@ static void apply_cam_forcing_tracers(const Real dt, ForcingFunctor& ff,
                                       const SimulationParams& p) {
   GPTLstart("ApplyCAMForcing_tracers");
 
-//original
-//  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, false, p.moisture);
-
   bool adjustment = false;
 
   if ( p.ftype == ForcingAlg::FORCING_0) adjustment = false;

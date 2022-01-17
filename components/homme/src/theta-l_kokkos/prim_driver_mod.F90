@@ -425,9 +425,6 @@ contains
 
     ! Test forcing is only for standalone Homme (and only for some tests/configurations)
     if (compute_forcing_and_push_to_c) then
-
-!print *, 'OG IN PUSH FORCING', elem(1)%derived%fvtheta(1,1,72),elem_derived_fvtheta(1,1,72,1)
-
       call compute_test_forcing_dummy(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
       call t_startf('push_to_cxx')
       call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
@@ -472,48 +469,6 @@ contains
     end if
 
   end subroutine prim_run_subcycle
-
-#if 0
-  subroutine setup_element_pointers (elem)
-    use element_state,  only : allocate_element_arrays, elem_state_v, elem_state_w_i, elem_state_vtheta_dp, &
-                               elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, elem_state_phis,       & 
-                               elem_state_Qdp, elem_state_Q, elem_derived_omega_p,                          &
-                               elem_accum_pener, elem_accum_kener, elem_accum_iener,                        &
-                               elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass
-    !
-    ! Inputs
-    !
-    type (element_t), intent(inout) :: elem(:)
-    !
-    ! Locals
-    !
-    integer :: ie
-
-    call allocate_element_arrays(nelemd)
-
-    do ie=1,nelemd
-      elem(ie)%state%v         => elem_state_v(:,:,:,:,:,ie)
-      elem(ie)%state%w_i       => elem_state_w_i(:,:,:,:,ie)
-      elem(ie)%state%vtheta_dp => elem_state_vtheta_dp(:,:,:,:,ie)
-      elem(ie)%state%phinh_i   => elem_state_phinh_i(:,:,:,:,ie)
-      elem(ie)%state%dp3d      => elem_state_dp3d(:,:,:,:,ie)
-      elem(ie)%state%ps_v      => elem_state_ps_v(:,:,:,ie)
-      elem(ie)%state%Q         => elem_state_Q(:,:,:,:,ie)
-      elem(ie)%state%Qdp       => elem_state_Qdp(:,:,:,:,:,ie)
-      elem(ie)%state%phis      => elem_state_phis(:,:,ie)
-      elem(ie)%derived%omega_p => elem_derived_omega_p(:,:,:,ie)
-
-      elem(ie)%accum%KEner     => elem_accum_KEner    (:,:,:,ie)
-      elem(ie)%accum%PEner     => elem_accum_PEner    (:,:,:,ie)
-      elem(ie)%accum%IEner     => elem_accum_IEner    (:,:,:,ie)
-      elem(ie)%accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
-      elem(ie)%accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
-      elem(ie)%accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
-
-    enddo
-
-  end subroutine setup_element_pointers
-#endif
 
 
 !the next 2 routines have logic for push to/from F and for forcing routine
