@@ -140,7 +140,6 @@ _TESTS = {
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
 
