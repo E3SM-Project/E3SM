@@ -659,7 +659,13 @@
 					description="Flag for Langmuir enchancement factor using prognostic waves"
 					possible_values=""
 		/>
-		<nml_option name="config_cvmix_kpp_n_wavenumber_partitions" type="integer" default_value="6" units="NA"
+	</nml_record>
+	<nml_record name="wave_coupling" mode="forward">
+		<nml_option name="config_use_active_wave" type="logical" default_value=".false." units="NA"
+					description="Flag for using prognostic waves"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_n_stokes_drift_wavenumber_partitions" type="integer" default_value="6" units="NA"
 					description="Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile"
 					possible_values="3,4,6"
 		/>
@@ -3452,6 +3458,14 @@
 		/>
 		<var name="stokesDriftMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Meridional component of the wave-induced Stokes drift current."
+			 packages="activeWavePKG"
+		/>
+		<var name="stokesDriftSurfaceZonal" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the wave-induced Stokes surface drift current."
+			 packages="activeWavePKG"
+		/>
+		<var name="stokesDriftSurfaceMeridional" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the wave-induced Stokes surface drift current."
 			 packages="activeWavePKG"
 		/>
 		<var name="significantWaveHeight" type="real" dimensions="nCells Time" units="m"

@@ -47,6 +47,7 @@ module ocn_stokes_drift
    !--------------------------------------------------------------------
 
    public :: ocn_stokes_drift_reconstruct, &
+             ocn_surface_stokes_drift, &
              ocn_stokes_drift_kpp_enhancement_factor, &
              ocn_stokes_drift_langmuir_number, &
              ocn_stokes_drift_init
@@ -165,6 +166,99 @@ contains
       !-----------------------------------------------------------------
 
    end subroutine ocn_stokes_drift_reconstruct!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_stokes_drift
+!
+!> \brief   Reconstructs surface Stokes drift
+!> \author  Steven Brus
+!> \date    December 2021 
+!> \details
+!>   This routine reconstructs the surface Stokes drift velocity
+!>   using partitioned surface Stokes drift in 6 wavenumber bins from 
+!>   an active wave model. 
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_stokes_drift(forcingPool)!{{{
+
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
+
+      type(mpas_pool_type), intent(inout) :: &
+         forcingPool
+
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
+
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      integer :: iCell
+      real(kind=RKIND), dimension(:), pointer  :: stokesDriftSurfaceZonal, stokesDriftSurfaceMeridional
+      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
+
+      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
+                                                 stokesDriftZonalWavenumber2, &
+                                                 stokesDriftZonalWavenumber3, &
+                                                 stokesDriftZonalWavenumber4, &
+                                                 stokesDriftZonalWavenumber5, &
+                                                 stokesDriftZonalWavenumber6
+      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
+                                                 stokesDriftMeridionalWavenumber2, &
+                                                 stokesDriftMeridionalWavenumber3, &
+                                                 stokesDriftMeridionalWavenumber4, &
+                                                 stokesDriftMeridionalWavenumber5, &
+                                                 stokesDriftMeridionalWavenumber6
+
+      !-----------------------------------------------------------------
+
+      call mpas_pool_get_array(forcingPool, 'stokesDriftSurfaceZonal', stokesDriftSurfaceZonal)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftSurfaceMeridional', stokesDriftSurfaceMeridional)
+
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
+
+      do iCell = 1,nCellsAll
+
+         zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
+         zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
+         zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
+         zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
+         zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
+         zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
+
+         meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
+         meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
+         meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
+         meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
+         meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
+         meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
+
+         call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                        stokesDriftSurfaceZonal(iCell), stokesDriftSurfaceMeridional(iCell))
+
+      end do 
+
+      !-----------------------------------------------------------------
+
+   end subroutine ocn_surface_stokes_drift!}}}
 
 !***********************************************************************
 !
@@ -356,7 +450,7 @@ contains
       stokesDriftZonal = 0.0_RKIND
       stokesDriftMeridional = 0.0_RKIND
 
-      do i = 1,config_cvmix_kpp_n_wavenumber_partitions
+      do i = 1,config_n_stokes_drift_wavenumber_partitions
 
          decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(i)*zDepth)
          stokesDriftZonal = stokesDriftZonal + zonalWavenumberCoeff(i)*decayFactor
@@ -413,7 +507,7 @@ contains
       stokesDriftZonalMLAvg = 0.0_RKIND        
       stokesDriftMeridionalMLAvg = 0.0_RKIND
 
-      do i = 1,config_cvmix_kpp_n_wavenumber_partitions
+      do i = 1,config_n_stokes_drift_wavenumber_partitions
          integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(i)*zMLD)) &
                         / (2.0_RKIND*stokesDriftWavenumbers(i))
          stokesDriftZonalMLAvg = stokesDriftZonalMLAvg + zonalWavenumberCoeff(i)*integralFactor
@@ -462,9 +556,9 @@ contains
 
       err = 0
 
-      allocate(stokesDriftWavenumbers(config_cvmix_kpp_n_wavenumber_partitions))
+      allocate(stokesDriftWavenumbers(config_n_stokes_drift_wavenumber_partitions))
 
-      select case (config_cvmix_kpp_n_wavenumber_partitions)
+      select case (config_n_stokes_drift_wavenumber_partitions)
 
          case(3)
            
@@ -496,7 +590,7 @@ contains
          case default
    
            call mpas_log_write(&
-           "Invalid choice for config_cvmix_kpp_n_wavenumber_partitions. Choices are: 3, 4, and 6")
+           "Invalid choice for config_n_stokes_drift_wavenumber_partitions. Choices are: 3, 4, and 6")
            err = 1
 
       end select

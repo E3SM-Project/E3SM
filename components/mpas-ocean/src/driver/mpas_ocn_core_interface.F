@@ -169,7 +169,7 @@ module ocn_core_interface
       logical, pointer :: config_use_time_varying_atmospheric_forcing
       logical, pointer :: config_use_time_varying_land_ice_forcing
       logical, pointer :: config_use_gotm
-      logical, pointer :: config_cvmix_kpp_use_active_wave
+      logical, pointer :: config_use_active_wave
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -406,9 +406,9 @@ module ocn_core_interface
       !
       call mpas_pool_get_package(packagePool, 'activeWavePKGActive', activeWavePKGActive)
       call mpas_pool_get_config(configPool, &
-                               'config_cvmix_kpp_use_active_wave', &
-                                config_cvmix_kpp_use_active_wave)
-      if (config_cvmix_kpp_use_active_wave) then
+                               'config_use_active_wave', &
+                                config_use_active_wave)
+      if (config_use_active_wave) then
          activeWavePKGActive = .true.
       endif
 

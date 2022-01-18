@@ -342,8 +342,9 @@ contains
       end do
       Nsqr_iface(nVertLevelsP1) = 0.0_RKIND
 
-      if (config_cvmix_kpp_use_active_wave) then
-        call ocn_stokes_drift_reconstruct(forcingPool)
+      if (config_use_active_wave) then
+        !call ocn_stokes_drift_reconstruct(forcingPool)
+        call ocn_surface_stokes_drift(forcingPool)
       end if
 
       call mpas_timer_start('cvmix cell loop', .false.)
