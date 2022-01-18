@@ -86,6 +86,14 @@ bind_field (const field_type& src, const field_type& tgt) {
 
   m_fields_are_bound[ifield] = true;
   ++m_num_bound_fields;
+
+  // Check if src and/or tgt is read-only, precluding bwd and/or fwd remap
+  if (src.is_read_only()) {
+    m_bwd_allowed = false;
+  }
+  if (tgt.is_read_only()) {
+    m_fwd_allowed = false;
+  }
 }
 
 void AbstractRemapper::
@@ -100,5 +108,32 @@ registration_ends () {
 
   m_state = RepoState::Closed;
 }
+
+void AbstractRemapper::remap (const bool forward) const {
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
+                     "Error! Cannot perform remapping at this time.\n"
+                     "       Did you forget to call 'registration_ends'?\n");
+
+  EKAT_REQUIRE_MSG(m_num_bound_fields==m_num_fields,
+                     "Error! Not all fields have been set in the remapper.\n"
+                     "       In particular, field " +
+                     std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
+                     " has not been bound.\n");
+
+  if (m_state!=RepoState::Clean) {
+    if (forward) {
+      EKAT_REQUIRE_MSG (m_fwd_allowed,
+                       "Error! Forward remap is not allowed by this remapper.\n"
+                       "       This means that some fields on the target grid are read-only.\n");
+      do_remap_fwd ();
+    } else {
+      EKAT_REQUIRE_MSG (m_bwd_allowed,
+                       "Error! Backward remap is not allowed by this remapper.\n"
+                       "       This means that some fields on the source grid are read-only.\n");
+      do_remap_bwd ();
+    }
+  }
+}
+
 
 } // namespace scream

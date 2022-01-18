@@ -66,25 +66,7 @@ public:
   RepoState get_state () const { return m_state; }
 
   // The actual remap routine.
-  void remap (const bool forward) const {
-    EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
-                       "Error! Cannot perform remapping at this time.\n"
-                       "       Did you forget to call 'registration_ends'?\n");
-
-    EKAT_REQUIRE_MSG(m_num_bound_fields==m_num_fields,
-                       "Error! Not all fields have been set in the remapper.\n"
-                       "       In particular, field " +
-                       std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
-                       " has not been bound.\n");
-
-    if (m_state!=RepoState::Clean) {
-      if (forward) {
-        do_remap_fwd ();
-      } else {
-        do_remap_bwd ();
-      }
-    }
-  }
+  void remap (const bool forward) const;
 
   // Getter methods
   grid_ptr_type get_src_grid () const { return m_src_grid; }
@@ -238,6 +220,12 @@ protected:
     }
     return ifield;
   }
+
+  // These flags will be updated once all fields are bound.
+  // By default, assume both are allowed. During bind_field, if source/target
+  // field is read-only, then bwd/fwd is NOT allowed
+  bool m_fwd_allowed = true;
+  bool m_bwd_allowed = true;
 
   // The state of the remapper
   RepoState     m_state;
