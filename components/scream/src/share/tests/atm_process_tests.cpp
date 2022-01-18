@@ -11,6 +11,7 @@
 #include "share/grid/remap/inverse_remapper.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
+#include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
@@ -177,6 +178,37 @@ public:
   }
 };
 
+class AddOne : public DummyProcess
+{
+public:
+  AddOne (const ekat::Comm& comm,const ekat::ParameterList& params)
+   : DummyProcess(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  // The type of the atm proc
+  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto lt = grid->get_2d_scalar_layout ();
+
+    add_field<Updated>("Field A",lt,K,m_grid_name);
+  }
+protected:
+    void run_impl (const int /* dt */) {
+    auto v = get_field_out("Field A", m_grid_name).get_view<Real*,Host>();
+
+    for (int i=0; i<v.extent_int(0); ++i) {
+      v[i] += Real(1.0);
+    }
+  }
+};
+
+
 // ================================ TESTS ============================== //
 
 TEST_CASE("process_factory", "") {
@@ -318,6 +350,68 @@ TEST_CASE("field_checks", "") {
     } else {
       REQUIRE_NOTHROW (foo->run(1));
     }
+  }
+}
+
+TEST_CASE ("subcycling") {
+  using namespace scream;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // A time stamp
+  util::TimeStamp t0 ({2022,1,1},{0,0,0});
+
+  // Create a grids manager
+  auto gm = create_gm(comm);
+
+  ekat::ParameterList params, params_sub;
+  params.set<std::string>("Process Name", "AddOne");
+  params.set<std::string>("Grid Name", "Point Grid");
+  params_sub.set<std::string>("Process Name", "AddOne");
+  params_sub.set<std::string>("Grid Name", "Point Grid");
+  params_sub.set<int>("Number of Subcycles", 5);
+
+  // Create and init two atm procs, one subcycled and one not subcycled
+  auto ap     = std::make_shared<AddOne>(comm,params);
+  auto ap_sub = std::make_shared<AddOne>(comm,params_sub);
+
+  ap->set_grids(gm);
+  ap_sub->set_grids(gm);
+
+  // Create fields (should be just one) and set it in the atm procs
+  for(const auto& req : ap->get_required_field_requests()) {
+    Field<Real> f(req.fid);
+    f.allocate_view();
+    f.deep_copy(0);
+    f.get_header().get_tracking().update_time_stamp(t0);
+    ap->set_required_field(f.get_const());
+    ap->set_computed_field(f);
+
+    Field<Real> f_sub(req.fid);
+    f_sub.allocate_view();
+    f_sub.deep_copy(0);
+    f_sub.get_header().get_tracking().update_time_stamp(t0);
+    ap_sub->set_required_field(f_sub.get_const());
+    ap_sub->set_computed_field(f_sub);
+  }
+
+  ap->initialize(t0,RunType::Initial);
+  ap_sub->initialize(t0,RunType::Initial);
+
+  // Now run both procs for dt=5.
+  const int dt = 5;
+  ap->run(dt);
+  ap_sub->run(dt);
+
+  // Now, ap_sub should have added one 5 times, while ap only once
+  auto v = ap->get_fields_in().front().get_view<Real*,Host>();
+  auto v_sub = ap_sub->get_fields_in().front().get_view<Real*,Host>();
+
+  // Safety check
+  REQUIRE (v.size()==v_sub.size());
+  for (size_t i=0; i<v.size(); ++i) {
+    REQUIRE (v_sub[i]==5*v[i]);
   }
 }
 

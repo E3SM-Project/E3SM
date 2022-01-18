@@ -430,6 +430,9 @@ private:
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
   TimeStamp m_time_stamp;
+
+  // The number of times this process needs to be subcycled
+  int m_num_subcycles = 1;
 };
 
 // ====================== IMPLEMENTATION ======================= //

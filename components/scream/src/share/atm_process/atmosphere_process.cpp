@@ -4,6 +4,7 @@
 
 #include <set>
 #include <stdexcept>
+#include <string>
 
 namespace scream
 {
@@ -17,6 +18,14 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
+
+  if (m_params.isParameter("Number of Subcycles")) {
+    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  }
+  EKAT_REQUIRE_MSG (m_num_subcycles>0,
+      "Error! Invalid number of subcycles.\n"
+      "  - Atm proc name: " + this->name() + "\n"
+      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 }
 
 void AtmosphereProcess::run (const int dt) {
@@ -25,8 +34,17 @@ void AtmosphereProcess::run (const int dt) {
     check_required_fields();
   }
 
+  EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
+      "Error! The number of subcycle iterations does not exactly divide the time step.\n"
+      "  - Atm proc name: " + this->name() + "\n"
+      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n"
+      "  - Time step    : " + std::to_string(dt) + "\n");
+
   // Let the derived class do the actual run
-  run_impl(dt);
+  auto dt_sub = dt / m_num_subcycles;
+  for (int isub=0; isub<m_num_subcycles; ++isub) {
+    run_impl(dt_sub);
+  }
 
   if (m_params.get("Enable Output Field Checks", true)) {
     // Run any check on required fields that has been stored in this AP
