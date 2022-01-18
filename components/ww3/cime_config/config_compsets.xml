@@ -39,4 +39,9 @@
     <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
   </compset>
 
+<compset>
+  <alias>WAV_WCYCL1850</alias>
+  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
+</compset>
+
 </compsets>
