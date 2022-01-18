@@ -835,6 +835,8 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   ::crm_rad_qc                = real4d( "crm_rad_qc              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_qi                = real4d( "crm_rad_qi              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_cld               = real4d( "crm_rad_cld             ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  ::crm_rad_nc                = real4d( "crm_rad_nc              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  ::crm_rad_ni                = real4d( "crm_rad_ni              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_output_subcycle_factor= real1d( "crm_output_subcycle_factor"                              , pcols); 
   ::crm_output_prectend       = real1d( "crm_output_prectend     "                                , pcols); 
   ::crm_output_precstend      = real1d( "crm_output_precstend    "                                , pcols); 
@@ -975,7 +977,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p, 
                   real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                   real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
-                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
+                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
+                  real *crm_output_subcycle_factor_p, 
                   real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                   real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                   real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
@@ -1019,6 +1022,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   realHost4d crm_rad_qc                = realHost4d( "crm_rad_qc              ",crm_rad_qc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qi                = realHost4d( "crm_rad_qi              ",crm_rad_qi_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_cld               = realHost4d( "crm_rad_cld             ",crm_rad_cld_p              , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_nc                = realHost4d( "crm_rad_nc              ",crm_rad_nc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_ni                = realHost4d( "crm_rad_ni              ",crm_rad_ni_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost1d crm_output_subcycle_factor= realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                             , pcols); 
   realHost1d crm_output_prectend       = realHost1d( "crm_output_prectend     ",crm_output_prectend_p                                      , pcols); 
   realHost1d crm_output_precstend      = realHost1d( "crm_output_precstend    ",crm_output_precstend_p                                     , pcols); 
@@ -1114,6 +1119,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_rad_qc                .deep_copy_to( ::crm_rad_qc                 );
   crm_rad_qi                .deep_copy_to( ::crm_rad_qi                 );
   crm_rad_cld               .deep_copy_to( ::crm_rad_cld                );
+  crm_rad_nc                .deep_copy_to( ::crm_rad_nc                 );
+  crm_rad_ni                .deep_copy_to( ::crm_rad_ni                 );
   crm_output_subcycle_factor.deep_copy_to( ::crm_output_subcycle_factor ); 
   crm_output_prectend       .deep_copy_to( ::crm_output_prectend        ); 
   crm_output_precstend      .deep_copy_to( ::crm_output_precstend       ); 
@@ -1196,7 +1203,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                               real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                               real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
-                              real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
+                              real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
+                              real *crm_output_subcycle_factor_p, 
                               real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                               real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                               real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
@@ -1242,6 +1250,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   realHost4d crm_rad_qc                = realHost4d( "crm_rad_qc              ",crm_rad_qc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qi                = realHost4d( "crm_rad_qi              ",crm_rad_qi_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_cld               = realHost4d( "crm_rad_cld             ",crm_rad_cld_p              , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_nc                = realHost4d( "crm_rad_nc              ",crm_rad_nc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_ni                = realHost4d( "crm_rad_ni              ",crm_rad_ni_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost1d crm_output_subcycle_factor= realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                             , pcols); 
   realHost1d crm_output_prectend       = realHost1d( "crm_output_prectend     ",crm_output_prectend_p                                      , pcols); 
   realHost1d crm_output_precstend      = realHost1d( "crm_output_precstend    ",crm_output_precstend_p                                     , pcols); 
@@ -1338,6 +1348,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_rad_qc              .deep_copy_to(crm_rad_qc              );
   ::crm_rad_qi              .deep_copy_to(crm_rad_qi              );
   ::crm_rad_cld             .deep_copy_to(crm_rad_cld             );
+  ::crm_rad_nc              .deep_copy_to(crm_rad_nc              );
+  ::crm_rad_ni              .deep_copy_to(crm_rad_ni              );
   ::crm_output_subcycle_factor.deep_copy_to(crm_output_subcycle_factor);
   ::crm_output_prectend     .deep_copy_to(crm_output_prectend     );
   ::crm_output_precstend    .deep_copy_to(crm_output_precstend    );
@@ -1462,6 +1474,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_rad_qc                = real4d();
   ::crm_rad_qi                = real4d();
   ::crm_rad_cld               = real4d();
+  ::crm_rad_nc                = real4d();
+  ::crm_rad_ni                = real4d();
   ::crm_output_subcycle_factor= real1d();
   ::crm_output_prectend       = real1d();
   ::crm_output_precstend      = real1d();
@@ -1957,7 +1971,9 @@ real4d crm_rad_temperature;
 real4d crm_rad_qv; 
 real4d crm_rad_qc; 
 real4d crm_rad_qi; 
-real4d crm_rad_cld; 
+real4d crm_rad_cld;
+real4d crm_rad_nc; 
+real4d crm_rad_ni;  
 real1d crm_output_subcycle_factor;
 real1d crm_output_prectend;
 real1d crm_output_precstend; 

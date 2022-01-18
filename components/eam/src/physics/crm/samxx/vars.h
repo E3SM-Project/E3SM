@@ -81,7 +81,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                   real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                   real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p, 
-                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
+                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
+                  real *crm_output_subcycle_factor_p, 
                   real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                   real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                   real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
@@ -114,7 +115,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                               real *crm_state_t_prev_p, real *crm_state_q_prev_p,
                               real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
-                              real *crm_rad_qi_p, real *crm_rad_cld_p, 
+                              real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
                               real *crm_output_subcycle_factor_p, 
                               real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
                               real *crm_output_gicewp_p, real *crm_output_gliqwp_p, 
@@ -462,7 +463,9 @@ extern real4d crm_rad_temperature;
 extern real4d crm_rad_qv; 
 extern real4d crm_rad_qc; 
 extern real4d crm_rad_qi; 
-extern real4d crm_rad_cld; 
+extern real4d crm_rad_cld;
+extern real4d crm_rad_nc; 
+extern real4d crm_rad_ni;  
 extern real1d crm_output_subcycle_factor;
 extern real1d crm_output_prectend;
 extern real1d crm_output_precstend; 

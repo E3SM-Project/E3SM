@@ -2745,7 +2745,7 @@ contains
       ! Reset to false if using MMF with 1-mom scheme
       call phys_getopts(use_MMF_out           = use_MMF          )
       call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      if (use_MMF 
+      if (use_MMF) then
          if (trim(MMF_microphysics_scheme) == 'sam1mom') do_snow_optics = .false.
          if (trim(MMF_microphysics_scheme) == 'p3')      do_snow_optics = .false.
       end if

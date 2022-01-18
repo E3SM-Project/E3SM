@@ -31,6 +31,8 @@ void post_icycle() {
   auto &crm_rad_qi          = :: crm_rad_qi;
   auto &tabs                = :: tabs;
   auto &crm_rad_cld         = :: crm_rad_cld;
+  auto &crm_rad_nc          = :: crm_rad_nc;
+  auto &crm_rad_ni          = :: crm_rad_ni;
   auto &crm_clear_rh        = :: crm_clear_rh;
   auto &crm_clear_rh_cnt    = :: crm_clear_rh_cnt;
   auto &pres                = :: pres;

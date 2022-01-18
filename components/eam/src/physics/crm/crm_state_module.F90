@@ -120,6 +120,11 @@ contains
          call prefetch(state%bm)
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
+         ! Add these here temporarily to avoid a runtime error when in debug mode
+         if (.not. allocated(state%qp))          allocate(state%qp(ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%qn))          allocate(state%qn(ncrms,crm_nx,crm_ny,crm_nz))
+         call prefetch(state%qp)
+         call prefetch(state%qn)
       end if
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (.not. allocated(state%qp))          allocate(state%qp(ncrms,crm_nx,crm_ny,crm_nz))
@@ -164,6 +169,9 @@ contains
          if (allocated(state%bm)) deallocate(state%bm)
          if (allocated(state%t_prev)) deallocate(state%t_prev)
          if (allocated(state%q_prev)) deallocate(state%q_prev)
+         ! Add these here temporarily to avoid a runtime error when in debug mode
+         if (allocated(state%qp)) deallocate(state%qp)
+         if (allocated(state%qn)) deallocate(state%qn)
       end if
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
          if (allocated(state%qp)) deallocate(state%qp)

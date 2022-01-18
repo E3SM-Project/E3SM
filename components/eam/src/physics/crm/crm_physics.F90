@@ -1137,12 +1137,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                dp_g = state(c)%pdel(i,k)/gravit
                do jj = 1,crm_ny
                   do ii = 1,crm_nx
-                     if (MMF_microphysics_scheme .eq. 'm2005' .or. MMF_microphysics_scheme .eq. 'p3') then
+                     if (MMF_microphysics_scheme .eq. 'm2005') then
                         qli_hydro_before(c,i) = qli_hydro_before(c,i)+(crm_state%qr(icrm,ii,jj,m)+ &
                                                                        crm_state%qs(icrm,ii,jj,m)+ &
                                                                        crm_state%qg(icrm,ii,jj,m)) * dp_g
                         qi_hydro_before(c,i)  =  qi_hydro_before(c,i)+(crm_state%qs(icrm,ii,jj,m)+ &
                                                                        crm_state%qg(icrm,ii,jj,m)) * dp_g
+                     else if (MMF_microphysics_scheme .eq. 'p3') then
+                        qli_hydro_before(c,i) = qli_hydro_before(c,i)+(crm_state%qr(icrm,ii,jj,m)) * dp_g
                      else if (MMF_microphysics_scheme .eq. 'sam1mom') then
                         sfactor = max(0._r8,min(1._r8,(crm_state%temperature(icrm,ii,jj,m)-268.16)*1./(283.16-268.16)))
                         qli_hydro_before(c,i) = qli_hydro_before(c,i)+crm_state%qp(icrm,ii,jj,m) * dp_g
@@ -1374,6 +1376,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%t_prev, crm_state%q_prev, &
                crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
                crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
+               crm_rad%nc, crm_rad%ni, &
                crm_output%subcycle_factor, crm_output%prectend, crm_output%precstend, &
                crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
                crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
@@ -1801,6 +1804,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                                                                      crm_state%qg(icrm,ii,jj,m)) * dp_g
                         qi_hydro_after(c,i)  =  qi_hydro_after(c,i)+(crm_state%qs(icrm,ii,jj,m)+ &
                                                                      crm_state%qg(icrm,ii,jj,m)) * dp_g
+                     else if(MMF_microphysics_scheme .eq. 'p3') then 
+                        qli_hydro_after(c,i) = qli_hydro_after(c,i)+(crm_state%qr(icrm,ii,jj,m)) * dp_g
                      else if(MMF_microphysics_scheme .eq. 'sam1mom') then 
                         sfactor = max(0._r8,min(1._r8,(crm_state%temperature(icrm,ii,jj,m)-268.16)*1./(283.16-268.16)))
                         qli_hydro_after(c,i) = qli_hydro_after(c,i)+crm_state%qp(icrm,ii,jj,m) * dp_g

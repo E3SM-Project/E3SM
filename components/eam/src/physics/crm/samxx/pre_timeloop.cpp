@@ -11,6 +11,8 @@ void pre_timeloop() {
   auto &crm_rad_qv                = :: crm_rad_qv;
   auto &crm_rad_qc                = :: crm_rad_qc;
   auto &crm_rad_qi                = :: crm_rad_qi;
+  auto &crm_rad_nc                = :: crm_rad_nc;
+  auto &crm_rad_ni                = :: crm_rad_ni;
   auto &crm_rad_cld               = :: crm_rad_cld;
   auto &crm_clear_rh              = :: crm_clear_rh;
   auto &crm_clear_rh_cnt          = :: crm_clear_rh_cnt;
@@ -205,6 +207,8 @@ void pre_timeloop() {
     crm_rad_qv(k,j,i,icrm)  = 0.0;
     crm_rad_qc(k,j,i,icrm)  = 0.0;
     crm_rad_qi(k,j,i,icrm)  = 0.0;
+    crm_rad_nc(k,j,i,icrm)  = 0.0;
+    crm_rad_ni(k,j,i,icrm)  = 0.0;
     crm_rad_cld(k,j,i,icrm) = 0.0;
   });
   // for (int icrm=0; icrm<ncrms; icrm++) {
