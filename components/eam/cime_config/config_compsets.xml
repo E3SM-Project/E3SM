@@ -260,6 +260,10 @@
     <alias>F-MMFXX-SCM-ARM97</alias>
     <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+  <compset>
+    <alias>F-MMFXX-P3-SCM-ARM97</alias>
+    <lname>AR97_EAM%MMFXX-P3-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
   
   <compset>
     <alias>F-MMF1-SCM-RICO</alias>
