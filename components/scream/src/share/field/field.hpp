@@ -331,11 +331,11 @@ deep_copy (const Field& field_src) {
   EKAT_REQUIRE_MSG (dt==src_dt, "Error! Cannot copy fields with different data type.\n");
 
   if (dt=="int") {
-    deep_copy_impl<int>(field_src);
+    deep_copy_impl<int,HD>(field_src);
   } else if (dt=="float") {
-    deep_copy_impl<float>(field_src);
+    deep_copy_impl<float,HD>(field_src);
   } else if (dt=="double") {
-    deep_copy_impl<double>(field_src);
+    deep_copy_impl<double,HD>(field_src);
   } else {
     EKAT_ERROR_MSG ("Error! Unsupported field data type in Field::deep_copy.\n");
   }
