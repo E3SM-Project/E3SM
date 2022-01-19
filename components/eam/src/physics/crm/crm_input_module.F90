@@ -223,6 +223,12 @@ contains
       if (allocated(input%t_vt)) deallocate(input%t_vt)
       if (allocated(input%q_vt)) deallocate(input%q_vt)
 
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+         if (allocated(input%nccn          ))  deallocate(input%nccn)
+         if (allocated(input%nc_nuceat_tend))  deallocate(input%nc_nuceat_tend)
+         if (allocated(input%ni_activated  ))  deallocate(input%ni_activated)
+      ! end if
+
    end subroutine crm_input_finalize 
 
 end module crm_input_module

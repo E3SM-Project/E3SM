@@ -121,8 +121,8 @@ contains
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
          ! Add these here temporarily to avoid a runtime error when in debug mode
-         if (.not. allocated(state%qp))          allocate(state%qp(ncrms,crm_nx,crm_ny,crm_nz))
-         if (.not. allocated(state%qn))          allocate(state%qn(ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%qp))          allocate(state%qp(1,1,1,1))
+         if (.not. allocated(state%qn))          allocate(state%qn(1,1,1,1))
          call prefetch(state%qp)
          call prefetch(state%qn)
       end if
@@ -131,6 +131,27 @@ contains
          if (.not. allocated(state%qn))          allocate(state%qn(ncrms,crm_nx,crm_ny,crm_nz))
          call prefetch(state%qp)
          call prefetch(state%qn)
+         ! Add these here temporarily to avoid a runtime error when in debug mode
+         if (.not. allocated(state%qc))          allocate(state%qc(1,1,1,1))
+         if (.not. allocated(state%qi))          allocate(state%qi(1,1,1,1))
+         if (.not. allocated(state%qr))          allocate(state%qr(1,1,1,1))
+         if (.not. allocated(state%nc))          allocate(state%nc(1,1,1,1))
+         if (.not. allocated(state%ni))          allocate(state%ni(1,1,1,1))
+         if (.not. allocated(state%nr))          allocate(state%nr(1,1,1,1))
+         if (.not. allocated(state%qm))          allocate(state%qm(1,1,1,1))
+         if (.not. allocated(state%bm))          allocate(state%bm(1,1,1,1))
+         if (.not. allocated(state%t_prev))      allocate(state%t_prev(1,1,1,1))
+         if (.not. allocated(state%q_prev))      allocate(state%q_prev(1,1,1,1))
+         call prefetch(state%qc)
+         call prefetch(state%qi)
+         call prefetch(state%qr)
+         call prefetch(state%nc)
+         call prefetch(state%ni)
+         call prefetch(state%nr)
+         call prefetch(state%qm)
+         call prefetch(state%bm)
+         call prefetch(state%t_prev)
+         call prefetch(state%q_prev)
       end if
 
    end subroutine crm_state_initialize
@@ -157,25 +178,45 @@ contains
          if (allocated(state%nr)) deallocate(state%nr)
          if (allocated(state%ns)) deallocate(state%ns)
          if (allocated(state%ng)) deallocate(state%ng)
-      end if
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+      ! end if
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+      !    if (allocated(state%qc)) deallocate(state%qc)
+      !    if (allocated(state%qi)) deallocate(state%qi)
+      !    if (allocated(state%qr)) deallocate(state%qr)
+      !    if (allocated(state%nc)) deallocate(state%nc)
+      !    if (allocated(state%ni)) deallocate(state%ni)
+      !    if (allocated(state%nr)) deallocate(state%nr)
+      !    if (allocated(state%qm)) deallocate(state%qm)
+      !    if (allocated(state%bm)) deallocate(state%bm)
+      !    if (allocated(state%t_prev)) deallocate(state%t_prev)
+      !    if (allocated(state%q_prev)) deallocate(state%q_prev)
+      !    ! Add these here temporarily to avoid a runtime error when in debug mode
+      !    if (allocated(state%qp)) deallocate(state%qp)
+      !    if (allocated(state%qn)) deallocate(state%qn)
+      ! end if
+      ! if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
+      !    if (allocated(state%qp)) deallocate(state%qp)
+      !    if (allocated(state%qn)) deallocate(state%qn)
+      ! end if
+
+      else
+         if (allocated(state%qp)) deallocate(state%qp)
+         if (allocated(state%qn)) deallocate(state%qn)
+
          if (allocated(state%qc)) deallocate(state%qc)
          if (allocated(state%qi)) deallocate(state%qi)
          if (allocated(state%qr)) deallocate(state%qr)
          if (allocated(state%nc)) deallocate(state%nc)
          if (allocated(state%ni)) deallocate(state%ni)
          if (allocated(state%nr)) deallocate(state%nr)
+
+         if (allocated(state%ns)) deallocate(state%ns)
+         if (allocated(state%ng)) deallocate(state%ng)
+
          if (allocated(state%qm)) deallocate(state%qm)
          if (allocated(state%bm)) deallocate(state%bm)
          if (allocated(state%t_prev)) deallocate(state%t_prev)
          if (allocated(state%q_prev)) deallocate(state%q_prev)
-         ! Add these here temporarily to avoid a runtime error when in debug mode
-         if (allocated(state%qp)) deallocate(state%qp)
-         if (allocated(state%qn)) deallocate(state%qn)
-      end if
-      if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
-         if (allocated(state%qp)) deallocate(state%qp)
-         if (allocated(state%qn)) deallocate(state%qn)
       end if
 
    end subroutine crm_state_finalize
