@@ -152,7 +152,7 @@ void micro_p3_proc() {
  // auto &relvar             = :: relvar;
  auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
  auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
- auto &precip_total_tend  = :: precip_total_tend;
+ // auto &precip_total_tend  = :: precip_total_tend;
  auto &nevapr             = :: nevapr;
  auto &qr_evap_tend       = :: qr_evap_tend;
  auto &mu                 = :: mu;
@@ -176,7 +176,8 @@ void micro_p3_proc() {
 
  // output
  auto &precsfc           = :: precsfc;
- auto &prec_xy           = :: prec_xy;
+ auto &precssfc          = :: precssfc;
+ // auto &prec_xy           = :: prec_xy;
 
  const int nlev  = nzm;
  const int ncol  = ncrms*nx*ny;
@@ -211,25 +212,25 @@ void micro_p3_proc() {
  real2d cldm_in("cldm_in", ncol, nlev);
 
  // p3 output variables 
- real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
- real2d precip_liq_surf_in("precip_liq",ncol, nlev);
- real2d precip_ice_surf_in("precip_ice",ncol, nlev);
- real2d diag_eff_radius_qc_in("diag_eff_qc",ncol, nlev);
- real2d diag_eff_radius_qi_in("diag_eff_qi",ncol, nlev);
- real2d rho_qi_in("rho_qi",ncol, nlev);
- real2d precip_liq_flux_in("precip_liq_flux",ncol, nlev);
- real2d precip_ice_flux_in("precip_ice_flux",ncol, nlev);
+ // real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
+ // real2d precip_liq_surf_in("precip_liq",ncol, nlev);
+ // real2d precip_ice_surf_in("precip_ice",ncol, nlev);
+ // real2d diag_eff_radius_qc_in("diag_eff_qc",ncol, nlev);
+ // real2d diag_eff_radius_qi_in("diag_eff_qi",ncol, nlev);
+ // real2d rho_qi_in("rho_qi",ncol, nlev);
+ // real2d precip_liq_flux_in("precip_liq_flux",ncol, nlev);
+ // real2d precip_ice_flux_in("precip_ice_flux",ncol, nlev);
 
  // p3 output variables
- real2d qv2qi_depos_tend_out("qv2qi_depos_tend", ncol, nlev);
- real2d diag_eff_radius_qc_out("diag_eff_radius_qc", ncol, nlev);
- real2d diag_eff_radius_qi_out("diag_eff_radius_qi", ncol, nlev);
- real2d rho_qi_out("rho_qi", nzm, nx);
- real2d precip_liq_flux_out("precip_liq_flux", ncol, nlev);
- real2d precip_ice_flux_out("precip_ice_flux", ncol, nlev);
+ // real2d qv2qi_depos_tend_out("qv2qi_depos_tend", ncol, nlev);
+ // real2d diag_eff_radius_qc_out("diag_eff_radius_qc", ncol, nlev);
+ // real2d diag_eff_radius_qi_out("diag_eff_radius_qi", ncol, nlev);
+ // real2d rho_qi_out("rho_qi", nzm, nx);
+ // real2d precip_liq_flux_out("precip_liq_flux", ncol, nlev);
+ // real2d precip_ice_flux_out("precip_ice_flux", ncol, nlev);
 
- real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
- real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
+ // real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
+ // real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
 
  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
    int icol = i+nx*(j+ny*icrm);
@@ -326,9 +327,11 @@ void micro_p3_proc() {
   array_to_view(cld_frac_l_in.myData, ncol, nlev, cld_frac_l_d);
   array_to_view(cld_frac_r_in.myData, ncol, nlev, cld_frac_r_d);
 
-  P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
-                                      cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
-                                      exner_d, q_prev_d, t_prev_d};
+  P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, 
+                                      ni_activated_d, inv_qc_relvar_d, 
+                                      cld_frac_i_d, cld_frac_l_d, cld_frac_r_d, 
+                                      pres_d, dz_d, dpres_d,exner_d, 
+                                      q_prev_d, t_prev_d};
 
   view_2d qv2qi_depos_tend_d("qv2qi_depos_tend", ncol, npack),
           diag_eff_radius_qc_d("diag_eff_radius_qc", ncol, npack),
@@ -409,9 +412,11 @@ void micro_p3_proc() {
      int k    = ilev*Spack::n+s;
      if (k < nlev) {
          auto precsfc_tmp = precsfc(j,i,icrm);
-         auto prec_xy_tmp = prec_xy(j,i,icrm);
-         precsfc(j,i,icrm) = precsfc_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
-         prec_xy(j,i,icrm) = prec_xy_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
+         auto precssfc_tmp = precssfc(j,i,icrm);
+         // auto prec_xy_tmp = prec_xy(j,i,icrm);
+         precsfc(j,i,icrm) = precsfc_tmp +(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
+         precssfc(j,i,icrm)= precssfc_tmp+(                                   diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
+         // prec_xy(j,i,icrm) = prec_xy_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
      }
   });
 
