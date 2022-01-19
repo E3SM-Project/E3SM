@@ -26,6 +26,8 @@ FieldIdentifier (const std::string& name,
 {
   // The list of supported data type does not contain 'Real'.
   // If data_type=="real", we find out what Real maps to, and use that.
+  // That's because ekat::TypeMap does not allow duplicates in the keys,
+  // and Real is just an alias to either float or double.
   m_data_type = data_type=="real" ? field_valid_data_types().at<Real>() : data_type;
 
   EKAT_REQUIRE_MSG (is_valid_field_data_type(m_data_type),

@@ -103,8 +103,6 @@ bool FieldNaNCheck::check(const Field& field) const {
     check = check_impl<float>(field);
   } else if (dt=="double") {
     check = check_impl<double>(field);
-  } else if (dt=="real") {
-    check = check_impl<Real>(field);
   } else {
     EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }

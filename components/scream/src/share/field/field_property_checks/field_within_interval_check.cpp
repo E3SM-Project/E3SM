@@ -98,8 +98,6 @@ bool FieldWithinIntervalCheck::check(const Field& field) const {
     check = check_impl<float>(field);
   } else if (dt=="double") {
     check = check_impl<double>(field);
-  } else if (dt=="real") {
-    check = check_impl<Real>(field);
   } else {
     EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }
@@ -214,8 +212,6 @@ void FieldWithinIntervalCheck::repair(Field& field) const {
     repair_impl<float>(field);
   } else if (dt=="double") {
     repair_impl<double>(field);
-  } else if (dt=="real") {
-    repair_impl<Real>(field);
   } else {
     EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }

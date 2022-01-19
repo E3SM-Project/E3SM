@@ -347,8 +347,6 @@ deep_copy (const Field& field_src) {
     deep_copy_impl<float>(field_src);
   } else if (dt=="double") {
     deep_copy_impl<double>(field_src);
-  } else if (dt=="real") {
-    deep_copy_impl<Real>(field_src);
   } else {
     EKAT_ERROR_MSG ("Error! Unsupported field data type in Field::deep_copy.\n");
   }
@@ -419,8 +417,7 @@ deep_copy (const ST value) {
   EKAT_REQUIRE_MSG (
       (std::is_same<ST,int>::value && dt=="int") ||
       (std::is_same<ST,float>::value && dt=="float") ||
-      (std::is_same<ST,double>::value && dt=="double") ||
-      (std::is_same<ST,Real>::value && dt=="real"),
+      (std::is_same<ST,double>::value && dt=="double"),
       "Error! Field data type incompatible with input value type.\n");
 
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this

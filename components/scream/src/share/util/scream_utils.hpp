@@ -20,7 +20,6 @@ inline int get_type_size (const std::string& type) {
     sizes["int"] = sizeof(int);
     sizes["float"] = sizeof(float);
     sizes["double"] = sizeof(double);
-    sizes["real"] = sizeof(Real);
   }
 
   return sizes.at(type);

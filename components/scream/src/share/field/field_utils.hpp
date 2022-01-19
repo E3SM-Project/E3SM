@@ -45,7 +45,7 @@ ST frobenius_norm(const Field& f)
 {
   // Check compatibility between ST and field data type
   const auto& dt = f.get_header().get_identifier().data_type();
-  EKAT_REQUIRE_MSG (dt=="float" || dt=="double" || dt=="real",
+  EKAT_REQUIRE_MSG (dt=="float" || dt=="double",
       "Error! Frobenius norm only allowed for floating-point field value types.\n");
 
   EKAT_REQUIRE_MSG (
