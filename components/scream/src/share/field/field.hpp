@@ -36,7 +36,7 @@ public:
   template<bool c, typename T, typename F>
   using cond_t = typename std::conditional<c,T,F>::type;
 
-  template<bool c, typename T>
+  template<bool c, typename T = void>
   using if_t = typename std::enable_if<c,T>::type;
 
   // Various kokkos-related types
@@ -80,12 +80,6 @@ public:
   // Type of a view given data type, HostOrDevice enum, and memory traits
   template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
   using get_view_type = cond_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
-
-  // template<typename DT>
-  // using uview_type = ekat::Unmanaged<view_type<DT>>;
-
-  // template<typename T, int N>
-  // using dual_view_ND_type = dual_view_type<typename ekat::DataND<T,N>::type>;
 
   // Field stack classes types
   using header_type          = FieldHeader;
