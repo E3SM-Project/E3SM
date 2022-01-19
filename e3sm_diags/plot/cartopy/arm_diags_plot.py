@@ -163,7 +163,6 @@ def plot_convection_onset_statistics(
         ax1.errorbar(
             bin_center,
             pr_binned_mean,
-            xerr=0,
             yerr=errorbar_precip.squeeze(),
             ls="none",
             color="black",
@@ -196,7 +195,6 @@ def plot_convection_onset_statistics(
         ax2.errorbar(
             bin_center,
             pr_probability,
-            xerr=0,
             yerr=errorbar_precip_binom.T,
             fmt="none",
             color="black",
@@ -252,7 +250,7 @@ def plot_convection_onset_statistics(
         freq_precipitating_points[freq_precipitating_points == 0] = np.nan
         freq_cwv[freq_cwv == 0] = np.nan
 
-        # ax3.errorbar(bin_center, freq_precipitating_points, xerr=0, yerr=errorbar_precip_points.squeeze(), ls='none', color='black')
+        # ax3.errorbar(bin_center, freq_precipitating_points, yerr=errorbar_precip_points.squeeze(), ls='none', color='black')
         ax3.scatter(
             bin_center,
             freq_cwv,
