@@ -52,7 +52,10 @@ public:
 
   void repair(Field& field) const override;
 
+// CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
+#ifndef KOKKOS_ENABLE_CUDA
 protected:
+#endif
 
   template<typename ST>
   bool check_impl (const Field& field) const;
@@ -60,6 +63,7 @@ protected:
   template<typename ST>
   void repair_impl(Field& field) const;
 
+protected:
   // Lower and upper bounds.
   double m_lower_bound, m_upper_bound;
 

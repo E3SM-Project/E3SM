@@ -14,16 +14,16 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
   const auto extents = layout.extents();
   const auto size = layout.size();
 
-  int num_nans = 0;
+  int num_invalid = 0;
   switch (layout.rank()) {
     case 1:
       {
         auto v = field.template get_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
-          if (std::isnan(v(i))) {
+          if (ekat::is_invalid(v(i))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     case 2:
@@ -32,10 +32,10 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-          if (std::isnan(v(i,j))) {
+          if (ekat::is_invalid(v(i,j))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     case 3:
@@ -44,10 +44,10 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-          if (std::isnan(v(i,j,k))) {
+          if (ekat::is_invalid(v(i,j,k))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     case 4:
@@ -56,10 +56,10 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-          if (std::isnan(v(i,j,k,l))) {
+          if (ekat::is_invalid(v(i,j,k,l))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     case 5:
@@ -68,10 +68,10 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-          if (std::isnan(v(i,j,k,l,m))) {
+          if (ekat::is_invalid(v(i,j,k,l,m))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     case 6:
@@ -80,17 +80,17 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-          if (isnan(v(i,j,k,l,m,n))) {
+          if (ekat::is_invalid(v(i,j,k,l,m,n))) {
             ++result;
           }
-        }, Kokkos::Sum<int>(num_nans));
+        }, Kokkos::Sum<int>(num_invalid));
       }
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  return num_nans==0;
+  return num_invalid==0;
 }
 
 bool FieldNaNCheck::check(const Field& field) const {
