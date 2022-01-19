@@ -113,6 +113,12 @@ public:
   get_view_type<DT,HD>
   get_view () const;
 
+  // These two getters are convenience function for commonly accessed metadata.
+  // The same info can be extracted from the metadata stored in the FieldHeader
+  const std::string& data_type () const { return get_header().get_identifier().data_type(); }
+  const std::string& name () const { return get_header().get_identifier().name(); }
+  int rank () const { return get_header().get_identifier().get_layout().rank(); }
+
   // WARNING: this is a power-user method. Its implementation, including assumptions
   //          on pre/post conditions, may change in the future. Use at your own risk!
   //          Read carefully the instructions below.
