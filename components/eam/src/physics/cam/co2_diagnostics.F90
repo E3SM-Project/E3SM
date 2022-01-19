@@ -558,7 +558,7 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_iflx_sff / dtime, gtc_iflx_sff
-            write(iulog,C_FF) 'Accumulated Land  Surface Flux ', gtc_iflx_lnd / dtime, gtc_iflx_lnd
+            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_iflx_lnd / dtime, gtc_iflx_lnd
             write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_iflx_ocn / dtime, gtc_iflx_ocn
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) '   *SUM*', &
