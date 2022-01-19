@@ -29,14 +29,8 @@ enum HostOrDevice {
 // A field is composed of metadata info (the header) and a pointer to a view.
 // Fields are always stored as 1D arrays of char-valued data. The associated
 // view can be reshaped as needed to match a desired layout/datatype for a given client.
-
-// class FieldNew {
-// public:
-//   using field_type = FieldNew;
-// #else
 class Field {
 public:
-// #endif
 
   // The syntax of std::enable_if is way too long...
   template<bool c, typename T, typename F>
@@ -237,7 +231,6 @@ protected:
     return ekat::subview_1(v,k);
   }
 
-
   template<HostOrDevice HD, typename T, int N>
   if_t<(N<=2),
        get_view_type<data_nd_t<T,N-1>,HD>>
@@ -246,12 +239,12 @@ protected:
   }
 
   template<HostOrDevice HD,typename T,int N>
-  if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>
-  get_ND_view () const;
+  auto get_ND_view () const
+    -> if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
-  if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>
-  get_ND_view () const;
+  auto get_ND_view () const
+    -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   // Metadata (name, rank, dims, customere/providers, time stamp, ...)
   std::shared_ptr<header_type>            m_header;
@@ -263,9 +256,8 @@ protected:
   bool                  m_is_read_only = false;
 };
 
-// We use this to find a FieldGroup in a std container.
+// We use this to find a Field in a std container.
 // We do NOT allow two entries with same field identifier in such containers.
-// template<typename RT1, typename RT2>
 inline bool operator== (const Field& lhs, const Field& rhs) {
   return lhs.get_header().get_identifier() == rhs.get_header().get_identifier();
 }
