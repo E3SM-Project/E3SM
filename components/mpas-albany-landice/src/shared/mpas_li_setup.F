@@ -39,7 +39,7 @@ module li_setup
    type (mpas_pool_type), public, pointer :: liConfigs  !< Public parameter: pool of config options
    type (mpas_pool_type), public, pointer :: liPackages
 
-
+	
    !--------------------------------------------------------------------
    !
    ! Public member functions
