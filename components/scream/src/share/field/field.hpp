@@ -207,6 +207,9 @@ public:
 protected:
 
   template<typename ST, HostOrDevice HD = Device>
+  void deep_copy_impl (const ST value);
+
+  template<typename ST, HostOrDevice HD = Device>
   void deep_copy_impl (const Field& field_src);
 
   template<HostOrDevice HD>
@@ -340,6 +343,37 @@ deep_copy (const Field& field_src) {
 
 template<typename ST, HostOrDevice HD>
 void Field::
+deep_copy (const ST value) {
+  EKAT_REQUIRE_MSG (not m_is_read_only,
+      "Error! Cannot call deep_copy on read-only fields.\n");
+
+  const auto& dt = get_header().get_identifier().data_type();
+  if (dt=="int") {
+    EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
+        "Error! Input value type is not convertible to field data type.\n"
+        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+        "   - Field data type : " + dt + "\n");
+    deep_copy_impl<int,HD>(value);
+  } else if (dt=="float") {
+    EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
+        "Error! Input value type is not convertible to field data type.\n"
+        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+        "   - Field data type : " + dt + "\n");
+    deep_copy_impl<float,HD>(value);
+  } else if (dt=="double") {
+    EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
+        "Error! Input value type is not convertible to field data type.\n"
+        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+        "   - Field data type : " + dt + "\n");
+    deep_copy_impl<double,HD>(value);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unsupported field data type in Field::deep_copy.\n");
+  }
+}
+
+
+template<typename ST, HostOrDevice HD>
+void Field::
 deep_copy_impl (const Field& field_src) {
 
   const auto& layout     = get_header().get_identifier().get_layout();
@@ -391,20 +425,8 @@ deep_copy_impl (const Field& field_src) {
   }
 }
 
-
 template<typename ST, HostOrDevice HD>
-void Field::
-deep_copy (const ST value) {
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
-
-  const auto& dt = get_header().get_identifier().data_type();
-
-  EKAT_REQUIRE_MSG (
-      (std::is_same<ST,int>::value && dt=="int") ||
-      (std::is_same<ST,float>::value && dt=="float") ||
-      (std::is_same<ST,double>::value && dt=="double"),
-      "Error! Field data type incompatible with input value type.\n");
+void Field::deep_copy_impl (const ST value) {
 
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. Instead, get the
