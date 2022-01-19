@@ -383,14 +383,14 @@ TEST_CASE ("subcycling") {
   for(const auto& req : ap->get_required_field_requests()) {
     Field f(req.fid);
     f.allocate_view();
-    f.deep_copy(0);
+    f.deep_copy<Real>(0);
     f.get_header().get_tracking().update_time_stamp(t0);
     ap->set_required_field(f.get_const());
     ap->set_computed_field(f);
 
     Field f_sub(req.fid);
     f_sub.allocate_view();
-    f_sub.deep_copy(0);
+    f_sub.deep_copy<Real>(0);
     f_sub.get_header().get_tracking().update_time_stamp(t0);
     ap_sub->set_required_field(f_sub.get_const());
     ap_sub->set_computed_field(f_sub);
@@ -405,8 +405,8 @@ TEST_CASE ("subcycling") {
   ap_sub->run(dt);
 
   // Now, ap_sub should have added one 5 times, while ap only once
-  auto v = ap->get_fields_in().front().get_view<Real*,Host>();
-  auto v_sub = ap_sub->get_fields_in().front().get_view<Real*,Host>();
+  auto v = ap->get_fields_in().front().get_view<const Real*,Host>();
+  auto v_sub = ap_sub->get_fields_in().front().get_view<const Real*,Host>();
 
   // Safety check
   REQUIRE (v.size()==v_sub.size());
