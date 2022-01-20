@@ -8,51 +8,51 @@
 <!-- ELM Namelist -->
 <!-- ========================================================================================  -->
 
-<entry id="finidat_interp_source" 
-       type="char*256" 
+<entry id="finidat_interp_source"
+       type="char*256"
        category="datasets"
-       input_pathname="abs" 
+       input_pathname="abs"
        group="elm_inparm"
        valid_values="" >
-If non-blank, then interpinic will be called to interpolate finidat_interp_source and 
+If non-blank, then interpinic will be called to interpolate finidat_interp_source and
 create output file specified by finidat_interp_dest.
 For this to be used finidat MUST BE blank.
 </entry>
 
-<entry id="finidat_interp_dest" 
-       type="char*256" 
+<entry id="finidat_interp_dest"
+       type="char*256"
        category="datasets"
-       input_pathname="abs" 
+       input_pathname="abs"
        group="elm_inparm"
        valid_values="" >
-If finidat_interp_source is set to non-blank, then interpinic will be called 
+If finidat_interp_source is set to non-blank, then interpinic will be called
 to interpolate finidat_interp_source and create output file finidat_interp_dest.
 </entry>
 
-<entry id="finidat" 
-       type="char*256" 
+<entry id="finidat"
+       type="char*256"
        category="datasets"
-       input_pathname="abs" 
+       input_pathname="abs"
        group="elm_inparm"
        valid_values="" >
 Full pathname of initial conditions file. If blank ELM will startup from
 arbitrary initial conditions.
 </entry>
 
-<entry id="nrevsn" 
-       type="char*256" 
+<entry id="nrevsn"
+       type="char*256"
        category="elm_restart"
-       input_pathname="abs" 
+       input_pathname="abs"
        group="elm_inparm"
        valid_values="" >
 Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch)
 (Set with RUN_REFCASE and RUN_REFDATE)
 </entry>
 
-<entry id="fatmlndfrc" 
-       type="char*256" 
+<entry id="fatmlndfrc"
+       type="char*256"
        category="datasets"
-       input_pathname="abs" 
+       input_pathname="abs"
        group="elm_inparm"
        valid_values="" >
 Full pathname of land fraction data file.
@@ -85,8 +85,8 @@ Type of CO2 feedback.
 
 <entry id="suplnitro" type="char*15" category="elm_physics"
        group="elm_inparm" valid_values="NONE,ALL" >
-Supplemental Nitrogen mode and for what type of vegetation it's turned on for. 
-In this mode Nitrogen is unlimited rather than prognosed and in general vegetation is 
+Supplemental Nitrogen mode and for what type of vegetation it's turned on for.
+In this mode Nitrogen is unlimited rather than prognosed and in general vegetation is
 over-productive.
     NONE           = No vegetation types get supplemental Nitrogen
     ALL            = Supplemental Nitrogen is active for all vegetation types
@@ -94,8 +94,8 @@ over-productive.
 
 <entry id="suplphos" type="char*15" category="elm_physics"
        group="elm_inparm" valid_values="NONE,ALL" >
-Supplemental Phosphorus mode and for what type of vegetation it's turned on for. 
-In this mode Phosphorus is unlimited rather than prognosed and in general vegetation is 
+Supplemental Phosphorus mode and for what type of vegetation it's turned on for.
+In this mode Phosphorus is unlimited rather than prognosed and in general vegetation is
 over-productive.
     NONE           = No vegetation types get supplemental Phosphorus
     ALL            = Supplemental Phosphorus is active for all vegetation types
@@ -128,14 +128,14 @@ If TRUE, run forest N/P fertilization experiment
 
 <entry id="ECA_Pconst_RGspin" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" >
-If TRUE, do not allow soil labile, secondary, occcluded, and 
+If TRUE, do not allow soil labile, secondary, occcluded, and
 parent material phosphorus to change, during Regular Spinup,
 for ECA model
 </entry>
 
 <entry id="NFIX_PTASE_plant" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" >
-If TRUE consider priority of plant to get a fraction of 
+If TRUE consider priority of plant to get a fraction of
 symbiotic N fixation and P phosphatase
 </entry>
 
@@ -188,7 +188,7 @@ Interpolate the soil layers on the surface dataset to the soil layers specified 
 <entry id="irrigate" type="logical" category="elm_physics"
        group="elm_inparm"  >
 If TRUE, irrigation will be active.
-</entry> 
+</entry>
 
 <entry id="tw_irr" type="logical" category="elm_physics"
        group="elm_inparm"  >
@@ -267,7 +267,7 @@ Full pathname of land-ice mask data file (on lnd grid).
 
 <entry id="flndtopo" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
-Full pathname of topography data file. Only required when 
+Full pathname of topography data file. Only required when
 land-ice model is active.
 </entry>
 
@@ -308,8 +308,18 @@ Switch deciding which nutrient model to use in FATES.
 </entry>
 
 <entry id="use_fates_fixed_biogeog" type="logical" category="physics"
-        group="elm_inparm" valid_values=".false." value=".false.">
-Toggle to turn on FATES fixed biogeography mode (STUB ONLY, MUST BE FALSE).
+        group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_nocomp" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on FATES no competition mode (only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_sp" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_logging" type="logical" category="physics"
@@ -319,7 +329,7 @@ Toggle to turn on the logging module (only relevant if FATES is being used).
 
 <entry id="use_fates_planthydro" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on plant hydraulics(only relevant if FATES is on).
+Toggle to turn on plant hydraulics (only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_cohort_age_tracking" type="logical" category="physics"
@@ -367,7 +377,7 @@ Full pathname datafile with fates parameters
        input_pathname="abs" group="elm_inparm" valid_values="" >
        Full pathname datafile with soil order dependent constants
 </entry>
-       
+
 <entry id="flanduse_timeseries" type="char*256" category="datasets"
        input_pathname="abs" group="dynamic_subgrid" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of
@@ -379,12 +389,12 @@ the initial surface dataset to vary over time.
 Full pathname of surface data file.
 </entry>
 
-<entry id="fsnowoptics" type="char*256" category="datasets" 
+<entry id="fsnowoptics" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 SNICAR (SNow, ICe, and Aerosol Radiative model) optical data file name
 </entry>
 
-<entry id="fsnowaging" type="char*256"  category="datasets" 
+<entry id="fsnowaging" type="char*256"  category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 SNICAR (SNow, ICe, and Aerosol Radiative model) snow aging data file name
 </entry>
@@ -486,7 +496,7 @@ Per tape series  maximum number of time samples.
 
 <entry id="hist_ndens" type="integer(6)" category="history"
        group="elm_inparm" valid_values="1,2" >
-Per tape series  history file density (i.e. output precision) 
+Per tape series  history file density (i.e. output precision)
     1=double precision
     2=single precision
 <default>Default: 2,2,2,2,2,2</default>
@@ -494,7 +504,7 @@ Per tape series  history file density (i.e. output precision)
 
 <entry id="hist_nhtfrq" type="integer(6)" category="history"
        group="elm_inparm" valid_values="" >
-Per tape series history write frequency. 
+Per tape series history write frequency.
     positive means in time steps
     0=monthly
     negative means hours
@@ -682,7 +692,7 @@ SCRIP format grid data file
        group="elmexp" valid_values="none,64bit_offset,netcdf4" >
 Flag to pass to the ESMF mapping utility, telling it what kind of large
 file support is needed for an output file generated with this grid as
-either the source or destination ('none', '64bit_offset' or 'netcdf4'). 
+either the source or destination ('none', '64bit_offset' or 'netcdf4').
 </entry>
 
 <entry id="scripgriddata_type" type="char*256" category="mkmapdata"
@@ -702,7 +712,7 @@ in its attributes. (Only used if scripgriddata_src_type = UGRID.)
 <!-- mksurfdata namelist                               -->
 <!--                                                   -->
 <entry id="mksrf_filename" type="char*256" category="mksurfdata"
-       group="default_settings" 
+       group="default_settings"
        valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4,mksrf_fgrvl,mksrf_fslp10,mksrf_fero" >
 Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
@@ -1226,16 +1236,16 @@ Mapping file to go from one resolution/land-mask to another resolution/land-mask
 </entry>
 
 <entry id="lmask" type="char*10" category="mksurfdata"
-       group="default_settings"  
+       group="default_settings"
        valid_values="nomask,navy,AVHRR,MODIS,USGS,IGBPmergeICESatGIS,IGBP-GSDP,ISRIC-WISE,LandScan2004,GLOBE-Gardner,GLOBE-Gardner-mergeGIS,GRDC,HYDRO1K-merge-nomask">
 Land mask description for mksurfdata input files
-</entry> 
+</entry>
 
 <entry id="hgrid" type="char*10" category="mksurfdata"
-       group="default_settings"  
+       group="default_settings"
        valid_values="0.1x0.1,0.5x0.5,10x10min,5x5min,360x720cru,0.9x1.25,19basin,1km-merge-10min">
 Horizontal grid resolutions for mksurfdata input files
-</entry> 
+</entry>
 
 
 <!-- ========================================================================================  -->
@@ -1254,40 +1264,40 @@ Add a note to the output namelist about the options given to build-namelist
 
 <entry id="clm_start_type" type="char*8"  category="default_settings"
        group="default_settings" valid_values="default,cold,arb_ic,startup,continue,branch" >
-CLM run type.  
+CLM run type.
     'default' use the default type of clm_start type for this configuration
     'cold' is a run from arbitrary initial conditions
     'arb_ic' is a run using initial conditions if provided, OR arbitrary initial conditions if no files can be found
-    'startup' is an initial run with initial conditions provided.  
+    'startup' is an initial run with initial conditions provided.
     'continue' is a restart run.
     'branch' is a restart run in which properties of the output history files may be changed.
 </entry>
 
 <entry id="res" type="char*30" category="default_settings"
-       group="default_settings"  
+       group="default_settings"
        valid_values=
 "512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne240np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
-</entry> 
+</entry>
 
 <entry id="rcp" type="real" category="default_settings"
-       group="default_settings"  
+       group="default_settings"
        valid_values="-999.9,1-1.9,1-2.6,4-3.4,5-3.4OS,2-4.5,4-6.0,3-7.0,5-8.5,2.6,4.5,6,8.5">
 Representative concentration pathway for future scenarios [radiative forcing at peak or 2100 in W/m^2]
 -999.9 means do NOT use a future scenario, just use historical data.
-</entry> 
+</entry>
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
        valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2">
 Land mask description
-</entry> 
+</entry>
 
 <entry id="irrig" type="logical" category="default_settings"
        group="default_settings"  >
 If TRUE, irrigation will be active (find surface datasets with active irrigation).
-</entry> 
+</entry>
 
 <entry id="sim_year" type="integer" category="default_settings"
        group="default_settings" valid_values=
@@ -1297,7 +1307,7 @@ A sim_year of 1000 corresponds to data used for testing only, NOT corresponding 
 A sim_year greater than 2005 corresponds to rcp scenario data
 Most years are only used for clm_tools and there aren't CLM datasets that correspond to them.
 CLM datasets exist for years: 1000 (for testing), 1850, and 2000
-</entry> 
+</entry>
 
 <entry id="sim_year_range" type="char*9" category="default_settings"
        group="default_settings" valid_values=
@@ -1306,7 +1316,7 @@ Range of years to simulate transitory datasets for (such as dynamic: land-use da
 Constant means simulation will be held at a constant year given in sim_year.
 A sim_year_range of 1000-1002 or 1000-1004 corresponds to data used for testing only, NOT corresponding to any real datasets.
 A sim_year_range that goes beyond 2005 corresponds to historical data until 2005 and then scenario data beyond that point.
-</entry> 
+</entry>
 
 <entry id="clm_demand" type="char*256" category="default_settings"
        group="default_settings" valid_values="">
@@ -1328,8 +1338,8 @@ Command line arguement for turning on CN spinup mode.
 Command line arguement for biogeochemistry mode for CLM4.5
    sp  = Satellitte Phenology
    cn  = Carbon Nitrogen model
-   bgc = CLM4.5 BGC model with: 
-        CENTURY model pools 
+   bgc = CLM4.5 BGC model with:
+        CENTURY model pools
         Methane model
         Vertically resolved Carbon
    fates = functionally assembled terrestrial ecosystem simulator
@@ -1340,20 +1350,20 @@ Command line arguement for biogeochemistry mode for CLM4.5
 <!-- ========================================================================================  -->
 
 <entry id="drydep_method" type="char*16" category="dry-deposition"
-       group="drydep_inparm" 
+       group="drydep_inparm"
        valid_values="xactive_lnd,xactive_atm,table">
 Where dry deposition is calculated (from land, atmosphere, or from a table)
 </entry>
 
-<!-- List of all of the potential Chemical species that can be use for Dry-Deposition 
+<!-- List of all of the potential Chemical species that can be use for Dry-Deposition
      Anything NOT in this list - can NOT be used. As species are added in
        seq_drydep_mod.F90 this list needs to be updated.
-     Note: Species from H2 and thereafter are species that "map" 
+     Note: Species from H2 and thereafter are species that "map"
            to other previous species in the list. The mapping is laid
            out in seq_drydep_mod.F90.
 -->
 <entry id="drydep_list" type="char*32(100)" category="dry-deposition"
-       group="drydep_inparm" 
+       group="drydep_inparm"
        valid_values=
 "OX,H2O2,OH,HO2,CO,CH4,CH3O2,CH3OOH,CH2O,CHOOH,NO,NO2,HNO3,CO2,NH3,N2O5,NO3,CH3OH,HO2NO2,O1D,C2H6,C2H5O2,PO2,MACRO2,ISOPO2,C4H10,CH3CHO,C2H5OOH,C3H6,POOH,C2H4,PAN,CH3COOOH,C10H16,CHOCHO,CH3COCHO,GLYALD,CH3CO3,C3H8,C3H7O2,CH3COCH3,C3H7OOH,RO2,ROOH,Rn,ISOP,MVK,MACR,C2H5OH,ONITR,ONIT,ISOPNO3,HYDRALD,HCN,CH3CN,H2,'HYAC','CH3COOH','O3S','O3INERT','MPAN','ISOPOOH','MACROOH','Pb','XOOH','H2SO4','ALKOOH','MEKOOH','TOLOOH','BENOOH','XYLOOH','TERPOOH','SOGM','SOGI','SOGT','SOGB','SOGX','SOA','SO2','SO4','CB1','CB2','OC1','OC2','NH3','NH4','SA1','SA2','SA3','SA4','HCN','CH3CN','HCOOH','SOAM','SOAI','SOAT','SOAB','SOAX','O3A','XMPAN','XPAN','XNO','XNO2','XHNO3','XONIT','XONITR',XHO2NO2','XNH4NO3','COhc','COme','CO01','CO02','CO03','CO04','CO05','CO06','CO07','CO08','CO09','CO10','CO11','CO12','CO13','CO14','CO15','CO16','CO17','CO18','CO19','CO20','CO21','CO22','CO23','CO24','CO25','CO26','CO27','CO28','CO29','CO30','CO31','CO32','CO33','CO34','CO35','CO36','CO37','CO38','CO39','CO40','CO41','CO42','CO43','CO44','CO45','CO46','CO47','CO48','CO49','CO50','NH4NO3'"
 >
@@ -1371,9 +1381,9 @@ Flag for overriding the crash that should occur if user tries to start the model
 
 <entry id="spinup_state" type="integer" category="elm_vertcn"
        group="elm_inparm" valid_values="0,1" >
-Flag for setting the state of the Accelerated decomposition spinup state for the model.  
-   0 = normal model behavior; 
-   1 = AD spinup.  
+Flag for setting the state of the Accelerated decomposition spinup state for the model.
+   0 = normal model behavior;
+   1 = AD spinup.
 Entering and exiting spinup mode occurs automatically by comparing the namelist and restart file values for this variable.
 </entry>
 
@@ -1479,7 +1489,7 @@ Flag to use the atmospheric time series of C14 concentrations from bomb fallout,
 
 <entry id="atm_c14_filename" type="char*256" category="elm_isotope"
        group="elm_inparm" valid_values="" >
-Filename with time series of atmospheric Delta C14 data.  variables in file are "time" and "atm_delta_c14".  time variable is in format 1950.0, and time values must be monotonically increasing for interpolation, however spacing can be unequal. atm_delta_c14 variable has units of permil.  
+Filename with time series of atmospheric Delta C14 data.  variables in file are "time" and "atm_delta_c14".  time variable is in format 1950.0, and time values must be monotonically increasing for interpolation, however spacing can be unequal. atm_delta_c14 variable has units of permil.
 (EXPERIMENTAL and NOT tested)
 </entry>
 
@@ -1513,7 +1523,7 @@ Minimum lake depth to increase non-molecular thermal diffusivities by the factor
        group="elm_inparm" valid_values="" >
 Factor to increase non-molecular thermal diffusivities for lakes deeper than deepmixing_depthcrit
 to account for unresolved 3D processes.
-Set to 1 to 
+Set to 1 to
 </entry>
 
 <entry id="lake_melt_icealb" type="real(2)" category="elm_lake"
@@ -1528,7 +1538,7 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 <!-- ========================================================================================  -->
 <entry id="reaction_method" type="char*256" category="elm_betr"
        group="betr_inparm" valid_values="" >
-Specify what reaction module will be used within the betr framework. 
+Specify what reaction module will be used within the betr framework.
 </entry>
 
 <entry id="AppParNLFile" type="char*256" category="elm_betr"
@@ -1583,7 +1593,7 @@ Use original CLM4 soil hydraulic properties
 
 <entry id="use_aereoxid_prog" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
-Allows user to tune the value of aereoxid.  If set to FALSE, then use the value of aereoxid from 
+Allows user to tune the value of aereoxid.  If set to FALSE, then use the value of aereoxid from
 the parameter file (set to 0.0, but may be tuned with values in the range {0.0,1.0}.  If set to TRUE,
 then don't fix aere (see ch4Mod.F90).
 <default>Default: .true.</default>
@@ -1652,7 +1662,7 @@ used in the Comp_Name variable on the file.
 MEGAN specifier. This is in the form of: Chem-compound = megan_compound(s)
 where megan_compound(s) can be the sum of megan compounds with a "+" between them.
 In each equation, the item to the left of the equal sign is a CAM chemistry compound, the
-items to the right are compounds known to the MEGAN model (single or combinations). 
+items to the right are compounds known to the MEGAN model (single or combinations).
 For example,
 megan_specifier = 'ISOP = isoprene',
                   'C10H16 = pinene_a + carene_3 + thujene_a'
@@ -1665,13 +1675,13 @@ If TRUE then use mapped MEGAN emissions factors for isoprene.
 </entry>
 
 <entry id="megan_cmpds" type="char*32(150)" category="drv_physics"
-       group="drv_physics" 
+       group="drv_physics"
        valid_values=
 "isoprene,myrcene,sabinene,limonene,carene_3,ocimene_t_b,pinene_b,pinene_a,2met_styrene,cymene_p,cymene_o,phellandrene_a,thujene_a,terpinene_a,terpinene_g,terpinolene,phellandrene_b,camphene,bornene,fenchene_a,ocimene_al,ocimene_c_b,tricyclene,estragole,camphor,fenchone,piperitone,thujone_a,thujone_b,cineole_1_8,borneol,linalool,terpineol_4,terpineol_a,linalool_OXD_c,linalool_OXD_t,ionone_b,bornyl_ACT,farnescene_a,caryophyllene_b,acoradiene,aromadendrene,bergamotene_a,bergamotene_b,bisabolene_a,bisabolene_b,bourbonene_b,cadinene_d,cadinene_g,cedrene_a,copaene_a,cubebene_a,cubebene_b,elemene_b,farnescene_b,germacrene_B,germacrene_D,gurjunene_b,humulene_a,humulene_g,isolongifolene,longifolene,longipinene,muurolene_a,muurolene_g,selinene_b,selinene_d,nerolidol_c,nerolidol_t,cedrol,MBO_2m3e2ol,methanol,acetone,methane,ammonia,nitrous_OXD,nitric_OXD,acetaldehyde,ethanol,formic_acid,formaldehyde,acetic_acid,MBO_3m2e1ol,MBO_3m3e1ol,benzaldehyde,butanone_2,decanal,dodecene_1,geranyl_acetone,heptanal,heptane,hexane,met_benzoate,met_heptenone,neryl_acetone,nonanal,nonenal,octanal,octanol,octenol_1e3ol,oxopentanal,pentane,phenyl_CCO,pyruvic_acid,terpinyl_ACT_a,tetradecene_1,toluene,carbon_monoxide,butene,ethane,ethene,hydrogen_cyanide,propane,propene,carbon_2s,carbonyl_s,diallyl_2s,2met_2s,2met_s,met_chloride,met_bromide,met_iodide,hydrogen_s,met_mercaptan,met_propenyl_2s,PPPP_2s,2met_nonatriene,met_salicylate,indole,jasmone,met_jasmonate,3met_3DCTT,hexanal,hexanol_1,hexenal_c3,hexenal_t2,hexenol_c3,hexenyl_ACT_c3,homosalate,Ehsalate,pentanal,heptanone,anisole,verbenene,benzyl-acetate,myrtenal,benzyl-alcohol,meta-cymenene,ipsenol,Napthalene"
 >
 List of possible MEGAN compounds to use
   (the list used by the simulation is on the megan_factors_file as the Comp_Name)
-</entry> 
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- Namelist options controlling prescribed subgrid dynamics                                  -->
