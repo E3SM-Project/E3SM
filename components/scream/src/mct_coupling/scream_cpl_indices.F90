@@ -93,7 +93,7 @@ module scream_cpl_indices
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_pbot'))    = 'p_mid'
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_shum'))    = 'qv'
     scr_names_a2x(mct_avect_indexra(a2x,'Sa_dens'))    = 'Sa_dens'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_rainl')) = 'precip_liq_surf'
+    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_rainl')) = 'Faxa_rainl'
 
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_u')) = 0
     vec_comp_a2x(mct_avect_indexra(a2x,'Sa_v')) = 1

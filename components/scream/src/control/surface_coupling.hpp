@@ -145,6 +145,7 @@ protected:
   view_1d<device_type,Real> Sa_z;
   view_1d<device_type,Real> Sa_ptem;
   view_1d<device_type,Real> Sa_dens;
+  view_1d<device_type,Real> Faxa_rainl;
   view_1d<device_type,Real> zero_view;
 
   // Dummy field to allow for the storage of the FieldIdentifier for debugging (not currently used)

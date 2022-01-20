@@ -1,6 +1,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "control/surface_coupling.hpp"
+#include "physics/share/physics_constants.hpp"
 
 #include <ekat/util/ekat_test_utils.hpp>
 
@@ -230,6 +231,7 @@ TEST_CASE ("recreate_mct_coupling")
   using FR     = FieldRequest;
   using GR     = GroupRequest;
   using RPDF   = std::uniform_real_distribution<Real>;
+  using C = scream::physics::Constants<Real>;
 
   // Some constants
   constexpr int ncols = 4;
@@ -402,7 +404,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("set_zero",        12);
   coupler.register_export("set_zero",        13);
   coupler.register_export("set_zero",        14);
-  coupler.register_export("precip_liq_surf", 15);
+  coupler.register_export("Faxa_rainl",      15);
   coupler.register_export("set_zero",        16);
   coupler.register_export("set_zero",        17);
   coupler.register_export("set_zero",        18);
@@ -504,7 +506,7 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[4 + icol*num_cpl_exports]  == T_mid_h          (icol,    nlevs-1)); // 5th export
       REQUIRE (export_raw_data[6 + icol*num_cpl_exports]  == qv_h             (icol,    nlevs-1)); // 7th export
       REQUIRE (export_raw_data[7 + icol*num_cpl_exports]  == p_mid_h          (icol,    nlevs-1)); // 8th export
-      REQUIRE (export_raw_data[15 + icol*num_cpl_exports] == precip_liq_surf_h(icol            )); // 16th export
+      REQUIRE (export_raw_data[15 + icol*num_cpl_exports] == C::RHO_H2O*precip_liq_surf_h(icol));  // 16th export
 
       // These exports should be set to 0
       REQUIRE (export_raw_data[1  + icol*num_cpl_exports] == 0); // 2nd export
