@@ -213,7 +213,7 @@ subroutine crm_physics_register()
    call pbuf_add_field('CLD',          'global', dtype_r8,dims_gcm_3D,idx)  ! cloud fraction
    call pbuf_add_field('CONCLD',       'global', dtype_r8,dims_gcm_3D,idx)  ! convective cloud fraction
 
-   if (MMF_microphysics_scheme .eq. 'm2005' .or. MMF_microphysics_scheme .eq. 'p3') then
+   if (MMF_microphysics_scheme .eq. 'm2005') then
       call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
       call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
       call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
@@ -234,14 +234,32 @@ subroutine crm_physics_register()
       if (prog_modal_aero) then
          call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8, dims_gcm_2D, idx)
       endif
+   end if
 
-   else
+   if (MMF_microphysics_scheme .eq. 'sam1mom') then
       call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QP',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QN',    'global', dtype_r8,dims_crm_3D,idx)
    end if
 
    if (MMF_microphysics_scheme .eq. 'p3') then
+      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
+      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
+      ! call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
+      ! call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
+
+      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NR',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QI',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NI',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QC',    'global', dtype_r8,dims_crm_3D,idx)
+
+      if (prog_modal_aero) then
+         call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8, dims_gcm_2D, idx)
+      endif
+
       call pbuf_add_field('CRM_QM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_BM',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_T_PREV','global', dtype_r8,dims_crm_3D,crm_t_prev_idx)
@@ -430,7 +448,8 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call addfld(bpcnst(ixcldrim ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldrim ))//' before physics' )
       call addfld(apcnst(ixrimvol ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrimvol ))//' after physics'  )
       call addfld(bpcnst(ixrimvol ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrimvol ))//' before physics' )
-   else
+   end if
+   if ( MMF_microphysics_scheme .eq. 'm2005' ) then
       call addfld(apcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
       call addfld(apcnst(ixcldice), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
       call addfld(bpcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
@@ -472,8 +491,8 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       else if (MMF_microphysics_scheme .eq. 'p3') then
          call pbuf_set_field(pbuf2d, crm_nc_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
-         call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
-         call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
+         ! call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
+         ! call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_q_prev_idx,0._r8)
          call pbuf_set_field(pbuf2d, crm_t_prev_idx,0._r8)
       end if
@@ -914,16 +933,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NG'), crm_ng)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
          else if (MMF_microphysics_scheme .eq. 'p3') then
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NC'), crm_nc)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QR'), crm_qr)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NR'), crm_nr)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QI'), crm_qi)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NI'), crm_ni)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QS'), crm_qs)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NS'), crm_ns)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QG'), crm_qg)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NG'), crm_ng)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QC'), crm_qc)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
          end if
