@@ -61,7 +61,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto f = m_field_mgr->get_field(fname);
       const auto& src_fid = f.get_header().get_identifier();
-      EKAT_REQUIRE_MSG(src_fid.data_type()==field_valid_data_types ().at<Real>(),
+      EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
       m_remapper->register_field_from_src(src_fid);
     }

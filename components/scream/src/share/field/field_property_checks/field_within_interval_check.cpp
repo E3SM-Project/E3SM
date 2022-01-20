@@ -89,20 +89,16 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
 }
 
 bool FieldWithinIntervalCheck::check(const Field& field) const {
-  const auto& dt = field.get_header().get_identifier().data_type();
-
-  bool check;
-  if (dt=="int") {
-    check = check_impl<int>(field);
-  } else if (dt=="float") {
-    check = check_impl<float>(field);
-  } else if (dt=="double") {
-    check = check_impl<double>(field);
-  } else {
-    EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+  switch (field.data_type()) {
+    case DataType::IntType:
+      return check_impl<int>(field);
+    case DataType::FloatType:
+      return check_impl<float>(field);
+    case DataType::DoubleType:
+      return check_impl<double>(field);
+    default:
+      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }
-
-  return check;
 }
 
 template<typename ST>
@@ -202,18 +198,17 @@ void FieldWithinIntervalCheck::repair(Field& field) const {
   EKAT_REQUIRE_MSG (can_repair(),
       "Error! Field property check misses repair capability.\b"
       "  - Property check: " + name() + "\n"
-      "  - field name    : " + field.get_header().get_identifier().name() + "\n");
+      "  - field name    : " + field.name() + "\n");
 
-  const auto& dt = field.get_header().get_identifier().data_type();
-
-  if (dt=="int") {
-    repair_impl<int>(field);
-  } else if (dt=="float") {
-    repair_impl<float>(field);
-  } else if (dt=="double") {
-    repair_impl<double>(field);
-  } else {
-    EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+  switch (field.data_type()) {
+    case DataType::IntType:
+      repair_impl<int>(field);
+    case DataType::FloatType:
+      repair_impl<float>(field);
+    case DataType::DoubleType:
+      repair_impl<double>(field);
+    default:
+      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }
 }
 

@@ -1,5 +1,4 @@
 #include "share/field/field_header.hpp"
-#include "share/util/scream_utils.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 

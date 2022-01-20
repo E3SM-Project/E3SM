@@ -115,7 +115,7 @@ public:
 
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
-  const std::string& data_type () const { return get_header().get_identifier().data_type(); }
+  DataType data_type () const { return get_header().get_identifier().data_type(); }
   const std::string& name () const { return get_header().get_identifier().name(); }
   int rank () const { return get_header().get_identifier().get_layout().rank(); }
 
@@ -332,18 +332,21 @@ deep_copy (const Field& field_src) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
-  const auto& dt = get_header().get_identifier().data_type();
-  const auto& src_dt = field_src.get_header().get_identifier().data_type();
-  EKAT_REQUIRE_MSG (dt==src_dt, "Error! Cannot copy fields with different data type.\n");
+  EKAT_REQUIRE_MSG (data_type()==field_src.data_type(),
+      "Error! Cannot copy fields with different data type.\n");
 
-  if (dt=="int") {
-    deep_copy_impl<int,HD>(field_src);
-  } else if (dt=="float") {
-    deep_copy_impl<float,HD>(field_src);
-  } else if (dt=="double") {
-    deep_copy_impl<double,HD>(field_src);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unsupported field data type in Field::deep_copy.\n");
+  switch (data_type()) {
+    case DataType::IntType:
+      deep_copy_impl<int,HD>(field_src);
+      break;
+    case DataType::FloatType:
+      deep_copy_impl<float,HD>(field_src);
+      break;
+    case DataType::DoubleType:
+      deep_copy_impl<double,HD>(field_src);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
 }
 
@@ -353,30 +356,33 @@ deep_copy (const ST value) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
-  const auto& dt = get_header().get_identifier().data_type();
-  if (dt=="int") {
-    EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
-        "Error! Input value type is not convertible to field data type.\n"
-        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
-        "   - Field data type : " + dt + "\n");
-    deep_copy_impl<int,HD>(value);
-  } else if (dt=="float") {
-    EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
-        "Error! Input value type is not convertible to field data type.\n"
-        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
-        "   - Field data type : " + dt + "\n");
-    deep_copy_impl<float,HD>(value);
-  } else if (dt=="double") {
-    EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
-        "Error! Input value type is not convertible to field data type.\n"
-        "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
-        "   - Field data type : " + dt + "\n");
-    deep_copy_impl<double,HD>(value);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unsupported field data type in Field::deep_copy.\n");
+  const auto my_data_type = data_type();
+  switch (my_data_type) {
+    case DataType::IntType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<int,HD>(value);
+      break;
+    case DataType::FloatType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<float,HD>(value);
+      break;
+    case DataType::DoubleType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<double,HD>(value);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
 }
-
 
 template<typename ST, HostOrDevice HD>
 void Field::

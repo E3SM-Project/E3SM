@@ -94,20 +94,16 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
 }
 
 bool FieldNaNCheck::check(const Field& field) const {
-  const auto& dt = field.get_header().get_identifier().data_type();
-
-  bool check;
-  if (dt=="int") {
-    check = check_impl<int>(field);
-  } else if (dt=="float") {
-    check = check_impl<float>(field);
-  } else if (dt=="double") {
-    check = check_impl<double>(field);
-  } else {
-    EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+  switch (field.data_type()) {
+    case DataType::IntType:
+      return check_impl<int>(field);
+    case DataType::FloatType:
+      return check_impl<float>(field);
+    case DataType::DoubleType:
+      return check_impl<double>(field);
+    default:
+      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }
-
-  return check;
 }
 
 } // namespace scream

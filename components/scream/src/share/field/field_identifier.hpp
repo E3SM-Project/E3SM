@@ -12,23 +12,51 @@
 namespace scream
 {
 
+// An enum for specifying fields data type
+enum class DataType {
+  IntType,
+  FloatType,
+  DoubleType,
+#ifdef SCREAM_DOUBLE_PRECISION
+  RealType = DoubleType
+#else
+  RealType = FloatType
+#endif
+};
+
+inline std::string e2str (const DataType data_type) {
+  switch (data_type) {
+    case DataType::IntType:    return "int";
+    case DataType::FloatType:  return "float";
+    case DataType::DoubleType: return "double";
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
+  }
+}
+
+inline int get_type_size (const DataType data_type) {
+  switch (data_type) {
+    case DataType::IntType:    return sizeof(int);
+    case DataType::FloatType:  return sizeof(float);
+    case DataType::DoubleType: return sizeof(double);
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
+  }
+}
+
 // A list of currently supported Field data types
 using FieldValidDataTypes = ekat::TypeList<int,float,double>;
-using FieldValidDataNames = ekat::TypeList<std::string,std::string,std::string>;
+using FieldValidDataNames = ekat::TypeList<DataType,DataType,DataType>;
 
 inline ekat::TypeMap<FieldValidDataTypes,FieldValidDataNames>
 field_valid_data_types ()
 {
   ekat::TypeMap<FieldValidDataTypes,FieldValidDataNames> map;
-  map.at<int>() = "int";
-  map.at<float>() = "float";
-  map.at<double>() = "double";
+  map.at<int>()    = DataType::IntType;
+  map.at<float>()  = DataType::FloatType;
+  map.at<double>() = DataType::DoubleType;
 
   return map;
-}
-
-inline bool is_valid_field_data_type (const std::string& name) {
-  return name=="real" || field_valid_data_types().has_v(name);
 }
 
 /*
@@ -60,7 +88,7 @@ public:
                    const layout_type& layout,
                    const Units& units,
                    const std::string& grid_name,
-                   const std::string& data_type);
+                   const DataType data_type);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
   FieldIdentifier& operator= (const FieldIdentifier&) = delete;
@@ -73,7 +101,7 @@ public:
   const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
   const Units&            get_units      () const { return m_units;     }
   const std::string&      get_grid_name  () const { return m_grid_name; }
-  const std::string&      data_type      () const { return m_data_type; }
+  DataType           data_type      () const { return m_data_type; }
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }
@@ -100,7 +128,7 @@ protected:
 
   ci_string       m_grid_name;
 
-  ci_string       m_data_type;
+  DataType   m_data_type;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.
