@@ -365,11 +365,12 @@ void post_timeloop() {
     crm_state_v_wind(k,j,i,icrm) = v(k,j+offy_v,i+offx_v,icrm);
     crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
     crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
-    if (microphysics_scheme == "sam1mom") {
+    if (strcmp(microphysics_scheme, "sam1mom") == 0) {
       crm_state_qt(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
       crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
       crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
-    } else if (microphysics_scheme == "p3") {
+    }
+    if (strcmp(microphysics_scheme, "p3")      == 0) {
       crm_state_qt(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
       // crm_state_qc(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
       crm_state_qc(k,j,i,icrm) = qc(k,j,i,icrm);

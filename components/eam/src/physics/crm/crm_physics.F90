@@ -430,7 +430,16 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       endif
    end do
 
-   
+   if ( MMF_microphysics_scheme .eq. 'sam1mom' ) then
+      call addfld(apcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
+      call addfld(apcnst(ixcldice), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
+      call addfld(bpcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
+      call addfld(bpcnst(ixcldice), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' before physics' )
+      call addfld(apcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' after physics'  )
+      call addfld(apcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' after physics'  )
+      call addfld(bpcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
+      call addfld(bpcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
+   end if
    if ( MMF_microphysics_scheme .eq. 'p3' ) then
       call addfld(apcnst(ixcldliq ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldliq ))//' after physics'  )
       call addfld(bpcnst(ixcldliq ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldliq ))//' before physics' )
@@ -503,8 +512,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICWMRDP')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDDP')     , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('NEVAPR_DPCU'), 0._r8)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('PREC_DP')    , 0._r8)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('SNOW_DP')    , 0._r8)
 
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICWMRSH')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDSH')     , 0._r8)
@@ -599,7 +606,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use crm_output_module,     only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module,only: crm_ecpp_output_type
 
-   use iso_c_binding,         only: c_bool
+   use iso_c_binding,         only: c_bool, C_NULL_CHAR
    use phys_grid,             only: get_rlon_p, get_rlat_p, get_gcol_p  
    use spmd_utils,            only: masterproc
    use openacc_utils,         only: prefetch
@@ -1419,7 +1426,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT, MMF_VT_wn_max, &
-               MMF_microphysics_scheme, &
+               trim(MMF_microphysics_scheme)//C_NULL_CHAR, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
@@ -1773,7 +1780,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_qp(i,:,:,:) = crm_state%qp(icrm,:,:,:)
                crm_qn(i,:,:,:) = crm_state%qn(icrm,:,:,:)
             end if
-            if (MMF_microphysics_scheme .eq. 'm2205') then
+            if (MMF_microphysics_scheme .eq. 'm2005') then
                crm_qc(i,:,:,:) = crm_state%qc(icrm,:,:,:)
                crm_qi(i,:,:,:) = crm_state%qi(icrm,:,:,:)
                crm_nc(i,:,:,:) = crm_state%nc(icrm,:,:,:)

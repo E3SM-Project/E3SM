@@ -75,7 +75,8 @@ void timeloop() {
 
       //---------------------------------------------------------
       //   Ice fall-out
-      if (docloud) { 
+      if (strcmp(microphysics_scheme, "sam1mom") == 0) {
+      // if (docloud) { 
         ice_fall();
       }
 
@@ -99,7 +100,7 @@ void timeloop() {
 // #if defined(shoc)
 //         shoc_proc();
 //#else
-       sgs_proc();
+        sgs_proc();
 //#endif
       }
 
@@ -168,8 +169,8 @@ void timeloop() {
       //-----------------------------------------------------------
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
-        if (microphysics_scheme == "sam1mom") { micro_proc(); }
-        if (microphysics_scheme == "p3"     ) { micro_p3_proc(); }
+        if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_proc(); }
+        if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_proc(); }
       }
 
       //-----------------------------------------------------------

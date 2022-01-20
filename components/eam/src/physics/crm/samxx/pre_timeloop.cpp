@@ -337,20 +337,18 @@ void pre_timeloop() {
     }
   });
 
-  if (microphysics_scheme == "sam1mom") {
-    // Populate microphysics array from crm_state
-    // for (int k=0; k<nzm; k++) {
-    //   for (int j=0; j<ny; j++) {
-    //     for (int i=0; i<nx; i++) {
-    //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  // Populate microphysics array from crm_state
+  // for (int k=0; k<nzm; k++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    if (strcmp(microphysics_scheme, "sam1mom") == 0) {
       micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
       micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
       qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
-    });
-
-  } else if (microphysics_scheme == "p3") {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    }
+    if (strcmp(microphysics_scheme, "p3")      == 0) {
       micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
       // micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
       micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
@@ -361,13 +359,13 @@ void pre_timeloop() {
       micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
       micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
       qc(k,j,i,icrm)                               = crm_state_qc(k,j,i,icrm);
-      t_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_t_prev(plev-k-1,icrm);
-      q_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_q_prev(plev-k-1,icrm);
-   });
-  }
+      t_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_t_prev(k,j,i,icrm);;
+      q_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_q_prev(k,j,i,icrm);;
+    }
+  });
 
-  if (microphysics_scheme == "sam1mom") { micro_init(); }
-  if (microphysics_scheme == "p3"     ) { micro_p3_init(); }
+  if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_init(); }
+  if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_init(); }
   
   sgs_init();
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -456,7 +454,7 @@ void pre_timeloop() {
       t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
       q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
     }
-    if (microphysics_scheme == "p3") {
+    if (strcmp(microphysics_scheme, "p3")      == 0) {
       nccn(k,icrm)           = crm_input_nccn(l,icrm);
       nc_nuceat_tend(k,icrm) = crm_input_nc_nuceat_tend(plev-(k+1),icrm);
       ni_activated(k,icrm)   = crm_input_ni_activated(plev-(k+1),icrm);

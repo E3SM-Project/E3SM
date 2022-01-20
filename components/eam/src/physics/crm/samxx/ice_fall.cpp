@@ -24,8 +24,8 @@ void ice_fall() {
 
   int index_cloud_ice;
 
-  if (microphysics_scheme == "sam1mom") { index_cloud_ice = 0; }
-  if (microphysics_scheme == "p3")      { index_cloud_ice = idx_qi; }
+  if (strcmp(microphysics_scheme, "sam1mom") == 0) { index_cloud_ice = 0; }
+  if (strcmp(microphysics_scheme, "p3")      == 0) { index_cloud_ice = idx_qi; }
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
