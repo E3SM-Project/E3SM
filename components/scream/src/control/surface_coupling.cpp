@@ -42,6 +42,9 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports,
   m_scream_imports_host = Kokkos::create_mirror_view(m_scream_imports_dev);
   m_scream_exports_host = Kokkos::create_mirror_view(m_scream_exports_dev);
 
+  m_cpl_scream_sign_change_dev  = decltype(m_cpl_scream_sign_change_dev)("",num_scream_imports);
+  m_cpl_scream_sign_change_host = Kokkos::create_mirror_view(m_cpl_scream_sign_change_dev);
+
   // These fields contain computation needed for some export fields
   dz    = decltype(dz)    ("", m_num_cols, m_num_levs);
   z_int = decltype(z_int) ("", m_num_cols, m_num_levs+1);
@@ -105,6 +108,14 @@ register_import(const std::string& fname,
 
     // Set cpl index
     info.cpl_idx = cpl_idx;
+
+    // For import fluxes, we must change the sign as cpl and atm interprete the direction differently.
+    if (fname == "surf_mom_flux"    || fname == "surf_sens_flux" ||
+        fname == "surf_latent_flux" || fname == "surf_lw_flux_up") {
+      m_cpl_scream_sign_change_host(m_num_scream_imports) = -1;
+    } else {
+      m_cpl_scream_sign_change_host(m_num_scream_imports) = 1;
+    }
 
     // Get column offset and stride
     get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
@@ -230,6 +241,9 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
   Kokkos::deep_copy(m_scream_imports_dev, m_scream_imports_host);
   Kokkos::deep_copy(m_scream_exports_dev, m_scream_exports_host);
 
+  // Deep copy sign change view to device
+  Kokkos::deep_copy(m_cpl_scream_sign_change_dev, m_cpl_scream_sign_change_host);
+
   if (m_num_scream_imports>0) {
     // Check input pointer
     EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
@@ -266,6 +280,7 @@ void SurfaceCoupling::do_import ()
   // Local copies, to deal with CUDA's handling of *this.
   const auto scream_imports = m_scream_imports_dev;
   const auto cpl_imports_view_d = m_cpl_imports_view_d;
+  const auto cpl_scream_sign_change = m_cpl_scream_sign_change_dev;
   const int num_cols = m_num_cols;
 
   // Deep copy cpl host array to device
@@ -280,7 +295,7 @@ void SurfaceCoupling::do_import ()
     const auto& info = scream_imports(ifield);
 
     auto offset = icol*info.col_stride + info.col_offset;
-    info.data[offset] = cpl_imports_view_d(icol,info.cpl_idx);
+    info.data[offset] = cpl_imports_view_d(icol,info.cpl_idx)*cpl_scream_sign_change(ifield);
   });
 }
 
