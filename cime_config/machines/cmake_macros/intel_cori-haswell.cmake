@@ -1,4 +1,4 @@
-string(APPEND FFLAGS " -fp-model consistent -fimf-use-svml")i
+string(APPEND FFLAGS " -fp-model consistent -fimf-use-svml")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2 -debug minimal -qno-opt-dynamic-align")
 endif()
