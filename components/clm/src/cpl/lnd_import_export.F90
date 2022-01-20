@@ -35,6 +35,14 @@ contains
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use clm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
+
+    ! modules for performance/memory checking
+    use perf_mod         , only : t_startf, t_stopf
+#ifdef TPROF
+    use shr_mem_mod      , only : shr_mem_init, shr_mem_getusage
+    use shr_mpi_mod      , only : shr_mpi_min, shr_mpi_max
+#endif
+
     !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
@@ -107,6 +115,13 @@ contains
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
+
+    !
+    real(r8) :: msize,msize0, msize1     ! memory size (high water)
+    real(r8) :: mrss ,mrss0 , mrss1      ! resident size (current memory use)
+    character(*), parameter :: FormatR = '(A,": =============== ", A31,F12.3,1x,  " ===============")'
+
+
     data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /	
 
     ! Constants to compute vapor pressure
@@ -169,6 +184,7 @@ contains
     ! by 1000 mm/m resulting in an overall factor of unity.
     ! Below the units are therefore given in mm/s.
 
+    call t_startf("lnd_import")
 
     thisng = bounds%endg - bounds%begg + 1
     do g = bounds%begg,bounds%endg
@@ -186,6 +202,18 @@ contains
        ! Determine required receive fields
 
 #ifdef CPL_BYPASS
+
+#ifdef TPROF
+        if(atm2lnd_vars%loaded_bypassdata==0) then
+          call t_startf("lnd_import_cplbypass_dataload")
+          call shr_mem_getusage(msize,mrss)
+          write(1000+iam,*) ' '
+          write(1000+iam,*) '----------------------------------------------------------------------------'
+          write(1000+iam,FormatR) 'cplbypass_prior_read', ' memory highwater  (MB)     = ', msize
+          write(1000+iam,FormatR) 'cplbypass_prior_read', ' memory current usage (MB)  = ', mrss
+        endif
+#endif
+
         !read forcing data directly, bypass coupler
         atm2lnd_vars%forc_flood_grc(g)   = 0._r8
         atm2lnd_vars%volr_grc(g)   = 0._r8 
@@ -402,7 +430,10 @@ contains
             else if (atm2lnd_vars%metsource == 5) then 
                     metdata_fname = 'WCYCL1850S.ne30_' // trim(metvars(v)) // '_0076-0100_z' // zst(2:3) // '.nc'
             end if
-  
+
+#ifdef TPROF
+            call t_startf("cplbypass_metdata_read")
+#endif
             ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
             if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
        
@@ -440,6 +471,14 @@ contains
 
             ierr = nf90_get_var(met_ncids(v), varid, atm2lnd_vars%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))
             ierr = nf90_close(met_ncids(v))
+
+#ifdef TPROF
+            call t_stopf("cplbypass_metdata_read")
+            call shr_mem_getusage(msize,mrss)
+            write(1000+iam,*) ' '
+            write(1000+iam,FormatR) 'cplbypass_metdata_read', ' memory highwater  (MB)     = ', msize
+            write(1000+iam,FormatR) 'cplbypass_metdata_read', ' memory current usage (MB)  = ', mrss
+#endif
     
             if (use_sitedata .and. v == 1) then 
                 starti_site = max((nint(site_metdata(4,1))-atm2lnd_vars%startyear_met) * &
@@ -723,6 +762,9 @@ contains
               close(nu_nml)
               call relavu( nu_nml )
 
+#ifdef TPROF
+              call t_startf("cplbypass_popdens_read")
+#endif
               ierr = nf90_open(trim(stream_fldFileName_popdens), NF90_NOWRITE, ncid)
               ierr = nf90_inq_varid(ncid, 'lat', varid)
               ierr = nf90_get_var(ncid, varid, smap05_lat)
@@ -742,6 +784,15 @@ contains
                   atm2lnd_vars%hdm2 = atm2lnd_vars%hdm1 
               end if
               ierr = nf90_close(ncid)
+
+#ifdef TPROF
+              call t_stopf("cplbypass_popdens_read")
+              call shr_mem_getusage(msize,mrss)
+              write(1000+iam,*) ' '
+              write(1000+iam,FormatR) 'cplbypass_popdens_read', ' memory highwater  (MB)     = ', msize
+              write(1000+iam,FormatR) 'cplbypass_popdens_read', ' memory current usage (MB)  = ', mrss
+#endif
+
           end if
 
           if (i .eq. 1) then 
@@ -792,6 +843,10 @@ contains
           close(nu_nml)
           call relavu( nu_nml )
 
+
+#ifdef TPROF
+          call t_startf("cplbypass_lightng_read")
+#endif
           !Get all of the data (master processor only)
           allocate(atm2lnd_vars%lnfm_all       (192,94,2920))
           ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
@@ -802,6 +857,15 @@ contains
           ierr = nf90_inq_varid(ncid, 'lnfm', varid)
           ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
           ierr = nf90_close(ncid)
+
+#ifdef TPROF
+          call t_stopf("cplbypass_lightng_read")
+          call shr_mem_getusage(msize,mrss)
+          write(1000+iam,*) ' '
+          write(1000+iam,FormatR) 'cplbypass_lightng_read', ' memory highwater  (MB)     = ', msize
+          write(1000+iam,FormatR) 'cplbypass_lightng_read', ' memory current usage (MB)  = ', mrss
+#endif
+
         end if
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. i .eq. 1) then
             call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
@@ -857,6 +921,9 @@ contains
 
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
+ #ifdef TPROF
+            call t_startf("cplbypass_ndep_read")
+#endif
             nu_nml = getavu()
             open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
             call find_nlgroup_name(nu_nml, 'ndepdyn_nml', status=nml_error)
@@ -888,6 +955,15 @@ contains
               atm2lnd_vars%ndep2 = atm2lnd_vars%ndep1
             end if
             ierr = nf90_close(ncid)
+
+#ifdef TPROF
+            call t_stopf("cplbypass_ndep_read")
+            call shr_mem_getusage(msize,mrss)
+            write(1000+iam,*) ' '
+            write(1000+iam,FormatR) 'cplbypass_ndep_read', ' memory highwater  (MB)     = ', msize
+            write(1000+iam,FormatR) 'cplbypass_ndep_read', ' memory current usage (MB)  = ', mrss
+#endif
+
            end if
            if (i .eq. 1) then
               call mpi_bcast (atm2lnd_vars%ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
@@ -928,6 +1004,11 @@ contains
    !------------------------------------Aerosol forcing--------------------------------------------------
        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
+
+#ifdef TPROF
+            call t_startf("cplbypass_aero_read")
+#endif
+
             aerovars(1) = 'BCDEPWET'
             aerovars(2) = 'BCPHODRY'
             aerovars(3) = 'BCPHIDRY'
@@ -957,6 +1038,15 @@ contains
               ierr = nf90_get_var(ncid, varid, atm2lnd_vars%aerodata(av,:,:,:), starti, counti)
             end do
             ierr = nf90_close(ncid)
+
+#ifdef TPROF
+            call t_stopf("cplbypass_aero_read")
+            call shr_mem_getusage(msize,mrss)
+            write(1000+iam,*) ' '
+            write(1000+iam,FormatR) 'cplbypass_aero_read', ' memory highwater  (MB)     = ', msize
+            write(1000+iam,FormatR) 'cplbypass_aero_read', ' memory current usage (MB)  = ', mrss
+#endif
+
           end if
           if (i .eq. 1) then 
              call mpi_bcast (atm2lnd_vars%aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
@@ -1095,6 +1185,10 @@ contains
 #ifdef CPL_BYPASS
         !atmospheric CO2 (to be used for transient simulations only)
         if (atm2lnd_vars%loaded_bypassdata .eq. 0) then 
+
+#ifdef TPROF
+          call t_startf("cplbypass_co2_read")
+#endif
           ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
           if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input CO2 file, please check!' )
           ierr = nf90_inq_dimid(ncid, 'time', dimid)
@@ -1104,6 +1198,14 @@ contains
           ierr = nf90_inq_varid(ncid, 'C13O2', varid)
           ierr = nf90_get_var(ncid, varid, atm2lnd_vars%c13o2_input(:,:,1:thistimelen))
           ierr = nf90_close(ncid)
+
+#ifdef TPROF
+          call t_stopf("cplbypass_co2_read")
+          call shr_mem_getusage(msize,mrss)
+          write(1000+iam,*) ' '
+          write(1000+iam,FormatR) 'cplbypass_co2_read', ' memory highwater  (MB)     = ', msize
+          write(1000+iam,FormatR) 'cplbypass_co2_read', ' memory current usage (MB)  = ', mrss
+#endif
         end if
 
         !get weights/indices for interpolation (assume values represent annual averages)
@@ -1150,8 +1252,33 @@ contains
           glc2lnd_vars%icemask_coupled_fluxes_grc(g)  = x2l(index_x2l_Sg_icemask_coupled_fluxes,i)
        end if
 
-    end do     
+    end do
+
 #ifdef CPL_BYPASS
+
+#ifdef TPROF
+    if(atm2lnd_vars%loaded_bypassdata==0) then
+      call t_stopf("lnd_import_cplbypass_dataload")
+      !
+      call shr_mem_getusage(msize,mrss)
+      write(1000+iam,*) ' '
+      write(1000+iam,FormatR) 'cplbypass_dataload - done', ' memory highwater  (MB)     = ', msize
+      write(1000+iam,FormatR) 'cplbypass_dataload - done', ' memory current usage (MB)  = ', mrss
+      if (masterproc) then
+        call shr_mpi_min(msize ,msize0,mpicom,' cplbypass_dataload msize0', all=.true.)
+        call shr_mpi_max(msize ,msize1,mpicom,' cplbypass_dataload msize1', all=.true.)
+        call shr_mpi_min(mrss  ,mrss0,mpicom,'  cplbypass_dataload mrss0',  all=.true.)
+        call shr_mpi_max(mrss  ,mrss1,mpicom,'  cplbypass_dataload mrss1',  all=.true.)
+        write(1000+iam,*) ' '
+        write(1000+iam,*) ' SUMMARY for all mpi ranks ',' ----------------------------------------------'
+        write(1000+iam,FormatR) ' ',' pes min memory highwater  (MB)  = ',msize0
+        write(1000+iam,FormatR) ' ',' pes max memory highwater  (MB)  = ',msize1
+        write(1000+iam,FormatR) ' ',' pes min memory last usage (MB)  = ',mrss0
+        write(1000+iam,FormatR) ' ',' pes max memory last usage (MB)  = ',mrss1
+      endif
+    endif
+#endif
+
     atm2lnd_vars%loaded_bypassdata = 1
 #endif
 
