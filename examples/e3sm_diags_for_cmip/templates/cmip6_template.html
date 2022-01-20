@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet"  href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css"/>
+
+    <title>E3SM Diags for CMIP6</title>
+  </head>
+  <body>
+
+    <div class="jumbotron text-center">
+      <h1>E3SM Diags for CMIP6</h1>
+      <p>A look at CMIP6 models from a familiar vantage point</p>
+    </div>
+
+    <div class="container alert alert-warning" role="alert">
+      Warning: Data and plots presented on this page should be considered experimental and not used for publications.
+    </div>
+
+    <div class="container">
+
+    <h1>AMIP simulations (1980-2014)</h1>
+
+    <label for="select">Show RMSE for</label>
+    <select id="amipSelect">
+{%- for field in fields[0].name %}
+  {%- if loop.index == 1 %}
+      <option value="{{ loop.index }}" selected>{{ field }}</option>
+  {%- else %}
+      <option value="{{ loop.index }}">{{ field }}</option>
+  {%- endif %}
+{%- endfor %}
+    </select>
+
+      <table id="table_amip" class="display nowrap" width="100%">
+        <thead>
+          <tr>
+{%- for col in header[0] %}
+            <th>{{ col }}</th>
+{%- endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+{%- for row in content[0] %}
+          <tr>
+  {%- for item in row %}
+            <td>{{ item }}</td>
+  {%- endfor %}
+          </tr>
+{%- endfor %}
+        </tbody>
+      </table>
+
+    </div>
+    <div class="col-xs-12" style="height:70px;"></div>
+    <div class="container">
+
+    <h1>Historical simulations (1980-2014)</h1>
+
+    <label for="select">Show RMSE for</label>
+    <select id="histSelect">
+{%- for field in fields[1].name %}
+  {%- if loop.index == 1 %}
+      <option value="{{ loop.index }}" selected>{{ field }}</option>
+  {%- else %}
+      <option value="{{ loop.index }}">{{ field }}</option>
+  {%- endif %}
+{%- endfor %}
+    </select>
+
+      <table id="table_hist" class="display nowrap" width="100%">
+        <thead>
+          <tr>
+{%- for col in header[1] %}
+            <th>{{ col }}</th>
+{%- endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+{%- for row in content[1] %}
+          <tr>
+  {%- for item in row %}
+            <td>{{ item }}</td>
+  {%- endfor %}
+          </tr>
+{%- endfor %}
+        </tbody>
+      </table>
+
+
+    </div>
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+
+    <!-- Custom -->
+    <script>
+$(document).ready( function () {
+  $('body').on('change', '#amipSelect', function(e) {
+
+      // Hide all columns first
+      table_amip.columns().visible(false);
+    
+      // Now, make only selected columns visible
+{%- for visible in fields[0].visible %}      
+  {%- if loop.index == 1 %}
+      if (this.value == '{{ loop.index }}') {
+         table_amip.columns({{ visible }}).visible(true);
+  {%- else %}
+      } else if (this.value == '{{ loop.index }}') {
+         table_amip.columns({{ visible }}).visible(true);
+  {%- endif %}
+{%- endfor %}
+      }
+  });
+
+  $('body').on('change', '#histSelect', function(e) {
+
+      // Hide all columns first
+      table_hist.columns().visible(false);
+    
+      // Now, make only selected columns visible
+{%- for visible in fields[1].visible %}      
+  {%- if loop.index == 1 %}
+      if (this.value == '{{ loop.index }}') {
+         table_hist.columns({{ visible }}).visible(true);
+  {%- else %}
+      } else if (this.value == '{{ loop.index }}') {
+         table_hist.columns({{ visible }}).visible(true);
+  {%- endif %}
+{%- endfor %}
+      }
+  });
+
+
+  var table_amip = $('#table_amip').DataTable( {
+      searching: false,
+      paging: false,
+      order: [],
+      // Initial column visibility
+      "columnDefs": [
+         { "visible": false, "targets": {{ fields[0].initial }} }
+      ],
+      // Highlight row with E3SM
+      "fnRowCallback": function( row, data, index ) {
+        if (data[0] == "E3SM-1-0") {
+          $('td', row).css('background-color', 'LightSalmon');
+        }
+      },
+  } );
+
+  var table_hist = $('#table_hist').DataTable( {
+      searching: false,
+      paging: false,
+      order: [],
+      // Initial column visibility
+      "columnDefs": [
+         { "visible": false, "targets": {{ fields[1].initial }} }
+      ],
+      // Highlight row with E3SM
+      "fnRowCallback": function( row, data, index ) {
+        if (data[0] == "E3SM-1-0") {
+          $('td', row).css('background-color', 'LightSalmon');
+        }
+      },
+  } );
+
+} );
+    </script>
+
+  </body>
+</html>
+

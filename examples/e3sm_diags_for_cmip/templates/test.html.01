@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet"  href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css"/>
+
+    <title>DataTables with Bootstrap</title>
+  </head>
+  <body>
+
+    <div class="jumbotron text-center">
+      <h1>DataTables with Bootstrap</h1>
+      <p>Testing DataTables and Bootsrap</p>
+    </div>
+
+    <div class="container">
+
+    <h1>AMIP simulations</h1>
+
+    <label for="select">Select field</label>
+    <select id="extSelect">
+{%- for field in fields.name %}
+  {%- if loop.index == 1 %}
+      <option value="{{ loop.index }}" selected>{{ field }}</option>
+  {%- else %}
+      <option value="{{ loop.index }}">{{ field }}</option>
+  {%- endif %}
+{%- endfor %}
+    </select>
+
+<!--
+      <option value="102">102</option>
+      <option value="104">104</option>
+-->
+
+<!--
+    </div>
+
+    <div class="container">
+-->
+      <table id="example" class="display nowrap" width="100%">
+        <thead>
+          <tr>
+{%- for col in header %}
+            <th>{{ col }}</th>
+{%- endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+{%- for row in content %}
+          <tr>
+  {%- for item in row %}
+            <td>{{ item }}</td>
+  {%- endfor %}
+          </tr>
+{%- endfor %}
+        </tbody>
+      </table>
+
+    </div>
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+
+    <!-- Custom -->
+    <script>
+$(document).ready( function () {
+  $('body').on('change', '#extSelect', function(e) {
+
+      // Hide all columns first
+      table.columns().visible(false);
+    
+      // Now, make only selected columns visible
+{%- for visible in fields.visible %}      
+  {%- if loop.index == 1 %}
+      if (this.value == '{{ loop.index }}') {
+         table.columns({{ visible }}).visible(true);
+  {%- else %}
+      } else if (this.value == '{{ loop.index }}') {
+         table.columns({{ visible }}).visible(true);
+  {%- endif %}
+{%- endfor %}
+      }
+  });
+
+  var table = $('#example').DataTable( {
+      searching: false,
+      paging: false,
+      order: [],
+      // Initial column visibility
+      "columnDefs": [
+         { "visible": false, "targets": {{ fields.initial }} }
+      ],
+      // Highlight row with E3SM
+      "fnRowCallback": function( row, data, index ) {
+        if (data[0] == "E3SM-1-0") {
+          $('td', row).css('background-color', 'LightSalmon');
+        }
+      },
+  } );
+} );
+    </script>
+
+  </body>
+</html>
+
