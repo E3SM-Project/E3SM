@@ -392,6 +392,9 @@ void SHOCMacrophysics::run_impl (const int dt)
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
                  workspace_mgr,input,input_output,output,history_output);
 
+  // Reset internal WSM variables so it can be used in the next timestep.
+  workspace_mgr.reset_internals();
+
   // Postprocessing of SHOC outputs
   Kokkos::parallel_for("shoc_postprocess",
                        default_policy,
