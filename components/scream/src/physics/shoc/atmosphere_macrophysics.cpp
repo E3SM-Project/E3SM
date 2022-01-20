@@ -350,7 +350,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(150, 500);
+  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(140, 500);
   auto positivity_check = std::make_shared<FieldPositivityCheck>();
 
   add_property_check<Computed>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
