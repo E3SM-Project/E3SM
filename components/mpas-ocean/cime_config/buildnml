@@ -84,11 +84,6 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '200927'
             ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
-        #  modify initial condition file if ocean BGC is turned on
-        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            ic_date = '180418'
-            ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
-            eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
 
     elif ocn_grid == 'oEC60to30v3wLI':
         decomp_date = '170328'
@@ -222,6 +217,11 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '201001'
             ic_prefix = 'mpaso.EC30to60E2r2.rstFromG-anvil'
+        #  modify initial condition file if ocean BGC is turned on
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '211030'
+            ic_prefix = 'ocean.EC30to60E2r2.210210+MARBL_ICfromOMIP+ecoAux+5xFESED'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.EC30to60E2r2.20201221.nc'
 
     elif ocn_grid == 'WC14to60E2r3':
         decomp_date = '200714'
