@@ -116,8 +116,7 @@ public:
         qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
 
 
@@ -159,6 +158,7 @@ public:
     view_2d       qm;
     view_2d       ni;
     view_2d       bm;
+    view_2d       qv_prev;
     view_2d       inv_exner;
     view_2d       th_atm;
     view_2d       cld_frac_l;
@@ -170,7 +170,7 @@ public:
            const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_,
            const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
-           const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
+           const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
            const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
            const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
            )
@@ -191,7 +191,7 @@ public:
       qm             = qm_;
       ni             = ni_;
       bm             = bm_;
-
+      qv_prev        = qv_prev_;
       // OUT
       inv_exner = inv_exner_;
       th_atm = th_atm_;
@@ -245,7 +245,7 @@ public:
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
 
 
-        // Update qv_prev
+        // Update qv_prev with qv which should now be wet mmr
         qv_prev(icol,ipack) = qv(icol,ipack);
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;

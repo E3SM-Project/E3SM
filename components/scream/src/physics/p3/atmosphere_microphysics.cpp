@@ -212,6 +212,7 @@ void P3Microphysics::initialize_impl ()
   const  auto& qm             = get_field_out("qm").get_view<Pack**>();
   const  auto& ni             = get_field_out("ni").get_view<Pack**>();
   const  auto& bm             = get_field_out("bm").get_view<Pack**>();
+  auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
@@ -223,7 +224,7 @@ void P3Microphysics::initialize_impl ()
 
   // -- Set values for the pre-amble structure
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,
-                        qv, qc, nc, qr, nr, qi, qm, ni, bm,
+                        qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
   prog_state.qc     = p3_preproc.qc;
@@ -243,8 +244,7 @@ void P3Microphysics::initialize_impl ()
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
   diag_inputs.pres            = get_field_in("p_mid").get_view<const Pack**>();
   diag_inputs.dpres           = p3_preproc.pseudo_density;
-  auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
-  diag_inputs.qv_prev         = qv_prev;
+  diag_inputs.qv_prev         = p3_preproc.qv_prev;
   auto t_prev                 = get_field_out("T_prev_micro_step").get_view<Pack**>();
   diag_inputs.t_prev          = t_prev;
   diag_inputs.cld_frac_l      = p3_preproc.cld_frac_l;
@@ -279,7 +279,7 @@ void P3Microphysics::initialize_impl ()
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,
       prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
-      prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
+      prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,diag_inputs.qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }
 
