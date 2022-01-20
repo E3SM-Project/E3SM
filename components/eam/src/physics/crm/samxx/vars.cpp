@@ -443,8 +443,8 @@ void init_values() {
   auto &z0   = ::z0  ;
   auto &CF3D = ::CF3D;
 
-  flag_precip(0) = 0;
-  flag_precip(1) = 1;
+  // flag_precip(0) = 0;
+  // flag_precip(1) = 1;
 
   ug = 0.                 ;
   vg = 0.                 ;
