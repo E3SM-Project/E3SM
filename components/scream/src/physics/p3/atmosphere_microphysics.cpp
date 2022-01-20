@@ -59,7 +59,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   constexpr int ps = Pack::n;
 
-  // These variables are needed by the interface, but not actually passed to p3_main. 
+  // These variables are needed by the interface, but not actually passed to p3_main.
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
@@ -190,7 +190,7 @@ void P3Microphysics::initialize_impl ()
   // get_field_out("bm").add_property_check(positivity_check);
   auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
   get_field_out("T_mid").add_property_check(T_interval_check);
-  
+
 
   // Initialize p3
   p3_init();
@@ -205,6 +205,14 @@ void P3Microphysics::initialize_impl ()
   const  auto& cld_frac_t     = get_field_in("cldfrac_tot").get_view<const Pack**>();
   const  auto& qv             = get_field_out("qv").get_view<Pack**>();
   const  auto& qc             = get_field_out("qc").get_view<Pack**>();
+  const  auto& nc             = get_field_out("nc").get_view<Pack**>();
+  const  auto& qr             = get_field_out("qr").get_view<Pack**>();
+  const  auto& nr             = get_field_out("nr").get_view<Pack**>();
+  const  auto& qi             = get_field_out("qi").get_view<Pack**>();
+  const  auto& qm             = get_field_out("qm").get_view<Pack**>();
+  const  auto& ni             = get_field_out("ni").get_view<Pack**>();
+  const  auto& bm             = get_field_out("bm").get_view<Pack**>();
+
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
   auto th_atm     = m_buffer.th_atm;
@@ -214,19 +222,20 @@ void P3Microphysics::initialize_impl ()
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv, qc,
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,
+                        qv, qc, nc, qr, nr, qi, qm, ni, bm,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
-  prog_state.qc     = p3_preproc.qc_dry;
-  prog_state.nc     = get_field_out("nc").get_view<Pack**>();
-  prog_state.qr     = get_field_out("qr").get_view<Pack**>();
-  prog_state.nr     = get_field_out("nr").get_view<Pack**>();
-  prog_state.qi     = get_field_out("qi").get_view<Pack**>();
-  prog_state.qm     = get_field_out("qm").get_view<Pack**>();
-  prog_state.ni     = get_field_out("ni").get_view<Pack**>();
-  prog_state.bm     = get_field_out("bm").get_view<Pack**>();
+  prog_state.qc     = p3_preproc.qc;
+  prog_state.nc     = p3_preproc.nc;
+  prog_state.qr     = p3_preproc.qr;
+  prog_state.nr     = p3_preproc.nr;
+  prog_state.qi     = p3_preproc.qi;
+  prog_state.qm     = p3_preproc.qm;
+  prog_state.ni     = p3_preproc.ni;
+  prog_state.bm     = p3_preproc.bm;
   prog_state.th     = p3_preproc.th_atm;
-  prog_state.qv     = p3_preproc.qv_dry;
+  prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = get_field_in("nc_nuceat_tend").get_view<const Pack**>();
   diag_inputs.nccn            = get_field_in("nc_activated").get_view<const Pack**>();
@@ -260,7 +269,7 @@ void P3Microphysics::initialize_impl ()
   infrastructure.ite = m_num_cols-1;
   infrastructure.kts = 0;
   infrastructure.kte = m_num_levs-1;
-  infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option 
+  infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option
   infrastructure.prescribedCCN = true; // Hard-coded for now, TODO: make this a runtime option
   infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
@@ -268,7 +277,9 @@ void P3Microphysics::initialize_impl ()
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
   // -- Set values for the post-amble structure
-  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv, prog_state.qc,qv_prev,
+  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,
+      prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
+      prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }
 

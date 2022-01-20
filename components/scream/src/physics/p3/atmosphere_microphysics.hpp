@@ -97,18 +97,33 @@ public:
          *Wet to dry mixing ratios:
          *-------------------------
          *Since state constituents from the host model (or AD) are  wet mixing ratios and P3 needs
-         *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio.
+         *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratios.
 
          *NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet" water vapor mixing ratio)
+
+         *IMPORTANT:Convert "qv wet mmr" to "qv dry mmr" after converting all other constituents to dry mmr as "qv" (as wet mmr)
+         * is an input for converting all other constituents to have dry mmr.
+
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        //since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the followinf constituents
-        qc_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); // qv is wet at this point
+        //since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the following constituents:
+        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nc(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qr(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nr(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qi(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
 
-        //NOTE: At this point, qv is still in wet mmr. Convert "qv" to "qv_dry" in the end
+
+        //NOTE: At this point, qv should still be wet mmr. Convert "qv" to dry mmr in the end
         //after converting all other constituents to dry mmr
-        qv_dry(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
+        qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
@@ -137,9 +152,13 @@ public:
     view_2d_const cld_frac_t;
     view_2d       qv;
     view_2d       qc;
-
-    view_2d       qv_dry;
-    view_2d       qc_dry;
+    view_2d       nc;
+    view_2d       qr;
+    view_2d       nr;
+    view_2d       qi;
+    view_2d       qm;
+    view_2d       ni;
+    view_2d       bm;
     view_2d       inv_exner;
     view_2d       th_atm;
     view_2d       cld_frac_l;
@@ -150,6 +169,8 @@ public:
     void set_variables(const int ncol, const int npack,
            const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_,
            const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
+           const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
+           const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
            const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
            const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
            )
@@ -162,10 +183,15 @@ public:
       T_atm          = T_atm_;
       cld_frac_t     = cld_frac_t_;
       qv             = qv_;
-      qc             = qc_ ;
+      qc             = qc_;
+      nc             = nc_;
+      qr             = qr_;
+      nr             = nr_;
+      qi             = qi_;
+      qm             = qm_;
+      ni             = ni_;
+      bm             = bm_;
 
-      qv_dry         = qv_;
-      qc_dry         = qc_;
       // OUT
       inv_exner = inv_exner_;
       th_atm = th_atm_;
@@ -189,19 +215,32 @@ public:
         // Update the atmospheric temperature and the previous temperature.
         T_atm(icol,ipack)  = PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack));
         T_prev(icol,ipack) = T_atm(icol,ipack);
+
         /*----------------------------------------------------------------------------------------------------------------------
          *DRY-TO-WET MMRs:
          *-----------------
-         *Since the host model (or AD) needs wet mixing ratio tendencies(state vector has wet mixing ratios),
-         *we need to convert dry mixing ratios from P3 to wet mixing ratios
-         *NOTE: water vapor mixing ratio argument in calculate_wetmmr_from_drymmr function has to be dry water vapor mixing
-         *ratio
+         *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios from P3 to
+         *wet mixing ratios.
+
+         *NOTE: Function calculate_wetmmr_from_drymmr 2 arguments: ( dry mmr and "dry" water vapor mixing ratio)
+
+         *IMPORTANT:Convert "qv dry mmr" to "qv wet mmr" after converting all other constituents to wet mmr as "qv" (as dry mmr)
+         * is an input for converting all other constituents to have wet mmr.
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));
+        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nc(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qr(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nr(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qi(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qm(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr(ni(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(bm(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
+        //(icol,ipack) = PF::calculate_wetmmr_from_drymmr((icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
 
-        //NOTE: At this point, qv is still in dry mmr (updated by P3_main). Convert dry "qv" to wet "qv" in the end
+
+        //NOTE: At this point, qv is should still be dry mmr. Convert "qv" to wet mmr in the end
         //after converting all other constituents to wet mmr
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
 
@@ -221,13 +260,22 @@ public:
     view_2d       T_prev;
     view_2d       qv;
     view_2d       qc;
+    view_2d       nc;
+    view_2d       qr;
+    view_2d       nr;
+    view_2d       qi;
+    view_2d       qm;
+    view_2d       ni;
+    view_2d       bm;
     view_2d       qv_prev;
     view_2d       diag_eff_radius_qc;
     view_2d       diag_eff_radius_qi;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
                     const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
-                    const view_2d& qv_, const view_2d& qc_, const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
+                    const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
+                    const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
+                    const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
                     const view_2d& diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
@@ -237,6 +285,13 @@ public:
       pmid        = pmid_;
       qv          = qv_;
       qc          = qc_;
+      nc          = nc_;
+      qr          = qr_;
+      nr          = nr_;
+      qi          = qi_;
+      qm          = qm_;
+      ni          = ni_;
+      bm          = bm_;
       // OUT
       T_atm              = T_atm_;
       T_prev             = T_prev_;
