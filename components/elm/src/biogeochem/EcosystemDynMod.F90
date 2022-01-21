@@ -51,6 +51,9 @@ module EcosystemDynMod
   use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl          , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
+!LXu@02/20++++++
+  use CNFireEmissionsMod  , only : fireemis_type
+!LXu@02/20------
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -509,6 +512,19 @@ contains
   end subroutine EcosystemDynNoLeaching1
 
 !-------------------------------------------------------------------------------------------------
+!LXu@02/20+++++
+!  subroutine EcosystemDynNoLeaching2(bounds,                                  &
+!       num_soilc, filter_soilc,                                                 &
+!       num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,               &
+!       cnstate_vars, carbonflux_vars, carbonstate_vars,                         &
+!       c13_carbonflux_vars, c13_carbonstate_vars,                               &
+!       c14_carbonflux_vars, c14_carbonstate_vars,                               &
+!       nitrogenflux_vars, nitrogenstate_vars,                                   &
+!       atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
+!       canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
+!       photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+!       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, elm_fates)
+! add fireemis_vars
   subroutine EcosystemDynNoLeaching2(bounds,                                  &
        num_soilc, filter_soilc,                                                 &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,               &
@@ -519,7 +535,13 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, elm_fates)
+       phosphorusflux_vars,phosphorusstate_vars, sedflux_vars, elm_fates, fireemis_vars)
+!LXu@02/20-----
+    !-------------------------------------------------------------------
+    ! bgc interface
+    ! Phase-2 of CNEcosystemDynNoLeaching
+    ! call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+    !-------------------------------------------------------------------
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -564,6 +586,9 @@ contains
 !    use AllocationMod        , only: cnallocation
     use SoilLittDecompMod            , only: SoilLittDecompAlloc
     use SoilLittDecompMod            , only: SoilLittDecompAlloc2 !after SoilLittDecompAlloc
+!LXu@02/20+++++
+    use CNFireEmissionsMod     , only : CNFireEmisUpdate
+!LXu@02/20-----
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -599,6 +624,9 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(sedflux_type)       , intent(in)    :: sedflux_vars
     type(hlm_fates_interface_type), intent(inout) :: elm_fates
+!LXu@02/20+++++
+    type(fireemis_type),         intent(inout) :: fireemis_vars
+!LXu@02/20-----
     !-----------------------------------------------------------------------
 
     ! Call the main CN routines
@@ -882,6 +910,12 @@ contains
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
              cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
              carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
+
+!LXu@02/20+++++
+!            ! fire carbon emissions when use_cn = True
+       call CNFireEmisUpdate(bounds, num_soilp,filter_soilp, &
+               carbonflux_vars, carbonstate_vars, fireemis_vars )
+!LXu@02/20-----
 
        call t_stopf('CNUpdate2')
 

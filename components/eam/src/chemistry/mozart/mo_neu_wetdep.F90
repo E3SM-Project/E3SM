@@ -28,6 +28,9 @@ module mo_neu_wetdep
   integer                     :: index_cldice,index_cldliq,nh3_ndx,co2_ndx
   logical                     :: debug   = .false.
   integer                     :: hno3_ndx = 0
+!LXu@07/2021+++
+  integer                     :: uci1_ndx
+!LXu@07/2021---
 !
 ! diagnostics
 !
@@ -51,6 +54,9 @@ subroutine neu_wetdep_init
   use constituents, only : cnst_get_ind,cnst_mw
   use cam_history,  only : addfld, add_default, horiz_only
   use ppgrid,       only : pver
+!LXu@07/2021+++
+  use mo_chem_utls, only : get_rxt_ndx
+!LXu@07/2021---
 !
   integer :: m,l
   character*20 :: test_name
@@ -58,6 +64,10 @@ subroutine neu_wetdep_init
   do_neu_wetdep = gas_wetdep_method == 'NEU' .and. gas_wetdep_cnt>0
 
   if (.not.do_neu_wetdep) return
+
+!LXu@07/2021+++
+  uci1_ndx = get_rxt_ndx('uci1')
+!LXu@07/2021---
 
   allocate( mapping_to_heff(gas_wetdep_cnt) )
   allocate( mapping_to_mmr(gas_wetdep_cnt) )
@@ -185,8 +195,12 @@ subroutine neu_wetdep_init
 !
 end subroutine neu_wetdep_init
 !
-subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
+!LXu@07/2021+++
+!subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
+!     prain, nevapr, cld, cmfdqr, wd_tend)
+subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
      prain, nevapr, cld, cmfdqr, wd_tend)
+!LXu@07/2021---
 !
   use ppgrid,           only : pcols, pver
 
@@ -197,9 +211,15 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
   implicit none
 !
   integer,        intent(in)    :: lchnk,ncol
-  real(r8),       intent(in)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
+!LXu@07/2021+++
+!  real(r8),       intent(in)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
+  real(r8),       intent(inout)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
+!LXu@07/2021---
   real(r8),       intent(in)    :: pmid(pcols,pver)         ! midpoint pressures (Pa)
-  real(r8),       intent(in)    :: pdel(pcols,pver)         ! pressure delta about midpoints (Pa)
+!LXu@07/2021+++
+!  real(r8),       intent(in)    :: pdel(pcols,pver)         ! pressure delta about midpoints (Pa)
+  real(r8),       intent(in)    :: pdeldry(pcols,pver)      ! dry air pressure delta about midpoints (Pa)
+!LXu@07/2021---
   real(r8),       intent(in)    :: zint(pcols,pver+1)       ! interface geopotential height above the surface (m)
   real(r8),       intent(in)    :: tfld(pcols,pver)         ! midpoint temperature (K)
   real(r8),       intent(in)    :: delt                     ! timestep (s)
@@ -260,7 +280,10 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
     kk = pver - k + 1
     do i=1,ncol
 !
-      mass_in_layer(i,k) = area(i) * pdel(i,kk)/gravit          ! kg
+!LXu@07/2021+++
+!      mass_in_layer(i,k) = area(i) * pdel(i,kk)/gravit          ! kg
+      mass_in_layer(i,k) = area(i) * pdeldry(i,kk)/gravit ! kg
+!LXu@07/2021---
 !
       cldice (i,k) = mmr(i,kk,index_cldice)                     ! kg/kg
       cldliq (i,k) = mmr(i,kk,index_cldliq)                     ! kg/kg
@@ -408,6 +431,15 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
       wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
     end do
     call outfld( 'WD_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+
+!LXu@07/2021+++
+! if chemUCI is used, apply wet deposition flux here
+    if (uci1_ndx <= 0) then
+      wd_tend(1:ncol,:,mapping_to_mmr(m)) = wd_tend(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)
+    else
+      mmr(1:ncol,:,mapping_to_mmr(m)) = mmr(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)*delt
+    end if
+!LXu@07/2021---
   end do
 !
   if ( do_diag ) then

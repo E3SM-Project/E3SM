@@ -3395,7 +3395,8 @@ Default: set by build-namelist
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
-					 superfast_mam4_resus_mom_soag,none " >
+					 superfast_mam4_resus_mom_soag,
+					 superfast_mam4_resus_mom_soag_po4,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -3610,6 +3611,18 @@ Default: .false.
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostics specific to CLUBB.
 Default: .true.
+</entry>
+
+<entry id="history_gaschmbudget" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers budget diagnostic output
+Default: .false.
+</entry>
+
+<entry id="history_gaschmbudget_2D" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output
+Default: .false.
 </entry>
 
 <!-- Radiation -->
@@ -5360,6 +5373,25 @@ Default: set by build-namelist.
 MEGAN mapped isoprene emissions facters switch
 If true then use mapped MEGAN emissions facters for isoprene.
 Default: .false.
+</entry>
+
+<entry id="fire_emis_factors_file" type="char*256" input_pathname="abs" category="Fire_emissions"
+       group="fire_emis_nl" valid_values="" >
+File containing fire emissions factors.
+Default: none
+</entry>
+
+<entry id="fire_emis_specifier" type="char*1024(100)" category="Fire_emissions"
+       group="fire_emis_nl" valid_values="" >
+Fire emissions specifier.
+Default: none
+</entry>
+
+<entry id="fire_emis_elevated" type="logical" category="Fire_emissions"
+       group="fire_emis_nl" valid_values="" >
+If true fire emissions are input into atmosphere as elevated forcings.
+Otherwise they are treated as surface emissions.
+Default: TRUE
 </entry>
 
 <!-- WACCM_GHG Chemistry -->

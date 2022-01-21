@@ -101,6 +101,9 @@ module elm_driver
   use elm_instMod            , only : cnstate_vars
   use elm_instMod            , only : dust_vars
   use elm_instMod            , only : vocemis_vars
+!LXu@02/20+++++  
+  use elm_instMod            , only : fireemis_vars
+!LXu@02/20-----   
   use elm_instMod            , only : drydepvel_vars
   use elm_instMod            , only : aerosol_vars
   use elm_instMod            , only : canopystate_vars
@@ -1080,6 +1083,21 @@ contains
              !--------------------------------------------------------------------------------
 
 
+!LXu@02/20+++++
+!original
+!             call EcosystemDynNoLeaching2(bounds_clump,                                   &
+!                   filter(nc)%num_soilc, filter(nc)%soilc,                                  &
+!                   filter(nc)%num_soilp, filter(nc)%soilp,                                  &
+!                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
+!                   cnstate_vars, carbonflux_vars, carbonstate_vars,                         &
+!                   c13_carbonflux_vars, c13_carbonstate_vars,                               &
+!                   c14_carbonflux_vars, c14_carbonstate_vars,                               &
+!                   nitrogenflux_vars, nitrogenstate_vars,                                   &
+!                   atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
+!                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
+!                   photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+!                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, alm_fates)
+! add fireemis_vars
              call EcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &
                    filter(nc)%num_soilp, filter(nc)%soilp,                                  &
@@ -1091,7 +1109,8 @@ contains
                    atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, alm_fates)
+                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, alm_fates, fireemis_vars)
+!LXu@02/20-----
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1368,11 +1387,18 @@ contains
     endif
 
     call t_startf('lnd2atm')
+!LXu@02/20+++++
+!    call lnd2atm(bounds_proc,                                            &
+!         atm2lnd_vars, surfalb_vars, frictionvel_vars, &
+!         waterstate_vars, waterflux_vars, energyflux_vars,               &
+!         solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
+!         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     call lnd2atm(bounds_proc,                                            &
          atm2lnd_vars, surfalb_vars, frictionvel_vars, &
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
+         vocemis_vars, dust_vars, fireemis_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
+!LXu@02/20-----
     call t_stopf('lnd2atm')
 
     ! ============================================================================
