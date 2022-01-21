@@ -193,10 +193,6 @@ Int Functions<S,D>
     const auto oni                 = ekat::subview(prognostic_state.ni, i);
     const auto obm                 = ekat::subview(prognostic_state.bm, i);
     const auto oqv                 = ekat::subview(prognostic_state.qv, i);
-    if(i==16){std::cout<<"In p3_main:"<<oqv(16)<<std::endl;
-      oqv(16) = oqv(16)*2;}
-    
-    if(i==16){std::cout<<"In p3_main:"<<oqv(16)<<std::endl;}
     const auto oth                 = ekat::subview(prognostic_state.th, i);
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);

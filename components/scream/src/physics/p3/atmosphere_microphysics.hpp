@@ -102,29 +102,27 @@ public:
          *NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet" water vapor mixing ratio)
 
          *IMPORTANT:Convert "qv wet mmr" to "qv dry mmr" after converting all other constituents to dry mmr as "qv" (as wet mmr)
-         * is an input for converting all other constituents to have dry mmr.
+         * is an input for converting all other constituent5Bs to have dry mmr.
 
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        //since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the following constituents:
-        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nc(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qr(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nr(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qi(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] preproc-opr bef qv, qv_prev(wet):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
-        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
-        //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        //Since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the following constituents:
+        //Units of all constituents below are [kg/kg(dry-air)] for mass and [#/kg(dry-air)] for number
+        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); //Cloud liquid mass
+        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nc(icol,ipack),qv(icol,ipack)); //Cloud liquid numbe
+        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qr(icol,ipack),qv(icol,ipack)); //Rain mass
+        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nr(icol,ipack),qv(icol,ipack)); //Rain number
+        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qi(icol,ipack),qv(icol,ipack)); //Cloud ice mass
+        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); //Cloud ice number
+        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); //Rimmed ice mass
+        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); //Rimmed ice number
+        //Water vapor from previous time step
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack));
 
-
-        //NOTE: At this point, qv should still be wet mmr. Convert "qv" to dry mmr in the end
-        //after converting all other constituents to dry mmr
+        // ^^ Ensure that qv is "wet mmr" till this point ^^
+        //NOTE: Convert "qv" to dry mmr in the end after converting all other constituents to dry mmr
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
-        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] preproc-opr aft qv, qv_prev(dry):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
@@ -224,32 +222,29 @@ public:
          *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios from P3 to
          *wet mixing ratios.
 
-         *NOTE: Function calculate_wetmmr_from_drymmr 2 arguments: ( dry mmr and "dry" water vapor mixing ratio)
+         *NOTE: Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry" water vapor mixing ratio)
 
          *IMPORTANT:Convert "qv dry mmr" to "qv wet mmr" after converting all other constituents to wet mmr as "qv" (as dry mmr)
          * is an input for converting all other constituents to have wet mmr.
          *----------------------------------------------------------------------------------------------------------------------
          */
+        //Units of all constituents below are [kg/kg(wet-air)] for mass and [#/kg(wet-air)] for number
+        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));//Cloud liquid mass
+        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nc(icol,ipack), qv(icol,ipack));//Cloud liquid number
+        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qr(icol,ipack), qv(icol,ipack));//Rain mass
+        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nr(icol,ipack), qv(icol,ipack));//Rain number
+        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qi(icol,ipack), qv(icol,ipack));//Cloud ice mass
+        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr(ni(icol,ipack), qv(icol,ipack));//Cloud ice number
+        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qm(icol,ipack), qv(icol,ipack));//Rimmed ice mass
+        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(bm(icol,ipack), qv(icol,ipack));//Rimmed ice number
 
-        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nc(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qr(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nr(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qi(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qm(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr(ni(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(bm(icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-        //(icol,ipack) = PF::calculate_wetmmr_from_drymmr((icol,ipack), qv(icol,ipack));// ensure that qv is dry at this point
-
-
-        //NOTE: At this point, qv is should still be dry mmr. Convert "qv" to wet mmr in the end
-        //after converting all other constituents to wet mmr
-        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] postproc-opr bef qv,qv_prev(dry):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
+        // ^^ Ensure that qv is "dry mmr" till this point ^^
+        //NOTE:Convert "qv" to wet mmr in the end after converting all other constituents to wet mmr
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
 
-        // Update qv_prev with qv which should now be wet mmr
+        // Update qv_prev with qv(which should now be a wet mmr) so that qv_prev is in wet mmr
         qv_prev(icol,ipack) = qv(icol,ipack);
-        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] postproc-opr aft qv, qv_prev(wet):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
+
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
