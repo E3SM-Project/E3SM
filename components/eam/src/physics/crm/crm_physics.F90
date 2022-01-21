@@ -948,6 +948,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_NI'), crm_ni)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QM'), crm_qm)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
+            call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
+            call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
          end if
 
          ! initialize all of total water to zero (needed for ncol < i <= pcols)
@@ -989,6 +991,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_nr(i,:,:,k) = state(c)%q(i,m,ixnumrain)
                   crm_qm(i,:,:,k) = state(c)%q(i,m,ixcldrim)
                   crm_bm(i,:,:,k) = state(c)%q(i,m,ixrimvol)
+                  crm_t_prev(i,:,:,k) = state(c)%t(i,m)
+                  crm_q_prev(i,:,:,k) = state(c)%q(i,m,1)
                end if
             end do
          end do
@@ -1008,6 +1012,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, crm_qs_rad_idx,crm_qs_rad)
             call pbuf_get_field(pbuf_chunk, crm_ns_rad_idx,crm_ns_rad)
          end if
+         if (MMF_microphysics_scheme .eq. 'p3') then
+            call pbuf_get_field(pbuf_chunk, crm_nc_rad_idx,crm_nc_rad)
+            call pbuf_get_field(pbuf_chunk, crm_ni_rad_idx,crm_ni_rad)
+         end if
 
          do k = 1,crm_nz
             m = pver-k+1
@@ -1023,6 +1031,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_ni_rad(i,:,:,k) = 0.0
                   crm_qs_rad(i,:,:,k) = 0.0
                   crm_ns_rad(i,:,:,k) = 0.0
+               end if
+               if (MMF_microphysics_scheme .eq. 'p3') then
+                  crm_nc_rad(i,:,:,k) = 0.0
+                  crm_ni_rad(i,:,:,k) = 0.0
                end if
             end do
          end do
