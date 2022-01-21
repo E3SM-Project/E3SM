@@ -1,4 +1,3 @@
-set(ALBANY_PATH "/global/cfs/cdirs/e3sm/software/albany-trilinos/albany-install-2020-08-07")
 string(APPEND FFLAGS " -fp-model consistent -fimf-use-svml")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -qno-opt-dynamic-align")
