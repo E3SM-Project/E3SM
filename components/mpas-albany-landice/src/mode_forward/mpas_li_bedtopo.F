@@ -68,7 +68,7 @@ module li_bedtopo
 	
    real (kind=RKIND), dimension(:), allocatable :: globalArray1, gatheredArray1
    real (kind=RKIND), dimension(:), allocatable :: globalArray2, gatheredArray2
-   real (kind=RKIND), dimension(:), allocatable :: globalArray3, gatheredArray3
+   real (kind=RKIND), dimension(:), allocatable :: globalArray3, gatheredArray3, globalArray4
 
 !***********************************************************************
 
@@ -284,6 +284,7 @@ subroutine li_bedtopo_solve(domain, err)
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
 
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography, upliftRate
+		real (kind=RKIND), dimension(:), pointer :: upliftDiff
 
 
       real (kind=RKIND), pointer :: deltat
@@ -318,14 +319,15 @@ subroutine li_bedtopo_solve(domain, err)
          end do
 
 		elseif (trim(config_uplift_method)=='sealevelmodel') then
-	       call mpas_log_write("<<< A, L342")
+	       call mpas_log_write("<<< A, L322")
 
 	        call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
   		     call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 		     call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-
+           call mpas_pool_get_array(geometryPool, 'upliftDiff', upliftDiff)
            call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+ 	       call mpas_log_write("<<< A, L330")
 
       else
          call mpas_log_write("Unknown option selected for 'config_uplift_method'", MPAS_LOG_ERR)
@@ -349,6 +351,7 @@ subroutine li_bedtopo_solve(domain, err)
 					allocate(globalArray2(nCellsGlobal), gatheredArray2(nCellsGlobal))
 	            allocate(globalArray3(nCellsGlobal), gatheredArray3(nCellsGlobal))
 	         endif
+				
 								
 	         ! Gather only the nCellsOwned from ice thickness (does not include Halos)
 	         call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArray1, nCellsPerProc, &
@@ -365,8 +368,6 @@ subroutine li_bedtopo_solve(domain, err)
 
 					! interpolate thickness to Gaussian grid					
                call interpolate(toColValues, toRowValues, toSvalues, globalArray1, thickness_slGrid1D)
-				  	call mpas_log_write('<<<shape of global array mesh $i', intArgs=(/shape(globalArray1)/))
-					call mpas_log_write('<<<shape of global array mesh $i', intArgs=(/shape(thickness_slGrid1D)/))
 				   call write_txt(thickness_slGrid1D, 'mali_iceload','')  !HH check iceload. output text file is of wrong size in parallel computing
 				  
 				   ! reshape the interpolated data
@@ -406,10 +407,10 @@ subroutine li_bedtopo_solve(domain, err)
 				endif
 				
 	         call MPI_SCATTERV(gatheredArray3, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-	                     globalArray3, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
+	                     upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
 			 				   call mpas_log_write("<<< rearrange back to index order")
 			  ! update bedTopography
-				bedTopography(:) = bedTopography(:) - globalArray3(:)
+				bedTopography(:) = bedTopography(:) - upliftDiff(:)
 				
 			   ! scatter updated bedTopo to processors
 			   call mpas_log_write("<<< scatter back bedtopo")
@@ -431,7 +432,7 @@ subroutine li_bedtopo_solve(domain, err)
 			   call mpas_log_write("<<< done SL calculatation!")
 
 			else
-				
+				call mpas_log_write("<<< MPAS alarm is not ringing, SLM is not called!")
 			 ! do nothing for now, but could calculate uplift rate here later instead.
 		   endif
 		else
@@ -440,6 +441,7 @@ subroutine li_bedtopo_solve(domain, err)
       
 		! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
+      call mpas_dmpar_field_halo_exch(domain,'upliftDiff')
       call li_update_geometry(geometryPool)
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
 
@@ -541,7 +543,7 @@ subroutine li_bedtopo_solve(domain, err)
 
 		itersl_sh = 1	   ! * note: hardcode itersl_sh == 1.
 		starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
-	   dtime_sh = 2
+	   dtime_sh = 5
 
 		call sl_set_unit_num(unit_num)
 		call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
@@ -612,7 +614,7 @@ subroutine li_bedtopo_solve(domain, err)
 	   ! 6. call sl_checkpoint & set_planet & sl_timewindow
 		itersl_sh = 1	   ! * note: hardcode itersl_sh == 1.
 		starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
-	   dtime_sh = 2
+	   dtime_sh = 5
 		call mpas_log_write("<<< sl_solver_checkpoint")
 		call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
 		call mpas_log_write("<<< sl_timewindow")
