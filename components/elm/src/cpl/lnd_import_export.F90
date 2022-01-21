@@ -1357,6 +1357,9 @@ contains
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
+!LXu@01/20++++++
+    use shr_fire_emis_mod  , only : shr_fire_emis_mechcomps_n
+!LXu@01/20------
     !
     ! !ARGUMENTS:
     implicit none
@@ -1428,6 +1431,15 @@ contains
        if (index_l2x_Fall_methane /= 0) then
           l2x(index_l2x_Fall_methane,i) = -lnd2atm_vars%flux_ch4_grc(g) 
        endif
+
+!LXu@01/20++++++
+       ! for fire emis fluxes
+       if (index_l2x_Fall_flxfire  /= 0 ) then
+          l2x(index_l2x_Fall_flxfire:index_l2x_Fall_flxfire+shr_fire_emis_mechcomps_n-1,i) = &
+               -lnd2atm_vars%fireflx_grc(g,:shr_fire_emis_mechcomps_n)
+          l2x(index_l2x_Sl_ztopfire,i) = lnd2atm_vars%fireztop_grc(g)
+       end if
+!LXu@01/20------
 
        ! sign convention is positive downward with 
        ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive

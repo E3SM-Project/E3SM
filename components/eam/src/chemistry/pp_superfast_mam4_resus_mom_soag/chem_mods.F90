@@ -23,25 +23,25 @@
 
       save
 
-      integer, parameter :: phtcnt    = 6, &    ! number of photolysis reactions
-                            rxntot    = 29, &    ! number of total reactions
-                            gascnt    = 23, &    ! number of gas phase reactions
+      integer, parameter :: phtcnt    = 19, &    ! number of photolysis reactions
+                            rxntot    = 88, &    ! number of total reactions
+                            gascnt    = 69, &    ! number of gas phase reactions
                             nabscol   = 2, &      ! number of absorbing column densities
-                            gas_pcnst = 41, &     ! number of "gas phase" species
+                            gas_pcnst = 59, &     ! number of "gas phase" species
                             nfs       = 6, &       ! number of "fixed" species
                             relcnt    = 0, &    ! number of relationship species
                             grpcnt    = 0, &    ! number of group members
-                            nzcnt     = 103, & ! number of non-zero matrix entries
+                            nzcnt     = 261, & ! number of non-zero matrix entries
                             extcnt    = 11, &    ! number of species with external forcing
-                            clscnt1   = 1, &   ! number of species in explicit class
+                            clscnt1   = 6, &   ! number of species in explicit class
                             clscnt2   = 0, &   ! number of species in hov class
                             clscnt3   = 0, &   ! number of species in ebi class
-                            clscnt4   = 40, &   ! number of species in implicit class
+                            clscnt4   = 53, &   ! number of species in implicit class
                             clscnt5   = 0, &   ! number of species in rodas class
                             indexm    = 1, &    ! index of total atm density in invariant array
                             indexh2o  = 4, &  ! index of water vapor density
                             clsze     = 1, &     ! loop length for implicit chemistry
-                            rxt_tag_cnt = 14, &
+                            rxt_tag_cnt = 88, &
                             nslvd     = 0
 
       integer   :: clscnt(5)            = 0

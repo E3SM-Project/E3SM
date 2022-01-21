@@ -26,6 +26,7 @@
   mprot_a1
   mlip_a1
   mom_a1
+  po4_a1
   so4_a2
   nh4_a2
   soa_a2
@@ -46,12 +47,14 @@
   mprot_a3
   mlip_a3
   mom_a3
+  po4_a3
   ncl_a4
   so4_a4
   pom_a4
   bc_a4
   nh4_a4
   mom_a4
+  po4_a4
   num_a4
   dst_a5
   so4_a5

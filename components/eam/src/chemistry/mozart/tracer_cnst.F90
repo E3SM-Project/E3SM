@@ -76,6 +76,13 @@ contains
           write(iulog,*) ' '
        endif
        return
+!added by LXu@09/2021+++
+    else
+       if ( masterproc ) then
+          write(iulog,*) 'num_tracer_cnst = ',num_tracer_cnst
+          write(iulog,*) ' '
+       endif
+!added by LXu@09/2021---
     end if
 
     allocate( tracer_cnst_flds(num_tracer_cnst), stat=istat)
@@ -89,6 +96,14 @@ contains
        if (ndx < 1) then
           write(iulog,*) fields(i)%fldnam//' is not an invariant'
           call endrun('tracer_cnst_init')
+!added by LXu@09/2021+++
+       else
+	  if ( masterproc ) then
+             write(iulog,*) 'prescribed tracer name = ',fields(i)%fldnam
+             write(iulog,*) ' '
+	  endif
+!added by LXu@09/2021---
+	  
        endif
 
        tracer_cnst_flds(i) = fields(i)%fldnam

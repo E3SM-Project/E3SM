@@ -23,6 +23,7 @@
 # 2013-12     Andre            Refactor everything into subroutines
 # 2013-12     Muszala          Add Ecosystem Demography functionality
 # 2015-09-30  X.Shi            Add pdep streams capability
+# 2020-02     L. Xu            Add fire_emis capability 
 #--------------------------------------------------------------------------------------------
 
 package ELMBuildNamelist;
@@ -237,6 +238,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -fire_emis               Produce a fire_emis_nl namelist that will go into the
+                              "drv_flds_in" file for the driver to pass fire emissions to the atm.
+                              (Note: buildnml copies the file for use by the driver)
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -305,6 +309,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               fire_emis             => 0,
              );
 
   GetOptions(
@@ -356,6 +361,7 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "fire_emis!"                => \$opts{'fire_emis'},
             )  or usage();
 
   # Give usage message.
@@ -1920,6 +1926,11 @@ sub process_namelist_inline_logic {
   # namelist group: elm_mosart_coupling   #
   #########################################
   setup_elm_mosart_coupling($opts, $nl_flags, $definition, $defaults, $nl);
+
+  #################################
+  # namelist group: fire_emis_nl  #
+  #################################
+  setup_logic_fire_emis($opts, $nl_flags, $definition, $defaults, $nl, $physv);
 }
 
 #-------------------------------------------------------------------------------
@@ -3100,6 +3111,25 @@ sub setup_logic_lai_streams {
 }
 
 #-------------------------------------------------------------------------------
+sub setup_logic_fire_emis {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+#  if ($opts->{'fire_emis'} ) {
+#    if ( $physv->as_long() < $physv->as_long("elm") ) {
+#     fatal_error("fire_emis option can NOT be set for CLM versions before clm4_5");
+#    }
+#    add_default($opts,  $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fire_emis_factors_file');
+#    add_default($opts,  $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fire_emis_specifier');
+#  } else {
+#    if ( defined($nl->get_value('fire_emis_elevated'))     ||
+#         defined($nl->get_value('fire_emis_factors_file')) ||
+#         defined($nl->get_value('fire_emis_specifier')) ) {
+#      fatal_error("fire_emission setting defined: fire_emis_elevated, fire_emis_factors_file, or fire_emis_specifier, but fire_emis option NOT set");
+#    }
+#  }
+}
+
+#-------------------------------------------------------------------------------
 
 sub setup_logic_snowpack {
   #
@@ -3221,8 +3251,10 @@ sub write_output_files {
   verbose_message("Writing clm namelist to $outfile");
 
   # Drydep or MEGAN namelist
-  if ($opts->{'drydep'} || $opts->{'megan'} ) {
-    @groups = qw(drydep_inparm megan_emis_nl);
+#  if ($opts->{'drydep'} || $opts->{'megan'} ) {
+  if ($opts->{'drydep'} || $opts->{'megan'} || $opts->{'fire_emis'}) {
+#    @groups = qw(drydep_inparm megan_emis_nl);
+    @groups = qw(drydep_inparm megan_emis_nl fire_emis_nl);
     $outfile = "$opts->{'dir'}/drv_flds_in";
     $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
     verbose_message("Writing @groups namelists to $outfile");

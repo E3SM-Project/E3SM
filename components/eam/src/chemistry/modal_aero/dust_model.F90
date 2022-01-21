@@ -21,8 +21,8 @@ module dust_model
 
   integer, parameter :: dust_nbin = 2
   integer, parameter :: dust_nnum = 2
-
-#if  ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+!LXu@05/2021
+#if  ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PO4 )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
 ! Zender03: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
