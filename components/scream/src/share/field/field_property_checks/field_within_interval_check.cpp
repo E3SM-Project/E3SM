@@ -203,10 +203,13 @@ void FieldWithinIntervalCheck::repair(Field& field) const {
   switch (field.data_type()) {
     case DataType::IntType:
       repair_impl<int>(field);
+      break;
     case DataType::FloatType:
       repair_impl<float>(field);
+      break;
     case DataType::DoubleType:
       repair_impl<double>(field);
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }
