@@ -269,6 +269,10 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
+
+  // Setup WSM for internal local variables
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  workspace_mgr.setup(m_buffer.wsm_data, nk_pack, 52, policy);
 }
 
 // =========================================================================================

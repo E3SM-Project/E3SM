@@ -437,6 +437,9 @@ protected:
   // Structures which compute pre/post process
   SHOCPreprocess shoc_preprocess;
   SHOCPostprocess shoc_postprocess;
+
+  // WSM for internal local variables
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
 }; // class SHOCMacrophysics
 
 } // namespace scream

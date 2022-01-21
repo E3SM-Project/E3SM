@@ -46,7 +46,7 @@ public:
   void set_num_fields (const int num_imports, const int num_exports)
   { set_num_fields(num_imports, num_imports, num_exports); }
 
-  // Register import scream fields
+  // Register import scream fields.
   void register_import (const std::string& fname,
                         const int cpl_idx,
                         const int vecComp = -1);
@@ -156,6 +156,16 @@ protected:
 
   cpl_dview_type       m_cpl_exports_view_d;
   cpl_hview_type       m_cpl_exports_view_h;
+
+  // Views which store 1 for fields whose convention with regard to sign is the same between cpl
+  // and SCREAM, and -1 for fields that differ.
+  // Currently, this is needed for fluxes as surface at atmosphere have different interpretations
+  // of the positive direction.
+  // TODO: This should be imporved in the future. Currently, if conventions change wrt. the flux
+  //       direction in either SCREAM or cpl, a bug related to the sign could be hard
+  //       to track down.
+  view_1d<device_type,      int>  m_cpl_scream_sign_change_dev;
+  view_1d<host_device_type, int>  m_cpl_scream_sign_change_host;
 
   // The following is only stored for debug/inspection routines
   std::set<FieldIdentifier>  m_imports_fids;

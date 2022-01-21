@@ -22,9 +22,6 @@ endif()
 set(ATM_SRC
   scream_cxx_f90_interface.cpp
   atm_comp_mct.F90
-  dead_mct_mod.F90
-  dead_data_mod.F90
-  dead_mod.F90
   ekat_string_utils.F90
   scream_f2c_mod.F90
   scream_cpl_indices.F90

@@ -352,14 +352,26 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   add_property_check<Computed>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
   add_property_check<Computed>(get_field_out("tke").get_header().get_identifier(),positivity_check);
+
+  // Setup WSM for internal local variables
+  const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
+  const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
+
+  // Calculate maximum number of levels in pbl from surface
+  const auto pref_mid = get_field_in("pref_mid").get_view<const Spack*>();
+  const int ntop_shoc = 0;
+  const int nbot_shoc = m_num_levs;
+  m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
 }
 
 // =========================================================================================
 void SHOCMacrophysics::run_impl (const int dt)
 {
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
-
   const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
 
@@ -370,23 +382,14 @@ void SHOCMacrophysics::run_impl (const int dt)
                        shoc_preprocess);
   Kokkos::fence();
 
-
-  // Calculate maximum number of levels in pbl from surface
-  const auto pref_mid = get_field_in("pref_mid").get_view<const Spack*>();
-  const int ntop_shoc = 0;
-  const int nbot_shoc = m_num_levs;
-  m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
-
   // For now set the host timestep to the shoc timestep. This forces
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
   m_nadv = std::max(hdtime/dt,1);
 
-  // WorkspaceManager for internal local variables
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
+  // Reset internal WSM variables.
+  workspace_mgr.reset_internals();
 
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
