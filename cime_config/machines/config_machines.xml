@@ -130,13 +130,11 @@
       </modules>
 
       <modules compiler="gnugpu">
-	<command name="load">cpe-cuda</command>
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-	<command name="load">cpe-cuda</command>
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
       </modules>
