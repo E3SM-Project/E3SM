@@ -14,25 +14,29 @@ void SurfaceCoupling::do_export (const bool init_phase)
   using KT = KokkosTypes<device_type>;
   using policy_type = KT::RangePolicy;
   using PF = PhysicsFunctions<device_type>;
+  using C = scream::physics::Constants<Real>;
 
   // For each export fields that is not trivially exist in the field
   // manager (see Case 2 in register_export()), calculate correct data
   // values.
   const bool scream_ad_run =
       (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") &&
-       m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density"));
+       m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density") &&
+       m_field_mgr->has_field("precip_liq_surf"));
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
-    const auto& qv             = m_field_mgr->get_field("qv").get_view<const Real**>();
-    const auto& T_mid          = m_field_mgr->get_field("T_mid").get_view<const Real**>();
-    const auto& p_mid          = m_field_mgr->get_field("p_mid").get_view<const Real**>();
-    const auto& pseudo_density = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
-    const auto l_dz            = dz;
-    const auto l_z_int         = z_int;
-    const auto l_z_mid         = z_mid;
-    const auto l_Sa_z          = Sa_z;
-    const auto l_Sa_ptem       = Sa_ptem;
-    const auto l_Sa_dens       = Sa_dens;
+    const auto& qv              = m_field_mgr->get_field("qv").get_view<const Real**>();
+    const auto& T_mid           = m_field_mgr->get_field("T_mid").get_view<const Real**>();
+    const auto& p_mid           = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto& pseudo_density  = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
+    const auto& precip_liq_surf = m_field_mgr->get_field("precip_liq_surf").get_view<const Real*>();
+    const auto l_dz             = dz;
+    const auto l_z_int          = z_int;
+    const auto l_z_mid          = z_mid;
+    const auto l_Sa_z           = Sa_z;
+    const auto l_Sa_ptem        = Sa_ptem;
+    const auto l_Sa_dens        = Sa_dens;
+    const auto l_Faxa_rainl     = Faxa_rainl;
 
     // Local copy, to deal with CUDA's handling of *this.
     const int num_levs = m_num_levs;
@@ -41,13 +45,13 @@ void SurfaceCoupling::do_export (const bool init_phase)
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
       const int i = team.league_rank();
 
-      const auto qv_i             = ekat::subview(qv, i);
-      const auto T_mid_i          = ekat::subview(T_mid, i);
-      const auto p_mid_i          = ekat::subview(p_mid, i);
-      const auto pseudo_density_i = ekat::subview(pseudo_density, i);
-      const auto dz_i             = ekat::subview(l_dz, i);
-      const auto z_int_i          = ekat::subview(l_z_int, i);
-      const auto z_mid_i          = ekat::subview(l_z_mid, i);
+      const auto qv_i              = ekat::subview(qv, i);
+      const auto T_mid_i           = ekat::subview(T_mid, i);
+      const auto p_mid_i           = ekat::subview(p_mid, i);
+      const auto pseudo_density_i  = ekat::subview(pseudo_density, i);
+      const auto dz_i              = ekat::subview(l_dz, i);
+      const auto z_int_i           = ekat::subview(l_z_int, i);
+      const auto z_mid_i           = ekat::subview(l_z_mid, i);
 
       // Compute vertical layer thickness
       PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
@@ -60,9 +64,10 @@ void SurfaceCoupling::do_export (const bool init_phase)
       PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
       team.team_barrier();
 
-      l_Sa_z(i)    = z_mid_i(last_entry);
-      l_Sa_ptem(i) = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
-      l_Sa_dens(i) = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
+      l_Sa_z(i)       = z_mid_i(last_entry);
+      l_Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
+      l_Sa_dens(i)    = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
+      l_Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
     });
   }
 

@@ -51,10 +51,11 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports,
   z_mid = decltype(z_mid) ("", m_num_cols, m_num_levs);
 
   // These fields contain export data
-  Sa_z         = decltype(Sa_z)      ("", m_num_cols);
-  Sa_ptem      = decltype(Sa_ptem)   ("", m_num_cols);
-  Sa_dens      = decltype(Sa_dens)   ("", m_num_cols);
-  zero_view    = decltype(zero_view) ("", m_num_cols);
+  Sa_z       = decltype(Sa_z)       ("", m_num_cols);
+  Sa_ptem    = decltype(Sa_ptem)    ("", m_num_cols);
+  Sa_dens    = decltype(Sa_dens)    ("", m_num_cols);
+  Faxa_rainl = decltype(Faxa_rainl) ("", m_num_cols);
+  zero_view  = decltype(zero_view)  ("", m_num_cols);
   Kokkos::deep_copy(zero_view, 0.0);
 
   // These will be incremented every time we register an import/export.
@@ -183,11 +184,12 @@ register_export (const std::string& fname,
   } else {
 
     // Set view data ptr
-    if (fname == "set_zero")     info.data = zero_view.data();
-    else if (fname == "Sa_z")    info.data = Sa_z.data();
-    else if (fname == "Sa_ptem") info.data = Sa_ptem.data();
-    else if (fname == "Sa_dens") info.data = Sa_dens.data();
-    else                         EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
+    if (fname == "set_zero")        info.data = zero_view.data();
+    else if (fname == "Sa_z")       info.data = Sa_z.data();
+    else if (fname == "Sa_ptem")    info.data = Sa_ptem.data();
+    else if (fname == "Sa_dens")    info.data = Sa_dens.data();
+    else if (fname == "Faxa_rainl") info.data = Faxa_rainl.data();
+    else                            EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
 
     // Get column offset and stride
     get_col_info (dummy_field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
