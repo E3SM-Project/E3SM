@@ -116,6 +116,7 @@ public:
         qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
+        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] preproc-opr bef qv, qv_prev(wet):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
         qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
         //(icol, ipack)      = PF::calculate_drymmr_from_wetmmr((icol,ipack),qv(icol,ipack)); // ensure that qv is wet here
 
@@ -123,6 +124,7 @@ public:
         //NOTE: At this point, qv should still be wet mmr. Convert "qv" to dry mmr in the end
         //after converting all other constituents to dry mmr
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
+        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] preproc-opr aft qv, qv_prev(dry):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
@@ -182,6 +184,7 @@ public:
       pseudo_density = pseudo_density_;
       T_atm          = T_atm_;
       cld_frac_t     = cld_frac_t_;
+      // OUT
       qv             = qv_;
       qc             = qc_;
       nc             = nc_;
@@ -192,7 +195,6 @@ public:
       ni             = ni_;
       bm             = bm_;
       qv_prev        = qv_prev_;
-      // OUT
       inv_exner = inv_exner_;
       th_atm = th_atm_;
       cld_frac_l = cld_frac_l_;
@@ -242,11 +244,12 @@ public:
 
         //NOTE: At this point, qv is should still be dry mmr. Convert "qv" to wet mmr in the end
         //after converting all other constituents to wet mmr
+        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] postproc-opr bef qv,qv_prev(dry):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
         qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
-
 
         // Update qv_prev with qv which should now be wet mmr
         qv_prev(icol,ipack) = qv(icol,ipack);
+        if(ipack == 16 && icol ==16){std::cout<<"--BALLI[RUN] postproc-opr aft qv, qv_prev(wet):"<<icol<<","<<ipack<<","<<qv(icol,ipack)<<","<<qv_prev(icol,ipack)<<std::endl;}
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;

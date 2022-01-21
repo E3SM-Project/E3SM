@@ -279,7 +279,7 @@ void P3Microphysics::initialize_impl ()
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,
       prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
-      prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,diag_inputs.qv_prev,
+      prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }
 
