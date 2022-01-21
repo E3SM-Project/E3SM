@@ -103,6 +103,9 @@ module elm_driver
   use elm_instMod            , only : cnstate_vars
   use elm_instMod            , only : dust_vars
   use elm_instMod            , only : vocemis_vars
+!LXu@02/20+++++  
+  use elm_instMod            , only : fireemis_vars
+!LXu@02/20-----   
   use elm_instMod            , only : drydepvel_vars
   use elm_instMod            , only : aerosol_vars
   use elm_instMod            , only : canopystate_vars
@@ -1124,7 +1127,7 @@ contains
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,   &
-                   sedflux_vars, solarabs_vars)
+                   sedflux_vars, solarabs_vars, fireemis_vars)
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1412,7 +1415,7 @@ contains
     call lnd2atm(bounds_proc,                                   &
          atm2lnd_vars, surfalb_vars, frictionvel_vars,          &
          energyflux_vars, solarabs_vars, drydepvel_vars,        &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
+         vocemis_vars, dust_vars, fireemis_vars, ch4_vars, soilhydrology_vars, &
          sedflux_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 

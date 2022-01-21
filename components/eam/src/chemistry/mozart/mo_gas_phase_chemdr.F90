@@ -29,6 +29,12 @@ module mo_gas_phase_chemdr
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
   integer :: o3lnz_ndx, ch4lnz_ndx
   integer :: uci1_ndx
+!LXu@09/2021+++  
+  integer :: id_o3,id_oh,id_ho2,id_h2o2,id_ho2no2,id_ch4,id_c2h4,id_c2h6,id_c3h8,id_isop
+  integer :: id_ch2o,id_ch3cho,id_ch3ooh,id_c2h5ooh,id_ch3coch3,id_mvkmacr,id_roho2
+  integer :: id_h2,id_h2o,id_co,id_no,id_no2,id_no3,id_n2o5,id_hno3,id_dms,id_so2    
+  integer :: id2_h2,id2_h2o,id2_ch4    
+!LXu@09/2021---  
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
@@ -49,6 +55,10 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
+!LXu@07/2021+++
+  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
+  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
+!LXu@07/2021---
 
   real(r8), parameter :: low_limit = 0.1_r8  ! lower limit factor for dry deposition
   integer,  parameter :: srf_emit_nlayer = 3 ! number of layers adding surface emission
@@ -140,6 +150,44 @@ contains
     jno3_a_ndx     = get_rxt_ndx('jno3_a')
     jn2o5_b_ndx    = get_rxt_ndx('jn2o5_b')
     po3_oh_ndx     = get_rxt_ndx('po3_oh')
+!    ch4lnz_ndx =  get_spc_ndx('CH4LNZ')
+!
+!LXu@09/2021+++
+    id_o3 = get_spc_ndx('O3')
+    id_oh = get_spc_ndx('OH')
+    id_ho2 = get_spc_ndx('HO2')
+    id_h2o2 = get_spc_ndx('H2O2')
+    id_ho2no2 = get_spc_ndx('HO2NO2')
+    id_c2h4 = get_spc_ndx('C2H4')
+    id_c2h6 = get_spc_ndx('C2H6')
+    id_c3h8 = get_spc_ndx('C3H8')
+    id_isop = get_spc_ndx('ISOP')
+    
+    id_ch2o = get_spc_ndx('CH2O')
+    id_ch3cho = get_spc_ndx('CH3CHO')
+    id_ch3ooh = get_spc_ndx('CH3OOH')
+    id_c2h5ooh = get_spc_ndx('C2H5OOH')
+    id_ch3coch3 = get_spc_ndx('CH3COCH3')
+    id_mvkmacr = get_spc_ndx('MVKMACR')
+    id_roho2 = get_spc_ndx('ROHO2')
+    id_dms = get_spc_ndx('DMS')
+   
+    id_co = get_spc_ndx('CO')
+    id_no = get_spc_ndx('NO')
+    id_no2 = get_spc_ndx('NO2')
+    id_no3 = get_spc_ndx('NO3')
+    id_n2o5 = get_spc_ndx('N2O5')
+    id_hno3 = get_spc_ndx('HNO3')
+    id_so2 = get_spc_ndx('SO2')
+    
+    id_ch4 = get_inv_ndx('CH4')
+    id_h2 = get_inv_ndx('H2')
+    id_h2o = get_inv_ndx('H2O')
+
+    id2_ch4 = get_spc_ndx('CH4')
+    id2_h2 = get_spc_ndx('H2')
+    id2_h2o = get_spc_ndx('H2O')
+!LXu@09/2021---
 
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
@@ -164,25 +212,28 @@ contains
        else
           call addfld( tag_names(n),             (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        endif
-       !call add_default( tag_names(n), 1, ' ' )
-    enddo
+!       call add_default( tag_names(n), 1, ' ' )
+       if (masterproc) write(iulog,*) rxt_tag_cnt,n,tag_names(n)
+    end do
 
     do n = 1,phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        pht_names(n) = 'J_' // trim(string)
-       call addfld(      pht_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+<       call addfld(      pht_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        call addfld( trim(pht_names(n))//"_nocloud", (/ 'lev' /), 'I', '/s', 'photolysis rate (cloud free)' )
        call addfld( trim(pht_names(n))//"_aerosol", (/ 'lev' /), 'I', '/s', 'photolysis rate (including aerosols)' )
        call addfld( trim(pht_names(n))//"_lookup", (/ 'lev' /), 'I', '/s', 'photolysis rate (lookup table: diagnostic)' )
        !call add_default( pht_names(n), 3, ' ' )
-    enddo
+    end do
 
     do n = 1,rxntot-phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        rxn_names(n) = 'R_' // trim(string)
        call addfld( rxn_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
-       !call add_default( rxn_names(n), 1, ' ' )
-    enddo
+!LXu@09/2021
+!       call add_default( rxn_names(n), 1, ' ' )
+       if (masterproc) write(iulog,*) rxntot,rxntot-phtcnt,n,rxn_names(n)
+    end do
 
     call addfld( 'DTCBS',  horiz_only, 'I',   ' ','photolysis diagnostic black carbon OD' )
     call addfld( 'DTOCS',  horiz_only, 'I',   ' ','photolysis diagnostic organic carbon OD' )
@@ -214,6 +265,37 @@ contains
        call addfld( 'het1_total', (/ 'lev' /), 'I', '/s', 'total N2O5 + H2O het rate constant' )
     endif
     call addfld( 'SZA', horiz_only, 'I', 'degrees', 'solar zenith angle' )
+
+!LXu@09/2021+++
+! output the oh and o3 chmp and chml from difference chemical reactions
+!oh
+       call addfld( 'OH_CHMP_o3_h2o', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O3+H2O)' )
+       call addfld( 'OH_CHMP_no_ho2', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (NO+HO2)' )
+       call addfld( 'OH_CHMP_o3_ho2', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O3+HO2)' )
+       call addfld( 'OH_CHMP_photo', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (Photolysis)' )
+       call addfld( 'OH_CHMP_other_rxns', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (Other reactions)' )
+
+       call addfld( 'OH_CHML_co_oh', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (CO+OH)' )
+       call addfld( 'OH_CHML_ch4_oh', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (CH4+OH)' )
+       call addfld( 'OH_CHML_ch2o_oh', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (CH2O+OH)' )
+       call addfld( 'OH_CHML_isop_oh', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (ISOPRENE+OH)' )
+       call addfld( 'OH_CHML_other_rxns', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (Other reactions)' )
+       call addfld( 'OH_CHML_rainout', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (rainout)' )
+!o3
+       call addfld( 'O3_CHMP_jo2_b', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O2+hv)' )
+       call addfld( 'O3_CHMP_jno2', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (NO2+hv)' )
+       call addfld( 'O3_CHMP_jno3_a', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (NO3+hv)' )
+       call addfld( 'O3_CHMP_jn2o5_b', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (N2O5+hv)' )
+       call addfld( 'O3_CHMP_po3_oh', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (OH+OH->O3+H2O)' )
+
+       call addfld( 'O3_CHML_o3_h2o', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O3+H2O)' )
+       call addfld( 'O3_CHML_o3_h2', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O3+H2)' )
+       call addfld( 'O3_CHML_o3_ch4', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (O3+CH4)' )
+       call addfld( 'O3_CHML_o3_no', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (NOx+O3)' )
+       call addfld( 'O3_CHML_o3_no2', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate (NOx+O3)' )
+       call addfld( 'O3_CHML_other_rxns', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (Other reactions)' )
+       call addfld( 'O3_CHML_rainout', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate (raintout)' )
+!LXu@09/2021---
 
     call chm_diags_inti()
     call rate_diags_init()
@@ -254,6 +336,28 @@ contains
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
+!LXu@02/20+++++
+!original
+!  subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
+!                              phis, zm, zi, calday, &
+!                              tfld, pmid, pdel, pint,  &
+!                              cldw, troplev, &
+!                              ncldwtr, ufld, vfld,  &
+!                              delt, ps, xactive_prates, &
+!                              fsds, ts, asdir, ocnfrac, icefrac, &
+!                              precc, precl, snowhland, ghg_chem, latmapback, &
+!                              chem_name, drydepflx, cflx, qtend, pbuf)
+! add fireflx, fireztop by LXu
+!  subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
+!                              phis, zm, zi, calday, &
+!                              tfld, pmid, pdel, pint,  &
+!                              cldw, troplev, &
+!                              ncldwtr, ufld, vfld,  &
+!                              delt, ps, xactive_prates, &
+!                              fsds, ts, asdir, ocnfrac, icefrac, &
+!                              precc, precl, snowhland, ghg_chem, latmapback, &
+!                              chem_name, drydepflx, cflx, fire_sflx, fire_ztop, qtend, pbuf)
+!LXu@07/2021+++
   subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
                               phis, zm, zi, calday, &
                               tfld, pmid, pdel, pdeldry, pint,  &
@@ -264,8 +368,9 @@ contains
                               do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
-                              chem_name, drydepflx, cflx, qtend, pbuf, ixcldliq, ixcldice, tropFlag, tropFlagInt)
+                              chem_name, drydepflx, cflx, fire_sflx, fire_ztop, qtend, pbuf, ixcldliq, ixcldice, tropFlag, tropFlagInt)
 
+!LXu@07/2021---
     !-----------------------------------------------------------------------
     !     ... Chem_solver advances the volumetric mixing ratio
     !         forward one time step via a combination of explicit,
@@ -323,6 +428,9 @@ contains
     use UCI_cloudJ_interface, only : cloudJ_interface
     use cam_abortutils,    only : endrun
     use mo_constants, only : pi, rgrav, rearth, avogadro
+!LXu@02/20+++++
+    use fire_emissions,    only : fire_emissions_vrt
+!LXu@02/20-----
 !
 ! LINOZ
 !
@@ -379,6 +487,10 @@ contains
     integer,        intent(in)    :: latmapback(pcols)
     character(len=*), intent(in)  :: chem_name
     integer,         intent(in)   :: troplev(pcols)
+ !LXu@02/20+++++
+    real(r8),pointer, intent(in)  :: fire_sflx(:,:)                 ! fire emssions surface flux (kg/m^2/s)
+    real(r8),pointer, intent(in)  :: fire_ztop(:)                   ! top of vertical distribution of fire emssions (m)
+!LXu@02/20-----
 
     real(r8),       intent(inout) :: qtend(pcols,pver,pcnst)        ! species tendencies (kg/kg/s)
     real(r8),       intent(inout) :: cflx(pcols,pcnst)              ! constituent surface flux (kg/m^2/s)
@@ -487,6 +599,26 @@ contains
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
 
+!LXu@09/2021+++ local variables to calculate chemical production and loss of OH and O3
+    real(r8), dimension(ncol,pver,1) :: &
+         prod01, &
+         prod02, &
+         prod03, &
+         prod04, &
+         prod05, &
+         loss01, &
+         loss02, &
+         loss03, &
+         loss04, &
+         loss05, &
+         loss06, &
+         loss07
+	 
+!    integer                        :: trop_idx
+    real(r8), dimension(ncol,pver) :: wrk1,wrk2,wrk3,wrk4,wrk5,wrk6,wrk7
+!    real(r8), dimension(ncol,pver) :: ch4_vmr, h2o_vmr
+!LXu@09/2021--- local variables to calculate chemical production and loss of OH and O3
+
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
@@ -514,7 +646,6 @@ contains
     real(r8), pointer, dimension(:) :: gas_ac_2D
     real(r8), pointer, dimension(:,:) :: gas_ac
     real(r8) :: ftem(pcols,pver) ! tmp space
-
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
     call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
@@ -523,6 +654,11 @@ contains
                  history_UCIgaschmbudget_2D_out = history_UCIgaschmbudget_2D, &
           history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels, &
                     history_chemdyg_summary_out = history_chemdyg_summary)
+
+!LXu@07/2021+++
+!    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
+!                       history_gaschmbudget_2D_out = history_gaschmbudget_2D)   
+!LXu@07/2021---    
 
     call t_startf('chemdr_init')
 
@@ -762,12 +898,19 @@ contains
        call ghg_chem_set_rates( reaction_rates, latmapback, zen_angle, ncol, lchnk )
     endif
 
+!LXu@09/2021 move to output the reaction rates after adjusting the photodissociation rates
     do i = phtcnt+1,rxntot
        call outfld( rxn_names(i-phtcnt), reaction_rates(:,:,i), ncol, lchnk )
     enddo
+!LXu@09/2021---
 
     call adjrxt( reaction_rates, invariants, invariants(1,1,indexm), ncol )
 
+!LXu@09/2021 move to output the reaction rates after adjusting the photodissociation rates
+!    do i = phtcnt+1,rxntot
+!       call outfld( rxn_names(i-phtcnt), reaction_rates(:,:,i), ncol, lchnk )
+!    enddo
+!LXu@09/2021---
     !-----------------------------------------------------------------------
     !        ... Compute the photolysis rates at time = t(n+1)
     !-----------------------------------------------------------------------      
@@ -879,10 +1022,12 @@ contains
                          esfact, vmr, invariants, ncol, lchnk, pbuf )
     endif
 
+!LXu@09/2021 move to output the reaction rates after adjusting the photodissociation rates
     do i = 1,phtcnt
        call outfld( pht_names(i), reaction_rates(:ncol,:,i), ncol, lchnk )
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
     enddo
+!LXu@09/2021---
 
     !! NOTE: the lookup table and xactive_photo use cwat, which is the sum of liquid and ice.
     call outfld( 'Photolysis_CLOUD',       cldfr,               ncol, lchnk )
@@ -895,6 +1040,12 @@ contains
     call O1D_to_2OH_adj( reaction_rates, invariants, invariants(:,:,indexm), ncol, tfld )
     call phtadj( reaction_rates, invariants, invariants(:,:,indexm), ncol )
 
+!LXu@09/2021+++
+!    do i = 1,phtcnt
+!       call outfld( pht_names(i), reaction_rates(:ncol,:,i), ncol, lchnk )
+!       call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
+!    enddo
+!LXu@09/2021---
     !-----------------------------------------------------------------------
     !        ... Compute the extraneous frcing at time = t(n+1)
     !-----------------------------------------------------------------------      
@@ -910,6 +1061,11 @@ contains
     call setext( extfrc, zint, zintr, cldtop, &
                  zmid, lchnk, tfld, o2mmr, ommr, &
                  pmid, mbar, rlats, calday, ncol, rlons, pbuf )
+
+!LXu@02/20+++++
+    ! include forcings from fire emissions ...
+    call fire_emissions_vrt( ncol, lchnk, zint, fire_sflx, fire_ztop, extfrc )
+!LXu@02/20-----
 
     do m = 1,extcnt
        if( m /= synoz_ndx ) then
@@ -969,6 +1125,11 @@ contains
        call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSW' )
     endif
+!LXu@07/2021+++
+!    if ( history_gaschmbudget .or. history_gaschmbudget_2D ) then
+!         vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+!    endif
+!LXu@07/2021---
 
     !=======================================================================
     !        ... Call the class solution algorithms
@@ -1016,6 +1177,202 @@ contains
       end do level0_loop
     end if
     
+!LXu@09/2021+++
+! output the oh and o3 chmp and chml from difference chemical reactions
+! OH
+     if (masterproc) then
+         write(iulog,*) 'id_o3,id_oh = ', id_o3,id_oh,id_ho2,id_h2o2,id_ho2no2,id_c2h4,id_c2h6,id_c3h8,id_isop, &
+                        id_ch2o,id_ch3cho,id_ch3ooh,id_c2h5ooh,id_ch3coch3,id_mvkmacr,id_roho2, &
+                        id_co,id_no,id_no2,id_no3,id_hno3,id_dms,id_so2
+         write(iulog,*) 'id_ch4,id_h2,id_h2o = ',id_ch4,id_h2,id_h2o
+     end if	 
+
+    ! tropospheric column ozone
+!    wrk1d(:) = 0._r8
+!    do i = 1,ncol
+!       do k = 1,pver
+!          if (k <= ltrop(i)) then
+!            cycle
+!          end if
+!          wrk1d(i) = wrk1d(i) + wrk(i,k)
+!       end do
+!    end do
+!    call outfld( 'TCO', wrk1d,   ncol, lchnk )
+
+! OH production and loss
+! production: 13 rxns
+!       prod01(:ncol,:,1) = 2._r8*reaction_rates(:ncol,:,20) *vmr(:ncol,:,id_o3) *invariants(:ncol,:,id_h2o)
+!lxu_old       prod01(:ncol,:,1) = 2._r8*reaction_rates(:ncol,:,20) *vmr(:ncol,:,id_o3) *h2o_vmr(:ncol,:)
+!          wrk1d(i) = wrk1d(i) + wrk(i,k)
+!       end do
+!    end do
+     prod01(:,:,1) = 0._r8
+     prod02(:,:,1) = 0._r8
+     prod03(:,:,1) = 0._r8
+     prod04(:,:,1) = 0._r8
+     prod05(:,:,1) = 0._r8
+     loss01(:,:,1) = 0._r8
+     loss02(:,:,1) = 0._r8
+     loss03(:,:,1) = 0._r8
+     loss04(:,:,1) = 0._r8
+     loss05(:,:,1) = 0._r8
+     loss06(:,:,1) = 0._r8
+     do k = 1,pver
+        do i = 1,ncol
+          if (k <= ltrop_sol(i)) then
+            cycle
+          end if
+    
+	  prod01(i,k,1) = prod01(i,k,1) + 2._r8*reaction_rates(i,k,20) *vmr(i,k,id_o3) 
+	  prod02(i,k,1) = prod02(i,k,1) + reaction_rates(i,k,43) *vmr(i,k,id_no) *vmr(i,k,id_ho2)
+	  prod03(i,k,1) = prod03(i,k,1) + reaction_rates(i,k,36) *vmr(i,k,id_o3) *vmr(i,k,id_ho2)
+	  prod04(i,k,1) = prod04(i,k,1) + 2._r8*reaction_rates(i,k, 3) *vmr(i,k,id_h2o2) &
+                	+ reaction_rates(i,k, 6) *vmr(i,k,id_ch3ooh) &
+                	+ reaction_rates(i,k, 7) *vmr(i,k,id_c2h5ooh) &
+                	+ reaction_rates(i,k,13) *vmr(i,k,id_hno3) &
+                	+ reaction_rates(i,k,14) *vmr(i,k,id_ho2no2) 		     
+   !lxu_old       prod05(i,k,1) =    reaction_rates(i,k,21) *vmr(i,k,id_o3) * 5.5e-7_r8 &
+   !                     +        reaction_rates(i,k,22) *vmr(i,k,id_o3) * ch4_vmr(i,k) &
+   !                     +        reaction_rates(i,k,31) *vmr(i,k,id_isop) *vmr(i,k,id_o3) &
+   !                     + 0.3_r8*reaction_rates(i,k,60) *vmr(i,k,id_ch3ooh) *vmr(i,k,id_oh) &
+   !                     + reaction_rates(i,k,75) *vmr(i,k,id_roho2) *vmr(i,k,id_ho2) 
+	  prod05(i,k,1) = prod05(i,k,1) + reaction_rates(i,k,21) *vmr(i,k,id_o3)  &
+                	+ reaction_rates(i,k,22) *vmr(i,k,id_o3)  &
+                	+ reaction_rates(i,k,31) *vmr(i,k,id_isop)   *vmr(i,k,id_o3) &
+                	+ 0.3_r8*reaction_rates(i,k,60) *vmr(i,k,id_ch3ooh) *vmr(i,k,id_oh) &
+                	+ reaction_rates(i,k,75) *vmr(i,k,id_roho2)  *vmr(i,k,id_ho2) 
+
+
+	  loss01(i,k,1) =  loss01(i,k,1) + (reaction_rates(i,k,23) + reaction_rates(i,k,24)) *vmr(i,k,id_co) *vmr(i,k,id_oh)
+	  loss02(i,k,1) =  loss02(i,k,1) + reaction_rates(i,k,26) *vmr(i,k,id_oh)
+	  loss03(i,k,1) =  loss03(i,k,1) + reaction_rates(i,k,33) *vmr(i,k,id_ch2o) *vmr(i,k,id_oh)
+	  loss04(i,k,1) =  loss04(i,k,1) + reaction_rates(i,k,32) *vmr(i,k,id_isop) *vmr(i,k,id_oh)       
+
+	  loss05(i,k,1) = loss05(i,k,1) + ( reaction_rates(i,k,25)   &
+                	+ reaction_rates(i,k,27) *vmr(i,k,id_c2h6)  &
+                	+ reaction_rates(i,k,28) *vmr(i,k,id_c3h8)  &
+                	+ reaction_rates(i,k,29) *vmr(i,k,id_c2h4)  &
+                	+ reaction_rates(i,k,34) *vmr(i,k,id_o3)  &
+                	+ 2._r8*reaction_rates(i,k,35) *vmr(i,k,id_oh) &
+                	+ reaction_rates(i,k,37) *vmr(i,k,id_ho2)  &
+                	+ 2._r8*reaction_rates(i,k,40) *vmr(i,k,id_oh)  &
+                	+ reaction_rates(i,k,41) *vmr(i,k,id_h2o2)  &
+                	+ reaction_rates(i,k,45) *vmr(i,k,id_no3)  &
+                	+ reaction_rates(i,k,47) *vmr(i,k,id_ho2no2)  &
+                	+ reaction_rates(i,k,48) *vmr(i,k,id_hno3)  &
+                	+ reaction_rates(i,k,49) *vmr(i,k,id_hno3)  &
+                	+ reaction_rates(i,k,50) *vmr(i,k,id_no2)  &
+                	+ reaction_rates(i,k,60) *vmr(i,k,id_ch3ooh)  &
+			+ reaction_rates(i,k,65) *vmr(i,k,id_c2h5ooh)  &
+                	+ reaction_rates(i,k,67) *vmr(i,k,id_ch3cho)  &
+                	+ reaction_rates(i,k,72) *vmr(i,k,id_ch3coch3)  &
+                	+ reaction_rates(i,k,73) *vmr(i,k,id_ch3coch3)  &
+                	+ reaction_rates(i,k,81) *vmr(i,k,id_mvkmacr)  &
+                	+ reaction_rates(i,k,85) *vmr(i,k,id_dms)  &
+                	+ reaction_rates(i,k,86) *vmr(i,k,id_dms)  &
+                	+ reaction_rates(i,k,87) *vmr(i,k,id_so2) )*vmr(i,k,id_oh) 
+	  loss06(i,k,1) = loss06(i,k,1) + het_rates(i,k,2)*vmr(i,k,id_oh)
+        end do
+      end do
+      		     
+      wrk1(:,:) = prod01(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk2(:,:) = prod02(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk3(:,:) = prod03(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk4(:,:) = prod04(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk5(:,:) = prod05(:ncol,:,1)*invariants(:ncol,:,indexm)
+      call outfld( 'OH_CHMP_o3_h2o', wrk1(:,:), ncol, lchnk )
+      call outfld( 'OH_CHMP_no_ho2', wrk2(:,:), ncol, lchnk )
+      call outfld( 'OH_CHMP_o3_ho2', wrk3(:,:), ncol, lchnk )
+      call outfld( 'OH_CHMP_photo',  wrk4(:,:), ncol, lchnk )
+      call outfld( 'OH_CHMP_other_rxns', wrk5(:,:), ncol, lchnk )
+      wrk1(:,:) = loss01(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk2(:,:) = loss02(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk3(:,:) = loss03(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk4(:,:) = loss04(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk5(:,:) = loss05(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk6(:,:) = loss06(:ncol,:,1)*invariants(:ncol,:,indexm)
+      call outfld( 'OH_CHML_co_oh',   wrk1(:,:), ncol, lchnk )
+      call outfld( 'OH_CHML_ch4_oh',  wrk2(:,:), ncol, lchnk )
+      call outfld( 'OH_CHML_ch2o_oh', wrk3(:,:), ncol, lchnk )
+      call outfld( 'OH_CHML_isop_oh', wrk4(:,:), ncol, lchnk )
+      call outfld( 'OH_CHML_other_rxns', wrk5(:,:), ncol, lchnk )
+      call outfld( 'OH_CHML_rainout',    wrk6(:,:), ncol, lchnk )
+! 
+!O3 production and loss
+!
+!               ind_prd(:,:,53) =2.000_r8*rxt(:,:,2)
+!               prod(53) = rxt(8)*y(9) +rxt(9)*y(10) +rxt(12)*y(11) +rxt(35)*y(2)*y(2)
+!  
+!               loss(53) = rxt(20)* y(1)   + rxt(21)*y(1)   + rxt(22)*y(1) +rxt(42)* y(8)*y1(!) +rxt(44)* y(9)*y(1)
+!
+!                              + (rxt(30)* y(18) +rxt(31)* y(25) + rxt(34)* y(2)+rxt(36)* y(3)+rxt(80)* y(27))*y(1)
+!                              + het_rates(1)* y(1)
+     prod01(:,:,1) = 0._r8
+     prod02(:,:,1) = 0._r8
+     prod03(:,:,1) = 0._r8
+     prod04(:,:,1) = 0._r8
+     prod05(:,:,1) = 0._r8
+     loss01(:,:,1) = 0._r8
+     loss02(:,:,1) = 0._r8
+     loss03(:,:,1) = 0._r8
+     loss04(:,:,1) = 0._r8
+     loss05(:,:,1) = 0._r8
+     loss06(:,:,1) = 0._r8
+     loss07(:,:,1) = 0._r8
+     do k = 1,pver
+        do i = 1,ncol
+          if (k <= ltrop_sol(i)) then
+            cycle
+          end if
+ 
+	  prod01(i,k,1) = prod01(i,k,1) + reaction_rates(i,k,2)
+	  prod02(i,k,1) = prod02(i,k,1) + reaction_rates(i,k,8) *vmr(i,k,id_no2) 
+	  prod03(i,k,1) = prod03(i,k,1) + reaction_rates(i,k,9) *vmr(i,k,id_no3) 
+	  prod04(i,k,1) = prod04(i,k,1) + reaction_rates(i,k,12) *vmr(i,k,id_n2o5) 
+	  prod05(i,k,1) = prod05(i,k,1) + reaction_rates(i,k,35) *vmr(i,k,id_oh) *vmr(i,k,id_oh)
+
+	  loss01(i,k,1) = loss01(i,k,1) + reaction_rates(i,k,20) *vmr(i,k,id_o3) 
+	  loss02(i,k,1) = loss02(i,k,1) + reaction_rates(i,k,21) *vmr(i,k,id_o3) 
+	  loss03(i,k,1) = loss03(i,k,1) + reaction_rates(i,k,22) *vmr(i,k,id_o3) 
+	  loss04(i,k,1) = loss04(i,k,1) + reaction_rates(i,k,42) *vmr(i,k,id_no) *vmr(i,k,id_o3) 
+	  loss05(i,k,1) = loss05(i,k,1) + reaction_rates(i,k,44) *vmr(i,k,id_no2) *vmr(i,k,id_o3) 
+	  loss06(i,k,1) = loss06(i,k,1) + (reaction_rates(i,k,30)*vmr(i,k,id_c2h4) &
+                             + reaction_rates(i,k,31)*vmr(i,k,id_isop) &
+                             + reaction_rates(i,k,34)*vmr(i,k,id_oh) &
+                             + reaction_rates(i,k,36)*vmr(i,k,id_ho2) &
+                             + reaction_rates(i,k,80)*vmr(i,k,id_mvkmacr)) *vmr(i,k,id_o3)
+	  loss07(i,k,1) = loss07(i,k,1) + het_rates(i,k,1)*vmr(i,k,id_o3)
+        end do
+      end do
+		     
+      wrk1(:,:) = prod01(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk2(:,:) = prod02(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk3(:,:) = prod03(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk4(:,:) = prod04(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk5(:,:) = prod05(:ncol,:,1)*invariants(:ncol,:,indexm)
+      call outfld( 'O3_CHMP_jo2_b', wrk1(:,:), ncol, lchnk )
+      call outfld( 'O3_CHMP_jno2', wrk2(:,:), ncol, lchnk )
+      call outfld( 'O3_CHMP_jno3_a', wrk3(:,:), ncol, lchnk )
+      call outfld( 'O3_CHMP_jn2o5_b', wrk4(:,:), ncol, lchnk )
+      call outfld( 'O3_CHMP_po3_oh',  wrk5(:,:), ncol, lchnk )
+
+      wrk1(:,:) = loss01(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk2(:,:) = loss02(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk3(:,:) = loss03(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk4(:,:) = loss04(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk5(:,:) = loss05(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk6(:,:) = loss06(:ncol,:,1)*invariants(:ncol,:,indexm)
+      wrk7(:,:) = loss07(:ncol,:,1)*invariants(:ncol,:,indexm)
+      call outfld( 'O3_CHML_o3_h2o', wrk1(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_o3_h2', wrk2(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_o3_ch4', wrk3(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_o3_no', wrk4(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_o3_no2', wrk5(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_other_rxns', wrk6(:,:), ncol, lchnk )
+      call outfld( 'O3_CHML_rainout', wrk7(:,:), ncol, lchnk )
+!LXu@09/2021---
+
+!LXu@07/2021+++
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1838,6 +2195,10 @@ contains
     end do
 
     call t_startf('chemdr_diags')
+!LXu@07/2021+++
+!    call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
+!                    reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
+!                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pbuf  )
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
                     mmr_tend(:ncol,:,:), pmid, pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev, tropFlag=tropFlag )

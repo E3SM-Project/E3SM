@@ -4,6 +4,9 @@ module cam_cpl_indices
   use mct_mod
   use seq_drydep_mod, only: drydep_fields_token, lnd_drydep
   use shr_megan_mod,  only: shr_megan_fields_token, shr_megan_mechcomps_n
+!LXu@02/20+++++
+  use shr_fire_emis_mod, only: shr_fire_emis_fields_token, shr_fire_emis_ztop_token, shr_fire_emis_mechcomps_n
+!LXu@02/20-----
 
   implicit none
 
@@ -87,6 +90,10 @@ module cam_cpl_indices
   integer :: index_x2a_Sl_ddvel        ! dry deposition velocities from land
   integer :: index_x2a_Sx_u10          ! 10m wind
   integer :: index_x2a_Sx_u10withgusts ! 10m wind with gusts
+!LXu@02/20+++++
+  integer :: index_x2a_Fall_flxfire    ! Fire emissions fluxes   
+  integer :: index_x2a_Sl_ztopfire   ! Fire emissions fluxes top of vert distribution  
+!LXu@02/2-----
 
 contains
 
@@ -149,6 +156,16 @@ contains
     else
        index_x2a_Fall_flxvoc = 0
     endif
+
+!LXu@02/20+++++
+    if (shr_fire_emis_mechcomps_n>0) then
+       index_x2a_Fall_flxfire = mct_avect_indexra(x2a,trim(shr_fire_emis_fields_token))
+       index_x2a_Sl_ztopfire = mct_avect_indexra(x2a,trim(shr_fire_emis_ztop_token))
+    else
+       index_x2a_Fall_flxfire = 0
+       index_x2a_Sl_ztopfire = 0
+    endif
+!LXu@02/20-----
 
     if ( lnd_drydep )then
        index_x2a_Sl_ddvel   = mct_avect_indexra(x2a, trim(drydep_fields_token))

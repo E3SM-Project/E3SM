@@ -123,7 +123,7 @@ OPTIONS
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | chemuci_linozv3_mam5_vbs |
-			  none ].  Default: trop_mam3.
+			  superfast_mam4_resus_mom_soag_po4 | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -shoc_sgs          Turns on SHOC_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
@@ -1436,7 +1436,15 @@ if ((($chem_pkg ne 'none') && ($chem_pkg ne 'spa')) || ($prog_species)) {
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
+#LXu@02/2019+++
+#    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+  if ($chem_pkg eq 'superfast_mam4_resus_mom_soag_po4') {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM_PO4 ';
+  } else {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+  }
+#LXu@02/2019---
+
 } elsif ($chem_pkg =~ '_mam5' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_5MODE ';
 } elsif ($chem_pkg =~ '_mam4' ) {

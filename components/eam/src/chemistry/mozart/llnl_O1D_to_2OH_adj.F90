@@ -143,10 +143,15 @@ contains
        if( jo1dU_ndx > 0 ) then
           prod_O1D(:) = rxt(:,k,jo1dU_ndx)   ! 1/sec, = production of O(1D) when *[O3]
              call comp_exp( exp_fac, 110._r8*tinv, ncol )
+!LXu@09/2021
           fc(:) =         2.15e-11_r8 * exp_fac(:) * invariants(:,k,n2_ndx)
+!          fc(:) =         2.15e-11_r8 * exp_fac(:) * invariants(:,k,o2_ndx)
              call comp_exp( exp_fac, 55._r8*tinv, ncol )
+!LXu@09/2021
           fc(:) = fc(:) + 3.30e-11_r8 * exp_fac(:) * invariants(:,k,o2_ndx)
+!          fc(:) = fc(:) + 3.30e-11_r8 * exp_fac(:) * invariants(:,k,n2_ndx)
              call comp_exp( exp_fac, 60._r8*tinv, ncol )
+!             call comp_exp( exp_fac, 63._r8*tinv, ncol )
           fc(:) = fc(:) + 1.63e-10_r8 * exp_fac(:) * invariants(:,k,h2o_ndx)
 
           if( uci1_ndx > 0 ) then

@@ -37,6 +37,11 @@ module lnd2atmMod
   use SedFluxType          , only : sedflux_type
   use spmdmod          , only: masterproc
   use elm_varctl     , only : iulog
+!LXu@01/20++++++
+  use shr_fire_emis_mod    , only : shr_fire_emis_mechcomps_n
+  use CNFireEmissionsMod   , only : fireemis_type
+!LXu@01/20------
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -139,12 +144,14 @@ contains
   end subroutine lnd2atm_minimal
 
   !------------------------------------------------------------------------
+!LXu@02/20++++++
   subroutine lnd2atm(bounds, &
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        energyflux_vars, &
        solarabs_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
+       vocemis_vars, dust_vars, fireemis_vars, ch4_vars, soilhydrology_vars, &
        sedflux_vars, lnd2atm_vars)
+!LXu@02/20-----
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -167,6 +174,9 @@ contains
     type(soilhydrology_type), intent(in)    :: soilhydrology_vars
     type(sedflux_type)     , intent(in)     :: sedflux_vars
     type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
+!LXu@02/20++++++
+    type(fireemis_type)    , intent(in)     :: fireemis_vars
+!LXu@02/20------
     !
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
@@ -359,6 +369,19 @@ contains
          flxdst_grc           (bounds%begg:bounds%endg,:), &
          p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
 
+!LXu@02/20++++++
+    ! fire emissions fluxes
+     if (use_cn .and. shr_fire_emis_mechcomps_n>0) then
+        call p2g(bounds, shr_fire_emis_mechcomps_n, &
+            -fireemis_vars%fireflx_patch(bounds%begp:bounds%endp,:), &
+             lnd2atm_vars%fireflx_grc   (bounds%begg:bounds%endg,:), &
+             p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+        call p2g(bounds, &
+             fireemis_vars%ztop_patch (bounds%begp:bounds%endp), &
+             lnd2atm_vars%fireztop_grc(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+     endif
+!LXu@02/20-----
 
     ! ch4 flux
     if (use_lch4 .and. (.not. is_active_betr_bgc)) then

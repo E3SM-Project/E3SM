@@ -49,6 +49,9 @@ public :: &
    rad_cnst_get_mode_num_idx,   &! get constituent index of mode number m.r. (climate list only)
    rad_cnst_out,                &! output constituent diagnostics (mass per layer and column burden)
    rad_cnst_get_call_list        ! return list of active climate/diagnostic calls to radiation
+!LXu@02/20+++++
+public :: rad_cnst_num_name
+!LXu@02/20+++++
 
 integer, parameter :: cs1 = 256
 integer, public, parameter :: N_DIAG = 10
@@ -240,6 +243,18 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-organic' /)
 
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 10
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic', 'phosphate' /)
+!LXu@08/2018---
 #else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
@@ -524,6 +539,58 @@ subroutine rad_cnst_get_gas(list_idx, gasname, state, pbuf, mmr)
 
 end subroutine rad_cnst_get_gas
 
+!================================================================================================
+!LXu@02/20+++++
+function rad_cnst_num_name(list_idx, spc_name_in, num_name_out, mode_out, spec_out ) result(found)
+
+  ! for a given species name spc_name_in return (optionals):
+  !   num_name_out -- corresponding number density species name
+  !   mode_out -- corresponding mode number
+  !   spec_out -- corresponding species number within the mode
+
+  integer,         intent(in) :: list_idx ! index of the climate or a diagnostic list
+  character(len=*),intent(in) :: spc_name_in
+  character(len=*),intent(out):: num_name_out
+  integer,optional,intent(out):: mode_out
+  integer,optional,intent(out):: spec_out
+
+  logical :: found
+
+  ! Local variables
+  type(modelist_t), pointer :: m_list ! local pointer to mode list of interest
+  integer :: n,m, mm
+  integer :: nmodes
+  integer :: nspecs
+  character(len= 32) :: spec_name
+
+  found = .false.
+  
+  m_list => ma_list(list_idx)
+  nmodes = m_list%nmodes
+  
+  do n = 1,nmodes
+     mm = m_list%idx(n)
+     nspecs = modes%comps(mm)%nspec
+     do m = 1,nspecs
+        spec_name = modes%comps(mm)%camname_mmr_a(m)
+        if (spc_name_in == spec_name) then
+           num_name_out = modes%comps(mm)%camname_num_a
+           found = .true.
+           if (present(mode_out)) then
+              mode_out = n
+           endif
+           if (present(spec_out)) then
+              spec_out = m
+           endif
+           return
+        endif
+     enddo
+  enddo
+
+  return
+
+end function
+!LXu@02/20-----
 !================================================================================================
 
 subroutine rad_cnst_get_info(list_idx, gasnames, aernames, &
@@ -1677,9 +1744,12 @@ subroutine parse_mode_defs(nl_in, modes)
       integer :: i
 
       do i = 1, num_spec_types
+      if (masterproc) then
+         write(iulog,*) num_spec_types, i, str(ib:ie), trim(spec_type_names(i))
+      end if
          if (str(ib:ie) == trim(spec_type_names(i))) return
       end do
-
+   
       call parse_error('specie type not valid', str(ib:ie))
 
    end subroutine check_specie_type
@@ -1697,7 +1767,7 @@ subroutine parse_mode_defs(nl_in, modes)
          if (str(ib:ie) == trim(mode_type_names(i))) return
       end do
 
-      call parse_error('mode type not valid', str(ib:ie))
+     call parse_error('mode type not valid', str(ib:ie))
 
    end subroutine check_mode_type
 

@@ -52,7 +52,7 @@ contains
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', 'num_c3  ', &
          'num_c4  ', 'num_c5  ', 'num_c6  ', 'num_c7  ', &
          'num_c8  ', 'num_c9  ' /)
-#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PO4 )
     character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
          'num_a3  ', 'num_a4  ' /)
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', &
@@ -114,6 +114,18 @@ contains
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
             'p-organic ', 's-organic ', 'black-c   ', &
             'dust      ', 'seasalt   ', 'm-organic ' /)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' , 'po4_a1  '/)
+       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ', 'po4_c1  ' /)
+       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+            'p-organic ', 's-organic ', 'black-c   ', &
+            'dust      ', 'seasalt   ', 'm-organic ', 'phosphate '  /)
+!LXu@08/2018---
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
@@ -144,7 +156,7 @@ contains
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE )
+#elif ( defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM_PO4 )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
        xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
@@ -199,12 +211,35 @@ contains
           xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
           xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
 #endif
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       ! mode 3 (coarse dust & seasalt) species
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+          xname_massptr(:nspec_amode(3),3)   = &
+          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' , 'po4_a3  '/)
+          xname_massptrcw(:nspec_amode(3),3) = &
+          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ', 'po4_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
+               's-organic ', 'm-organic ', 'phosphate ' /)
+#else
+          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+!LXu@08/2018---
 #endif
 #if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
        ! mode 4 (primary carbon) species
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ' /)
        xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ' /)
        xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ' /)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       ! mode 4 (primary carbon) species
+       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ', 'po4_a4  ' /)
+       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ', 'po4_c4  ' /)
+       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ', 'm-organic ', 'phosphate ' /)
+!LXu@08/2018---
 #elif ( defined MODAL_AERO_4MODE )
        ! mode 4 (primary carbon) species
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
@@ -782,6 +817,10 @@ loop:    do i = icldphy+1, pcnst
           lptr_mom_cw_amode(m) = init_val
           lptr_dust_a_amode(m)  = init_val
           lptr_dust_cw_amode(m) = init_val
+!LXu@08/2018+++
+          lptr_po4_a_amode(m)  = init_val
+          lptr_po4_cw_amode(m) = init_val
+!LXu@08/2018---
           do l = 1, nspec_amode(m)
              l2 = lspectype_amode(l,m)
              if ( (specname_amode(l2) .eq. 'sulfate') .and.  &
@@ -849,6 +888,13 @@ loop:    do i = icldphy+1, pcnst
                 lptr_dust_a_amode(m)  = lmassptr_amode(l,m)
                 lptr_dust_cw_amode(m) = lmassptrcw_amode(l,m)
              end if
+!LXu@08/2018+++
+             if ( (specname_amode(l2) .eq. 'phosphate') .and.  &
+                  (lptr_po4_a_amode(m) .le. 0) ) then
+                lptr_po4_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_po4_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+!LXu@08/2018---
           end do
        end do
 
@@ -877,6 +923,10 @@ loop:    do i = icldphy+1, pcnst
        specmw_dust_amode = 1.0_r8
        specmw_seasalt_amode = 1.0_r8
        specmw_mom_amode = 1.0_r8
+!LXu@08/2018+++
+       specdens_po4_amode = 2.0_r8
+       specmw_po4_amode = 1.0_r8
+!LXu@08/2018---
        do m = 1, ntot_aspectype
           if      (specname_amode(m).eq.'sulfate   ') then
              specdens_so4_amode = specdens_amode(m)
@@ -914,6 +964,10 @@ loop:    do i = icldphy+1, pcnst
           else if (specname_amode(m).eq.'m-organic ') then
              specdens_mom_amode = specdens_amode(m)
              specmw_mom_amode = specmw_amode(m)
+!LXu@08/2018
+          else if (specname_amode(m).eq.'phosphate ') then
+             specdens_po4_amode = specdens_amode(m)
+             specmw_po4_amode = specmw_amode(m)
           end if
        enddo
 
@@ -988,6 +1042,14 @@ loop:    do i = icldphy+1, pcnst
           call initaermodes_setspecptrs_write2( m,                    &
                lptr_mom_a_amode(m), lptr_mom_cw_amode(m),  'mom' )
        end do
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       write(iulog,9000) 'phosphate '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_po4_a_amode(m), lptr_po4_cw_amode(m),  'po4' )
+       end do
+#endif
 
        write(iulog,9000) 'dust       '
        do m = 1, ntot_amode

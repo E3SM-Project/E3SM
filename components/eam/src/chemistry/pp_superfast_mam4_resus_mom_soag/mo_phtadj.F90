@@ -42,6 +42,8 @@
       real(r8) ::  im(ncol)
 
       do k = 1,pver
+         im(:ncol) = 1._r8 / m(:ncol,k)
+         p_rate(:,k,  2) = p_rate(:,k,  2)  * inv(:,k, 3) * im(:)
       end do
 
       end subroutine phtadj

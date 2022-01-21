@@ -285,6 +285,7 @@
 <seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="superfast_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="chemuci_linozv3_mam5_vbs"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="superfast_mam4_resus_mom_soag_po4"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -700,6 +701,7 @@
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="superfast_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="chemuci_linozv3_mam5_vbs">xactive_atm</drydep_method>
+<drydep_method chem="superfast_mam4_resus_mom_soag_po4">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->

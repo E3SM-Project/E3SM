@@ -16,6 +16,9 @@ module lnd2atmType
   use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fan
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
+!LXu@02/20+++++
+  use shr_fire_emis_mod,only : shr_fire_emis_mechcomps_n
+!LXu@02/20-----
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -53,6 +56,10 @@ module lnd2atmType
      real(r8), pointer :: flxvoc_grc         (:,:) => null() ! VOC flux (size bins)
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
      real(r8), pointer :: flux_nh3_grc       (:)   => null() ! gross NH3 emission (gN/m2/s) [+ to atm]
+!LXu@02/20++++++
+     real(r8), pointer :: fireflx_grc        (:,:) => null() ! Wild Fire Emissions
+     real(r8), pointer :: fireztop_grc       (:)   => null() ! Wild Fire Emissions vertical distribution top
+!LXu@02/20------
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
      real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
@@ -165,6 +172,12 @@ contains
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
     endif
+!LXu@02/20++++++
+    if (shr_fire_emis_mechcomps_n>0) then
+       allocate(this%fireflx_grc(begg:endg,1:shr_fire_emis_mechcomps_n));  this%fireflx_grc(:,:) = ival
+       allocate(this%fireztop_grc(begg:endg))                           ;  this%fireztop_grc(:)  = ival
+    endif
+!LXu@02/20------
     if ( n_drydep > 0 .and. drydep_method == DD_XLND )then
        allocate(this%ddvel_grc(begg:endg,1:n_drydep));   this%ddvel_grc(:,:)=ival
     end if

@@ -1191,8 +1191,13 @@ if ($aer_model eq 'mam' ) {
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam4_resus_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam5/) {$aero_modes = '5mode';}
+#LXu@08/2021
+  if ($chem =~ /_mam4_resus_mom_soag/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
   if ($chem =~ /_mam9/) {$aero_modes = '9mode';}
+#LXu@08/2018
+  if ($chem =~ /_mam4_resus_mom_soag_po4/) {$aero_modes = '4mode_mom_po4';}
+  print "aero_mode is $aero_modes";
 
   my @mode_names;
   my @mode_types;
@@ -1496,6 +1501,77 @@ if ($aer_model eq 'mam' ) {
             [qw(A A A)],
             );
     }
+#LXu@08/2018+++
+  } elsif($aero_modes eq '4mode_mom_po4') {
+      # For 4 modes
+
+    # MAM rad_climate settings.  The externally mixed quantities in the modal aerosol
+    # model are the modes.
+    push @aero_names, qw(mam4_mode1 mam4_mode2 mam4_mode3 mam4_mode4);
+    push @aerosources, qw(M: M: M: M:);
+  
+    # Each of the mode names put into the @aero_names array needs to be defined.
+    @mode_names    = qw(mam4_mode1 mam4_mode2 mam4_mode3 mam4_mode4);
+    @mode_types    = qw(accum aitken coarse primary_carbon);
+    @mode_num      = qw(num_a1 num_a2 num_a3 num_a4);
+    @mode_num_cw   = qw(num_c1 num_c2 num_c3 num_c4);
+    if ($rain_evap_to_coarse_aero == 0) { #default
+	@mode_spec     = (
+	    [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1 mom_a1 po4_a1)],
+	    [qw(so4_a2 soa_a2 ncl_a2 mom_a2)],
+	    [qw(dst_a3 ncl_a3 so4_a3)],
+	    [qw(pom_a4 bc_a4 mom_a4 po4_a4)],
+	    );
+	@mode_spec_type = (
+	    [qw(sulfate p-organic s-organic black-c dust seasalt  m-organic phosphate)],
+	    [qw(sulfate s-organic seasalt  m-organic)],
+	    [qw(dust seasalt sulfate)],
+	    [qw(p-organic black-c  m-organic phosphate)],
+	    );
+	@mode_spec_cw  = (
+	    [qw(so4_c1 pom_c1 soa_c1 bc_c1 dst_c1 ncl_c1 mom_c1 po4_c1)],
+	    [qw(so4_c2 soa_c2 ncl_c2 mom_c2)],
+	    [qw(dst_c3 ncl_c3 so4_c3)],
+	    [qw(pom_c4 bc_c4 mom_c4 po4_c4)],
+	    );	
+      
+	@mode_num_src  = qw(A A A A);
+	@mode_spec_src = (
+	    [qw(A A A A A A A A)],
+	    [qw(A A A A)],
+	    [qw(A A A)],
+	    [qw(A A A A)],
+	    );
+    }
+    else{
+	@mode_spec     = (
+            [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1 mom_a1 po4_a1)],
+            [qw(so4_a2 soa_a2 ncl_a2 mom_a2)],
+            [qw(dst_a3 ncl_a3 so4_a3 bc_a3 pom_a3 soa_a3 mom_a3 po4_a3)],
+            [qw(pom_a4 bc_a4 mom_a4 po4_a4)],
+            );
+        @mode_spec_type = (
+            [qw(sulfate p-organic s-organic black-c dust seasalt m-organic phosphate)],
+            [qw(sulfate s-organic seasalt m-organic)],
+            [qw(dust seasalt sulfate black-c p-organic s-organic m-organic phosphate)],
+            [qw(p-organic black-c m-organic phosphate)],
+            );
+        @mode_spec_cw  = (
+            [qw(so4_c1 pom_c1 soa_c1 bc_c1 dst_c1 ncl_c1 mom_c1 po4_c1)],
+            [qw(so4_c2 soa_c2 ncl_c2 mom_c2)],
+            [qw(dst_c3 ncl_c3 so4_c3 bc_c3 pom_c3 soa_c3 mom_c3 po4_c3)],
+            [qw(pom_c4 bc_c4 mom_c4 po4_c4)],
+            );
+
+        @mode_num_src  = qw(A A A A);
+        @mode_spec_src = (
+            [qw(A A A A A A A A)],
+            [qw(A A A A)],
+            [qw(A A A A A A A A)],
+            [qw(A A A A)],
+            );
+    }
+#LXu@08/2018---
   } elsif($aero_modes eq '7mode') { 
 
     # For 7 modes
@@ -3257,6 +3333,157 @@ if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'chemuci_linozv3_mam5_v
 	add_default($nl, 'sad_type',  'val'=>'CYCLICAL');
 	add_default($nl, 'sad_cycle_yr',  'val'=>'1990');
     }
+    unless (defined $nl->get_value('linoz_data_type')) {
+	add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
+	add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');
+    }
+    unless (defined $nl->get_value('chlorine_loading_type')) {
+	add_default($nl, 'chlorine_loading_type',  'val'=>'FIXED');
+	add_default($nl, 'chlorine_loading_fixed_ymd',  'val'=>'20000101');
+    }
+    add_default($nl, 'xactive_prates', 'val'=>'.false.');
+
+    # Prescribed species
+    my $val = "'CH4','NO3'";
+    add_default($nl, 'tracer_cnst_specifier', 'val'=>$val);
+    my @files = ( 'tracer_cnst_datapath','tracer_cnst_file', 'tracer_cnst_filelist');
+    foreach my $file (@files) {
+	add_default($nl, $file, 'ver'=>'fixed_ch4');
+    }
+    unless (defined $nl->get_value('tracer_cnst_type')) {
+	add_default($nl, 'tracer_cnst_type',    'ver'=>'fixed_ch4');
+	add_default($nl, 'tracer_cnst_cycle_yr','ver'=>'fixed_ch4');
+    }
+    
+    my $val = "'prsd_ch4:CH4'";
+    add_default($nl, 'prescribed_ghg_specifier', 'val'=>$val);
+    my @files = ( 'prescribed_ghg_datapath','prescribed_ghg_file', 'prescribed_ghg_filelist');
+    foreach my $file (@files) {
+	add_default($nl, $file, 'ver'=>'fixed_ch4');
+    }
+    unless (defined $nl->get_value('prescribed_ghg_type')) {
+	add_default($nl, 'prescribed_ghg_type',    'ver'=>'fixed_ch4');
+	add_default($nl, 'prescribed_ghg_cycle_yr','ver'=>'fixed_ch4');
+    }
+
+    # Marine organic matter specification
+    my @files = ('mam_mom_specifier', 'mam_mom_filename',
+		 'mam_mom_datapath', 'mam_mom_datatype',
+		 'mam_mom_cycle_yr', 'mam_mom_fixed_ymd',
+		 'mam_mom_fixed_tod' );
+    foreach my $file (@files) {
+        add_default($nl, $file);
+    }
+}
+
+if ($chem eq 'superfast_mam4_resus_mom_soag_po4') {
+
+    # Surface emission datasets:
+    my %species;
+
+    %species = (
+	        'CH2O   -> ' => 'ch2o_emis_file',
+	        'CO     -> ' => 'co_emis_file',
+	        'DMS    -> ' => 'dms_emis_file',
+		'NO     -> ' => 'nox_emis_file',
+		'SO2    -> ' => 'so2_emis_file',
+		'bc_a4  -> ' => 'bc_a4_emis_file',
+		'pom_a4 -> ' => 'pom_a4_emis_file',
+		'po4_a3 -> ' => 'po4_a3_emis_file',
+                'so4_a1 -> ' => 'so4_a1_emis_file',
+                'so4_a2 -> ' => 'so4_a2_emis_file',
+		'num_a1 -> ' => 'mam7_num_a1_emis_file',
+                'num_a2 -> ' => 'num_a2_emis_file',
+		'num_a4 -> ' => 'mam7_num_a3_emis_file',
+                );
+    if (! $megan_emis ) {
+      %species = ( %species,
+		'ISOP   -> ' => 'isop_emis_file',  );
+    }
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    # May later add a block to use a new chem package name in parallel with superfast_mam4_resus_soag 
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'C2H4      -> ' => 'c2h4_emis_file',
+                'C2H6      -> ' => 'c2h6_emis_file',
+                'C3H8      -> ' => 'c3h8_emis_file',
+                'CH3CHO    -> ' => 'ch3cho_emis_file',
+                'CH3COCH3  -> ' => 'ch3coch3_emis_file',
+                'E90       -> ' => 'e90_emis_file', );
+    }
+    my %verhash = ('ver'=>'mam');
+    my $first = 1;
+    my $pre = "";
+    my $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash );
+	my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+	$val .= $pre . quote_string($id . $abs_filepath);
+	if ($first) {
+	    $pre = ",";
+	    $first = 0;
+	}
+    }
+    add_default($nl, 'srf_emis_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
+    }
+
+    # Vertical emission datasets:
+    %species = ();
+    %species = ('SO2         -> ' => 'so2_ext_file',
+		'SOAG        -> ' => 'soag_ext_file',
+                'so4_a1      -> ' => 'so4_a1_ext_file', 
+                'so4_a2      -> ' => 'so4_a2_ext_file',
+		'pom_a4      -> ' => 'pom_a4_ext_file',
+		'bc_a4       -> ' => 'bc_a4_ext_file',
+		'po4_a4      -> ' => 'po4_a4_ext_file',
+		'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		'num_a2      -> ' => 'num_a2_ext_file',
+		'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'NO2         -> ' => 'no2_ext_file' );
+    }
+    $first = 1; $pre = ""; $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash );
+        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+        $val .= $pre . quote_string($id . $abs_filepath);
+        if ($first) {
+            $pre = ",";
+            $first = 0;
+        }
+    }
+    add_default($nl, 'ext_frc_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('ext_frc_type')) {
+	add_default($nl, 'ext_frc_type', 'val'=>"'CYCLICAL'");
+	add_default($nl, 'ext_frc_cycle_yr',  'val'=>2000);
+    }
+
+    # Species with fixed stratosphere values
+    $val = "'NO','NO2','HNO3','CO'";
+    add_default($nl, 'fstrat_list', 'val'=>$val);
+
+    # Datasets
+#    my @files = ('airpl_emis_file', 'soil_erod_file', 'flbc_file', 'fstrat_file',
+    my @files = ('airpl_emis_file', 'soil_erod_file', 'fstrat_file',
+                 'sulf_file', 'tuv_xsect_file', 'o2_xsect_file', 'xs_long_file', 'rsf_file', 
+                 'solar_parms_file', 'exo_coldens_file', 'sad_file', 
+                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file' );
+    foreach my $file (@files) {
+	add_default($nl, $file);
+    }
+    unless (defined $nl->get_value('sad_type')) {
+	add_default($nl, 'sad_type',  'val'=>'CYCLICAL');
+	add_default($nl, 'sad_cycle_yr',  'val'=>'1990');
+    }
+#    unless (defined $nl->get_value('flbc_type')) {
+#	add_default($nl, 'flbc_type',  'val'=>'CYCLICAL');
+#	add_default($nl, 'flbc_cycle_yr',  'val'=>'2000');
+#    }
     unless (defined $nl->get_value('linoz_data_type')) {
 	add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
 	add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');

@@ -37,6 +37,12 @@ module aero_model
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
   public :: aero_model_strat_surfarea !  stratospheric aerosol wet surface area for chemistry
+!LXu@08/2018+++
+#if (defined MODAL_AERO_4MODE_MOM_PO4)
+  public :: has_mam_po4               ! run with phosphate (i.e.,po4)?
+#endif
+!LXu@08/2018---
+
   ! These are made public to be used by MMF w/ ECPP
   public :: calc_1_impact_rate
   public :: dlndg_nimptblgrow
@@ -82,7 +88,10 @@ module aero_model
   ! for aero_model_surfarea called from mo_usrrxt
   integer :: aitken_idx = -1
   integer, dimension(ntot_amode) :: num_idx = -1
-  integer :: index_tot_mass(ntot_amode,10) = -1
+!LXu@06/2019+++(need to visit this code later!)
+!  integer :: index_tot_mass(ntot_amode,10) = -1
+  integer :: index_tot_mass(ntot_amode,11) = -1  ! add po4
+!LXu@05/2019---
   integer :: index_chm_mass(ntot_amode,10) = -1
   integer :: ndx_h2so4
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
@@ -109,6 +118,14 @@ module aero_model
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
+
+!LXu@2021++++
+#if (defined MODAL_AERO_4MODE_MOM_PO4)
+   logical :: has_mam_po4 = .true.
+#else
+   logical :: has_mam_po4 = .false.
+#endif
+!LXu@2021----
 
 contains
   
@@ -483,7 +500,8 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+!LXu@2021+++
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM_PO4 )
 
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
@@ -497,9 +515,20 @@ contains
           call add_default (dummy, 1, ' ')
        endif
 #endif
+!LXu@2021---
 
     endif
 
+!LXu@08/2018
+if (has_mam_po4) then
+#if (defined MODAL_AERO_4MODE_MOM_PO4 )
+       dummy = 'po4_a4SF'
+       call addfld (dummy,horiz_only, 'A','kg/m2/s','po4_a4 phosphate surface emission')
+       if (history_aerosol) then
+          call add_default (dummy, 1, ' ')
+       endif
+#endif
+end if
     
     ! set flags for drydep tendencies
     drydep_lq(:) = .false.
@@ -773,6 +802,49 @@ contains
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
     !
+!LXu@08/2018 +++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+    !
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_tot_mass(1,8) = get_spc_ndx('po4_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+    !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    !
+    ! coarse mode
+    !
+    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_tot_mass(4,4) = get_spc_ndx('po4_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    !
+!LXu@08/2018 ---
+
 #elif ( defined MODAL_AERO_4MODE_MOM )
     !
     ! accumulation mode #1
@@ -1357,7 +1429,7 @@ contains
 
     if ( mam_prevap_resusp_optaa == 30 ) then
 
-#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_4MODE_MOM_PO4) 
        ntoo = modeptr_coarse
 #elif (defined MODAL_AERO_5MODE)
        ntoo = modeptr_coarse

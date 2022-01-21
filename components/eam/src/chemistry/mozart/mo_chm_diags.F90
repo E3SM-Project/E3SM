@@ -127,7 +127,11 @@ contains
     integer :: aerosol_idx
 
     !-----------------------------------------------------------------------
-
+!LXu@07/2021+++
+!    call phys_getopts( history_aerosol_out = history_aerosol, &
+!                       history_amwg_out    = history_amwg,  &
+!                       history_verbose_out = history_verbose,  &
+!                       cam_chempkg_out     = chempkg   )
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
@@ -950,7 +954,21 @@ contains
 
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       call addfld( 'Mass_po4',   (/ 'lev' /), 'A', 'kg/kg ', &
+            'sum of po4 mass concentration po4_a1+po4_c1+po4_a3+po4_c3+po4_a4+po4_c4')
+       call add_default( 'Mass_po4', 1, ' ' )
+#endif
+!LXu@08/2018---
+    endif
+
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
+!LXu@07/2021+++
+    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
+       call add_default( 'AREA', 1, ' ' )
+    endif
+!LXu@07/2021---
 
     ! tropospheric air mass diagnostics based on 3D tropopause flag
     e90_ndx=-1
@@ -1055,6 +1073,7 @@ contains
   end subroutine chm_diags_inti_ac
 
   subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pmid, pdel, pdeldry, pbuf, ltrop, tropFlag )
+
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -1118,6 +1137,11 @@ contains
     real(r8), dimension(ncol,pver) :: mass_3d_tmp
     real(r8), dimension(ncol) :: mass_at_pressure
 
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PO4)
+    real(r8), dimension(ncol,pver) :: mass_po4
+#endif
+!LXu@08/2018---
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
     logical :: get_presc_aero_data      ! produce output to drive prescribed aerosol run
@@ -1169,6 +1193,10 @@ contains
        mass_soa(:ncol,:) = 0._r8
        mass_3d_tmp(:ncol,:) = 0._r8
        mass_at_pressure(:ncol) = 0.0_r8
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PO4)
+       mass_po4(:ncol,:) = 0._r8
+#endif
     endif
 
     call get_area_all_p(lchnk, ncol, area)
@@ -1354,6 +1382,28 @@ contains
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
 #ifdef MODAL_AERO
           if (history_aerosol) then
+!          if (history_aerosol .and. .not. history_verbose) then
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PO4)
+             select case (trim(solsym(m)))
+             case ('bc_a1','bc_a3','bc_a4')
+                  mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
+             case ('dst_a1','dst_a3')
+                  mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
+             case ('mom_a1','mom_a2','mom_a3','mom_a4')
+                  mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
+             case ('ncl_a1','ncl_a2','ncl_a3')
+                  mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
+             case ('pom_a1','pom_a3','pom_a4')
+                  mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
+             case ('so4_a1','so4_a2','so4_a3')
+                  mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
+             case ('soa_a1','soa_a2','soa_a3')
+                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
+             case ('po4_a1','po4_a3','po4_a4')
+                  mass_po4(:ncol,:) = mass_po4(:ncol,:) + mmr(:ncol,:,m)
+             end select
+#else
              select case (trim(solsym(m)))
              case ('bc_a1','bc_a3','bc_a4')
                   mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
@@ -1374,7 +1424,8 @@ contains
              case ('soa_a1','soa_a2','soa_a3')
                   mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
              end select
-          endif
+#endif	     
+         endif
 #endif
        else
           call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
@@ -1429,6 +1480,27 @@ contains
        do n = 1,pcnst
           fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
           if(associated(fldcw)) then
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+             select case (trim(cnst_name_cw(n)))
+                case ('bc_c1','bc_c3','bc_c4')
+                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
+                case ('dst_c1','dst_c3')
+                     mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
+                case ('mom_c1','mom_c2','mom_c3','mom_c4')
+                     mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
+                case ('ncl_c1','ncl_c2','ncl_c3')
+                     mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
+                case ('pom_c1','pom_c3','pom_c4')
+                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
+                case ('so4_c1','so4_c2','so4_c3')
+                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
+                case ('soa_c1','soa_c2','soa_c3')
+                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
+                case ('po4_c1','po4_c3','po4_c4')
+                     mass_po4(:ncol,:) = mass_po4(:ncol,:) + fldcw(:ncol,:)
+             end select
+#else
              select case (trim(cnst_name_cw(n)))
                 case ('bc_c1','bc_c3','bc_c4')
                      mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
@@ -1449,6 +1521,7 @@ contains
                 case ('soa_c1','soa_c2','soa_c3')
                      mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
              end select
+#endif
           endif
        end do
        call outfld( 'Mass_bc', mass_bc(:ncol,:),ncol,lchnk)
@@ -1502,6 +1575,11 @@ contains
 
        end do
 
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+       call outfld( 'Mass_po4', mass_po4(:ncol,:),ncol,lchnk)
+#endif
+!LXu@08/2018---
     endif
 #endif
 

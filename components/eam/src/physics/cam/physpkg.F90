@@ -186,6 +186,17 @@ subroutine phys_register
     integer :: nmodes
     character(len=16) :: spc_name
 
+!    call phys_getopts(shallow_scheme_out       = shallow_scheme, &
+!                      macrop_scheme_out        = macrop_scheme,   &
+!                      microp_scheme_out        = microp_scheme,   &
+!                      cld_macmic_num_steps_out = cld_macmic_num_steps, &
+!                      do_clubb_sgs_out         = do_clubb_sgs,     &
+!                      do_aerocom_ind3_out      = do_aerocom_ind3,  &
+!                      use_subcol_microp_out    = use_subcol_microp, &
+!                      state_debug_checks_out   = state_debug_checks, &
+!                      micro_do_icesupersat_out = micro_do_icesupersat, &
+!                      pergro_test_active_out   = pergro_test_active, &
+!                      pergro_mods_out          = pergro_mods)
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
                       microp_scheme_out        = microp_scheme,   &
@@ -309,7 +320,7 @@ subroutine phys_register
                 call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
               end if
             end if
-         enddo
+         end do
        end if
 
        ! co2 constituents

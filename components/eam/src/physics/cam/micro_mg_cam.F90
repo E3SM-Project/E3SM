@@ -538,6 +538,9 @@ subroutine micro_mg_cam_register
     ! Cloud fraction for liquid drops + snow
     call pbuf_register_subcol('CLDFSNOW ',   'micro_mg_cam_register', cldfsnow_idx)
 
+    if (masterproc) then
+      write(iulog,*) "prog_modal_aero =  ",prog_modal_aero
+    end if  
     if (prog_modal_aero) then
       call pbuf_register_subcol('RATE1_CW2PR_ST', 'micro_mg_cam_register', rate1_cw2pr_st_idx)
     end if

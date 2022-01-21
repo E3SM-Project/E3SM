@@ -19,6 +19,9 @@ contains
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
+!LXu@02/20+++++
+    use shr_fire_emis_mod, only: shr_fire_emis_mechcomps_n
+!LXu@02/20-----
     !
     ! Arguments
     !
@@ -118,6 +121,16 @@ contains
              cam_in(c)%meganflx(i,1:shr_megan_mechcomps_n) = &
                   x2a(index_x2a_Fall_flxvoc:index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1, ig)
           endif
+
+!LXu@02/20+++++
+          ! Fire emission fluxes
+!          if ( associated(cam_in(c)%fireflx) .and. associated(cam_in(c)%fireztop) ) then
+          if ( associated(cam_in(c)%fireflx) ) then
+             cam_in(c)%fireflx(i,:shr_fire_emis_mechcomps_n) = &
+                  x2a(index_x2a_Fall_flxfire:index_x2a_Fall_flxfire+shr_fire_emis_mechcomps_n-1, ig)
+             cam_in(c)%fireztop(i) = x2a(index_x2a_Sl_ztopfire, ig)
+          endif
+!LXu@02/20-----
 
           ! dry dep velocities
           if ( index_x2a_Sl_ddvel/=0 .and. n_drydep>0 ) then

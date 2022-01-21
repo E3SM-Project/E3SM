@@ -36,8 +36,10 @@ integer,           parameter :: unset_int = huge(1)
 
 ! Namelist variables:
 character(len=16) :: cam_physpkg          = unset_str  ! CAM physics package [cam3 | cam4 | cam5 |
-                                                       !   ideal | adiabatic | default].
-character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
+ 
+!LXu@08/2018                                                       !   ideal | adiabatic].
+!character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
+character(len=36) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 
                                                        !  trop_mam4_resus | trop_mam4_resus_soag |
@@ -48,6 +50,7 @@ character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [
                                                        !  linoz_mam4_resus_mom |
                                                        !  linoz_mam4_resus_mom_soag |
                                                        !  superfast_mam4_resus_mom_soag |
+                                                       !  superfast_mam4_resus_mom_soag_po4 |
                                                        !  super_fast_llnl | super_fast_llnl_mam3 | 
                                                        !  waccm_mozart_mam3 | none
 character(len=16) :: waccmx_opt           = unset_str  ! WACCMX run option [ionosphere | neutral | off
@@ -86,7 +89,10 @@ logical           :: history_aero_optics  = .false.    ! output the aerosol
 logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
-                                                       ! temperature, water vapor, cloud ice and cloud
+!LXu@07/2021+++
+logical           :: history_gaschmbudget = .false.    ! output gas chemistry tracer concentrations and tendencies
+logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies                                                       ! temperature, water vapor, cloud ice and cloud
+!LXu@07/2021---
                                                        ! liquid budgets.
 logical           :: history_gaschmbudget = .false.    ! output gas chemistry tracer concentrations and tendencies
 logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies
@@ -224,6 +230,7 @@ subroutine phys_ctl_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'phys_ctl_readnl'
 
+!LXu@07/2021+++ add history_gaschmbudget, history_gaschmbudget_2D, &
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
@@ -245,6 +252,7 @@ subroutine phys_ctl_readnl(nlfile)
       UCIgaschmbudget_2D_L3_s, UCIgaschmbudget_2D_L3_e, UCIgaschmbudget_2D_L4_s, UCIgaschmbudget_2D_L4_e, & 
       history_gaschmbudget_num, &
       use_qqflx_fixer, & 
+      history_gaschmbudget, history_gaschmbudget_2D, &
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       use_gw_energy_fix, &
@@ -510,6 +518,7 @@ subroutine phys_ctl_readnl(nlfile)
    end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
+!LXu@05/2021+++
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
                       .or. cam_chempkg_is('trop_mam4_resus') &
@@ -525,6 +534,7 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('chemuci_linozv3_mam5_vbs') &
+                      .or. cam_chempkg_is('superfast_mam4_resus_mom_soag_po4') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
@@ -540,6 +550,10 @@ subroutine phys_ctl_readnl(nlfile)
      endif
    endif
     
+  if (masterproc) then
+      write(iulog,*)'phys_setopts: prog_modal_aero:', prog_modal_aero, ' cam_chempkg_is:',cam_chempkg
+  end if
+		      
 end subroutine phys_ctl_readnl
 
 !===============================================================================
@@ -577,6 +591,29 @@ end function waccmx_is
 
 !===============================================================================
 
+!LXu@07/2021+++
+!subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, & 
+!                        microp_scheme_out, &
+!                        radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
+!                        history_amwg_out, history_verbose_out, history_vdiag_out, &
+!                        history_aerosol_out, history_aero_optics_out, history_eddy_out, &
+!                        history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
+!                        history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
+!                        prog_modal_aero_out, macrop_scheme_out, &
+!                        use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, use_MAML_out, &
+!                        use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
+!                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+!                        do_aerocom_ind3_out,  &
+!                        use_mass_borrower_out, & 
+!                        use_qqflx_fixer_out, & 
+!                        print_fixer_message_out, & 
+!                        cld_macmic_num_steps_out, micro_do_icesupersat_out, &
+!                        fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
+!                        convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
+!                        micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
+!                       ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
+!                       ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
+!                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
 subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, & 
                         microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &

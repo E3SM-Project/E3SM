@@ -125,6 +125,10 @@ module camsrfexch
      real(r8), pointer, dimension(:,:) :: depvel   ! deposition velocities
      real(r8), pointer, dimension(:,:) :: dstflx   ! dust fluxes
      real(r8), pointer, dimension(:,:) :: meganflx ! MEGAN fluxes
+!LXu@02/20+++++
+     real(r8), pointer, dimension(:,:) :: fireflx  ! wild fire emissions
+     real(r8), pointer, dimension(:)   :: fireztop ! wild fire emissions vert distribution top
+!LXu@02/20----- 
   end type cam_in_t    
 
 !===============================================================================
@@ -151,6 +155,10 @@ CONTAINS
     use cam_cpl_indices, only: index_x2a_Sl_ram1, index_x2a_Sl_fv, index_x2a_Sl_soilw, index_x2a_Fall_flxdst1
     use cam_cpl_indices, only: index_x2a_Fall_flxvoc
     use shr_megan_mod,   only: shr_megan_mechcomps_n
+!LXu@02/20+++++
+    use cam_cpl_indices, only:  index_x2a_Fall_flxfire
+    use shr_fire_emis_mod,only: shr_fire_emis_mechcomps_n
+!LXu@02/20----- 
 
 !
 !!ARGUMENTS:
@@ -179,6 +187,10 @@ CONTAINS
        nullify(cam_in(c)%depvel)
        nullify(cam_in(c)%dstflx)
        nullify(cam_in(c)%meganflx)
+!LXu@02/20+++++
+       nullify(cam_in(c)%fireflx)
+       nullify(cam_in(c)%fireztop)
+!LXu@02/20-----
     enddo  
     do c = begchunk,endchunk 
        allocate (cam_in(c)%asdir(pcols), stat=ierror)
@@ -296,6 +308,17 @@ CONTAINS
        end do
     endif
 
+!LXu@02/20+++++
+    if ( index_x2a_Fall_flxfire>0 .and. shr_fire_emis_mechcomps_n>0 ) then
+       do c = begchunk,endchunk 
+          allocate(cam_in(c)%fireflx(pcols,shr_fire_emis_mechcomps_n), stat=ierror)
+          if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fireflx')
+          allocate(cam_in(c)%fireztop(pcols), stat=ierror)
+          if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fireztop')
+       enddo
+    endif
+!LXu@02/20-----
+
     do c = begchunk,endchunk
        cam_in(c)%lchnk = c
        cam_in(c)%ncol  = get_ncols_p(c)
@@ -342,6 +365,14 @@ CONTAINS
        if (lnd_drydep .and. n_drydep>0) then
           cam_in(c)%depvel (:,:) = 0._r8
        endif
+
+!LXu@02/20+++++
+       if ( index_x2a_Fall_flxfire>0 .and. shr_fire_emis_mechcomps_n>0 ) then
+!       if (associated(cam_in(c)%fireflx)) then
+          cam_in(c)%fireflx(:,:) = 0._r8
+          cam_in(c)%fireztop(:) = 0._r8
+       endif
+!LXu@02/20-----
     end do
 
   end subroutine hub2atm_alloc

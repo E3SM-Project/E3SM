@@ -75,6 +75,9 @@ module elm_instMod
   use BeTRSimulationELM          , only : betr_simulation_elm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use ELMFatesInterfaceMod       , only : hlm_fates_interface_type
+!LXu@02/20++++++
+  use CNFireEmissionsMod         , only : fireemis_type
+!LXu@02/20------
 
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars
@@ -104,6 +107,9 @@ module elm_instMod
   type(cnstate_type)                                  :: cnstate_vars
   type(dust_type)                                     :: dust_vars
   type(vocemis_type)                                  :: vocemis_vars
+!LXu@02/20+++++
+  type(fireemis_type)                                 :: fireemis_vars
+!LXu@02/20-----
   type(drydepvel_type)                                :: drydepvel_vars
   type(aerosol_type)                                  :: aerosol_vars
   type(canopystate_type)                              :: canopystate_vars
@@ -214,6 +220,10 @@ contains
        if(use_betr)then
           call PlantMicKinetics_vars%Init(bounds_proc)
        endif
+
+!LXu@02/20+++++, initilizing fireemis_vars
+       call fireemis_vars%Init(bounds_proc)
+!LXu@02/20-----
 
     endif
 

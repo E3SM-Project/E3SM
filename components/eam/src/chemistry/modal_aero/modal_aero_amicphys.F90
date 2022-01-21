@@ -103,7 +103,12 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-
+!LXu@05/2021+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PO4 )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom, po4 (+1)
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 1
+!LXu@05/2021---
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -122,7 +127,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_MOM_PO4 ))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #elif ( defined MODAL_AERO_5MODE)
   integer, parameter :: ntot_amode_extd = ntot_amode
@@ -169,6 +174,9 @@
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
+!LXu@08/2018+++
+  integer :: iaer_po4
+!LXu@08/2018---
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &
@@ -6107,6 +6115,9 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
       iaer_mproc = 0 ; iaer_mom = 0
+!LXu@08/2018+++
+      iaer_po4 = 0
+!LXu@08/2018--
 
 #if ( defined VBS_SOA )
       if (nsoa == 1 .and. nsoag == 7) then
@@ -6225,11 +6236,19 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM_PO4 )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
 #endif
+!LXu@08/2018+++
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+      naer = naer + 1
+      name_aerpfx(naer) = 'po4'
+      iaer_po4 = naer
+#endif
+!LXu@08/2018---
 
       if (ntot_amode==9) then
          naer = naer + 1
@@ -6600,6 +6619,12 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
            'fac_eqvso4hyg_aer(1:naer)'
          write(iulog,'(4(a,1pe10.3,3x))') &
            ( name_aerpfx(iaer)(1:6), fac_eqvso4hyg_aer(iaer), iaer=1,naer )
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PO4 )
+         write(iulog,'(/a56,10i5)') &
+           'iaer_po4', &
+            iaer_po4
+#endif	    
 
          write(iulog,'(/a)') 'igas, lmap, name, mwhost, mw, fcvt, accom, vmol'
          do igas = 1, ngas
