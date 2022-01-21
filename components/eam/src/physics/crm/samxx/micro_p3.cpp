@@ -117,129 +117,142 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
            }
         }
       });
- }
+  }
 }
 
 //
 // main micro_p3 microproc
 //
 void micro_p3_proc() {
- using P3F        = Functions<Real, DefaultDevice>;
- using KT         = typename P3F::KT;
- using ExeSpace   = typename KT::ExeSpace;
- using MemberType = typename P3F::MemberType;
- using Spack      = typename P3F::Spack;
- using view_1d    = typename P3F::view_1d<Spack>;
- using uview_1d   = typename P3F::uview_1d<Spack>;
- using view_2d    = typename P3F::view_2d<Spack>;
- using sview_1d   = typename P3F::view_1d<Real>;
- using sview_2d   = typename P3F::view_2d<Real>;
+  using P3F        = Functions<Real, DefaultDevice>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+  using view_2d    = typename P3F::view_2d<Spack>;
+  using sview_1d   = typename P3F::view_1d<Real>;
+  using sview_2d   = typename P3F::view_2d<Real>;
 
- auto &micro_field        = :: micro_field;
- auto &rho                = :: rho;
- auto &dt                 = :: dt;
- auto &pres               = :: pres;
- auto &pdel               = :: crm_input_pdel;
- auto &tabs               = :: tabs;
- auto &ncrms              = :: ncrms;
- auto &dz                 = :: dz;
- auto &longitude0         = :: longitude0;
- auto &latitude0          = :: latitude0;
- auto &z0                 = :: z0;
- auto &nc_nuceat_tend     = :: nc_nuceat_tend;
- // auto &nccn_prescribed    = :: nccn_prescribed;
- auto &ni_activated       = :: ni_activated;
- // auto &relvar             = :: relvar;
- auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
- auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
- // auto &precip_total_tend  = :: precip_total_tend;
- auto &nevapr             = :: nevapr;
- auto &qr_evap_tend       = :: qr_evap_tend;
- auto &mu                 = :: mu;
- auto &lambdac            = :: lambdac;
- auto &t_prev             = :: t_prev;
- auto &q_prev             = :: q_prev;
- auto &docloud            = :: docloud;
- // auto &ast                = :: ast;
+  auto &micro_field        = :: micro_field;
+  auto &qv                 = :: qv;
+  auto &qcl                = :: qcl;
+  auto &qci                = :: qci;
+  auto &qpl                = :: qpl;
+  auto &qpi                = :: qpi;
+  auto &rho                = :: rho;
+  auto &dt                 = :: dt;
+  auto &pres               = :: pres;
+  auto &pdel               = :: crm_input_pdel;
+  auto &t                  = :: t;
+  auto &gamaz              = :: gamaz;
+  auto &tabs               = :: tabs;
+  auto &ncrms              = :: ncrms;
+  auto &dz                 = :: dz;
+  auto &longitude0         = :: longitude0;
+  auto &latitude0          = :: latitude0;
+  auto &z0                 = :: z0;
+  auto &nc_nuceat_tend     = :: nc_nuceat_tend;
+  // auto &nccn_prescribed    = :: nccn_prescribed;
+  auto &ni_activated       = :: ni_activated;
+  // auto &relvar             = :: relvar;
+  auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
+  auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
+  // auto &precip_total_tend  = :: precip_total_tend;
+  auto &nevapr             = :: nevapr;
+  auto &qr_evap_tend       = :: qr_evap_tend;
+  auto &mu                 = :: mu;
+  auto &lambdac            = :: lambdac;
+  auto &t_prev             = :: t_prev;
+  auto &q_prev             = :: q_prev;
+  auto &docloud            = :: docloud;
+  // auto &ast                = :: ast;
 
- // output 
- auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
- auto &precip_liq_surf    = :: precip_liq_surf;
- auto &precip_ice_surf    = :: precip_ice_surf;
- auto &rho_qi             = :: rho_qi;
- auto &precip_liq_flux    = :: precip_liq_flux;
- auto &precip_ice_flux    = :: precip_ice_flux;
+  // output 
+  auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
+  auto &precip_liq_surf    = :: precip_liq_surf;
+  auto &precip_ice_surf    = :: precip_ice_surf;
+  auto &rho_qi             = :: rho_qi;
+  auto &precip_liq_flux    = :: precip_liq_flux;
+  auto &precip_ice_flux    = :: precip_ice_flux;
 
- auto &liq_ice_exchange  =  :: liq_ice_exchange;
- auto &vap_liq_exchange  =  :: vap_liq_exchange;
- auto &vap_ice_exchange  =  :: vap_ice_exchange;
+  auto &liq_ice_exchange  =  :: liq_ice_exchange;
+  auto &vap_liq_exchange  =  :: vap_liq_exchange;
+  auto &vap_ice_exchange  =  :: vap_ice_exchange;
 
- // output
- auto &precsfc           = :: precsfc;
- auto &precssfc          = :: precssfc;
- // auto &prec_xy           = :: prec_xy;
+  // output
+  auto &precsfc           = :: precsfc;
+  auto &precssfc          = :: precssfc;
+  // auto &prec_xy           = :: prec_xy;
 
- const int nlev  = nzm;
- const int ncol  = ncrms*nx*ny;
- const int npack = ekat::npack<Spack>(nlev);
+  const int nlev  = nzm;
+  const int ncol  = ncrms*nx*ny;
+  const int npack = ekat::npack<Spack>(nlev);
 
- real2d qc_in("qc",ncol, nlev);
- real2d nc_in("nc",ncol, nlev);
- real2d qr_in("qr",ncol, nlev);
- real2d nr_in("nr",ncol, nlev);
- real2d qi_in("qi",ncol, nlev);
- real2d qm_in("qm",ncol, nlev);
- real2d ni_in("ni",ncol, nlev);
- real2d bm_in("bm",ncol, nlev);
- real2d qv_in("qv",ncol, nlev);
- real2d th_in("th",ncol, nlev);
- 
- real2d nc_nuceat_tend_in("nuceat",ncol, nlev);
- real2d nccn_prescribed_in("nccn_prescribed",ncol, nlev);
- real2d ni_activated_in("ni_act",ncol, nlev);
- real2d inv_qc_relvar_in("inv_qc",ncol, nlev);
- real2d cld_frac_i_in("cld_frac_i",ncol, nlev);
- real2d cld_frac_l_in("cld_frac_l",ncol, nlev);
- real2d cld_frac_r_in("cld_frac_r",ncol, nlev);
- real2d pres_in("pres", ncol, nlev);
- real2d dz_in("dz", ncol, nlev);
- real2d dpres_in("dpres",ncol, nlev);
- real2d exner_in("exner",ncol, nlev);
- real2d q_prev_in("q_prev",ncol, nlev);
- real2d t_prev_in("t_prev",ncol, nlev);
- 
- real2d ast_in("ast_in",ncol, nlev);
- real2d cldm_in("cldm_in", ncol, nlev);
+  real2d qc_in("qc",ncol, nlev);
+  real2d nc_in("nc",ncol, nlev);
+  real2d qr_in("qr",ncol, nlev);
+  real2d nr_in("nr",ncol, nlev);
+  real2d qi_in("qi",ncol, nlev);
+  real2d qm_in("qm",ncol, nlev);
+  real2d ni_in("ni",ncol, nlev);
+  real2d bm_in("bm",ncol, nlev);
+  real2d qv_in("qv",ncol, nlev);
+  real2d th_in("th",ncol, nlev);
 
- // p3 output variables 
- // real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
- // real2d precip_liq_surf_in("precip_liq",ncol, nlev);
- // real2d precip_ice_surf_in("precip_ice",ncol, nlev);
- // real2d diag_eff_radius_qc_in("diag_eff_qc",ncol, nlev);
- // real2d diag_eff_radius_qi_in("diag_eff_qi",ncol, nlev);
- // real2d rho_qi_in("rho_qi",ncol, nlev);
- // real2d precip_liq_flux_in("precip_liq_flux",ncol, nlev);
- // real2d precip_ice_flux_in("precip_ice_flux",ncol, nlev);
+  real2d nc_nuceat_tend_in("nuceat",ncol, nlev);
+  real2d nccn_prescribed_in("nccn_prescribed",ncol, nlev);
+  real2d ni_activated_in("ni_act",ncol, nlev);
+  real2d inv_qc_relvar_in("inv_qc",ncol, nlev);
+  real2d cld_frac_i_in("cld_frac_i",ncol, nlev);
+  real2d cld_frac_l_in("cld_frac_l",ncol, nlev);
+  real2d cld_frac_r_in("cld_frac_r",ncol, nlev);
+  real2d pres_in("pres", ncol, nlev);
+  real2d dz_in("dz", ncol, nlev);
+  real2d dpres_in("dpres",ncol, nlev);
+  real2d exner_in("exner",ncol, nlev);
+  real2d q_prev_in("q_prev",ncol, nlev);
+  real2d t_prev_in("t_prev",ncol, nlev);
 
- // p3 output variables
- // real2d qv2qi_depos_tend_out("qv2qi_depos_tend", ncol, nlev);
- // real2d diag_eff_radius_qc_out("diag_eff_radius_qc", ncol, nlev);
- // real2d diag_eff_radius_qi_out("diag_eff_radius_qi", ncol, nlev);
- // real2d rho_qi_out("rho_qi", nzm, nx);
- // real2d precip_liq_flux_out("precip_liq_flux", ncol, nlev);
- // real2d precip_ice_flux_out("precip_ice_flux", ncol, nlev);
+  real2d ast_in("ast_in",ncol, nlev);
+  real2d cldm_in("cldm_in", ncol, nlev);
 
- // real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
- // real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
+  // p3 output variables 
+  // real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
+  // real2d precip_liq_surf_in("precip_liq",ncol, nlev);
+  // real2d precip_ice_surf_in("precip_ice",ncol, nlev);
+  // real2d diag_eff_radius_qc_in("diag_eff_qc",ncol, nlev);
+  // real2d diag_eff_radius_qi_in("diag_eff_qi",ncol, nlev);
+  // real2d rho_qi_in("rho_qi",ncol, nlev);
+  // real2d precip_liq_flux_in("precip_liq_flux",ncol, nlev);
+  // real2d precip_ice_flux_in("precip_ice_flux",ncol, nlev);
 
- parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-   int icol = i+nx*(j+ny*icrm);
-   int ilev = k;
-   exner_in(icol, ilev) = 1./std::pow((pres(k,icrm)*1.0e-5), (rgas/cp));
-   th_in(icol, ilev) = tabs(k,j,i,icrm)*exner_in(icol, ilev);
- });
+  // p3 output variables
+  // real2d qv2qi_depos_tend_out("qv2qi_depos_tend", ncol, nlev);
+  // real2d diag_eff_radius_qc_out("diag_eff_radius_qc", ncol, nlev);
+  // real2d diag_eff_radius_qi_out("diag_eff_radius_qi", ncol, nlev);
+  // real2d rho_qi_out("rho_qi", nzm, nx);
+  // real2d precip_liq_flux_out("precip_liq_flux", ncol, nlev);
+  // real2d precip_ice_flux_out("precip_ice_flux", ncol, nlev);
 
- parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  // real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
+  // real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
+
+  //----------------------------------------------------------------------------
+  // Populate P3 thermodynamic state
+  //----------------------------------------------------------------------------
+  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    int icol = i+nx*(j+ny*icrm);
+    int ilev = k;
+    exner_in(icol, ilev) = 1./std::pow((pres(k,icrm)*1.0e-3), (rgas/cp));
+    tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
+                      + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
+                      + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+    th_in(icol, ilev) = tabs(k,j,i,icrm)*exner_in(icol, ilev);
+  });
+
+  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
     qv_in(icol,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
@@ -279,13 +292,16 @@ void micro_p3_proc() {
   P3F::P3PrognosticState prog_state{qc_d, nc_d, qr_d, nr_d, qi_d, qm_d,
                                     ni_d, bm_d, qv_d, th_atm_d};
 
+  //----------------------------------------------------------------------------
+  // Populate P3 diagnostic inputs
+  //----------------------------------------------------------------------------
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
     int ilev = k;
     nccn_prescribed_in(icol,ilev) = 0.; //nccn_prescribed(k,icrm)*0.0; // TODO: we zero out the nccn_prescribed because of the missing of model
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
-    inv_qc_relvar_in(icol,ilev)   = 0.; // relvar(k,icrm);
+    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use here?
     pres_in(icol,ilev)            = pres(k,icrm);
     dz_in(icol,ilev)              = dz(icrm);
     dpres_in(icol,ilev)           = pdel(k,icrm);
@@ -333,6 +349,9 @@ void micro_p3_proc() {
                                       pres_d, dz_d, dpres_d,exner_d, 
                                       q_prev_d, t_prev_d};
 
+  //----------------------------------------------------------------------------
+  // Populate P3 diagnostic outputs
+  //----------------------------------------------------------------------------
   view_2d qv2qi_depos_tend_d("qv2qi_depos_tend", ncol, npack),
           diag_eff_radius_qc_d("diag_eff_radius_qc", ncol, npack),
           diag_eff_radius_qi_d("diag_eff_radius_qi", ncol, npack),
@@ -361,6 +380,9 @@ void micro_p3_proc() {
                                          precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d,
                                          rho_qi_d,precip_liq_flux_d, precip_ice_flux_d};
 
+  //----------------------------------------------------------------------------
+  // Populate P3 infrastructure
+  //----------------------------------------------------------------------------
   int it;
   int its{0};
   int ite{ncrms*crm_nx*crm_ny};
@@ -373,7 +395,7 @@ void micro_p3_proc() {
   do_prescribed_CCN = false;
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {nzm, ny, nx, ncrms}), KOKKOS_LAMBDA(int k, int j, int i, int icrm) {
-// Kokkos::parallel_for("col_location", ncol, KOKKOS_LAMBDA (const int& icol) {
+  // Kokkos::parallel_for("col_location", ncol, KOKKOS_LAMBDA (const int& icol) {
      int icol = i+nx*(j+icrm*ny);
      col_location_d(icol, 1) = z0.myData[icrm];
      col_location_d(icol, 2) = longitude0.myData[icrm];
@@ -383,6 +405,9 @@ void micro_p3_proc() {
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
 
+  //----------------------------------------------------------------------------
+  // Populate P3 history output
+  //----------------------------------------------------------------------------
   view_2d liq_ice_exchange_d("liq_ice_exchange_d", ncol, npack),
           vap_liq_exchange_d("vap_liq_exchange_d", ncol, npack),
           vap_ice_exchange_d("vap_ice_exchange_d", ncol, npack);
@@ -396,15 +421,48 @@ void micro_p3_proc() {
   P3F::P3HistoryOnly history_only {liq_ice_exchange_d, vap_liq_exchange_d,
                                    vap_ice_exchange_d};
 
+  //----------------------------------------------------------------------------
+  // Call p3_main
+  //----------------------------------------------------------------------------
   const int nlev_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev_pack);
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 52, policy);
 
+  std::cout << "WHDEBUG - before p3_main - nstep:" << nstep << std::endl;
+
+  // for (int k=0; k<nzm; k++) {
+  //   for (int j=0; j<crm_ny_rad; j++) {
+  //     for (int i=0; i<crm_nx_rad; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
+  //         // int i    = icol%nx;
+  //         // int j    = (icol/nx)%ny;
+  //         // int icrm = (icol/nx)/ny;
+  //         // int k    = ilev*Spack::n + s;
+  //         int icol = i+nx*(j+ny*icrm);
+  //         int ilev = k;
+  //         std::cout
+  //         <<"  i:"<<i 
+  //         <<"  k:"<<k 
+  //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
+  //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
+  //         <<"  th:"<<th_in(icol,ilev)
+  //         <<"  qc:"<<qc_in(icol,ilev)
+  //         // <<"  ta:"<<tabs(k,j,i,icrm)
+  //         // <<"  ex:"<<exner_in(icol, ilev)
+  //         // <<"  pr:"<<pres(k,icrm)
+  //         <<std::endl;
+  //       }
+  //     }
+  //   }
+  // }
 
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                    history_only, workspace_mgr, ncol, nlev);
+  
+  std::cout << "WHDEBUG - after p3_main - nstep:" << nstep << std::endl;
 
-     
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, nlev, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
      int i    = icol%nx;
      int j    = (icol/nx)%ny;
@@ -428,7 +486,6 @@ void micro_p3_proc() {
      int k    = ilev*Spack::n + s;
      if (k < nlev) {
         micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];      
-        // micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
         qc(k,j,i,icrm)                               = prog_state.qc(icol,ilev)[s];
         micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
         micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];
@@ -437,6 +494,32 @@ void micro_p3_proc() {
         micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
         micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
         micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
+     } 
+  });
+
+  micro_p3_diagnose();   // leave this line here
+
+  // update LSE, temperature, and previous t/q
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
+     int i    = icol%nx;
+     int j    = (icol/nx)%ny;
+     int icrm = (icol/nx)/ny;
+     int k    = ilev*Spack::n + s;
+     if (k < nlev) {
+        // t(i,j,k) = t(i,j,k) - dtn*fac_cond*tmp_stend(i,k,iqv) 
+        //                     - dtn*fac_cond*tmp_stend(i,k,idx_qr)
+        //                     - dtn*fac_sub *tmp_stend(i,k,idx_qi);
+        // Real dt_tmp = (prog_state.th(icol,ilev)[s] - th_in(icol, ilev) )/exner_in(icol, ilev);
+        // t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + dt_tmp;
+        t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev) 
+                      + gamaz(k,icrm)
+                      - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) ) 
+                      - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
+        tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
+                      + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
+                      + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+        t_prev(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev);
+        q_prev(k,j,i,icrm) = prog_state.qv(icol,ilev)[s];
      } 
   });
 
@@ -466,8 +549,7 @@ void micro_p3_proc() {
          vap_ice_exchange(k,icrm) = history_only.vap_ice_exchange(icol,ilev)[s];
      }
   });
-     
-  if (docloud)  micro_p3_diagnose();   // leave this line here
+
 }
 
 // #endif
