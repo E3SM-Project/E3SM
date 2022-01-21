@@ -11,6 +11,7 @@
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
 #include "share/field/field_property_checks/field_upper_bound_check.hpp"
 #include "share/field/field_property_checks/field_nan_check.hpp"
+#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
@@ -369,7 +370,6 @@ TEST_CASE("field_mgr", "") {
   FID fid2("field_2", {tags1, dims1},  m/s, "phys");
   FID fid3("field_3", {tags1, dims1},  m/s, "phys");
   FID fid4("field_4", {tags3, dims4},  m/s, "phys");
-  FID fid5("field_5", {tags1, dims1},  m/s, "phys");
 
   FID bad1("field_1", {tags2, dims2},  m/s, "dyn");  // Bad grid
   FID bad2("field_2", {tags1, dims1}, km/s, "phys"); // Bad units
@@ -391,13 +391,14 @@ TEST_CASE("field_mgr", "") {
   field_mgr.register_field(FR{fid3,SL{"group_1","group_2","group_3"}});
   field_mgr.register_field(FR{fid2,"group_4"});
   field_mgr.register_field(FR{fid4});
-  field_mgr.register_field(FR{fid5,FR{fid4},subview_dim,subview_slice,true}); // Register a dynamic subfield
 
   // === Invalid registration calls === //
   REQUIRE_THROWS(field_mgr.register_field(FR{bad1}));
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
   REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
-  REQUIRE_THROWS(field_mgr.register_field(FR{fid5,FR{fid4},1,0,false})); // Cannot register inconsistent subfields
+
+  // Cannot add external fields while registration is happening
+  REQUIRE_THROWS(field_mgr.add_field(Field<Real>()));
 
   field_mgr.registration_ends();
 
@@ -406,14 +407,13 @@ TEST_CASE("field_mgr", "") {
 
   // Check registration is indeed closed
   REQUIRE (field_mgr.repository_state()==RepoState::Closed);
-  REQUIRE (field_mgr.size()==5);
+  REQUIRE (field_mgr.size()==4);
 
   // Get all fields
   auto f1 = field_mgr.get_field(fid1.name());
   auto f2 = field_mgr.get_field(fid2.name());
   auto f3 = field_mgr.get_field(fid3.name());
   auto f4 = field_mgr.get_field(fid4.name());
-  auto f5 = field_mgr.get_field(fid5.name());
   REQUIRE_THROWS(field_mgr.get_field("bad")); // Not in the field_mgr
   REQUIRE(f1.get_header().get_identifier()==fid1);
 
@@ -462,19 +462,26 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (f1_padding==ekat::PackInfo<Pack::n>::padding(nlevs));
   REQUIRE (f2_padding==ekat::PackInfo<16>::padding(nlevs));
 
-  // Verify f5 is a subfield of f4
-  auto f5_ap = f5.get_header().get_alloc_properties();
-  REQUIRE (f5_ap.is_subfield());
-  REQUIRE (f5_ap.is_dynamic_subfield());
-  REQUIRE (f5_ap.get_subview_info().dim_idx==subview_dim);
-  REQUIRE (f5_ap.get_subview_info().slice_idx==subview_slice);
+  // Try to subview a field and set the subfield back in the FM
+  field_mgr.add_field(f4.subfield("field_4_sf",subview_dim,subview_slice,true));
+  auto f4_sf = field_mgr.get_field("field_4_sf");
+  REQUIRE (field_mgr.size()==5);
+  REQUIRE_THROWS (field_mgr.add_field(Field<Real>())); // Not allocated
+  REQUIRE_THROWS (field_mgr.add_field(f4_sf)); // Cannot have duplicates
 
-  // Fill f4 with random numbers, and verify corresponding subview of f5 gets same values.
+  // Verify f5 is a subfield of f4
+  auto f4_sf_ap = f4_sf.get_header().get_alloc_properties();
+  REQUIRE (f4_sf_ap.is_subfield());
+  REQUIRE (f4_sf_ap.is_dynamic_subfield());
+  REQUIRE (f4_sf_ap.get_subview_info().dim_idx==subview_dim);
+  REQUIRE (f4_sf_ap.get_subview_info().slice_idx==subview_slice);
+
+  // Fill f4_sf with random numbers, and verify corresponding subview of f4 gets same values.
   auto engine = setup_random_test(&comm);
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.0,1.0);
-  randomize(f5,engine,pdf);
-  REQUIRE (views_are_equal(f5,f4.get_component(subview_slice)));
+  randomize(f4_sf,engine,pdf);
+  REQUIRE (views_are_equal(f4_sf,f4.get_component(subview_slice)));
 }
 
 TEST_CASE("tracers_bundle", "") {
@@ -699,12 +706,6 @@ TEST_CASE("field_property_check", "") {
   // Check positivity.
   SECTION ("field_positivity_check") {
     Field<Real> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
-    REQUIRE(not positivity_check->can_repair());
-    // Note: Here we will test the ability to add a check to a field and then
-    //       access it using get_property_checks.  Subsequent tests will use
-    //       the checker directly on the field.
-    f1.add_property_check(positivity_check);
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -713,23 +714,20 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,pos_pdf);
     f1.sync_to_dev();
-    for (const auto& p : f1.get_property_checks()) {
-      REQUIRE(p.check(f1));
-    }
+
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+    REQUIRE(not positivity_check->can_repair());
+    REQUIRE(positivity_check->check(f1));
 
     // Assign non-positive values to the field and make sure it fails the check.
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
-    for (const auto& p : f1.get_property_checks()) {
-      REQUIRE(not p.check(f1));
-    }
+    REQUIRE(not positivity_check->check(f1));
   }
 
   // Check positivity with repairs.
   SECTION ("field_positivity_check_with_repairs") {
     Field<Real> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
-    REQUIRE(positivity_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
 
@@ -738,6 +736,9 @@ TEST_CASE("field_property_check", "") {
     auto f1_data = f1.get_internal_view_data<Host>();
     ekat::genRandArray(f1_data,num_reals,engine,neg_pdf);
     f1.sync_to_dev();
+
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
+    REQUIRE(positivity_check->can_repair());
     REQUIRE(not positivity_check->check(f1));
     positivity_check->repair(f1);
     REQUIRE(positivity_check->check(f1));
@@ -746,9 +747,10 @@ TEST_CASE("field_property_check", "") {
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
     Field<Real> f1(fid);
-    auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
 
     // Assign  values to the field and make sure it passes our test for NaNs.
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -766,10 +768,11 @@ TEST_CASE("field_property_check", "") {
   // Check that the values of a field lie within an interval.
   SECTION ("field_within_interval_check") {
     Field<Real> f1(fid);
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
-    REQUIRE(interval_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 1);
+    REQUIRE(interval_check->can_repair());
 
     // Assign in-bound values to the field and make sure it passes the within-interval check
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -791,10 +794,11 @@ TEST_CASE("field_property_check", "") {
   // Check that the values of a field are above a lower bound
   SECTION ("field_lower_bound_check") {
     Field<Real> f1(fid);
-    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real> >(-1.0);
-    REQUIRE(lower_bound_check->can_repair());
     f1.allocate_view();
     const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck<Real> >(-1.0);
+    REQUIRE(lower_bound_check->can_repair());
 
     // Assign in-bound values to the field and make sure it passes the lower_bound check
     auto f1_data = f1.get_internal_view_data<Host>();
@@ -815,8 +819,7 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(lower_bound_check->check(f1));
     // Should have repaired to the lower bound:
     f1.sync_to_host();
-    for (int i=0; i<num_reals; ++i)
-    {
+    for (int i=0; i<num_reals; ++i) {
       REQUIRE(f1_data[i] == -1.0);
     }
   }
@@ -848,9 +851,38 @@ TEST_CASE("field_property_check", "") {
     REQUIRE(upper_bound_check->check(f1));
     // Should have repaired to the upper bound:
     f1.sync_to_host();
-    for (int i=0; i<num_reals; ++i)
-    {
+    for (int i=0; i<num_reals; ++i) {
       REQUIRE(f1_data[i] == 1.0);
+    }
+  }
+
+  SECTION ("check_and_repair_wrapper") {
+    Field<Real> f1(fid);
+    f1.allocate_view();
+    const int num_reals = f1.get_header().get_alloc_properties().get_num_scalars();
+
+    // Two separate FPC for check and for repair
+    constexpr Real ub_check  = 1.0;
+    constexpr Real ub_repair = 0.0;
+    auto check  = std::make_shared<FieldUpperBoundCheck<Real> >(ub_check);
+    auto repair = std::make_shared<FieldUpperBoundCheck<Real> >(ub_repair);
+
+    auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(check, repair);
+    REQUIRE(check_and_repair->can_repair());
+
+    // Assign out-of-bound values to the field, and ensure check fails
+    auto f1_data = f1.get_internal_view_data<Host>();
+    for (int i = 0; i<num_reals; ++i) {
+      f1_data[i] = 2.0;
+    }
+    f1.sync_to_dev();
+    REQUIRE(not check_and_repair->check(f1));
+
+    // Repair the field, and make sure the field values match ub_repair
+    check_and_repair->repair(f1);
+    f1.sync_to_host();
+    for (int i=0; i<num_reals; ++i) {
+      REQUIRE(f1_data[i] == ub_repair);
     }
   }
 }

@@ -132,6 +132,17 @@
   <!-- SCREAM compsets -->
   <!-- *********************************** -->  
   
+  <!-- SCREAM aquaplanet -->
+  <compset>
+    <alias>F-SCREAM-LR-AQP1</alias>
+    <lname>2000_EAM%SCREAM-LR-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F-SCREAM-HR-AQP1</alias>
+    <lname>2000_EAM%SCREAM-HR-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- SCREAM compsets with CMIP6 2010 forcings -->
   <compset>
     <alias>F2010-SCREAM-LR</alias>

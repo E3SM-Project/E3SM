@@ -328,9 +328,9 @@ contains
     !
     ! Input(s)
     !
-    integer(kind=c_int), pointer, intent(in) :: gids(:)
-    real(kind=c_double), pointer, intent(in) :: lat(:), lon(:), area(:)
-    integer(kind=c_int),          intent(in) :: pg_type
+    integer(kind=c_int), intent(out) :: gids(:)
+    real(kind=c_double), intent(out) :: lat(:), lon(:), area(:)
+    integer(kind=c_int), intent(in) :: pg_type
     !
     ! Local(s)
     !

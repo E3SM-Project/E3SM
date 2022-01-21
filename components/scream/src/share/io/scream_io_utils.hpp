@@ -2,9 +2,41 @@
 #define SCREAM_IO_UTILS_HPP
 
 #include <string>
+#include "ekat/util/ekat_string_utils.hpp"
 
 namespace scream
 {
+
+enum class OutputAvgType {
+  Instant,
+  Max,
+  Min,
+  Average,
+  Invalid
+};
+
+inline std::string e2str(const OutputAvgType avg) {
+  using OAT = OutputAvgType;
+  switch (avg) {
+    case OAT::Instant:  return "INSTANT";
+    case OAT::Max:      return "MAX";
+    case OAT::Min:      return "MIN";
+    case OAT::Average:  return "AVERAGE";
+    default:            return "INVALID";
+  }
+}
+
+inline OutputAvgType str2avg (const std::string& s) {
+  auto s_ci = ekat::upper_case(s);
+  using OAT = OutputAvgType;
+  for (auto e : {OAT::Instant, OAT::Max, OAT::Min, OAT::Average}) {
+    if (s_ci==e2str(e)) {
+      return e;
+    }
+  }
+
+  return OAT::Invalid;
+}
 
 // Mini struct to hold IO frequency info
 struct IOControl {

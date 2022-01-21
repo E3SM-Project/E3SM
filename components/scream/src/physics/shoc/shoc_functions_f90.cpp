@@ -274,7 +274,7 @@ void shoc_main_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
                  Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec,
                  Real* brunt, Real* shoc_ql2, Real* elapsed_s);
 
-void pblintd_height_c(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
+void pblintd_height_c(Int shcol, Int nlev, Int npbl_in, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 
 void vd_shoc_decomp_c(Int shcol, Int nlev, Int nlevi, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
                       Real* flux, Real* du, Real* dl, Real* d);
@@ -282,7 +282,7 @@ void vd_shoc_decomp_c(Int shcol, Int nlev, Int nlevi, Real* kv_term, Real* tmpi,
 void vd_shoc_solve_c(Int shcol, Int nlev, Real* du, Real* dl, Real* d, Real* var);
 void pblintd_surf_temp_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 void pblintd_check_pblh_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
-void pblintd_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
+void pblintd_c(Int shcol, Int nlev, Int nlevi, Int npbl_in, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -769,7 +769,7 @@ void pblintd_height(PblintdHeightData& d)
 {
   shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  pblintd_height_c(d.shcol, d.nlev, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
+  pblintd_height_c(d.shcol, d.nlev, d.npbl, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -817,7 +817,7 @@ void pblintd(PblintdData& d)
 {
   shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  pblintd_c(d.shcol, d.nlev, d.nlevi, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
+  pblintd_c(d.shcol, d.nlev, d.nlevi, d.npbl, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -2909,7 +2909,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   return elapsed_microsec;
 }
 
-void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check)
+void pblintd_height_f(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check)
 {
   using SHOC       = Functions<Real, DefaultDevice>;
   using Spack      = typename SHOC::Spack;
@@ -2938,8 +2938,6 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
   std::vector<bview_1d> views_bool_1d(1);
   ScreamDeepCopy::copy_to_device({check}, shcol, views_bool_1d);
   bview_1d check_1d (views_bool_1d[0]);
-
-  Int npbl = nlev;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
@@ -3247,7 +3245,7 @@ void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Rea
   ScreamDeepCopy::copy_to_host({pblh}, shcol, out_1d_views);
 }
 
-void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
+void pblintd_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
 {
     using SHF = Functions<Real, DefaultDevice>;
 
@@ -3291,8 +3289,6 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
       v_d(temp_2d_d[6]),
       cldn_d(temp_2d_d[7]);
 
-
-    const Int npbl = nlev;
     const Int nlev_pack = ekat::npack<Spack>(nlev);
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
 

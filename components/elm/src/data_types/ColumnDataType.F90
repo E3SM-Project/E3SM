@@ -29,7 +29,7 @@ module ColumnDataType
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
-  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
   use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step, get_step_size
@@ -109,6 +109,7 @@ module ColumnDataType
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
     real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (used??)
+    real(r8), pointer :: wslake_col         (:)   => null() ! col lake water storage (mm H2O)
     ! Derived water and ice state variables for soil/snow column, depth varying
     real(r8), pointer :: h2osoi_liqvol      (:,:) => null() ! volumetric liquid water content (-nlevsno+1:nlevgrnd) (m3/m3)
     real(r8), pointer :: h2osoi_icevol      (:,:) => null() ! volumetric ice content (-nlevsno+1:nlevgrnd) (m3/m3)
@@ -1285,6 +1286,7 @@ contains
   !------------------------------------------------------------------------
   subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
     !
+    use elm_varctl  , only : use_lake_wat_storage
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc
@@ -1305,9 +1307,10 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = nan
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = nan
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = nan
-    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan
-    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan
-    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan
+    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan   
+    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan 
+    allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = nan
+    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = nan
     allocate(this%h2osoi_icevol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_icevol      (:,:) = nan
     allocate(this%h2osoi_liq_old     (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_old     (:,:) = nan
@@ -1508,11 +1511,21 @@ contains
           avgflag='A', long_name='imbalance in snow depth (liquid water)', &
            ptr_col=this%errh2osno, c2l_scale_type='urbanf')
 
+
+    this%wslake_col(begc:endc) = spval
+    if (use_lake_wat_storage) then
+       call hist_addfld1d(fname='WSLAKE', units='mm', &
+         avgflag='A', long_name='lake water storage', &
+         ptr_col=this%wslake_col)
+    end if
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ws
     !-----------------------------------------------------------------------
 
     ! Arrays that are initialized from input arguments
+    this%wslake_col(begc:endc) = 0._r8
+
     do c = begc,endc
        l = col_pp%landunit(c)
        this%h2osno(c)                 = h2osno_input(c)
@@ -1685,6 +1698,7 @@ contains
     ! Read/Write column water state information to/from restart file.
     !
     ! !USES:
+    use elm_varctl, only : use_lake_wat_storage
     !
     ! !ARGUMENTS:
     class(column_water_state) :: this
@@ -1808,6 +1822,12 @@ contains
             dim1name='column', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%wf)
+    end if
+
+    if (use_lake_wat_storage) then
+       call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
+         dim1name='column', long_name='lake water storage', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%wslake_col)
     end if
 
     ! Determine volumetric soil water (for read only)
@@ -2527,7 +2547,7 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
                    endif
                 end do
              end do
@@ -2749,11 +2769,11 @@ contains
     ! Spinup state
     !--------------------------------
 
-    if (carbon_type == 'c12'  .or. carbon_type == 'c14') then
+    if (carbon_type == 'c12' .or. carbon_type == 'c13' .or. carbon_type == 'c14') then
         if (flag == 'write') then
            idata = spinup_state
         end if
-        if (carbon_type == 'c12' .or. (carbon_type == 'c14' .and. flag == 'read')) then
+        if (carbon_type == 'c12' .or. (carbon_type == 'c13' .and. flag == 'read') .or. (carbon_type == 'c14' .and. flag == 'read')) then
            call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
                 long_name='Spinup state of the model that wrote this restart file: ' &
                 // ' 0 = normal model mode, 1 = AD spinup', units='', &
@@ -4389,7 +4409,8 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c,a,b,d
+    integer            :: i,j,k,l,c
+    real(r8)           :: a,b,d
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.
@@ -4405,9 +4426,9 @@ contains
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     real(r8)           :: smax_c, ks_sorption_c
-    real(r8)           :: rootfr(1:nlevdecomp)
     real(r8)           :: pinit_prof(1:nlevdecomp)
-    real(r8)           :: rootfr_tot
+    real(r8)           :: depth,pinit_prof_tot,tmp_scalar ! depth threshold for different p initialization profiles
+    integer            :: j_depth    ! jth depth index for different p initializaiton profiles
     !------------------------------------------------------------------------
 
     associate(&
@@ -4604,15 +4625,35 @@ contains
               errMsg(__FILE__, __LINE__))
           end if
 
+          ! calculate P initializtation profile
+          depth = 0.5_r8 ! set 50cm as depth threshold for p initializaiton profiles
           do j = 1, nlevdecomp
-             rootfr(j) = exp(-3.0* zsoi(j))
+             if (zisoi(j) <= depth) then
+                j_depth = j
+             end if
           end do
-          rootfr_tot = 0._r8
-          do j = 1, nlevdecomp
-             rootfr_tot = rootfr_tot + rootfr(j)
-          end do
-          do j = 1, nlevdecomp
-             pinit_prof(j) = rootfr(j) / rootfr_tot / dzsoi_decomp(j) ! 1/m
+          do c = bounds%begc, bounds%endc
+             if (use_vertsoilc) then
+                do j = 1, j_depth
+                   pinit_prof(j) = exp(-1._r8 * pinit_beta1(cnstate_vars%isoilorder(c)) * zisoi(j))
+                end do
+                do j = j_depth+1, nlevdecomp
+                   pinit_prof(j) = exp(-1._r8 * pinit_beta2(cnstate_vars%isoilorder(c)) * zisoi(j))
+                end do
+                ! rescale P profile so that distribution conserves and total P mass (g/m2) match obs for top 50 cm
+                pinit_prof_tot = 0._r8
+                do j = 1, j_depth
+                   pinit_prof_tot = pinit_prof_tot + pinit_prof(j) * dzsoi_decomp(j)
+                end do
+                do j = 1, j_depth ! for top 50 cm (6 layers), rescale
+                   pinit_prof(j) = pinit_prof(j) / pinit_prof_tot
+                end do
+                ! for below 50 cm, make sure 7 layer and 6 layer are consistent and also downward
+                tmp_scalar = pinit_prof(j_depth) / pinit_prof(j_depth+1)
+                do j = j_depth+1, nlevdecomp
+                   pinit_prof(j) = pinit_prof(j) * tmp_scalar
+                end do
+             end if
           end do
 
           do c = bounds%begc, bounds%endc
@@ -4621,9 +4662,6 @@ contains
                    ! solve equilibrium between loosely adsorbed and solution
                    ! phosphorus
                    ! the P maps used in the initialization are generated for the top 50cm soils
-                   ! assume soil below 50 cm has the same p pool concentration
-                   ! divide 0.5m when convert p pools from g/m2 to g/m3
-                   ! assume p pools evenly distributed at dif layers
                    ! Prescribe P initial profile based on exponential rooting profile [need to improve]
                    if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
                       a = 1.0_r8
@@ -4636,20 +4674,12 @@ contains
                       this%secondp_vr(c,j) = cnstate_vars%secp_col(c)*pinit_prof(j)
                       this%occlp_vr(c,j) = cnstate_vars%occp_col(c)*pinit_prof(j)
                       this%primp_vr(c,j) = cnstate_vars%prip_col(c)*pinit_prof(j)
-                   else if (nu_com .eq. 'RD') then
-                      a = 1.0_r8
-                      b = smax(cnstate_vars%isoilorder(c)) + &
-                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
-                      d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
-
-                      this%solutionp_vr(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
-                      this%labilep_vr(c,j) = cnstate_vars%labp_col(c)/0.5_r8 - this%solutionp_vr(c,j)
-                      this%secondp_vr(c,j) = cnstate_vars%secp_col(c)/0.5_r8
-                      this%occlp_vr(c,j) = cnstate_vars%occp_col(c)/0.5_r8
-                      this%primp_vr(c,j) = cnstate_vars%prip_col(c)/0.5_r8
                    end if
 
-                   if (nu_com .eq. 'RD') then
+                   ! assume soil below 50 cm has the same p pool concentration
+                   ! divide 0.5m when convert p pools from g/m2 to g/m3
+                   ! assume p pools evenly distributed at dif layers
+                   if (nu_com .eq. 'RD') then 
                        smax_c = smax(isoilorder(c))
                        ks_sorption_c = ks_sorption(isoilorder(c))
                        this%solutionp_vr(c,j) = (cnstate_vars%labp_col(c)/0.5_r8*ks_sorption_c)/&
@@ -10128,13 +10158,14 @@ contains
        if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
+       else
+          this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
        end if
     end do
 
     do fc = 1,num_special_col
        c = special_col(fc)
        this%dwt_ploss(c) = 0._r8
-       this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)

@@ -57,7 +57,7 @@
       <value compset="_EAM%MMF"        >-use_MMF -crm_adv MPDATA -nlev 60 -crm_nz 50 </value>
       <value compset="_EAM%MMF"        >-crm_dx 2000 -crm_dt 10 </value>
       <value compset="_EAM%MMF"        >-crm_nx 64 -crm_nx_rad 4 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF"        >-rad rrtmgp </value>
+      <value compset="_EAM%MMF"        >-rad rrtmgp -rrtmgpxx</value>
       <value compset="_EAM%MMF[12]"    >-crm sam</value>
       <value compset="_EAM%MMFXX"      >-crm samxx</value>
       <value compset="_EAM%MMFOMP"     >-crm samomp</value>
@@ -82,11 +82,12 @@
       <value compset="_EAM%ADIAB"     >-phys adiabatic</value>
 
       <!-- SCREAM configurations -->
-      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates</value>
-      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates</value>
+      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM.*-AQUA">-aquaplanet</value>
 
       <!-- Doubly Periodic SCREAM -->
-      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem none</value>
+      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
 
       <!-- Aquaplanet -->
       <value compset="_EAM%AQUA"   >-nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
@@ -142,11 +143,13 @@
       <value compset="AR97_EAM"     >scam_arm97</value>
       <value compset="SCAM_EAM"        >scam_generic</value>
       <value compset="PIPD_EAM"        >1850-PD_cam5</value>
-      <value compset="2010_EAM.*SCREAM-LR" >2010_scream_lr</value>
-      <value compset="2010_EAM.*SCREAM-HR" >2010_scream_hr</value>
-      <value compset="AR97_EAM.*DPSCREAM"  >dpscream_arm97</value>
-      <value compset="2010_EAM.*SCREAM-LR-DYAMOND2" >2010_scream_lr_dyamond2</value>
-      <value compset="2010_EAM.*SCREAM-HR-DYAMOND2" >2010_scream_hr_dyamond2</value>  
+      <value compset="2010_EAM%SCREAM-LR" >2010_scream_lr</value>
+      <value compset="2010_EAM%SCREAM-HR" >2010_scream_hr</value>
+      <value compset="AR97_EAM%DPSCREAM"  >dpscream_arm97</value>
+      <value compset="2010_EAM%SCREAM-LR-DYAMOND2" >2010_scream_lr_dyamond2</value>
+      <value compset="2010_EAM%SCREAM-HR-DYAMOND2" >2010_scream_hr_dyamond2</value>
+      <value compset="_EAM%SCREAM-LR-AQUA">aquaplanet_SCREAM-LR</value>
+      <value compset="_EAM%SCREAM-HR-AQUA">aquaplanet_SCREAM-HR</value>
       <!-- Aqua planet -->
       <value compset="_EAM%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -231,12 +234,12 @@
     <desc compset="_EAM%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_EAM%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="EAM.*_BGC%B">EAM prognostic CO2 cycle turned on.</desc>
-    <desc compset="_EAM.*SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
-    <desc compset="_EAM.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
-    <desc compset="_EAM.*SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>
-    <desc compset="_EAM.*SCREAM-HR-DYAMOND2">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND2 (2020-01-20).</desc>
-    <desc compset="_EAM.*SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
-    <desc compset="_EAM.*SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
+    <desc compset="_EAM%SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_EAM%SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_EAM%SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_EAM%SCREAM-HR-DYAMOND2">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_EAM%SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
+    <desc compset="_EAM%SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
     <!-- MMF / Super-Parameterization -->
     <desc compset="_EAM%MMF1"     >E3SM-MMF (Fortran w/ OpenACC offload),RRTMGP, 1-mom micro, prescribed aerosol</desc>
     <desc compset="_EAM%MMF2-ECPP">E3SM-MMF (Fortran no GPU offload),    RRTMGP, 2-mom micro, prognostic aerosol, ECPP </desc>

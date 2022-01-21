@@ -1,0 +1,51 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Time Stepping:
+  # IMPORTANT: make sure Start Time equals to the initial run start time PLUS one time step
+  Time Step: 300
+  Start Time: [12, 05, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: 1
+
+Initial Conditions:
+  Restart Run: true
+  Restart Casename: model_restart
+
+Atmosphere Processes:
+  Number of Entries: 5
+  Schedule Type: Sequential
+  Process 0:
+    Process Name: Homme
+    Enable Output Field Checks: false
+  Process 1:
+    Process Name: SHOC
+    Grid: Physics GLL
+  Process 2:
+    Process Name: CldFraction
+    Grid: Physics GLL
+  Process 3:
+    Process Name: P3
+    Grid: Physics GLL
+  Process 4:
+    Process Name: RRTMGP
+    Grid: Physics GLL
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+
+Grids Manager:
+  Type: Dynamics Driven
+  Reference Grid: Physics GLL
+  Dynamics Driven:
+    Dynamics Namelist File Name: namelist.nl
+
+# List all the yaml files with the output parameters
+Scorpio:
+  Output YAML Files: ["model_restart_output.yaml"]
+  Model Restart:
+    Casename: model_restart
+    Output Control:
+      Frequency:       1
+      Frequency Units: Steps
+...

@@ -22,6 +22,6 @@ set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90
 target_link_libraries(scream_io PUBLIC scream_share ${SCREAM_CIME_LIBS})
 target_compile_options(scream_io PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
-if (NOT SCREAM_LIBS_ONLY)
+if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()

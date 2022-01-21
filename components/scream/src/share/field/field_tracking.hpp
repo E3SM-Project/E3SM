@@ -39,7 +39,8 @@ public:
   // Please, notice this is not the OS time stamp (see time_stamp.hpp for details).
   const TimeStamp& get_time_stamp () const { return m_time_stamp; }
 
-  // List of providers/customers for this field
+  //  - provider: can compute the field as an output
+  //  - customer: requires the field as an input
   const atm_proc_set_type& get_providers () const { return m_providers; }
   const atm_proc_set_type& get_customers () const { return m_customers; }
 

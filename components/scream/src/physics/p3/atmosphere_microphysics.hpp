@@ -335,7 +335,7 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl ();
+  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 
@@ -362,6 +362,10 @@ protected:
   P3F::P3Infrastructure    infrastructure;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
+
+  // WSM for internal local variables
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
 

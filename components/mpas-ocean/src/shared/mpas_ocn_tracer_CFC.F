@@ -148,7 +148,7 @@ contains
                                         CFC12FluxDiagnostics,  &
                                         CFCAuxiliary
 
-      integer :: numColumns, column, iCell, iTracer, iLevelSurface
+      integer :: numColumns, column, iCell, iLevelSurface
 
       real (kind=RKIND), dimension(:), pointer :: &
          pCFC11,   &

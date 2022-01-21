@@ -16,6 +16,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
+#include <memory>
 #include <random>
 #include <numeric>
 
@@ -78,12 +79,12 @@ TEST_CASE("remap", "") {
 
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = gm.get_grid("Dynamics");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
   auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
-  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());
+  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_cg_dofs_gids());
   auto h_d_lid2idx = Kokkos::create_mirror_view(dyn_grid->get_lid_to_idx_map());
   Kokkos::deep_copy(h_p_dofs,phys_grid->get_dofs_gids());
-  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_cg_dofs_gids());
   Kokkos::deep_copy(h_d_lid2idx,dyn_grid->get_lid_to_idx_map());
 
   // Get some dimensions for Homme
@@ -224,7 +225,7 @@ TEST_CASE("remap", "") {
       // Note: for the dyn->phys test to run correctly, the dynamics input v must be synced,
       //       meaning that the values at the interface between two elements must match.
       //       To do this, we initialize each entry in the dynamic v with the id
-      //       of the corresponding column.
+      //       of the corresponding physics column.
       //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
 
       if (fwd) {
@@ -623,12 +624,12 @@ TEST_CASE("combo_remap", "") {
 
   // Get physics and dynamics grids, and their dofs
   auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = gm.get_grid("Dynamics");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
   auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
-  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());
+  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_cg_dofs_gids());
   auto h_d_lid2idx = Kokkos::create_mirror_view(dyn_grid->get_lid_to_idx_map());
   Kokkos::deep_copy(h_p_dofs,phys_grid->get_dofs_gids());
-  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_cg_dofs_gids());
   Kokkos::deep_copy(h_d_lid2idx,dyn_grid->get_lid_to_idx_map());
 
   // Get some dimensions for Homme
@@ -855,23 +856,6 @@ TEST_CASE("combo_remap", "") {
       // Remap
       if (pdp) {
         remapper->remap(true);
-        // For states, p->d remaps into tl.n0 and d->p remaps out of tl.np1.
-        // Hence, copy n0 slice into np1 slice in the states
-        auto ss_3d = ss_3d_field_dyn.get_view<Real*****>();
-        auto vs_3d = vs_3d_field_dyn.get_view<Real******>();
-        const int size = nle*np*np*NVL;
-        using ExeSpace = typename decltype(ss_3d)::traits::execution_space;
-        Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,size),
-                             KOKKOS_LAMBDA (const int idx) {
-          const int ie = idx / (np*np*NVL);
-          const int ip = (idx / (np*NVL)) % np;
-          const int jp = (idx / NVL) % np;
-          const int il = idx % NVL;
-
-          ss_3d(ie,np1,ip,jp,il) = ss_3d(ie,n0,ip,jp,il);
-          vs_3d(ie,np1,0,ip,jp,il) = vs_3d(ie,n0,0,ip,jp,il);
-          vs_3d(ie,np1,1,ip,jp,il) = vs_3d(ie,n0,1,ip,jp,il);
-        });
         Kokkos::fence();
         remapper->remap(false);
       } else {

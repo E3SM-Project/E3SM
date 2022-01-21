@@ -42,43 +42,49 @@ contains
 
   end subroutine dyn_grid_init
 
-  subroutine get_my_dyn_data (gids, elgpgp, lat, lon)
+  subroutine get_my_dyn_data (dg_gids, cg_gids, elgpgp, lat, lon)
     use iso_c_binding,     only: c_int, c_double
     use dimensions_mod,    only: nelemd, np
     use homme_context_mod, only: elem, par
     use shr_const_mod,     only: pi=>SHR_CONST_PI
     use bndry_mod_base,    only: bndry_exchangeV
     use edge_mod_base,     only: edgeVpack_nlyr, edgeVunpack_nlyr
-    use kinds,             only: real_kind
+    use kinds,             only: real_kind, int_kind
+    use dof_mod,           only: genLocalDof
     !
     ! Inputs
     !
-    real(kind=c_double), pointer :: lat (:), lon(:)
-    integer(kind=c_int), pointer :: gids (:), elgpgp(:,:)
+    real(kind=c_double), intent(out) :: lat (:), lon(:)
+    integer(kind=c_int), intent(out) :: cg_gids (:), dg_gids(:), elgpgp(:,:)
     !
     ! Local(s)
     !
-    real(kind=real_kind), allocatable :: el_gids (:,:,:)  ! Homme's bex stuff only works with reals
+    real(kind=real_kind), allocatable :: el_cg_gids (:,:,:)  ! Homme's bex stuff only works with reals
+    integer(kind=int_kind), allocatable :: el_dg_gids (:,:,:)  ! Homme's getLocalDof might not work with c_int
     integer :: idof, ip,jp, ie, icol
 
     ! Get the gids
-    allocate(el_gids(np,np,nelemd))
-    el_gids = 0
+    allocate(el_cg_gids(np,np,nelemd))
+    allocate(el_dg_gids(np,np,nelemd))
+    el_dg_gids = 0
+    el_cg_gids = 0
     do ie=1,nelemd
+      call genLocalDof(elem(ie)%vertex%number,np,el_dg_gids(:,:,ie))
       do icol=1,elem(ie)%idxP%NumUniquePts
         ip = elem(ie)%idxP%ia(icol)
         jp = elem(ie)%idxP%ja(icol)
-        el_gids(ip,jp,ie) = elem(ie)%idxP%UniquePtOffset + icol - 1
+        el_cg_gids(ip,jp,ie) = elem(ie)%idxP%UniquePtOffset + icol - 1
       enddo
-      call edgeVpack_nlyr(edge,elem(ie)%desc,el_gids(:,:,ie),1,0,1)
+      call edgeVpack_nlyr(edge,elem(ie)%desc,el_cg_gids(:,:,ie),1,0,1)
     enddo
     call bndry_exchangeV(par,edge)
     do ie=1,nelemd
-      call edgeVunpack_nlyr(edge,elem(ie)%desc,el_gids(:,:,ie),1,0,1)
+      call edgeVunpack_nlyr(edge,elem(ie)%desc,el_cg_gids(:,:,ie),1,0,1)
       do ip=1,np
         do jp=1,np
           idof = (ie-1)*16+(jp-1)*4+ip
-          gids(idof) = INT(el_gids(ip,jp,ie),kind=c_int)
+          cg_gids(idof) = INT(el_cg_gids(ip,jp,ie),kind=c_int)
+          dg_gids(idof) = INT(el_dg_gids(ip,jp,ie),kind=c_int)
           lat(idof)  = elem(ie)%spherep(ip,jp)%lat * 180.0_c_double/pi
           lon(idof)  = elem(ie)%spherep(ip,jp)%lon * 180.0_c_double/pi
           elgpgp(1,idof) = ie-1

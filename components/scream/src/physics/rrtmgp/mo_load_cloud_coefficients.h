@@ -1,7 +1,7 @@
 #ifndef MO_LOAD_CLOUD_COEFFICIENTS_HPP
 #define MO_LOAD_CLOUD_COEFFICIENTS_HPP
 
-#include "cpp/const.h"
+#include "cpp/rrtmgp_const.h"
 #include "cpp/rte/mo_optical_props.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 

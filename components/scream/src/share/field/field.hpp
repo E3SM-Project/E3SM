@@ -2,8 +2,6 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
-#include "share/field/field_property_check.hpp"
-#include "share/util/pointer_list.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_type_traits.hpp"
@@ -79,14 +77,6 @@ public:
   static_assert(std::is_floating_point<RT>::value,
                 "Error! RealType should be a floating point type.\n");
 
-  // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
-  // determine whether it satisfies certain properties. We use the PointerList
-  // class to provide simple access to the property checks.
-  using property_check_type = FieldPropertyCheck<non_const_RT>;
-  using property_check_list = PointerList<std::shared_ptr<property_check_type>,
-                                           property_check_type>;
-  using property_check_iterator = typename property_check_list::iterator;
-
   // Constructor(s)
   Field ();
   explicit Field (const identifier_type& id);
@@ -114,23 +104,6 @@ public:
 
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
-
-  // Adds a propery check to this field.
-  void add_property_check(std::shared_ptr<property_check_type> property_check) {
-    m_prop_checks->append(property_check);
-  }
-
-  // These (forward) iterators allow access to the set of property checks on the
-  // field.
-  property_check_iterator property_check_begin() const {
-    return m_prop_checks->begin();
-  }
-  property_check_iterator property_check_end() const {
-    return m_prop_checks->end();
-  }
-  const property_check_list& get_property_checks () const {
-    return *m_prop_checks;
-  }
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -171,7 +144,12 @@ public:
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const field_type& field_src);
+  void deep_copy (const non_const_field_type& field_src) {
+    deep_copy(field_src.get_const());
+  }
+
+  template<HostOrDevice HD = Device>
+  void deep_copy (const const_field_type& field_src);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -293,9 +271,6 @@ protected:
   // Host mirror of the data. Use shared_ptr to ensure subfields store
   // the same host mirror of parents.
   std::shared_ptr<HM<view_type<RT*>>>     m_view_h;
-
-  // List of property checks for this field.
-  std::shared_ptr<property_check_list>    m_prop_checks;
 };
 
 // We use this to find a FieldGroup in a std container.
@@ -320,7 +295,6 @@ template<typename RealType>
 Field<RealType>::
 Field (const identifier_type& id)
  : m_header     (create_header(id))
- , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's real type.
   m_header->get_alloc_properties().request_allocation<RT>();
@@ -337,7 +311,6 @@ Field (const Field<SrcRealType>& src)
  : m_header (src.get_header_ptr())
  , m_view_d (src.m_view_d)
  , m_view_h (src.m_view_h)
- , m_prop_checks (src.m_prop_checks)
 {
   using src_field_type = Field<SrcRealType>;
 
@@ -388,7 +361,6 @@ operator= (const Field<SrcRT>& src) {
     m_header = src.m_header;
     m_view_d = src.m_view_d;
     m_view_h = src.m_view_h;
-    m_prop_checks = src.m_prop_checks;
   }
 
   return *this;
@@ -480,7 +452,7 @@ sync_to_dev () const {
 template<typename RealType>
 template<HostOrDevice HD>
 void Field<RealType>::
-deep_copy (const field_type& field_src) {
+deep_copy (const const_field_type& field_src) {
   const auto& layout     = get_header().get_identifier().get_layout();
   const auto& layout_src = field_src.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(layout==layout_src,
@@ -493,35 +465,42 @@ deep_copy (const field_type& field_src) {
     case 1:
       {
         auto v     = get_view<RT*,HD>();
-        auto v_src = field_src.get_view<RT*,HD>();
+        auto v_src = field_src.template get_view<const_RT*,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 2:
       {
         auto v     = get_view<RT**,HD>();
-        auto v_src = field_src.get_view<RT**,HD>();
+        auto v_src = field_src.template get_view<const_RT**,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 3:
       {
         auto v     = get_view<RT***,HD>();
-        auto v_src = field_src.get_view<RT***,HD>();
+        auto v_src = field_src.template get_view<const_RT***,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 4:
       {
         auto v     = get_view<RT****,HD>();
-        auto v_src = field_src.get_view<RT****,HD>();
+        auto v_src = field_src.template get_view<const_RT****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
     case 5:
       {
         auto v     = get_view<RT*****,HD>();
-        auto v_src = field_src.get_view<RT*****,HD>();
+        auto v_src = field_src.template get_view<const_RT*****,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 6:
+      {
+        auto v     = get_view<RT******,HD>();
+        auto v_src = field_src.template get_view<const_RT******,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
@@ -572,6 +551,12 @@ deep_copy (const RT value) {
         Kokkos::deep_copy(v,value);
       }
       break;
+    case 6:
+      {
+        auto v = get_view<RT******,HD>();
+        Kokkos::deep_copy(v,value);
+      }
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
   }
@@ -605,7 +590,6 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_view_d = m_view_d;
   sf.m_view_h = m_view_h;
-  sf.m_prop_checks = std::make_shared<property_check_list>();
 
   return sf;
 }

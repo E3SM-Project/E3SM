@@ -39,7 +39,8 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor)
@@ -96,6 +97,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nu_top                        = nu_top;
   params.hypervis_order                = hypervis_order;
   params.hypervis_subcycle             = hypervis_subcycle;
+  params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = disable_diagnostics;
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
@@ -147,11 +149,11 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  if (test_name=="jw_baroclinic") {
+  //if (test_name=="jw_baroclinic") {
     params.test_case = TestCase::JW_BAROCLINIC;
-  } else {
-    Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  }
+  //} else {
+  //  Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
+  //}
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -225,14 +227,12 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
-    if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
-    }
-    HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
-        elem_derived_FQ, num_elems);
-    sync_to_device(fq_f90, tracers.fq);
+  if (tracers.fq.data() == nullptr) {
+    tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
   }
+  HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
+      elem_derived_FQ, num_elems);
+  sync_to_device(fq_f90, tracers.fq);
 }
 
 void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)

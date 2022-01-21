@@ -288,9 +288,6 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: harmonicAnalysisAMPool 
-      type (mpas_time_type) :: current_time
-      type (mpas_time_type) :: harmonicAnalysisStart
-      type (mpas_time_type) :: harmonicAnalysisEnd
 
       integer, pointer :: nCellsSolve      
       integer, pointer :: nAnalysisConstituents
@@ -321,7 +318,9 @@ contains
 
       integer :: iCell
       integer :: iCon
+      integer :: err_tmp
       real (kind=RKIND) :: time
+      real (kind=RKIND) :: harmonicAnalysisEnd
 
       err = 0
 
@@ -346,18 +345,16 @@ contains
 
          ! get relevant time information
          time = daysSinceStartOfSim*86400_RKIND
-         current_time = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
-         call mpas_set_time(harmonicAnalysisStart, dateTimeString=config_AM_harmonicAnalysis_start)  
-         call mpas_set_time(harmonicAnalysisEnd, dateTimeString=config_AM_harmonicAnalysis_end)  
+         harmonicAnalysisEnd = config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration
          
          ! exit if harmonic analysis period has not begun yet
-         if (current_time .lt. harmonicAnalysisStart) then
+         if (daysSinceStartOfSim .lt. config_AM_harmonicAnalysis_start_delay) then
            call mpas_log_write('harmonicAnalysisAM exit: before HA period')
            return 
          end if
 
          ! update if within harmonic analysis period 
-         if (current_time .le. harmonicAnalysisEnd) then
+         if (daysSinceStartOfSim .le. harmonicAnalysisEnd) then
            CALL update_least_squares_LHS_matrix(nAnalysisConstituents, &
                                                 time, &
                                                 analysisConstituentFrequency, &
@@ -373,7 +370,7 @@ contains
          end if
 
          ! solve harmonic analysis least squares system if harmonic analysis period is over
-         if ((current_time .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution == 0)) then
+         if ((daysSinceStartOfSim .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution == 0)) then
            call harmonic_analysis_solve(nCellsSolve, &
                                         nAnalysisConstituents, &
                                         leastSquaresLHSMatrix, &
@@ -435,11 +432,13 @@ contains
              endif
            enddo
 
+           call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_harmonicAnalysis_output_stream, forceWriteNow=.true., ierr=err_tmp)
+
            ! increment to indicate the system has been solved
            leastSquaresSolution = leastSquaresSolution + 1
            call mpas_log_write('harmonicAnalysisAM solve')
 
-         else if ((current_time .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution > 0)) then
+         else if ((daysSinceStartOfSim .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution > 0)) then
            call mpas_log_write('harmonicAnalysisAM exit: past HA period')
          end if
 

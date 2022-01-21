@@ -97,7 +97,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
     Kokkos::deep_copy(aer_ssa_sw_h,spa_data.AER_SSA_SW);
     Kokkos::deep_copy(aer_tau_sw_h,spa_data.AER_TAU_SW);
     Kokkos::deep_copy(aer_tau_lw_h,spa_data.AER_TAU_LW);
-    for (int dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
+    for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
       gid_type glob_i = dofs_gids_h(dof_i);
       REQUIRE(ps_h(dof_i) == ps_func(time_index,glob_i));
       for (int kk=0;kk<nlevs;kk++) {

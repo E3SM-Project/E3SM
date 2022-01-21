@@ -56,6 +56,14 @@
     </directives>
   </batch_system>
 
+   <batch_system MACH="spock" type="slurm">
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00" default="true">ecp</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00">caar</queue>
+       <queue strict="true" nodemin="5" nodemax="16" walltimemax="01:00:00">caar</queue>
+     </queues>
+   </batch_system>
+
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
@@ -212,7 +220,7 @@
   </batch_system>
   <!-- for lawrence livermore computing -->
 
-  <!-- for NERSC machines: edison,cori-haswell,cori-knl -->
+  <!-- for NERSC machines: cori-haswell,cori-knl -->
   <batch_system type="nersc_slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -306,23 +314,6 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="eos" type="pbs" >
-    <directives>
-      <directive>-A {{ project }}</directive>
-      <directive>-l  nodes={{ num_nodes }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" default="true">batch</queue>
-    </queues>
-   </batch_system>
-
-  <batch_system MACH="edison" type="nersc_slurm" >
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:30:00" default="true">regular</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="cori-haswell" type="nersc_slurm">
      <directives>
        <directive> --constraint=haswell</directive>
@@ -340,6 +331,29 @@
     <queues>
       <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
       <queue walltimemax="01:15:00" default="true">regular</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="perlmutter" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=gpu</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
     </queues>
   </batch_system>
 

@@ -1331,10 +1331,10 @@ contains
     call update_prognostics_implicit(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind)
   end subroutine update_prognostics_implicit_c
 
-  subroutine pblintd_height_c(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
+  subroutine pblintd_height_c(shcol, nlev, npbl_in, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
     use shoc, only : npbl, pblintd_height
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, npbl_in
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, u, v, thv
     real(kind=c_real) , intent(in), dimension(shcol) :: ustar, thv_ref
     real(kind=c_real) , intent(out), dimension(shcol) :: pblh
@@ -1342,7 +1342,7 @@ contains
     logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
 
     ! setup npbl
-    npbl = nlev
+    npbl = npbl_in
     call pblintd_height(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check)
   end subroutine pblintd_height_c
 
@@ -1399,15 +1399,17 @@ contains
     call pblintd_check_pblh(shcol, nlev, nlevi, z, ustar, check, pblh)
   end subroutine pblintd_check_pblh_c
 
-  subroutine pblintd_c(shcol, nlev, nlevi, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh) bind(C)
-    use shoc, only : pblintd
+  subroutine pblintd_c(shcol, nlev, nlevi, npbl_in, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh) bind(C)
+    use shoc, only : npbl, pblintd
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, npbl_in
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, thl, ql, q, u, v, cldn
     real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: zi
     real(kind=c_real) , intent(in), dimension(shcol) :: ustar, obklen, kbfs
     real(kind=c_real) , intent(out), dimension(shcol) :: pblh
 
+    ! setup npbl
+    npbl = npbl_in
     call pblintd(shcol, nlev, nlevi, z, zi, thl, ql, q, u, v, ustar, obklen, kbfs, cldn, pblh)
   end subroutine pblintd_c
 end module shoc_iso_c

@@ -65,6 +65,13 @@ public:
   void set_required_field (const Field<const Real>& field);
   void set_required_group (const FieldGroup<const Real>& group);
 
+  // Gather internal fields from all processes in the group
+  // NOTE: this method *must* be called before any attempt to query this atm proc group
+  //       for its internal fields, otherwise it will appear as if this atm proc group
+  //       stores ZERO internal fields. In other words, this method populates the list
+  //       of internal fields of the group.
+  void gather_internal_fields ();
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
@@ -72,6 +79,7 @@ protected:
   void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods
+  void initialize_impl(const RunType run_type);
   void initialize_impl ();
   void run_impl        (const int dt);
   void finalize_impl   (/* what inputs? */);

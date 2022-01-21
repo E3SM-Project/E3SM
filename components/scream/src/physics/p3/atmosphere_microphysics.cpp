@@ -59,7 +59,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   constexpr int ps = Pack::n;
 
-  // These variables are needed by the interface, but not actually passed to p3_main.
+  // These variables are needed by the interface, but not actually passed to p3_main. 
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
@@ -175,7 +175,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void P3Microphysics::initialize_impl ()
+void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
@@ -189,8 +189,7 @@ void P3Microphysics::initialize_impl ()
   // get_field_out("ni").add_property_check(positivity_check);
   // get_field_out("bm").add_property_check(positivity_check);
   auto T_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(150, 500);
-  get_field_out("T_mid").add_property_check(T_interval_check);
-
+  add_property_check<Updated>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
 
   // Initialize p3
   p3_init();
@@ -269,7 +268,7 @@ void P3Microphysics::initialize_impl ()
   infrastructure.ite = m_num_cols-1;
   infrastructure.kts = 0;
   infrastructure.kte = m_num_levs-1;
-  infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option
+  infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option 
   infrastructure.prescribedCCN = true; // Hard-coded for now, TODO: make this a runtime option
   infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
@@ -281,6 +280,10 @@ void P3Microphysics::initialize_impl ()
       prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
       prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
+
+  // Setup WSM for internal local variables
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  workspace_mgr.setup(m_buffer.wsm_data, nk_pack, 52, policy);
 }
 
 // =========================================================================================

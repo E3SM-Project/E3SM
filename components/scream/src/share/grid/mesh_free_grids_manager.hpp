@@ -9,9 +9,11 @@ namespace scream {
 
 // This class is meant to be used for small unit tests, where we want to
 // test some infrastructure of scream, without bothering too much about
-// grids-related features. This manager can build a PointGrid and a SEGrid.
-// If the SEGrid is build, it corresponds to a "strip" of elements,
-// and the PointGrid is built as the 'unique' grid of that SEGrid.
+// grids-related features. This manager can build a PointGrid and a SEGrid,
+// (in both the CG and DG flavor). If the CG SEGrid is build, it corresponds
+// to a "strip" of elements, while the DG SEGrid corresponds to a set of
+// completely unrelated elements.
+// There is *no* link between the stored grids.
 
 class MeshFreeGridsManager : public GridsManager
 {
@@ -40,8 +42,6 @@ public:
 
 protected:
 
-  void build_pt_from_se (const int num_local_elems, const int num_gp, const int num_vertical_levels);
-
   std::string get_reference_grid_name () const {
     return m_params.get<std::string>("Reference Grid");
   }
@@ -66,10 +66,11 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const ekat::ParameterLis
 
 std::shared_ptr<GridsManager>
 create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elems,
-                                const int num_gp, const int num_vertical_levels);
+                                const int num_gp, const int num_vertical_levels,
+                                const int num_global_cols);
 
 inline void register_mesh_free_grids_manager () {
-  // A physics-only grids manager, in case we run a physics-only test
+  // A simple grids manager, useful to run physics-only unit tests
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 }

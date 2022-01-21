@@ -2239,8 +2239,8 @@
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
        if (tr_bgc_C) then
-       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-13_dbl_kind .or. &
-          abs(dN) > maxval(abs(reactb(:)))*1.0e-13_dbl_kind) then
+          if (abs(dC) > max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind) .or. &
+            abs(dN) > max(puny,maxval(abs(reactb(:)))*1.0e-13_dbl_kind)) then
             conserve_C = .false.
             write(warning, *) 'Conservation error!'
             call add_warning(warning)

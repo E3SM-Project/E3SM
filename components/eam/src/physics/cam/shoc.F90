@@ -4226,7 +4226,7 @@ subroutine pblintd(&
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
     call pblintd_f(&
-      shcol,nlev,nlevi,&             ! Input
+      shcol,nlev,nlevi,npbl,&        ! Input
       z,zi,thl,ql,&                  ! Input
       q,u,v,&                        ! Input
       ustar,obklen,kbfs,cldn,&       ! Input
@@ -4407,8 +4407,8 @@ subroutine pblintd_height(&
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call pblintd_height_f(shcol,nlev,z,u,v,ustar,thv,thv_ref,&             ! Input
-                            pblh,rino,check)          ! Output
+      call pblintd_height_f(shcol,nlev,npbl,z,u,v,ustar,thv,thv_ref,& ! Input
+                            pblh,rino,check)                          ! Output
       return
    endif
 #endif

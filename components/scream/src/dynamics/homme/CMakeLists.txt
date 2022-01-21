@@ -138,8 +138,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ### HACK ALERT! ###
 
       # Remove shr_blah_mod.F90 from homme/utils/csm_share,
-      # since we use those from cime/src/share/util.
-      # Note: the cleanest thing is to mod homme, to use cime stuff
+      # since we use those from $repo_root/share/util.
+      # Note: the cleanest thing would be to mod homme, to use cime stuff
       set (REMOVE_FILES)
       foreach (file IN_LIST ${THETAL_DEPS})
         if (file MATCHES "csm_share/shr_")

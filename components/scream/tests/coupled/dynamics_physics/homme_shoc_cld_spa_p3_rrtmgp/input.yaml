@@ -12,21 +12,15 @@ Time Stepping:
 Initial Conditions:
   Physics GLL:
     Filename: homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-    # Set X_prev = X
-    T_mid_prev: T_mid
-    horiz_winds_prev: horiz_winds
-    w_int: 0.0 # Start from zero vert velocity
-    w_int_prev: 0.0
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
-  Dynamics:
-    tracers: tracers, Physics GLL
 
 Atmosphere Processes:
   Number of Entries: 6
   Schedule Type: Sequential
   Process 0:
     Process Name: Homme
+    Enable Output Field Checks: false
   Process 1:
     Process Name: SHOC
     Grid: Physics GLL

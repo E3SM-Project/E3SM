@@ -13,7 +13,7 @@ use ppgrid, only: begchunk
 use pmgrid, only: plev, plon
 use parallel_mod,            only: par
 #ifdef MODEL_THETA_L
-use element_ops, only: get_R_star
+use element_ops, only: get_R_star, get_pottemp
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
@@ -261,6 +261,11 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k)
 #endif
 
+    ! collect stats from dycore for analysis
+    if (dp_crm) then
+      call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
+    endif
+
     do ie=1,nelemd_todo
 
       do k=1,nlev
@@ -504,5 +509,151 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
   enddo
 
 end subroutine iop_domain_relaxation
+
+subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
+                              nelemd_todo,np_todo)
+
+  ! Subroutine intended to compute various resolved turbulence statistics
+  ! (done so to be consistent with SHOC's definition of each for ease of
+  ! comparison) for DP CRM runs.
+
+  use scamMod
+  use dimensions_mod, only : np, np, nlev, nlevp, npsq, nelem
+  use parallel_mod, only: global_shared_buf, global_shared_sum
+  use global_norms_mod, only: wrap_repro_sum
+  use hybvcoord_mod, only : hvcoord_t
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use time_mod
+  use physical_constants, only : Cp, Rgas
+  use cam_history, only: outfld
+  use physconst, only: latvap
+
+  ! Input/Output variables
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  type(hybrid_t),             intent(in) :: hybrid
+  integer, intent(in) :: nelemd_todo, np_todo, t1
+
+  ! Local variables
+  real (kind=real_kind), dimension(nlev) :: domain_thetal, domain_qw, domain_u, domain_v
+  real (kind=real_kind) :: thetal(np,np,nlev), qw(np,np,nlev)
+  real (kind=real_kind) :: rho(np,np,nlev), temperature(np,np,nlev)
+  real (kind=real_kind) :: wthl_res(np,np,nlev+1), wqw_res(np,np,nlev+1)
+  real (kind=real_kind) :: w2_res(np,np,nlev+1), w3_res(np,np,nlev+1)
+  real (kind=real_kind) :: u2_res(np,np,nlev), v2_res(np,np,nlev)
+  real (kind=real_kind) :: thl2_res(np,np,nlev), qw2_res(np,np,nlev), qwthl_res(np,np,nlev)
+  real (kind=real_kind) :: pres(nlev)
+  integer :: ie, i, j, k
+
+  ! Compute pressure for IOP observations
+  do k=1,nlev
+    pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
+  end do
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Find the domain mean of thetal, qw, u, and v
+  do k=1,nlev
+    do ie=1,nelemd_todo
+
+      ! Compute potential temperature
+      call get_pottemp(elem(ie),thetal,hvcoord,t1,1)
+
+      ! Compute liquid water potential temperature
+      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
+      ! Compute total water
+      qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
+
+      ! Initialize the global buffer
+      global_shared_buf(ie,1) = 0.0_real_kind
+      global_shared_buf(ie,2) = 0.0_real_kind
+      global_shared_buf(ie,3) = 0.0_real_kind
+      global_shared_buf(ie,4) = 0.0_real_kind
+
+      ! Sum each variable for each level
+      global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(thetal(:,:,k))
+      global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(qw(:,:,k))
+      global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
+      global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
+    enddo
+
+    ! Compute the domain mean
+    call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
+    domain_thetal(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
+    domain_qw(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
+    domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
+    domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
+  enddo
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Compute the flux
+  do ie=1,nelemd_todo
+
+    ! Compute potential temperature
+    call get_pottemp(elem(ie),thetal,hvcoord,t1,1)
+    call get_temperature(elem(ie),temperature,hvcoord,t1)
+
+    ! Compute liquid water potential temperature
+    do k=1,nlev
+      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
+      qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
+    enddo
+
+    ! Compute air density
+    do k=1,nlev
+      rho(:,:,k) = pres(k)/(Rgas*temperature(:,:,k))
+    enddo
+
+    ! Compute fluxes
+    wthl_res(:,:,:) = 0.0_real_kind ! initialize
+    wqw_res(:,:,:) = 0.0_real_kind
+    do k=2,nlev
+      wthl_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1) * 0.5_real_kind * &
+                        ((thetal(:,:,k)-domain_thetal(k))+&
+                        (thetal(:,:,k-1)-domain_thetal(k-1)))
+      wqw_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1) * 0.5_real_kind * &
+                        ((qw(:,:,k)-domain_qw(k))+(qw(:,:,k-1)-domain_qw(k-1)))
+
+      ! convert to W/m2
+      wthl_res(:,:,k) = wthl_res(:,:,k) * 0.5_real_kind*(rho(:,:,k)+rho(:,:,k-1)) * Cp
+      wqw_res(:,:,k) = wqw_res(:,:,k) * 0.5_real_kind*(rho(:,:,k)+rho(:,:,k-1)) * latvap
+    enddo
+
+    ! Compute variances and covariances on interface grid
+    w2_res(:,:,:) = 0.0_real_kind
+    w3_res(:,:,:) = 0.0_real_kind
+    do k=1,nlev+1
+      w2_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1)**2
+      w3_res(:,:,k) = elem(ie)%state%w_i(:,:,k,t1)**3
+    enddo
+
+    ! Compute variances and covariances on midpoint grid
+    u2_res(:,:,:) = 0.0_real_kind
+    v2_res(:,:,:) = 0.0_real_kind
+    thl2_res(:,:,:) = 0.0_real_kind
+    qw2_res(:,:,:) = 0.0_real_kind
+    qwthl_res(:,:,:) = 0.0_real_kind
+    do k=1,nlev
+      u2_res(:,:,k) = (elem(ie)%state%V(:,:,1,k,t1) - domain_u(k))**2
+      v2_res(:,:,k) = (elem(ie)%state%V(:,:,2,k,t1) - domain_v(k))**2
+      thl2_res(:,:,k) = (thetal(:,:,k)-domain_thetal(k))**2
+      qw2_res(:,:,k) = (qw(:,:,k)-domain_qw(k))**2
+      qwthl_res(:,:,k) = (thetal(:,:,k)-domain_thetal(k))* &
+                         (qw(:,:,k)-domain_qw(k))
+    enddo
+
+    call outfld('WTHL_RES',wthl_res,npsq,ie)
+    call outfld('WQW_RES',wqw_res,npsq,ie)
+    call outfld('W2_RES',w2_res,npsq,ie)
+    call outfld('W3_RES',w3_res,npsq,ie)
+    call outfld('U2_RES',u2_res,npsq,ie)
+    call outfld('V2_RES',v2_res,npsq,ie)
+    call outfld('THL2_RES',thl2_res,npsq,ie)
+    call outfld('QW2_RES',qw2_res,npsq,ie)
+    call outfld('QWTHL_RES',qwthl_res,npsq,ie)
+
+  enddo
+
+end subroutine crm_resolved_turb
 
 end module se_single_column_mod

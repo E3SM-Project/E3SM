@@ -259,6 +259,8 @@ module seq_diag_mct
   integer :: index_l2x_Flrl_rofdto
   integer :: index_l2x_Flrl_rofi
   integer :: index_l2x_Flrl_irrig
+  integer :: index_l2x_Flrl_wslake
+
 
   integer :: index_x2l_Faxa_lwdn
   integer :: index_x2l_Faxa_rainc
@@ -882,6 +884,7 @@ contains
           index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
           index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
+          index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
 
           index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
           if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -911,7 +914,8 @@ contains
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
-               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_wslake,n)
           if (index_l2x_Flrl_irrig /= 0) then
              nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_irrig,n)
           end if

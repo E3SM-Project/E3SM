@@ -157,12 +157,14 @@ public:
       // if we have dy!=dx.
       cell_length(i) = sqrt(area(i));
 
-      const int nlev_v = (nlev-1)/Spack::n;
-      const int nlev_p = (nlev-1)%Spack::n;
-      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
-      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlev_v)[nlev_p];
+      const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
+      const auto& inv_exner_int_surf = 1/exner_int;
+
+      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]);
+      wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_int_surf;
+      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlevi_v)[nlevi_p];
+      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
+      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
@@ -176,6 +178,7 @@ public:
     view_1d_const        area;
     view_2d_const        T_mid;
     view_2d_const        p_mid;
+    view_2d_const        p_int;
     view_2d_const        pseudo_density;
     view_2d_const        omega;
     view_1d_const        phis;
@@ -210,7 +213,7 @@ public:
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const Real z_surf_,
                        const view_1d_const& area_,
-                       const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
+                       const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const sview_2d_const& surf_mom_flux_,
@@ -231,6 +234,7 @@ public:
       area = area_;
       T_mid = T_mid_;
       p_mid = p_mid_;
+      p_int = p_int_;
       pseudo_density = pseudo_density_;
       omega = omega_;
       phis = phis_;
@@ -398,7 +402,7 @@ public:
 protected:
 
   // The three main interfaces for the subcomponent
-  void initialize_impl ();
+  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 
@@ -435,6 +439,9 @@ protected:
   // Structures which compute pre/post process
   SHOCPreprocess shoc_preprocess;
   SHOCPostprocess shoc_postprocess;
+
+  // WSM for internal local variables
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
 }; // class SHOCMacrophysics
 
 } // namespace scream

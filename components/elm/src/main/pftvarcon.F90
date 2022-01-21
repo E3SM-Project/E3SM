@@ -245,6 +245,9 @@ module pftvarcon
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
   real(r8), allocatable :: s_vc(:)             ! slope of photosynthesis vcmax ~ leaf N content regression model
+  real(r8), allocatable :: nsc_rtime(:)        ! non-structural carbon residence time
+  real(r8), allocatable :: pinit_beta1(:)      ! shaping parameter for P initialization
+  real(r8), allocatable :: pinit_beta2(:)      ! shaping parameter for P initialization
   ! new stoichiometry
   real(r8), allocatable :: leafcn_obs(:)       !leaf C:N [gC/gN]
   real(r8), allocatable :: frootcn_obs(:)      !fine root C:N (gC/gN)
@@ -534,6 +537,9 @@ contains
     allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
+    allocate( nsc_rtime          (0:mxpft) )
+    allocate( pinit_beta1        (0:nsoilorder))
+    allocate( pinit_beta2        (0:nsoilorder))
     allocate( alpha_nfix         (0:mxpft) )
     allocate( alpha_ptase        (0:mxpft) )
     allocate( ccost_nfix         (0:mxpft) )
@@ -889,6 +895,12 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in i_vc'//errMsg(__FILE__, __LINE__))
         call ncd_io('s_vc',s_vc, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in s_vc'//errMsg(__FILE__, __LINE__))
+        call ncd_io('nsc_rtime',nsc_rtime, 'read', ncid, readvar=readv)
+        if ( .not. readv ) nsc_rtime(:) = 1.0_r8
+        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
+        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta2(:) = 0.1_r8
         ! new stoichiometry
         call ncd_io('leafcn_obs',leafcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -1005,11 +1017,12 @@ contains
 
     do i = 0, mxpft
 
+       if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
+       
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_fates)then
-          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
