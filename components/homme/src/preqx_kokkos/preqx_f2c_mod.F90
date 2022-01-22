@@ -137,12 +137,12 @@ interface
   end subroutine push_forcing_to_c
 
   ! Run dycore for a full atm timesteps
-  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iteration) bind(c)
     use iso_c_binding, only: c_int, c_double
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
+    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step, nsplit_iteration
     real (kind=c_double), intent(in) :: tstep
   end subroutine prim_run_subcycle_c
 
