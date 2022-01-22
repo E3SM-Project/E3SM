@@ -8794,14 +8794,14 @@
       <pes compset="any" pesize="any">
         <comment>summit|ascent: any compset on ne30np4.pg2 grid</comment>
         <ntasks>
-          <ntasks_atm>-4</ntasks_atm>
-          <ntasks_lnd>-4</ntasks_lnd>
-          <ntasks_rof>-4</ntasks_rof>
-          <ntasks_ice>-4</ntasks_ice>
-          <ntasks_ocn>-4</ntasks_ocn>
-          <ntasks_cpl>-4</ntasks_cpl>
-          <ntasks_glc>-4</ntasks_glc>
-          <ntasks_wav>-4</ntasks_wav>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
