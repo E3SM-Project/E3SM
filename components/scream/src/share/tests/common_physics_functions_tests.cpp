@@ -10,7 +10,6 @@
 #include "ekat/util/ekat_test_utils.hpp"
 
 #include <iomanip>
-#include <limits>
 
 namespace{
 
@@ -86,7 +85,7 @@ void run(std::mt19937_64& engine)
   static constexpr auto cp       = PC::CP;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
-  static constexpr auto test_tol = PC::macheps;
+  static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
   using pack_info = ekat::PackInfo<pack_size>;
@@ -167,7 +166,7 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, qv_wet0, qv_dry0, dz0, Tv0, rho0, rand_int0, z0, dse0;
   RealType surf_height;
 
   // calculate density property tests:
@@ -256,9 +255,8 @@ void run(std::mt19937_64& engine)
 
 
   // WETMMR to DRYMMR (and vice versa) property tests
-  wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
-  //qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
-  qv0  = wetmmr0;  // This is an input for mmr_tests, so it won't be modified by mmr tests
+  qv_wet0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
+  qv_dry0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
   // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
@@ -273,28 +271,19 @@ void run(std::mt19937_64& engine)
   //
   //            *WARNING* This test might fail if a check is added to this function to accept only valid values for qv0
 
-  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
-  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
+  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv_wet0),zero) ); //mmr_test1
+  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv_dry0),zero) ); //mmr_test2
 
-  typedef std::numeric_limits< double > dbl;
-  double d = 3.14159265358979;
-  std::cout.precision(dbl::max_digits10);
   //mmr_test3
-  std::cout<<std::endl;
-  std::cout<<"BALLI-wetmmr, qv0:"<<wetmmr0<<","<<qv0<<","<<test_tol<<std::endl;
-  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
-  std::cout<<"BALLI-answer-dry:"<<tmp<<std::endl;
-  tmp = PF::calculate_wetmmr_from_drymmr(tmp, tmp);//qv0);//convert it back to wetmmr0
-  std::cout<<"BALLI-answer-wet:"<<tmp<<std::endl;
-
-
-  REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
+  qv_dry0 = PF::calculate_drymmr_from_wetmmr(qv_wet0,qv_wet0);//get drymmr from wetmmr0
+  tmp = PF::calculate_wetmmr_from_drymmr(qv_dry0, qv_dry0);//convert it back to wetmmr0
+  REQUIRE( Check::approx_equal(tmp,qv_wet0,test_tol) );// wetmmr0 should be equal to tmp
 
   //mmr_test4
-  ScalarT qv0_2k_m1 = pow(2,rand_int0)+1; // 2^rand_int+1
-  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0_2k_m1);//get drymmr from wetmmr0
-  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0_2k_m1);//convert it back to wetmmr0
-  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be exactly equal to tmp
+  //ScalarT qv0_2k_m1 = pow(2,rand_int0)+1; // 2^rand_int+1
+  //tmp = PF::calculate_drymmr_from_wetmmr(qv0_2k_m1,qv0_2k_m1);//get drymmr from wetmmr0
+  //tmp = PF::calculate_wetmmr_from_drymmr(tmp, tmp);//convert it back to wetmmr0
+  //REQUIRE( Check::equal(tmp,qv0_2k_m1));// wetmmr0 should be exactly equal to tmp
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
@@ -366,10 +355,10 @@ void run(std::mt19937_64& engine)
     PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
 
     // Compute drymmr from wetmmr
-    PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,qv,drymmr);
+    PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,wetmmr_for_testing,drymmr);
 
     // Convert drymmr computed above to wetmmr
-    PF::calculate_wetmmr_from_drymmr(team,drymmr,qv,wetmmr);
+    PF::calculate_wetmmr_from_drymmr(team,drymmr,drymmr,wetmmr);
 
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
