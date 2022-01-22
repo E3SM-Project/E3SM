@@ -10,6 +10,7 @@
 #include "ekat/util/ekat_test_utils.hpp"
 
 #include <iomanip>
+#include <limits>
 
 namespace{
 
@@ -85,7 +86,7 @@ void run(std::mt19937_64& engine)
   static constexpr auto cp       = PC::CP;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
-  static constexpr auto test_tol = PC::macheps*1e3;
+  static constexpr auto test_tol = PC::macheps;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
   using pack_info = ekat::PackInfo<pack_size>;
@@ -256,7 +257,8 @@ void run(std::mt19937_64& engine)
 
   // WETMMR to DRYMMR (and vice versa) property tests
   wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
-  qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
+  //qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
+  qv0  = wetmmr0;  // This is an input for mmr_tests, so it won't be modified by mmr tests
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
   // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
@@ -274,9 +276,18 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
   REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
 
+  typedef std::numeric_limits< double > dbl;
+  double d = 3.14159265358979;
+  std::cout.precision(dbl::max_digits10);
   //mmr_test3
+  std::cout<<std::endl;
+  std::cout<<"BALLI-wetmmr, qv0:"<<wetmmr0<<","<<qv0<<","<<test_tol<<std::endl;
   tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
-  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0);//convert it back to wetmmr0
+  std::cout<<"BALLI-answer-dry:"<<tmp<<std::endl;
+  tmp = PF::calculate_wetmmr_from_drymmr(tmp, tmp);//qv0);//convert it back to wetmmr0
+  std::cout<<"BALLI-answer-wet:"<<tmp<<std::endl;
+
+
   REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
 
   //mmr_test4
