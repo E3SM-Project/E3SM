@@ -8,16 +8,11 @@
 namespace scream
 {
 
-// This field property check returns true if all data in a given field are
-// bounded below by the given lower bounds, and false if not.
-// It can repair a field that fails the check by clipping all unbounded values
-// to the lower bound.
-// Note: The lower bound check is a sub-class of the within interval check with
-// the upper bound set to the numeric limit.
-template<typename RealType>
-class FieldLowerBoundCheck: public FieldWithinIntervalCheck<RealType> {
+// Convenience implementation of check for interval [L,+\infty). The class
+// inherits from FieldWithinIntervalCheck, and sets upper bound to "infinity"
+
+class FieldLowerBoundCheck: public FieldWithinIntervalCheck {
 public:
-  using const_RT     = typename FieldPropertyCheck<RealType>::const_RT;
 
   // No default constructor -- we need a lower bound.
   FieldLowerBoundCheck () = delete;
@@ -26,14 +21,12 @@ public:
   // can repair fields that fail the check by overwriting nonpositive values
   // with the given lower bound. If can_repair is false, the check cannot
   // apply repairs to the field.
-  explicit FieldLowerBoundCheck (const_RT lower_bound,
+  explicit FieldLowerBoundCheck (const double lower_bound,
                                  bool can_repair = true) : 
-    FieldWithinIntervalCheck<RealType>(lower_bound, std::numeric_limits<RealType>::max(), can_repair)
-    {
-      // Do Nothing
-    }
-
-  // Overrides.
+    FieldWithinIntervalCheck(lower_bound, std::numeric_limits<double>::max(), can_repair)
+  {
+    // Do Nothing
+  }
 
   // The name of the field check
   std::string name () const override {

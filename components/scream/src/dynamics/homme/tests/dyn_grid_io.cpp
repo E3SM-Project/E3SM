@@ -96,9 +96,9 @@ TEST_CASE("dyn_grid_io")
   FieldIdentifier fid_phys_2 ("field_2",layout_phys_2,nondim,phys_grid->name());
   FieldIdentifier fid_phys_3 ("field_3",layout_phys_3,nondim,phys_grid->name());
 
-  auto fm_dyn = std::make_shared<FieldManager<Real>> (dyn_grid);
-  auto fm_phys= std::make_shared<FieldManager<Real>> (phys_grid);
-  auto fm_ctrl= std::make_shared<FieldManager<Real>> (phys_grid);
+  auto fm_dyn = std::make_shared<FieldManager> (dyn_grid);
+  auto fm_phys= std::make_shared<FieldManager> (phys_grid);
+  auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
 
   fm_dyn->registration_begins();
   fm_phys->registration_begins();

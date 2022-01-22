@@ -85,7 +85,7 @@ public:
   using layout_type      = FieldLayout;
   using layout_ptr_type  = std::shared_ptr<const layout_type>;
 
-  FieldAllocProp ();
+  FieldAllocProp (const int scalar_size);
   FieldAllocProp (const FieldAllocProp&) = default;
 
   FieldAllocProp& operator= (const FieldAllocProp&);
@@ -95,17 +95,8 @@ public:
   // possible to change the entry index (k) at runtime.
   FieldAllocProp subview (const int idim, const int k, const bool dynamic) const;
 
-  // Request allocation able to accommodate the given ValueType
-  template<typename ValueType>
-  void request_allocation ();
-
   // Request allocation able to accommodate a pack of ScalarType of the given pack size
-  template<typename ScalarType>
-  void request_allocation (int pack_size);
-
-  // Request allocation able to accommodate pack_size scalars,
-  // where scalars have size scalar_size
-  void request_allocation (int scalar_size, int pack_size);
+  void request_allocation (const int pack_size = 1);
 
   // Request allocation able to accommodate all the alloc props in src.
   // Note: src does not need to be committed yet.
@@ -183,19 +174,6 @@ protected:
 };
 
 // ================================= IMPLEMENTATION ================================== //
-
-template<typename ValueType>
-void FieldAllocProp::request_allocation () {
-  using ekat::ScalarTraits;
-  using scalar_type = typename ScalarTraits<ValueType>::scalar_type;
-  const int n = sizeof(ValueType) / sizeof(scalar_type);
-  request_allocation<scalar_type>(n);
-}
-
-template<typename ScalarType>
-void FieldAllocProp::request_allocation (const int pack_size) {
-  request_allocation (sizeof(ScalarType),pack_size);
-}
 
 template<typename ValueType>
 bool FieldAllocProp::is_compatible () const {

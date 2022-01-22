@@ -1,9 +1,10 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
-#include <memory>
 #include "share/field/field_utils.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+
+#include <memory>
 
 namespace scream {
 
@@ -169,7 +170,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_field (const Field<const Real>& f) {
+set_required_field (const Field& f) {
   if (m_group_schedule_type==ScheduleType::Parallel) {
     // In parallel splitting, all required fields are *actual* inputs,
     // and the base class impl is fine.
@@ -237,7 +238,7 @@ endloop:
 }
 
 void AtmosphereProcessGroup::
-set_required_group (const FieldGroup<const Real>& group) {
+set_required_group (const FieldGroup& group) {
   if (m_group_schedule_type==ScheduleType::Parallel) {
     // In parallel splitting, all required group are *actual* inputs,
     // and the base class impl is fine.
@@ -315,7 +316,7 @@ endloop:
 }
 
 void AtmosphereProcessGroup::
-set_required_group_impl (const FieldGroup<const Real>& group)
+set_required_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->has_required_group(group.m_info->m_group_name,group.grid_name())) {
@@ -325,7 +326,7 @@ set_required_group_impl (const FieldGroup<const Real>& group)
 }
 
 void AtmosphereProcessGroup::
-set_computed_group_impl (const FieldGroup<Real>& group)
+set_computed_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->has_computed_group(group.m_info->m_group_name,group.grid_name())) {
@@ -341,7 +342,7 @@ set_computed_group_impl (const FieldGroup<Real>& group)
   }
 }
 
-void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f) {
+void AtmosphereProcessGroup::set_required_field_impl (const Field& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->has_required_field(fid)) {
@@ -350,7 +351,7 @@ void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f
   }
 }
 
-void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
+void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->has_computed_field(fid)) {

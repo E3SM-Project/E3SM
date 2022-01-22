@@ -16,8 +16,6 @@ namespace scream {
 
 class RRTMGPRadiation : public AtmosphereProcess {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using view_2d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using ci_string        = ekat::CaseInsensitiveString;

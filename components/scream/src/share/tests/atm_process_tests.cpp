@@ -323,12 +323,12 @@ TEST_CASE("field_checks", "") {
   const auto lt = grid->get_3d_scalar_layout(true);
   FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"Point Grid");
   FieldIdentifier fid_T("Temperature",lt,K,"Point Grid");
-  Field<Real> T(fid_T), T_tend(fid_T_tend);
+  Field T(fid_T), T_tend(fid_T_tend);
   T.allocate_view();
   T_tend.allocate_view();
   T_tend.deep_copy(ekat::ScalarTraits<Real>::invalid());
 
-  auto nan_check = std::make_shared<FieldNaNCheck<Real>>();
+  auto nan_check = std::make_shared<FieldNaNCheck>();
   util::TimeStamp t0(1,1,1,1,1,1);
   for (bool check : {true, false}) {
     params.set("Enable Input Field Checks",check);
@@ -381,14 +381,14 @@ TEST_CASE ("subcycling") {
 
   // Create fields (should be just one) and set it in the atm procs
   for(const auto& req : ap->get_required_field_requests()) {
-    Field<Real> f(req.fid);
+    Field f(req.fid);
     f.allocate_view();
     f.deep_copy(0);
     f.get_header().get_tracking().update_time_stamp(t0);
     ap->set_required_field(f.get_const());
     ap->set_computed_field(f);
 
-    Field<Real> f_sub(req.fid);
+    Field f_sub(req.fid);
     f_sub.allocate_view();
     f_sub.deep_copy(0);
     f_sub.get_header().get_tracking().update_time_stamp(t0);
@@ -405,8 +405,8 @@ TEST_CASE ("subcycling") {
   ap_sub->run(dt);
 
   // Now, ap_sub should have added one 5 times, while ap only once
-  auto v = ap->get_fields_in().front().get_view<Real*,Host>();
-  auto v_sub = ap_sub->get_fields_in().front().get_view<Real*,Host>();
+  auto v = ap->get_fields_in().front().get_view<const Real*,Host>();
+  auto v_sub = ap_sub->get_fields_in().front().get_view<const Real*,Host>();
 
   // Safety check
   REQUIRE (v.size()==v_sub.size());

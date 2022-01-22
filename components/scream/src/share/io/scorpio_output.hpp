@@ -108,10 +108,10 @@ namespace scream
 class AtmosphereOutput 
 {
 public:
-  using fm_type       = FieldManager<Real>;
+  using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
-  using remapper_type = AbstractRemapper<Real>;
+  using remapper_type = AbstractRemapper;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>

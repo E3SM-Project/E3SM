@@ -22,15 +22,10 @@ namespace scream
  *  there is no need to actually access the data.
  */
 
-template<typename RealType>
-class IdentityRemapper : public AbstractRemapper<RealType>
+class IdentityRemapper : public AbstractRemapper
 {
 public:
-  using base_type       = AbstractRemapper<RealType>;
-  using field_type      = typename base_type::field_type;
-  using identifier_type = typename base_type::identifier_type;
-  using layout_type     = typename base_type::layout_type;
-  using grid_ptr_type   = typename base_type::grid_ptr_type;
+  using base_type       = AbstractRemapper;
 
   IdentityRemapper (const grid_ptr_type grid)
    : base_type(grid,grid)

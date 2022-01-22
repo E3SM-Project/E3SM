@@ -60,7 +60,7 @@ void AtmosphereProcess::finalize (/* what inputs? */) {
   finalize_impl(/* what inputs? */);
 }
 
-void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
+void AtmosphereProcess::set_required_field (const Field& f) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_required_field(f.get_header().get_identifier()),
     "Error! Input field is not required by this atm process.\n"
@@ -82,7 +82,7 @@ void AtmosphereProcess::set_required_field (const Field<const Real>& f) {
   set_required_field_impl (f);
 }
 
-void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
+void AtmosphereProcess::set_computed_field (const Field& f) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_computed_field(f.get_header().get_identifier()),
     "Error! Input field is not computed by this atm process.\n"
@@ -104,7 +104,7 @@ void AtmosphereProcess::set_computed_field (const Field<Real>& f) {
   set_computed_field_impl (f);
 }
 
-void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group) {
+void AtmosphereProcess::set_required_group (const FieldGroup& group) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not require the input group.\n"
@@ -131,7 +131,7 @@ void AtmosphereProcess::set_required_group (const FieldGroup<const Real>& group)
   set_required_group_impl(group);
 }
 
-void AtmosphereProcess::set_computed_group (const FieldGroup<Real>& group) {
+void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,group.grid_name()),
     "Error! This atmosphere process does not compute the input group.\n"
@@ -300,114 +300,114 @@ void AtmosphereProcess::update_time_stamps () {
   }
 }
 
-void AtmosphereProcess::add_me_as_provider (const Field<Real>& f) {
+void AtmosphereProcess::add_me_as_provider (const Field& f) {
   f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
 }
 
-void AtmosphereProcess::add_me_as_customer (const Field<const Real>& f) {
+void AtmosphereProcess::add_me_as_customer (const Field& f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void AtmosphereProcess::add_internal_field (const Field<Real>& f) {
+void AtmosphereProcess::add_internal_field (const Field& f) {
   m_internal_fields.push_back(f);
 }
 
-const Field<const Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_field_in(const std::string& field_name, const std::string& grid_name) const {
   return get_field_in_impl(field_name,grid_name);
 }
 
-Field<const Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_in(const std::string& field_name, const std::string& grid_name) {
   return get_field_in_impl(field_name,grid_name);
 }
 
-const Field<const Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_field_in(const std::string& field_name) const {
   return get_field_in_impl(field_name);
 }
 
-Field<const Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_in(const std::string& field_name) {
   return get_field_in_impl(field_name);
 }
 
-const Field<Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_field_out(const std::string& field_name, const std::string& grid_name) const {
   return get_field_out_impl(field_name,grid_name);
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_out(const std::string& field_name, const std::string& grid_name) {
   return get_field_out_impl(field_name,grid_name);
 }
 
-const Field<Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_field_out(const std::string& field_name) const {
   return get_field_out_impl (field_name);
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_out(const std::string& field_name) {
   return get_field_out_impl (field_name);
 }
 
-const FieldGroup<const Real>& AtmosphereProcess::
+const FieldGroup& AtmosphereProcess::
 get_group_in(const std::string& group_name, const std::string& grid_name) const {
   return get_group_in_impl (group_name,grid_name);
 }
 
-FieldGroup<const Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_in(const std::string& group_name, const std::string& grid_name) {
   return get_group_in_impl (group_name,grid_name);
 }
 
-const FieldGroup<const Real>& AtmosphereProcess::
+const FieldGroup& AtmosphereProcess::
 get_group_in(const std::string& group_name) const {
   return get_group_in_impl(group_name);
 }
 
-FieldGroup<const Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_in(const std::string& group_name) {
   return get_group_in_impl(group_name);
 }
 
-const FieldGroup<Real>& AtmosphereProcess::
+const FieldGroup& AtmosphereProcess::
 get_group_out(const std::string& group_name, const std::string& grid_name) const {
   return get_group_out_impl(group_name,grid_name);
 }
 
-FieldGroup<Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_out(const std::string& group_name, const std::string& grid_name) {
   return get_group_out_impl(group_name,grid_name);
 }
 
-const FieldGroup<Real>& AtmosphereProcess::
+const FieldGroup& AtmosphereProcess::
 get_group_out(const std::string& group_name) const {
   return get_group_out_impl(group_name);
 }
 
-FieldGroup<Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_out(const std::string& group_name) {
   return get_group_out_impl(group_name);
 }
 
-const Field<Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name, const std::string& grid_name) const {
   return get_internal_field_impl(field_name,grid_name);
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name, const std::string& grid_name) {
   return get_internal_field_impl(field_name,grid_name);
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) {
   return get_internal_field_impl(field_name);
 }
 
-const Field<Real>& AtmosphereProcess::
+const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
 }
@@ -503,7 +503,7 @@ alias_group_out (const std::string& group_name,
   }
 }
 
-Field<const Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_in_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
     return *m_fields_in_pointers.at(field_name).at(grid_name);
@@ -518,7 +518,7 @@ get_field_in_impl(const std::string& field_name, const std::string& grid_name) c
   }
 }
 
-Field<const Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_in_impl(const std::string& field_name) const {
   try {
     auto& copies = m_fields_in_pointers.at(field_name);
@@ -539,7 +539,7 @@ get_field_in_impl(const std::string& field_name) const {
   }
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_out_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
     return *m_fields_out_pointers.at(field_name).at(grid_name);
@@ -554,7 +554,7 @@ get_field_out_impl(const std::string& field_name, const std::string& grid_name) 
   }
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_field_out_impl(const std::string& field_name) const {
   try {
     auto& copies = m_fields_out_pointers.at(field_name);
@@ -575,7 +575,7 @@ get_field_out_impl(const std::string& field_name) const {
   }
 }
 
-FieldGroup<const Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_in_impl(const std::string& group_name, const std::string& grid_name) const {
   try {
     return *m_groups_in_pointers.at(group_name).at(grid_name);
@@ -590,7 +590,7 @@ get_group_in_impl(const std::string& group_name, const std::string& grid_name) c
   }
 }
 
-FieldGroup<const Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_in_impl(const std::string& group_name) const {
   try {
     auto& copies = m_groups_in_pointers.at(group_name);
@@ -611,7 +611,7 @@ get_group_in_impl(const std::string& group_name) const {
   }
 }
 
-FieldGroup<Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_out_impl(const std::string& group_name, const std::string& grid_name) const {
   try {
     return *m_groups_out_pointers.at(group_name).at(grid_name);
@@ -626,7 +626,7 @@ get_group_out_impl(const std::string& group_name, const std::string& grid_name) 
   }
 }
 
-FieldGroup<Real>& AtmosphereProcess::
+FieldGroup& AtmosphereProcess::
 get_group_out_impl(const std::string& group_name) const {
   try {
     auto& copies = m_groups_out_pointers.at(group_name);
@@ -647,7 +647,7 @@ get_group_out_impl(const std::string& group_name) const {
   }
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
     return *m_internal_fields_pointers.at(field_name).at(grid_name);
@@ -662,7 +662,7 @@ get_internal_field_impl(const std::string& field_name, const std::string& grid_n
   }
 }
 
-Field<Real>& AtmosphereProcess::
+Field& AtmosphereProcess::
 get_internal_field_impl(const std::string& field_name) const {
   try {
     auto& copies = m_internal_fields_pointers.at(field_name);

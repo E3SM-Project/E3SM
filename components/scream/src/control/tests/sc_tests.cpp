@@ -63,8 +63,8 @@ TEST_CASE ("surface_coupling")
   const int num_fields = num_s2d+num_s3d+2*(num_v2d+num_v3d)+num_sub_s3d;
 
   // Keep two separate fms, so we can compare original and final fields.
-  auto fm_in = std::make_shared<FieldManager<Real>> (grid);
-  auto fm_out = std::make_shared<FieldManager<Real>> (grid);
+  auto fm_in = std::make_shared<FieldManager> (grid);
+  auto fm_out = std::make_shared<FieldManager> (grid);
   fm_in->registration_begins();
   fm_in->register_field(s2d_id);
   fm_in->register_field(s3d_id);
@@ -174,7 +174,7 @@ TEST_CASE ("surface_coupling")
     ekat::genRandArray(v2d_exp_d,engine,pdf);
     ekat::genRandArray(v3d_exp_d,engine,pdf);
     auto G3d_size = G3d_exp.get_header().get_alloc_properties().get_num_scalars();
-    ekat::genRandArray(G3d_exp.get_internal_view_data<Host>(),G3d_size,engine,pdf);
+    ekat::genRandArray(G3d_exp.get_internal_view_data<Real,Host>(),G3d_size,engine,pdf);
 
     // Set all raw_data to -1 (might be helpful for debugging)
     std::fill_n(raw_data,ncols*num_fields,-1);
@@ -281,7 +281,7 @@ TEST_CASE ("recreate_mct_coupling")
   const int num_cpl_exports    = 35;
 
   // Register fields and tracer group in a FieldManager
-  auto fm = std::make_shared<FieldManager<Real>> (grid);
+  auto fm = std::make_shared<FieldManager> (grid);
   fm->registration_begins();
   fm->register_field(FR{surf_latent_flux_id});
   fm->register_field(FR{surf_sens_flux_id});
@@ -450,7 +450,7 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
     auto Q_size = Q.get_header().get_alloc_properties().get_num_scalars();
-    ekat::genRandArray(Q.get_internal_view_data<Host>(),Q_size,engine,pdf);
+    ekat::genRandArray(Q.get_internal_view_data<Real,Host>(),Q_size,engine,pdf);
 
     // Fill import_raw_data with random values
     for (int icol=0; icol<ncols*num_cpl_imports; ++icol) {
@@ -582,7 +582,7 @@ TEST_CASE ("do_initial_export")
   const int num_fields = 2;
 
   // Keep two separate fms, so we can compare original and final fields.
-  auto fm = std::make_shared<FieldManager<Real>> (grid);
+  auto fm = std::make_shared<FieldManager> (grid);
   fm->registration_begins();
   fm->register_field(f1_id);
   fm->register_field(f2_id);

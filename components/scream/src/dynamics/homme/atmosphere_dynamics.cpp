@@ -31,6 +31,7 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/field/field_property_checks/field_lower_bound_check.hpp"
+#include "share/field/field_property_checks/field_positivity_check.hpp"
 #include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
@@ -378,9 +379,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //       are added here. To avoid this assumption, we need a more flexible lower bound
   //       check, which has one LB for check and one LB for repair.
   const Real tol = -1e-17;
-  auto lb_check = std::make_shared<FieldLowerBoundCheck<Real>>(tol,false);
-  auto lb_repair = std::make_shared<FieldLowerBoundCheck<Real>>(0.0,true);
-  auto check_and_repair = std::make_shared<CheckAndRepairWrapper<Real>>(lb_check,lb_repair);
+  auto lb_check = std::make_shared<FieldLowerBoundCheck>(tol,false);
+  auto lb_repair = std::make_shared<FieldPositivityCheck>(true);
+  auto check_and_repair = std::make_shared<CheckAndRepairWrapper>(lb_check,lb_repair);
   add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),check_and_repair);
 }
 
@@ -416,7 +417,7 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
   Homme::Context::singleton().finalize_singleton();
 }
 
-void HommeDynamics::set_computed_group_impl (const FieldGroup<Real>& group)
+void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
 {
   if (group.m_info->m_group_name=="tracers") {
     // Set runtime number of tracers in Homme
@@ -714,8 +715,8 @@ create_helper_field (const std::string& name,
   }
 
   // Create the field. Init with NaN's, so we spot instances of uninited memory usage
-  field_type f(id);
-  f.get_header().get_alloc_properties().request_allocation<Real>(pack_size);
+  Field f(id);
+  f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
   f.deep_copy(ekat::ScalarTraits<Real>::invalid());
 
@@ -884,7 +885,7 @@ void HommeDynamics::restart_homme_state () {
     // printing the state, so we need to make sure it doesn't contain NaNs
     m_helper_fields.at("w_int_dyn").deep_copy(0);
   }
-  auto qv_prev_ref = std::make_shared<Field<Real>>();
+  auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
     // Recall, we store Q_old in FQ_ref, and do FQ_ref = Q_new - FQ_ref during pre-process
@@ -990,7 +991,7 @@ void HommeDynamics::initialize_homme_state () {
   } else {
     // No IC read from file for w_int, but Homme still does some global reduction on w_int when
     // printing the state, so we need to make sure it doesn't contain NaNs
-    m_helper_fields.at("w_int_dyn").deep_copy(0);
+    m_helper_fields.at("w_int_dyn").deep_copy(0.0);
   }
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap(true);

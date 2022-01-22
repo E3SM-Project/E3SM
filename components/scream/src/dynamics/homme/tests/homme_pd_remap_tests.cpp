@@ -34,13 +34,13 @@ TEST_CASE("remap", "") {
   using namespace ShortFieldTagsNames;
 
   // Some type defs
-  using PackType = ekat::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
-  using Remapper = PhysicsDynamicsRemapper<Homme::Real>;
+  using Remapper = PhysicsDynamicsRemapper;
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
 
   constexpr int pg_gll = 0;
+  constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
 
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -157,34 +157,34 @@ TEST_CASE("remap", "") {
   FID tr_3d_phys_fid ("tr_3d_phys", FL(v_3d_phys_tags, tr_3d_phys_dims),units, pgn);
 
   // Create fields
-  Field<Real> s_2d_field_phys (s_2d_phys_fid);
-  Field<Real> v_2d_field_phys (v_2d_phys_fid);
-  Field<Real> s_3d_field_phys (s_3d_phys_fid);
-  Field<Real> v_3d_field_phys (v_3d_phys_fid);
-  Field<Real> ss_3d_field_phys (ss_3d_phys_fid);
-  Field<Real> vs_3d_field_phys (vs_3d_phys_fid);
-  Field<Real> tr_3d_field_phys (tr_3d_phys_fid);
+  Field s_2d_field_phys (s_2d_phys_fid);
+  Field v_2d_field_phys (v_2d_phys_fid);
+  Field s_3d_field_phys (s_3d_phys_fid);
+  Field v_3d_field_phys (v_3d_phys_fid);
+  Field ss_3d_field_phys (ss_3d_phys_fid);
+  Field vs_3d_field_phys (vs_3d_phys_fid);
+  Field tr_3d_field_phys (tr_3d_phys_fid);
 
-  Field<Real> s_2d_field_dyn(s_2d_dyn_fid);
-  Field<Real> v_2d_field_dyn(v_2d_dyn_fid);
-  Field<Real> s_3d_field_dyn(s_3d_dyn_fid);
-  Field<Real> v_3d_field_dyn(v_3d_dyn_fid);
-  Field<Real> ss_3d_field_dyn (ss_3d_dyn_fid);
-  Field<Real> vs_3d_field_dyn (vs_3d_dyn_fid);
-  Field<Real> tr_3d_field_dyn (tr_3d_dyn_fid);
+  Field s_2d_field_dyn(s_2d_dyn_fid);
+  Field v_2d_field_dyn(v_2d_dyn_fid);
+  Field s_3d_field_dyn(s_3d_dyn_fid);
+  Field v_3d_field_dyn(v_3d_dyn_fid);
+  Field ss_3d_field_dyn (ss_3d_dyn_fid);
+  Field vs_3d_field_dyn (vs_3d_dyn_fid);
+  Field tr_3d_field_dyn (tr_3d_dyn_fid);
 
   // Request allocation to fit packs of reals for 3d views
-  s_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  v_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  ss_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  vs_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  tr_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  s_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  v_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  ss_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  vs_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  tr_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
 
-  s_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  v_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  ss_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  vs_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  tr_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  s_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  v_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  ss_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  vs_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  tr_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
 
   // Allocate view
   s_2d_field_phys.allocate_view();
@@ -579,13 +579,13 @@ TEST_CASE("combo_remap", "") {
   using namespace ShortFieldTagsNames;
 
   // Some type defs
-  using PackType = ekat::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
-  using Remapper = PhysicsDynamicsRemapper<Homme::Real>;
+  using Remapper = PhysicsDynamicsRemapper;
   using IPDF = std::uniform_int_distribution<int>;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
 
   constexpr int pg_gll = 0;
+  constexpr int PackSize = HOMMEXX_VECTOR_SIZE;
 
   // Create a comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -640,7 +640,6 @@ TEST_CASE("combo_remap", "") {
   const int nle = num_local_elems;
   const int nlc = num_local_cols;
   const auto units = ekat::units::m;  // Placeholder units (we don't care about units here)
-
 
   c.create_if_not_there<Homme::TimeLevel>();
   auto& tl = c.get<Homme::TimeLevel>();
@@ -703,34 +702,34 @@ TEST_CASE("combo_remap", "") {
   FID tr_3d_phys_fid ("tr_3d_phys", FL(tr_3d_phys_tags, tr_3d_phys_dims),units, pgn);
 
   // Create fields
-  Field<Real> s_2d_field_phys (s_2d_phys_fid);
-  Field<Real> v_2d_field_phys (v_2d_phys_fid);
-  Field<Real> s_3d_field_phys (s_3d_phys_fid);
-  Field<Real> v_3d_field_phys (v_3d_phys_fid);
-  Field<Real> ss_3d_field_phys (ss_3d_phys_fid);
-  Field<Real> vs_3d_field_phys (vs_3d_phys_fid);
-  Field<Real> tr_3d_field_phys (tr_3d_phys_fid);
+  Field s_2d_field_phys (s_2d_phys_fid);
+  Field v_2d_field_phys (v_2d_phys_fid);
+  Field s_3d_field_phys (s_3d_phys_fid);
+  Field v_3d_field_phys (v_3d_phys_fid);
+  Field ss_3d_field_phys (ss_3d_phys_fid);
+  Field vs_3d_field_phys (vs_3d_phys_fid);
+  Field tr_3d_field_phys (tr_3d_phys_fid);
 
-  Field<Real> s_2d_field_dyn(s_2d_dyn_fid);
-  Field<Real> v_2d_field_dyn(v_2d_dyn_fid);
-  Field<Real> s_3d_field_dyn(s_3d_dyn_fid);
-  Field<Real> v_3d_field_dyn(v_3d_dyn_fid);
-  Field<Real> ss_3d_field_dyn (ss_3d_dyn_fid);
-  Field<Real> vs_3d_field_dyn (vs_3d_dyn_fid);
-  Field<Real> tr_3d_field_dyn (tr_3d_dyn_fid);
+  Field s_2d_field_dyn(s_2d_dyn_fid);
+  Field v_2d_field_dyn(v_2d_dyn_fid);
+  Field s_3d_field_dyn(s_3d_dyn_fid);
+  Field v_3d_field_dyn(v_3d_dyn_fid);
+  Field ss_3d_field_dyn (ss_3d_dyn_fid);
+  Field vs_3d_field_dyn (vs_3d_dyn_fid);
+  Field tr_3d_field_dyn (tr_3d_dyn_fid);
 
   // Request allocation to fit packs of reals for 3d views
-  s_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  v_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  ss_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  vs_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
-  tr_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  s_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  v_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  ss_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  vs_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
+  tr_3d_field_phys.get_header().get_alloc_properties().request_allocation(PackSize);
 
-  s_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  v_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  ss_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  vs_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
-  tr_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  s_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  v_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  ss_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  vs_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
+  tr_3d_field_dyn.get_header().get_alloc_properties().request_allocation(PackSize);
 
   // Allocate view
   s_2d_field_phys.allocate_view();

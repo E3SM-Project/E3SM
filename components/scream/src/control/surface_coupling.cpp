@@ -22,7 +22,7 @@ SurfaceCoupling (const field_mgr_ptr& field_mgr)
   const auto nondim = Units::nondimensional();
   auto grid_name = grid->name();
   FieldIdentifier id ("dummy_field", layout, nondim, grid_name);
-  dummy_field = Field<const Real>(id);
+  dummy_field = Field(id);
 
   EKAT_REQUIRE_MSG(grid->type()==GridType::Point,
       "Error! Surface coupling only implemented for 'Point' grids.\n"
@@ -90,7 +90,7 @@ register_import(const std::string& fname,
                        "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
     // Get the field, and check that is valid
-    import_field_type field = m_field_mgr->get_field(fname);
+    Field field = m_field_mgr->get_field(fname);
 
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
 
@@ -105,7 +105,7 @@ register_import(const std::string& fname,
     auto& info = m_scream_imports_host(m_num_scream_imports);
 
     // Set view data ptr
-    info.data = field.get_internal_view_data();
+    info.data = field.get_internal_view_data<Real>();
 
     // Set cpl index
     info.cpl_idx = cpl_idx;
@@ -168,12 +168,12 @@ register_export (const std::string& fname,
   if (m_field_mgr->has_field(fname)) {
 
     // If fname is a field in the the field manager, then set the data and column info based on this field.
-    export_field_type field = m_field_mgr->get_field(fname);
+    Field field = m_field_mgr->get_field(fname);
 
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
 
     // Set view data ptr
-    info.data = field.get_internal_view_data();
+    info.data = field.get_internal_view_data<Real>();
 
     // Get column offset and stride
     get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);

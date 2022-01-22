@@ -22,10 +22,6 @@ namespace scream
 class HommeDynamics : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-  template<int N>
-  using view_Nd_type = typename field_type::view_ND_type<Real,N>;
 
   // Constructor(s)
   HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -42,10 +38,6 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -79,7 +71,7 @@ protected:
 
   // For simplicity, it's best to store the size of the tracers as soon as it is available.
   // We can do it the first time that the 'tracers' group is set
-  void set_computed_group_impl (const FieldGroup<Real>& group);
+  void set_computed_group_impl (const FieldGroup& group);
 
   // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
@@ -95,12 +87,12 @@ protected:
                             const std::string& grid);
 
   // Some helper fields.
-  std::map<std::string,field_type>  m_helper_fields;
+  std::map<std::string,Field>  m_helper_fields;
 
   // Remapper for inputs and outputs, plus a special one for initial conditions
-  std::shared_ptr<AbstractRemapper<Real>>   m_p2d_remapper;
-  std::shared_ptr<AbstractRemapper<Real>>   m_d2p_remapper;
-  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper;
+  std::shared_ptr<AbstractRemapper>   m_p2d_remapper;
+  std::shared_ptr<AbstractRemapper>   m_d2p_remapper;
+  std::shared_ptr<AbstractRemapper>   m_ic_remapper;
 
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;

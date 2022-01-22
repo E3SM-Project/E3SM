@@ -7,14 +7,10 @@ namespace scream
 {
 
 // Performs remap by chaining two remap strategies
-template<typename RealType>
-class InverseRemapper : public AbstractRemapper<RealType>
+class InverseRemapper : public AbstractRemapper
 {
 public:
-  using base_type       = AbstractRemapper<RealType>;
-  using field_type      = typename base_type::field_type;
-  using identifier_type = typename base_type::identifier_type;
-  using layout_type     = typename base_type::layout_type;
+  using base_type       = AbstractRemapper;
 
   InverseRemapper (std::shared_ptr<base_type> remapper) :
     base_type(remapper->get_tgt_grid(),remapper->get_src_grid())

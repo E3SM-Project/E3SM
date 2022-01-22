@@ -15,7 +15,7 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs,
-                   const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs);
+                   const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);
@@ -32,7 +32,7 @@ protected:
   void cleanup ();
 
   void add_nodes (const group_type& atm_procs,
-                  const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs);
+                  const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs);
 
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position
@@ -55,10 +55,10 @@ protected:
   };
 
   // Assign an id to each field identifier
-  std::vector<FieldIdentifier>                m_fids;
+  std::vector<FieldIdentifier>            m_fids;
 
   // Store groups so we can print info of their members if need be
-  std::map<FieldIdentifier,FieldGroup<Real>>  m_gr_fid_to_group;
+  std::map<FieldIdentifier,FieldGroup>    m_gr_fid_to_group;
 
   // Map each field id to its last provider
   std::map<int,int>               m_fid_to_last_provider;
