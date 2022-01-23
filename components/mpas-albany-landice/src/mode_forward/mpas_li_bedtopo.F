@@ -267,7 +267,6 @@ subroutine li_bedtopo_solve(domain, err)
             err = ior(err, err_tmp)
 					
 	      else
-	         call mpas_log_write("<<< MPAS alarm is not ringing, SLM is not called!")
 	        ! do nothing for now, but could calculate uplift rate here later instead.
 	      endif
 		else
@@ -334,7 +333,7 @@ subroutine li_bedtopo_solve(domain, err)
 !
 !> \brief   Initializes the sea-level model
 !> \author  Holly Kyeore Han
-!> \date    1 December 2021
+!> \date    January 2021
 !> \details
 !>  This wrapper routine initializes the sea-level solver
 !> (Han et al., 2022, GMD, https://doi.org/10.5281/zenodo.5775235)
@@ -450,7 +449,7 @@ subroutine li_bedtopo_solve(domain, err)
 !
 !> \brief   Solves gravitationally consistent sea-level change
 !> \author  Holly Kyeore Han
-!> \date    1 December 2021
+!> \date    January 2022
 !> \details
 !>  This wrapper routine calls the sea-level solver that takes in
 !>  ice thickness and provides sea-level change (i.e., changes in the
@@ -510,6 +509,7 @@ subroutine li_bedtopo_solve(domain, err)
       starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
       dtime_sh = 5
 		
+		call mpas_log_write("A")
      
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -517,11 +517,11 @@ subroutine li_bedtopo_solve(domain, err)
       call mpas_pool_get_array(geometryPool, 'upliftDiff', upliftDiff)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-		
+		call mpas_log_write("B")
 
       ! Allocate globalArray and gatheredArray only on process 0
       call MPI_COMM_RANK(domain % dminfo % comm, curProc, err)
-         
+      call mpas_log_write("C")   
       if (curProc.eq.0) then
          allocate(globalArray1(nCellsGlobal), gatheredArray1(nCellsGlobal))
          allocate(globalArray2(nCellsGlobal), gatheredArray2(nCellsGlobal))
@@ -531,7 +531,7 @@ subroutine li_bedtopo_solve(domain, err)
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
       call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArray1, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
-         
+      call mpas_log_write("D")
       if (curProc.eq.0) then   
                                                
          ! Rearrange thickness into CellID order
@@ -544,14 +544,13 @@ subroutine li_bedtopo_solve(domain, err)
          call write_txt(thickness_slGrid1D, 'mali_iceload','')  
 				
          ! reshape the interpolated data
-         ism_iceload(:,:) = reshape(thickness_slGrid1D, [nglv,2*nglv]) !<<HH why does it not work!? 
-		   call mpas_log_write("<<< D slmTimeStep: $i", intArgs=(/slmTimeStep/))
+         ism_iceload(:,:) = reshape(thickness_slGrid1D, [nglv,2*nglv]) 
 						
 		  ! call the sea-level model
-		   call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
+		   call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt boundcheck error
 		   call sl_timewindow(slmTimeStep)
 		   call sl_solver(itersl_sh, slmTimeStep, dtime_sh, starttime_sh, ism_iceload, slm_slchange)
-		   call deallocate_slarrays      ! 8. deallocate memory within the slm
+		   call deallocate_slarrays     
    
          ! HH: interpolate slchange from Gaussian grid to MALI mesh and reshape
          slChange_slGrid1D = reshape(slm_slchange, [nglv*2*nglv])
@@ -569,19 +568,20 @@ subroutine li_bedtopo_solve(domain, err)
          enddo
             
       endif
-			
-      call MPI_SCATTERV(gatheredArray3, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
-
-      ! update bedTopography
-      bedTopography(:) = bedTopography(:) - upliftDiff(:)
-		
-      call li_update_geometry(geometryPool)
-      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-		
-      ! scatter updated bedTopo to processors
+			call mpas_log_write("E")
+      ! scatter bedTopography and sea-level change to processors
       call MPI_SCATTERV(gatheredArray2, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
                   bedTopography, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
+						
+      call MPI_SCATTERV(gatheredArray3, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
+                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
+call mpas_log_write("F")
+      ! update bedTopography
+      bedTopography(:) = bedTopography(:) - upliftDiff(:)
+		call mpas_log_write("G")
+      call li_update_geometry(geometryPool)
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+call mpas_log_write("H")
                       
       ! deallocate memory
       if (curProc.eq.0) then
@@ -592,12 +592,8 @@ subroutine li_bedtopo_solve(domain, err)
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
-      call mpas_log_write("<<< done SL calculatation!")
-		
-      ! Perform Halo exchange update
-      call mpas_dmpar_field_halo_exch(domain,'bedTopography')
       call mpas_dmpar_field_halo_exch(domain,'upliftDiff')
-
+call mpas_log_write("I")
 
    !--------------------------------------------------------------------
    end subroutine slmodel_solve
