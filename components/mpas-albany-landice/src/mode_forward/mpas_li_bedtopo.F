@@ -243,9 +243,7 @@ subroutine li_bedtopo_solve(domain, err)
          end do
 
       elseif (trim(config_uplift_method)=='sealevelmodel') then
-			
-			call mpas_log_write("Sea-level model is used to calculate changes in bedTopography")
-
+			 ! do nothing
       else
          call mpas_log_write("Unknown option selected for 'config_uplift_method'", MPAS_LOG_ERR)
       endif
@@ -407,7 +405,7 @@ subroutine li_bedtopo_solve(domain, err)
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)         
          
       if (curProc.eq.0) then
-         call mpas_log_write("<<< we are on the head node. init slmodel")
+
          ! Rearrange data into CellID order
          do iCell = 1,nCellsGlobal
             globalArray1(indexToCellIDGathered(iCell)) = gatheredArray1(iCell)
@@ -437,6 +435,7 @@ subroutine li_bedtopo_solve(domain, err)
         
          deallocate(globalArray1, gatheredArray1)
          deallocate(globalArray2, gatheredArray2)
+
       endif
 
    !--------------------------------------------------------------------
@@ -508,20 +507,18 @@ subroutine li_bedtopo_solve(domain, err)
       itersl_sh = 1      ! * note: hardcode itersl_sh == 1.
       starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
       dtime_sh = 5
-		
-		call mpas_log_write("A")
-     
+
+      ! set variables needed
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'upliftDiff', upliftDiff)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-		call mpas_log_write("B")
 
       ! Allocate globalArray and gatheredArray only on process 0
       call MPI_COMM_RANK(domain % dminfo % comm, curProc, err)
-      call mpas_log_write("C")   
+
       if (curProc.eq.0) then
          allocate(globalArray1(nCellsGlobal), gatheredArray1(nCellsGlobal))
          allocate(globalArray2(nCellsGlobal), gatheredArray2(nCellsGlobal))
@@ -531,7 +528,7 @@ subroutine li_bedtopo_solve(domain, err)
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
       call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArray1, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
-      call mpas_log_write("D")
+
       if (curProc.eq.0) then   
                                                
          ! Rearrange thickness into CellID order
@@ -568,20 +565,19 @@ subroutine li_bedtopo_solve(domain, err)
          enddo
             
       endif
-			call mpas_log_write("E")
+
       ! scatter bedTopography and sea-level change to processors
       call MPI_SCATTERV(gatheredArray2, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
                   bedTopography, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
 						
       call MPI_SCATTERV(gatheredArray3, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
                   upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
-call mpas_log_write("F")
+
       ! update bedTopography
       bedTopography(:) = bedTopography(:) - upliftDiff(:)
-		call mpas_log_write("G")
+
       call li_update_geometry(geometryPool)
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-call mpas_log_write("H")
                       
       ! deallocate memory
       if (curProc.eq.0) then
@@ -593,7 +589,6 @@ call mpas_log_write("H")
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
       call mpas_dmpar_field_halo_exch(domain,'upliftDiff')
-call mpas_log_write("I")
 
    !--------------------------------------------------------------------
    end subroutine slmodel_solve
