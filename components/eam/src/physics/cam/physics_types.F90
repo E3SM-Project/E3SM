@@ -237,7 +237,8 @@ contains
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
 !    real(r8),allocatable :: cpairv_loc(:,:,:)
-    real(r8),allocatable :: rairv_loc(:,:,:)
+!    real(r8),allocatable :: rairv_loc(:,:,:)
+    real(r8) :: rairv_loc(state%psetcols,pver)
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
@@ -296,8 +297,8 @@ contains
 !       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
 !       rairv_loc(:,:,:) = rairv(:,:,:)
 !    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rair
+!       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+!       rairv_loc(:,:,:) = rair
 !    else
 !       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
 !    end if
@@ -425,6 +426,8 @@ contains
       zvirv(:,:) = zvir    
 !    endif
 
+    rairv_loc(:,:) = rair
+
     !-------------------------------------------------------------------------------------------
     ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
     !-------------------------------------------------------------------------------------------
@@ -438,6 +441,7 @@ contains
        end do
     end if
 
+#if 0
     ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
@@ -447,6 +451,17 @@ contains
                           rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
                           state%zi    , state%zm      ,&
                           ncol)
+#endif
+
+    if (ptend%ls .or. ptend%lq(1)) then
+      call geopotential_t(state%lnpint, state%lnpmid  ,&
+                          state%pint  , state%pmid    ,&
+                          state%pdel  , state%rpdel   ,&
+                          state%t     , state%q(:,:,1),&
+                          rairv_loc(:,:)  , gravit, zvirv,&
+                          state%zi    , state%zm      ,&
+                          ncol)
+
        do k = ptend%top_level, ptend%bot_level
           state%s(:ncol,k) = state%t(:ncol,k  )*cpair &
                            + gravit*state%zm(:ncol,k) + state%phis(:ncol)
@@ -461,7 +476,7 @@ contains
 
 !    deallocate(cpairv_loc, rairv_loc)
 !    deallocate(cpairv_loc)
-    deallocate(rairv_loc)
+!    deallocate(rairv_loc)
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
