@@ -296,7 +296,7 @@ contains
 !       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
 !       rairv_loc(:,:,:) = rairv(:,:,:)
 !    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-!       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
        rairv_loc(:,:,:) = rair
 !    else
 !       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
