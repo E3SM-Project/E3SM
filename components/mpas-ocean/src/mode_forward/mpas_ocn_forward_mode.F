@@ -608,10 +608,10 @@ module ocn_forward_mode
         call mpas_timer_stop('io_CFC')
       endif
 
-      ! read initial data required for ecosys forcing                                                            
-      if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then                               
+      ! read initial data required for ecosys forcing
+      if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
         call mpas_timer_start('io_benthos',.false.)
-        call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .true.)                        
+        call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .true.)
         call mpas_timer_stop('io_benthos')
       endif
 
@@ -771,11 +771,11 @@ module ocn_forward_mode
            call mpas_timer_stop('io_CFC')
          endif
 
-         ! read next time level data required for benthos forcing                                                
-         if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then                            
-            call mpas_timer_start('io_benthos',.false.)                                                          
-            call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .false.)                   
-            call mpas_timer_stop('io_benthos')                                                                   
+         ! read next time level data required for benthos forcing
+         if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
+            call mpas_timer_start('io_benthos',.false.)
+            call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .false.)
+            call mpas_timer_stop('io_benthos')
          endif
 
          ! read next time level data required for monthly surface salinity restoring

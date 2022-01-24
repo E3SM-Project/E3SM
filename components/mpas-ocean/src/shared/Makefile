@@ -54,9 +54,9 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_tracer_DMS.o \
 	   mpas_ocn_tracer_MacroMolecules.o \
 	   mpas_ocn_tracer_CFC.o \
-           mpas_ocn_tracer_benthos.o \
-           mpas_ocn_benthos_mod.o \
            mpas_ocn_benthos_parms.o \
+           mpas_ocn_benthos_mod.o \
+           mpas_ocn_tracer_benthos.o \
 	   mpas_ocn_high_freq_thickness_hmix_del2.o \
 	   mpas_ocn_tracer_surface_flux_to_tend.o \
 	   mpas_ocn_test.o \
@@ -213,7 +213,7 @@ mpas_ocn_benthos_parms.o:
 
 mpas_ocn_benthos_mod.o: mpas_ocn_benthos_parms.o
 
-mpas_ocn_tracer_benthos.o: mpas_ocn_tracer_ecosys.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_benthos_mod.o mpas_ocn_benthos_parms.o
+mpas_ocn_tracer_benthos.o: mpas_ocn_tracer_ecosys.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o mpas_ocn_benthos_mod.o mpas_ocn_benthos_parms.o
 
 mpas_ocn_tracer_surface_flux_to_tend.o: mpas_ocn_constants.o mpas_ocn_config.o
 

@@ -512,7 +512,7 @@
 		</var_struct>
 	</var_struct>
 
-	<var_struct name="benthosMonthlyForcing" time_levs="1">
+	<var_struct name="benthosMonthlyForcing" time_levs="1" packages="benthosTracersPKG">
 		<var name="oceanBenthosPOCFluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean particulate organic carbon sinking flux to the benthos"
 		/>
@@ -2068,4 +2068,37 @@
 		</var_struct>
 	</var_struct>
 
-	
+	<streams>
+
+		<stream name="benthos_monthly_flux"
+				type="input"
+				filename_template="benthosForcingMonthly.nc"
+				input_interval="initial_only"
+				immutable="true"
+				packages="benthosTracersPKG"
+                                mode="forward">
+
+			<var name="xtime"/>
+			<var name="oceanBenthosPOCFluxData"/>
+			<var name="oceanBenthosPICFluxData"/>
+			<var name="oceanBenthosMno2FluxData"/>
+			<var name="oceanBenthosFeoh3FluxData"/>
+			<var name="oceanBenthosPrecipMno2Data"/>
+			<var name="oceanBenthosPrecipFeoh3Data"/>
+			<var name="oceanBottomBenthosDensityData"/>
+			<var name="oceanBottomBenthosTemperatureData"/>
+			<var name="oceanBottomBenthosSalinityData"/>
+			<var name="oceanBottomBenthosPressureData"/>
+			<var name="oceanBottomBenthosSio3Data"/>
+			<var name="oceanBottomBenthosNh4Data"/>
+			<var name="oceanBottomBenthosNo3Data"/>
+			<var name="oceanBottomBenthosO2Data"/>
+			<var name="oceanBottomBenthosDICData"/>
+			<var name="oceanBottomBenthosAlkData"/>
+			<var name="oceanBottomBenthosPo4Data"/>
+			<var name="oceanBottomBenthosFeData"/>
+			<var name="oceanBottomBenthosMnData"/>
+			<var name="oceanBottomBenthosSo4Data"/>
+		</stream>
+
+	</streams>

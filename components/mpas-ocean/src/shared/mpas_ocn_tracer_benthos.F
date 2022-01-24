@@ -29,6 +29,7 @@ module ocn_tracer_benthos
    use mpas_stream_manager
    use mpas_log
    use ocn_constants
+   use ocn_config
    use ocn_tracer_ecosys   
    use ocn_framework_forcing
    use ocn_benthos_mod
@@ -1257,8 +1258,8 @@ contains
          forcingReferenceTimeMonthly
 
        logical, pointer :: &
-          config_do_restart, &
-          config_do_restart_benthos, &
+          !config_do_restart, &
+          !config_do_restart_benthos, &
           config_use_carbonate_saturation, &
           config_use_secondary_reactions, &
           config_use_depth_dependent_porosity, &
@@ -1910,8 +1911,8 @@ test_flag = .false.
       allocate (benthos_diagnostic_fields%diag_netElementsTransportTend(numBenthicColumnsMax, element_tracer_cnt) )
       allocate (benthos_diagnostic_fields%diag_netElementsTend(numBenthicColumnsMax, element_tracer_cnt) )
 
-      call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call MPAS_pool_get_config(domain % configs, 'config_do_restart_benthos', config_do_restart_benthos)
+      !call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      !call MPAS_pool_get_config(domain % configs, 'config_do_restart_benthos', config_do_restart_benthos)
 
       if (config_use_benthos_monthly_forcing) then
          ! initialize monthly forcing to be read from file (sediment fluxes)
@@ -2170,10 +2171,10 @@ test_flag = .false.
                 forcingIntervalMonthly)
 
          call MPAS_forcing_init_field_data( forcingGroupHead, &
-        'benthosMonthlyClimatology',  &
-         domain % streamManager,  &
-         config_do_restart, &
-         .false.)
+           'benthosMonthlyClimatology',  &
+            domain % streamManager,  &
+            config_do_restart, &
+            .false.)
 
      end if ! config_use_benthos_monthly_forcing
 
@@ -2397,7 +2398,7 @@ test_flag = .false.
         type (MPAS_clock_type) :: simulationClock
 
         logical, intent(in) :: firstTimeStep
-        character(len=strKind), pointer :: config_dt
+        !character(len=strKind), pointer :: config_dt
         real(kind=RKIND) :: dt
 
         type (mpas_pool_type), pointer :: forcingPool
@@ -2469,11 +2470,11 @@ test_flag = .false.
         integer, pointer :: nCells
         integer :: iCell
 
-        logical, pointer :: config_do_restart, config_do_restart_benthos
+        !logical, pointer :: config_do_restart, config_do_restart_benthos
 
-        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
-        call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
-        call MPAS_pool_get_config(domain%configs, 'config_do_restart_benthos', config_do_restart_benthos)
+        !call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
+        !call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
+        !call MPAS_pool_get_config(domain%configs, 'config_do_restart_benthos', config_do_restart_benthos)
 
         call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
         call mpas_get_timeInterval(timeStepEco,dt=dt)
