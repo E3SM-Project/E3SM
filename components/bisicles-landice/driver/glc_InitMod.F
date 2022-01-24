@@ -141,6 +141,8 @@
   integer, parameter :: days_in_year = 365
   
   namelist /cism_params/  paramfile, cism_debug, ice_flux_routing
+
+  write(*,*) 'TJL - Entering glc_initiailize...'
  
 !-----------------------------------------------------------------------
 !  initialize return flag
@@ -188,26 +190,36 @@
 
    paramfile  = 'unknown_paramfile'
 
+   write(*,*) 'TJL - glc_initialize: my_task: ',my_task,', master_task: ',master_task
    if (my_task == master_task) then
+      write(*,*) 'TJL -   glc_initialize: nml_filename: ',nml_filename
       open (nml_in, file=nml_filename, status='old',iostat=nml_error)
       if (nml_error /= 0) then
          nml_error = -1
       else
          nml_error =  1
       endif
+      write(*,*) 'TJL -   glc_initialize: nml_error (1): ',nml_error
       do while (nml_error > 0)
          read(nml_in, nml=cism_params,iostat=nml_error)
       end do
+      write(*,*) 'TJL -   glc_initialize: nml_error (2): ',nml_error
       if (nml_error == 0) close(nml_in)
    endif
+   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (1)'
    call broadcast_scalar(nml_error, master_task)
+   write(*,*) 'TJL - glc_initialize: nml_error (3): ',nml_error
    if (nml_error /= 0) then
       call exit_glc(sigAbort,'ERROR reading cism_params nml')
    endif
 
+   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (2)'
    call broadcast_scalar(paramfile,         master_task)
+   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (3)'
    call broadcast_scalar(cism_debug,        master_task)
+   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (4)'
    call broadcast_scalar(ice_flux_routing,  master_task)
+   write(*,*) 'TJL - glc_initialize: call set_routing'
    call set_routing(ice_flux_routing)
 
    if (verbose .and. my_task==master_task) then
@@ -361,6 +373,7 @@
 !-----------------------------------------------------------------------
 !EOC
 
+   write(*,*) 'TJL - Exiting glc_initiailize...'
  end subroutine glc_initialize
 
 !***********************************************************************

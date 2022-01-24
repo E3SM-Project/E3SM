@@ -51,6 +51,7 @@ module glc_comp_mct
   integer(IN)           :: my_task_local        ! my task in mpi communicator mpicom 
   integer(IN),parameter :: master_task_local=0  ! task number of master task
 
+  real(R8) :: cur_time
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -92,38 +93,51 @@ CONTAINS
     character(*), parameter :: F02   = "('(glc_init_mct) ',a,4es13.6)"
     character(*), parameter :: F91   = "('(glc_init_mct) ',73('-'))"
     character(*), parameter :: subName = "(glc_init_mct) "
+
+    character(len=32) :: c_inputFilename
+
+    write(*,*) 'TJL - glc_init_mct: begin...'
+
     !-------------------------------------------------------------------------------
 
     !----------------------------------------------------------------------------
     ! Determine attribute vector indices
     !----------------------------------------------------------------------------
     
+    write(*,*) 'TJL -   glc_init_mct: call glc_cpl_indices_set'
     call glc_cpl_indices_set()
 
     !----------------------------------------------------------------------------
     ! Set cdata pointers
     !----------------------------------------------------------------------------
 
+    write(*,*) 'TJL -   glc_init_mct: call seq_cdata_getdata'
     call seq_cdata_getdata(cdata, &
          id=compid, mpicom=mpicom, gsMap=gsMap, dom=dom, infodata=infodata)
 
+    write(*,*) 'TJL -   glc_init_mct: call mpi_comm_rank'
     call mpi_comm_rank(mpicom, my_task_local, ierr)
 
     !---------------------------------------------------------------------------
     ! set variables that depend on ensemble index
     !---------------------------------------------------------------------------
 
+    write(*,*) 'TJL -   glc_init_mct: call set_inst_vars'
     call set_inst_vars(COMPID)
+    write(*,*) 'TJL -   glc_init_mct: call get_inst_name'
     call get_inst_name(myModelName)
+    write(*,*) 'TJL -   glc_init_mct: call set_filenames'
     call set_filenames()
 
     !---------------------------------------------------------------------------
     ! use infodata to determine type of run
     !---------------------------------------------------------------------------
 
+    write(*,*) 'TJL -   glc_init_mct: call seq_infodata_GetData'
     call seq_infodata_GetData( infodata, &
          start_type=starttype)
 
+    write(*,*) 'TJL -   glc_init_mct: Check starttype'
     if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
        runtype = "initial"
     else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
@@ -139,6 +153,7 @@ CONTAINS
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
     !--- open log file ---
+    write(*,*) 'TJL -   glc_init_mct: Set up I/O units'
     if (my_task_local == master_task_local) then
        stdout = shr_file_getUnit()
        call shr_file_setIO(ionml_filename,stdout)
@@ -148,10 +163,24 @@ CONTAINS
     stderr = stdout
     nml_in = shr_file_getUnit()
 
+    write(*,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (1)'
     call shr_file_getLogUnit (shrlogunit)
+    write(*,*) 'TJL -   glc_init_mct: call shr_file_getLogLevel (1)'
     call shr_file_getLogLevel(shrloglev)
+    write(*,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (1)'
     call shr_file_setLogUnit (stdout)
 
+    ! TJL - Adding BISICLES init call (start)
+    ! call MPI_comm_rank(mpicom_g,iam,ierr)
+
+    c_inputFilename = "inputs.bisiclesTest"
+
+    cur_time = 0.0
+    write(*,*) 'TJL -   glc_init_mct: call bike_driver_init!!!'
+    call bike_driver_init(mpicom, cur_time, c_inputFilename)
+    ! TJL - Adding BISICLES init call (end)
+
+#if 0
     errorCode = glc_Success
     if (verbose .and. my_task_local == master_task_local) then
        write(stdout,F00) ' Starting'
@@ -159,7 +188,9 @@ CONTAINS
        call write_inst_vars
        call shr_sys_flush(stdout)
     endif
+    write(*,*) 'TJL -   glc_init_mct: call init_communicate'
     call init_communicate(mpicom)
+    write(*,*) 'TJL -   glc_init_mct: call glc_initialize'
     call glc_initialize(EClock, errorCode)
     if (verbose .and. my_task == master_task) then
        write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
@@ -169,14 +200,17 @@ CONTAINS
 
     ! Initialize MCT gsmap
 
+    write(*,*) 'TJL -   glc_init_mct: call glc_SetgsMap_mct'
     call glc_SetgsMap_mct(mpicom, COMPID, gsMap)
 
     ! Initialize MCT domain
 
+    write(*,*) 'TJL -   glc_init_mct: call glc_domain_mct'
     call glc_domain_mct(gsMap,dom)
 
     ! Set flags in infodata
 
+    write(*,*) 'TJL -   glc_init_mct: call seq_infodata_PutData'
     call seq_infodata_PutData(infodata, glc_present=.true., &
        glclnd_present = .true., &
        glcocn_present=has_ocn_coupling(), &
@@ -185,29 +219,39 @@ CONTAINS
 
     ! Initialize MCT attribute vectors
 
+    write(*,*) 'TJL -   glc_init_mct: call mct_aVect_init (1)'
     call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=npts)
+    write(*,*) 'TJL -   glc_init_mct: call mct_aVect_zero (1)'
     call mct_aVect_zero(g2x)
 
+    write(*,*) 'TJL -   glc_init_mct: call mct_aVect_init (2)'
     call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=npts)
+    write(*,*) 'TJL -   glc_init_mct: call mct_aVect_zero (2)'
     call mct_aVect_zero(x2g)
 
     ! Create initial glc export state
 
+    write(*,*) 'TJL -   glc_init_mct: call glc_export'
     call glc_export(g2x%rattr)
-	 
+
    if (my_task == master_task) then
       write(stdout,F91) 
       write(stdout,F00) trim(myModelName),': start of main integration loop'
       write(stdout,F91) 
    end if
+#endif
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
+    write(*,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (2)'
     call shr_file_setLogUnit (shrlogunit)
+    write(*,*) 'TJL -   glc_init_mct: call shr_file_getLogLevel (2)'
     call shr_file_setLogLevel(shrloglev)
+    write(*,*) 'TJL -   glc_init_mct: call shr_sys_flush'
     call shr_sys_flush(stdout)
 
+    write(*,*) 'TJL - glc_init_mct: end...'
 end subroutine glc_init_mct
 
 !===============================================================================
@@ -257,6 +301,8 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
    character(*), parameter :: F04   = "('(glc_run_mct) ',2a,2i8,'s')"
    character(*), parameter :: subName = "(glc_run_mct) "
 !-------------------------------------------------------------------------------
+
+    write(*,*) 'TJL - glc_run_mct: begin...'
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -336,6 +382,7 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
     call shr_file_setLogLevel(shrloglev)
     call shr_sys_flush(stdout)
     
+    write(*,*) 'TJL - glc_run_mct: end...'
 end subroutine glc_run_mct
 
 !===============================================================================
@@ -379,6 +426,8 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
 !
 !-------------------------------------------------------------------------------
 
+   write(*,*) 'TJL - glc_final_mct: begin...'
+
    ! Reset shr logging to my log file
    call shr_file_getLogUnit (shrlogunit)
    call shr_file_getLogLevel(shrloglev)
@@ -406,6 +455,8 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(stdout)
+
+   write(*,*) 'TJL - glc_final_mct: end...'
 
 end subroutine glc_final_mct
 
