@@ -91,9 +91,24 @@ endif()
 
 project(E3SM C CXX Fortran)
 
-# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to 
+# Include function definitions
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_scream.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
+
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
+
+if(USE_CUDA)
+  enable_language(CUDA)
+endif()
+
+# Scream manages its own flags
+build_scream()
+
+# We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
 # decide what optimization flags to append, based on build type,
-# so make all the following empty
+# for components who rely on CIME for build flags, so make all the following empty.
 set (CMAKE_C_FLAGS_RELEASE "")
 set (CMAKE_CXX_FLAGS_RELEASE "")
 set (CMAKE_Fortran_FLAGS_RELEASE "")
@@ -102,25 +117,12 @@ set (CMAKE_C_FLAGS_DEBUG "")
 set (CMAKE_CXX_FLAGS_DEBUG "")
 set (CMAKE_Fortran_FLAGS_DEBUG "")
 
-if(USE_CUDA)
-  enable_language(CUDA)
-endif()
-
-# Include function definitions
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_scream.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
-
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
-# Do any MPAS/scream builds first since they manage their own flags
 build_mpas_models()
-build_scream()
 
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
