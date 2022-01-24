@@ -236,8 +236,6 @@ contains
 
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
-!    real(r8),allocatable :: cpairv_loc(:,:,:)
-!    real(r8),allocatable :: rairv_loc(:,:,:)
     real(r8) :: rairv_loc(state%psetcols,pver)
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
@@ -280,28 +278,6 @@ contains
     end if
 
     call t_startf ('physics_update_main')
-    !-----------------------------------------------------------------------
-    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, the cpairv is the correct size and just copy
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-!    if (state%psetcols == pcols) then
-!       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-!       cpairv_loc(:,:,:) = cpairv(:,:,:)
-!    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-!       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-!       cpairv_loc(:,:,:) = cpair
-!    else
-!       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
-!    end if
-!    if (state%psetcols == pcols) then
-!       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
-!       rairv_loc(:,:,:) = rairv(:,:,:)
-!    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-!       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-!       rairv_loc(:,:,:) = rair
-!    else
-!       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
-!    end if
 
     !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
@@ -420,12 +396,7 @@ contains
               ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
     endif
    
-!    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-!      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
-!    else
-      zvirv(:,:) = zvir    
-!    endif
-
+    zvirv(:,:) = zvir    
     rairv_loc(:,:) = rair
 
     !-------------------------------------------------------------------------------------------
@@ -440,18 +411,6 @@ contains
           state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpair * dt
        end do
     end if
-
-#if 0
-    ! Derive new zi,zm,s if heating or water tendency not 0.
-    if (ptend%ls .or. ptend%lq(1)) then
-      call geopotential_t(state%lnpint, state%lnpmid  ,&
-                          state%pint  , state%pmid    ,&
-                          state%pdel  , state%rpdel   ,&
-                          state%t     , state%q(:,:,1),&
-                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
-                          state%zi    , state%zm      ,&
-                          ncol)
-#endif
 
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
@@ -473,10 +432,6 @@ contains
     ! call shr_sys_flush(iulog)
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
-
-!    deallocate(cpairv_loc, rairv_loc)
-!    deallocate(cpairv_loc)
-!    deallocate(rairv_loc)
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
@@ -1275,24 +1230,6 @@ end subroutine physics_ptend_copy
        state%lnpint(:ncol,k+1) = log(state%pint(:ncol,k+1))
        state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
-
-!    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-!      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
-!    else
-!      zvirv(:,:) = zvir    
-!    endif
-
-! compute new T,z from new s,q,dp
-!    if (adjust_te) then
-!!! OG with fix to total energy (removed geopotential term)
-!!! this call needs to be replaced. This code in not active, so, fixes are not
-!!! implemented.
-!       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
-!            state%pmid  , state%pdel    , state%rpdel,  &
-!            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-!            gravit, cpairv(:,:,state%lchnk), zvirv, &
-!            state%t     , state%zi      , state%zm   , ncol)
-!    end if
 
   end subroutine physics_dme_adjust
 !-----------------------------------------------------------------------
