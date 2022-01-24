@@ -777,7 +777,6 @@ end function shoc_implements_cnst
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
        
-       !thlm(i,k) = state1%t(i,k)*inv_exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
        pot_temp = state1%t(i,k)*inv_exner(i,k)
        thlm(i,k) = pot_temp-(pot_temp/state1%t(i,k))*(latvap/cpair)*state1%q(i,k,ixcldliq)
        thv(i,k) = state1%t(i,k)*inv_exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
