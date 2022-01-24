@@ -1586,6 +1586,30 @@ contains
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
+  integer :: q1ind, q2ind, q3ind, q6ind, q7ind
+
+#if 0
+   1  Q         Specific humidity                                                                                                                 wet
+   2  CLDLIQ    Grid box averaged cloud liquid amount                                                                                             wet
+   3  CLDICE    Grid box averaged cloud ice amount                                                                                                wet
+   4  NUMLIQ    Grid box averaged cloud liquid number                                                                                             wet
+   5  NUMICE    Grid box averaged cloud ice number                                                                                                wet
+   6  RAINQM    Grid box averaged rain amount                                                                                                     wet
+   7  SNOWQM    Grid box averaged snow amount                                                                                                     wet
+   8  NUMRAI    Grid box averaged rain number                                                                                                     wet
+   9  NUMSNO    Grid box averaged snow number 
+#endif
+
+
+#define WL
+!#undef WL
+
+#ifdef WL
+q1ind=1; q2ind=2; q3ind=3; q6ind=6; q7ind=7;
+#endif
+
+
+
 #ifdef HOMMEXX_BFB_TESTING
   ! BFB comparison with C++ requires to perform the reduction
   ! of FQ over the whole column *before* adding to ps
@@ -1640,8 +1664,13 @@ contains
                   !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
                   elem%state%Qdp(i,j,k,q,np1_qdp) = &
                        dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-                  
+      
+!this will only run wiht EAM, no need to check qsize    
+#ifdef WL
+                  if (q==q1ind .or. q==q2ind .or. q==q3ind .or. q==q6ind .or. q==q7ind) then
+#else        
                   if (q==1) then
+#endif
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
                           elem%state%Q(i,j,k,q))
                      ! force ps to conserve mass:  
