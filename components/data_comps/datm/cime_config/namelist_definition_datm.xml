@@ -1600,8 +1600,8 @@
         a2x3h_Sa_co2prog co2prog
       </value>
       <value stream="E3SMWCv2Forcing.State1hr">
-        a2x1h_Sa_u  u
-        a2x1h_Sa_v  v
+        a2x3h_Sa_u  u
+        a2x3h_Sa_v  v
       </value>
       <value  stream="CLM_QIAN.Solar">
         FSDS swdn
