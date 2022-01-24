@@ -156,6 +156,12 @@ OPTIONS
      -crop                    Toggle for prognostic crop model. (default is off)
                               (can ONLY be turned on when BGC type is CN or BGC)
                               This turns on the namelist variable: use_crop
+     -hydrstrss               Toggle for plant hydraulic stress model. (default is off)
+                              This turns on the namelist variable: use_hydrstress
+     -topounit                Toggle for downscaling of atmosphric forcing from grid to topounit(default is off)
+                              This turns on the namelist variable: use_atm_downscaling_to_topunit
+     -tw_irr                  Toggle for irrigation will be two-way coupled with MOSART. (default is off)
+                              This turns on the namelist variable: tw_irr
      -csmdata "dir"           Root directory of CESM input data.
                               Can also be set by using the CSMDATA environment variable.
      -drydep                  Produce a drydep_inparm namelist that will go into the
@@ -300,6 +306,9 @@ sub process_commandline {
                test                  => 0,
                bgc                   => "default",
                crop                  => 0,
+               hydrstress            => 0,
+               topounit              => 0,
+               tw_irr                => 0,
                dynamic_vegetation    => 0,
                envxml_dir            => ".",
                vichydro              => 0,
@@ -351,6 +360,9 @@ sub process_commandline {
              "use_case=s"                => \$opts{'use_case'},
              "bgc=s"                     => \$opts{'bgc'},
              "crop"                      => \$opts{'crop'},
+             "hydrstress"                => \$opts{'hydrstress'},
+             "topounit"                  => \$opts{'topounit'},
+             "tw_irr"                    => \$opts{'tw_irr'},
              "dynamic_vegetation"        => \$opts{'dynamic_vegetation'},
              "vichydro"                  => \$opts{'vichydro'},
              "maxpft=i"                  => \$opts{'maxpft'},
@@ -676,6 +688,9 @@ sub process_namelist_commandline_options {
   setup_cmdl_nutrient($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_nutrient_comp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_crop($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_hydrstress($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_topounit($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_tw_irr($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_maxpft($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_irrigation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
@@ -1413,7 +1428,89 @@ sub setup_cmdl_crop {
 }
 
 #-------------------------------------------------------------------------------
+sub setup_cmdl_hydrstress {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
 
+  $nl_flags->{'use_hydrstress'} = ".false.";
+  my $val;
+  my $var = "hydrstress";
+  $val = $opts->{$var};
+  $nl_flags->{'hydrstress'} = $val;
+  if ( $nl_flags->{'hydrstress'} eq 1 ) {
+    $nl_flags->{'use_hydrstress'} = ".true.";
+  }
+  if ( defined($nl->get_value("use_hydrstress")) && ($nl_flags->{'use_hydrstress'} ne $nl->get_value("use_hydrstress")) ) {
+    fatal_error("Namelist item use_hydrstress contradicts the command-line option -hydrstress, use the command line option");
+  }
+
+  $var = "use_hydrstress";
+  $val = ".false.";
+  if ($nl_flags->{'hydrstress'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+#-------------------------------------------------------------------------------
+sub setup_cmdl_topounit {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+  $nl_flags->{'use_atm_downscaling_to_topunit'} = ".false.";
+  my $val;
+  my $var = "topounit";
+  $val = $opts->{$var};
+  $nl_flags->{'topounit'} = $val;
+  if ( $nl_flags->{'topounit'} eq 1 ) {
+    $nl_flags->{'use_atm_downscaling_to_topunit'} = ".true.";
+  }
+  if ( defined($nl->get_value("use_atm_downscaling_to_topunit")) && ($nl_flags->{'use_atm_downscaling_to_topunit'} ne $nl->get_value("use_atm_downscaling_to_topunit")) ) {
+    fatal_error("Namelist item use_atm_downscaling_to_topunit contradicts the command-line option -topounit, use the command line option");
+  }
+
+  $var = "use_atm_downscaling_to_topunit";
+  $val = ".false.";
+  if ($nl_flags->{'topounit'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+#------------------------------------------------------------------------------------------
+sub setup_cmdl_tw_irr {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+  $nl_flags->{'tw_irr'} = ".false.";
+  my $val;
+  my $var = "tw_irr";
+  $val = $opts->{$var}; 
+  $nl_flags->{'tw_irr'} = $val;
+  if ( $nl_flags->{'tw_irr'} eq 1 ) {
+    $nl_flags->{'tw_irr'} = ".true.";
+  }
+  if ( defined($nl->get_value("tw_irr")) && ($nl_flags->{'tw_irr'} ne $nl->get_value("tw_irr")) ) {
+    fatal_error("Namelist item tw_irr contradicts the command-line option -tw_irr, use the command line option");
+  }
+
+  $var = "tw_irr";
+  $val = ".false.";
+  if ($nl_flags->{'topounit'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+
+#-------------------------------------------------------------------------------------------
 sub setup_cmdl_maxpft {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
 

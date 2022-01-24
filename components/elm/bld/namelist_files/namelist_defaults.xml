@@ -45,7 +45,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <irrig>.false.</irrig>
 
 <!-- twowayirrigation default -->
-<tw_irr>.false.</tw_irr>
+<create_crop_landunit  tw_irr=".true." >.true.</create_crop_landunit>
+<irrigate  tw_irr=".true." >.true.</irrigate>
 
 <!-- extra gw pumping for irrigation default -->
 <extra_gw_irr>.false.</extra_gw_irr>
@@ -115,7 +116,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
 <!-- Do downscaling to topounit -->
-<use_atm_downscaling_to_topunit>.false.</use_atm_downscaling_to_topunit>
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->
 <use_lake_wat_storage>.false.</use_lake_wat_storage>
@@ -124,12 +124,15 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
+<paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_cn=".false." use_fates=".false." >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220224.nc</paramfile>
+<paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="ECA" use_fates=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="ECA" use_cn=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
 <paramfile use_crop=".false." use_fates=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
 
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
@@ -437,6 +440,11 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." use_cn=".true.">
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
+<fsurdat hgrid="r05"          sim_year="1850"  use_atm_downscaling_to_topunit =".true.">
+lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc</fsurdat>
+
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1950" use_crop=".false." >
@@ -507,10 +515,8 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
 <flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
-
 <flanduse_timeseries hgrid="r05" sim_year_range="1850-2000"
   use_crop=".false." use_cn=".true." >lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
-
 <flanduse_timeseries hgrid="r05" sim_year_range="1850-2000"
   use_crop=".false." use_cn=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
 
@@ -921,6 +927,7 @@ this mask will have smb calculated over the entire global land surface
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." tw_irr=".ture." >.true.</create_crop_landunit>
 
 <!-- =========================================  -->
 <!-- Performance issues                         -->
