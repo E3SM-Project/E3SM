@@ -985,12 +985,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
-                  crm_qr(i,:,:,k) = state(c)%q(i,m,ixrain)
-                  crm_nc(i,:,:,k) = state(c)%q(i,m,ixnumliq)
-                  crm_ni(i,:,:,k) = state(c)%q(i,m,ixnumice)
-                  crm_nr(i,:,:,k) = state(c)%q(i,m,ixnumrain)
-                  crm_qm(i,:,:,k) = state(c)%q(i,m,ixcldrim)
-                  crm_bm(i,:,:,k) = state(c)%q(i,m,ixrimvol)
+                  crm_qr(i,:,:,k) = 0.0_r8
+                  crm_nc(i,:,:,k) = 0.0_r8
+                  crm_ni(i,:,:,k) = 0.0_r8
+                  crm_nr(i,:,:,k) = 0.0_r8
+                  crm_qm(i,:,:,k) = 0.0_r8
+                  crm_bm(i,:,:,k) = 0.0_r8
                   crm_t_prev(i,:,:,k) = state(c)%t(i,m)
                   crm_q_prev(i,:,:,k) = state(c)%q(i,m,1)
                end if
