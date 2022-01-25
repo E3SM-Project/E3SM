@@ -66,6 +66,9 @@ OR
     parser.add_argument("-o","--overwrite", action="store_true", default=False,
                         help="Overwrite possibly existing variable values")
 
+    parser.add_argument("-p","--prune-history", action="store_true", default=False,
+                        help="Prune the history attribute")
+
     # Dimensions addition
     parser.add_argument("-adims","--add-dimensions",nargs='+', default=[],
                         help="Add dimensions, if not already existing")
@@ -83,6 +86,9 @@ OR
     parser.add_argument("-rvars","--remove-variables",nargs='+', default=[],
                         help="Remove variables from output file (can be used to purge 'temporarily' imported"
                              "vars from another file, used just to compute some quantity)")
+
+    parser.add_argument("-svars","--slice-variables",nargs='+', default=[],
+                        help="Extract a N-1 dim slice from a N-dim variable.")
 
     parser.add_argument("-vvars","--vector-variables",nargs='+', default=[],
                         help="Add vector variables, whose components are specified as other existing variables")
