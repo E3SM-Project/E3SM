@@ -114,7 +114,7 @@ public:
 
         // Temperature
         const auto& theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
-        thlm(i,k) = theta_zt - (latvap/cpair)*qc(i,k);
+        thlm(i,k) = theta_zt-(theta_zt/T_mid(i,k))*(latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
         // Vertical layer thickness
