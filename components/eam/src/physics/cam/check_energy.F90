@@ -1144,83 +1144,14 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer, intent(in) :: ncol                   
     integer :: i,k                            
 
-
-#if 0
-    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
-    ke = 0._r8
-    se = 0._r8
-    wv = 0._r8
-    wl = 0._r8
-    wi = 0._r8
-    wr = 0._r8
-    ws = 0._r8
-
-    !keep it bfb and fast
-    if (present(teloc) .and. present(psterm))then
-    teloc = 0.0; psterm = 0.0
-    do k = 1, pver
-       do i = 1, ncol
-          teloc(i,k) = 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit &
-                   + t(i,k)*cpair*pdel(i,k)/gravit &
-                   + (latvap+latice)*q(i,k,1       )*pdel(i,k)/gravit
-          if (icldliq > 1  .and.  irain > 1) then
-             teloc(i,k) = teloc(i,k) &
-                      + latice*(q(i,k,icldliq) + q(i,k,irain))*pdel(i,k)/gravit
-          endif
-       end do
-    end do
-    do i = 1, ncol
-       psterm(i) = phis(i)*ps(i)/gravit
-    end do
+    if(icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. isnow > 1) then
+      do i = 1, ncol
+        call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),ps(i),pdel(i,:),phis(i), &
+                                   ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )                             
+      enddo
+    else
+      call endrun('energy_helper...column is not implemented if water forms do not exist')
     endif
-
-    do k = 1, pver
-       do i = 1, ncol
-          ke(i) = ke(i) + 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit
-          se(i) = se(i) +         t(i,k)*cpair*pdel(i,k)/gravit
-          wv(i) = wv(i) + q(i,k,1      )*pdel(i,k)/gravit
-       end do
-    end do
-    do i = 1, ncol
-       se(i) = se(i) + phis(i)*ps(i)/gravit
-    end do
-
-    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (icldliq > 1  .and.  icldice > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wl(i) = wl(i) + q(i,k,icldliq)*pdel(i,k)/gravit
-             wi(i) = wi(i) + q(i,k,icldice)*pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    if (irain   > 1  .and.  isnow   > 1 ) then
-       do k = 1, pver
-          do i = 1, ncol
-             wr(i) = wr(i) + q(i,k,irain)*pdel(i,k)/gravit
-             ws(i) = ws(i) + q(i,k,isnow)*pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    ! Compute vertical integrals of frozen static energy and total water.
-    do i = 1, ncol
-       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
-       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
-    end do
-#endif
-
-  if(icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. isnow > 1) then
-    do i = 1, ncol
-      call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),ps(i),pdel(i,:),phis(i), &
-                                   ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )
-                                   
-    enddo
-  else
-    call endrun('energy_helper...column is not implemented if water forms do not exist')
-  endif
-
 
   end subroutine energy_helper_eam_def
 
