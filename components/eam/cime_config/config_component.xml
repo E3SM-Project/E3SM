@@ -28,7 +28,7 @@
 
   <entry id="CAM_TARGET">
          <type>char</type>
-         <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
+         <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l,theta-l_kokkos</valid_values>
          <default_value>theta-l</default_value>
          <group>build_component_cam</group>
          <file>env_build.xml</file>
