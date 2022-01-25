@@ -104,6 +104,42 @@
 	<packages>
 		<package name="benthosTracersPKG" description="This package includes variables required to include benthosTracers."/>
 	</packages>
+
+	<streams>
+
+		<stream name="benthos_monthly_flux"
+				type="input"
+				filename_template="benthosForcingMonthly.nc"
+				input_interval="none"
+				runtime_format="single_file"
+				packages="benthosTracersPKG"
+                                mode="forward">
+
+			<var name="xtime"/>
+			<var name="oceanBenthosPOCFluxData"/>
+			<var name="oceanBenthosPICFluxData"/>
+			<var name="oceanBenthosMno2FluxData"/>
+			<var name="oceanBenthosFeoh3FluxData"/>
+			<var name="oceanBenthosPrecipMno2Data"/>
+			<var name="oceanBenthosPrecipFeoh3Data"/>
+			<var name="oceanBottomBenthosDensityData"/>
+			<var name="oceanBottomBenthosTemperatureData"/>
+			<var name="oceanBottomBenthosSalinityData"/>
+			<var name="oceanBottomBenthosPressureData"/>
+			<var name="oceanBottomBenthosSio3Data"/>
+			<var name="oceanBottomBenthosNh4Data"/>
+			<var name="oceanBottomBenthosNo3Data"/>
+			<var name="oceanBottomBenthosO2Data"/>
+			<var name="oceanBottomBenthosDICData"/>
+			<var name="oceanBottomBenthosAlkData"/>
+			<var name="oceanBottomBenthosPo4Data"/>
+			<var name="oceanBottomBenthosFeData"/>
+			<var name="oceanBottomBenthosMnData"/>
+			<var name="oceanBottomBenthosSo4Data"/>
+		</stream>
+
+	</streams>
+
 	<var_struct name="state" time_levs="2">
 		<var_struct name="seafloorTracers" time_levs="2">
 			<var name="benthosPhPrev3d" type="real" dimensions="nBenthicVertLevelsP1 nCells Time" units=""
@@ -512,66 +548,86 @@
 		</var_struct>
 	</var_struct>
 
-	<var_struct name="benthosMonthlyForcing" time_levs="1" packages="benthosTracersPKG">
+	<var_struct name="benthosMonthlyForcing" time_levs="1">
 		<var name="oceanBenthosPOCFluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean particulate organic carbon sinking flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosPICFluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean particulate calcite, aragonite and mg-calcite flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosMno2FluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean manganese oxide sinking flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosFeoh3FluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean iron oxyhydroxide  sinking flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosPrecipMno2Data" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean manganese oxide precipitation flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosPrecipFeoh3Data" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 			description="Ocean iron oxyhydroxide precipitation flux to the benthos"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosSio3Data" type="real" dimensions="nCells Time" units="mmol m^{-3}"
 			description="ocean bottom silicate used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosPo4Data" type="real" dimensions="nCells Time" units="mmol P m^{-3}"
 			description="ocean bottom phosphate concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosNh4Data" type="real" dimensions="nCells Time" units="mmol N m^{-3}"
 			description="ocean bottom ammonium concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosNo3Data" type="real" dimensions="nCells Time" units="mmol N m^{-3}"
 			description="ocean bottom nitrate concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosO2Data" type="real" dimensions="nCells Time" units="mmol O2 m^{-3}"
 			description="ocean bottom oxygen concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosFeData" type="real" dimensions="nCells Time" units="mmol Fe m^{-3}"
 			description="ocean bottom dissolved iron concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosMnData" type="real" dimensions="nCells Time" units="mmol Mn m^{-3}"
 			description="ocean bottom manganese concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosSo4Data" type="real" dimensions="nCells Time" units="mmol S m^{-3}"
 			description="ocean bottom sulfate concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosDICData" type="real" dimensions="nCells Time" units="mmol C m^{-3}"
 			description="ocean bottom DIC concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosAlkData" type="real" dimensions="nCells Time" units="meq m^{-3}"
 			description="ocean bottom alkalinity concentration used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosTemperatureData" type="real" dimensions="nCells Time" units="oC"
 			description="ocean bottom temperature used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosSalinityData" type="real" dimensions="nCells Time" units="psu"
 			description="ocean bottom salinity used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosPressureData" type="real" dimensions="nCells Time" units="N m^{-2}"
 			description="ocean bottom pressure used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBottomBenthosDensityData" type="real" dimensions="nCells Time" units="kg m^{-3}"
 			description="ocean bottom density used in benthos module"
+			packages="benthosTracersPKG"
 		/>
 	</var_struct>
 
@@ -2067,38 +2123,3 @@
 			/>
 		</var_struct>
 	</var_struct>
-
-	<streams>
-
-		<stream name="benthos_monthly_flux"
-				type="input"
-				filename_template="benthosForcingMonthly.nc"
-				input_interval="initial_only"
-				immutable="true"
-				packages="benthosTracersPKG"
-                                mode="forward">
-
-			<var name="xtime"/>
-			<var name="oceanBenthosPOCFluxData"/>
-			<var name="oceanBenthosPICFluxData"/>
-			<var name="oceanBenthosMno2FluxData"/>
-			<var name="oceanBenthosFeoh3FluxData"/>
-			<var name="oceanBenthosPrecipMno2Data"/>
-			<var name="oceanBenthosPrecipFeoh3Data"/>
-			<var name="oceanBottomBenthosDensityData"/>
-			<var name="oceanBottomBenthosTemperatureData"/>
-			<var name="oceanBottomBenthosSalinityData"/>
-			<var name="oceanBottomBenthosPressureData"/>
-			<var name="oceanBottomBenthosSio3Data"/>
-			<var name="oceanBottomBenthosNh4Data"/>
-			<var name="oceanBottomBenthosNo3Data"/>
-			<var name="oceanBottomBenthosO2Data"/>
-			<var name="oceanBottomBenthosDICData"/>
-			<var name="oceanBottomBenthosAlkData"/>
-			<var name="oceanBottomBenthosPo4Data"/>
-			<var name="oceanBottomBenthosFeData"/>
-			<var name="oceanBottomBenthosMnData"/>
-			<var name="oceanBottomBenthosSo4Data"/>
-		</stream>
-
-	</streams>
