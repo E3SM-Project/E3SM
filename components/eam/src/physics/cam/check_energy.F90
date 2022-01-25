@@ -68,6 +68,7 @@ module check_energy
   public :: ieflx_gmean             ! calculate global mean of ieflx 
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
+  public :: energy_helper_eam_def
 
 ! Private module data
 
@@ -395,6 +396,7 @@ end subroutine check_energy_get_integrals
     lchnk = state%lchnk
     ncol  = state%ncol
 
+#if 0
     ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
     se = 0._r8
@@ -440,6 +442,11 @@ end subroutine check_energy_get_integrals
        te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
        tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
     end do
+#endif
+
+    call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                   ncol)
 
     ! compute expected values and tendencies
     do i = 1, ncol
@@ -1220,6 +1227,87 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     end if
 
   end subroutine check_prect
+
+!====================================================================
+
+  subroutine energy_helper_eam_def(u,v,T,q,ps,pdel,phis, &
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &     
+                                   ncol,teloc,psterm)
+
+!state vars are of size psetcols,pver, so, not exactly correct
+    real(r8), intent(in) :: u(pcols,pver) 
+    real(r8), intent(in) :: v(pcols,pver) 
+    real(r8), intent(in) :: T(pcols,pver) 
+    real(r8), intent(in) :: q(pcols,pver,pcnst) 
+    real(r8), intent(in) :: ps(pcols) 
+    real(r8), intent(in) :: pdel(pcols,pver) 
+    real(r8), intent(in) :: phis(pcols) 
+
+
+    real(r8), intent(inout) :: ke(ncol)     ! vertical integral of kinetic energy
+    real(r8), intent(inout) :: se(ncol)     ! vertical integral of static energy
+    real(r8), intent(inout) :: wv(ncol)     ! vertical integral of water (vapor)
+    real(r8), intent(inout) :: wl(ncol)     ! vertical integral of water (liquid)
+    real(r8), intent(inout) :: wi(ncol)     ! vertical integral of water (ice)
+    real(r8), intent(inout) :: te(ncol)     ! vertical integral of total energy
+    real(r8), intent(inout) :: tw(ncol)     ! vertical integral of total water
+    real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
+    real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
+
+    real(r8), intent(inout), optional :: teloc(pcols,pver) 
+    real(r8), intent(inout), optional :: psterm(pcols) 
+
+    integer, intent(in) :: ncol                   
+    integer :: i,k                            
+
+    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
+    ke = 0._r8
+    se = 0._r8
+    wv = 0._r8
+    wl = 0._r8
+    wi = 0._r8
+    wr = 0._r8
+    ws = 0._r8
+
+    do k = 1, pver
+       do i = 1, ncol
+          ke(i) = ke(i) + 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit
+          se(i) = se(i) +         t(i,k)*cpair*pdel(i,k)/gravit
+          wv(i) = wv(i) + q(i,k,1      )*pdel(i,k)/gravit
+       end do
+    end do
+    do i = 1, ncol
+       se(i) = se(i) + phis(i)*ps(i)/gravit
+    end do
+
+    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
+    if (icldliq > 1  .and.  icldice > 1) then
+       do k = 1, pver
+          do i = 1, ncol
+             wl(i) = wl(i) + q(i,k,icldliq)*pdel(i,k)/gravit
+             wi(i) = wi(i) + q(i,k,icldice)*pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    if (irain   > 1  .and.  isnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + q(i,k,irain)*pdel(i,k)/gravit
+             ws(i) = ws(i) + q(i,k,isnow)*pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    ! Compute vertical integrals of frozen static energy and total water.
+    do i = 1, ncol
+       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
+       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
+    end do
+
+  end subroutine energy_helper_eam_def
+
+
 
 
 end module check_energy
