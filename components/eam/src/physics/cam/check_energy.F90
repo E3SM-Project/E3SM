@@ -1144,13 +1144,14 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer, intent(in) :: ncol                   
     integer :: i,k                            
 
-    if(icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. isnow > 1) then
-      do i = 1, ncol
-        call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),ps(i),pdel(i,:),phis(i), &
+    if (icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. isnow > 1) then
+       do i = 1, ncol
+          call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),&
+                                   ps(i),pdel(i,:),phis(i), &
                                    ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )                             
-      enddo
+       enddo
     else
-      call endrun('energy_helper...column is not implemented if water forms do not exist')
+       call endrun('energy_helper...column is not implemented if water forms do not exist')
     endif
 
   end subroutine energy_helper_eam_def
@@ -1194,37 +1195,37 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     !keep it bfb and fast
     if (present(teloc) .and. present(psterm))then
-    teloc = 0.0; psterm = 0.0
-    do k = 1, pver
+       teloc = 0.0; psterm = 0.0
+       do k = 1, pver
           teloc(k) = 0.5_r8*(u(k)**2 + v(k)**2)*pdel(k)/gravit &
                    + t(k)*cpair*pdel(k)/gravit &
                    + (latvap+latice)*q(k,1       )*pdel(k)/gravit
-             teloc(k) = teloc(k) &
-                      + latice*(q(k,icldliq) + q(k,irain))*pdel(k)/gravit
-    end do
-    psterm = phis*ps/gravit
+          teloc(k) = teloc(k) &
+                   + latice*(q(k,icldliq) + q(k,irain))*pdel(k)/gravit
+       end do
+       psterm = phis*ps/gravit
     endif
 
     do k = 1, pver
-          ke = ke + 0.5_r8*(u(k)**2 + v(k)**2)*pdel(k)/gravit
-          se = se +         t(k)*cpair*pdel(k)/gravit
-          wv = wv + q(k,1      )*pdel(k)/gravit
+       ke = ke + 0.5_r8*(u(k)**2 + v(k)**2)*pdel(k)/gravit
+       se = se +         t(k)*cpair*pdel(k)/gravit
+       wv = wv + q(k,1      )*pdel(k)/gravit
     end do
     se = se + phis*ps/gravit
 
-       do k = 1, pver
-             wl = wl + q(k,icldliq)*pdel(k)/gravit
-             wi = wi + q(k,icldice)*pdel(k)/gravit
-       end do
+    do k = 1, pver
+       wl = wl + q(k,icldliq)*pdel(k)/gravit
+       wi = wi + q(k,icldice)*pdel(k)/gravit
+    end do
 
-       do k = 1, pver
-             wr = wr + q(k,irain)*pdel(k)/gravit
-             ws = ws + q(k,isnow)*pdel(k)/gravit
-       end do
+    do k = 1, pver
+       wr = wr + q(k,irain)*pdel(k)/gravit
+       ws = ws + q(k,isnow)*pdel(k)/gravit
+    end do
 
     ! Compute vertical integrals of frozen static energy and total water.
-       te = se + ke + (latvap+latice)*wv + latice*( wl + wr )
-       tw = wv + wl + wi + wr + ws
+    te = se + ke + (latvap+latice)*wv + latice*( wl + wr )
+    tw = wv + wl + wi + wr + ws
 
   end subroutine energy_helper_eam_def_column
 
