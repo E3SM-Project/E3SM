@@ -127,7 +127,7 @@ endif ()
 
 # Add CUDA as a language for CUDA builds
 if (CUDA_BUILD)
-    enable_language(CUDA)
+  enable_language(CUDA)
 endif()
 
 ### Scream default configuration options
