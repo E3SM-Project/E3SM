@@ -840,8 +840,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! co2 cycle            
     if (co2_transport()) then
        call co2_init()
-       call co2_diags_init(phys_state)
     end if
+    call co2_diags_init(phys_state)
 
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
