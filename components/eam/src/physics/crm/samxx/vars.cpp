@@ -101,6 +101,7 @@ void allocate() {
   uhl              = real1d( "uhl             " , ncrms ); 
   vhl              = real1d( "vhl             " , ncrms ); 
   phis             = real1d( "phis            " , ncrms ); 
+  psfc             = real1d( "psfc            " , ncrms ); 
   sgs_field        = real5d( "sgs_field       " , nsgs_fields      , nzm , dimy_s , dimx_s , ncrms );
   sgs_field_diag   = real5d( "sgs_field_diag  " , nsgs_fields_diag , nzm , dimy_d , dimx_d , ncrms );
   grdf_x           = real2d( "grdf_x          "                    , nzm                   , ncrms );
@@ -306,6 +307,7 @@ void allocate() {
   yakl::memset(uhl               ,0.);
   yakl::memset(vhl               ,0.);
   yakl::memset(phis              ,0.);
+  yakl::memset(psfc              ,0.);
   yakl::memset(sgs_field         ,0.);
   yakl::memset(sgs_field_diag    ,0.);
   yakl::memset(grdf_x            ,0.);
@@ -575,6 +577,7 @@ void finalize() {
   uhl              = real1d(); 
   vhl              = real1d(); 
   phis             = real1d();
+  psfc             = real1d();
   sgs_field        = real5d();
   sgs_field_diag   = real5d();
   grdf_x           = real2d();
@@ -715,7 +718,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p,
                             real *crm_input_ul_p, real *crm_input_vl_p, real *crm_input_tl_p,
                             real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p,
-                            real *crm_input_tau00_p, real *crm_input_phis_p,
+                            real *crm_input_tau00_p, real *crm_input_phis_p, real *crm_input_ps_p,
 #ifdef MMF_ESMT
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif
@@ -747,6 +750,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   realHost2d crm_input_ql              = realHost2d( "crm_input_ql             ",crm_input_ql_p                                , plev       , pcols); 
   realHost1d crm_input_tau00           = realHost1d( "crm_input_tau00          ",crm_input_tau00_p                                          , pcols); 
   realHost1d crm_input_phis            = realHost1d( "crm_input_phis           ",crm_input_phis_p                                           , pcols);
+  realHost1d crm_input_ps              = realHost1d( "crm_input_ps             ",crm_input_ps_p                                             , pcols);
 #ifdef MMF_ESMT
   realHost2d crm_input_ul_esmt         = realHost2d( "crm_input_ul_esmt        ",crm_input_ul_esmt_p                            , plev       , pcols);
   realHost2d crm_input_vl_esmt         = realHost2d( "crm_input_vl_esmt        ",crm_input_vl_esmt_p                            , plev       , pcols);
@@ -801,6 +805,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   ::crm_input_ql              = real2d( "crm_input_ql            "                   , plev       , pcols); 
   ::crm_input_tau00           = real1d( "crm_input_tau00         "                                , pcols);
   ::crm_input_phis            = real1d( "crm_input_phis          "                                , pcols);
+  ::crm_input_ps              = real1d( "crm_input_ps            "                                , pcols);
 #ifdef MMF_ESMT
   ::crm_input_ul_esmt         = real2d( "crm_input_ul_esmt       "                   , plev       , pcols);
   ::crm_input_vl_esmt         = real2d( "crm_input_vl_esmt       "                   , plev       , pcols);
@@ -930,6 +935,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
   crm_input_ql            .deep_copy_to(::crm_input_ql            );
   crm_input_tau00         .deep_copy_to(::crm_input_tau00         );
   crm_input_phis          .deep_copy_to(::crm_input_phis          );
+  crm_input_ps            .deep_copy_to(::crm_input_ps            );
 #ifdef MMF_ESMT
   crm_input_ul_esmt       .deep_copy_to(::crm_input_ul_esmt       );
   crm_input_vl_esmt       .deep_copy_to(::crm_input_vl_esmt       );
@@ -1440,6 +1446,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_ql              = real2d();
   ::crm_input_tau00           = real1d();
   ::crm_input_phis            = real1d();
+  ::crm_input_ps              = real1d();
 #ifdef MMF_ESMT
   ::crm_input_ul_esmt         = real2d();
   ::crm_input_vl_esmt         = real2d();
@@ -1661,6 +1668,7 @@ void perturb_arrays() {
     perturb( uhl               , mag );
     perturb( vhl               , mag );
     perturb( phis              , mag );
+    perturb( ps                , mag );
     perturb( z                 , mag );
     perturb( pres              , mag );
     perturb( zi                , mag );
@@ -1810,6 +1818,7 @@ real1d z0              ;
 real1d uhl             ;
 real1d vhl             ;
 real1d phis            ;
+real1d psfc            ;
 
 real2d z               ;
 real2d pres            ;
@@ -1938,6 +1947,7 @@ real2d crm_input_qiil  ;
 real2d crm_input_ql    ;
 real1d crm_input_tau00 ;
 real1d crm_input_phis  ;
+real1d crm_input_ps    ;
 #ifdef MMF_ESMT
 real2d crm_input_ul_esmt;
 real2d crm_input_vl_esmt;

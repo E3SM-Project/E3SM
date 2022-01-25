@@ -1397,7 +1397,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_input%pmid, crm_input%pint, crm_input%pdel, &
                crm_input%ul, crm_input%vl, crm_input%tl, &
                crm_input%qccl, crm_input%qiil, crm_input%ql, &
-               crm_input%tau00, crm_input%phis, &
+               crm_input%tau00, crm_input%phis, crm_input%ps, &
 #ifdef MMF_ESMT
                crm_input%ul_esmt, crm_input%vl_esmt, &
 #endif

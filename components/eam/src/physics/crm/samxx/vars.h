@@ -59,7 +59,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p,
                             real *crm_input_ul_p, real *crm_input_vl_p, real *crm_input_tl_p,
                             real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p,
-                            real *crm_input_tau00_p, real *crm_input_phis_p,
+                            real *crm_input_tau00_p, real *crm_input_phis_p, real *crm_input_ps_p,
 #ifdef MMF_ESMT
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif
@@ -330,6 +330,7 @@ extern real1d z0              ;
 extern real1d uhl             ;
 extern real1d vhl             ;
 extern real1d phis            ;
+extern real1d psfc            ;
 
 extern real2d z               ;
 extern real2d pres            ;
@@ -429,6 +430,7 @@ extern real2d crm_input_qiil  ;
 extern real2d crm_input_ql    ;
 extern real1d crm_input_tau00 ;
 extern real1d crm_input_phis  ;
+extern real1d crm_input_ps    ;
 #ifdef MMF_ESMT
 extern real2d crm_input_ul_esmt;
 extern real2d crm_input_vl_esmt;

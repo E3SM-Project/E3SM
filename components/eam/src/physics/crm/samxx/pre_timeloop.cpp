@@ -176,7 +176,9 @@ void pre_timeloop() {
   auto &q_vt                       = :: q_vt;
   auto &use_VT                     = :: use_VT;
   auto &crm_input_phis             = :: crm_input_phis;
+  auto &crm_input_ps               = :: crm_input_ps;
   auto &phis                       = :: phis;
+  auto &psfc                       = :: psfc;
   auto &nccn                       = :: nccn;
   auto &nc_nuceat_tend             = :: nc_nuceat_tend;
   auto &ni_activated               = :: ni_activated;
@@ -229,6 +231,7 @@ void pre_timeloop() {
     zi(nz-1,icrm) = crm_input_zint(plev-nz+1,icrm)-crm_input_zint(plev,icrm); //+++mhwang, 2012-02-04
     presi(nz-1,icrm) = crm_input_pint(plev-nz+1,icrm)/100.0;
     phis(icrm) = crm_input_phis(icrm);
+    psfc(icrm) = crm_input_ps(icrm);
     adzw(0,icrm) = 1.0;
   });
   // for (int j=0; j<ny+1; j++) {

@@ -10,7 +10,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev,
                     real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p,
                     real *crm_input_ul_p, real *crm_input_vl_p, real *crm_input_tl_p,
                     real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p,
-                    real *crm_input_tau00_p, real *crm_input_phis_p,
+                    real *crm_input_tau00_p, real *crm_input_phis_p, real *crm_input_ps_p,
 #ifdef MMF_ESMT
                     real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif 
@@ -69,7 +69,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev,
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p,
                          crm_input_ul_p, crm_input_vl_p, crm_input_tl_p,
                          crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p,
-                         crm_input_tau00_p, crm_input_phis_p,
+                         crm_input_tau00_p, crm_input_phis_p, crm_input_ps_p,
 #ifdef MMF_ESMT
                          crm_input_ul_esmt_p, crm_input_vl_esmt_p,
 #endif 

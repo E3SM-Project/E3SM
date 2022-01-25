@@ -18,7 +18,7 @@ module cpp_interface_mod
                    crm_input_pmid, crm_input_pint, crm_input_pdel, &
                    crm_input_ul, crm_input_vl, crm_input_tl, &
                    crm_input_qccl, crm_input_qiil, crm_input_ql, &
-                   crm_input_tau00, crm_input_phis, &
+                   crm_input_tau00, crm_input_phis, crm_input_ps, &
 #ifdef MMF_ESMT
                    crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
@@ -75,7 +75,7 @@ module cpp_interface_mod
                                       crm_input_pmid, crm_input_pint, crm_input_pdel, &
                                       crm_input_ul, crm_input_vl, crm_input_tl, &
                                       crm_input_qccl, crm_input_qiil, crm_input_ql, &
-                                      crm_input_tau00, crm_input_phis, &
+                                      crm_input_tau00, crm_input_phis, crm_input_ps, &
 #ifdef MMF_ESMT
                                       crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif

@@ -144,7 +144,8 @@ void micro_p3_proc() {
   auto &rho                = :: rho;
   auto &dt                 = :: dt;
   auto &pres               = :: pres;
-  auto &pdel               = :: crm_input_pdel;
+  auto &p                  = :: p;
+  auto &psfc               = :: psfc;
   auto &t                  = :: t;
   auto &gamaz              = :: gamaz;
   auto &tabs               = :: tabs;
@@ -190,6 +191,9 @@ void micro_p3_proc() {
   const int ncol  = ncrms*nx*ny;
   const int npack = ekat::npack<Spack>(nlev);
 
+  real4d pmid("pdel",nzm,ny,nx,ncrms);
+  real4d pdel("pdel",nzm,ny,nx,ncrms);
+
   real2d qc_in("qc",ncol, nlev);
   real2d nc_in("nc",ncol, nlev);
   real2d qr_in("qr",ncol, nlev);
@@ -208,9 +212,9 @@ void micro_p3_proc() {
   real2d cld_frac_i_in("cld_frac_i",ncol, nlev);
   real2d cld_frac_l_in("cld_frac_l",ncol, nlev);
   real2d cld_frac_r_in("cld_frac_r",ncol, nlev);
-  real2d pres_in("pres", ncol, nlev);
   real2d dz_in("dz", ncol, nlev);
-  real2d dpres_in("dpres",ncol, nlev);
+  real2d pmid_in("pmid", ncol, nlev);
+  real2d pdel_in("pdel",ncol, nlev);
   real2d exner_in("exner",ncol, nlev);
   real2d q_prev_in("q_prev",ncol, nlev);
   real2d t_prev_in("t_prev",ncol, nlev);
@@ -240,12 +244,28 @@ void micro_p3_proc() {
   // real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
 
   //----------------------------------------------------------------------------
+  // Calculate total pressure and pressure thickness
+  //----------------------------------------------------------------------------
+  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    pmid(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm) + 100.0*pres(k,icrm);
+  });
+
+  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    if (k==0) {
+      pdel(k,j,i,icrm) = psfc(icrm) - pmid(k+1,j,i,icrm);
+    } else if (k==(nzm-1)) {
+      pdel(k,j,i,icrm) = pdel(k-1,j,i,icrm);
+    } else {
+      pdel(k,j,i,icrm) = pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm);
+    }
+  });
+  //----------------------------------------------------------------------------
   // Populate P3 thermodynamic state
   //----------------------------------------------------------------------------
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    exner_in(icol, ilev) = 1./std::pow((pres(k,icrm)*1.0e-3), (rgas/cp));
+    exner_in(icol, ilev) = 1./std::pow((pmid(k,j,i,icrm)*1.0e-5), (rgas/cp));
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
                       + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
@@ -301,10 +321,10 @@ void micro_p3_proc() {
     nccn_prescribed_in(icol,ilev) = 0.; //nccn_prescribed(k,icrm)*0.0; // TODO: we zero out the nccn_prescribed because of the missing of model
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
-    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use here?
-    pres_in(icol,ilev)            = pres(k,icrm);
+    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
     dz_in(icol,ilev)              = dz(icrm);
-    dpres_in(icol,ilev)           = pdel(k,icrm);
+    pmid_in(icol,ilev)            = pmid(k,j,i,icrm);
+    pdel_in(icol,ilev)            = pdel(k,j,i,icrm);
     ast_in(icol,ilev)             = 0.; // ast(k,icrm);
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
@@ -319,9 +339,9 @@ void micro_p3_proc() {
           nccn_prescribed_d("nccn_prescribed", ncol, npack),
           ni_activated_d("ni_activated", ncol, npack),
           inv_qc_relvar_d("inv_qc_relvar", ncol, npack),
-          pres_d("pres", ncol, npack),
           dz_d("dz", ncol, npack),
-          dpres_d("dpres", ncol, npack),
+          pmid_d("pmid", ncol, npack),
+          pdel_d("pdel", ncol, npack),
           exner_d("exner", ncol, npack),
           t_prev_d("t_prev", ncol, npack),
           q_prev_d("q_prev", ncol, npack),
@@ -333,9 +353,9 @@ void micro_p3_proc() {
   array_to_view(nccn_prescribed_in.myData, ncol, nlev, nccn_prescribed_d);
   array_to_view(ni_activated_in.myData, ncol, nlev, ni_activated_d);
   array_to_view(inv_qc_relvar_in.myData, ncol, nlev, inv_qc_relvar_d);
-  array_to_view(pres_in.myData, ncol, nlev, pres_d);
   array_to_view(dz_in.myData, ncol, nlev, dz_d);
-  array_to_view(dpres_in.myData, ncol, nlev, dpres_d);
+  array_to_view(pmid_in.myData, ncol, nlev, pmid_d);
+  array_to_view(pdel_in.myData, ncol, nlev, pdel_d);
   array_to_view(exner_in.myData, ncol, nlev, exner_d);
   array_to_view(t_prev_in.myData, ncol, nlev, t_prev_d);
   array_to_view(q_prev_in.myData, ncol, nlev, q_prev_d);
@@ -346,7 +366,7 @@ void micro_p3_proc() {
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, 
                                       ni_activated_d, inv_qc_relvar_d, 
                                       cld_frac_i_d, cld_frac_l_d, cld_frac_r_d, 
-                                      pres_d, dz_d, dpres_d,exner_d, 
+                                      pmid_d, dz_d, pdel_d, exner_d, 
                                       q_prev_d, t_prev_d};
 
   //----------------------------------------------------------------------------
@@ -397,9 +417,9 @@ void micro_p3_proc() {
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {nzm, ny, nx, ncrms}), KOKKOS_LAMBDA(int k, int j, int i, int icrm) {
   // Kokkos::parallel_for("col_location", ncol, KOKKOS_LAMBDA (const int& icol) {
      int icol = i+nx*(j+icrm*ny);
-     col_location_d(icol, 1) = z0.myData[icrm];
-     col_location_d(icol, 2) = longitude0.myData[icrm];
-     col_location_d(icol, 3) = latitude0.myData[icrm];
+     col_location_d(icol, 0) = z0.myData[icrm];
+     col_location_d(icol, 1) = longitude0.myData[icrm];
+     col_location_d(icol, 2) = latitude0.myData[icrm];
   });
 
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
@@ -443,13 +463,24 @@ void micro_p3_proc() {
   //         std::cout
   //         <<"  i:"<<i 
   //         <<"  k:"<<k 
+  //         <<"  pm:"<<pmid(k,j,i,icrm)
+  //         <<"  dp:"<<pdel(k,j,i,icrm)
+  //         // <<"  ps:"<<psfc_xy(j,i,icrm)
+  //         <<"  ps:"<<psfc(icrm)
+  //         // <<"  dz:"<<dz(icrm)
+  //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
+  //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
+  //         // <<"  qv:"<<qv_in(icol,ilev)
   //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
   //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
-  //         <<"  th:"<<th_in(icol,ilev)
-  //         <<"  qc:"<<qc_in(icol,ilev)
+  //         // <<"  th:"<<th_in(icol,ilev)
+  //         // <<"  qc:"<<qc_in(icol,ilev)
   //         // <<"  ta:"<<tabs(k,j,i,icrm)
   //         // <<"  ex:"<<exner_in(icol, ilev)
-  //         // <<"  pr:"<<pres(k,icrm)
+  //         // <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm)
+  //         // <<"  ni:"<<micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm)
+  //         // <<"  qc:"<<qc(k,j,i,icrm)
+  //         // <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
   //         <<std::endl;
   //       }
   //     }
