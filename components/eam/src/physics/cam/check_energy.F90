@@ -261,6 +261,8 @@ end subroutine check_energy_get_integrals
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
+    real(r8) :: te(state%ncol)       
+    real(r8) :: tw(state%ncol)
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
@@ -272,6 +274,7 @@ end subroutine check_energy_get_integrals
     lchnk = state%lchnk
     ncol  = state%ncol
 
+#if 0
 ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
     se = 0._r8
@@ -311,7 +314,6 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
 !!     state%te_ini(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
@@ -321,6 +323,18 @@ end subroutine check_energy_get_integrals
        state%te_cur(i) = state%te_ini(i)
        state%tw_cur(i) = state%tw_ini(i)
     end do
+#endif
+
+    call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                   ncol)
+
+    state%te_ini(:ncol) = te(:ncol)
+    state%tw_ini(:ncol) = tw(:ncol)
+
+    state%te_cur(:ncol) = state%te_ini(:ncol)
+    state%tw_cur(:ncol) = state%tw_ini(:ncol)
+
 
 ! zero cummulative boundary fluxes 
     tend%te_tnd(:ncol) = 0._r8
@@ -395,54 +409,6 @@ end subroutine check_energy_get_integrals
 
     lchnk = state%lchnk
     ncol  = state%ncol
-
-#if 0
-    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
-    ke = 0._r8
-    se = 0._r8
-    wv = 0._r8
-    wl = 0._r8
-    wi = 0._r8
-    wr = 0._r8
-    ws = 0._r8
-
-    do k = 1, pver
-       do i = 1, ncol
-          ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) +         state%t(i,k)*cpair*state%pdel(i,k)/gravit
-          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
-       end do
-    end do
-    do i = 1, ncol
-       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
-    end do
-
-    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (icldliq > 1  .and.  icldice > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,icldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,icldice)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    if (irain   > 1  .and.  isnow   > 1 ) then
-       do k = 1, pver
-          do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,irain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,isnow)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    ! Compute vertical integrals of frozen static energy and total water.
-    do i = 1, ncol
-!!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
-       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
-       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
-    end do
-#endif
 
     call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
                                    ke,se,wv,wl,wi,wr,ws,te,tw, &
