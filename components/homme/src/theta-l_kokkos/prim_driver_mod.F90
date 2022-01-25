@@ -10,6 +10,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
+  use physical_constants,   only : rearth
 
   implicit none
 
@@ -21,6 +22,9 @@ module prim_driver_mod
   public :: prim_init_state_views
   public :: prim_init_ref_states_views
   public :: prim_init_diags_views
+
+  logical, private :: compute_forcing_and_push_to_c
+  logical, private :: push_to_f
 
 contains
 
@@ -61,7 +65,7 @@ contains
     use iso_c_binding, only : c_loc, c_ptr, c_bool, C_NULL_CHAR
     use theta_f2c_mod, only : init_reference_element_c, init_simulation_params_c, &
                               init_time_level_c, init_hvcoord_c, init_elements_c
-    use time_mod,      only : TimeLevel_t
+    use time_mod,      only : TimeLevel_t, nsplit
     use hybvcoord_mod, only : hvcoord_t
     use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,   &
                               nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg,  &
@@ -104,7 +108,7 @@ contains
                                    transport_alg,                                                 &
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
                                    c_loc(test_name),                                              &
-                                   dt_remap_factor, dt_tracer_factor)
+                                   dt_remap_factor, dt_tracer_factor, rearth, nsplit)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -343,9 +347,10 @@ contains
 
   end subroutine prim_init_kokkos_functors
 
-  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord, nsplit_iteration)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
-    use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics
+    use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics, &
+                               dt_remap_factor, dt_tracer_factor
     use dimensions_mod, only : nelemd
     use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
@@ -355,7 +360,7 @@ contains
     use hybrid_mod,     only : hybrid_t
     use hybvcoord_mod,  only : hvcoord_t
     use kinds,          only : real_kind
-    use time_mod,       only : timelevel_t, nextOutputStep, nsplit
+    use time_mod,       only : timelevel_t, nextOutputStep, nsplit, TimeLevel_Qdp
     use control_mod,    only : statefreq
     use parallel_mod,   only : abortmp
     use perf_mod,       only : t_startf, t_stopf
@@ -375,7 +380,7 @@ contains
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
+    integer,              intent(in)    :: nsplit_iteration             !  = 1 .. nsplit
     !
     ! Locals
     !
@@ -385,6 +390,12 @@ contains
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
 
+    integer :: n0_qdp, np1_qdp
+    real(kind=real_kind) :: dt_remap, dt_q
+
+    if (nsplit_iteration < 1 .or. nsplit_iteration > nsplit) then
+      call abortmp ('nsplit_iteration out of range')
+    endif
     if (nets/=1 .or. nete/=nelemd) then
       call abortmp ('We don''t allow to call C routines from a horizontally threaded region')
     endif
@@ -401,16 +412,27 @@ contains
       compute_diagnostics = .false.
     endif
 
-#ifndef SCREAM
-    ! Scream already computes all forcing using the same pointers
-    ! stored in Hommexx, so the forcing is already up to date
-    call t_startf('push_to_cxx')
-    call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
-                           elem_derived_FPHI, elem_derived_FQ)
-    call t_stopf('push_to_cxx')
-#endif
+    call init_logic_for_push_to_c(nsplit_iteration)
 
-    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
+    dt_q = dt*dt_tracer_factor
+    if (dt_remap_factor == 0) then
+       dt_remap = dt
+    else
+       dt_remap = dt*dt_remap_factor
+    end if
+
+    call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
+
+    ! Test forcing is only for standalone Homme (and only for some tests/configurations)
+    if (compute_forcing_and_push_to_c) then
+      call compute_test_forcing_dummy(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
+      call t_startf('push_to_cxx')
+      call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
+                             elem_derived_FPHI, elem_derived_FQ)
+      call t_stopf('push_to_cxx')
+    endif
+
+    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c
@@ -418,7 +440,9 @@ contains
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+    call init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iteration)
+
+    if (push_to_f) then
       ! Set pointers to states
       elem_state_v_ptr         = c_loc(elem_state_v)
       elem_state_w_i_ptr       = c_loc(elem_state_w_i)
@@ -447,43 +471,126 @@ contains
   end subroutine prim_run_subcycle
 
 
-  subroutine setup_element_pointers (elem)
-    use element_state,  only : allocate_element_arrays, elem_state_v, elem_state_w_i, elem_state_vtheta_dp, &
-                               elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, elem_state_phis,       & 
-                               elem_state_Qdp, elem_state_Q, elem_derived_omega_p,                          &
-                               elem_accum_pener, elem_accum_kener, elem_accum_iener,                        &
-                               elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass
-    !
-    ! Inputs
-    !
-    type (element_t), intent(inout) :: elem(:)
-    !
-    ! Locals
-    !
-    integer :: ie
+!the next 2 routines have logic for push to/from F and for forcing routine
+!
+!STANDALONE HOMME there are 3 cases:
+!
+!performance:
+! (no forcing, no push to c) -> (subcycle) -> (no push to f)
+!
+!test without forcing (can be performant if output is only at the end):
+! (no forcing, no push to c) -> (subcycle) -> (push to f only for output/diagnostics)
+!
+!test with forcing (not performant):
+! (always forcing and push to c) -> (subcycle) -> (always push to f)
 
-    call allocate_element_arrays(nelemd)
+  subroutine init_logic_for_push_to_c(nsplit_iter)
 
-    do ie=1,nelemd
-      elem(ie)%state%v         => elem_state_v(:,:,:,:,:,ie)
-      elem(ie)%state%w_i       => elem_state_w_i(:,:,:,:,ie)
-      elem(ie)%state%vtheta_dp => elem_state_vtheta_dp(:,:,:,:,ie)
-      elem(ie)%state%phinh_i   => elem_state_phinh_i(:,:,:,:,ie)
-      elem(ie)%state%dp3d      => elem_state_dp3d(:,:,:,:,ie)
-      elem(ie)%state%ps_v      => elem_state_ps_v(:,:,:,ie)
-      elem(ie)%state%Q         => elem_state_Q(:,:,:,:,ie)
-      elem(ie)%state%Qdp       => elem_state_Qdp(:,:,:,:,:,ie)
-      elem(ie)%state%phis      => elem_state_phis(:,:,ie)
-      elem(ie)%derived%omega_p => elem_derived_omega_p(:,:,:,ie)
+    use control_mod, only: test_with_forcing
+    integer,              intent(in) :: nsplit_iter
 
-      elem(ie)%accum%KEner     => elem_accum_KEner    (:,:,:,ie)
-      elem(ie)%accum%PEner     => elem_accum_PEner    (:,:,:,ie)
-      elem(ie)%accum%IEner     => elem_accum_IEner    (:,:,:,ie)
-      elem(ie)%accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
-      elem(ie)%accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
-      elem(ie)%accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
+    compute_forcing_and_push_to_c = .false.
 
-    enddo
+    ! Scream already computes all forcing using the same pointers
+    ! stored in Hommexx, so the forcing is already up to date
+#if defined(HOMMEXX_BENCHMARK_NOFORCING) 
 
-  end subroutine setup_element_pointers
+#elif defined(SCREAM)
+
+#elif defined(CAM)
+    if (nsplit_iter == 1) then
+       compute_forcing_and_push_to_c = .true.
+    endif
+#else
+    if(test_with_forcing)then
+       compute_forcing_and_push_to_c = .true.
+    endif
+#endif
+
+  end subroutine init_logic_for_push_to_c
+
+
+  subroutine init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter)
+
+    use control_mod, only: test_with_forcing
+    use time_mod,    only : timelevel_t, nsplit
+
+    type (TimeLevel_t),   intent(in) :: tl
+    integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
+    logical,              intent(in) :: compute_diagnostics
+ 
+    logical                          :: time_for_homme_output
+
+    time_for_homme_output = &
+         (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics)
+
+#ifdef HOMMEXX_BENCHMARK_NOFORCING
+!standalone homme, only benchmarks
+    push_to_f = .false.
+
+#elif defined(SCREAM)
+!SCREAM run, do nothing
+
+#elif defined(CAM)
+!CAM run, push at the end of nsplit loop
+    if (nsplit_iter == nsplit) then
+       push_to_f = .true.
+    endif
+
+!CAM also needs some of homme output
+    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+    if ( time_for_homme_output ) then
+       push_to_f = .true.
+    endif
+
+#else     
+!standalone homme, not benchmarks
+!output
+    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then 
+    if ( time_for_homme_output ) then 
+       push_to_f = .true.
+    endif
+
+!push for standalone homme with forcing, test_with_forcing=false
+!for most standalone homme tests
+    if (test_with_forcing) then
+       push_to_f = .true.
+    endif
+
+#endif
+
+  end subroutine init_logic_for_push_to_f
+
+
+  subroutine compute_test_forcing_dummy(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use element_mod,      only : element_t
+#if !defined(CAM) && !defined(SCREAM)
+    use test_mod,       only : compute_test_forcing
+#endif
+    implicit none
+    type(element_t),     intent(inout) :: elem(:)                            ! element array
+    type(hybrid_t),      intent(in)    :: hybrid                             ! hybrid parallel structure
+    type(hvcoord_t),     intent(in)    :: hvcoord
+    real(kind=real_kind),intent(in)    :: dt
+    integer,             intent(in)    :: nets,nete,nt,ntQ
+    type(TimeLevel_t),   intent(in)    :: tl
+
+#if !defined(CAM) && !defined(SCREAM)
+    call compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
+#endif
+
+  end subroutine compute_test_forcing_dummy
+
+
+
+
+
+
+
+
+
+
 end module

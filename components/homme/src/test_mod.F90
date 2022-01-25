@@ -4,7 +4,7 @@
 
 module test_mod
 
-use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype, bubble_moist
+use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype, bubble_moist, test_with_forcing
 use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
@@ -55,6 +55,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
  
+!which ones are with forcing????
+
   ! init calls for any runtype
   select case(test_case)
     case('asp_baroclinic');
@@ -68,19 +70,19 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test1_2');
     case('dcmip2012_test1_3');
     case('dcmip2012_test2_0');
-    case('dcmip2012_test2_1');
-    case('dcmip2012_test2_2');
+    case('dcmip2012_test2_1'); test_with_forcing = .true. ;
+    case('dcmip2012_test2_2'); test_with_forcing = .true. ;
     case('dcmip2012_test3');
     case('dcmip2012_test4');
-    case('dcmip2016_test1');    call dcmip2016_init();
+    case('dcmip2016_test1');    call dcmip2016_init();  test_with_forcing = .true. ;
     case('dcmip2016_test1_pg1', 'dcmip2016_test1_pg2', 'dcmip2016_test1_pg3', 'dcmip2016_test1_pg4')
-       call dcmip2016_init();
-    case('dcmip2016_test2');    call dcmip2016_init();
-    case('dcmip2016_test3');    call dcmip2016_init();
-    case('mtest1');
-    case('mtest2');
-    case('mtest3');
-    case('held_suarez0');
+       call dcmip2016_init();  test_with_forcing = .true. ;
+    case('dcmip2016_test2');    call dcmip2016_init();  test_with_forcing = .true. ;
+    case('dcmip2016_test3');    call dcmip2016_init();  test_with_forcing = .true. ;
+    case('mtest1'); test_with_forcing = .true. ;
+    case('mtest2'); test_with_forcing = .true. ;
+    case('mtest3'); test_with_forcing = .true. ;
+    case('held_suarez0'); test_with_forcing = .true. ;
     case('jw_baroclinic');
     case('planar_hydro_gravity_wave');
     case('planar_nonhydro_gravity_wave');
@@ -88,14 +90,17 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_nonhydro_mtn_wave');
     case('planar_schar_mtn_wave');
     case('planar_rising_bubble');
-           if (bubble_moist) call dcmip2016_init();
+           if (bubble_moist) then 
+              call dcmip2016_init();
+              test_with_forcing = .true. ;
+           endif
     case('planar_density_current');
     case('planar_baroclinic_instab');
     case('planar_moist_rising_bubble');
     case('planar_moist_density_current');
-    case('planar_moist_baroclinic_instab');
-    case('planar_tropical_cyclone');
-    case('planar_supercell');
+    case('planar_moist_baroclinic_instab'); 
+    case('planar_tropical_cyclone'); 
+    case('planar_supercell'); 
     case default;               call abortmp('unrecognized test case')
   endselect
 

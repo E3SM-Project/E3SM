@@ -298,7 +298,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       // Fix w at surface:
       // Adjust w_i at the surface, since velocity has changed
       if (process_nh_vars) {
-
         Kokkos::single(Kokkos::PerThread(team),[&](){
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
@@ -323,24 +322,26 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   Kokkos::fence();
 
-  //sponge layer  
-  for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
+  //sponge layer 
+  if(m_data.nu_top > 0){ 
+    for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
 
-    //m_policy_first_laplace has ref states, so cannot be reused now
-    //laplace(fields) --> ttens, etc.
-    Kokkos::parallel_for(m_policy_nutop_laplace, *this);
-    Kokkos::fence();
+      //m_policy_first_laplace has ref states, so cannot be reused now
+      //laplace(fields) --> ttens, etc.
+      Kokkos::parallel_for(m_policy_nutop_laplace, *this);
+      Kokkos::fence();
 
-    //exchange is done on ttens, dptens, vtens, etc.
-    ///? do another timer or the same for all mpi in HV?
-    ///exchange on a subset of levels in future? 
-    assert (m_be->is_registration_completed());
-    GPTLstart("hvf-bexch");
-    m_be->exchange();
-    GPTLstop("hvf-bexch");
+      //exchange is done on ttens, dptens, vtens, etc.
+      ///? do another timer or the same for all mpi in HV?
+      ///exchange on a subset of levels in future? 
+      assert (m_be->is_registration_completed());
+      GPTLstart("hvf-bexch");
+      m_be->exchange();
+      GPTLstop("hvf-bexch");
 
-    Kokkos::parallel_for(m_policy_update_states2, *this);
-    Kokkos::fence();
+      Kokkos::parallel_for(m_policy_update_states2, *this);
+      Kokkos::fence();
+    }
   } //for for sponge layer
 } //run()
 

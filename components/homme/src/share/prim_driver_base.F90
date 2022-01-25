@@ -1570,7 +1570,7 @@ contains
   logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,ie,q
+  integer :: i,j,k,q
   real (kind=real_kind)  :: fq
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
@@ -1586,11 +1586,24 @@ contains
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
+#ifdef HOMMEXX_BFB_TESTING
+  ! BFB comparison with C++ requires to perform the reduction
+  ! of FQ over the whole column *before* adding to ps
+  real (kind=real_kind) :: sum_fq(np,np)
+  sum_fq = 0
+#endif
+
+  call t_startf("ApplyCAMForcing_tracers")
+
 #ifdef MODEL_THETA_L
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
+#ifdef SCREAM
+     adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
+#else
      adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+#endif
   endif
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
@@ -1603,7 +1616,6 @@ contains
 
   ! after calling this routine, ps_v may not be valid and should not be used
   elem%state%ps_v(:,:,np1)=0
-
 
 #ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
@@ -1623,6 +1635,7 @@ contains
 #endif
 
    if (adjustment) then 
+
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
          do j=1,np
@@ -1638,13 +1651,24 @@ contains
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
                           elem%state%Q(i,j,k,q))
                      ! force ps to conserve mass:  
+#ifdef HOMMEXX_BFB_TESTING
+                     sum_fq(i,j) = sum_fq(i,j) + fq
+#else
                      ps(i,j)=ps(i,j) + fq
+#endif
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
                   endif
                enddo
             end do
          end do
       end do
+#ifdef HOMMEXX_BFB_TESTING
+      do j=1,np
+        do i=1,np
+          ps(i,j) = ps(i,j) + sum_fq(i,j)
+        end do
+      end do
+#endif
    else ! end of adjustment
       ! apply forcing to Qdp
       elem%derived%FQps(:,:)=0
@@ -1737,6 +1761,8 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
+
+  call t_stopf("ApplyCAMForcing_tracers")
 
   end subroutine applyCAMforcing_tracers
   

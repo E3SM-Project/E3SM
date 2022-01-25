@@ -64,15 +64,16 @@ module VegetationType
      logical , pointer :: active        (:) => null() ! true=>do computations on this patch
 
      ! Fates relevant types
-     logical , pointer :: is_veg        (:) => null() ! This is an ACTIVE fates patch
-     logical , pointer :: is_bareground (:) => null() ! ?
-     real(r8), pointer :: wt_ed         (:) => null() ! TODO mv ? can this be removed
-     logical , pointer :: is_fates      (:) => null() ! true for patch vector space reserved
-                                                      ! for FATES.
-                                                      ! this is static and is true for all
-                                                      ! patches within fates jurisdiction
-                                                      ! including patches which are not currently
-                                                      ! associated with a FATES linked-list patch
+     logical , pointer :: is_veg            (:) => null() ! This is an ACTIVE fates patch
+     logical , pointer :: is_bareground     (:) => null() ! ?
+     real(r8), pointer :: wt_ed             (:) => null() ! TODO mv ? can this be removed
+     real(r8), pointer :: sp_pftorder_index (:) => null() ! index to map 'p' onto the order of FATES patches in SP mode.
+     logical , pointer :: is_fates          (:) => null() ! true for patch vector space reserved
+                                                          ! for FATES.
+                                                          ! this is static and is true for all
+                                                          ! patches within fates jurisdiction
+                                                          ! including patches which are not currently
+                                                          ! associated with a FATES linked-list patch
    contains
 
      procedure, public :: Init => veg_pp_init
@@ -119,6 +120,7 @@ contains
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
        allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan
+       allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = nan
     end if
 
 	end subroutine veg_pp_init
@@ -147,6 +149,7 @@ contains
        deallocate(this%is_veg)
        deallocate(this%is_bareground)
        deallocate(this%wt_ed)
+       deallocate(this%sp_pftorder_index)
     end if
 
   end subroutine veg_pp_clean

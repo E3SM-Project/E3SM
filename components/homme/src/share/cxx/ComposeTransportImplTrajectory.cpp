@@ -435,7 +435,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
     const int num_phys_lev = this->num_phys_lev;
     const auto m_sphere_cart = geo.m_sphere_cart;
     //todo get scale_factor into PhysicalConstants
-    const auto scale_factor = m_data.geometry_type == 1 ? 1 : PhysicalConstants::rearth;
+    const auto scale_factor = m_data.geometry_type == 1 ? 1 : geo.m_rearth;
     const auto m_dep_pts = m_data.dep_pts;
     const auto calc_departure_point = KOKKOS_LAMBDA (const MT& team) {
       KernelVariables kv(team, tu_ne);
@@ -446,7 +446,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
       const auto dep_pts = Homme::subview(m_dep_pts, ie);
       const auto f = [&] (const int i, const int j, const int k) {
         // dp = p1 - dt v/scale_factor
-        Scalar dp[3], r = 0;
+        Scalar dp[3];
         for (int d = 0; d < 3; ++d) {
           const auto vel_cart = (vec_sphere2cart(0,d,i,j)*vstar(0,i,j,k) +
                                  vec_sphere2cart(1,d,i,j)*vstar(1,i,j,k));

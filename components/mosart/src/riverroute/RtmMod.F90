@@ -1409,7 +1409,11 @@ contains
           call shr_sys_abort(subname//' ERROR gdc2glo values')
        endif
        rtmCTL%lonc(nr) = rtmCTL%rlon(i)
-       rtmCTL%latc(nr) = rtmCTL%rlat(j)
+       if (isgrid2d) then 
+          rtmCTL%latc(nr) = rtmCTL%rlat(j)
+       else 
+          rtmCTL%latc(nr) = rtmCTL%rlat(i)
+       endif
 
        rtmCTL%outletg(nr) = idxocn(n)
        rtmCTL%area(nr) = area_global(n)

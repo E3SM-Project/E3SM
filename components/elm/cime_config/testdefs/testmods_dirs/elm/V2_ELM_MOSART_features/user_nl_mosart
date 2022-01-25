@@ -1,0 +1,8 @@
+paraFile = '$DIN_LOC_ROOT/rof/mosart/global_reservoir_halfdegree_c20200917.nc'
+frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_20210422.nc'
+wrmflag = .true.
+inundflag = .true.
+rtmhist_mfilt=1
+rtmhist_nhtfrq=-24
+
+

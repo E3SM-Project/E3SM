@@ -60,7 +60,7 @@ contains
                             dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr, &
                             ps_ptr, eta_dot_dpdn_ptr, qdp_ptr) bind(c)
     use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
-    use control_mod,            only: vert_remap_q_alg, rsplit
+    use control_mod,            only: vert_remap_q_alg, vert_remap_u_alg, rsplit
     use dimensions_mod,         only: nelemd, nlev, nlevp, np, qsize, qsize_d
     use thetal_test_interface,  only: hvcoord
     use geometry_interface_mod, only: hybrid
@@ -111,6 +111,7 @@ contains
     ! set control variables
     rsplit = rsplit_in
     vert_remap_q_alg = vr_alg
+    vert_remap_u_alg = vr_alg
     qsize = qsize_in
 
     ! Call f90 vertical remap

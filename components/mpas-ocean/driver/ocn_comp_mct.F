@@ -2128,6 +2128,7 @@ contains
               if ( iceFluxDOCField % isActive ) then
                  iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
                  iceFluxDOC(2,i) = x2o_o % rAttr(index_x2o_Fioi_doc2, n)
+                 iceFluxDOC(3,i) = x2o_o % rAttr(index_x2o_Fioi_doc3, n)
               endif
               if ( iceFluxDONField % isActive ) then
                  iceFluxDON(i) = x2o_o % rAttr(index_x2o_Fioi_don1, n)
@@ -2496,6 +2497,7 @@ contains
                                                avgOceanSurfaceDMS, &
                                                avgOceanSurfaceDMSP, &
                                                avgOceanSurfaceDOCr, &
+                                               avgOceanSurfaceDOCSemiLabile, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
 
@@ -2579,6 +2581,7 @@ contains
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+        call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
      endif
@@ -2665,6 +2668,10 @@ contains
           o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
           o2x_o % rAttr(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
           o2x_o % rAttr(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_don1,   n) = 0.0_RKIND
           o2x_o % rAttr(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
           o2x_o % rAttr(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
           o2x_o % rAttr(index_o2x_So_nh4,    n) = max(0.0_RKIND,avgOceanSurfaceNH4(i))
@@ -2679,7 +2686,8 @@ contains
        if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
           o2x_o % rAttr(index_o2x_So_doc1, n) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
           o2x_o % rAttr(index_o2x_So_doc2, n) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
-          o2x_o % rAttr(index_o2x_So_don1, n) = max(0.0_RKIND,avgOceanSurfaceDON(i))
+          o2x_o % rAttr(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
+          o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
        endif
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)

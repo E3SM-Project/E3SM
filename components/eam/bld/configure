@@ -785,7 +785,7 @@ if (defined $opts{'dyn'}) {
             $cfg_ref->set('dyn_target', 'preqx');
         }
         if (substr($opts{'dyn_target'},0,5) eq 'theta') {
-            # theta_* uses 'theta-l' namelist defaults
+            # theta-l (f code) and theta-l_kokkos (cxx code) use 'theta-l' namelist defaults
             $cfg_ref->set('dyn_target', 'theta-l');
         }
         print  "SE dycore target options:\n";
@@ -2652,6 +2652,14 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/preqx/share\n";
         print $fh "$camsrcdir/homme/src/share/compose\n";
       }
+      elsif ($opts{'dyn_target'} eq 'theta-l_kokkos') {
+        print $fh "$camsrcdir/homme/src/share/cxx\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/theta-l_kokkos\n";
+        print $fh "$camsrcdir/homme/src/theta-l_kokkos/cxx\n";
+        print $fh "$camsrcdir/homme/src/theta-l/share\n";
+        print $fh "$camsrcdir/homme/src/share/compose\n";
+      }
     }
 
     # Parallelization utilies
@@ -2762,6 +2770,10 @@ sub write_cppdefs
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
         print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+    }
+
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l_kokkos") {
+        print $fh " -DKOKKOS_TARGET -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE -DCOMPOSE_PORT"
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
