@@ -27,8 +27,6 @@ void post_timeloop() {
   auto &crm_input_ul_esmt       = :: crm_input_ul_esmt;
   auto &crm_input_vl_esmt       = :: crm_input_vl_esmt;
 #endif
-  auto &colprec                 = :: colprec;
-  auto &colprecs                = :: colprecs;
   auto &qpl                     = :: qpl;
   auto &qpi                     = :: qpi;
   auto &crm_input_pdel          = :: crm_input_pdel;
@@ -58,8 +56,6 @@ void post_timeloop() {
   auto &crm_output_v_tend_esmt  = :: crm_output_v_tend_esmt;
 #endif
   auto &icrm_run_time           = :: icrm_run_time;
-  auto &crm_output_prectend     = :: crm_output_prectend;
-  auto &crm_output_precstend    = :: crm_output_precstend;
   auto &w                       = :: w;
   auto &crm_state_u_wind        = :: crm_state_u_wind;
   auto &crm_state_v_wind        = :: crm_state_v_wind;
@@ -227,12 +223,6 @@ void post_timeloop() {
     uln  (k,icrm) = 0.0;
     vln  (k,icrm) = 0.0;
   });
-  
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    colprec (icrm)=0;
-    colprecs(icrm)=0;
-  });
 
 #ifdef MMF_ESMT
  // do k = 1,ptop-1
@@ -257,12 +247,6 @@ void post_timeloop() {
   //      for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
     int l = plev-(k+1);
-
-    real tmp = (qpl(k,j,i,icrm)+qpi(k,j,i,icrm))*crm_input_pdel(l,icrm);
-    yakl::atomicAdd(colprec (icrm) , tmp);
-
-    tmp = qpi(k,j,i,icrm)*crm_input_pdel(l,icrm);
-    yakl::atomicAdd(colprecs(icrm) , tmp);
     yakl::atomicAdd(tln(l,icrm) , tabs(k,j,i,icrm));
     yakl::atomicAdd(qln(l,icrm) , qv(k,j,i,icrm));
     yakl::atomicAdd(qccln(l,icrm) , qcl(k,j,i,icrm));
@@ -320,12 +304,6 @@ void post_timeloop() {
         crm_output_q_vt_tend(k,icrm) = 0.0;
       }
     }
-  });
-
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    crm_output_prectend (icrm) = (colprec (icrm)-crm_output_prectend (icrm))/ggr*factor_xy * icrm_run_time;
-    crm_output_precstend(icrm) = (colprecs(icrm)-crm_output_precstend(icrm))/ggr*factor_xy * icrm_run_time;
   });
 
   // don't use CRM tendencies from two crm top levels

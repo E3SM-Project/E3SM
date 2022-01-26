@@ -1246,7 +1246,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   ! else
                   !    ???
                   ! end if
-                  crm_input%nccn          (icrm,k) = 1.0e6
+                  crm_input%nccn          (icrm,k) = 1e3
                   crm_input%nc_nuceat_tend(icrm,k) = 1.0 ! npccn       (i,l)
                   crm_input%ni_activated  (icrm,k) = 1.0 ! ni_activated(i,l)
                end do
@@ -1411,7 +1411,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
                crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
                crm_rad%nc, crm_rad%ni, &
-               crm_output%subcycle_factor, crm_output%prectend, crm_output%precstend, &
+               crm_output%subcycle_factor, &
                crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
                crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
                crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, &

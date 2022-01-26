@@ -73,8 +73,6 @@ void pre_timeloop() {
   auto &t_prev                    = :: t_prev;
   auto &q_prev                    = :: q_prev;
   auto &qn                        = :: qn;
-  auto &colprec                   = :: colprec;
-  auto &colprecs                  = :: colprecs;
   auto &u0                        = :: u0;
   auto &v0                        = :: v0;
   auto &t0                        = :: t0;
@@ -118,8 +116,6 @@ void pre_timeloop() {
   auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
   auto &rhow                       = :: rhow;
   auto &qv                         = :: qv;
-  auto &crm_output_prectend        = :: crm_output_prectend;
-  auto &crm_output_precstend       = :: crm_output_precstend;
   auto &crm_input_ul               = :: crm_input_ul;
   auto &crm_input_vl               = :: crm_input_vl;
 #ifdef MMF_ESMT
@@ -373,11 +369,6 @@ void pre_timeloop() {
   if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_init(); }
   
   sgs_init();
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    colprec (icrm)=0.0;
-    colprecs(icrm)=0.0;
-  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
@@ -402,11 +393,6 @@ void pre_timeloop() {
     t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm)+gamaz(k,icrm)-fac_cond*qcl(k,j,i,icrm)-fac_sub*qci(k,j,i,icrm) -
                                                                  fac_cond*qpl(k,j,i,icrm)-fac_sub*qpi(k,j,i,icrm);
 
-    real tmp = (qpl(k,j,i,icrm)+qpi(k,j,i,icrm))*crm_input_pdel(plev-(k+1),icrm);
-    yakl::atomicAdd(colprec(icrm) , tmp);
-
-    tmp = qpi(k,j,i,icrm)*crm_input_pdel(plev-(k+1),icrm);
-    yakl::atomicAdd(colprecs(icrm) , tmp);
     yakl::atomicAdd(u0(k,icrm) , u(k,j+offy_u,i+offx_u,icrm));
     yakl::atomicAdd(v0(k,icrm) , v(k,j+offy_v,i+offx_v,icrm));
     yakl::atomicAdd(t0(k,icrm) , t(k,j+offy_s,i+offx_s,icrm));
@@ -475,8 +461,6 @@ void pre_timeloop() {
     z0_est(z(0,icrm),bflx(icrm),wnd(icrm),ustar(icrm),z0(icrm));
     z0(icrm) = max(0.00001,min(1.0,z0(icrm)));
     crm_output_subcycle_factor(icrm) = 0.0;
-    crm_output_prectend (icrm)=colprec (icrm);
-    crm_output_precstend(icrm)=colprecs(icrm);
   });
 
 //---------------------------------------------------
