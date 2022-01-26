@@ -131,11 +131,11 @@ if (CUDA_BUILD)
 endif()
 
 ### Scream default configuration options
-set(DEFAULT_MAX_RANKS 4)
-set(DEFAULT_MAX_THREADS 16)
+set(DEFAULT_MAX_RANKS 1)
+set(DEFAULT_MAX_THREADS 1)
 set(DEFAULT_MIMIC_GPU FALSE)
 set(DEFAULT_FPE FALSE)
-set(DEFAULT_PACK_SIZE 16)
+set(DEFAULT_PACK_SIZE 1)
 set(DEFAULT_POSSIBLY_NO_PACK FALSE)
 if (CUDA_BUILD)
   # On the GPU, the pack size must be 1
