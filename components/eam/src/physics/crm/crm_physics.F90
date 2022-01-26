@@ -1246,7 +1246,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   ! else
                   !    ???
                   ! end if
-                  crm_input%nccn          (icrm,k) = 1.0
+                  crm_input%nccn          (icrm,k) = 1.0e6
                   crm_input%nc_nuceat_tend(icrm,k) = 1.0 ! npccn       (i,l)
                   crm_input%ni_activated  (icrm,k) = 1.0 ! ni_activated(i,l)
                end do

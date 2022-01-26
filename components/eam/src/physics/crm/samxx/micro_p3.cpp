@@ -141,7 +141,7 @@ void micro_p3_proc() {
   auto &qci                = :: qci;
   auto &qpl                = :: qpl;
   auto &qpi                = :: qpi;
-  auto &rho                = :: rho;
+  // auto &rho                = :: rho;
   auto &dt                 = :: dt;
   auto &pres               = :: pres;
   auto &p                  = :: p;
@@ -155,7 +155,7 @@ void micro_p3_proc() {
   auto &latitude0          = :: latitude0;
   auto &z0                 = :: z0;
   auto &nc_nuceat_tend     = :: nc_nuceat_tend;
-  // auto &nccn_prescribed    = :: nccn_prescribed;
+  auto &nccn               = :: nccn;
   auto &ni_activated       = :: ni_activated;
   // auto &relvar             = :: relvar;
   auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
@@ -206,7 +206,7 @@ void micro_p3_proc() {
   real2d th_in("th",ncol, nlev);
 
   real2d nc_nuceat_tend_in("nuceat",ncol, nlev);
-  real2d nccn_prescribed_in("nccn_prescribed",ncol, nlev);
+  real2d nccn_in("nccn",ncol, nlev);
   real2d ni_activated_in("ni_act",ncol, nlev);
   real2d inv_qc_relvar_in("inv_qc",ncol, nlev);
   real2d cld_frac_i_in("cld_frac_i",ncol, nlev);
@@ -318,7 +318,7 @@ void micro_p3_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
     int ilev = k;
-    nccn_prescribed_in(icol,ilev) = 0.; //nccn_prescribed(k,icrm)*0.0; // TODO: we zero out the nccn_prescribed because of the missing of model
+    nccn_in(icol,ilev)            = nccn(k,icrm);
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
     inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
@@ -336,7 +336,7 @@ void micro_p3_proc() {
                      cld_frac_i_in, cld_frac_l_in, cld_frac_r_in, cldm_in);
 
   view_2d nc_nuceat_tend_d("nc_nuceat_tend", ncol, npack),
-          nccn_prescribed_d("nccn_prescribed", ncol, npack),
+          nccn_d("nccn", ncol, npack),
           ni_activated_d("ni_activated", ncol, npack),
           inv_qc_relvar_d("inv_qc_relvar", ncol, npack),
           dz_d("dz", ncol, npack),
@@ -350,7 +350,7 @@ void micro_p3_proc() {
           cld_frac_r_d("cld_frac_r", ncol, npack);
 
   array_to_view(nc_nuceat_tend_in.myData, ncol, nlev, nc_nuceat_tend_d);
-  array_to_view(nccn_prescribed_in.myData, ncol, nlev, nccn_prescribed_d);
+  array_to_view(nccn_in.myData, ncol, nlev, nccn_d);
   array_to_view(ni_activated_in.myData, ncol, nlev, ni_activated_d);
   array_to_view(inv_qc_relvar_in.myData, ncol, nlev, inv_qc_relvar_d);
   array_to_view(dz_in.myData, ncol, nlev, dz_d);
@@ -363,7 +363,7 @@ void micro_p3_proc() {
   array_to_view(cld_frac_l_in.myData, ncol, nlev, cld_frac_l_d);
   array_to_view(cld_frac_r_in.myData, ncol, nlev, cld_frac_r_d);
 
-  P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, 
+  P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_d, 
                                       ni_activated_d, inv_qc_relvar_d, 
                                       cld_frac_i_d, cld_frac_l_d, cld_frac_r_d, 
                                       pmid_d, dz_d, pdel_d, exner_d, 
@@ -451,8 +451,8 @@ void micro_p3_proc() {
   std::cout << "WHDEBUG - before p3_main - nstep:" << nstep << std::endl;
 
   // for (int k=0; k<nzm; k++) {
-  //   for (int j=0; j<crm_ny_rad; j++) {
-  //     for (int i=0; i<crm_nx_rad; i++) {
+  //   for (int j=0; j<crm_ny; j++) {
+  //     for (int i=0; i<crm_nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   //         // int i    = icol%nx;
   //         // int j    = (icol/nx)%ny;
@@ -463,10 +463,9 @@ void micro_p3_proc() {
   //         std::cout
   //         <<"  i:"<<i 
   //         <<"  k:"<<k 
-  //         <<"  pm:"<<pmid(k,j,i,icrm)
-  //         <<"  dp:"<<pdel(k,j,i,icrm)
-  //         // <<"  ps:"<<psfc_xy(j,i,icrm)
-  //         <<"  ps:"<<psfc(icrm)
+  //         // <<"  pm:"<<pmid(k,j,i,icrm)
+  //         // <<"  dp:"<<pdel(k,j,i,icrm)
+  //         // <<"  ps:"<<psfc(icrm)
   //         // <<"  dz:"<<dz(icrm)
   //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
   //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
@@ -479,8 +478,8 @@ void micro_p3_proc() {
   //         // <<"  ex:"<<exner_in(icol, ilev)
   //         // <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm)
   //         // <<"  ni:"<<micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm)
-  //         // <<"  qc:"<<qc(k,j,i,icrm)
-  //         // <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
+  //         <<"  qc:"<<qc(k,j,i,icrm)
+  //         <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
   //         <<std::endl;
   //       }
   //     }
