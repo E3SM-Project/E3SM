@@ -28,7 +28,6 @@
     <default_value></default_value>
     <values modifier='additive'>
       <value compset="_SCREAM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 35</value>
-      <value compset="-AQP">SCREAM_AQUAPLANET</value>
     </values>
     <group>build_component_scream</group>
     <file>env_build.xml</file>
