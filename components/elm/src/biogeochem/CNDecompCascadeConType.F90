@@ -18,7 +18,7 @@ module CNDecompCascadeConType
   public :: init_decomp_cascade_constants
   !
   type, public :: decomp_cascade_type
-     !-- properties of each pathway along decomposition cascade 
+     !-- properties of each pathway along decomposition cascade
      character(len=8)  , pointer :: cascade_step_name(:)               ! name of transition
      integer           , pointer :: cascade_donor_pool(:)              ! which pool is C taken from for a given decomposition step
      integer           , pointer :: cascade_receiver_pool(:)           ! which pool is C added to for a given decomposition step
@@ -44,6 +44,8 @@ module CNDecompCascadeConType
   end type decomp_cascade_type
 
   type(decomp_cascade_type), public :: decomp_cascade_con
+  !$acc declare create(decomp_cascade_con)
+
   !------------------------------------------------------------------------
 
 contains
@@ -55,7 +57,7 @@ contains
     ! Initialize decomposition cascade state
     !------------------------------------------------------------------------
 
-    !-- properties of each pathway along decomposition cascade 
+    !-- properties of each pathway along decomposition cascade
     allocate(decomp_cascade_con%cascade_step_name(1:ndecomp_cascade_transitions))
     allocate(decomp_cascade_con%cascade_donor_pool(1:ndecomp_cascade_transitions))
     allocate(decomp_cascade_con%cascade_receiver_pool(1:ndecomp_cascade_transitions))
@@ -79,7 +81,7 @@ contains
     allocate(decomp_cascade_con%spinup_factor(0:ndecomp_pools))
     allocate(decomp_cascade_con%decomp_k_pools(0:ndecomp_pools))
 
-    !-- properties of each pathway along decomposition cascade 
+    !-- properties of each pathway along decomposition cascade
     decomp_cascade_con%cascade_step_name(1:ndecomp_cascade_transitions) = ''
     decomp_cascade_con%cascade_donor_pool(1:ndecomp_cascade_transitions) = 0
     decomp_cascade_con%cascade_receiver_pool(1:ndecomp_cascade_transitions) = 0

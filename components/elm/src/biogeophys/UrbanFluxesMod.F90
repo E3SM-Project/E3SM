@@ -56,7 +56,7 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas

@@ -68,7 +68,7 @@ contains
     ! Reference:  Polynomial approximations from:
     !             Piotr J. Flatau, et al.,1992:  Polynomial fits to saturation
     !             vapor pressure.  Journal of Applied Meteorology, 31, 1507-1513.
-    !
+    !$acc routine seq 
     ! !USES:
     use shr_kind_mod , only: r8 => shr_kind_r8
     use shr_const_mod, only: SHR_CONST_TKFRZ

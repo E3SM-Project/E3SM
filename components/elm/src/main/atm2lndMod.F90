@@ -45,13 +45,13 @@ contains
     !
     ! Downscaling is done over columns defined by filter_do_smb_c. But we also do direct copies
     ! of gridcell-level forcings into column-level forcings over all other active columns.
-    !
+    !$ac routine seq 
     ! !USES:
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold
     use landunit_varcon , only : istice_mec 
     use elm_varctl      , only : glcmec_downscale_rain_snow_convert
-    use domainMod       , only : ldomain
+    !use domainMod       , only : ldomain
     use QsatMod         , only : Qsat
     !
     ! !ARGUMENTS:
@@ -120,7 +120,7 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-         hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
+         hsurf_g = 0 !ldomain%topo(g)                       ! gridcell sfc elevation
          hsurf_c = col_pp%glc_topo(c)                       ! column sfc elevation
          tbot_g  = forc_t_g(g)                           ! atm sfc temp
          thbot_g = forc_th_g(g)                          ! atm sfc pot temp
@@ -182,7 +182,7 @@ contains
 
       call downscale_longwave(bounds, num_do_smb_c, filter_do_smb_c, atm2lnd_vars)
 
-      call check_downscale_consistency(bounds, atm2lnd_vars)
+      !call check_downscale_consistency(bounds, atm2lnd_vars)
 
     end associate
 
@@ -194,9 +194,9 @@ contains
     ! !DESCRIPTION:
     ! Downscale longwave radiation from gridcell to column
     ! Must be done AFTER temperature downscaling
-    !
+    !$acc routine seq 
     ! !USES:
-    use domainMod       , only : ldomain
+    !use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec 
     use elm_varcon      , only : lapse_glcmec
     use elm_varctl      , only : glcmec_downscale_longwave
@@ -254,7 +254,7 @@ contains
             l = col_pp%landunit(c)
             g = col_pp%gridcell(c)
 
-            hsurf_g = ldomain%topo(g)
+            hsurf_g = 0 !ldomain%topo(g)
             hsurf_c = col_pp%glc_topo(c)
 
             ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz
@@ -295,7 +295,7 @@ contains
 
 
          ! Make sure that, after normalization, the grid cell mean is conserved
-
+#ifndef _OPENACC 
          do g = bounds%begg, bounds%endg
             if (sum_wts_g(g) > 0._r8) then
                if (abs((newsum_lwrad_g(g) / sum_wts_g(g)) - forc_lwrad_g(g)) > 1.e-8_r8) then
@@ -306,7 +306,7 @@ contains
                end if
             end if
          end do
-
+#endif 
       end if    ! glcmec_downscale_longwave
 
     end associate
@@ -344,18 +344,13 @@ contains
     !              forc_lwrad_c(c) = forc_lwrad_c(c) * lwrad_norm_g(g)
     !   where lwrad_norm_g is the array of norms computed by this routine
 
-    !
+    !$acc routine seq 
     ! !ARGUMENTS:
     real(r8), intent(in)  :: orig_field(:)  ! the original field, at the grid cell level
     real(r8), intent(in)  :: sum_field(:)   ! the new weighted sum across columns (dimensioned by grid cell)
     real(r8), intent(in)  :: sum_wts(:)     ! sum of the weights used to create sum_field (dimensioned by grid cell)
     real(r8), intent(out) :: norms(:)       ! computed normalization factors
     !-----------------------------------------------------------------------
-
-    SHR_ASSERT((size(orig_field) == size(norms)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(sum_field) == size(norms)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT((size(sum_wts) == size(norms)), errMsg(__FILE__, __LINE__))
-
     where (sum_wts == 0._r8)
        ! Avoid divide by zero; if sum_wts is 0, then the normalization doesn't matter,
        ! because the adjusted values won't affect the grid cell mean.

@@ -2,7 +2,7 @@ module LakeCon
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Module containing constants and parameters for the Lake code 
+  ! Module containing constants and parameters for the Lake code
   ! (CLM4-LISSS, documented in Subin et al. 2011, JAMES)
   ! Also contains time constant variables for Lake code
   ! Created by Zack Subin, 2011
@@ -22,18 +22,18 @@ module LakeCon
   !-----------------------------------------------------------------------
 
   !------------------------------------------------------------------
-  ! Lake Model non-tuneable constants 
+  ! Lake Model non-tuneable constants
   !------------------------------------------------------------------
 
   ! temperature of maximum water density (K)
   ! This is from Hostetler and Bartlein (1990); more updated sources suggest 277.13 K.
-  real(r8), parameter :: tdmax = 277._r8   
+  real(r8), parameter :: tdmax = 277._r8
 
   !------------------------------------------------------------------
-  ! Lake Model tuneable constants 
+  ! Lake Model tuneable constants
   !------------------------------------------------------------------
 
-  ! lake emissivity. This is used for both frozen and unfrozen lakes. 
+  ! lake emissivity. This is used for both frozen and unfrozen lakes.
   ! This is pulled in from CLM4 and the reference is unclear.
   real(r8), parameter :: emg_lake = 0.97_r8
 
@@ -41,15 +41,15 @@ module LakeCon
   ! absorbed in ~1 m of water (the surface layer za_lake).
   ! This is roughly the fraction over 700 nm but may depend on the details
   ! of atmospheric radiative transfer. As long as NIR = 700 nm and up, this can be zero.
-  real(r8) :: betavis = 0.0_r8            
+  real(r8) :: betavis = 0.0_r8
 
   ! Momentum Roughness length over frozen lakes without snow  (m)
   ! Typical value found in the literature, and consistent with Mironov expressions.
   ! See e.g. Morris EM 1989, Andreas EL 1987, Guest & Davidson 1991 (as cited in Vavrus 1996)
-  real(r8), parameter :: z0frzlake = 0.001_r8  
+  real(r8), parameter :: z0frzlake = 0.001_r8
 
   ! Base of surface light absorption layer for lakes (m)
-  real(r8), parameter :: za_lake = 0.6_r8           
+  real(r8), parameter :: za_lake = 0.6_r8
 
   ! For calculating prognostic roughness length
   real(r8), parameter :: cur0    = 0.01_r8  ! min. Charnock parameter
@@ -94,7 +94,7 @@ module LakeCon
   ! true => use old fcrit & minz0 as per Subin et al 2011 form
   ! See initLakeMod for details. Difference is very small for
   ! small lakes and negligible for large lakes. Currently hardwired off.
-  logical,  public :: lake_use_old_fcrit_minz0 = .false. 
+  logical,  public :: lake_use_old_fcrit_minz0 = .false.
 
   ! used in LakeTemperature
   ! Increase mixing by a large factor for deep lakes
@@ -102,10 +102,10 @@ module LakeCon
   ! See Subin et al 2011 (JAMES) for details
 
   ! (m) minimum lake depth to invoke deepmixing
-  real(r8), public :: deepmixing_depthcrit = 25._r8     
+  real(r8), public :: deepmixing_depthcrit = 25._r8
 
   ! factor to increase mixing by
-  real(r8), public :: deepmixing_mixfact   = 10._r8     
+  real(r8), public :: deepmixing_mixfact   = 10._r8
 
   ! true => Suppress enhanced diffusion. Small differences.
   ! Currently hardwired .false.
@@ -113,19 +113,36 @@ module LakeCon
   ! Enhanced diffusion is intended for under ice and at large depths.
   ! It is a much smaller change on its own than the "deepmixing"
   ! above, but it increases the effect of deepmixing under ice and for large depths.
-  logical,  public :: lake_no_ed = .false.              
+  logical,  public :: lake_no_ed = .false.
 
   ! puddling (not extensively tested and currently hardwired off)
   ! used in LakeTemperature and SurfaceAlbedo
 
   ! true => suppress convection when greater than minimum amount
   ! of ice is present. This also effectively sets lake_no_melt_icealb.
-  logical,  public :: lakepuddling = .false.            
+  logical,  public :: lakepuddling = .false.
 
   ! (m) minimum amount of total ice nominal thickness before
   ! convection is suppressed
-  real(r8), public :: lake_puddle_thick = 0.2_r8        
+  real(r8), public :: lake_puddle_thick = 0.2_r8
   !-----------------------------------------------------------------------
+  !$acc declare create(betavis)
+  !$acc declare copyin(z0frzlake)
+  !$acc declare copyin(za_lake)
+  !$acc declare copyin(cur0)
+  !$acc declare copyin(cus )
+  !$acc declare copyin(curm)
+  !$acc declare create(fcrit     )
+  !$acc declare create(minz0lake )
+  !$acc declare copyin(n2min)
+  !$acc declare copyin(lsadz)
+  !$acc declare create(pudz)
+  !$acc declare create(depthcrit)
+  !$acc declare create(mixfact)
+  !$acc declare copyin(lake_use_old_fcrit_minz0)
+  !$acc declare create(lakepuddling)
+  !$acc declare copyin(lake_puddle_thick)
+  !$acc declare create(lake_no_ed)
 
 contains
 
@@ -133,7 +150,7 @@ contains
   subroutine LakeConInit()
     !
     ! !DESCRIPTION:
-    ! Initialize time invariant variables for S Lake code 
+    ! Initialize time invariant variables for S Lake code
     !------------------------------------------------------------------------
 
     if (masterproc) write (iulog,*) 'Attempting to initialize time invariant variables for lakes'
@@ -142,18 +159,18 @@ contains
     if (lake_use_old_fcrit_minz0) then
        ! critical dimensionless fetch for Charnock parameter. From Vickers & Mahrt 1997
        ! but converted to use u instead of u* (Form used in Subin et al. 2011)
-       fcrit   = 22._r8 
+       fcrit   = 22._r8
 
        ! (m) Minimum allowed roughness length for unfrozen lakes.
        ! (Used in Subin et al. 2011)
-       minz0lake = 1.e-5_r8        
+       minz0lake = 1.e-5_r8
     else
        ! Vickers & Mahrt 1997
-       fcrit   = 100._r8  
+       fcrit   = 100._r8
 
        ! (m) Minimum allowed roughness length for unfrozen lakes.
        ! Now set low so it is only to avoid floating point exceptions.
-       minz0lake = 1.e-10_r8       
+       minz0lake = 1.e-10_r8
     end if
 
     if (lakepuddling) then
@@ -161,15 +178,15 @@ contains
        ! This option has not been extensively tested.
        ! This option turns on lake_no_melt_icealb, as the decrease in albedo will be based
        ! on whether there is water over nice, not purely a function of ice top temperature.
-       pudz = lake_puddle_thick    
+       pudz = lake_puddle_thick
     end if
 
     ! (m) Depth beneath which to increase mixing. See discussion in Subin et al. 2011
-    depthcrit = deepmixing_depthcrit 
+    depthcrit = deepmixing_depthcrit
 
     ! Mixing increase factor. ! Defaults are 25 m, increase by 10.
     ! Note some other namelists will be used directly in lake physics during model integration.
-    mixfact = deepmixing_mixfact 
+    mixfact = deepmixing_mixfact
 
     if (masterproc) write (iulog,*) 'Successfully initialized time invariant variables for lakes'
 

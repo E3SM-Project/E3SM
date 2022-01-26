@@ -68,7 +68,7 @@ contains
           if (c_template /= ispval) then
              call copy_state(c, c_template, soilhydrology_vars)
           else
-             write(iulog,*)' WARNING: No template column found to initialize newly-active column'
+             print * ,' WARNING: No template column found to initialize newly-active column'
           end if
        end if
     end do
@@ -109,17 +109,17 @@ contains
     case(istcrop)
        c_template = initial_template_col_crop(bounds, c_new,cactive_prior(bounds%begc:bounds%endc) )
     case(istice)
-       write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier column not yet implemented'
+      ! write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier column not yet implemented'
     case(istice_mec)
-       write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier mec column not yet implemented'
+       !write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier mec column not yet implemented'
     case(istdlak)
-       write(iulog,*) ' ERROR: Ability to initialize a newly-active lake column not yet implemented'
+       !write(iulog,*) ' ERROR: Ability to initialize a newly-active lake column not yet implemented'
     case(istwet)
-       write(iulog,*) ' ERROR: Ability to initialize a newly-active wetland column not yet implemented'
-    case(isturb_MIN:isturb_MAX)
-       write(iulog,*)' ERROR: Ability to initialize a newly-active urban column not yet implemented'
+       !write(iulog,*) ' ERROR: Ability to initialize a newly-active wetland column not yet implemented'
+    !case(isturb_MIN:isturb_MAX)
+       !write(iulog,*)' ERROR: Ability to initialize a newly-active urban column not yet implemented'
     case default
-       write(iulog,*) ' ERROR: Unknown landunit type: ', ltype
+       !write(iulog,*) ' ERROR: Unknown landunit type: ', ltype
     end select
 
   end function initial_template_col_dispatcher
@@ -145,13 +145,14 @@ contains
     !
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
-
+#ifndef _OPENACC
     if (col_pp%wtgcell(c_new) > 0._r8) then
 
        write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
        write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
        call endrun()
     end if
+#endif 
 
     c_template = ispval
 

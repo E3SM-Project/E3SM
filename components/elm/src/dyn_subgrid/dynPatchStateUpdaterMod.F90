@@ -47,7 +47,7 @@ module dynPatchStateUpdaterMod
   ! based on pft type.
   public :: update_patch_state_partition_flux_by_type
 
-  type :: patch_state_updater_type
+  type, public :: patch_state_updater_type
 
      real(r8), pointer :: pwtgcell_old(:) => null() ! old patch weights on the gridcell
      real(r8), pointer :: pwtgcell_new(:) => null()! new patch weights on the gridcell
@@ -67,8 +67,8 @@ module dynPatchStateUpdaterMod
 
    contains
      ! Public routines
-     !procedure, public :: set_old_patch_weights     ! set weights before dyn subgrid updates
-     !procedure, public :: set_new_patch_weights     ! set weights after dyn subgrid updates
+     procedure, public :: set_old_patch_weights     ! set weights before dyn subgrid updates
+     procedure, public :: set_new_patch_weights     ! set weights after dyn subgrid updates
 
 
 
@@ -257,14 +257,7 @@ contains
     ! a patch-level array, it is expressed as mass per unit area GRIDCELL.
     real(r8), intent(inout), optional :: seed_addition
     !
-    character(len=*), parameter :: subname = 'update_patch_state'
     !-----------------------------------------------------------------------
-
-    if (present(seed_addition)) then
-       if (.not. present(seed)) then
-          call endrun(subname//' ERROR: seed_addition can only be provided if seed is provided')
-       end if
-    end if
 
     if (this%dwt(p) > 0._r8) then
       var = var * this%growing_old_fraction(p)

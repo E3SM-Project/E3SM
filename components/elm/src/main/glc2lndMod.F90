@@ -275,7 +275,6 @@ contains
     use elm_varcon      , only : ispval
     use elm_varctl      , only : glc_do_dynglacier
     use landunit_varcon , only : istice_mec
-    use column_varcon   , only : col_itype_to_icemec_class
     use subgridWeightsMod , only : set_landunit_weight
     !
     ! !ARGUMENTS:
@@ -323,15 +322,15 @@ contains
                if (area_ice_mec > 0) then
                   ! Determine index of the glc_mec landunit
                   l_ice_mec = top_pp%landunit_indices(istice_mec, t)
-                  
+#ifndef _OPENACC              
                   if (l_ice_mec == ispval) then
                      write(iulog,*) ' ERROR: no ice_mec landunit found within the icemask, for g = ', g
                      call endrun()
                   end if
-
+#endif 
                   frac_assigned(1:maxpatch_glcmec) = .false.
                   do c = lun_pp%coli(l_ice_mec), lun_pp%colf(l_ice_mec)
-                     icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+                     icemec_class = col_pp%itype(c) - istice_mec*100 
                      col_pp%wtlunit(c) = glc2lnd_vars%frac_grc(g, icemec_class) / lun_pp%wttopounit(l_ice_mec)
                      frac_assigned(icemec_class) = .true.
                   end do
@@ -362,7 +361,7 @@ contains
        ! Values from GLC are only valid within the icemask, so we only update CLM's topo values there
        if (glc2lnd_vars%icemask_grc(g) > 0._r8) then
           if (lun_pp%itype(l) == istice_mec) then
-             icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
+             icemec_class = col_pp%itype(c) - istice_mec*100
           else
              ! If not on a glaciated column, assign topography to the bare-land value determined by GLC.
              icemec_class = 0

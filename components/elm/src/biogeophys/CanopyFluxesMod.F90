@@ -1285,11 +1285,12 @@ contains
             end if
          end do
 
+#ifndef _OPENACC
          do f = 1, fn
             p = filterp(f)
             write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
          end do
-
+#endif
       end if
 
     end associate
