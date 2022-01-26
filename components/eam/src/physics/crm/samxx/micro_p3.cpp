@@ -448,48 +448,8 @@ void micro_p3_proc() {
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev_pack);
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 52, policy);
 
-  std::cout << "WHDEBUG - before p3_main - nstep:" << nstep << std::endl;
-
-  // for (int k=0; k<nzm; k++) {
-  //   for (int j=0; j<crm_ny; j++) {
-  //     for (int i=0; i<crm_nx; i++) {
-  //       for (int icrm=0; icrm<ncrms; icrm++) {
-  //         // int i    = icol%nx;
-  //         // int j    = (icol/nx)%ny;
-  //         // int icrm = (icol/nx)/ny;
-  //         // int k    = ilev*Spack::n + s;
-  //         int icol = i+nx*(j+ny*icrm);
-  //         int ilev = k;
-  //         std::cout
-  //         <<"  i:"<<i 
-  //         <<"  k:"<<k 
-  //         // <<"  pm:"<<pmid(k,j,i,icrm)
-  //         // <<"  dp:"<<pdel(k,j,i,icrm)
-  //         // <<"  ps:"<<psfc(icrm)
-  //         // <<"  dz:"<<dz(icrm)
-  //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
-  //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
-  //         // <<"  qv:"<<qv_in(icol,ilev)
-  //         // <<"  t_prev:"<<t_prev(k,j,i,icrm)
-  //         // <<"  q_prev:"<<q_prev(k,j,i,icrm)
-  //         // <<"  th:"<<th_in(icol,ilev)
-  //         // <<"  qc:"<<qc_in(icol,ilev)
-  //         // <<"  ta:"<<tabs(k,j,i,icrm)
-  //         // <<"  ex:"<<exner_in(icol, ilev)
-  //         // <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm)
-  //         // <<"  ni:"<<micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm)
-  //         <<"  qc:"<<qc(k,j,i,icrm)
-  //         <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
-  //         <<std::endl;
-  //       }
-  //     }
-  //   }
-  // }
-
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                    history_only, workspace_mgr, ncol, nlev);
-  
-  std::cout << "WHDEBUG - after p3_main - nstep:" << nstep << std::endl;
 
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
