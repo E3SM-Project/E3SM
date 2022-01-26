@@ -1,0 +1,18 @@
+ext_frc_specifier    = 
+        'SO2         -> /sems-data-store/ACME/cldera/data/E3SM/model_input/emissions/volc/merge_cmip6_and_volc_so2/merged_cmip6_and_volc_so2.nc',
+        'SOAG        -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1850-2014_c180205.nc',
+        'bc_a4       -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc',
+        'num_a1      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc',
+        'num_a2      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1850-2014_c180205.nc',
+        'num_a4      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1850-2014_c180205.nc',
+        'pom_a4      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c180205.nc',
+        'so4_a1      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc',
+        'so4_a2      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc'
+
+prescribed_volcaero_filetype = 'VOLC_MIXING_RATIO'
+prescribed_volcaero_datapath = '/sems-data-store/ACME/cldera/data/E3SM/model_input/emissions/volc/zero-presc-volc-mmr/'
+prescribed_volcaero_file = 'BMW_volcanic_1850-3009_all_zero.nc'
+
+use_hetfrz_classnuc  = .true.
+hist_hetfrz_classnuc = .true.
+
