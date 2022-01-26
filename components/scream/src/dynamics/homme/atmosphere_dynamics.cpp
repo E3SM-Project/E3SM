@@ -1028,8 +1028,8 @@ void HommeDynamics::initialize_homme_state () {
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
-  const auto phis = m_helper_fields.at("phis_dyn").get_view<const Real***>();
-  const auto phi_int = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
+  const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
+  const auto phi_int_dyn_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
 
   // Need two temporaries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(npacks_int,2,policy);
@@ -1065,8 +1065,8 @@ void HommeDynamics::initialize_homme_state () {
     auto dphi   = [&](const int ilev)->Pack {
       return EOS::compute_dphi(vTh_dp(ilev), p_mid(ilev));
     };
-    auto phi_int_col = ekat::subview(phi_int,ie,n0,igp,jgp);
-    ColOps::column_scan<false>(team,nlevs,dphi,phi_int_col,phis(ie,igp,jgp));
+    auto phi_int = ekat::subview(phi_int_dyn_view,ie,n0,igp,jgp);
+    ColOps::column_scan<false>(team,nlevs,dphi,phi_int,phis_dyn_view(ie,igp,jgp));
 
     // Release the scratch mem
     ws.release(p_int);
