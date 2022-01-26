@@ -539,6 +539,7 @@
 <config_use_constant_diffusivity>.false.</config_use_constant_diffusivity>
 <config_use_ocean_bottom_state>.false.</config_use_ocean_bottom_state>
 <config_use_benthos_monthly_forcing>.false.</config_use_benthos_monthly_forcing>
+<config_use_benthos_monthly_terra_forcing>.false.</config_use_benthos_monthly_terra_forcing>
 <config_benthosTracers_diagnostic_fields_level1>.false.</config_benthosTracers_diagnostic_fields_level1>
 <config_benthosTracers_diagnostic_fields_level2>.false.</config_benthosTracers_diagnostic_fields_level2>
 <config_benthosTracers_diagnostic_fields_level3>.false.</config_benthosTracers_diagnostic_fields_level3>

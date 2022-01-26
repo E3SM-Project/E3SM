@@ -734,13 +734,14 @@ contains
          ecosys_diag_OtherRemin
 
       ! two dimensional arrays for benthos module (nx,nz)                                
-      ! NJ:add benthos_bsiToSed and benthos_dustToSed
       real (kind=RKIND), dimension(:,:), pointer :: &
          benthos_pocToSed, &
          benthos_ponToSed, &
          benthos_popToSed, &
          benthos_pfeToSed, &
-         benthos_calcToSed
+         benthos_calcToSed, &
+         benthos_bsiToSed, &
+         benthos_dustToSed
 
       ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -981,6 +982,8 @@ contains
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_ponToSed)                     
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_popToSed)                     
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pfeToSed', benthos_pfeToSed)
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_bsiToSed', benthos_bsiToSed)
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_dustToSed', benthos_dustToSed)
       endif
 
       numColumns = 1
@@ -1087,6 +1090,15 @@ contains
                benthos_popToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_popToSed_indexInMARBL)%field_3d(iLevel,column),  &
                   ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
+
+               benthos_bsiToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_bsiToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)
+
+               benthos_dustToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_dustToSed_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)
+
             endif  !  config_ecosysTracers_diagnostic_fields_level3
 
             !

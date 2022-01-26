@@ -615,6 +615,12 @@ module ocn_forward_mode
         call mpas_timer_stop('io_benthos')
       endif
 
+      if (config_use_benthosTracers .and. config_use_benthos_monthly_terra_forcing) then
+        call mpas_timer_start('io_benthos',.false.)
+        call ocn_get_benthos_terra_data(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_benthos')
+      endif
+
       ! read initial data required for monthly surface salinity restoring
       ! always execute this call as initial data needed regardless of alarm
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
@@ -775,6 +781,13 @@ module ocn_forward_mode
          if (config_use_benthosTracers .and. config_use_benthos_monthly_forcing) then
             call mpas_timer_start('io_benthos',.false.)
             call ocn_get_benthos_data(domain % streamManager, domain, domain % clock, .false.)
+            call mpas_timer_stop('io_benthos')
+         endif
+
+         ! read next time level data required for benthos forcing
+         if (config_use_benthosTracers .and. config_use_benthos_monthly_terra_forcing) then
+            call mpas_timer_start('io_benthos',.false.)
+            call ocn_get_benthos_terra_data(domain % streamManager, domain, domain % clock, .false.)
             call mpas_timer_stop('io_benthos')
          endif
 

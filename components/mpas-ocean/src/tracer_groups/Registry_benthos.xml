@@ -79,6 +79,10 @@
 			description="if true, use monthly data file of ocean fluxes and concentrations"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_benthos_monthly_terra_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, use monthly data file of terrigenous fluxes"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_benthosTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in benthosDiagFieldsLevel1 available for output"
 			possible_values=".true. or .false."
@@ -136,6 +140,19 @@
 			<var name="oceanBottomBenthosFeData"/>
 			<var name="oceanBottomBenthosMnData"/>
 			<var name="oceanBottomBenthosSo4Data"/>
+		</stream>
+
+		<stream name="benthos_monthly_terra_flux"
+				type="input"
+				filename_template="benthosTerrestrialForcingMonthly.nc"
+				input_interval="none"
+				runtime_format="single_file"
+				packages="benthosTracersPKG"
+                                mode="forward">
+
+			<var name="xtime"/>
+                        <var name="oceanTerraBenthosPOCFluxData"/>
+                        <var name="oceanTerraLithogenicFluxData"/>
 		</stream>
 
 	</streams>
@@ -387,40 +404,43 @@
 			/>
 		</var_struct>
 		<var_struct name="oceanBenthosFlux" time_levs="1">
+			<var name="totalSedimentMassFlux" type="real" dimensions="nCells Time" units="kg m^{-3} m s^{-1}"
+				description="total sediment flux = 2.1 x biogenic Si + dust + PIC + 2x POC + lithogenic"
+			/>
 			<var name="oceanBenthosPOCFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 				description="total ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCaFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOCaFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="labile ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCbFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOCbFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="semi-labile ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCcFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOCcFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="refractory ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPaFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOPaFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
 				description="labile ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPbFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOPbFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
 				description="semi-labile ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPcFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOPcFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
 				description="refractory ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONaFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPONaFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="labile ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONbFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPONbFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="semi-labile ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONcFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPONcFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="refractory ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosParticulateFeFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosParticulateFeFlux" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 				description="ocean particulate iron sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPICFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPICFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="Total ocean particulate inorganic carbon sinking flux to the benthos"
 			/>
 			<var name="oceanBenthosCaco3aFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
@@ -455,6 +475,18 @@
 			/>
 			<var name="oceanBenthosFepbFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
 				description="ocean particulate iron bound phosphorus-b  sinking flux to the benthos"
+			/>
+			<var name="oceanBenthosBiogenicSilicaFlux" type="real" dimensions="nCells Time" units="mmol Si m^{-3} s^{-1}"
+				description="ocean biogenic silica flux to the benthos"
+			/>
+			<var name="oceanBenthosDustFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+				description="dust flux to the benthos"
+			/>
+			<var name="oceanTerraBenthosPOCFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+				description="Terrestrial particulate organic carbon sinking flux to the benthos"
+			/>
+			<var name="oceanTerraLithogenicFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+				description="Ocean minineral flux from the land to the benthos"
 			/>
 		</var_struct>
 		<var_struct name="oceanBottomBenthosFields" time_levs="1">
@@ -549,20 +581,28 @@
 	</var_struct>
 
 	<var_struct name="benthosMonthlyForcing" time_levs="1">
-		<var name="oceanBenthosPOCFluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+		<var name="oceanBenthosPOCFluxData" type="real" dimensions="nCells Time" units="mmol C m^{-3} s^{-1}"
 			description="Ocean particulate organic carbon sinking flux to the benthos"
 			packages="benthosTracersPKG"
 		/>
-		<var name="oceanBenthosPICFluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+		<var name="oceanBenthosPICFluxData" type="real" dimensions="nCells Time" units="mmol C m^{-3} s^{-1}"
 			description="Ocean particulate calcite, aragonite and mg-calcite flux to the benthos"
 			packages="benthosTracersPKG"
 		/>
-		<var name="oceanBenthosMno2FluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+		<var name="oceanBenthosMno2FluxData" type="real" dimensions="nCells Time" units="mmol Mn m^{-3} s^{-1}"
 			description="Ocean manganese oxide sinking flux to the benthos"
 			packages="benthosTracersPKG"
 		/>
-		<var name="oceanBenthosFeoh3FluxData" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+		<var name="oceanBenthosFeoh3FluxData" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} s^{-1}"
 			description="Ocean iron oxyhydroxide  sinking flux to the benthos"
+			packages="benthosTracersPKG"
+		/>
+		<var name="oceanBenthosBiogenicSilicaFluxData" type="real" dimensions="nCells Time" units="mmol Si m^{-3} s^{-1}"
+			description="ocean biogenic silica flux to the benthos"
+			packages="benthosTracersPKG"
+		/>
+		<var name="oceanBenthosDustFluxData" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			description="dust flux to the benthos"
 			packages="benthosTracersPKG"
 		/>
 		<var name="oceanBenthosPrecipMno2Data" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
@@ -627,6 +667,17 @@
 		/>
 		<var name="oceanBottomBenthosDensityData" type="real" dimensions="nCells Time" units="kg m^{-3}"
 			description="ocean bottom density used in benthos module"
+			packages="benthosTracersPKG"
+		/>
+	</var_struct>
+
+	<var_struct name="benthosMonthlyTerraForcing" time_levs="1">
+		<var name="oceanTerraBenthosPOCFluxData" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+			description="Terrestrial particulate organic carbon sinking flux to the benthos"
+			packages="benthosTracersPKG"
+		/>
+		<var name="oceanTerraLithogenicFluxData" type="real" dimensions="nCells Time" units="kg m^{-3} m s^{-1}"
+			description="Ocean minineral flux from the land to the benthos"
 			packages="benthosTracersPKG"
 		/>
 	</var_struct>

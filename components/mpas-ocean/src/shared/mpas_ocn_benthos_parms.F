@@ -78,6 +78,12 @@ module ocn_benthos_parms
        vol_to_mass   = c1_benthos / mass_to_vol, &   ! mmol/m3 -> mol/kg
        mmol_per_kg_water = 5.55556e4_benthos_r8, &     ! mmol of water/ kg of water
        degreeC_to_K = 273.15_benthos_r8  , &
+       kg_per_mg = 1.0e-6_benthos_r8, & ! miligrams to kilograms conversion
+       gSi_per_molSi = 28.1_benthos_r8, & !g/mol silica molecular weight
+       gC_per_molC = 12.0107_benthos_r8, & !g/mol carbon molecular weight
+       massOpal_per_massbSi = 2.1_benthos_r8, & ! kg Opal per kg biogenic silica; Fahl and Nothig, 2007
+       mass_per_molPIC = 100.1_benthos_r8, & !g/mol CaCO3 molecular weight
+       mass_per_massPOC = 2.0_benthos_r8, & ! mass per mass of particulate organic carbon; Fahl and Nothig, 2007
        deg_to_rad = 3.14159265359_benthos_r8/180.0_benthos_r8
 
   !-----------------------------------------------------------------------------
@@ -318,7 +324,11 @@ module ocn_benthos_parms
       oceanPOPFlux, &
       oceanPONFlux, &
       oceanParticulateIronFlux, &
-      oceanCalciteFlux
+      oceanCalciteFlux, &
+      oceanBiogenicSilicaFlux, &
+      oceanDustFlux, &
+      lithogenicFlux, &
+      terraPOCFlux
 
   end type benthos_input_type
 
@@ -400,7 +410,8 @@ module ocn_benthos_parms
       oceanPrecipIronOxyhydroxidea, & !
       oceanPrecipIronOxyhydroxideb, & !
       oceanPrecipIronBoundPhosphorusa, & !
-      oceanPrecipIronBoundPhosphorusb !
+      oceanPrecipIronBoundPhosphorusb, &
+      oceanTotalSedimentMassFlux
 
   end type benthos_output_type
 

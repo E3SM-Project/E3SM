@@ -59,7 +59,9 @@ module ocn_tracer_benthos
    public :: benthos_tracer_compute, &
 !             ocn_tracer_ecosys_benthos_flux_compute,  &
              ocn_get_benthos_data,  &
+             ocn_get_benthos_terra_data,  &
              ocn_benthos_forcing_write_restart,  &
+             ocn_benthos_terra_forcing_write_restart,  &
              ocn_benthos_tracer_init
 
    integer, public:: &
@@ -224,6 +226,7 @@ contains
          config_use_deep_source, &
          config_use_constant_diffusivity, &
          config_use_benthos_monthly_forcing, &
+         config_use_benthos_monthly_terra_forcing, &
          config_benthosTracers_diagnostic_fields_level1, &
          config_benthosTracers_diagnostic_fields_level2
 
@@ -261,6 +264,8 @@ contains
          benthos_ponToSed,       &
          benthos_popToSed,       &
          benthos_pfeToSed,       &
+         benthos_bsiToSed,       &
+         benthos_dustToSed,      &
          pressure          
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -303,12 +308,17 @@ contains
          oceanBenthosFeoh3bFlux, &
          oceanBenthosFepaFlux, &
          oceanBenthosFepbFlux, &
+         oceanBenthosBiogenicSilicaFlux, &
+         oceanBenthosDustFlux, &
          oceanBenthosPrecipMno2a, &
          oceanBenthosPrecipMno2b, &
          oceanBenthosPrecipFeoh3a, &
          oceanBenthosPrecipFeoh3b, &
          oceanBenthosPrecipFepa, &
-         oceanBenthosPrecipFepb
+         oceanBenthosPrecipFepb, &
+         oceanTerraLithogenicFlux, &
+         oceanTerraBenthosPOCFlux, &
+         totalSedimentMassFlux
 
       real (kind=RKIND) :: convertLengthMKStoCGS = 100.0_RKIND
       real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
@@ -348,6 +358,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_deep_source',  config_use_deep_source)
       call mpas_pool_get_config(ocnConfigs, 'config_use_constant_diffusivity',  config_use_constant_diffusivity)
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_forcing', config_use_benthos_monthly_forcing)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_terra_forcing', config_use_benthos_monthly_terra_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_benthosTracers_diagnostic_fields_level1', &
               config_benthosTracers_diagnostic_fields_level1)
       call mpas_pool_get_config(ocnConfigs, 'config_benthosTracers_diagnostic_fields_level2', &
@@ -360,6 +371,8 @@ contains
          call mpas_pool_get_array(ecosysBenthosForcingPool, 'benthos_pfeToSed', benthos_pfeToSed)
          call mpas_pool_get_array(ecosysBenthosForcingPool, 'benthos_popToSed', benthos_popToSed)
          call mpas_pool_get_array(ecosysBenthosForcingPool, 'benthos_ponToSed', benthos_ponToSed)
+         call mpas_pool_get_array(ecosysBenthosForcingPool, 'benthos_bsiToSed', benthos_bsiToSed)
+         call mpas_pool_get_array(ecosysBenthosForcingPool, 'benthos_dustToSed', benthos_dustToSed)
       end if
 
       call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
@@ -385,6 +398,11 @@ contains
       call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanBenthosFeoh3bFlux', oceanBenthosFeoh3bFlux)
       call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanBenthosFepaFlux', oceanBenthosFepaFlux)
       call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanBenthosFepbFlux', oceanBenthosFepbFlux)
+      call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanBenthosBiogenicSilicaFlux', oceanBenthosBiogenicSilicaFlux)
+      call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanBenthosDustFlux', oceanBenthosDustFlux)
+      call mpas_pool_get_array(oceanBenthosFluxPool, 'totalSedimentMassFlux', totalSedimentMassFlux)
+      call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanTerraLithogenicFlux', oceanTerraLithogenicFlux)
+      call mpas_pool_get_array(oceanBenthosFluxPool, 'oceanTerraBenthosPOCFlux', oceanTerraBenthosPOCFlux)
 
       call mpas_pool_get_array(oceanBottomBenthosFieldsPool, 'oceanBottomBenthosSio3', oceanBottomBenthosSio3)
       call mpas_pool_get_array(oceanBottomBenthosFieldsPool, 'oceanBottomBenthosPo4', oceanBottomBenthosPo4)
@@ -455,6 +473,14 @@ contains
          maxLevel = maxLevelCell(iCell)
          benthos_input%oceanBottomDepth(column) =  bottomDepth(iCell)
 
+         if (config_use_benthos_monthly_terra_forcing) then
+            benthos_input%lithogenicFlux(column) = oceanTerraLithogenicFlux(iCell)
+            benthos_input%terraPOCFlux(column) = oceanTerraBenthosPOCFlux(iCell)
+         else
+            benthos_input%lithogenicFlux(column) = 0.0_RKIND
+            benthos_input%terraPOCFlux(column) = 0.0_RKIND
+         end if
+
          if (config_use_benthos_monthly_forcing) then
             benthos_input%oceanBottomDensity(column) = oceanBottomBenthosDensity(iCell)
             benthos_input%oceanBottomPressure(column) =  oceanBottomBenthosPressure(iCell)
@@ -474,8 +500,8 @@ contains
             benthos_input%oceanPOCFlux(column) = oceanBenthosPOCFlux(iCell)
             benthos_input%oceanParticulateIronFlux(column) = oceanBenthosFeoh3Flux(iCell)
             benthos_input%oceanCalciteFlux(column) = oceanBenthosPICFlux(iCell)
-            !benthos_input%oceanPONFlux(column) = oceanBenthosPOCFlux(iCell)
-            !benthos_input%oceanPOPFlux(column) = oceanBenthosPOCFlux(iCell)
+            benthos_input%oceanBiogenicSilicaFlux(column) = oceanBenthosBiogenicSilicaFlux(iCell)
+            benthos_input%oceanDustFlux(column) = oceanBenthosDustFlux(iCell)
          else
             benthos_input%oceanBottomDensity(column) = density(maxLevel,iCell)
             benthos_input%oceanBottomPressure(column) =  pressure(maxLevel,iCell)
@@ -498,8 +524,8 @@ contains
                benthos_input%oceanPOCFlux(column) = max(0.0_RKIND,benthos_pocToSed(maxLevel,iCell)) ! units are mmolC/m3 m/s
                benthos_input%oceanParticulateIronFlux(column) = max(0.0_RKIND,benthos_pfeToSed(maxLevel,iCell)) ! units are mmolFe/m3 m/s
                benthos_input%oceanCalciteFlux(column) = max(0.0_RKIND,benthos_calcToSed(maxLevel,iCell)) ! units are mmolC/m3 m/s
-               !benthos_input%oceanPONFlux(column) = max(0.0_RKIND,benthos_ponToSed(maxLevel,iCell)) ! units are mmolN/m3 m/s
-               !benthos_input%oceanPOPFlux(column) = max(0.0_RKIND,benthos_popToSed(maxLevel,iCell)) ! units are mmolP/m3 m/s
+               benthos_input%oceanBiogenicSilicaFlux(column) = 0.0_RKIND
+               benthos_input%oceanDustFlux(column) = 0.0_RKIND
             else
                benthos_input%oceanBottomSilicate(column) = 0.0_RKIND
                benthos_input%oceanBottomPhosphate(column) = 0.0_RKIND
@@ -709,6 +735,7 @@ contains
          oceanBenthosPrecipFeoh3b(iCell) = benthos_output%oceanPrecipIronOxyhydroxideb(column)
          oceanBenthosPrecipFepa(iCell) = benthos_output%oceanPrecipIronBoundPhosphorusa(column)
          oceanBenthosPrecipFepb(iCell) = benthos_output%oceanPrecipIronBoundPhosphorusb(column)
+         totalSedimentMassFlux(iCell) = benthos_output%oceanTotalSedimentMassFlux(column)
 
          do iLevel=1,nBenthicVertLevels+1
 
@@ -1227,6 +1254,7 @@ contains
       type (mpas_pool_type), pointer :: benthosAuxiliaryPool
       type (mpas_pool_type), pointer :: benthosDiagFieldsLevel1Pool
       type (mpas_pool_type), pointer :: benthosMonthlyForcing
+      type (mpas_pool_type), pointer :: benthosMonthlyTerraForcing
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
           benthosTracers
@@ -1276,11 +1304,14 @@ contains
           config_use_constant_diffusivity, &
           config_use_ecosysTracers, &
           config_use_ocean_bottom_state, &
-          config_use_benthos_monthly_forcing
+          config_use_benthos_monthly_forcing, &
+          config_use_benthos_monthly_terra_forcing
 
         real (kind=RKIND), dimension(:), pointer :: &
            oceanBenthosPOCFluxData, &
            oceanBenthosPICFluxData, &
+           oceanBenthosBiogenicSilicaFluxData, &
+           oceanBenthosDustFluxData, &
            oceanBenthosMno2FluxData, &
            oceanBenthosFeoh3FluxData, &
            oceanBenthosPrecipMno2Data, &
@@ -1298,7 +1329,9 @@ contains
            oceanBottomBenthosTemperatureData, &
            oceanBottomBenthosSalinityData, &
            oceanBottomBenthosPressureData, &
-           oceanBottomBenthosDensityData
+           oceanBottomBenthosDensityData, &
+           oceanTerraBenthosPOCFluxData, &
+           oceanTerraLithogenicFluxData
 
       ! local variables
 
@@ -1662,6 +1695,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_deep_source',  config_use_deep_source)
       call mpas_pool_get_config(ocnConfigs, 'config_use_constant_diffusivity',  config_use_constant_diffusivity)
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_forcing',  config_use_benthos_monthly_forcing)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_terra_forcing',  config_use_benthos_monthly_terra_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_ocean_bottom_state',  config_use_ocean_bottom_state)
       
       call mpas_pool_get_subpool(forcingPool, 'benthosAuxiliary', benthosAuxiliaryPool)
@@ -1813,6 +1847,10 @@ test_flag = .false.
       allocate ( benthos_input%oceanPONFlux(numBenthicColumnsMax))
       allocate ( benthos_input%oceanParticulateIronFlux(numBenthicColumnsMax))
       allocate ( benthos_input%oceanCalciteFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanBiogenicSilicaFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%oceanDustFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%lithogenicFlux(numBenthicColumnsMax))
+      allocate ( benthos_input%terraPOCFlux(numBenthicColumnsMax))
 
       allocate ( benthos_output%benthosTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
       allocate ( benthos_output%benthosTransportTendencies(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
@@ -1869,6 +1907,7 @@ test_flag = .false.
       allocate ( benthos_output%oceanPrecipIronOxyhydroxideb(numBenthicColumnsMax))
       allocate ( benthos_output%oceanPrecipIronBoundPhosphorusa(numBenthicColumnsMax))
       allocate ( benthos_output%oceanPrecipIronBoundPhosphorusb(numBenthicColumnsMax))
+      allocate ( benthos_output%oceanTotalSedimentMassFlux(numBenthicColumnsMax))
 
       allocate ( benthos_forcing%deepStoragePrescribedFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
       allocate ( benthos_forcing%benthosOceanSedimentFlux(numBenthicColumnsMax, benthos_tracer_cnt) )
@@ -1931,6 +1970,8 @@ test_flag = .false.
          call mpas_pool_get_subpool(domain % blocklist % structs, 'benthosMonthlyForcing', benthosMonthlyForcing)
          call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPOCFluxData', oceanBenthosPOCFluxData)
          call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPICFluxData', oceanBenthosPICFluxData)
+         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosBiogenicSilicaFluxData', oceanBenthosBiogenicSilicaFluxData)
+         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosDustFluxData', oceanBenthosDustFluxData)
          call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosMno2FluxData', oceanBenthosMno2FluxData)
          call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosFeoh3FluxData', oceanBenthosFeoh3FluxData)
          call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPrecipMno2Data', oceanBenthosPrecipMno2Data)
@@ -1968,6 +2009,28 @@ test_flag = .false.
                 'benthos_monthly_flux', &
                 'benthosMonthlyForcing',  &
                 'oceanBenthosPICFluxData', &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+
+         call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'benthosMonthlyClimatology', &
+                'oceanBenthosBiogenicSilicaFluxData', &
+                'benthos_monthly_flux', &
+                'benthosMonthlyForcing',  &
+                'oceanBenthosBiogenicSilicaFluxData', &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+
+         call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'benthosMonthlyClimatology', &
+                'oceanBenthosDustFluxData', &
+                'benthos_monthly_flux', &
+                'benthosMonthlyForcing',  &
+                'oceanBenthosDustFluxData', &
                 'linear',  &
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
@@ -2177,6 +2240,54 @@ test_flag = .false.
             .false.)
 
      end if ! config_use_benthos_monthly_forcing
+
+     if (config_use_benthos_monthly_terra_forcing) then
+         ! initialize monthly forcing to be read from file (terrigenous sediment fluxes)
+
+         forcingIntervalMonthly = "0000-01-00_00:00:00"
+         forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
+
+         call MPAS_forcing_init_group( forcingGroupHead,  &
+                "benthosMonthlyTerraClimatology", &
+                domain, &
+                '0000-01-01_00:00:00', &
+                '0000-01-01_00:00:00', &
+                '0001-00-00_00:00:00', &
+                config_do_restart)
+
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'benthosMonthlyTerraForcing', benthosMonthlyTerraForcing)
+         call mpas_pool_get_array(benthosMonthlyTerraForcing, 'oceanTerraBenthosPOCFluxData', oceanTerraBenthosPOCFluxData)
+         call mpas_pool_get_array(benthosMonthlyTerraForcing, 'oceanTerraLithogenicFluxData', oceanTerraLithogenicFluxData)
+
+         call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'benthosMonthlyTerraClimatology', &
+                'oceanTerraBenthosPOCFluxData', &
+                'benthos_monthly_terra_flux', &
+                'benthosMonthlyTerraForcing',  &
+                'oceanTerraBenthosPOCFluxData', &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+
+         call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'benthosMonthlyTerraClimatology', &
+                'oceanTerraLithogenicFluxData', &
+                'benthos_monthly_terra_flux', &
+                'benthosMonthlyTerraForcing',  &
+                'oceanTerraLithogenicFluxData', &
+                'linear',  &
+                forcingReferenceTimeMonthly,  &
+                forcingIntervalMonthly)
+
+         call MPAS_forcing_init_field_data( forcingGroupHead, &
+        'benthosMonthlyTerraClimatology',  &
+         domain % streamManager,  &
+         config_do_restart, &
+         .false.)
+
+     end if
 
    ! TracerType: 1 for solutes, 0 for solids
 
@@ -2422,7 +2533,9 @@ test_flag = .false.
            oceanBenthosPOCFlux, &
            oceanBenthosPICFlux, &
            oceanBenthosMno2Flux, &
-           oceanBenthosFeoh3Flux
+           oceanBenthosFeoh3Flux, &
+           oceanBenthosBiogenicSilicaFlux, &
+           oceanBenthosDustFlux
 
         ! input flux components in    oceanBottomBenthosFields
         real (kind=RKIND), dimension(:), pointer :: &
@@ -2448,6 +2561,8 @@ test_flag = .false.
         real (kind=RKIND), dimension(:), pointer :: &
            oceanBenthosPOCFluxData, &
            oceanBenthosPICFluxData, &
+           oceanBenthosBiogenicSilicaFluxData, &
+           oceanBenthosDustFluxData, &
            oceanBenthosMno2FluxData, &
            oceanBenthosFeoh3FluxData, &
            oceanBenthosPrecipMno2Data, &
@@ -2498,6 +2613,8 @@ test_flag = .false.
 
         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPOCFluxData', oceanBenthosPOCFluxData)
         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPICFluxData', oceanBenthosPICFluxData)
+        call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosBiogenicSilicaFluxData', oceanBenthosBiogenicSilicaFluxData)
+        call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosDustFluxData', oceanBenthosDustFluxData)
         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosFeoh3FluxData', oceanBenthosFeoh3FluxData)
         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosMno2FluxData', oceanBenthosMno2FluxData)
         call mpas_pool_get_array(benthosMonthlyForcing, 'oceanBenthosPrecipFeoh3Data', oceanBenthosPrecipFeoh3Data)
@@ -2521,6 +2638,8 @@ test_flag = .false.
 
         call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosPOCFlux', oceanBenthosPOCFlux )
         call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosPICFlux', oceanBenthosPICFlux)
+        call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosDustFlux', oceanBenthosDustFlux)
+        call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosBiogenicSilicaFlux', oceanBenthosBiogenicSilicaFlux)
         call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosMno2Flux', oceanBenthosMno2Flux)
         call mpas_pool_get_array(oceanBenthosFlux, 'oceanBenthosFeoh3Flux', oceanBenthosFeoh3Flux)
 
@@ -2553,6 +2672,8 @@ test_flag = .false.
            ! particulate data is in mmol/m^3*m/s
            oceanBenthosPOCFlux(iCell) = max(0.0_RKIND,oceanBenthosPOCFluxData(iCell))
            oceanBenthosPICFlux(iCell) = max(0.0_RKIND,oceanBenthosPICFluxData(iCell))
+           oceanBenthosBiogenicSilicaFlux(iCell) = max(0.0_RKIND,oceanBenthosBiogenicSilicaFluxData(iCell))
+           oceanBenthosDustFlux(iCell) = max(0.0_RKIND,oceanBenthosDustFluxData(iCell))
            oceanBenthosMno2Flux(iCell) =  3.6e-13_RKIND ! Arkona Basin
            oceanBenthosFeoh3Flux(iCell) = max(0.0_RKIND,oceanBenthosFeoh3FluxData(iCell))
 
@@ -2586,6 +2707,90 @@ test_flag = .false.
 
 !***********************************************************************
 !
+!  routine get_benthos_terra_data
+!
+!> \brief   retrieve data from terrigenous sources to the benthos
+!> \author  Nicole Jeffery
+!> \date    04/20/21
+!> \details
+!>  This routine calls mpas_forcing routines to acquire for lithogenic and
+!> land-derived POC.  directly copied from ocn_get_ecosysData
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_get_benthos_terra_data( streamManager, &
+        domain, &
+        simulationClock, &
+        firstTimeStep) !{{{
+
+        type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+        type (domain_type) :: domain
+        type (MPAS_timeInterval_type) :: timeStepEco
+        type (MPAS_clock_type) :: simulationClock
+
+        logical, intent(in) :: firstTimeStep
+        character(len=strKind), pointer :: config_dt
+        real(kind=RKIND) :: dt
+
+        type (mpas_pool_type), pointer :: forcingPool
+        type (mpas_pool_type), pointer :: meshPool
+        type (mpas_pool_type), pointer :: benthosAuxiliary
+        type (mpas_pool_type), pointer :: oceanBenthosFlux
+        type (mpas_pool_type), pointer :: benthosMonthlyTerraForcing
+
+! input flux components in oceanBenthosFlux
+        real (kind=RKIND), dimension(:), pointer :: &
+           oceanTerraBenthosPOCFlux, &
+           oceanTerraLithogenicFlux
+
+        ! input flux components in oceanBottomBenthosFields
+        real (kind=RKIND), dimension(:), pointer :: &
+           oceanTerraBenthosPOCFluxData, &
+           oceanTerraLithogenicFluxData
+
+        integer, pointer :: nCells
+        integer :: iCell
+
+        logical, pointer :: config_do_restart, config_do_restart_benthos
+
+        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
+        call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
+        call MPAS_pool_get_config(domain%configs, 'config_do_restart_benthos', config_do_restart_benthos)
+
+        call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
+        call mpas_get_timeInterval(timeStepEco,dt=dt)
+
+        if (firstTimeStep .and. config_do_restart) then
+          call MPAS_forcing_get_forcing(forcingGroupHead, &
+             'benthosMonthlyTerraClimatology', streamManager, 0.0_RKIND)
+        else
+          call MPAS_forcing_get_forcing(forcingGroupHead, &
+             'benthosMonthlyTerraClimatology', streamManager, dt)
+        end if
+
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(forcingPool, 'oceanBenthosFlux', oceanBenthosFlux)
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'benthosMonthlyTerraForcing', benthosMonthlyTerraForcing)
+
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+        call mpas_pool_get_array(benthosMonthlyTerraForcing, 'oceanTerraBenthosPOCFluxData', oceanTerraBenthosPOCFluxData)
+        call mpas_pool_get_array(benthosMonthlyTerraForcing, 'oceanTerraLithogenicFluxData', oceanTerraLithogenicFluxData)
+        call mpas_pool_get_array(oceanBenthosFlux, 'oceanTerraBenthosPOCFlux', oceanTerraBenthosPOCFlux )
+        call mpas_pool_get_array(oceanBenthosFlux, 'oceanTerraLithogenicFlux', oceanTerraLithogenicFlux)
+
+        do iCell = 1, nCells
+           ! particulate data is in mmol/m^3*m/s
+           oceanTerraBenthosPOCFlux(iCell) = max(0.0_RKIND,oceanTerraBenthosPOCFluxData(iCell))
+           oceanTerraLithogenicFlux(iCell) = max(0.0_RKIND,oceanTerraLithogenicFluxData(iCell))
+        end do
+
+    end subroutine ocn_get_benthos_terra_data!}}}
+
+!***********************************************************************
+!
 !  routine ocn_benthos_forcing_write_restart
 !
 !> \brief   writes restart timestamp for benthos data to be read in on future restart
@@ -2602,6 +2807,25 @@ test_flag = .false.
       call MPAS_forcing_write_restart_times(forcingGroupHead)
 
     end subroutine ocn_benthos_forcing_write_restart!}}}
+
+!***********************************************************************
+!
+!  routine ocn_benthos_terra_forcing_write_restart
+!
+!> \brief   writes restart timestamp for benthos data to be read in on future restart
+!> \author  Nicole Jeffery
+!> \date    04/30/2021
+! 
+!  Copied after Mathew Maltrud, ocn_ecosys_forcing_write_restart
+!-----------------------------------------------------------------------
+
+   subroutine ocn_benthos_terra_forcing_write_restart(domain)!{{{
+
+      type(domain_type) :: domain
+
+      call MPAS_forcing_write_restart_times(forcingGroupHead)
+
+    end subroutine ocn_benthos_terra_forcing_write_restart!}}}
 
 end module ocn_tracer_benthos
 

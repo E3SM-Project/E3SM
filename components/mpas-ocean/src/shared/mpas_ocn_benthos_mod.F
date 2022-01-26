@@ -1626,8 +1626,9 @@ contains
       dhtop, vel, dt, oceanBottomPhosphate, oceanBottomAmmonium, oceanBottomNitrate, oceanBottomOxygen, &
       oceanBottomIron, oceanBottomDIC, oceanBottomAlkalinity, oceanPOCFlux, oceanPONFlux, &
       oceanPOPFlux, oceanParticulateIronFlux, oceanCalciteFlux,benthosSolidPorosityTop, &
-      oceanBottomSilicate, oceanBottomManganese, benthos_output, column, config_use_benthos_monthly_forcing, &
-      oceanBottomDepth)
+      oceanBiogenicSilicaFlux, oceanDustFlux, oceanBottomSilicate, oceanBottomManganese, &
+      benthos_output, column, config_use_benthos_monthly_forcing, oceanBottomDepth, &
+      terraPOCFlux, lithogenicFlux)
 
 ! !DESCRIPTION:
 !  compute benthos boundary fluxes and concentrations at the start of each timestep
@@ -1658,7 +1659,11 @@ contains
        oceanParticulateIronFlux, &
        oceanCalciteFlux, &
        benthosSolidPorosityTop, &
-       oceanBottomDepth
+       oceanBottomDepth, &
+       oceanBiogenicSilicaFlux, &
+       oceanDustFlux, &
+       terraPOCFlux, &
+       lithogenicFlux
 
   logical(KIND=benthos_log), intent(in) :: &
        config_use_benthos_monthly_forcing
@@ -1698,7 +1703,8 @@ contains
        popFluxRate, &
        ocean_feoh3aFlux, &   ! mmol (m/kg)/s
        ocean_caco3Flux, &
-       fluxSed_middelburg  ! Middelburg et al (1997) parameterization
+       fluxSed_middelburg, &  ! Middelburg et al (1997) parameterization
+       fluxSed_forcing  ! based on ocean BGC forcing and monthly climatology
 
 !-----------------------------------------------------------------------
 !EOC
@@ -1709,10 +1715,12 @@ contains
       pocFluxRate = oceanPOCFlux/sediment_density/benthosSolidPorosityTop
       ponFluxRate = pocFluxRate/CtoP*NtoP
       popFluxRate = pocFluxRate/CtoP
-!      ponFluxRate = oceanPONFlux/sediment_density/benthosSolidPorosityTop
-!      popFluxRate = oceanPOPFlux/sediment_density/benthosSolidPorosityTop
       ocean_feoh3aFlux = oceanParticulateIronFlux/sediment_density/benthosSolidPorosityTop
       ocean_caco3Flux = oceanCalciteFlux/sediment_density/benthosSolidPorosityTop
+      fluxSed_forcing = (oceanPOCFlux + terraPOCFlux) * kg_per_mg * gC_per_molC * mass_per_massPOC &
+         + oceanBiogenicSilicaFlux * kg_per_mg * gSi_per_molSi * massOpal_per_massbSi &
+         + oceanDustFlux + lithogenicFlux &
+         + oceanCalciteFlux * kg_per_mg * mass_per_molPIC
    else
       pocFluxRate = 6000.0_benthos_r8/sediment_density/sec_per_year
       ponFluxRate = pocFluxRate/CtoP*NtoP
@@ -1720,17 +1728,22 @@ contains
       ocean_feoh3aFlux = 57.7_benthos_r8/sec_per_year/sediment_density
       ocean_caco3Flux = 1000.0_benthos_r8 / sec_per_year/sediment_density
       oceanBottomSilicate = 11.0_benthos_r8
+      fluxSed_forcing = c0_benthos
    end if
 
    ! sediment sinking flux will eventually come from the ocean model
    !  sea bed accumulation rates (ob, Yenisey  0.2-0.7 cm/y
 
    if (useSedimentation) then
-      fluxSed_middelburg = sedFlux3 * 10.0_benthos_r8**(-sedFlux1-sedFlux2*oceanBottomDepth)*sediment_density * benthosSolidPorosityTop
-      if (useFastSedimentation) then
-         fluxSed = 1000.0_benthos_r8*fluxSed_o
+      if (useOceanBottomState .or. config_use_benthos_monthly_forcing) then
+         fluxSed = fluxSed_forcing
       else
-         fluxSed = fluxSed_middelburg !fluxSed_o
+         fluxSed_middelburg = sedFlux3 * 10.0_benthos_r8**(-sedFlux1-sedFlux2*oceanBottomDepth)*sediment_density * benthosSolidPorosityTop
+         if (useFastSedimentation) then
+            fluxSed = 1000.0_benthos_r8*fluxSed_o
+         else
+            fluxSed = fluxSed_middelburg !fluxSed_o
+         end if
       end if
       if (.not. usePositiveSedimentation) fluxSed = -fluxSed
    else
@@ -1835,6 +1848,7 @@ contains
 
    !  Assign bottom ocean fields and fluxes to benthos_output
 
+   benthos_output % oceanTotalSedimentMassFlux(column) = FluxSed
    benthos_output % oceanBottomOxygen(column)   = oceanTracerConc(o2_ind)
    benthos_output % oceanBottomAmmonium(column) = oceanTracerConc(nh4_ind)
    benthos_output % oceanBottomPhosphate(column) = oceanTracerConc(h2po4_ind)
@@ -2287,7 +2301,11 @@ contains
        oceanPONFlux, &
        oceanPOPFlux, &
        oceanParticulateIronFlux, &
-       oceanCalciteFlux
+       oceanCalciteFlux, &
+       oceanBiogenicSilicaFlux, &
+       oceanDustFlux, &
+       terraPOCFlux, &
+       lithogenicFlux
 
   real(KIND=benthos_r8) :: &
        work1, work2, work3, work4, work5, & !
@@ -2510,7 +2528,11 @@ contains
    oceanPOPFlux  = benthos_input%oceanPOCFlux(column)/CtoP
    oceanParticulateIronFlux  = benthos_input%oceanParticulateIronFlux(column)
    oceanCalciteFlux  = benthos_input%oceanCalciteFlux(column)
+   oceanBiogenicSilicaFlux  = benthos_input%oceanBiogenicSilicaFlux(column)
+   oceanDustFlux  = benthos_input%oceanDustFlux(column)
    oceanBottomSilicate = benthos_input%oceanBottomSilicate(column)
+   terraPOCFlux = benthos_input%terraPOCFlux(column)
+   lithogenicFlux = benthos_input%lithogenicFlux(column)
 
    if (useOceanBottomState .or. config_use_benthos_monthly_forcing) then
       oceanBottomDepth = benthos_input%oceanBottomDepth(column)
@@ -2538,11 +2560,11 @@ contains
       oceanBottomDensity = 1027.0_benthos_r8    ! kg/m3
    end if
 
-   benthos_output%oceanBottomTemperature = oceanBottomTemperature
-   benthos_output%oceanBottomDepth = oceanBottomDepth
-   benthos_output%oceanBottomSalinity = oceanBottomSalinity
-   benthos_output%oceanBottomPressure = oceanBottomPressure
-   benthos_output%oceanBottomDensity = oceanBottomDensity
+   benthos_output%oceanBottomTemperature(column) = oceanBottomTemperature
+   benthos_output%oceanBottomDepth(column) = oceanBottomDepth
+   benthos_output%oceanBottomSalinity(column) = oceanBottomSalinity
+   benthos_output%oceanBottomPressure(column) = oceanBottomPressure
+   benthos_output%oceanBottomDensity(column) = oceanBottomDensity
 
    do iTracers = 1, nBenthicTracers
       benthosStorageConc(iTracers) = benthos_input%deepStorage(column,iTracers)
@@ -2578,8 +2600,9 @@ contains
         FluxSed, dhtop, vel, dt, oceanBottomPhosphate, oceanBottomAmmonium, oceanBottomNitrate, &
         oceanBottomOxygen, oceanBottomIron, oceanBottomDIC, oceanBottomAlkalinity, oceanPOCFlux, &
         oceanPONFlux, oceanPOPFlux, oceanParticulateIronFlux, oceanCalciteFlux,benthosSolidPorosityI(1), &
-        oceanBottomSilicate, oceanBottomManganese, benthos_output, column, config_use_benthos_monthly_forcing, &
-        oceanBottomDepth)
+        oceanBiogenicSilicaFlux, oceanDustFlux, oceanBottomSilicate, oceanBottomManganese, &
+        benthos_output, column, config_use_benthos_monthly_forcing, oceanBottomDepth, &
+        terraPOCFlux, lithogenicFlux)
 
    call computeNetElements (netElementsStart, nBenthicVertLevels, benthosTracerBulk,&
         vertBenthosGridThickI)

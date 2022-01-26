@@ -695,6 +695,12 @@
                         <var name="benthos_popToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
                                 description="P Flux to Sediments"
                         />
+			<var name="benthos_bsiToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol Si m^{-3} m s^{-1}"
+				description="Biogenic Si Flux to Sediments"
+			/>
+			<var name="benthos_dustToSed" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-2} s^{-1}"
+				description="Dust Flux to Sediments"
+			/>
                       </var_struct>
 
 		<var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
