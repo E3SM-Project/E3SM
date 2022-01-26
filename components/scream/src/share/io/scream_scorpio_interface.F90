@@ -549,6 +549,11 @@ contains
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
       call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
 
+      !PMC
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', 'pigs')
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', 'chickens')
+
+      
       ! Update the number of variables on file
       pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     else
