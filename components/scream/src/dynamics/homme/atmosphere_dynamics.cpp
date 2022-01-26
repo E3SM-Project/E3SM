@@ -139,14 +139,17 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       into the n0 time-slice of Homme's vtheta_dp, and then do the conversion
   //       T_mid->VTheta_dp in place.
 
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+
   // Note: qv is needed to transform T<->Theta
   add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   rgn,N);
   add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     rgn,N);
   add_field<Updated> ("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
-  add_field<Required>("phis",          FL({COL         },{ncols           }),Pa/rho,rgn);
-  add_field<Computed>("phi_int",       FL({COL,    ILEV},{ncols,  nlev_int}),Pa/rho,rgn,N);
+  add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
+  add_field<Computed>("phi_int",       FL({COL,    ILEV},{ncols,  nlev_int}),m2/s2, rgn,N);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);

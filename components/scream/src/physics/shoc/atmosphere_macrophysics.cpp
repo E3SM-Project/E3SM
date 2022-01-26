@@ -61,30 +61,33 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   constexpr int ps = Spack::n;
 
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+
   // These variables are needed by the interface, but not actually passed to shoc_main.
   // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data.
-  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,      grid_name, ps);
-  add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/(m*m), grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/(m*m), grid_name);
-  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/(m*m), grid_name);
+  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,   grid_name, ps);
+  add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s, grid_name, ps);
+  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
   add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
 
   // Input variables
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("p_int",          scalar3d_layout_int, Pa, grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("phis",           scalar2d_layout_col, m,  grid_name, ps);
+  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
+  add_field<Required>("p_int",          scalar3d_layout_int, Pa,    grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name, ps);
+  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name, "tracers", ps);
-  add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name, ps);
-  add_field<Updated>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name, ps);
-  add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name, ps);
-  add_field<Updated>("qc",            scalar3d_layout_mid, Qunit,       grid_name, "tracers", ps);
-  add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, nondim,      grid_name, ps);
+  add_field<Updated>("tke",           scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
+  add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
+  add_field<Updated>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s), grid_name, ps);
+  add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, m2/s,    grid_name, ps);
+  add_field<Updated>("qc",            scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, nondim,  grid_name, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d_layout_col, m,           grid_name);
