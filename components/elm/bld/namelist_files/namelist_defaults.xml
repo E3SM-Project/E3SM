@@ -116,7 +116,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c210219.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220120.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 

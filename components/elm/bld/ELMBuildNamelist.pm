@@ -2577,7 +2577,7 @@ sub setup_logic_do_transient_crops {
   }
 
   elsif (!value_is_true($nl->get_value("irrigate"))) {
-  #  $cannot_be_true = "$var should be set to true when running with irrigate = true";
+    $cannot_be_true = "$var should be set to true when running with irrigate = true";
   }
 
   elsif (value_is_true($nl->get_value('use_fates'))) {
