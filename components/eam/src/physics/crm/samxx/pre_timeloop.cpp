@@ -397,7 +397,7 @@ void pre_timeloop() {
     yakl::atomicAdd(v0(k,icrm) , v(k,j+offy_v,i+offx_v,icrm));
     yakl::atomicAdd(t0(k,icrm) , t(k,j+offy_s,i+offx_s,icrm));
 
-    tmp = t(k,j+offy_s,i+offx_s,icrm)+fac_cond*qpl(k,j,i,icrm)+fac_sub*qpi(k,j,i,icrm);
+    real tmp = t(k,j+offy_s,i+offx_s,icrm)+fac_cond*qpl(k,j,i,icrm)+fac_sub*qpi(k,j,i,icrm);
     yakl::atomicAdd(t00(k,icrm) , tmp);
     yakl::atomicAdd(tabs0(k,icrm) , tabs(k,j,i,icrm));
 
