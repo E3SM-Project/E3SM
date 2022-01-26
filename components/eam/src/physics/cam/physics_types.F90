@@ -339,23 +339,6 @@ contains
 
     end do
 
-    !------------------------------------------------------------------------
-    ! This is a temporary fix for the large H, H2 in WACCM-X
-    ! Well, it was supposed to be temporary, but it has been here
-    ! for a while now.
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call cnst_get_ind('H', ixh)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
-       end do
-
-       call cnst_get_ind('H2', ixh2)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
-       end do
-    endif
-
     ! Special tests for cloud liquid and ice:
     ! Enforce a minimum non-zero value.
     if (icldliq > 1) then
@@ -380,19 +363,6 @@ contains
        end if
     end if
 
-    !------------------------------------------------------------------------
-    ! Get indices for molecular weights and call WACCM-X physconst_update
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      call cnst_get_ind('O', ixo)
-      call cnst_get_ind('O2', ixo2)
-      call cnst_get_ind('N', ixn)             
-
-      call physconst_update(state%q, state%t, &
-              cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
-              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
-    endif
-   
     zvirv(:,:) = zvir    
     rairv_loc(:,:) = rair
 
