@@ -14,7 +14,7 @@ module elm_driver
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use elm_varctl             , only : use_erosion
+  use elm_varctl             , only : use_erosion, use_fates_sp
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_time_manager       , only : get_curr_calday, get_days_per_year
   use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
@@ -137,9 +137,9 @@ module elm_driver
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType       , only : grc_ns, grc_nf
   use GridcellDataType       , only : grc_ps, grc_pf
-  use TopounitDataType       , only : top_as, top_af  
-  use LandunitType           , only : lun_pp                
-  use ColumnType             , only : col_pp 
+  use TopounitDataType       , only : top_as, top_af
+  use LandunitType           , only : lun_pp
+  use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
@@ -247,7 +247,7 @@ contains
     call get_curr_date(year_curr,mon_curr, day_curr,secs_curr)
     dayspyr_mod = get_days_per_year()
     jday_mod = get_curr_calday()
-    
+
     if (do_budgets) then
        call WaterBudget_Reset()
 
@@ -277,7 +277,7 @@ contains
           ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
           ! weights obtained here are used in subroutine SatellitePhenology to obtain time
           ! interpolated values.
-          if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
+          if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND ) .or. use_fates_sp) then
              call t_startf('interpMonthlyVeg')
              call interpMonthlyVeg(bounds_proc, canopystate_vars)
              call t_stopf('interpMonthlyVeg')
@@ -406,11 +406,11 @@ contains
 
           call col_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
-          
+
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
           call BeginGridPBalance(bounds_clump, col_ps, grc_ps)
-          
+
        end if
 
        call t_stopf('cnpinit')
@@ -482,15 +482,15 @@ contains
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   col_cs, grc_cs, grc_cf)
-             
+
              call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   col_ns, grc_ns, grc_nf)
-             
+
              call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   col_ps, grc_ps, grc_pf)
-             
+
           end do
           !$OMP END PARALLEL DO
           call t_stopf('cnbalchk_at_grid')
@@ -567,7 +567,7 @@ contains
           call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_ps)
-          
+
           call t_stopf('begcnpbalwf')
        end if
 
@@ -1099,13 +1099,18 @@ contains
              end if
           else ! not use_cn
 
-             if (doalb) then
+             if (.not.use_fates_sp .and. doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes
-
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
+
+             if (use_fates_sp .and. doalb) then
+               call SatellitePhenology(bounds_clump,               &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
+               waterstate_vars, canopystate_vars)
+             endif
 
           end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
@@ -1283,21 +1288,21 @@ contains
        endif
 
        if (use_cn .or. use_fates) then
-          
+
           call t_startf('cnbalchk')
-             
+
           call ColCBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs, col_cf)
-             
+
           call ColNBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_ns, col_nf)
-             
+
           call ColPBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_ps, col_pf)
-             
+
           call GridCBalanceCheck(bounds_clump, col_cs, col_cf, grc_cs, grc_cf)
 
           call t_stopf('cnbalchk')
@@ -1459,7 +1464,7 @@ contains
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
-       
+
        call t_stopf('elm_drv_io_htapes')
        ! Write restart/initial files if appropriate
        if (rstwr) then
@@ -1732,7 +1737,7 @@ contains
     call p2c (bounds, num_nolakec, filter_nolakec, &
          qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
          qflx_snow_grnd_col  (bounds%begc:bounds%endc))
-    
+
     if (.not. use_extrasnowlayers) then
        call p2c (bounds, num_allc, filter_allc, &
             veg_wf%qflx_snwcp_liq(bounds%begp:bounds%endp), &

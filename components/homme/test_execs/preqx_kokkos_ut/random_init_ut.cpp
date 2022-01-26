@@ -2,7 +2,9 @@
 
 #include "ElementsState.hpp"
 #include "ElementsGeometry.hpp"
+#include "PhysicalConstants.hpp"
 #include "Types.hpp"
+
 #include "utilities/TestUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 
@@ -60,7 +62,7 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
 
   ElementsGeometry geometry;
-  geometry.init(num_elems, false, /*alloc_gradphis = */ false);
+  geometry.init(num_elems, false, /*alloc_gradphis = */ false, PhysicalConstants::rearth0);
   geometry.randomize(seed);
 
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);

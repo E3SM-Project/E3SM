@@ -540,7 +540,7 @@ contains
       ! indices on tracerGroup are (iTracer, iLevel, iCell)
       if (.not. bulkThicknessFluxOff) then
          !$omp parallel
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(surfaceTemperatureFluxWithoutRunoff)
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature

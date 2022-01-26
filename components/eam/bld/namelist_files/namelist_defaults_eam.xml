@@ -1245,6 +1245,7 @@
 
 <!-- viscosity  -->
 
+<tom_sponge_start> 0d0 </tom_sponge_start>
 <nu_top> 2.5e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne120np4"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne240np4"> 4.3e4 </nu_top>

@@ -1,4 +1,4 @@
-string(APPEND CFLAGS " -O2 -fp-model precise -std=gnu99")
+string(APPEND CFLAGS " -fp-model precise -std=gnu99")
 if (compile_threaded)
   string(APPEND CFLAGS " -qopenmp")
 endif()

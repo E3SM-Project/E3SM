@@ -334,6 +334,29 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="perlmutter" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=gpu</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="stampede2" type="slurm">
     <directives>
       <directive>-n {{ total_tasks }}</directive>

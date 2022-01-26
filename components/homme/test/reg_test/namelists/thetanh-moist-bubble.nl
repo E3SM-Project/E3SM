@@ -38,7 +38,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   hypervis_subcycle_tom = 1
   hypervis_subcycle_q = 1
-  se_ftype=2
+  se_ftype=0
   limiter_option    = 9
   planar_slice=.true.
   lx = 20000.0
@@ -55,7 +55,8 @@
   bubble_moist=.true.
   bubble_T0=300.0
   bubble_dT=2.0
-  bubble_moist_dq=0.2
+  bubble_rh_background=0.7
+  bubble_moist_drh=0.2
   bubble_prec_type=0
 /
 &vert_nl

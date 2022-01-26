@@ -653,7 +653,7 @@ def create_ic():
         print("  Gridsize: ", gridSize)
 
         # input
-        filenameIn = "x1.%i.grid.nc" %(gridSize)
+        filenameIn = "grid.%i.nc" %(gridSize)
 
         fileIn = Dataset(filenameIn,"r")
 

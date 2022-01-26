@@ -9,7 +9,9 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   #IF (${NUM_CPUS} EQUAL 1)
   #  ADD_TEST(${target_name}_test ${target_name})
   #ELSE()
-    ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} "./${target_name}")
+    set(TMP ${USE_MPI_OPTIONS})
+    separate_arguments(TMP)
+    ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name})
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
 
