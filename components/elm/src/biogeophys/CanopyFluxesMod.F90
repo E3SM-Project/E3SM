@@ -1,6 +1,6 @@
 module CanopyFluxesMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
 
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -9,10 +9,10 @@ module CanopyFluxesMod
   ! fluxes for the new ground temperature.
   !
   ! !USES:
-  !#py use shr_sys_mod           , only : shr_sys_flush
+  use shr_sys_mod           , only : shr_sys_flush
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod           , only : errMsg => shr_log_errMsg
-  !#py use abortutils            , only : endrun
+  use shr_log_mod           , only : errMsg => shr_log_errMsg
+  use abortutils            , only : endrun
   use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
   use elm_varctl            , only : use_hydrstress
   use elm_varpar            , only : nlevgrnd, nlevsno
@@ -735,7 +735,7 @@ contains
       if (found) then
          if ( .not. use_fates ) then
             !write(*,*)'Error: Forcing height is below canopy height for pft index '
-            !#py !#py call endrun(decomp_index=index, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=index, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 
@@ -1321,7 +1321,7 @@ contains
 
          do f = 1, fn
             p = filterp(f)
-            !#py write(iulog,*) 'energy balance in canopy ',p,', err=',err(f)
+            write(iulog,*) 'energy balance in canopy ',p,', err=',err(f)
          end do
 
       end if

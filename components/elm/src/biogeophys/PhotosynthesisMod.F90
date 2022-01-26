@@ -1,6 +1,6 @@
 module  PhotosynthesisMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Leaf photosynthesis and stomatal conductance calculation as described by
@@ -9,8 +9,8 @@ module  PhotosynthesisMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod         , only : errMsg => shr_log_errMsg
-  !#py use abortutils          , only : endrun
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use abortutils          , only : endrun
   use elm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
   use elm_varpar          , only : nlevcan
   use elm_varctl          , only : use_hydrstress
@@ -101,7 +101,7 @@ module  PhotosynthesisMod
      real(r8),pointer , public :: lmr_intercept_atkin(:)   => null()
   contains
      procedure, private :: allocParams
-     !#py procedure, public :: readParams
+     procedure, public :: readParams
   end type photo_params_type
   !
   type(photo_params_type), public :: params_inst  ! params_inst is populated in readParamsMod
@@ -113,7 +113,7 @@ contains
   subroutine allocParams ( this )
     !
     ! !USES:
-    !#py !#py use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
 
     implicit none
 
@@ -133,8 +133,8 @@ contains
     allocate( this%psi_soil_ref(0:mxpft) )          ; this%psi_soil_ref(:) = spval
 
     if ( use_hydrstress .and. nvegwcs /= 4 )then
-       !#py call endrun(msg='Error:: the Plant Hydraulics Stress methodology is for the spacA function is hardcoded for nvegwcs==4' &
-                   !#py !#py //errMsg(__FILE__, __LINE__))
+       call endrun(msg='Error:: the Plant Hydraulics Stress methodology is for the spacA function is hardcoded for nvegwcs==4' &
+                   //errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine allocParams
@@ -204,6 +204,7 @@ contains
     !$acc params_inst%lmr_intercept_atkin )
 
  end subroutine readParams
+
 
   !------------------------------------------------------------------------------
   subroutine Photosynthesis ( bounds, fn, filterp, &
@@ -440,7 +441,7 @@ contains
       lmrc    = fth25 (lmrhd, lmrse)
 
       !$acc enter data copyin(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc) &
-      !$acc create(jmax_z(1:fn,nlevcan), lnc(1:fn),kn(1:fn),psn_wc_z(1:fn,:nlevcan),psn_wj_z(1:fn,:nlevcan), psn_wp_z(1:fn,:nlevcan) )  
+      !$acc create(jmax_z(1:fn,nlevcan), lnc(1:fn),kn(1:fn),psn_wc_z(1:fn,:nlevcan),psn_wj_z(1:fn,:nlevcan), psn_wp_z(1:fn,:nlevcan) )
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,i_type,kc25,ko25,sco,cp25)
       do f = 1, fn
@@ -829,8 +830,8 @@ contains
 #ifndef _OPENACC
                if (gs_mol(p,iv) < 0._r8) then
                   print *, 'Negative stomatal conductance:'
-                  !#py write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
-                  !#py !#py call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 #endif
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
@@ -841,7 +842,7 @@ contains
 #ifndef _OPENACC
                if (abs(gs_mol(p,iv)-gs_mol_err) > 1.e-01_r8) then
                   print *, 'Ball-Berry error check - stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol(p,iv), gs_mol_err
+                  write (iulog,*) gs_mol(p,iv), gs_mol_err
                end if
 #endif
             end if    ! night or day if branch
@@ -1253,8 +1254,8 @@ contains
     fb=f2
 #ifndef _OPENACC
     if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
-       !#py write(iulog,*) 'root must be bracketed for brent'
-       !#py !#py call endrun(msg=errmsg(__FILE__, __LINE__))
+       write(iulog,*) 'root must be bracketed for brent'
+       call endrun(msg=errmsg(__FILE__, __LINE__))
     endif
 #endif
     c=b
@@ -2493,9 +2494,9 @@ contains
                ! Make sure iterative solution is correct
 #ifndef _OPENACC
                if (gs_mol_sun(p,iv) < 0._r8 .or. gs_mol_sha(p,iv) < 0._r8) then
-                  !#py write (iulog,*)'Negative stomatal conductance:'
-                  !#py write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
-                  !#py !#py call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  write (iulog,*)'Negative stomatal conductance:'
+                  write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 #endif
 
@@ -2508,8 +2509,8 @@ contains
 
 #ifndef _OPENACC
                if (abs(gs_mol_sun(p,iv)-gs_mol_err) > 1.e-01_r8) then
-                  !#py write (iulog,*) 'Ball-Berry error check - sunlit stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol_sun(p,iv), gs_mol_err
+                  write (iulog,*) 'Ball-Berry error check - sunlit stomatal conductance error:'
+                  write (iulog,*) gs_mol_sun(p,iv), gs_mol_err
                end if
 #endif
                hs = (gb_mol(p)*ceair + gs_mol_sha(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol_sha(p,iv))*esat_tv(p))
@@ -2519,8 +2520,8 @@ contains
 
 #ifndef _OPENACC
                if (abs(gs_mol_sha(p,iv)-gs_mol_err) > 1.e-01_r8) then
-                  !#py write (iulog,*) 'Ball-Berry error check - shaded stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol_sha(p,iv), gs_mol_err
+                  write (iulog,*) 'Ball-Berry error check - shaded stomatal conductance error:'
+                  write (iulog,*) gs_mol_sha(p,iv), gs_mol_err
                end if
 #endif
 
@@ -2920,8 +2921,8 @@ contains
 #ifndef _OPENACC
     do phase=1, nphs
        if ( (fa(phase) > 0._r8 .and. fb(phase) > 0._r8) .or. (fa(phase) < 0._r8 .and. fb(phase) < 0._r8) ) then
-          !#py write(iulog,*) 'root must be bracketed for brent'
-          !#py !#py call endrun(msg=errmsg(__FILE__, __LINE__))
+          write(iulog,*) 'root must be bracketed for brent'
+          call endrun(msg=errmsg(__FILE__, __LINE__))
        endif
     enddo
 #endif
@@ -3001,7 +3002,7 @@ contains
        if( (fb(sun) == 0._r8) .and. (fb(sha) == 0._r8) ) exit
     enddo
 #ifndef _OPENACC
-    !#py if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
+    if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
 #endif
     xsun=b(sun)
     xsha=b(sha)
@@ -3461,7 +3462,7 @@ contains
 #ifndef NDEBUG
     ! Only execute this code if DEBUG=TRUE
     if ( nvegwcs /= 4 )then
-       !#py !#py call endrun(msg='Error:: this function is hardcoded for 4x4 matrices with nvegwcs==4'//errMsg(__FILE__, __LINE__))
+       call endrun(msg='Error:: this function is hardcoded for 4x4 matrices with nvegwcs==4'//errMsg(__FILE__, __LINE__))
     end if
 #endif
 
