@@ -302,13 +302,14 @@ contains
 
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
-       if (all_active) then
-          veg_pp%active(p) = .true.
-       else
-          c =veg_pp%column(p)
-          veg_pp%active(p) = .false.
-          if (col_pp%active(c) .and. veg_pp%wtcol(p) > 0._r8) veg_pp%active(p) = .true.
-       end if
+       veg_pp%active(p) = is_active_p(p)
+       !if (all_active) then
+       !   veg_pp%active(p) = .true.
+       !else
+       !   c =veg_pp%column(p)
+       !   veg_pp%active(p) = .false.
+       !   if (col_pp%active(c) .and. veg_pp%wtcol(p) > 0._r8) veg_pp%active(p) = .true.
+       !end if
        if (veg_pp%active(p) .and. .not. col_pp%active(c)) then
           print *,' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
@@ -1007,13 +1008,8 @@ contains
     !-----------------------------------------------------------------------
 
     if (maxpatch_glcmec > 0) then
-<<<<<<< HEAD
        subgrid_weights_diagnostics%pct_glc_mec(bounds%begt:bounds%endt,:) = 0._r8
     
-=======
-       subgrid_weights_diagnostics%pct_glc_mec(bounds%begg:bounds%endg, :) = 0._r8
-
->>>>>>> 9046bc8cdd... Added many of the acc flags needed for compilation -- need to solve linking issue!
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
@@ -1021,13 +1017,8 @@ contains
           !topi = grc_pp%topi(g)
           !ti = t - topi + 1
           if (lun_pp%itype(l) == istice_mec) then
-<<<<<<< HEAD
-             icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-             subgrid_weights_diagnostics%pct_glc_mec(t, icemec_class) = col_pp%wtlunit(c) * 100._r8
-=======
              icemec_class = col_pp%itype(c) - istice_mec*100
-             subgrid_weights_diagnostics%pct_glc_mec(g, icemec_class) = col_pp%wtlunit(c) * 100._r8
->>>>>>> 9046bc8cdd... Added many of the acc flags needed for compilation -- need to solve linking issue!
+             subgrid_weights_diagnostics%pct_glc_mec(t, icemec_class) = col_pp%wtlunit(c) * 100._r8
           end if
        end do
     end if
@@ -1055,25 +1046,14 @@ contains
 
     character(len=*), parameter :: subname = 'set_pct_pft_diagnostics'
     !-----------------------------------------------------------------------
-<<<<<<< HEAD
-    
     subgrid_weights_diagnostics%pct_nat_pft(bounds%begt:bounds%endt,:) = 0._r8
-=======
-
-    subgrid_weights_diagnostics%pct_nat_pft(bounds%begg:bounds%endg, :) = 0._r8
->>>>>>> 9046bc8cdd... Added many of the acc flags needed for compilation -- need to solve linking issue!
 
     ! Note that pct_cft will be 0-size if cft_size is 0 (which can happen if we don't
     ! have a crop landunit). But it doesn't hurt to have this line setting all elements
     ! to 0, and doing this always allows us to avoid extra logic which could be a
     ! maintenance problem.
-<<<<<<< HEAD
     subgrid_weights_diagnostics%pct_cft(bounds%begt:bounds%endt,:) = 0._r8
     
-=======
-    subgrid_weights_diagnostics%pct_cft(bounds%begg:bounds%endg, :) = 0._r8
-
->>>>>>> 9046bc8cdd... Added many of the acc flags needed for compilation -- need to solve linking issue!
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
        l = veg_pp%landunit(p)

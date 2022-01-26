@@ -192,12 +192,12 @@ contains
        ! on input result is rhs, on output result is solution vector
        result(:)=r(ci,jtop(ci):jbot(ci))
 
-       #ifdef _OPENACC
+#ifdef _OPENACC
                  call dgbsv_oacc(n, kl, ku, 1, ab, m ,ipiv, result,n,info)
-       #else
-               ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+#else
+              ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
                call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
-       #endif
+#endif
 
        u(ci,jtop(ci):jbot(ci))=result(:)
 

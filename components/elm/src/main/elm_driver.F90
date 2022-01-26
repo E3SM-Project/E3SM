@@ -314,7 +314,6 @@ contains
     istat = cudaDeviceSetLimit(cudaLimitMallocHeapSize,heapsize)
     istat = cudaMemGetInfo(free1, total)
     print *, "Free1:",free1
-#endif
 if(nstep_mod == 0 ) then
   print *, "transferring data to GPU"
    !$acc update device( &
@@ -442,14 +441,13 @@ if(nstep_mod == 0 ) then
     !! !$acc enter data copyin(tape_gpu(:),elmptr_ra,elmptr_rs)
     !$acc enter data copyin( doalb, declinp1, declin )
 
-#if _CUDA
           istat = cudaMemGetInfo(free2, total)
           print *, "Transferred:", free1-free2
           print *, "Total:",total
           print *, "Free:", free2
-#endif
   end if
 
+#endif
 
     if (do_budgets) call WaterBudget_Reset()
 
