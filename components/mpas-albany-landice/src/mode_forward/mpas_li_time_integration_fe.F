@@ -202,7 +202,6 @@ module li_time_integration_fe
 ! It's not clear when the best time to do this is.
 ! Seems cleaner to do it either before or after all of the time evolution of the ice
 ! is complete.  Putting it after.
-      ! ! ! write(6,*) '<<< 3. mpas_li_time_integration_fe.F L205: li_bedtopo_solve '
       call li_bedtopo_solve(domain, err=err_tmp)
       err = ior(err, err_tmp)
 

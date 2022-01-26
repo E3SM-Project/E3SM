@@ -20,6 +20,7 @@
 !-----------------------------------------------------------------------
 
 module li_bedtopo
+
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
@@ -27,9 +28,10 @@ module li_bedtopo
    use li_mask
    use li_setup
    use netcdf
-!#ifdef USE_SEALEVELMODEL
-   use mpi 
-!#endif   
+#ifdef _MPI
+   use mpi
+#endif
+
    implicit none
    private
 
@@ -40,6 +42,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
    ! Public member functions
    !--------------------------------------------------------------------
+
    public :: li_bedtopo_init, &
              li_bedtopo_finalize, &
              li_bedtopo_block_init, &
@@ -65,10 +68,12 @@ module li_bedtopo
    integer, pointer :: nCellsAll
    integer, pointer ::  nCellsOwned
    integer :: iCell, ilm, curProc
-   
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayIce, gatheredArrayIce
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopo, gatheredArrayBedTopo
-   real (kind=RKIND), dimension(:), allocatable :: globalArraySLC, gatheredArraySLC
+
+   !< globalArray: all global cells in the proper ordering specified by indexToCellID
+	!< gatheredArray: all global cells but in an arbitrary ordering returned by the MPI gather operation
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayThickness, gatheredArrayThickness
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopography, gatheredArrayBedTopography
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayUpliftDiff, gatheredArrayUpliftDiff
 
 !***********************************************************************
 
@@ -107,7 +112,6 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-
       ! No init is needed.
       err = 0
 
@@ -177,7 +181,8 @@ contains
 !>  is a data field passed in as input.
 !
 !-----------------------------------------------------------------------
-subroutine li_bedtopo_solve(domain, err)
+
+   subroutine li_bedtopo_solve(domain, err)
 
       use mpas_timekeeping 
       use li_mask
@@ -204,7 +209,6 @@ subroutine li_bedtopo_solve(domain, err)
       !-----------------------------------------------------------------
 
       type (block_type), pointer :: block
-	   character (len=StrKIND), pointer :: config_slm_coupling_interval
       character (len=StrKIND), pointer :: config_uplift_method
       type (mpas_pool_type), pointer :: meshPool          !< mesh information
       type (mpas_pool_type), pointer :: geometryPool      !< geometry information
@@ -243,35 +247,30 @@ subroutine li_bedtopo_solve(domain, err)
          end do
 
       elseif (trim(config_uplift_method)=='sealevelmodel') then
-
-			call mpas_log_write("Sea-level model is used to calculate changes in bedTopography")
-
+         ! do nothing
       else
          call mpas_log_write("Unknown option selected for 'config_uplift_method'", MPAS_LOG_ERR)
       endif
 
 #ifdef USE_SEALEVELMODEL
-
       if (trim(config_uplift_method)=='sealevelmodel') then
-			call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+         if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then
+            err = ior(err, err_tmp)
 
-	      if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then
-	         err = ior(err, err_tmp)
+            slmTimeStep = slmTimeStep + 1
 
-				slmTimeStep = slmTimeStep + 1
-
-	         call mpas_log_write("<<< SL alarm is ringing. slmTimeStep: $i", intArgs=(/slmTimeStep/))
+            call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
             call slmodel_solve(slmTimeStep, domain)
 
             call mpas_reset_clock_alarm(domain % clock, 'slmCouplingInterval', ierr=err_tmp)
             err = ior(err, err_tmp)
 
-	      else
-	        ! do nothing for now, but could calculate uplift rate here later instead.
-	      endif
-		else
+         else
+           ! do nothing for now, but could calculate uplift rate here later instead.
+         endif
+      else
          call mpas_log_write("'sealevelmodel' should be selected for option 'config_uplift_method'", MPAS_LOG_ERR)
-		endif
+      endif
 #endif
 
       ! === error check
@@ -340,11 +339,9 @@ subroutine li_bedtopo_solve(domain, err)
 !-----------------------------------------------------------------------
 
    subroutine slmodel_init(domain, err)
-      use sl_model_mod
-      use user_specs_mod, only: nglv
-      use spharmt
-      use planets_mod
-      use io_mod !<<HH delete if not
+
+      use sl_model_mod                !< this is part of the SLM code
+      use user_specs_mod, only: nglv. !< this is part of the SLM code
 
       !-----------------------------------------------------------------
       ! input variables
@@ -355,8 +352,6 @@ subroutine li_bedtopo_solve(domain, err)
       !-----------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
-      type (block_type), pointer :: block         !< Input/output: Block object
-      type (mpas_pool_type), pointer :: geometryPool !< mesh information
 
       !-----------------------------------------------------------------
       ! output variables
@@ -368,16 +363,19 @@ subroutine li_bedtopo_solve(domain, err)
       ! local variables
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), pointer :: geometryPool !< mesh information
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
-		real (kind=RKIND), dimension(:), allocatable :: mask_mesh
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ism_iceload, ism_bedrock, ism_mask
-		real (kind=RKIND), dimension(nglv*2*nglv) :: mask_slGrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thickness_slGrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: bedrock_slGrid1D
+      real (kind=RKIND), dimension(:), allocatable :: meshMask
+      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismBedtopo, ismMask
+      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: bedrockSLgrid1D
 
       integer :: unit_num
       integer :: slmTimeStep, itersl_sh, dtime_sh !get these values from namelist
       real    :: starttime_sh
+
+      err = 0
 
       ! initialize coupling time step number. initial time is 0
       slmTimeStep = 0  !<<<HH: hardcode it until making the namelist file
@@ -397,48 +395,48 @@ subroutine li_bedtopo_solve(domain, err)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
       if (curProc.eq.0) then
-          allocate(globalArrayIce(nCellsGlobal), gatheredArrayIce(nCellsGlobal))
-          allocate(globalArrayBedTopo(nCellsGlobal), gatheredArrayBedTopo(nCellsGlobal))
-			 allocate(mask_mesh(nCellsGlobal))
+          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
+          allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
+          allocate(meshMask(nCellsGlobal))
       endif
 
       ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayIce, nCellsPerProc, &
+      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
-      call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopo, nCellsPerProc, &
+      call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
 
       if (curProc.eq.0) then
 
          ! Rearrange data into CellID order
          do iCell = 1,nCellsGlobal
-            globalArrayIce(indexToCellIDGathered(iCell)) = gatheredArrayIce(iCell)
-            globalArrayBedTopo(indexToCellIDGathered(iCell)) = gatheredArrayBedTopo(iCell)
-				mask_mesh(indexToCellIDGathered(iCell)) = 1
+            globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
+            globalArrayBedTopography(indexToCellIDGathered(iCell)) = gatheredArrayBedTopography(iCell)
+            meshMask(indexToCellIDGathered(iCell)) = 1
          enddo
 
          ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayIce, thickness_slGrid1D)
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopo, bedrock_slGrid1D)
-			call interpolate(toColValues, toRowValues, toSvalues, mask_mesh, mask_slGrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedrockSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
          ! reformat the interpolated data
-         ism_iceload = reshape(thickness_slGrid1D, [nglv,2*nglv])
-         ism_bedrock = reshape(bedrock_slGrid1D, [nglv, 2*nglv])
-         ism_mask = reshape(mask_slGrid1D, [nglv, 2*nglv])
+         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
+         ismBedtopo = reshape(bedrockSLgrid1D, [nglv, 2*nglv])
+         ismMask = reshape(maskSLgrid1D, [nglv, 2*nglv])
 
-         ! define unit_num for writing output messages
+         ! set SLM unit number to the MALI output log file unit
          unit_num = domain % logInfo % outputLog % unitNum
 
          call sl_set_unit_num(unit_num)
-         call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt error
+         call sl_solver_checkpoint(itersl_sh, dtime_sh)
          call sl_timewindow(slmTimeStep)
-         call sl_solver_init(itersl_sh, starttime_sh, ism_iceload, ism_bedrock, ism_mask)
-         call deallocate_slarrays ! Deallocate arrays that are set from sl_timewindow()
+         call sl_solver_init(itersl_sh, starttime_sh, ismIceload, ismBedtopo, ismMask)
+         call sl_deallocate_array
 
-         deallocate(globalArrayIce, gatheredArrayIce)
-         deallocate(globalArrayBedTopo, gatheredArrayBedTopo)
-			deallocate(mask_mesh)
+         deallocate(globalArrayThickness, gatheredArrayThickness)
+         deallocate(globalArrayBedTopography, gatheredArrayBedTopography)
+         deallocate(meshMask)
       endif
 
    !--------------------------------------------------------------------
@@ -457,33 +455,34 @@ subroutine li_bedtopo_solve(domain, err)
 !>  This wrapper routine calls the sea-level solver that takes in
 !>  ice thickness and provides sea-level change (i.e., changes in the
 !>  heights of the sea surface and the solid Earth surface associated
-!>  with ice sheet changes. The sea-levle model is taken and modified
+!>  with ice sheet changes. The sea-level model is taken and modified
 !>  from Han et al. (2021, GMD, https://doi.org/10.5281/zenodo.5775235)
 !
 !-----------------------------------------------------------------------
 
    subroutine slmodel_solve(slmTimeStep, domain)
+
       use li_advection
-      use sl_model_mod
-      use user_specs_mod, only: nglv
-      use io_mod !<<HH delete if not needed
+      use sl_model_mod               !< this is part of the SLM code
+      use user_specs_mod, only: nglv !< this is part of the SLM code
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
-	   integer, intent(in) :: slmTimeStep
+      integer, intent(in) :: slmTimeStep
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
 
-      integer :: err !< Output: error flag
+      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! local variables
@@ -494,20 +493,20 @@ subroutine li_bedtopo_solve(domain, err)
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
 
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
-		real (kind=RKIND), dimension(:), pointer :: upliftDiff
+      real (kind=RKIND), dimension(:), pointer :: upliftDiff
 
-      real (kind=RKIND), dimension(:), allocatable :: slChange_maliMesh, mask_mesh
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ism_iceload, ism_mask
-	   real (kind=RKIND), dimension(nglv,2*nglv) :: slm_slchange
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thickness_slGrid1D, slChange_slGrid1D
-		real (kind=RKIND), dimension(nglv*2*nglv) :: mask_slGrid1D
+      real (kind=RKIND), dimension(:), allocatable :: slChange_maliMesh, meshMask
+      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
+      real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
+      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D, slChange_slGrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
-		integer :: err_tmp
+      integer :: err_tmp
 
       integer ::  itersl_sh, dtime_sh
       real    :: starttime_sh
 
-		err_tmp = 0
+      err_tmp = 0
       itersl_sh = 1      ! * note: hardcode itersl_sh == 1.
       starttime_sh = 0 ! get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
       dtime_sh = 5
@@ -521,73 +520,72 @@ subroutine li_bedtopo_solve(domain, err)
 
       ! Allocate globalArray and gatheredArray only on process 0
       call MPI_COMM_RANK(domain % dminfo % comm, curProc, err)
+      err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
-         allocate(globalArrayIce(nCellsGlobal), gatheredArrayIce(nCellsGlobal))
-         allocate(globalArrayBedTopo(nCellsGlobal), gatheredArrayBedTopo(nCellsGlobal))
-         allocate(globalArraySLC(nCellsGlobal), gatheredArraySLC(nCellsGlobal))
-			allocate(mask_mesh(nCellsGlobal))
+         allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
+         allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
+         allocate(globalArrayUpliftDiff(nCellsGlobal), gatheredArrayUpliftDiff(nCellsGlobal))
+         allocate(meshMask(nCellsGlobal))
       endif
 
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayIce, nCellsPerProc, &
+      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
+      err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
 
          ! Rearrange thickness into CellID order
          do iCell = 1,nCellsGlobal
-            globalArrayIce(indexToCellIDGathered(iCell)) = gatheredArrayIce(iCell)
-				mask_mesh(indexToCellIDGathered(iCell)) = 1
+            globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
+            meshMask(indexToCellIDGathered(iCell)) = 1
          enddo
 
          ! interpolate thickness to Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayIce, thickness_slGrid1D)
-			call interpolate(toColValues, toRowValues, toSvalues, mask_mesh, mask_slGrid1D)
-         call write_txt(thickness_slGrid1D, 'mali_iceload','')
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
          ! reshape the interpolated data
-         ism_iceload(:,:) = reshape(thickness_slGrid1D, [nglv,2*nglv])
-			ism_mask = reshape(mask_slGrid1D, [nglv, 2*nglv])
+         ismIceload(:,:) = reshape(thicknessSLgrid1D, [nglv,2*nglv])
+         ismMask = reshape(maskSLgrid1D, [nglv, 2*nglv])
 
-		   ! call the sea-level model
-		   call sl_solver_checkpoint(itersl_sh, dtime_sh) !Uncomment this after fixing the spharmt boundcheck error
-		   call sl_timewindow(slmTimeStep)
-		   call sl_solver(itersl_sh, slmTimeStep, dtime_sh, starttime_sh, ism_iceload, ism_mask, slm_slchange)
-		   call deallocate_slarrays
+         call sl_solver_checkpoint(itersl_sh, dtime_sh)
+         call sl_timewindow(slmTimeStep)
+         call sl_solver(itersl_sh, slmTimeStep, dtime_sh, starttime_sh, ismIceload, ismMask, slmSLchange)
+         call sl_deallocate_array
 
          ! interpolate slchange from Gaussian grid to MALI mesh and reshape
-         slChange_slGrid1D = reshape(slm_slchange, [nglv*2*nglv])
+         slChange_slGrid1D = reshape(slmSLchange, [nglv*2*nglv])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
-         call interpolate(fromColValues, fromRowValues, fromSValues, slChange_slGrid1D, globalArraySLC)
+         call interpolate(fromColValues, fromRowValues, fromSValues, slChange_slGrid1D, globalArrayUpliftDiff)
           
          ! Rearrange back to index order
          do iCell = 1,nCellsGlobal
-             gatheredArraySLC(iCell) = globalArraySLC(indexToCellIDGathered(iCell))
+             gatheredArrayUpliftDiff(iCell) = globalArrayUpliftDiff(indexToCellIDGathered(iCell))
          enddo
             
       endif
 
-      ! scatter bedTopography and sea-level change to processors
-      call MPI_SCATTERV(gatheredArrayBedTopo, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  bedTopography, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
-						
-      call MPI_SCATTERV(gatheredArraySLC, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
+      ! scatter output sea-level changes to processors
+      call MPI_SCATTERV(gatheredArrayUpliftDiff, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
                   upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
+      err = ior(err, err_tmp)
 
       ! update bedTopography
       bedTopography(:) = bedTopography(:) - upliftDiff(:)
 
       call li_update_geometry(geometryPool)
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
 
       ! deallocate memory
       if (curProc.eq.0) then
-         deallocate(globalArrayIce, gatheredArrayIce)
-         deallocate(globalArrayBedTopo, gatheredArrayBedTopo)
-         deallocate(globalArraySLC, gatheredArraySLC)
-			deallocate(mask_mesh)
+         deallocate(globalArrayThickness, gatheredArrayThickness)
+         deallocate(globalArrayBedTopography, gatheredArrayBedTopography)
+         deallocate(globalArrayUpliftDiff, gatheredArrayUpliftDiff)
+         deallocate(meshMask)
       endif
 
       ! Perform Halo exchange update
@@ -616,13 +614,13 @@ subroutine li_bedtopo_solve(domain, err)
 !-----------------------------------------------------------------------
 
    subroutine interpolate(colValues, rowValues, sValues, dataIn, dataOut)
-      use io_mod
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
-      integer, dimension(:) :: rowValues, colValues
-      real (kind=RKIND), dimension(:) :: sValues, dataIn
+      integer, dimension(:), intent(in) :: rowValues, colValues
+      real (kind=RKIND), dimension(:), intent(in) :: sValues, dataIn
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -632,7 +630,7 @@ subroutine li_bedtopo_solve(domain, err)
       ! output variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:) :: dataOut
+      real (kind=RKIND), dimension(:), intent(out) :: dataOut
 
       !-----------------------------------------------------------------
       ! local variables
@@ -683,17 +681,18 @@ subroutine li_bedtopo_solve(domain, err)
       ! input variables
       !-----------------------------------------------------------------
 
-   
+
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain    !< Input/output: Domain
-      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! local variables
@@ -714,15 +713,15 @@ subroutine li_bedtopo_solve(domain, err)
 
       ! MPI variables
       integer :: curProc
-     ! integer, pointer ::  nCells
       integer, dimension(:), pointer :: indexToCellID
       integer :: iProc, l, ilm, nProcs
 
+      integer :: err_tmp
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_MALI_to_SLM_weights_file', config_MALI_to_SLM_weights_file)
       call mpas_pool_get_config(liConfigs, 'config_SLM_to_MALI_weights_file', config_SLM_to_MALI_weights_file)
-      
+
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll)   
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
@@ -730,8 +729,9 @@ subroutine li_bedtopo_solve(domain, err)
 
       ! Begin MPI portion
       call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
+      err = ior(err, err_tmp)
       call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err)
-
+      err = ior(err, err_tmp)
       
       ! perform the initialization on the head processor
       if (curProc.eq.0) then
@@ -742,7 +742,8 @@ subroutine li_bedtopo_solve(domain, err)
       ! Gather nCellsOwned
       call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
                        0, domain % dminfo % comm, err)
-      
+      err = ior(err, err_tmp)
+
       ! Set Displacement variable for GATHERV command
       if (curProc.eq.0) then
          nCellsGlobal = sum(nCellsPerProc)
@@ -758,15 +759,18 @@ subroutine li_bedtopo_solve(domain, err)
       ! Gather indexToCellID
       call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
               nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err)
+      err = ior(err, err_tmp)
 
-      !initialize interpoation
-       if (curProc.eq.0) then
+      !initialize interpolation
+      if (curProc.eq.0) then
          mpasToGridFile = trim(config_MALI_to_SLM_weights_file)
          gridToMpasFile = trim(config_MALI_to_SLM_weights_file)
 
          ! Open netcdf weights files
          call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId) ,err)
+         err = ior(err, err_tmp)
          call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId) ,err)
+         err = ior(err, err_tmp)
 
          ! Get dimension ID
          call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId) ,err)
