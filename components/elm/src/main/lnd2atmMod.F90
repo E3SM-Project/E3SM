@@ -148,6 +148,7 @@ contains
     ! !USES:
       !$acc routine seq
     use CH4varcon  , only : ch4offline
+    use elm_varcon , only : convertgC2kgCO2
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)     :: bounds
@@ -165,11 +166,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
-    real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
-    real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
-    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
-    ! The following converts g of C to kg of CO2
-    real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
     !------------------------------------------------------------------------
     associate( &
       t_ref2m     => veg_es%t_ref2m , &
