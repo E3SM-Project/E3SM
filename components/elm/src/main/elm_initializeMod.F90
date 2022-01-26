@@ -944,7 +944,7 @@ contains
     ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
 
-    if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
+    if ( use_fates .and. .not.is_restart() .and. finidat == ' ' .and. nsrest /= nsrBranch) then
        ! If fates is using satellite phenology mode, make sure to call the SatellitePhenology
        ! procedure prior to init_coldstart which will eventually call leaf_area_profile
        if ( use_fates_sp ) then
