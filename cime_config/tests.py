@@ -457,4 +457,11 @@ _TESTS = {
             )
     },
 
+    "e3sm_cldera" : {
+        "tests" : (
+            "ERS_Ln9.ne4pg2_oQU480.F20TR.eam-prognostic_volcaero",
+            "SMS_D_Ln9.ne4pg2_ne4pg2.F20TR-CICE.eam-prognostic_volcaero",
+            )
+    },
+
 }
