@@ -14,6 +14,7 @@ module PhosphorusStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use VegetationType              , only : veg_pp
+  use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com
@@ -28,7 +29,7 @@ module PhosphorusStateUpdate1Mod
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
-  #define is_active_betr_bgc .false.
+
   !
   implicit none
   save
@@ -74,7 +75,7 @@ contains
             c = filter_soilc_with_inactive(fc)
             col_ps%prod10p(c) = col_ps%prod10p(c) + col_pf%dwt_prod10p_gain(c)*dt
             col_ps%prod100p(c) = col_ps%prod100p(c) + col_pf%dwt_prod100p_gain(c)*dt
-            col_ps%prod1p(c) = col_ps%prod1p(c) + col_pf%dwt_crop_productp_gain(c)*dt            
+            col_ps%prod1p(c) = col_ps%prod1p(c) + col_pf%dwt_crop_productp_gain(c)*dt
 
             do j = 1,nlevdecomp
 
@@ -146,18 +147,18 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  
+
                   ! plant to litter fluxes
                   ! phenology and dynamic landcover fluxes
                   col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
                        col_pf%phenology_p_to_litr_met_p(c,j) * dt
-                  
+
                   col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
                        col_pf%phenology_p_to_litr_cel_p(c,j) * dt
-                  
+
                   col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
                        col_pf%phenology_p_to_litr_lig_p(c,j) * dt
-                  
+
                end do
             end do
          end if
@@ -207,9 +208,9 @@ contains
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+            ! fertilization assumed to occur at the begnining of each month
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
-               .and. fert_type(c) == 2 &
-               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+               .and. fert_type(c) == 2 .and. kda == 1  .and. mcsec == 1800) then
                do j = 1, nlevdecomp
                   col_ps%solutionp_vr(c,j) = col_ps%solutionp_vr(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                end do
@@ -220,7 +221,6 @@ contains
       if(.not.use_fates)then
 
           ! patch loop (veg)
-
           do fp = 1,num_soilp
               p = filter_soilp(fp)
 

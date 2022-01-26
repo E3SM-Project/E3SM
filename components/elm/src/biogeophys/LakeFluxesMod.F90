@@ -7,7 +7,7 @@ module LakeFluxesMod
   !
   ! !USES
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use shr_log_mod          , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
   use atm2lndType          , only : atm2lnd_type
   use EnergyFluxType       , only : energyflux_type
@@ -33,8 +33,8 @@ module LakeFluxesMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine LakeFluxes(bounds, num_lakec, filter_lakec, num_lakep, filter_lakep, &
-       atm2lnd_vars, solarabs_vars, frictionvel_vars, &
+  subroutine LakeFluxes(num_lakep, filter_lakep, &
+       solarabs_vars, frictionvel_vars, &
        energyflux_vars, lakestate_vars)
     !
     ! !DESCRIPTION:
@@ -44,7 +44,6 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
@@ -56,26 +55,19 @@ contains
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds
-    integer                , intent(in)    :: num_lakec         ! number of column non-lake points in column filter
-    integer                , intent(in)    :: filter_lakec(:)   ! column filter for non-lake points
     integer                , intent(in)    :: num_lakep         ! number of column non-lake points in pft filter
     integer                , intent(in)    :: filter_lakep(:)   ! patch filter for non-lake points
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(solarabs_type)    , intent(inout) :: solarabs_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(lakestate_type)   , intent(inout) :: lakestate_vars
     !
     ! !LOCAL VARIABLES:
-    real(r8), pointer :: z0mg_col(:)               ! roughness length over ground, momentum [m]
-    real(r8), pointer :: z0hg_col(:)               ! roughness length over ground, sensible heat [m]
-    real(r8), pointer :: z0qg_col(:)               ! roughness length over ground, latent heat [m]
-    integer , parameter :: niters = 4             ! maximum number of iterations for surface temperature
-    real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
-    real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
-    integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
-    integer  :: iter                               ! iteration index
+    integer , parameter :: niters = 4      ! maximum number of iterations for surface temperature
+    real(r8), parameter :: beta1 = 1._r8   ! coefficient of convective velocity (in computing W_*) [-]
+    real(r8), parameter :: zii = 1000._r8  ! convective boundary height [m]
+    integer  :: i,fc,fp,g,t,c,p            ! do loop or array index
+    integer  :: iter                       ! iteration index
     integer  :: nmozsgn    ! number of times moz changes sign
     integer  :: jtop       ! top level for each column (no longer all 1)
     real(r8) :: ax         ! used in iteration loop for calculating t_grnd (numerator of NR solution)
@@ -132,7 +124,7 @@ contains
     real(r8) :: fetch     ! Fetch (m)
     real(r8) :: sqre0     ! root of roughness Reynolds number
     real(r8), parameter :: kva0 = 1.51e-5_r8       ! kinematic viscosity of air (m^2/s) at 20C and 1.013e5 Pa
-    real(r8) :: kva0temp                           ! (K) temperature for kva0; will be set below
+    real(r8), parameter :: kva0temp = 20._r8 + tfrz! (K) temperature for kva0; will be set below
     real(r8), parameter :: kva0pres = 1.013e5_r8   ! (Pa) pressure for kva0
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
@@ -211,17 +203,19 @@ contains
          ram1_lake        =>    lakestate_vars%ram1_lake_patch   , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
          ust_lake         =>    lakestate_vars%ust_lake_col      , & ! Output: [real(r8) (:)   ]  friction velocity (m/s)
          lake_raw         =>    lakestate_vars%lake_raw_col      , & ! Output: [real(r8) (:)   ]  aerodynamic resistance for moisture (s/m)
-
-         begp             =>    bounds%begp                      , &
-         endp             =>    bounds%endp                        &
+         ! the following cause a crash if they are set as associated
+         z0mg_col         =>    frictionvel_vars%z0mg_col        , &
+         z0hg_col         =>    frictionvel_vars%z0hg_col        , &
+         z0qg_col         =>    frictionvel_vars%z0qg_col         &
          )
 
-      ! the following cause a crash if they are set as associated
-      z0mg_col => frictionvel_vars%z0mg_col
-      z0hg_col => frictionvel_vars%z0hg_col
-      z0qg_col => frictionvel_vars%z0qg_col
 
-      kva0temp = 20._r8 + tfrz
+
+      ! kva0temp = 20._r8 + tfrz
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc  private(p,c,t,g,eg, degdT, qsatg, qsatgdT, thv, dthv, zldis, &
+      !$acc  displa, z0mg, z0hg, z0qg, obu, iter, ur, um, ustar, &
+      !$acc  temp1, temp2, temp12m, temp22m,fm,e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -333,11 +327,11 @@ contains
 
       ! Begin stability iteration
 
-      ITERATION : do while (iter <= niters .and. num_lakep > 0)
+      ITERATION : do while (iter <= niters )
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
-         if (nmozsgn >= 3) cycle
+         if (nmozsgn >= 3) iter = niters+1 ! stop iterating
 
          call FrictionVelocity(fp, p, &
               displa, z0mg, z0hg, z0qg, &
@@ -576,6 +570,7 @@ contains
 
        !NOTE : this loop only uses global variables so keep it separate for potential
        !       cache benefits?
+       !$acc parallel loop independent gang vector default(present) private(p,t)
        do fp = 1, num_lakep
          p = filter_lakep(fp)
          t = veg_pp%topounit(p)

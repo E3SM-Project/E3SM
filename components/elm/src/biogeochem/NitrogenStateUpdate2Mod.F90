@@ -9,8 +9,6 @@ module NitrogenStateUpdate2Mod
   use elm_varpar          , only : nlevsoi, nlevdecomp
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl          , only : iulog
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use CNNitrogenFLuxType  , only : nitrogenflux_type
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_nf
@@ -18,7 +16,6 @@ module NitrogenStateUpdate2Mod
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
   !
-  #define is_active_betr_bgc .false.
   implicit none
   save
   private
@@ -39,7 +36,8 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-      !$acc routine seq
+   !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -52,7 +50,7 @@ contains
     integer  :: c,p,j,l ! indices
     integer  :: fp,fc   ! lake filter indices
     !-----------------------------------------------------------------------
-      
+
     ! column-level nitrogen fluxes from gap-phase mortality
       if ( .not. is_active_betr_bgc .and. &
            .not.(use_pflotran .and. pf_cmode)) then
@@ -118,6 +116,7 @@ contains
     ! no science equations. This increases readability and maintainability
     !
       !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

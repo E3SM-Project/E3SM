@@ -12,27 +12,24 @@ module VerticalProfileMod
   use SoilStateType   , only : soilstate_type
   use CanopyStateType , only : canopystate_type
   use CNStateType     , only : cnstate_type
-  use ColumnType      , only : col_pp                
-  use VegetationType       , only : veg_pp                
+  use ColumnType      , only : col_pp
+  use VegetationType       , only : veg_pp
   !
   implicit none
   save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public:: decomp_vertprofiles
+  public :: decomp_vertprofiles
   !
   logical , public :: exponential_rooting_profile = .true.
   logical , public :: pftspecific_rootingprofile = .true.
   ! how steep profile is for root C inputs (1/ e-folding depth) (1/m)
-  real(r8), public :: rootprof_exp  = 3.       
+  real(r8), public :: rootprof_exp  = 3.
   ! how steep profile is for surface components (1/ e_folding depth) (1/m)
-  real(r8), public :: surfprof_exp  = 10.   
-
-  !$acc declare copyin(rootprof_exp)
-  !$acc declare copyin(surfprof_exp) 
-  !$acc declare copyin(exponential_rooting_profile)
-  !$acc declare copyin(pftspecific_rootingprofile)   
+  real(r8), public :: surfprof_exp  = 10.
+  !$acc declare copyin(rootprof_exp,surfprof_exp)
+  !$acc declare copyin(exponential_rooting_profile, pftspecific_rootingprofile)
   !-----------------------------------------------------------------------
 
 contains
@@ -54,15 +51,16 @@ contains
     !  points. However, note that this routine is (mistakenly) called from two places
     !  currently - the above note applies to its call from the driver, but its call from
     !  SoilLittDecompMod uses the standard filters that just apply over active points
-    !$acc routine seq  
+    !
     ! !USES:
+      !$acc routine seq
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds  
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -95,18 +93,18 @@ contains
     associate(                                                               & 
          nlev2bed             => col_pp%nlevbed                            , & ! Input: [integer (:)     ]  number of layers to bedrock
          rootfr               => soilstate_vars%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
-         
-         altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)                              
-         
-         nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
+
+         altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)
+
+         nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
          ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
-         pdep_prof            => cnstate_vars%pdep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for P depostition additions          
-         
-         leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
-         froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
-         croot_prof           => cnstate_vars%croot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
-         stem_prof            => cnstate_vars%stem_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of stems                          
-         
+         pdep_prof            => cnstate_vars%pdep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for P depostition additions
+
+         leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves
+         froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+         croot_prof           => cnstate_vars%croot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of coarse roots
+         stem_prof            => cnstate_vars%stem_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of stems
+
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                               , &
          begc                 => bounds%begc                               , &
@@ -116,7 +114,6 @@ contains
       if (use_vertsoilc) then
 
          ! define a single shallow surface profile for surface additions (leaves, stems, and N deposition)
-         surface_prof(:) = 0._r8
          do j = 1, nlevdecomp
             surface_prof(j) = exp(-surfprof_exp * zsoi(j)) / dzsoi_decomp(j)
          end do
@@ -219,8 +216,8 @@ contains
                ! if fully frozen, or no roots, put everything in the top layer
                froot_prof(p,1) = 1./dzsoi_decomp(1)
                croot_prof(p,1) = 1./dzsoi_decomp(1)
-               leaf_prof(p,1) = 1./dzsoi_decomp(1)
-               stem_prof(p,1) = 1./dzsoi_decomp(1)
+               leaf_prof (p,1) = 1./dzsoi_decomp(1)
+               stem_prof (p,1) = 1./dzsoi_decomp(1)
             endif
 
          end do
@@ -265,7 +262,7 @@ contains
             else
                nfixation_prof(c,1) = 1./dzsoi_decomp(1)
                ndep_prof(c,1) = 1./dzsoi_decomp(1)
-               pdep_prof(c,1) = 1./dzsoi_decomp(1) 
+               pdep_prof(c,1) = 1./dzsoi_decomp(1)
             endif
          end do
 
@@ -294,9 +291,9 @@ contains
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
             pdep_prof_sum = pdep_prof_sum + pdep_prof(c,j) *  dzsoi_decomp(j)
          end do
-#ifndef _OPENACC
          if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. &
               ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
+            #ifndef _OPENACC
             write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum, pdep_prof_sum
             write(iulog, *) 'c: ', c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
@@ -307,13 +304,13 @@ contains
             write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
             write(iulog, *) 'surface_prof: ', surface_prof(:)
             write(iulog, *) 'npfts(c): ', col_pp%npfts(c)
+            #endif
             do p = col_pp%pfti(c), col_pp%pfti(c) + col_pp%npfts(c) -1
                write(iulog, *) 'p, itype(p), wtcol(p): ', p, veg_pp%itype(p), veg_pp%wtcol(p)
                write(iulog, *) 'cinput_rootfr(p,:): ', cinput_rootfr(p,:)
             end do
             call endrun(msg=" ERROR: _prof_sum-1>delta"//errMsg(__FILE__, __LINE__))
          endif
-#endif 
       end do
 
       do fp = 1,num_soilp
@@ -328,17 +325,15 @@ contains
             leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
             stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
          end do
-#ifndef _OPENACC
          if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
               ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
             write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
             call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
          endif
-#endif 
       end do
 
-    end associate 
+    end associate
 
   end subroutine decomp_vertprofiles
-  
+
 end module VerticalProfileMod

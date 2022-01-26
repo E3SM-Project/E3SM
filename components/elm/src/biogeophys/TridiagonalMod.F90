@@ -101,7 +101,7 @@ contains
 
   end subroutine Tridiagonal_sr
 
-  subroutine Tridiagonal_SoilLittVertTransp (lbj, ubj, jtop, numf, filter, a, b, c, r, u,is_col_active)
+  subroutine Tridiagonal_SoilLittVertTransp (lbj, ubj, numf, a, b, c, r, u)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
@@ -114,58 +114,41 @@ contains
     ! !ARGUMENTS:
     implicit none
     integer           , intent(in)    :: lbj, ubj              ! lbinning and ubing level indices
-    integer           , intent(in)    :: jtop(numf)            ! top level for each column [col]
     integer           , intent(in)    :: numf                  ! filter dimension
-    integer           , intent(in)    :: filter(:)             ! filter
     real(r8)          , intent(in)    :: a( 1:numf , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
     real(r8)          , intent(in)    :: b( 1:numf , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
     real(r8)          , intent(in)    :: c( 1:numf , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
     real(r8)          , intent(in)    :: r( 1:numf , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
     real(r8)          , intent(inout) :: u( 1:numf , lbj:ubj)    ! solution [col                                    , j]
-    logical, optional, intent(in)     :: is_col_active(:)   !
-    logical                           :: l_is_col_active(1:numf) !!
     integer                           :: j,ci               ! indices
     real(r8)                          :: gam(numf,lbj:ubj)     ! temporary
     real(r8)                          :: bet(numf)             ! temporary
     !-----------------------------------------------------------------------
-
     ! Solve the matrix
-    if(present(is_col_active))then
-       l_is_col_active(:) = is_col_active(:)
-    else
-       l_is_col_active(:) = .true.
-    endif
-
     do ci = 1,numf
-        if(l_is_col_active(ci))then
-            bet(ci) = b(ci,jtop(ci))
-        endif
+       bet(ci) = b(ci,0)
     end do
 
     do j = lbj, ubj
        do ci = 1,numf
-           if(l_is_col_active(ci))then
-             if (j >= jtop(ci)) then
-               if (j == jtop(ci)) then
-                 u(ci,j) = r(ci,j) / bet(ci)
-               else
-                 gam(ci,j) = c(ci,j-1) / bet(ci)
-                 bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
-                 u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
-               end if
+          if (j >= 0) then
+             if (j == 0) then
+                u(ci,j) = r(ci,j) / bet(ci)
+             else
+                gam(ci,j) = c(ci,j-1) / bet(ci)
+                bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
+                u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
              end if
-           endif
+          end if
         end do
     end do
 
     do j = ubj-1,lbj,-1
-        do ci = 1,numf
-           if(l_is_col_active(ci))then
-             if (j >= jtop(ci)) then
-               u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
-             end if
-           endif
-        end do
+      do ci = 1,numf
+         if (j >= 0) then
+            u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
+         end if
+      end do
     end do
 
 

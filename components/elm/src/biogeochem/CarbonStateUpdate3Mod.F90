@@ -10,14 +10,11 @@ module CarbonStateUpdate3Mod
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use elm_varctl       , only : use_erosion, ero_ccycle
-  use CNCarbonStateType, only : carbonstate_type
-  use CNCarbonFluxType , only : carbonflux_type
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
   ! bgc interface & pflotran:
   use elm_varctl       , only : use_pflotran, pf_cmode
-  #define is_active_betr_bgc .false.
   !
   implicit none
   save
@@ -37,7 +34,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by fire fluxes and also erosion flux
     !
-      !$acc routine seq
+    use tracer_varcon       , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -58,7 +55,9 @@ contains
       if ( .not.is_active_betr_bgc )then
          ! column level carbon fluxes from fire
          if (.not.(use_pflotran .and. pf_cmode)) then
+            !$acc parallel loop independent gang default(present)
              do j = 1, nlevdecomp
+                !$acc loop vector private(c)
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
                    ! pft-level wood to column-level CWD (uncombusted wood)
@@ -77,11 +76,14 @@ contains
          end if !(.not.(use_pflotran .and. pf_cmode))
 
          ! litter and CWD losses to fire
+         !$acc parallel loop independent collapse(2) gang default(present)
          do l = 1, ndecomp_pools
             do j = 1, nlevdecomp
+               !$acc loop vector private(c)
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
+                  col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) &
+                              - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
                end do
             end do
          end do
@@ -94,7 +96,8 @@ contains
                do j = 1, nlevdecomp
                   do fc = 1, num_soilc
                      c = filter_soilc(fc)
-                     col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%decomp_cpools_yield_vr(c,j,l) * dt
+                     col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l)&
+                                 - col_cf%decomp_cpools_yield_vr(c,j,l) * dt
                   end do
                end do
             end if
@@ -103,9 +106,9 @@ contains
 
 
       ! patch loop
+      !$acc parallel loop independent gang vector private(p) default(present)
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
          ! pft-level carbon fluxes from fire
          ! displayed pools
          veg_cs%leafc(p)              = veg_cs%leafc(p)               - veg_cf%m_leafc_to_fire(p)            * dt
@@ -154,8 +157,6 @@ contains
          veg_cs%gresp_xfer(p)         = veg_cs%gresp_xfer(p)          - veg_cf%m_gresp_xfer_to_litter_fire(p)     * dt
          veg_cs%cpool(p)              = veg_cs%cpool(p)               - veg_cf%m_cpool_to_fire(p)                 * dt
          veg_cs%cpool(p)              = veg_cs%cpool(p)               - veg_cf%m_cpool_to_litter_fire(p)          * dt
-
-
       end do ! end of pft loop
 
   end subroutine CarbonStateUpdate3

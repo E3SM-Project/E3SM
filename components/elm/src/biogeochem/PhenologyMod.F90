@@ -74,6 +74,7 @@ module PhenologyMod
   type(PnenolParamsType), public ::  PhenolParamsInst
   !$acc declare create(PhenolParamsInst)
 
+  !real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
   real(r8) :: crit_onset_fdd                ! critical number of freezing days
   real(r8) :: crit_onset_swi                ! water stress days for offset trigger
@@ -155,7 +156,7 @@ contains
      allocate(PhenolParamsInst%lwtop           )
     !
     ! read in parameters
-    !   
+    !
     tString='crit_dayl'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -167,7 +168,7 @@ contains
     else
        tString='crit_dayl_stress'
        call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-       if ( .not. readv ) then 
+       if ( .not. readv ) then
           PhenolParamsInst%crit_dayl_stress = secspqtrday
        else
           PhenolParamsInst%crit_dayl_stress = tempr
@@ -230,10 +231,10 @@ contains
     tString='lwtop_ann'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    PhenolParamsInst%lwtop=tempr   
+    PhenolParamsInst%lwtop=tempr
 
      !!!!========== Update to device ========= !!!
-     !$acc enter data copyin(PhenolParamsInst%crit_dayl, &
+     !$acc update device(PhenolParamsInst%crit_dayl, &
      !$acc PhenolParamsInst%crit_dayl_stress, &
      !$acc PhenolParamsInst%cumprec_onset   , &
      !$acc PhenolParamsInst%ndays_on        , &
@@ -260,7 +261,6 @@ contains
     ! 1. grass phenology
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -275,29 +275,61 @@ contains
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    integer :: fcp, fp ,p
     !-----------------------------------------------------------------------
 
     ! each of the following phenology type routines includes a filter
     ! to operate only on the relevant patches
 
-    call PhenologyClimate(num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-         cnstate_vars, crop_vars)
+    !NOTE: this loop is take from PhenologyClimate so that it has only num_pcropp loop
+    !$acc parallel loop independent gang vector default(present) private(p)
+    do fp = 1,num_soilp
+      p = filter_soilp(fp)
+      cnstate_vars%tempavg_t2m_patch(p) = cnstate_vars%tempavg_t2m_patch(p) &
+                     + veg_es%t_ref2m(p) * (dtime_mod/(dayspyr_mod*secspday))
 
-    call CNEvergreenPhenology(num_soilp, filter_soilp, &
-         cnstate_vars)
+      call CNEvergreenPhenology(p, cnstate_vars)
+      call CNSeasonDecidPhenology(p, cnstate_vars)
+      call CNStressDecidPhenology(p,soilstate_vars, atm2lnd_vars, cnstate_vars)
+      call CNOnsetGrowth(p, cnstate_vars)
 
-    call CNSeasonDecidPhenology(num_soilp, filter_soilp, cnstate_vars)
+    end do
 
-    call CNStressDecidPhenology(num_soilp, filter_soilp,   &
-         soilstate_vars, atm2lnd_vars, cnstate_vars &
-         )
+    !NOTE:  Only one loop is for num_soilp, other loop for num_pcropp
+    !$acc parallel loop independent gang vector default(present) private(p)
+    do fcp=1, num_pcropp
+      p = filter_pcropp(fcp)
+      call PhenologyClimate(p, crop_vars)
+    end do
+
+    ! !$acc parallel loop independent gang vector default(present) private(p)
+    ! do fp = 1, num_soilp
+    !   p = filter_soilp(fp)
+    !   call CNEvergreenPhenology(p, cnstate_vars)
+    ! end do
+
+   !  !$acc parallel loop independent gang vector default(present) private(p)
+   !  do fp = 1, num_soilp
+   !    p = filter_soilp(fp)
+   !    call CNSeasonDecidPhenology(p, cnstate_vars)
+   ! enddo
+
+    ! !$acc parallel loop independent gang vector default(present) private(p)
+    ! do fp = 1, num_soilp
+    !   p = filter_soilp(fp)
+    !   call CNStressDecidPhenology(p,soilstate_vars, atm2lnd_vars, cnstate_vars)
+    ! end do
 
    if (num_pcropp > 0 ) then
-       call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
+      !NOTE:  num_pcropp loop
+      print *, "NUM_PCROPP > 0"
+      stop
+       call CropPlantDate( num_pcropp, filter_pcropp,&
             cnstate_vars, crop_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
+      !NOTE: all in a num_pcropp loop
        call CropPhenology(num_pcropp, filter_pcropp, &
             crop_vars, canopystate_vars, cnstate_vars &
             )
@@ -310,30 +342,37 @@ contains
 
     ! the same onset and offset routines are called regardless of
     ! phenology type - they depend only on onset_flag, offset_flag, bglfr, and bgtr
-
-    call CNOnsetGrowth(num_soilp, filter_soilp, &
-         cnstate_vars)
+   !  !NOTE: just a num_soilp loop
+   !  !$acc parallel loop independent gang vector default(present) private(p)
+   !  do fp = 1, num_soilp
+   !    p = filter_soilp(fp)
+   !    call CNOnsetGrowth(p, cnstate_vars)
+   ! end do
 
    if (num_pcropp > 0 ) then
+      !NOTE: loop over num_pcropp but then calls routine that performs reductions
+      !      of the patch level variables into the column level variables
       call CNCropHarvest(num_pcropp, filter_pcropp, &
            num_soilc, filter_soilc, crop_vars, &
            cnstate_vars)
    end if
+   !$acc parallel loop independent gang vector default(present) private(p)
+   do fp = 1, num_soilp
+     p = filter_soilp(fp)
+    call CNOffsetLitterfall(p, cnstate_vars)
+    call CNBackgroundLitterfall(p, cnstate_vars)
+    call CNLivewoodTurnover(p)
 
-   if (num_ppercropp > 0 ) then
-      call CNPerennialCropHarvest(num_ppercropp, filter_ppercropp, &
-           num_soilc, filter_soilc, crop_vars, cnstate_vars)
-   end if
+   !if (num_ppercropp > 0 ) then
+   !   call CNPerennialCropHarvest(num_ppercropp, filter_ppercropp, &
+   !        num_soilc, filter_soilc, crop_vars, cnstate_vars)
+   !end if
 
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
          cnstate_vars)
+   enddo
 
-    call CNBackgroundLitterfall(num_soilp, filter_soilp, &
-         cnstate_vars)
-
-    call CNLivewoodTurnover(num_soilp, filter_soilp)
-
-    ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
+  ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
 
   end subroutine Phenology
 
@@ -393,8 +432,6 @@ contains
 
     !$acc update device(&
     !$acc   fracday         &
-    !$acc  , crit_onset_fdd  &
-    !$acc  , crit_onset_swi  &
     !$acc  , soilpsi_on      &
     !$acc  , crit_offset_fdd &
     !$acc  , crit_offset_swi &
@@ -411,8 +448,7 @@ contains
   end subroutine PhenologyInit
 
   !-----------------------------------------------------------------------
-  subroutine PhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-          cnstate_vars, crop_vars)
+  subroutine PhenologyClimate (p,  crop_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -421,55 +457,35 @@ contains
     use timeinfoMod
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    integer                , intent(in)    :: num_pcropp      ! number of prognostic crops in filter
-    integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
-    type(cnstate_type)     , intent(inout) :: cnstate_vars
-    type(crop_type)        , intent(inout) :: crop_vars
-
+    !$acc routine seq
+    integer, value, intent(in) :: p
+    type(crop_type), intent(inout) :: crop_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: p                    ! indices
-    integer :: fp                   ! lake filter pft index
-    real(r8):: dayspyr              ! days per year (days)
     integer kyr                     ! current year
     integer kmo                     !         month of year  (1, ..., 12)
     integer kda                     !         day of month   (1, ..., 31)
     integer mcsec                   !         seconds of day (0, ..., seconds/day)
     real(r8), parameter :: yravg   = 20.0_r8      ! length of years to average for gdd
     real(r8), parameter :: yravgm1 = yravg-1.0_r8 ! minus 1 of above
-    real(r8) :: dt
     !-----------------------------------------------------------------------
 
     associate(                                                  &
-        !NEW TO MASTER
          nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
-         t_ref2m        => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)
          gdd0           => veg_es%gdd0        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)
          gdd8           => veg_es%gdd8        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "
          gdd10          => veg_es%gdd10       , & ! Output: [real(r8) (:) ]     "     "    "    "  10  "  "    "
          gdd020         => veg_es%gdd020      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd0 (ddays)
          gdd820         => veg_es%gdd820      , & ! Output: [real(r8) (:) ]  20-yr mean of gdd8 (ddays)
-         gdd1020        => veg_es%gdd1020     , & ! Output: [real(r8) (:) ]  20-yr mean of gdd10 (ddays)
-
-         tempavg_t2m    => cnstate_vars%tempavg_t2m_patch       & ! Output: [real(r8) (:) ]  temp. avg 2m air temperature (K)
+         gdd1020        => veg_es%gdd1020     & ! Output: [real(r8) (:) ]  20-yr mean of gdd10 (ddays)
          )
 
       ! set time steps
-      dt = dtime_mod
-      dayspyr = dayspyr_mod
       !time info only used if num_pcropp > 1
       kyr = year_curr
       kda = day_curr
       kmo = mon_curr
       mcsec = secs_curr
-
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-         tempavg_t2m(p) = tempavg_t2m(p) + t_ref2m(p) * (fracday/dayspyr)
-      end do
 
       !
       ! The following crop related steps are done here rather than CropPhenology
@@ -478,33 +494,28 @@ contains
       ! The following lines come from ibis's climate.f + stats.f
       ! gdd SUMMATIONS ARE RELATIVE TO THE PLANTING DATE (see subr. updateAccFlds)
 
-
-      do fp = 1,num_pcropp
-         p = filter_pcropp(fp)
-         if (kmo == 1 .and. kda == 1 .and. nyrs_crop_active(p) == 0) then ! YR 1:
-            gdd020(p)  = 0._r8                             ! set gdd..20 variables to 0
-            gdd820(p)  = 0._r8                             ! and crops will not be planted
-            gdd1020(p) = 0._r8
-         end if
-         if (kmo == 1 .and. kda == 1 .and. mcsec == 0) then        ! <-- END of EVERY YR:
-            if (nyrs_crop_active(p)  == 1) then                    ! <-- END of YR 1
-               gdd020(p)  = gdd0(p)                                ! <-- END of YR 1
-               gdd820(p)  = gdd8(p)                                ! <-- END of YR 1
-               gdd1020(p) = gdd10(p)                               ! <-- END of YR 1
-            end if                                                 ! <-- END of YR 1
-            gdd020(p)  = (yravgm1* gdd020(p)  + gdd0(p))  / yravg  ! gdd..20 must be long term avgs
-            gdd820(p)  = (yravgm1* gdd820(p)  + gdd8(p))  / yravg  ! so ignore results for yrs 1 & 2
-            gdd1020(p) = (yravgm1* gdd1020(p) + gdd10(p)) / yravg
-         end if
-      end do
+      if (kmo == 1 .and. kda == 1 .and. nyrs_crop_active(p) == 0) then ! YR 1:
+         gdd020(p)  = 0._r8                             ! set gdd..20 variables to 0
+         gdd820(p)  = 0._r8                             ! and crops will not be planted
+         gdd1020(p) = 0._r8
+      end if
+      if (kmo == 1 .and. kda == 1 .and. mcsec == 0) then        ! <-- END of EVERY YR:
+         if (nyrs_crop_active(p)  == 1) then                    ! <-- END of YR 1
+            gdd020(p)  = gdd0(p)                                ! <-- END of YR 1
+            gdd820(p)  = gdd8(p)                                ! <-- END of YR 1
+            gdd1020(p) = gdd10(p)                               ! <-- END of YR 1
+         end if                                                 ! <-- END of YR 1
+         gdd020(p)  = (yravgm1* gdd020(p)  + gdd0(p))  / yravg  ! gdd..20 must be long term avgs
+         gdd820(p)  = (yravgm1* gdd820(p)  + gdd8(p))  / yravg  ! so ignore results for yrs 1 & 2
+         gdd1020(p) = (yravgm1* gdd1020(p) + gdd10(p)) / yravg
+      end if
 
     end associate
 
   end subroutine PhenologyClimate
 
   !-----------------------------------------------------------------------
-  subroutine CNEvergreenPhenology (num_soilp, filter_soilp , &
-       cnstate_vars)
+  subroutine CNEvergreenPhenology (p , cnstate_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -514,14 +525,11 @@ contains
     use elm_varcon       , only : secspday
     !
     ! !ARGUMENTS:
-    integer           , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer           , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer, value , intent(in) :: p
     type(cnstate_type), intent(inout) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
     real(r8):: dayspyr                ! Days per year
-    integer :: p                      ! indices
-    integer :: fp                     ! lake filter pft index
     !-----------------------------------------------------------------------
 
     associate(                                    &
@@ -536,24 +544,19 @@ contains
          lgsf        => cnstate_vars%lgsf_patch    & ! Output: [real(r8) (:) ]  long growing season factor [0-1]
          )
 
-      dayspyr = dayspyr_mod
-
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-         if (evergreen(ivt(p)) == 1._r8) then
-            bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
-            bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
-            bgtr(p)  = 0._r8
-            lgsf(p)  = 0._r8
-         end if
-      end do
+      if (evergreen(ivt(p)) == 1._r8) then
+         bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr_mod * secspday)
+         bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr_mod * secspday)
+         bgtr(p)  = 0._r8
+         lgsf(p)  = 0._r8
+      end if
 
     end associate
 
   end subroutine CNEvergreenPhenology
 
   !-----------------------------------------------------------------------
-  subroutine CNSeasonDecidPhenology (num_soilp, filter_soilp, cnstate_vars)
+  subroutine CNSeasonDecidPhenology (p, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -566,13 +569,11 @@ contains
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
-    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
+    integer, value, intent(in) :: p
+    type(cnstate_type), intent(inout) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g,c,p          !indices
-    integer :: fp             !lake filter pft index
+    integer :: g,c            !indices
     real(r8):: ws_flag        !winter-summer solstice flag (0 or 1)
     real(r8):: crit_onset_gdd !critical onset growing degree-day sum
     real(r8):: soilt
@@ -689,8 +690,8 @@ contains
          )
          dt = dtime_mod
       ! start pft loop
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
+      !do fp = 1,num_soilp
+      !   p = filter_soilp(fp)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
 
@@ -881,15 +882,14 @@ contains
 
          end if ! end if seasonal deciduous
 
-      end do ! end of pft loop
+      ! end do ! end of pft loop
 
     end associate
 
   end subroutine CNSeasonDecidPhenology
 
   !-----------------------------------------------------------------------
-  subroutine CNStressDecidPhenology (num_soilp, filter_soilp , &
-       soilstate_vars, atm2lnd_vars, cnstate_vars)
+  subroutine CNStressDecidPhenology (p , soilstate_vars, atm2lnd_vars, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! This routine handles phenology for vegetation types, such as grasses and
@@ -908,15 +908,13 @@ contains
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
     !
     ! !ARGUMENTS:
-    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
+    integer , value , intent(in) :: p
+    type(soilstate_type), intent(in)    :: soilstate_vars
+    type(atm2lnd_type)  , intent(in)    :: atm2lnd_vars
+    type(cnstate_type)  , intent(inout) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g,t,c,p           ! indices
-    integer :: fp              ! lake filter pft index
+    integer :: g,t,c           ! indices
     real(r8):: dayspyr         ! days per year
     real(r8) :: dt
     real(r8):: crit_onset_gdd  ! degree days for onset trigger
@@ -1046,11 +1044,9 @@ contains
       dayspyr = dayspyr_mod
 
 
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-         c = veg_pp%column(p)
-         t = veg_pp%topounit(p)
-         g = veg_pp%gridcell(p)
+      c = veg_pp%column(p)
+      t = veg_pp%topounit(p)
+      g = veg_pp%gridcell(p)
 
          if (stress_decid(ivt(p)) == 1._r8) then
             soilt = t_soisno(c,3)
@@ -1368,7 +1364,6 @@ contains
 
          end if ! end if stress deciduous
 
-      end do ! end of pft loop
 
     end associate
 
@@ -1486,7 +1481,6 @@ contains
          )
 
       ! get time info
-      !NEED TO FIX!
       dt = dtime_mod
       dayspyr = dayspyr_mod
       kyr = year_curr
@@ -2333,15 +2327,11 @@ contains
          tkil = (tbase - 6._r8) - 6._r8 * hdidx(p)
          if (tkil >= tcrown) then
             if ((0.95_r8 - 0.02_r8 * (tcrown - tkil)**2) >= 0.02_r8) then
-#ifndef _OPENACC 
                write (iulog,*)  'crop damaged by cold temperatures at p,c =', p,c
-#endif 
             else if (tlai(p) > 0._r8) then ! slevis: kill if past phase1
                gddmaturity(p) = 0._r8      !         by forcing through
                huigrain(p)    = 0._r8      !         harvest
-#ifndef _OPENACC 
                write (iulog,*)  '95% of crop killed by cold temperatures at p,c =', p,c
-#endif 
             end if
          end if
       end if
@@ -2351,7 +2341,7 @@ contains
   end subroutine vernalization
 
   !-----------------------------------------------------------------------
-  subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
+  subroutine CropPlantDate (num_pcropp, filter_pcropp, &
         cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
@@ -2367,8 +2357,6 @@ contains
 
     !
     ! !ARGUMENTS:
-    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     integer                , intent(in)    :: num_pcropp      ! number of prognostic crops in filter
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(cnstate_type)     , intent(inout) :: cnstate_vars
@@ -2433,16 +2421,12 @@ contains
 
       dt = dtime_mod
 
-
       fracday = dt/secspday
-
-      if (num_pcropp > 0) then
-         ! get time-related info
-         kyr = year_curr
-         kmo = mon_curr
-         kda = day_curr
-         mcsec = secs_curr
-      end if
+      ! get time-related info
+      kyr = year_curr
+      kmo = mon_curr
+      kda = day_curr
+      mcsec = secs_curr
 
       do fp = 1,num_pcropp
          p = filter_pcropp(fp)
@@ -2543,8 +2527,7 @@ contains
   end subroutine CropPlantDate
 
   !-----------------------------------------------------------------------
-  subroutine CNOnsetGrowth (num_soilp, filter_soilp, &
-       cnstate_vars)
+  subroutine CNOnsetGrowth (p, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! Determines the flux of stored C and N from transfer pools to display
@@ -2554,15 +2537,12 @@ contains
     use pftvarcon            , only : percrop
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    !$acc routine seq
+    integer , value ,intent(in) :: p
     type(cnstate_type)       , intent(in)    :: cnstate_vars
 
     !
     ! !LOCAL VARIABLES:
-    integer :: p            ! indices
-    integer :: fp           ! lake filter pft index
     real(r8):: t1           ! temporary variable
     real(r8) :: dt
     !-----------------------------------------------------------------------
@@ -2623,8 +2603,6 @@ contains
 
       ! patch loop
       dt = dtime_mod
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
 
          ! only calculate these fluxes during onset period
          if (onset_flag(p) == 1._r8) then
@@ -2688,7 +2666,6 @@ contains
             end if
          end if ! end if bgtr
 
-      end do ! end pft loop
 
     end associate
 
@@ -2903,27 +2880,24 @@ contains
  end subroutine CNPerennialCropHarvest
 
   !-----------------------------------------------------------------------
-  subroutine CNOffsetLitterfall (num_soilp, filter_soilp, &
-       cnstate_vars)
+  subroutine CNOffsetLitterfall (p, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
     ! pools during the phenological offset period.
     !
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use pftvarcon , only : npcropmin
     !
     ! !ARGUMENTS:
-    integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                 , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer , value , intent(in) :: p
     type(cnstate_type)      , intent(inout) :: cnstate_vars
 
     !
     ! !LOCAL VARIABLES:
-    integer :: p, c         ! indices
-    integer :: fp           ! lake filter pft index
-    real(r8):: t1           ! temporary variable
+    integer :: c         ! indices
+    real(r8):: t1        ! temporary variable
     real(r8):: dt
     !-----------------------------------------------------------------------
 
@@ -3001,9 +2975,6 @@ contains
       ! The litterfall transfer rate starts at 0.0 and increases linearly
       ! over time, with displayed growth going to 0.0 on the last day of litterfall
       dt = dtime_mod
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-
          ! only calculate fluxes during offset period
          if (offset_flag(p) == 1._r8) then
 
@@ -3098,29 +3069,22 @@ contains
 
          end if ! end if offset period
 
-      end do ! end pft loop
-
     end associate
 
   end subroutine CNOffsetLitterfall
 
   !-----------------------------------------------------------------------
-  subroutine CNBackgroundLitterfall (num_soilp, filter_soilp, &
-       cnstate_vars)
+  subroutine CNBackgroundLitterfall (p, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
     ! pools as the result of background litter fall.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                 , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    !$acc routine seq
+    integer , value , intent(in) :: p
     type(cnstate_type)      , intent(in)    :: cnstate_vars
 
-    ! !LOCAL VARIABLES:
-    integer :: p            ! indices
-    integer :: fp           ! lake filter pft index
     !-----------------------------------------------------------------------
 
     associate(                                                               &
@@ -3159,8 +3123,6 @@ contains
 
 
       ! patch loop
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
 
          ! only calculate these fluxes if the background litterfall rate is non-zero
          if (bglfr_leaf(p) > 0._r8) then
@@ -3198,14 +3160,13 @@ contains
                frootp_to_litter(p) = bglfr_froot(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
             end if
          end if
-      end do
 
     end associate
 
   end subroutine CNBackgroundLitterfall
 
   !-----------------------------------------------------------------------
-  subroutine CNLivewoodTurnover (num_soilp, filter_soilp)
+  subroutine CNLivewoodTurnover (p)
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from live wood to
@@ -3213,13 +3174,10 @@ contains
     ! add phosphorus flux - X.YANG
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    !$acc routine seq
+    integer , value, intent(in) :: p
     !
     ! !LOCAL VARIABLES:
-    integer :: p            ! indices
-    integer :: fp           ! lake filter pft index
     real(r8):: ctovr        ! temporary variable for carbon turnover
     real(r8):: ntovr        ! temporary variable for nitrogen turnover
     real(r8):: ptovr        ! temporary variable for phosphorus turnover
@@ -3258,10 +3216,7 @@ contains
          )
 
       ! patch loop
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-
-         ! only calculate these fluxes for woody types
+      ! only calculate these fluxes for woody types
          if (woody(ivt(p)) > 0._r8) then
             if ( nu_com .eq. 'RD') then
                ! live stem to dead stem turnover
@@ -3317,7 +3272,6 @@ contains
 
          end if
 
-      end do
 
     end associate
 
@@ -3342,23 +3296,21 @@ contains
     type(cnstate_type)      , intent(in)    :: cnstate_vars
 
     ! !LOCAL VARIABLES:
-    integer :: fp,c,p,j       ! indices
+    integer :: fp,c,p,j, ivt       ! indices
     real(r8):: wt_col
     !-----------------------------------------------------------------------
 
-    associate(                                                                                       &
-         ivt                                 =>    veg_pp%itype                                       , & ! Input:  [integer  (:)   ]  pft vegetation type
-         wtcol                               =>    veg_pp%wtcol                                       , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)
+    associate(                                                           &
+         wtcol                               =>    veg_pp%wtcol         , & ! Input:  [real(r8) (:)   ]  weight (relative to column) for this pft (0-1)
+         lf_flab                             =>    veg_vp%lf_flab       , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction
+         lf_fcel                             =>    veg_vp%lf_fcel       , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction
+         lf_flig                             =>    veg_vp%lf_flig       , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction
+         fr_flab                             =>    veg_vp%fr_flab       , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction
+         fr_fcel                             =>    veg_vp%fr_fcel       , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction
+         fr_flig                             =>    veg_vp%fr_flig       , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction
 
-         lf_flab                             =>    veg_vp%lf_flab                              , & ! Input:  [real(r8) (:)   ]  leaf litter labile fraction
-         lf_fcel                             =>    veg_vp%lf_fcel                              , & ! Input:  [real(r8) (:)   ]  leaf litter cellulose fraction
-         lf_flig                             =>    veg_vp%lf_flig                              , & ! Input:  [real(r8) (:)   ]  leaf litter lignin fraction
-         fr_flab                             =>    veg_vp%fr_flab                              , & ! Input:  [real(r8) (:)   ]  fine root litter labile fraction
-         fr_fcel                             =>    veg_vp%fr_fcel                              , & ! Input:  [real(r8) (:)   ]  fine root litter cellulose fraction
-         fr_flig                             =>    veg_vp%fr_flig                              , & ! Input:  [real(r8) (:)   ]  fine root litter lignin fraction
-
-         leaf_prof                           =>    cnstate_vars%leaf_prof_patch                    , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
-         froot_prof                          =>    cnstate_vars%froot_prof_patch                   , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
+         leaf_prof                           =>    cnstate_vars%leaf_prof_patch  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
+         froot_prof                          =>    cnstate_vars%froot_prof_patch , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
 
          leafc_to_litter                     =>    veg_cf%leafc_to_litter           , & ! Input:  [real(r8) (:)   ]  leaf C litterfall (gC/m2/s)
          frootc_to_litter                    =>    veg_cf%frootc_to_litter          , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)
@@ -3390,86 +3342,88 @@ contains
                p = filter_soilp(fp)
                c = veg_pp%column(p)
                wt_col = wtcol(p)
+               ivt = veg_pp%itype(p)
+
                ! leaf litter carbon fluxes
                phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                   + leafc_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
+                   + leafc_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
                phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                   + leafc_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
+                   + leafc_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
                phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                   + leafc_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+                   + leafc_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                     ! leaf litter nitrogen fluxes
-                     phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
-                          + leafn_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
-                     phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
-                          + leafn_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
-                     phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
-                          + leafn_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+               ! leaf litter nitrogen fluxes
+               phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
+                    + leafn_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
+               phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
+                    + leafn_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
+               phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
+                    + leafn_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                     ! leaf litter phosphorus fluxes
-                     phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
-                          + leafp_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
-                     phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
-                          + leafp_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
-                     phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
-                          + leafp_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+               ! leaf litter phosphorus fluxes
+               phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
+                    + leafp_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
+               phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
+                    + leafp_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
+               phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
+                    + leafp_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                     ! fine root litter carbon fluxes
-                     phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                          + frootc_to_litter(p) * fr_flab(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                          + frootc_to_litter(p) * fr_fcel(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                          + frootc_to_litter(p) * fr_flig(ivt(p)) * wt_col * froot_prof(p,j)
+               ! fine root litter carbon fluxes
+               phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                    + frootc_to_litter(p) * fr_flab(ivt) * wt_col * froot_prof(p,j)
+               phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                    + frootc_to_litter(p) * fr_fcel(ivt) * wt_col * froot_prof(p,j)
+               phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                    + frootc_to_litter(p) * fr_flig(ivt) * wt_col * froot_prof(p,j)
 
-                     ! fine root litter nitrogen fluxes
-                     phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
-                          + frootn_to_litter(p) * fr_flab(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
-                          + frootn_to_litter(p) * fr_fcel(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
-                          + frootn_to_litter(p) * fr_flig(ivt(p)) * wt_col * froot_prof(p,j)
+               ! fine root litter nitrogen fluxes
+               phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
+                    + frootn_to_litter(p) * fr_flab(ivt) * wt_col * froot_prof(p,j)
+               phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
+                    + frootn_to_litter(p) * fr_fcel(ivt) * wt_col * froot_prof(p,j)
+               phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
+                    + frootn_to_litter(p) * fr_flig(ivt) * wt_col * froot_prof(p,j)
 
 
-                     ! fine root litter phosphorus fluxes
-                     phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
-                          + frootp_to_litter(p) * fr_flab(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
-                          + frootp_to_litter(p) * fr_fcel(ivt(p)) * wt_col * froot_prof(p,j)
-                     phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
-                          + frootp_to_litter(p) * fr_flig(ivt(p)) * wt_col * froot_prof(p,j)
+               ! fine root litter phosphorus fluxes
+               phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
+                    + frootp_to_litter(p) * fr_flab(ivt) * wt_col * froot_prof(p,j)
+               phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
+                    + frootp_to_litter(p) * fr_fcel(ivt) * wt_col * froot_prof(p,j)
+               phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
+                    + frootp_to_litter(p) * fr_flig(ivt) * wt_col * froot_prof(p,j)
 
-                     ! agroibis puts crop stem litter together with leaf litter
-                     ! so I've used the leaf lf_f* parameters instead of making
-                     ! new ones for now (slevis)
-                     ! The food is now directed to the product pools (BDrewniak)
+               ! agroibis puts crop stem litter together with leaf litter
+               ! so I've used the leaf lf_f* parameters instead of making
+               ! new ones for now (slevis)
+               ! The food is now directed to the product pools (BDrewniak)
 
-                     if (ivt(p) >= npcropmin) then ! add livestemc to litter
-                        ! stem litter carbon fluxes
-                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                             + livestemc_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                             + livestemc_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                             + livestemc_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+               if (ivt >= npcropmin) then ! add livestemc to litter
+                  ! stem litter carbon fluxes
+                  phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                       + livestemc_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                       + livestemc_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                       + livestemc_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                        ! stem litter nitrogen fluxes
-                        phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
-                             + livestemn_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
-                             + livestemn_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
-                             + livestemn_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+                  ! stem litter nitrogen fluxes
+                  phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
+                       + livestemn_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
+                       + livestemn_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
+                       + livestemn_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                        ! stem litter phosphorus fluxes
-                        phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
-                             + livestemp_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
-                             + livestemp_to_litter(p) * lf_fcel(ivt(p)) * wt_col * leaf_prof(p,j)
-                        phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
-                             + livestemp_to_litter(p) * lf_flig(ivt(p)) * wt_col * leaf_prof(p,j)
+                  ! stem litter phosphorus fluxes
+                  phenology_p_to_litr_met_p(c,j) = phenology_p_to_litr_met_p(c,j) &
+                       + livestemp_to_litter(p) * lf_flab(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_p_to_litr_cel_p(c,j) = phenology_p_to_litr_cel_p(c,j) &
+                       + livestemp_to_litter(p) * lf_fcel(ivt) * wt_col * leaf_prof(p,j)
+                  phenology_p_to_litr_lig_p(c,j) = phenology_p_to_litr_lig_p(c,j) &
+                       + livestemp_to_litter(p) * lf_flig(ivt) * wt_col * leaf_prof(p,j)
 
-                     end if
+               end if
 
          end do
       end do
