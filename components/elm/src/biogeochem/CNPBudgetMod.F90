@@ -848,6 +848,7 @@ contains
   subroutine CarbonBudget_Message(ip, cdate, sec, f_size, s_size, budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
     !
     use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use elm_varcon      , only : convertgC2kgCO2
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -883,6 +884,15 @@ contains
 
     time_integrated_flux = sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
 
+    write(iulog,'(71("-"),"|",20("-"))')
+
+    write(iulog,*) ''
+    write(iulog,*)'Converting flux from kgC/m^2/s*1e6 to kgCO2/m2/s*1e6, to be consistent with the flux sent'
+    write(iulog,*)'to the E3SM coupler'
+    write(iulog,'(71("-"),"|",20("-"))')
+    write(iulog,C_FF)'   *SUM*', &
+         -sum(budg_fluxGpr(:,ip)) * convertgC2kgCO2, &
+         -sum(budg_fluxG(:,ip))*unit_conversion*get_step_size() * convertgC2kgCO2
     write(iulog,'(71("-"),"|",20("-"))')
 
     write(iulog,*)''
