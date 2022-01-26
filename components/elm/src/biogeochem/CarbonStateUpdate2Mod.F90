@@ -12,7 +12,8 @@ module CarbonStateUpdate2Mod
   use pftvarcon        , only : npcropmin
   use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp
-  use tracer_varcon    , only : is_active_betr_bgc
+  !use tracer_varcon    , only : is_active_betr_bgc
+  #define is_active_betr_bgc .false. 
   use VegetationType        , only : veg_pp
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
@@ -37,7 +38,6 @@ contains
     ! variables affected by gap-phase mortality fluxes
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -123,7 +123,6 @@ contains
     ! variables affected by harvest mortality fluxes
     !
       !$acc routine seq
-    use tracer_varcon,  only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

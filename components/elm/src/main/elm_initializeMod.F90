@@ -82,6 +82,7 @@ contains
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
+    use domainMod, only : domain_transfer 
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -273,7 +274,7 @@ contains
 
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
-
+    call domain_transfer() 
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     !

@@ -323,10 +323,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given landunit is active
-    !
+    !$acc routine seq 
     ! !USES:
     use landunit_varcon, only : istsoil, istice, istice_mec
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -399,10 +399,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given landunit is active
-    !$acc routine seq
+   !! !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istsoil, istice, istice_mec
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -421,7 +421,7 @@ contains
         lun_pp_active(l) = .false.
 
         if (lun_pp%wttopounit(l) > 0) lun_pp_active(l) = .true.
-        if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) lun_pp_active(l) = .true.
+        if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) lun_pp_active(l) = .true.
 
         if (lun_pp%itype(l) == istsoil .and. .not. is_topo_all_ltypeX(lun_pp%topounit(l), istice)) then
             lun_pp_active(l) = .true.
@@ -436,10 +436,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given column is active
-    !
+    !$acc routine seq 
     ! !USES:
     use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -496,10 +496,10 @@ contains
     !
     ! !DESCRIPTION:
     ! Determine whether the given column is active
-    !$acc routine seq
+    !! !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
-    use domainMod , only : ldomain
+    use domainMod , only : ldomain_gpu
     !
     ! !ARGUMENTS:
     implicit none
@@ -522,7 +522,7 @@ contains
         if (lun_pp%active(l) .and. col_pp%wtlunit(c) > 0._r8) col_pp_active(c) = .true.
         !
         !
-        if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) col_pp_active(c) = .true.
+        if (lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) col_pp_active(c) = .true.
         if (lun_pp%active(l) .and. (lun_pp%itype(l) >= isturb_MIN .and. lun_pp%itype(l) <= isturb_MAX)) then
             col_pp_active(c) = .true.
         end if
@@ -542,7 +542,7 @@ contains
     ! Determine whether the given pft is active
     !
     ! !USES:
-    !
+    !$acc routine seq 
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: p   ! pft index

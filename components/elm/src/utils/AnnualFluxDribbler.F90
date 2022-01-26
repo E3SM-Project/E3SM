@@ -82,19 +82,18 @@ module AnnualFluxDribbler
   ! !PUBLIC TYPES:
 
   type, public :: annual_flux_dribbler_type
-     private
      ! Metadata
-     character(len=name_maxlen) :: name
-     character(len=units_maxlen) :: units
+     character(len=128), pointer :: name
+     character(len=64) , pointer :: units
 
      ! Whether this dribbler allows non-zero deltas on time steps other than the first
      ! time step of the year
-     logical :: allows_non_annual_delta
+     logical, pointer :: allows_non_annual_delta
 
      ! Which subgrid level this dribbler is operating at, stored in various ways
-     character(len=subgrid_maxlen) :: dim1name
-     character(len=subgrid_maxlen) :: name_subgrid
-     integer :: bounds_subgrid_level
+     character(len=64), pointer :: dim1name
+     character(len=64), pointer :: name_subgrid
+     integer, pointer :: bounds_subgrid_level
 
      ! Annual amount to dribble in over the year
      real(r8), pointer :: amount_to_dribble(:)
@@ -165,6 +164,7 @@ contains
 
     character(len=*), parameter :: subname = 'annual_flux_dribbler_gridcell'
     !-----------------------------------------------------------------------
+    allocate(this%dim1name);allocate(this%name_subgrid);allocate(this%bounds_subgrid_level)
 
     this%dim1name = 'gridcell'
     this%name_subgrid = nameg
@@ -202,6 +202,7 @@ contains
 
     character(len=*), parameter :: subname = 'annual_flux_dribbler_patch'
     !-----------------------------------------------------------------------
+    allocate(this%dim1name);allocate(this%name_subgrid);allocate(this%bounds_subgrid_level)
 
     this%dim1name = 'pft'
     this%name_subgrid = namep
@@ -547,6 +548,9 @@ contains
 
     character(len=*), parameter :: subname = 'set_metadata'
     !-----------------------------------------------------------------------
+    allocate(this%name )
+    allocate(this%units)
+    allocate(this%allows_non_annual_delta)
 
     if (len_trim(name) > name_maxlen) then
        write(iulog,*) subname // ': name too long'

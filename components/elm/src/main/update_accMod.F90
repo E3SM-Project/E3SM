@@ -11,29 +11,22 @@ subroutine update_acc_variables()
   use elm_varpar
   use soilorder_varcon
   use LakeCon
-  !#USE_START
   use SoilWaterMovementMod
   use SharedParamsMod
   use MaintenanceRespMod
   use NitrifDenitrifMod
   use CNStateType
   use AllocationMod
-  !#USE_END
-#ifdef MAINTENANCERESPMOD
   !---------- MaintenanceRespMod ------------!
   !$acc update device(br_mr_Inst)
-#endif
-#ifdef NITRIFDENITRIFMOD
   !----------- NitrifDenitrifMod -----------!
   !$acc update device (no_frozen_nitrif_denitrif )
-#endif
   !---------- CNStateType ---------------!
   !$acc update device(fert_type  &
   !$acc               ,fert_continue &
   !$acc               ,fert_dose     &
   !$acc               ,fert_start    &
   !$acc               ,fert_end      &
-
   !---------- soilorder_varcon -------------!
   !$acc               ,smax(:)       &
   !$acc               ,ks_sorption(:)&
@@ -45,14 +38,12 @@ subroutine update_acc_variables()
   !$acc               ,k_s2_biochem(:) &
   !$acc               ,k_s3_biochem(:) &
   !$acc               ,k_s4_biochem(:) &
-  !$acc               ,r_mort_soilorder(:) &
+  !$acc               ,r_mort_soilorder(:) )
   !---------- SharedParamsMod -------------- !
-#ifdef SHAREDPARAMSMOD
-  !$acc update device (  anoxia_wtsat    &
-  !$acc               ,nlev_soildecomp_standard )
-#endif
+  !$acc update device(anoxia_wtsat, nlev_soildecomp_standard )
   !--------- elm_varpar --------------------!
-  !$acc       ,nlevsoi         &
+  !$acc update device( &
+  !$acc       nlevsoi         &
   !$acc       ,nlevsoifl       &
   !$acc       ,nlevurb         &
   !$acc       ,nlevlak         &
@@ -74,14 +65,15 @@ subroutine update_acc_variables()
   !$acc       ,maxpatch_glcmec   &
   !$acc       ,max_patch_per_col &
   !$acc       ,mach_eps         &
-  !$acc       ,maxpatch_pft &
+  !$acc       ,maxpatch_pft )
   !--------- elm_varcon --------------------!
-  !$acc       ,zlak(:)        &
+  !$acc update device(&
+  !$acc       zlak(:)        &
   !$acc       ,dzlak(:)       &
   !$acc       ,zsoi(:)        &
   !$acc       ,dzsoi(:)       &
   !$acc       ,zisoi(:)       &
-  !$acc       ,dzsoi_decomp(:)&
+  !$acc       ,dzsoi_decomp(:) &
   !$acc       ,nlvic(:)       &
   !$acc       ,dzvic(:)       &
   !$acc       ,zsoifl(:)      &
@@ -89,50 +81,17 @@ subroutine update_acc_variables()
   !$acc       ,dzsoifl(:)     &
   !$acc       ,denh2o         &
   !-------- elm_varctl ---------------------!
-  !$acc       ,use_fates &
-  !$acc       ,use_betr &
-  !$acc       ,use_c13, use_cn, use_lch4, glcmec_downscale_rain_snow_convert &
-  !$acc       ,use_c14 &
-  !$acc       ,glcmec_downscale_longwave, subgridflag &
+  !$acc       ,glcmec_downscale_rain_snow_convert &
+  !$acc       ,glcmec_downscale_longwave &
+  !$acc       ,subgridflag &
   !$acc       ,use_nofire          &
   !$acc       ,use_lch4            &
-  !$acc       ,use_nitrif_denitrif &
   !$acc       ,use_vertsoilc       &
   !$acc       ,use_extralakelayers &
   !$acc       ,use_vichydro        &
   !$acc       ,use_century_decomp  &
   !$acc       ,use_cn              )
   ! -------- pftvarcon ------------------!
-  !$acc update device ( &
-  !$acc       noveg                &
-  !$acc       ,ndllf_evr_tmp_tree   &
-  !$acc       ,ndllf_evr_brl_tree   &
-  !$acc       ,ndllf_dcd_brl_tree   &
-  !$acc       ,nbrdlf_evr_trp_tree  &
-  !$acc       ,nbrdlf_evr_tmp_tree  &
-  !$acc       ,nbrdlf_dcd_trp_tree  &
-  !$acc       ,nbrdlf_dcd_tmp_tree  &
-  !$acc       ,nbrdlf_dcd_brl_tree  &
-  !$acc       ,ntree                &
-  !$acc       ,nbrdlf_evr_shrub     &
-  !$acc       ,nbrdlf_dcd_tmp_shrub &
-  !$acc       ,nbrdlf_dcd_brl_shrub &
-  !$acc       ,nc3_arctic_grass     &
-  !$acc       ,nc3_nonarctic_grass  &
-  !$acc       ,nc4_grass            &
-  !$acc       ,npcropmin            &
-  !$acc       ,ncorn                &
-  !$acc       ,ncornirrig           &
-  !$acc       ,nscereal             &
-  !$acc       ,nscerealirrig        &
-  !$acc       ,nwcereal             &
-  !$acc       ,nwcerealirrig        &
-  !$acc       ,nsoybean             &
-  !$acc       ,nsoybeanirrig        &
-  !$acc       ,npcropmax            &
-  !$acc       ,nc3crop              &
-  !$acc       ,nc3irrig             &
-  !$acc       ,num_cfts_known_to_model )
   !$acc update device( &
   !$acc        dleaf(:)       &
   !$acc       ,c3psn(:)       &
@@ -320,11 +279,8 @@ subroutine update_acc_variables()
   !$acc     ,lakepuddling &
   !$acc     ,lake_no_ed )
   !------------ SoilWaterMovementMod ---------------- !
-#ifdef SOILWATERMOVENMENTMOD
-  !$acc update devive(soilroot_water_method )
-#endif
+  !$acc update device(soilroot_water_method )
   !----------- AllocationMod ------------------- !
-#ifdef ALLOCATIONMOD
   !$acc update device( nu_com_leaf_physiology &
   !$acc    , nu_com_root_kinetics   &
   !$acc    , nu_com_phosphatase     &
@@ -333,16 +289,9 @@ subroutine update_acc_variables()
   !$acc    , dayscrecover           &
   !$acc    , arepr(:)               &
   !$acc    , aroot(:)               &
-  !$acc    , col_plant_ndemand(:)   &
-  !$acc    , col_plant_pdemand(:)   &
-  !$acc    , decompmicc             &
-  !$acc    , e_km_nh4               &
-  !$acc    , e_km_no3               &
-  !$acc    , e_km_p                 &
-  !$acc    , e_km_n                 &
+  !$acc    , decompmicc(:)          &
   !$acc    , crop_supln             &
   !$acc     )
-#endif
 
 end subroutine update_acc_variables
 

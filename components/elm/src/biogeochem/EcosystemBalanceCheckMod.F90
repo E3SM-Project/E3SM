@@ -43,7 +43,7 @@ module EcosystemBalanceCheckMod
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
 
   use timeinfoMod
-
+  #define is_active_betr_bgc .false. 
   !
   implicit none
   save
@@ -176,15 +176,14 @@ contains
   end subroutine BeginColPBalance
 
   !-----------------------------------------------------------------------
-  subroutine ColCBalanceCheck(bounds, &
+  subroutine ColCBalanceCheck(  &
        num_soilc, filter_soilc, &
        col_cs, col_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check for column and pft
-    !
+    !$acc routine seq 
     ! !ARGUMENTS:
-    type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(column_carbon_state) , intent(inout) :: col_cs
@@ -219,10 +218,10 @@ contains
          litfall                   =>    col_cf%litfall )                     ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
 
 
-      ! set time steps
-      dt = real( get_step_size(), r8 )
-      nstep = get_nstep()
+      ! set time stepsi
 
+      dt = dtime_mod 
+      nstep = nstep_mod 
       err_found = .false.
       ! column loop
       do fc = 1,num_soilc
@@ -340,8 +339,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, perform nitrogen mass conservation check
     ! for column and pft
-    !
-    use tracer_varcon,  only : is_active_betr_bgc
+    !$acc routine seq 
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -556,7 +554,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, perform phosphorus mass conservation check
     ! for column and pft
-    !
+    !$acc routine seq 
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -804,31 +802,31 @@ contains
          )
 
       call c2g(bounds, totcolc(bounds%begc:bounds%endc), begcb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+           c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, totcolc(bounds%begc:bounds%endc), beg_totc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, totpftc(bounds%begc:bounds%endc), beg_totpftc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, cwdc(bounds%begc:bounds%endc), beg_cwdc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, totlitc(bounds%begc:bounds%endc), beg_totlitc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, totsomc(bounds%begc:bounds%endc), beg_totsomc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, totprodc(bounds%begc:bounds%endc), beg_totprodc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, ctrunc(bounds%begc:bounds%endc), beg_ctrunc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       call c2g(bounds, cropseedc_deficit(bounds%begc:bounds%endc), beg_cropseedc_deficit(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
     end associate
 
@@ -840,7 +838,7 @@ contains
     ! !DESCRIPTION:
     ! Calculate the beginning carbon balance for mass conservation checks
     ! at grid cell level
-    !
+    !$acc routine seq 
     use GridcellDataType, only : gridcell_carbon_flux
     use ColumnDataType  , only : column_carbon_flux
     !
@@ -904,44 +902,44 @@ contains
 
       ! c2g states
       call c2g(bounds, col_totc(bounds%begc:bounds%endc), end_totc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_totpftc(bounds%begc:bounds%endc), end_totpftc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_cwdc(bounds%begc:bounds%endc), end_cwdc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_totlitc(bounds%begc:bounds%endc), end_totlitc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_totsomc(bounds%begc:bounds%endc), end_totsomc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_totprodc(bounds%begc:bounds%endc), end_totprodc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_ctrunc(bounds%begc:bounds%endc), end_ctrunc(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_cropseedc_deficit(bounds%begc:bounds%endc), end_cropseedc_deficit(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
       ! c2g fluxes
       call c2g(bounds, col_gpp(bounds%begc:bounds%endc), grc_gpp(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_er(bounds%begc:bounds%endc), grc_er(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_fire_closs(bounds%begc:bounds%endc), grc_fire_closs(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_prod1c_loss(bounds%begc:bounds%endc), grc_prod1c_loss(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_prod10c_loss(bounds%begc:bounds%endc), grc_prod10c_loss(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_prod100c_loss(bounds%begc:bounds%endc), grc_prod100c_loss(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_hrv_xsmrpool_to_atm(bounds%begc:bounds%endc), grc_hrv_xsmrpool_to_atm(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_som_c_leached(bounds%begc:bounds%endc), grc_som_c_leached(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
       call c2g(bounds, col_som_c_yield(bounds%begc:bounds%endc), grc_som_c_yield(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+               c2l_scale_type = unity, l2g_scale_type = unity)
 
-      dt = real( get_step_size(), r8 )
-      nstep = get_nstep()
+      dt = dtime_mod !real( get_step_size(), r8 )
+      nstep =  nstep_mod !get_nstep()
 
       do g = bounds%begg, bounds%endg
          grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
@@ -955,7 +953,7 @@ contains
          end if
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
-
+#ifndef _OPENACC
          if (grc_errcb(g) > error_tol .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
@@ -976,6 +974,7 @@ contains
 
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
+#endif 
       end do
 
     end associate

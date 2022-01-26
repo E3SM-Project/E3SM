@@ -1,7 +1,9 @@
 module SimpleMathMod
 
 #include "shr_assert.h"
-  !------------------------------------------------------------------------------
+ 
+use shr_kind_mod , only : r8 => shr_kind_r8
+!------------------------------------------------------------------------------
   !
   ! DESCRIPTIONS:
   ! module contains simple mathematical functions for arrays
@@ -16,6 +18,8 @@ implicit none
   interface array_div_vector
     module procedure array_div_vector_filter, array_div_vector_nofilter
   end interface array_div_vector
+
+  public :: shr_flux_update_stress_elm
 contains
 !--------------------------------------------------------------------------------
   subroutine array_normalization_2d(which_dim, arr2d_inout)
@@ -257,5 +261,72 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
 
     end subroutine matvec_acc
 
+
+
+!===============================================================================
+
+! After the stress has been recalculated in iteration loops, call this routine
+! to adjust the value used in the next iteration for improved convergence.
+!
+! We use the sign convention where all arguments are assumed to be positive,
+! except for tau_diff and prev_tau_diff, which can be of either sign.
+subroutine shr_flux_update_stress_elm(wind0, wsresp, tau_est, tau, prev_tau, &
+     tau_diff, prev_tau_diff, wind_adj)
+  !$acc routine seq 
+  ! Wind speed from atmosphere (not updated by iteration) [m/s]
+  real(r8), intent(in) :: wind0
+  ! Response of boundary layer wind to stress changes in a time step [m/s/Pa]
+  real(r8), intent(in) :: wsresp
+  ! Estimated tau that would be in equilibrium with boundary layer wind [Pa]
+  real(r8), intent(in) :: tau_est
+  ! Stress that has just been calculated in this loop [Pa]
+  real(r8), intent(inout) :: tau
+  ! Stress assumed when calculating this tau (use tau_est for first iter.) [Pa]
+  real(r8), intent(inout) :: prev_tau
+  ! Difference between last two values of tau used for iterations [Pa]
+  ! (Use a very large value for first iteration)
+  real(r8), intent(inout) :: tau_diff
+  ! Copy of the input tau_diff (for diagnostic purposes) [Pa]
+  real(r8), intent(out) :: prev_tau_diff
+  ! Wind updated by iteration [m/s]
+  real(r8), intent(out) :: wind_adj
+
+  real(r8) :: wsresp_applied
+
+  ! maximum ratio between abs(tau_diff) and abs(prev_tau_diff)
+  real(r8) :: tau_diff_fac
+
+  ! Using wsresp_applied = 0.5 * wsresp improves accuracy somewhat, similar to
+  ! using the trapezoidal method rather than backward Euler.
+  wsresp_applied = 0.5 * wsresp
+
+  ! Forbid removing more than 99% of wind speed.
+  ! This is applied before anything else to ensure that the applied stress is
+  ! not so strong that it reverses the direction of the winds.
+  if ( (tau - tau_est) * wsresp_applied > 0.99_r8 * wind0 ) then
+     tau = tau_est + 0.99_r8 * wind0 / wsresp_applied
+  end if
+
+  prev_tau_diff = tau_diff
+  tau_diff = tau - prev_tau
+
+  ! damp large changes each iteration for convergence
+  if (tau_diff * prev_tau_diff < 0._r8) then
+     ! if oscillating about the solution, use stronger damping
+     ! this should not be set below 0.5
+     tau_diff_fac = 0.6_r8
+  else
+     tau_diff_fac = 0.95_r8
+  end if
+
+  if (abs(tau_diff) > abs(tau_diff_fac*prev_tau_diff)) then
+     tau_diff = sign(tau_diff_fac*prev_tau_diff, tau_diff)
+     tau = prev_tau + tau_diff
+  end if
+  prev_tau = tau
+
+  wind_adj = wind0 - (tau - tau_est) * wsresp_applied
+
+end subroutine shr_flux_update_stress_elm
 
 end module SimpleMathMod

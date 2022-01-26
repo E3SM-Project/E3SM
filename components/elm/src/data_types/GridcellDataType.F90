@@ -247,7 +247,8 @@ module GridcellDataType
   type(gridcell_phosphorus_flux)       , public, target :: grc_pf     ! gridcell phosphorus flux
   !------------------------------------------------------------------------
   !$acc declare create(grc_ns, grc_ps, grc_ws, grc_pf, grc_nf, grc_cf, grc_cs )
-  !$acc declare create(c13_grc_cs,c14_grc_cs,c13_grc_cf,c14_grc_cf,grc_ef,grc_es)
+  !$acc declare create(c13_grc_cs,c14_grc_cs,c13_grc_cf,c14_grc_cf)
+  !$acc declare create(grc_es, grc_ef)
   !$acc declare create(grc_wf)
 contains
 

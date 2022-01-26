@@ -13,6 +13,7 @@ module PhenologyFLuxLimitMod
   use pftvarcon                   , only : npcropmin
   use elm_varctl                  , only : iulog
   use abortutils                  , only : endrun
+  use timeInfoMod
 implicit none
   private
 
@@ -172,7 +173,6 @@ contains
   end subroutine ascal
 !------------------------------------------------------------
   subroutine fpmax(a,b)
-  !
   ! DESCRIPTION
   ! b=max(a,0._r8)
   implicit none
@@ -521,7 +521,6 @@ contains
       veg_cf, veg_cs , c13_veg_cf, c13_veg_cs , c14_veg_cf, c14_veg_cs , &
       veg_nf, veg_ns, veg_pf, veg_ps)
 
-    !
     ! DESCRIPTION
     !  apply the phenology flux limiter to avoid potential negative fluxes.
     use decompMod           , only : bounds_type
@@ -588,7 +587,6 @@ contains
   subroutine carbon_flux_limiter(bounds, num_soilc, filter_soilc,&
       num_soilp, filter_soilp, crop_vars,  &
       veg_cf, veg_cs )
-    !
     ! DESCRIPTION
     ! the flux limiter for phenology carbon fluxes
     use decompMod           , only : bounds_type
@@ -617,7 +615,7 @@ contains
          harvdate              =>    crop_vars%harvdate_patch   & ! Input:  [integer  (:)     ]  harvest date
          )
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  dt = dtime_mod !real( get_step_size(), r8 )
 
   do fp = 1,num_soilp
     p = filter_soilp(fp)
@@ -823,7 +821,6 @@ contains
       num_soilp, filter_soilp, cnstate_vars,  &
       veg_nf, veg_ns)
 
-    !
     ! DESCRIPTION
     ! the flux limiter for phenology nitrogen fluxes
     use decompMod           , only : bounds_type
@@ -852,7 +849,7 @@ contains
          ns                    => veg_ns               &
   )
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  dt = dtime_mod !real( get_step_size(), r8 )
   do fp = 1,num_soilp
     p = filter_soilp(fp)
     ystates(:) = 0._r8
@@ -1037,7 +1034,7 @@ contains
   )
 
   ! set time steps
-  dt = real( get_step_size(), r8 )
+  dt = dtime_mod !real( get_step_size(), r8 )
   do fp = 1,num_soilp
     p = filter_soilp(fp)
     ystates(:) = 0._r8

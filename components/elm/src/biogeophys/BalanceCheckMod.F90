@@ -162,7 +162,7 @@ contains
      ! The error for water balance:
      !
      ! error = abs(precipitation - change of water storage - evaporation - runoff)
-     !
+     !$acc routine seq 
      ! !USES:
      use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
@@ -170,7 +170,7 @@ contains
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use elm_varctl        , only : create_glacier_mec_landunit
      use elm_initializeMod , only : surfalb_vars
-     use domainMod         , only : ldomain
+     use domainMod         , only : ldomain_gpu
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
@@ -383,7 +383,7 @@ contains
              write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
              write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
+             write(iulog,*)'f_grd                      = ',ldomain_gpu%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
@@ -408,7 +408,7 @@ contains
              write(iulog,*)'qflx_surf_irrig_col        = ',qflx_surf_irrig_col(indexc)
              write(iulog,*)'qflx_over_supply_col       = ',qflx_over_supply_col(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
+             write(iulog,*)'f_grd                      = ',ldomain_gpu%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_h2osfc_surf           = ',qflx_h2osfc_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
@@ -723,6 +723,7 @@ contains
           end if
        end do
        if ( found ) then
+#ifndef _OPENACC 
           write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
@@ -732,6 +733,7 @@ contains
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
+#endif 
        end if
 
      end associate
@@ -884,7 +886,7 @@ contains
        energyflux_vars, canopystate_vars, soilhydrology_vars)
      !
      ! !DESCRIPTION:
-     !
+     !$acc routine seq 
      ! !USES:
      use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall

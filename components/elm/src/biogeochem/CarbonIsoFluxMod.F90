@@ -20,6 +20,7 @@ module CarbonIsoFluxMod
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
   use VegetationDataType     , only : veg_cs, veg_cf
+  #define is_active_betr_bgc .false.
   !
   implicit none
   save
@@ -51,7 +52,6 @@ contains
     ! On the radiation time step, set the carbon isotopic flux
     ! variables (except for gap-phase mortality and fire fluxes)
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -427,7 +427,6 @@ contains
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -711,7 +710,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter

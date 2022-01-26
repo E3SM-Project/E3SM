@@ -16,6 +16,7 @@ module NitrogenStateUpdate3Mod
   use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode, use_fates
+  #define is_active_betr_bgc .false. 
   !
   implicit none
   save
@@ -38,7 +39,6 @@ contains
     ! no science equations. This increases readability and maintainability.
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

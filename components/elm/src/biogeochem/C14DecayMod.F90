@@ -13,7 +13,7 @@ module C14DecayMod
   use elm_varctl             , only : nu_com
   use ColumnDataType         , only : c14_col_cs
   use VegetationDataType     , only : c14_veg_cs
-
+  #define is_active_betr_bgc .false.
   use timeInfoMod
   !
   implicit none
@@ -48,7 +48,6 @@ contains
     ! On the radiation time step, calculate the radioactive decay of C14
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

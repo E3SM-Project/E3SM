@@ -13,11 +13,11 @@ module PhosphorusStateUpdate2Mod
   !use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
-  use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
+  #define is_active_betr_bgc .false. 
   !
   implicit none
   save

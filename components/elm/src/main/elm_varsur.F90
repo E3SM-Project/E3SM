@@ -48,5 +48,6 @@ module elm_varsur
   real(r8), pointer :: slp_tunit(:,:)  ! Topounit slope 
   integer, pointer :: asp_tunit(:,:)  ! Topounit aspect
   !-----------------------------------------------------------------------
-
+    
+  !$acc declare create(wt_lunit) 
 end module elm_varsur

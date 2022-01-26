@@ -1026,9 +1026,11 @@ contains
           eflx_sh_grnd(p)   = eflx_sh_grnd(p)   - errsoi(c)
           eflx_soil_grnd(p) = eflx_soil_grnd(p) + errsoi(c)
           eflx_gnet(p)      = eflx_gnet(p)      + errsoi(c)
+#ifndef _OPENACC 
           if (abs(errsoi(c)) > 1.e-3_r8) then
              write(iulog,*)'errsoi incorporated into sensible heat in LakeTemperature: c, (W/m^2):', c, errsoi(c)
           end if
+#endif 
           errsoi(c) = 0._r8
        end if
 
