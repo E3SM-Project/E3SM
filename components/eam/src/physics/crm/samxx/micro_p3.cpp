@@ -451,21 +451,64 @@ void micro_p3_proc() {
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                    history_only, workspace_mgr, ncol, nlev);
 
+
+// for (int k=0; k<nzm; k++) {
+//   // for (int j=0; j<crm_ny; j++) {
+//     // int k = 20;
+//     int j = 0;
+//     // for (int i=0; i<crm_nx; i++) {
+//       int i = 16;
+//       for (int icrm=0; icrm<ncrms; icrm++) {
+//         int icol = i+nx*(j+ny*icrm);
+//         int ilev = k;
+//         real dth = prog_state.th(icol,ilev)[0] - th_in(icol,ilev);
+//         real dqv = prog_state.qv(icol,ilev)[0] - qv_in(icol,ilev);
+//         real dqc = prog_state.qc(icol,ilev)[0] - qc_in(icol,ilev);
+//         real dqi = prog_state.qi(icol,ilev)[0] - qi_in(icol,ilev);
+//         std::cout<<"WHDEBUG"
+//         <<"  i:"<<i 
+//         <<"  k:"<<k 
+//         <<"  th_in:" <<th_in(icol,ilev)
+//         <<"  th_out:"<<prog_state.th(icol,ilev)[0]
+//         <<"  dth:"<<dth
+//         <<"  "
+//         <<"  qv_in:" <<qv_in(icol,ilev)
+//         <<"  qv_out:"<<prog_state.qv(icol,ilev)[0]
+//         <<"  dqv:"<<dqv
+//         <<"  "
+//         <<"  qc_in:" <<qc_in(icol,ilev)
+//         <<"  qc_out:"<<prog_state.qc(icol,ilev)[0]
+//         <<"  dqc:"<<dqc
+//         <<"  "
+//         <<"  qi_in:" <<qi_in(icol,ilev)
+//         <<"  qi_out:"<<prog_state.qi(icol,ilev)[0]
+//         <<"  dqi:"<<dqi
+//         <<"  precip_liq:"<<diag_outputs.precip_liq_surf(icol)
+//         <<"  precip_ice:"<<diag_outputs.precip_ice_surf(icol)
+//         // <<"  pm:"<<pmid(k,j,i,icrm)
+//         // <<"  dp:"<<pdel(k,j,i,icrm)
+//         // <<"  ps:"<<psfc(icrm)
+//         // <<"  qc:"<<qc(k,j,i,icrm)
+//         // <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
+//         <<std::endl;
+//       }
+//     // }
+//   // }
+// }
+
+
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, nlev, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
-     int i    = icol%nx;
-     int j    = (icol/nx)%ny;
-     int icrm = (icol/nx)/ny;
-     int k    = ilev*Spack::n+s;
-     if (k < nlev) {
-         auto precsfc_tmp = precsfc(j,i,icrm);
-         auto precssfc_tmp = precssfc(j,i,icrm);
-         // auto prec_xy_tmp = prec_xy(j,i,icrm);
-         precsfc(j,i,icrm) = precsfc_tmp +(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
-         precssfc(j,i,icrm)= precssfc_tmp+(                                   diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
-         // prec_xy(j,i,icrm) = prec_xy_tmp+(diag_outputs.precip_liq_surf(icol)+diag_outputs.precip_ice_surf(icol))*1000.0*dt/dz.myData[icrm];
-     }
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, Spack::n}), KOKKOS_LAMBDA(int icol, int s) {
+    int i    = icol%nx;
+    int j    = (icol/nx)%ny;
+    int icrm = (icol/nx)/ny;
+    auto tmp_precip_liq = diag_outputs.precip_liq_surf(icol);//[s];
+    auto tmp_precip_ice = diag_outputs.precip_ice_surf(icol);//[s];
+    auto precsfc_tmp  = precsfc(j,i,icrm);
+    auto precssfc_tmp = precssfc(j,i,icrm);
+    precsfc(j,i,icrm) = precsfc_tmp +(tmp_precip_liq+tmp_precip_ice) * 1000.0 * dt / dz(icrm);
+    precssfc(j,i,icrm)= precssfc_tmp+(               tmp_precip_ice) * 1000.0 * dt / dz(icrm);
   });
 
   // update microfield
@@ -491,26 +534,26 @@ void micro_p3_proc() {
 
   // update LSE, temperature, and previous t/q
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
-     int i    = icol%nx;
-     int j    = (icol/nx)%ny;
-     int icrm = (icol/nx)/ny;
-     int k    = ilev*Spack::n + s;
-     if (k < nlev) {
-        // t(i,j,k) = t(i,j,k) - dtn*fac_cond*tmp_stend(i,k,iqv) 
-        //                     - dtn*fac_cond*tmp_stend(i,k,idx_qr)
-        //                     - dtn*fac_sub *tmp_stend(i,k,idx_qi);
-        // Real dt_tmp = (prog_state.th(icol,ilev)[s] - th_in(icol, ilev) )/exner_in(icol, ilev);
-        // t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + dt_tmp;
-        t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev) 
-                      + gamaz(k,icrm)
-                      - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) ) 
-                      - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
-        tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
-                      + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
-                      + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
-        t_prev(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev);
-        q_prev(k,j,i,icrm) = prog_state.qv(icol,ilev)[s];
-     } 
+    int i    = icol%nx;
+    int j    = (icol/nx)%ny;
+    int icrm = (icol/nx)/ny;
+    int k    = ilev*Spack::n + s;
+    if (k < nlev) {
+      // update liquid-ice static energy due to precip sedimentation tendencies (see SAM v6)
+      // t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm)
+      //                             - dtn*fac_cond*( prog_state.qv(icol,ilev)[0] - qv_in(icol,ilev) )
+      //                             - dtn*fac_cond*( prog_state.qr(icol,ilev)[0] - qr_in(icol,ilev) )
+      //                             - dtn*fac_sub *( prog_state.qi(icol,ilev)[0] - qi_in(icol,ilev) ) ;
+      t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev)
+                    + gamaz(k,icrm)
+                    - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
+                    - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
+      tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
+                    + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
+                    + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+      t_prev(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/exner_in(icol, ilev);
+      q_prev(k,j,i,icrm) = prog_state.qv(icol,ilev)[s];
+    }
   });
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
