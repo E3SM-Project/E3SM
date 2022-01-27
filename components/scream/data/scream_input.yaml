@@ -63,6 +63,10 @@ Atmosphere Driver:
     Dynamics:
       tracers: tracers, Physics GLL
 
+  # The parameters for I/O control
+  Scorpio:
+    Output YAML Files: ["data/screamv1_output.yaml"]
+
 SCREAM:
 
   Start Date: "${RUN_STARTDATE}"
@@ -83,12 +87,12 @@ HOMME:
     statefreq         : 9999
     mesh_file         : /dev/null
     tstep             : 300
-    nu                :  .000000034
+    nu                : 3.4e-8 
     nu_div            : -1 
-    nu_p              : .000000034
-    nu_q              : .000000034
-    nu_s              : .000000034
-    nu_top            : 
+    nu_p              : -1
+    nu_q              : -1
+    nu_s              : -1
+    nu_top            : 2.5e+5
     se_ftype          : 0
     limiter_option    : 9
     vert_remap_q_alg  : 10
@@ -101,7 +105,6 @@ HOMME:
     tstep_type        : 5
     dt_remap_factor   : 1
     dt_tracer_factor  : 1
-    transport_alg     : 12
     moisture:           moist
 
   vert_nl:
