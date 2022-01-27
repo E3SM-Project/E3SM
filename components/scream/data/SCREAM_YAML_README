@@ -32,6 +32,7 @@ This file supports some special syntax in addition to basic YAML:
 statements. If switch_val matches key1, then the expression evaluates to val1; if switch_val
 matches key2, then the expression evaluates to val2; if it matches neither, then
 the expression evaluates to elseval. The elseval component of this expression is optional.
+You can have any number (N>=1) of key => val sections.
 
 Example, if you wanted tstep to depend on atm grid resolution:
 
