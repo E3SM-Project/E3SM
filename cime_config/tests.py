@@ -176,7 +176,7 @@ _TESTS = {
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
