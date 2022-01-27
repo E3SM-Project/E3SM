@@ -3,10 +3,12 @@
 # Check if the env var PR_LABELS is defined, and contains something meaningful
 IFS=';' read -r -a labels <<< "$PR_LABELS";
 
-# default values
+# default values. By default, test only Stand-Alone (SA) on all machines
 skip_testing=0
 test_scripts=0
-test_cime=0
+test_v0=0
+test_v1=0
+test_SA=1
 skip_mappy=0
 skip_weaver=0
 skip_blake=0
@@ -16,10 +18,17 @@ if [ ${#labels[@]} -gt 0 ]; then
   do
     if [ "$label" == "AT: Integrate Without Testing" ]; then
       skip_testing=1
+    elif [ "$label" == "AT: Skip Stand-Alone Testing" ]; then
+      test_SA=0
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
+    elif [ "$label" == "SCREAMv1" ]; then
+      test_v1=1
+    elif [ "$label" == "SCREAMv0" ]; then
+      test_v0=1
     elif [ "$label" == "CIME" ]; then
-      test_cime=1
+      test_v0=1
+      test_v1=1
     elif [ "$label" == "AT: Skip mappy" ]; then
       skip_mappy=1
     elif [ "$label" == "AT: Skip weaver" ]; then
@@ -75,19 +84,22 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
-  if [[ $? != 0 ]]; then fails=$fails+1; fi
-
-  # Add a valgrind and coverage tests for mappy for nightlies
-  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  # Run scream stand-alone tests (SA)
+  if [ $test_SA -eq 1 ]; then
+    ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
-  fi
 
-  # Add a cuda-memcheck test for weaver for nightlies
-  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
+    # Add a valgrind and coverage tests for mappy for nightlies
+    if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
+      ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
+
+    # Add a cuda-memcheck test for weaver for nightlies
+    if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
+      ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
   fi
 
   # scripts-tests is pretty expensive, so we limit this testing to mappy
@@ -104,10 +116,12 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   # Run SCREAM CIME suite
-  if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
+  if [[ $test_v0 == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream -c -b master
     if [[ $? != 0 ]]; then fails=$fails+1; fi
+  fi
 
+  if [[ $test_v1 == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
     if [[ $? != 0 ]]; then fails=$fails+1; fi
   fi
