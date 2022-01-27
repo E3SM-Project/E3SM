@@ -59,7 +59,6 @@ module homme_params_mod
     nu_top,                 &
     hypervis_order,         &
     hypervis_scaling,       &
-    hypervis_power,         &
     hypervis_subcycle,      &
     hypervis_subcycle_tom,  &
     hypervis_subcycle_q,    &
