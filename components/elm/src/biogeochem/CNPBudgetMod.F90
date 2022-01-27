@@ -891,8 +891,8 @@ contains
     write(iulog,*)'to the E3SM coupler'
     write(iulog,'(71("-"),"|",20("-"))')
     write(iulog,C_FF)'   *SUM*', &
-         -sum(budg_fluxGpr(:,ip)) * convertgC2kgCO2, &
-         -sum(budg_fluxG(:,ip))*unit_conversion*get_step_size() * convertgC2kgCO2
+         sum(budg_fluxGpr(:,ip)) * convertgC2kgCO2, &
+         sum(budg_fluxG(:,ip))*unit_conversion*get_step_size() * convertgC2kgCO2
     write(iulog,'(71("-"),"|",20("-"))')
 
     write(iulog,*)''
