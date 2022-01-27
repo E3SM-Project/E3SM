@@ -812,7 +812,7 @@ contains
        endif
 
        if (plev > 0) then
-          unit_conversion = 1._r8/(4.0_r8*shr_const_pi)*1.0e9_r8
+          unit_conversion = 1._r8/(4.0_r8*shr_const_pi)*1.0e6_r8
           if (.not.sumdone) then
              sumdone = .true.
              call Sum0(f_size, s_size, budg_fluxL, budg_fluxG, budg_stateL, budg_stateG)
@@ -869,7 +869,7 @@ contains
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
     write(iulog,C_FA0 )'    Time    ','  Time    '
     write(iulog,C_FA0 )'  averaged  ','integrated'
-    write(iulog,C_FA0 )'kgC/m2/s*1e6','kgC/m2*1e6'
+    write(iulog,C_FA0 )'kgC/m2/s*1e9','kgC/m2*1e9'
 
     write(iulog,'(71("-"),"|",20("-"))')
 
@@ -887,7 +887,7 @@ contains
     write(iulog,'(71("-"),"|",20("-"))')
 
     write(iulog,*) ''
-    write(iulog,*)'Converting flux from kgC/m^2/s*1e6 to kgCO2/m2/s*1e6, to be consistent with the flux sent'
+    write(iulog,*)'Converting flux from kgC/m^2/s*1e9 to kgCO2/m2/s*1e9, to be consistent with the flux sent'
     write(iulog,*)'to the E3SM coupler'
     write(iulog,'(71("-"),"|",20("-"))')
     write(iulog,C_FF)'   *SUM*', &
@@ -896,7 +896,7 @@ contains
     write(iulog,'(71("-"),"|",20("-"))')
 
     write(iulog,*)''
-    write(iulog,*)'CARBON STATES (kgC/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
+    write(iulog,*)'CARBON STATES (kgC/m2*1e9): period ',trim(pname(ip)),': date = ',cdate,sec
 
     write(iulog,*)''
     write(iulog,C_SA0_2)'beg','end','*NET CHANGE*'
