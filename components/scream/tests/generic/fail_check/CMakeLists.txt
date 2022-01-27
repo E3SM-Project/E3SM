@@ -6,22 +6,22 @@ include(EkatCreateUnitTest)
 
 # Ensure that a non-satisfied REQUIRE clause does, in fact, make the test fail
 EkatCreateUnitTestExec (fail "fail.cpp")
-EkatCreateUnitTestFromExec (fail fail PROPERTIES WILL_FAIL TRUE)
+EkatCreateUnitTestFromExec (fail fail PROPERTIES WILL_FAIL TRUE LABELS "fail")
 
 if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
   # Ensure that Kokkos OOB are caught
   EkatCreateUnitTestExec (kokkos_fail "kokkos_fail.cpp")
-  EkatCreateUnitTestFromExec (kokkos_fail kokkos_fail PROPERTIES WILL_FAIL TRUE)
+  EkatCreateUnitTestFromExec (kokkos_fail kokkos_fail PROPERTIES WILL_FAIL TRUE LABELS "fail")
 endif()
 
 if (EKAT_ENABLE_VALGRIND)
   # Ensure that valgrind errors are caught
   EkatCreateUnitTestExec (valg_fail "valg_fail.cpp")
-  EkatCreateUnitTestFromExec (valg_fail valg_fail PROPERTIES WILL_FAIL TRUE)
+  EkatCreateUnitTestFromExec (valg_fail valg_fail PROPERTIES WILL_FAIL TRUE LABELS "fail")
 endif()
 
 if (SCREAM_FPE)
   # Ensure that FPE *do* throw
   EkatCreateUnitTestExec (fpe_fail "fpe_fail.cpp")
-  EkatCreateUnitTestFromExec (fpe_fail fpe_fail PROPERTIES WILL_FAIL TRUE)
+  EkatCreateUnitTestFromExec (fpe_fail fpe_fail PROPERTIES WILL_FAIL TRUE LABELS "fail")
 endif()
