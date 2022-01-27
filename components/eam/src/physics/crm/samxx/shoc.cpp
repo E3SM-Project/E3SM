@@ -28,35 +28,35 @@ void shoc_proc() {
   auto &z                  = :: z;
   auto &sl                 = :: sl;
   auto &omega              = :: omega;
-  auto &crm_state_qv       = :: crm_state_qv; // ixq
-  auto &crm_state_qc       = :: crm_state_qc; // ixcldliq
-  auto &crm_state_qi       = :: crm_state_qi; // ixcldice
-  auto &crm_state_nc       = :: crm_state_ni; // ixnumliq
-  auto &crm_state_ni       = :: crm_state_ni; // ixnumice
+  // auto &crm_state_qv       = :: crm_state_qv; // ixq
+  // auto &crm_state_qc       = :: crm_state_qc; // ixcldliq
+  // auto &crm_state_qi       = :: crm_state_qi; // ixcldice
+  // auto &crm_state_nc       = :: crm_state_ni; // ixnumliq
+  // auto &crm_state_ni       = :: crm_state_ni; // ixnumice
   auto &phis               = :: phis;
-  auto &shf                = :: crm_input_shf;
-  auto &cflx               = :: crm_input_cflx;
-  auto &wsx                = :: crm_input_wsx;
-  auto &wsy                = :: crm_input_wsy;
-  auto &crm_input_tke      = :: crm_input_tke_zt;
-  auto &crm_input_wthv     = :: crm_input_wthv;
-  auto &crm_input_tkh      = :: crm_input_tkh;
-  auto &crm_input_tk       = :: crm_input_tk;
-  auto &crm_input_alst     = :: crm_input_alst;
-  auto &crm_input_qtracers = :: crm_input_qtracers;
-  auto &crm_input_tl       = :: crm_input_tl;
-  auto &crm_input_zint     = :: crm_input_zint;
-  auto &crm_input_zmid     = :: crm_input_zmid;
-  auto &crm_input_pmid     = :: crm_input_pmid;
-  auto &crm_input_pint     = :: crm_input_pint;
-  auto &crm_input_pdel     = :: crm_input_pdel;
-  auto &crm_input_phis     = :: crm_input_phis;
-  auto &crm_input_sl       = :: crm_input_sl;
-  auto &crm_input_omega    = :: crm_input_omega;
-  auto &crm_input_qccl     = :: crm_input_qccl;
-  auto &crm_input_ql       = :: crm_input_ql;
-  auto &crm_input_ul       = :: crm_input_ul;
-  auto &crm_input_vl       = :: crm_input_vl;
+  // auto &shf                = :: crm_input_shf;
+  // auto &cflx               = :: crm_input_cflx;
+  // auto &wsx                = :: crm_input_wsx;
+  // auto &wsy                = :: crm_input_wsy;
+  // auto &crm_input_tke      = :: crm_input_tke_zt;
+  // auto &crm_input_wthv     = :: crm_input_wthv;
+  // auto &crm_input_tkh      = :: crm_input_tkh;
+  // auto &crm_input_tk       = :: crm_input_tk;
+  // auto &crm_input_alst     = :: crm_input_alst;
+  // auto &crm_input_qtracers = :: crm_input_qtracers;
+  // auto &crm_input_tl       = :: crm_input_tl;
+  // auto &crm_input_zint     = :: crm_input_zint;
+  // auto &crm_input_zmid     = :: crm_input_zmid;
+  // auto &crm_input_pmid     = :: crm_input_pmid;
+  // auto &crm_input_pint     = :: crm_input_pint;
+  // auto &crm_input_pdel     = :: crm_input_pdel;
+  // auto &crm_input_phis     = :: crm_input_phis;
+  // auto &crm_input_sl       = :: crm_input_sl;
+  // auto &crm_input_omega    = :: crm_input_omega;
+  // auto &crm_input_qccl     = :: crm_input_qccl;
+  // auto &crm_input_ql       = :: crm_input_ql;
+  // auto &crm_input_ul       = :: crm_input_ul;
+  // auto &crm_input_vl       = :: crm_input_vl;
   auto &sgs_field          = :: sgs_field;
   auto &sgs_field_diag     = :: sgs_field_diag;
  
@@ -103,14 +103,30 @@ void shoc_proc() {
   real2d nc("nc", ncol, nlev);
   real2d ni("ni", ncol, nlev);
   real2d pres("pres", ncol, nlev);
-  real2d pdels("pdel", ncol, nlev);
+  real2d pdel("pdel", ncol, nlev);
   real2d presi("presi", ncol, nlevi);
   real3d qtracers("qtracers", ncol, num_tracers, nlev);
+
+  //----------------------------------------------------------------------------
+  // Calculate total pressure and pressure thickness
+  //----------------------------------------------------------------------------
 
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    inv_exner(icol, ilev) = 1./std::pow((crm_input_pmid(plev-nzm+k,icrm)/p0_shoc), (rgas/cp));
+    pres(icol,ilev)  = p(k,j+offy_p,i+offx_p,icrm) + 100.0*pres(k,icrm);
+  });
+
+  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    int icol = i+nx*(j+ny*icrm);
+    int ilev = k;
+    if (k==0) {
+      pdel(icol,ilev) = psfc(icrm) - pres(icol,ilev+1)
+    } else if (k==(nzm-1)) {
+      pdel(icol,ilev) = pdel(k-1,j,i,icrm);
+    } else {
+      pdel(icol,ilev) = pres(icol,ilev-1) - pres(icol,ilev+1)
+    }
   });
 
   // At each SHOC call, initialize mean momentum  and thermo SHOC state 
@@ -121,26 +137,29 @@ void shoc_proc() {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
 
-    rvm(icol,ilev) = crm_input_ql(plev-nzm+k,icrm);
-    rcm(icol,ilev) = crm_input_qccl(plev-nzm+k,icrm);
+    inv_exner(icol, ilev) = 1./std::pow((pdel(icol,ilev)/p0_shoc), (rgas/cp));    
+
+    real qv_tmp = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
+
+    real ta_tmp = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
+                      + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
+                      + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+
+    rvm(icol,ilev) = qv_tmp;
+    rcm(icol,ilev) = qcl(k,j,i,icrm);
     rtm(icol,ilev) = rvm(icol,ilev) + rcm(icol,ilev);
 
-    um(icol,ilev)  = crm_input_ul(plev-nzm+k,icrm);
-    vm(icol,ilev)  = crm_input_vl(plev-nzm+k,icrm);
+    um(icol,ilev)  = u(k,j+offy_u,i+offx_u,icrm);
+    vm(icol,ilev)  = v(k,j+offy_v,i+offx_v,icrm);
 
-    // um(icol,ilev)  = u(nzm-(k+1),j+offy_u,i+offx_u,icrm);
-    // vm(icol,ilev)  = v(nzm-(k+1),j+offy_v,i+offx_v,icrm);
-
-    thlm(icol,ilev)  = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)-(latvap/cp)*crm_state_qc(nzm-(k+1),j,i,icrm);
-    thv(icol,ilev)   = crm_input_tl(plev-nzm+k,icrm)*inv_exner(icol,ilev)
-                       *(1.0+zvir*crm_state_qv(nzm-(k+1),j,i,icrm)-crm_state_qc(nzm-(k+1),j,i,icrm));
+    thlm(icol,ilev)  = ta_tmp*inv_exner(icol,ilev)-(latvap/cp)*qc(k,j,i,icrm);
+    thv(icol,ilev)   = ta_tmp*inv_exner(icol,ilev)*(1.0+zvir*qv_tmp-qc(k,j,i,icrm));
 
     tke(icol,ilev)   = crm_input_tke(plev-nzm+k,icrm);
     tkh(icol,ilev)   = crm_input_tkh(plev-nzm+k,icrm);
     tk (icol,ilev)   = crm_input_tk(plev-nzm+k,icrm);
     wthv(icol,ilev)  = crm_input_wthv(plev-nzm+k,icrm);
-    pres(icol,ilev)  = crm_input_pmid(plev-nzm+k,icrm);
-    pdels(icol,ilev) = crm_input_pdel(plev-nzm+k,icrm);
+    
 
     // Cloud fraction needs to be initialized for first 
     // PBL height calculation call
