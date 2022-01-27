@@ -925,12 +925,12 @@ void HommeDynamics::initialize_homme_state () {
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
   m_ic_remapper->registration_begins();
-  m_ic_remapper->register_field(get_field_out("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
-  m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
-  m_ic_remapper->register_field(get_field_out("ps",rgn),m_helper_fields.at("ps_dyn"));
+  m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
+  m_ic_remapper->register_field(get_field_in("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
+  m_ic_remapper->register_field(get_field_in("ps",rgn),m_helper_fields.at("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
-  m_ic_remapper->register_field(get_field_out("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(*get_group_out("Q",rgn).m_bundle,m_helper_fields.at("Q_dyn"));
+  m_ic_remapper->register_field(get_field_in("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
+  m_ic_remapper->register_field(*get_group_in("Q",rgn).m_bundle,m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap(true);
 
