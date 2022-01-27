@@ -1,7 +1,7 @@
-if (DEFINED ENV{SCREAM_FAKE_ONLY})
-  # Some fake tests for testing infrastructure
-  add_subdirectory(generic)
-else()
+# Some tests for checking testing works
+add_subdirectory(generic)
+
+if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # Testing individual atm processes
   add_subdirectory(uncoupled)
 
