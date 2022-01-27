@@ -100,6 +100,8 @@ if [ $skip_testing -eq 0 ]; then
       ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
+  else
+    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
   fi
 
   # scripts-tests is pretty expensive, so we limit this testing to mappy
